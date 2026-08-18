@@ -109,7 +109,7 @@ External review keys are present and `feedback_iterations > 0`. Run the
 full external review:
 
 ```bash
-uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
+uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py \
   --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
@@ -209,7 +209,7 @@ plan adds nothing permanent, that brief is three lines — see the template.
 #    Do NOT copy the plan's rejected-alternatives rationale into it.
 
 # 2. Ask the same two models.
-uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
+uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py \
   --mode architecture \
   --brief-file "{planning_dir}/architecture_brief.md" \
   --spec-file "{spec_file}" \

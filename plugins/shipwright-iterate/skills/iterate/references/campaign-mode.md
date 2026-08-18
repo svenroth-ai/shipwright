@@ -170,7 +170,7 @@ If campaign directory doesn't exist yet:
    3c. Spawn sub-iterate-runner subagent:
        result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
                      model=<finalization tier resolved at loop step 2, omit if "inherit">,
-                     prompt=<brief with sub_iterate_id, spec, base_branch, etc.>)
+                     prompt=<brief with sub_iterate_id, spec, base_branch, plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), etc.>)
        The runner branches off base_branch (fresh origin/<default>), builds,
        finalizes, pushes, and leaves the PR OPEN (auto-merge deferred). The brief
        carries campaign slug (via campaign_path) + sub_iterate_id; the runner

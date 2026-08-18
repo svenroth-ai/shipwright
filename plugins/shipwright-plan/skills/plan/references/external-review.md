@@ -26,7 +26,7 @@ carries the gate. Silent-skip is not an option.
 ## Script
 
 ```bash
-uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
+uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py \
   --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \

@@ -1,0 +1,1 @@
+External code review now reliably reaches DeepSeek/OpenAI in consumer projects — every uv run .../external_review.py invocation now passes uv's own --project flag pointed at the plugin declaring its openai dependency, instead of silently degrading to internal-only reviewers.

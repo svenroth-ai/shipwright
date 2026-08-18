@@ -5,10 +5,12 @@ Provider chain (:func:`detect_provider`): OpenRouter (one OPENROUTER_API_KEY for
 both models) → direct OpenAI (GPT only; DeepSeek has no direct route) → skip.
 DeepSeek never falls back to Gemini or a direct provider.
 
-Usage — every mode takes ``--spec-file`` and ``--plugin-root`` plus exactly ONE
-input flag, listed below::
+Usage — every mode takes ``--spec-file``, ``--plugin-root``, exactly ONE input
+flag below, and uv's own ``--project <plan plugin root>`` (else ``openai``
+silently fails to import outside a project whose own pyproject.toml declares it)::
 
-    uv run shared/scripts/tools/external_review.py --mode <mode> \\
+    uv run --project <shipwright-plan plugin root> \\
+        shared/scripts/tools/external_review.py --mode <mode> \\
         <input-flag> <path> --spec-file <path> --plugin-root <path>
 
 Mode → primary-input mapping (the table itself is
@@ -44,10 +46,8 @@ Output (JSON):
         }
     }
 
-This is the consolidated successor of
-``plugins/shipwright-plan/scripts/llm_clients/review.py``. Prompt loading uses
-per-mode helpers from ``lib.external_review_prompts``; reviewer/model
-identities are validated against fixed bindings before client construction.
+Prompt loading uses per-mode helpers from ``lib.external_review_prompts``;
+reviewer/model identities are validated against fixed bindings before client construction.
 """
 
 import argparse

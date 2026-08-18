@@ -1,0 +1,81 @@
+{
+  "run_id": "iterate-2026-08-18-external-review-project-flag",
+  "date": "2026-08-18T13:15:42.720104Z",
+  "event_at": "2026-08-18T13:14:53.954083+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/external-review-project-flag",
+  "spec": ".shipwright/planning/iterate/2026-08-18-external-review-project-flag.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-18-external-review-project-flag",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Every external_review.py invocation block anywhere under plugins/+shared/ carries --project (repo-wide scan, not a fixed allowlist)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_project_flag.py::test_external_review_calls_pass_project_flag PASSED"
+      },
+      {
+        "behavior": "The scan finds exactly the known 9 invocation blocks, and --project value is context-sensitive (plugin_root only inside shipwright-plan, plan_plugin_root elsewhere), quoted on all 9",
+        "disposition": "tested",
+        "evidence": "same test - EXPECTED_TOTAL_COMMANDS == 9 sanity assertion + per-site allowed-value check, verified failing pre-fix"
+      },
+      {
+        "behavior": "uv run --project <plan_plugin_root> resolves openai (and runs the real script, not just the import) from a directory with no pyproject.toml, against both the monorepo copy and the installed plugin-cache copy",
+        "disposition": "tested",
+        "evidence": "manual probes: uv run --project <target> .../external_review.py --help, exit 0 both copies; not unit-testable without shelling uv, and the mechanism is uv's own contract"
+      },
+      {
+        "behavior": "Plain uv run (no --project) fails from the same no-pyproject.toml directory, confirming the bug is real outside this monorepo",
+        "disposition": "tested",
+        "evidence": "manual probe: uv run python -c \"import openai\" -> ModuleNotFoundError, exit 1"
+      },
+      {
+        "behavior": "sub-iterate-runner.md declares plan_plugin_root as an Input parameter (consumer side)",
+        "disposition": "tested",
+        "evidence": "test_sub_iterate_runner_declares_plan_plugin_root_input PASSED"
+      },
+      {
+        "behavior": "campaign-mode.md's runner spawn actually names plan_plugin_root in the brief, and is confirmed the SOLE Task-spawn site for sub-iterate-runner (producer side)",
+        "disposition": "tested",
+        "evidence": "test_campaign_mode_threads_plan_plugin_root_into_runner_spawn PASSED; grep confirmed campaign-mode.md:171 is the only subagent_type=\"shipwright-iterate:sub-iterate-runner\" spawn in the repo"
+      },
+      {
+        "behavior": "sub-iterate-runner.md's existing contract tests still pass after adding the Input parameter (no drift)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py - part of the 942 passed above"
+      },
+      {
+        "behavior": "The canonical uv run --project failure-handling note (\"not a completed review, record not_run\") exists in iteration-reviews.md",
+        "disposition": "tested",
+        "evidence": "test_canonical_failure_handling_note_exists PASSED"
+      },
+      {
+        "behavior": "external_review.py's own module docstring usage example also shows uv run --project (a 10th, undiffed mention outside the *.md scan)",
+        "disposition": "tested",
+        "evidence": "test_external_review_docstring_shows_project_flag PASSED"
+      }
+    ],
+    "counts": {
+      "total": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-18-external-review-project-flag.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_external_review_project_flag.py -v",
+    "tests_run": 5,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-18-external-review-project-flag/surface_verification.json",
+    "timestamp": "2026-08-18T13:11:00Z"
+  }
+}

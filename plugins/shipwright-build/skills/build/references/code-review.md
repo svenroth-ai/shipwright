@@ -189,12 +189,21 @@ sent.
 2. Run the external review:
 
 ```bash
-uv run "{shared_root}/scripts/tools/external_review.py" \
+uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file /tmp/shipwright-review-diff.txt \
   --spec-file "{section_spec_path}" \
   --plugin-root "{plan_plugin_root}"
 ```
+
+(`uv run --project` points uv at the plugin that declares the `openai`
+dependency `external_review.py` imports — without it, `uv run` resolves
+package context from cwd, which has no such declaration outside this
+monorepo, and the import silently fails. `{plan_plugin_root}` resolves the
+same way `{shared_root}` above it does — the installed shipwright-plan
+plugin's root. A non-zero `uv run` exit, or stdout that is not the
+expected JSON, means the pass did NOT run: record it `not_run` with that
+reason, never parsed as a completed review.)
 
 (`--plugin-root` is unused in code-mode prompt loading but the argument
 remains required for CLI shape parity with plan/iterate modes.)
