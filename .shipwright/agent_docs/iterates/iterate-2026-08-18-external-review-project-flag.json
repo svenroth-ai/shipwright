@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-08-18-external-review-project-flag",
-  "date": "2026-08-18T13:15:42.720104Z",
+  "date": "2026-08-18T13:22:15.721102Z",
   "event_at": "2026-08-18T13:14:53.954083+00:00",
   "type": "bug",
   "complexity": "medium",
@@ -56,11 +56,17 @@
         "behavior": "external_review.py's own module docstring usage example also shows uv run --project (a 10th, undiffed mention outside the *.md scan)",
         "disposition": "tested",
         "evidence": "test_external_review_docstring_shows_project_flag PASSED"
+      },
+      {
+        "behavior": "campaign-mode.md (producer) -> sub-iterate-runner.md (consumer) plan_plugin_root chain actually composes end to end: spawn supplies it, runner declares it as Input, runner's own call sites consume the identical token",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_campaign_to_runner_plan_plugin_root_chain_composes PASSED"
       }
     ],
     "counts": {
-      "total": 9,
-      "tested": 9,
+      "total": 10,
+      "tested": 10,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -73,9 +79,9 @@
   "surface_verification": {
     "surface": "cli",
     "runner": "uv run pytest shared/tests/test_external_review_project_flag.py -v",
-    "tests_run": 5,
+    "tests_run": 6,
     "exit_code": 0,
     "evidence_path": ".shipwright/runs/iterate-2026-08-18-external-review-project-flag/surface_verification.json",
-    "timestamp": "2026-08-18T13:11:00Z"
+    "timestamp": "2026-08-18T13:21:55.041Z"
   }
 }

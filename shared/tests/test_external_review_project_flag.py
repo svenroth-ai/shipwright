@@ -216,6 +216,41 @@ def test_external_review_docstring_shows_project_flag():
     )
 
 
+def test_campaign_to_runner_plan_plugin_root_chain_composes():
+    """category:integration -- campaign-mode.md is FRAMEWORK cross-component
+    machinery (campaign_*/campaign-mode.md, per SKILL.md's Risk Taxonomy);
+    the two producer/consumer unit checks above each verify one HALF of the
+    plan_plugin_root contract in isolation. This proves the full chain
+    actually composes: the orchestrator (campaign-mode.md) supplies the
+    value at spawn -> the runner (sub-iterate-runner.md) declares it as an
+    expected Input -> the runner's OWN call sites consume the identical
+    `{plan_plugin_root}` token, not a different or stale placeholder."""
+    campaign_text = (
+        REPO_ROOT
+        / "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md"
+    ).read_text(encoding="utf-8")
+    runner_text = (
+        REPO_ROOT / "plugins/shipwright-iterate/agents/sub-iterate-runner.md"
+    ).read_text(encoding="utf-8")
+
+    spawn_section = campaign_text.split("Spawn sub-iterate-runner subagent:", 1)[1][:600]
+    assert "plan_plugin_root" in spawn_section, "producer hop broken (see unit test above)"
+
+    input_section = runner_text.split("## Input", 1)[1].split("## Workflow", 1)[0]
+    assert "plan_plugin_root" in input_section, "consumer declaration hop broken"
+
+    consuming_commands = [
+        cmd for cmd in _external_review_commands(runner_text) if "{plan_plugin_root}" in cmd
+    ]
+    assert len(consuming_commands) == 2, (
+        f"expected both of sub-iterate-runner.md's external_review.py call "
+        f"sites to consume the literal {{plan_plugin_root}} token supplied "
+        f"by campaign-mode.md's spawn, found {len(consuming_commands)} -- "
+        f"the declared Input is not actually wired to the invocations that "
+        f"need it, breaking the producer->consumer chain end to end."
+    )
+
+
 def test_campaign_mode_threads_plan_plugin_root_into_runner_spawn():
     """The producer side: the orchestrator must actually pass
     plan_plugin_root when it spawns the runner, or the consumer-side

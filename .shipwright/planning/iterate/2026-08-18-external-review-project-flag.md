@@ -128,11 +128,14 @@ which project context `uv run` resolves from, not a data format.
   | 7 | `sub-iterate-runner.md`'s existing contract tests still pass after adding the Input parameter (no drift) | tested | `plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py` — 37/37 PASSED |
   | 8 | The canonical `uv run --project` failure-handling note ("not a completed review, record `not_run`") exists in iteration-reviews.md, so every other call site's pointer to it resolves to something real | tested | `test_canonical_failure_handling_note_exists` — PASSED |
   | 9 | `external_review.py`'s own module docstring usage example also shows `uv run --project` — a 10th, undiffed mention outside the *.md scan (a `.py` file, prose `<...>` placeholder, not caught by the markdown-only walk) | tested | `test_external_review_docstring_shows_project_flag` — PASSED |
+  | 10 | **category:integration** — `campaign-mode.md` is FRAMEWORK cross-component machinery (`campaign_*`/`campaign-mode.md`, SKILL.md Risk Taxonomy); the producer (row 6) and consumer (row 5) checks each verify one half in isolation — this proves the full `plan_plugin_root` chain actually composes: spawn supplies it, runner declares it as Input, runner's own two call sites consume the identical `{plan_plugin_root}` token | tested | `test_campaign_to_runner_plan_plugin_root_chain_composes` — PASSED (added after F11's `check_integration_coverage` correctly flagged this diff as touching `cross_component` machinery) |
 - **Confidence-pattern check:** Asymptote — the "is `--plugin-root` also
   broken?" question was probed empirically against the script source
   rather than assumed; it resolved to "no, inert for these modes," so no
   further probe needed there. Coverage — every AC above has a `tested`
-  row; 0 untested-testable.
+  row; 0 untested-testable. Integration — `cross_component` (campaign-mode.md)
+  is covered by row 10 above (added post-F11-finding, not pre-empted at
+  authoring time; noted as a process gap in F3a).
 
 ## Verification (medium+)
 - **Surface:** cli
@@ -140,7 +143,7 @@ which project context `uv run` resolves from, not a data format.
   plus the manual `uv run --project` probes recorded in Confidence
   Calibration (both the monorepo and the installed plugin-cache copy, each
   from a directory with no `pyproject.toml`).
-- **Evidence path:** pytest output above (5 test functions, all PASSED);
+- **Evidence path:** pytest output above (6 test functions, all PASSED);
   probe transcripts inline in this spec.
 
 ## Internal Plan Review (opus-plan-reviewer)

@@ -4,9 +4,9 @@
     "date": "2026-08-18",
     "unit": {
       "status": "pass",
-      "passed": 12425,
+      "passed": 12426,
       "failed": 0,
-      "note": "F0 suite (run_test_suite.py): 18/18 units GREEN in 4.5 min. Exact counts confirmed by direct pytest run for: shared/tests 9282 passed + 32 skipped (this run's new shared/tests/test_external_review_project_flag.py included, 5/5 passed); plugins/shipwright-iterate 942 passed + 1 skipped; plugins/shipwright-build 133 passed; plugins/shipwright-plan 82 passed; integration-tests 520 collected/passed (2 deselected); shared/scripts/tests 466 passed; shared/scripts/tools/tests 575 collected/passed (2 deselected). The remaining 11 F0 units (shipwright-run/design/project/changelog/security/deploy/grade/test/adopt/compliance/preview) reported PASS in the F0 suite summary without a separate direct count."
+      "note": "F0 suite (run_test_suite.py): 18/18 units GREEN in 4.5 min. Exact counts confirmed by direct pytest run for: shared/tests 9282 passed + 32 skipped (this run's new shared/tests/test_external_review_project_flag.py included, 6/6 passed); plugins/shipwright-iterate 942 passed + 1 skipped; plugins/shipwright-build 133 passed; plugins/shipwright-plan 82 passed; integration-tests 520 collected/passed (2 deselected); shared/scripts/tests 466 passed; shared/scripts/tools/tests 575 collected/passed (2 deselected). The remaining 11 F0 units (shipwright-run/design/project/changelog/security/deploy/grade/test/adopt/compliance/preview) reported PASS in the F0 suite summary without a separate direct count."
     },
     "integration": {
       "status": "pass",
@@ -32,10 +32,10 @@
     "surface_verification": {
       "surface": "cli",
       "runner": "uv run pytest shared/tests/test_external_review_project_flag.py -v",
-      "tests_run": 5,
+      "tests_run": 6,
       "exit_code": 0,
       "evidence_path": ".shipwright/runs/iterate-2026-08-18-external-review-project-flag/surface_verification.json",
-      "timestamp": "2026-08-18T13:11:00Z"
+      "timestamp": "2026-08-18T13:21:55.041Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -84,11 +84,17 @@
           "behavior": "external_review.py's own module docstring usage example also shows uv run --project (a 10th, undiffed mention outside the *.md scan)",
           "disposition": "tested",
           "evidence": "test_external_review_docstring_shows_project_flag PASSED"
+        },
+        {
+          "behavior": "campaign-mode.md (producer) -> sub-iterate-runner.md (consumer) plan_plugin_root chain actually composes end to end: spawn supplies it, runner declares it as Input, runner's own call sites consume the identical token",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_campaign_to_runner_plan_plugin_root_chain_composes PASSED"
         }
       ],
       "counts": {
-        "total": 9,
-        "tested": 9,
+        "total": 10,
+        "tested": 10,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -108,7 +114,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-08-18-external-review-project-flag",
-    "commit": "5828d2e493e28de4faa18e99c19eb431623624d7",
+    "commit": "fb1f3ee7418169b86cb4b81eae95607625c41cf8",
     "dirty": true,
     "base": null,
     "release": null
