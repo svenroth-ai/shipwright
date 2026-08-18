@@ -17,7 +17,7 @@ You receive these parameters in the prompt:
 - `sub_iterate_spec`: Absolute path to the sub-iterate spec file
 - `campaign_path`: Absolute path to the campaign directory
 - `project_root`: Absolute path to the project root
-- `plugin_root`: Absolute path to the shipwright-iterate plugin
+- `plugin_root` / `plan_plugin_root`: absolute paths to the shipwright-iterate plugin / shipwright-plan (external_review.py's `uv run --project` target)
 - `shared_root`: Absolute path to the shared directory
 - `base_branch`: Ref to branch off. **serial (campaign default): the FRESH `origin/<default>` remote ref** — every sub-iterate (incl. the first) branches off it, so it starts from a `main` that already contains every prior merged sub-iterate. (stacked: the previous sub-iterate's branch; null for the first stacked sub-iterate.)
 - `session_id`: Shipwright session ID
@@ -99,7 +99,7 @@ Parse the JSON. Then:
 - **Branch A — `available`:**
 
   ```bash
-  uv run "{shared_root}/scripts/tools/external_review.py" --mode iterate \
+  uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" --mode iterate \
     --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
     --plugin-root "{plugin_root}"
   ```
@@ -109,9 +109,9 @@ Parse the JSON. Then:
   `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
   `rejected-with-reason`, before Finalization.
 
-- **Branch B — `missing_keys`:** autonomous; cannot prompt. Log, proceed,
-  record the opt-out in the ADR with reason `missing_keys`; the orchestrator
-  surfaces it at campaign-end.
+- **Branch B — `missing_keys`:** autonomous; cannot prompt. Log, proceed, record the opt-out;
+  orchestrator surfaces at campaign-end. (`uv run --project` failure ≠ this branch —
+  iteration-reviews.md's note: `--status not_run`, no `--marker-status`.)
 
 - **Branch C — `user_disabled`** (`external_review.feedback_iterations: 0`):
   notice + skip; record `skipped_config_disabled` in the ADR.
@@ -187,7 +187,7 @@ review for those.
    ```bash
    git diff HEAD~1 > /tmp/shipwright-review-diff.txt
 
-   uv run "{shared_root}/scripts/tools/external_review.py" \
+   uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code \
      --diff-file /tmp/shipwright-review-diff.txt \
      --spec-file "{sub_iterate_spec}" \

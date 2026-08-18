@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-18-external-review-project-flag",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-18T11:57:53.687282+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case / test design",
+          "file": null,
+          "line": null,
+          "finding": "The `--project` value check must be context-aware. In `shipwright-plan` call sites, `--project {plugin_root}` is correct; in `shipwright-iterate` / `shipwright-build` sites, `--project \"{plan_plugin_root}\"` is required. If the scanner accepts either token in all files, a future regression to `{plugin_root}` in an iterate/build site could still pass the test while resolving the wrong plugin and failing in real consumer projects.",
+          "suggestion": "Encode a per-plugin expected project-root token — e.g., `shipwright-plan` files require `{plugin_root}`, all other plugins require `{plan_plugin_root}` — rather than allowing any recognized project-root placeholder universally.  ---  ### Finding 2",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The manual no-`pyproject.toml` probes verify that `openai` resolves via `python -c \"import openai\"`, but the plan does not show the actual `external_review.py` script being run from the no-`pyproject.toml` directory. That leaves a small gap around the script’s own local imports, path handling, and CLI behavior under `--project`.",
+          "suggestion": "Add one actual harmless invocation, such as `uv run --project <plan_plugin_root> .../external_review.py --help` or an equivalent non-mutating mode, from the no-`pyproject.toml` directory against both the monorepo copy and the installed plugin-cache copy.  ---  ### Finding 3",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk / test implementation",
+          "file": null,
+          "line": null,
+          "finding": "The verification command runs from `shared/tests`. If the new repo-wide scan derives the repo root from `Path.cwd()`, it will scan `shared/tests/plugins` and `shared/tests/shared`, likely finding zero blocks and failing incorrectly despite the fix being present. The `EXPECTED_TOTAL_BLOCKS = 9` assertion would catch this, but as a confusing failure rather than a clear path bug.",
+          "suggestion": "Derive the repo root from the test file location with `ROOT = Path(__file__).resolve().parents[2]`, and scan `ROOT / \"plugins\"` and `ROOT / \"shared\"`.  ---  ### Finding 4",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Threading `plan_plugin_root` into `sub-iterate-runner.md` is only effective if every producer that spawns that runner actually supplies the value. The plan tests `campaign-mode.md`, but if any other orchestration path also constructs a `sub-iterate-runner` brief, it could still leave a literal `{plan_plugin_root}` unresolved.",
+          "suggestion": "Grep for all spawn/brief sites that invoke `sub-iterate-runner` and confirm the inventory is exactly the one covered by `campaign-mode.md`; if there are more, each must pass `plan_plugin_root` or the contract remains incomplete.  ---  ### Finding 5",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security / shell quoting",
+          "file": null,
+          "line": null,
+          "finding": "The newly changed call sites quote `{plan_plugin_root}`, which is correct. The 3 pre-existing `shipwright-plan` sites remain unquoted, and the plan deliberately defers that to a later sweep. The static test must not let that deliberate exception become a general allowance for unquoted project roots in newly added or modified sites.",
+          "suggestion": "Scope the unquoted `--project {plugin_root}` exception to `shipwright-plan` files only, and keep the repo-wide quoting sweep as a follow-up rather than allowing new unquoted `--project` values to pass.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The three pre-existing `shipwright-plan` invocations leave `--project {plugin_root}` unquoted. This directly undermines the stated reliability goal for consumer installations whose plugin-cache path contains spaces. The rationale that fixing only these three would be “inconsistent” is not compelling: these are precisely the nine targeted `external_review.py` invocations, not an unrelated convention sweep.",
+          "suggestion": "Change the three relevant existing calls to `--project \"{plugin_root}\"` and have the static test require a quoted project placeholder for all targeted calls. Leave unrelated unquoted `{plugin_root}` uses for the broader quoting cleanup if desired.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new `plan_plugin_root` contract is tested only for the `campaign-mode.md` runner spawn. That establishes one producer, but not that every way `sub-iterate-runner.md` can be launched supplies the newly required input. A direct runner invocation or another orchestration flow would now leave `{plan_plugin_root}` unresolved and turn a previously runnable review into a failed shell command.",
+          "suggestion": "Grep for every producer/invocation of `sub-iterate-runner.md` and either thread `plan_plugin_root` through each one or explicitly establish that `campaign-mode.md` is the sole producer. Add each producer to the contract test, or make the test scan producer briefs rather than asserting only the campaign-mode instance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "shipwright-build` is being directed to a canonical failure-handling note in `shipwright-iterate`’s `iteration-reviews.md`. If plugins are installed or loaded independently, that creates a cross-plugin documentation dependency: a build-session consumer may not have the iterate plugin’s reference file available, even though the build plugin’s review flow is otherwise expected to work.",
+          "suggestion": "Verify that this cross-plugin reference is resolvable in the installed-plugin execution model. If it is not guaranteed, keep the build-specific instruction self-contained with a concise rule such as “on `uv run` failure, record the provider as `not_run` and continue,” while retaining the fuller canonical guidance within iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed static test correctly verifies flag placement, but “an allowed value” must be context-sensitive. A syntactically valid `uv run --project \"{plugin_root}\"` in an iterate/build file can still resolve the wrong project and recreate the missing-`openai` failure; conversely, `{plugin_root}` is correct only for calls owned by `shipwright-plan`.",
+          "suggestion": "Make the assertion verify both placement and target: calls outside `shipwright-plan` must use `\"{plan_plugin_root}\"`; calls inside `shipwright-plan` may use `\"{plugin_root}\"` (quoted). Preserve the exact count assertion and ensure the block extraction handles the actual multiline/continued shell-command format used by these instruction files.  Overall, the core diagnosis and use of `uv run --project` are sound, and the no-`pyproject.toml` plus cold plugin-cache probes are strong evidence. Resolve the path-quoting gap and fully validate the new runner-input and cross-plugin-documentation contracts before merging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-18T12:54:37.412328+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] The approach is sound overall: it targets the actual failure mode (consumer projects with no root `pyproject.toml`), converts a prose-only fix into static regression coverage that cannot pass vacuously, and appropriately scopes out adjacent cleanups. The findings below are refinements to test context-awareness and empirical validation.\n\n---\n\n### Finding 1\n- **Category:** edge-case / test design\n- **Severity:** medium\n- **Finding:** The `--project` value check must be context-aware. In `shipwright-plan` call sites, `--project {plugin_root}` is correct; in `shipwright-iterate` / `shipwright-build` sites, `--project \"{plan_plugin_root}\"` is required. If the scanner accepts either token in all files, a future regression to `{plugin_root}` in an iterate/build site could still pass the test while resolving the wrong plugin and failing in real consumer projects.\n- **Suggestion:** Encode a per-plugin expected project-root token — e.g., `shipwright-plan` files require `{plugin_root}`, all other plugins require `{plan_plugin_root}` — rather than allowing any recognized project-root placeholder universally.\n\n---\n\n### Finding 2\n- **Category:** edge-case\n- **Severity:** low\n- **Finding:** The manual no-`pyproject.toml` probes verify that `openai` resolves via `python -c \"import openai\"`, but the plan does not show the actual `external_review.py` script being run from the no-`pyproject.toml` directory. That leaves a small gap around the script’s own local imports, path handling, and CLI behavior under `--project`.\n- **Suggestion:** Add one actual harmless invocation, such as `uv run --project <plan_plugin_root> .../external_review.py --help` or an equivalent non-mutating mode, from the no-`pyproject.toml` directory against both the monorepo copy and the installed plugin-cache copy.\n\n---\n\n### Finding 3\n- **Category:** risk / test implementation\n- **Severity:** low\n- **Finding:** The verification command runs from `shared/tests`. If the new repo-wide scan derives the r […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The three pre-existing `shipwright-plan` invocations leave `--project {plugin_root}` unquoted. This directly undermines the stated reliability goal for consumer installations whose plugin-cache path contains spaces. The rationale that fixing only these three would be “inconsistent” is not compelling: these are precisely the nine targeted `external_review.py` invocations, not an unrelated convention sweep.  \n   **Suggestion:** Change the three relevant existing calls to `--project \"{plugin_root}\"` and have the static test require a quoted project placeholder for all targeted calls. Leave unrelated unquoted `{plugin_root}` uses for the broader quoting cleanup if desired.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The new `plan_plugin_root` contract is tested only for the `campaign-mode.md` runner spawn. That establishes one producer, but not that every way `sub-iterate-runner.md` can be launched supplies the newly required input. A direct runner invocation or another orchestration flow would now leave `{plan_plugin_root}` unresolved and turn a previously runnable review into a failed shell command.  \n   **Suggestion:** Grep for every producer/invocation of `sub-iterate-runner.md` and either thread `plan_plugin_root` through each one or explicitly establish that `campaign-mode.md` is the sole producer. Add each producer to the contract test, or make the test scan producer briefs rather than asserting only the campaign-mode instance.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** `shipwright-build` is being directed to a canonical failure-handling note in `shipwright-iterate`’s `iteration-reviews.md`. If plugins are installed or loaded independently, that creates a cross-plugin documentation dependency: a build-session consumer may not have the iterate plugin’s reference file available, even though the build plugin’s review flow is  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-18T12:46:35.653173+00:00",
+      "disposition": "verdict: approve, 1 low-severity readability finding (dead comparison in test's _invocation_defect) fixed in-place",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-18T12:46:44.111369+00:00",
+      "disposition": "no Stage-3 trigger present: no migrations, no async/concurrency, no cross-plugin Python import edge (the new test imports stdlib only; --project/plan_plugin_root threading is prose/config wiring across markdown files, not a module dependency edge), no irreversible ops. Diff is prose fixes + one new static test.",
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-18T12:42:31.408938+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The diff updates all scoped invocation sites with uv’s correctly positioned `--project` flag, threads `plan_plugin_root` through the campaign runner contract, updates the script usage documentation, and adds a static test that validates the known invocation inventory and flag values without relying on the monorepo’s masking dependency context.\n\nOverall assessment: ship-as-is.",
+      "verdicts": {
+        "openai": "unknown",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "deepseek unavailable across all 4 attempts (provider returned empty reply each time, not a repo-side issue); openai succeeded each time and its final-round feedback is a clean approve (no concrete defects, ship-as-is) after 3 prior rounds of findings were fixed. Proceeding on the single successful leg per existing rule: degraded requires ALL legs to fail."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-18T12:24:01.528552+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-18T12:10:57.670783+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

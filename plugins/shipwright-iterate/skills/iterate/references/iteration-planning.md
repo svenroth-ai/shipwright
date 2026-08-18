@@ -329,13 +329,19 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
 2. **Branch A — `available`:** run external review as today.
    ```bash
-   uv run "{shared_root}/scripts/tools/external_review.py" \
+   uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode iterate \
      --spec-file "{iterate_spec_path}" \
      --plan-file "{miniplan_path}" \
      --plugin-root "{plan_plugin_root}" \
      --project-root "{project_root}" --run-id "{run_id}"
    ```
+   (`uv run --project` points uv at the plugin that declares the `openai`
+   dependency `external_review.py` imports — without it, `uv run` resolves
+   package context from cwd, which has no such declaration outside this
+   monorepo, and the import silently fails. Resolution + a non-zero-exit /
+   bad-stdout failure branch: [iteration-reviews.md](iteration-reviews.md) →
+   "`{plan_plugin_root}` resolution and `uv run` failure".)
    (`--run-id` is additive — it records this call's real boundary as an
    `external_review` timing span, parent `planning`; omitting it just skips
    the recording, see [iterate-timings](iterate-timings.md).)
@@ -368,7 +374,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    #    → .shipwright/planning/iterate/{run_id}/architecture_brief.md
 
    # 2. Ask the same two models.
-   uv run "{shared_root}/scripts/tools/external_review.py" \
+   uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode architecture \
      --spec-file "{iterate_spec_path}" \
      --brief-file "{project_root}/.shipwright/planning/iterate/{run_id}/architecture_brief.md" \

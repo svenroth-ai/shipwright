@@ -305,13 +305,34 @@ to opt out at the project level (one-time switch — falls into Branch C
 ```bash
 git diff HEAD > /tmp/shipwright-review-diff.txt
 
-uv run "{shared_root}/scripts/tools/external_review.py" \
+uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file /tmp/shipwright-review-diff.txt \
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
   --project-root "{project_root}" --run-id "{run_id}"
 ```
+
+(`uv run --project` is uv's own flag, distinct from the script's
+`--project-root` a few lines below — `--project` points uv at
+`shipwright-plan`, the plugin that declares the `openai` dependency
+`external_review.py` imports; without it `uv run` resolves package context
+from cwd, which has no such declaration outside this monorepo, and the
+import silently fails.)
+
+**`{plan_plugin_root}` resolution and `uv run` failure — canonical for every
+site in this file, `iteration-planning.md`, `sub-iterate-runner.md`, and
+`shipwright-build`'s `code-review.md` that pass `--project "{plan_plugin_root}"`.**
+It resolves the same way `{plugin_root}`/`{shared_root}` already do for the
+running session — the installed `shipwright-plan` plugin's root. This was
+already harmless-if-wrong before this iterate (`--plugin-root` only matters
+for `--mode plan`, never these `--mode code`/`iterate`/`architecture` calls),
+but `--project` makes it load-bearing: a missing or unresolved value now
+makes `uv run` itself fail before any provider is reached. Treat a non-zero
+`uv run` exit, or stdout that is not the expected JSON, exactly like
+`shipwright-plan not installed` in [iteration-planning.md](iteration-planning.md)'s
+Internal Plan Review degraded handling — the pass did NOT run; record it
+`not_run` with that reason, never parsed as a completed review.
 
 (`--run-id` additively records this call as an `external_review` timing span,
 parent `review` — see [iterate-timings](iterate-timings.md).)
