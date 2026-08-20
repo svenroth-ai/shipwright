@@ -74,3 +74,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Retention cap is approximate, not exact, under parallel worktree merges](iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md)
 - [Behaviour-affecting, FR-declaring events must carry test evidence or a stated reason](iterate-2026-08-16-fr-gate-test-evidence-test-evidence-gate.md)
 - [ADR: Keeping shipped profile security floors honest over time](iterate-2026-08-17-vite-hono-floor-profile-floor-drift.md)
+- [Fix B5 phase-task field mismatch and C1's column-count-brittle Screens parser](iterate-2026-08-20-compliance-b5-c1-field-mismatch-b5-c1-fix.md)

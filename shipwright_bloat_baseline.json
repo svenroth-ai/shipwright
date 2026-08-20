@@ -814,13 +814,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/tools/verifiers/design_checks.py",
-      "limit": 300,
-      "current": 342,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/tools/verifiers/infrastructure_checks.py",
       "limit": 300,
       "current": 314,

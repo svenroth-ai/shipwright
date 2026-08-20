@@ -7,7 +7,6 @@ from pathlib import Path
 
 from tools.verifiers.common import Severity
 from tools.verifiers.design_checks import (
-    _parse_screens_table,
     check_design_fr_coverage,
     check_design_manifest_screens_exist,
     run_design_checks,
@@ -83,50 +82,6 @@ def seed_canon_design(
     (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: Anchor\n- **Status:** accepted\n"
     )
-
-
-# ---------------------------------------------------------------------------
-# _parse_screens_table
-# ---------------------------------------------------------------------------
-
-def test_parse_screens_table_extracts_file_and_frs():
-    md = (
-        "## Screens\n\n"
-        "| # | Screen | File | Status | Linked FRs |\n"
-        "|---|--------|------|--------|-----------|\n"
-        "| 01 | Login | screens/01-login.html | complete | FR-01.01, FR-01.02 |\n"
-        "| 02 | Dashboard | screens/02-dashboard.html | complete | FR-02.01 |\n"
-        "\n## User Flows\n"
-    )
-    rows = _parse_screens_table(md)
-    assert len(rows) == 2
-    assert rows[0][0] == "screens/01-login.html"
-    assert set(rows[0][1]) == {"FR-01.01", "FR-01.02"}
-    assert rows[1][1] == ["FR-02.01"]
-
-
-def test_parse_screens_table_treats_none_as_empty_fr_list():
-    md = (
-        "## Screens\n\n"
-        "|---|---|---|---|---|\n"
-        "| 01 | Logo | screens/logo.html | complete | none |\n"
-    )
-    rows = _parse_screens_table(md)
-    assert rows == [("screens/logo.html", [])]
-
-
-def test_parse_screens_table_stops_at_next_section():
-    md = (
-        "## Screens\n\n"
-        "| 01 | A | screens/a.html | complete | FR-01.01 |\n"
-        "\n## User Flows\n\n"
-        "| Flow | File | Screens | Status |\n"
-        "| Auth | flows/auth.html | 01 → 02 | complete |\n"
-    )
-    rows = _parse_screens_table(md)
-    # Only the Screens row is returned — User Flows rows are ignored
-    assert len(rows) == 1
-    assert rows[0][0] == "screens/a.html"
 
 
 # ---------------------------------------------------------------------------

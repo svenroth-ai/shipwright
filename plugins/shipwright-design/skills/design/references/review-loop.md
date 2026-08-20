@@ -47,6 +47,8 @@ so Option B parses it identically regardless of how it was produced:
 **FR-Coverage Gate** (verify before finalizing):
 - Read the spec's Functional Requirements that have UI relevance
 - Verify each UI-relevant FR has at least one screen in `.shipwright/designs/design-manifest.md`
+- If an FR is genuinely backend-only (no screen will ever exist for it), record it under
+  `## Non-UI FRs` in the manifest with the deciding ADR, per Step 6 — do not invent a screen for it
 - Verify `.shipwright/designs/visual-guidelines.md` exists and contains: Colors, Typography, Spacing
 - If uncovered FRs or missing guidelines → fix before proceeding to Spec Backflow
 

@@ -318,7 +318,7 @@ def _check_b5(project_root: Path) -> tuple[str, str, list[str]]:
         if not isinstance(task, dict):
             continue
         phase = task.get("phase")
-        task_id = task.get("id")
+        task_id = task.get("phaseTaskId")
         if isinstance(phase, str) and isinstance(task_id, str):
             phase_to_task_ids.setdefault(phase, []).append(task_id)
 
