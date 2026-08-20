@@ -31,7 +31,6 @@ helpers from ``common.py``.
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 from .common import (
@@ -44,6 +43,11 @@ from .common import (
     check_c2_dashboard_reflects_phase,
     check_c5_changelog_unreleased_has_phase_entry,
     check_phase_history_has_run,
+)
+from .design_screens_parser import (
+    parse_non_ui_frs,
+    parse_screens_table,
+    summarize_fr_coverage,
 )
 from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 
@@ -121,60 +125,6 @@ def _design_phase_ran(project_root: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# design-manifest.md parser
-# ---------------------------------------------------------------------------
-
-# Pipe-delimited Screens table row: "| 01 | Login | screens/01-login.html | complete | FR-01.01, FR-01.02 |"
-# Group 1: filename, group 2: FR list (may be empty, "none", or a comma list).
-_SCREEN_ROW_RE = re.compile(
-    r"^\|\s*\S+\s*\|\s*[^|]+?\s*\|\s*(?P<file>[^|]+?)\s*\|\s*\S+\s*\|\s*(?P<frs>[^|]*?)\s*\|$"
-)
-
-# Table header line — used to ignore the "|---|---|" separator row.
-_TABLE_SEPARATOR_RE = re.compile(r"^\|[\s:|-]+\|$")
-
-
-def _parse_screens_table(manifest_body: str) -> list[tuple[str, list[str]]]:
-    """Return ``[(screen_file, [linked_frs])]`` for every row inside the
-    ``## Screens`` section of a design manifest.
-
-    Stops at the next ``## `` header so trailing ``## User Flows`` and
-    ``## Uploads`` tables aren't accidentally merged into the result.
-    """
-    # Extract the section body between "## Screens" and the next "## " header.
-    m = re.search(
-        r"##\s+Screens\s*\n(.*?)(?=\n##\s+|\Z)",
-        manifest_body,
-        re.DOTALL,
-    )
-    if not m:
-        return []
-    body = m.group(1)
-
-    out: list[tuple[str, list[str]]] = []
-    for line in body.splitlines():
-        if _TABLE_SEPARATOR_RE.match(line.strip()):
-            continue
-        if line.strip().startswith("| #") or line.strip().startswith("|#"):
-            continue
-        hit = _SCREEN_ROW_RE.match(line.strip())
-        if not hit:
-            continue
-        screen_file = hit.group("file").strip()
-        fr_cell = hit.group("frs").strip()
-        if not fr_cell or fr_cell.lower() in {"none", "-", "—", "tbd"}:
-            frs: list[str] = []
-        else:
-            frs = [
-                f.strip()
-                for f in re.split(r"[,\s]+", fr_cell)
-                if re.match(r"^FR-[\d.]+$", f.strip())
-            ]
-        out.append((screen_file, frs))
-    return out
-
-
-# ---------------------------------------------------------------------------
 # Phase-own checks
 # ---------------------------------------------------------------------------
 
@@ -204,7 +154,7 @@ def check_design_manifest_screens_exist(project_root: Path) -> CheckResult:
     except OSError as exc:
         return CheckResult(name, False, f"read error: {exc}")
 
-    rows = _parse_screens_table(body)
+    rows = parse_screens_table(body)
     if not rows:
         return CheckResult(
             name,
@@ -242,6 +192,11 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
     lifecycle (adopted / brownfield; no ``"design"`` in ``completed_steps``),
     so the manifest legitimately never existed (triage trg-d26da6f4). An
     absent manifest AFTER a design phase ran is real drift and still fails.
+
+    A declared FR listed under the manifest's ``## Non-UI FRs`` section is
+    exempt — the project-level ``scope=library`` skip (ADR-079) only covers
+    a project with NO UI surface at all; a mostly-UI project with a handful
+    of legitimately backend-only FRs needs a per-FR marker instead.
     """
     name = "design FR coverage (every FR linked to >=1 screen)"
 
@@ -271,26 +226,11 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
     except OSError as exc:
         return CheckResult(name, False, f"read error: {exc}")
 
-    rows = _parse_screens_table(body)
-    linked: set[str] = set()
-    for _, row_frs in rows:
-        linked.update(row_frs)
-
+    rows = parse_screens_table(body)
+    non_ui = parse_non_ui_frs(body)
     declared = {f.id for f in frs}
-    orphans = sorted(declared - linked)
-
-    if orphans:
-        return CheckResult(
-            name,
-            False,
-            f"{len(orphans)} FR(s) with no screen mapping: {orphans[:5]}"
-            + (" …" if len(orphans) > 5 else ""),
-        )
-    return CheckResult(
-        name,
-        True,
-        f"{len(declared)} FR(s) linked across {len(rows)} screen(s)",
-    )
+    ok, detail = summarize_fr_coverage(declared, rows, non_ui)
+    return CheckResult(name, ok, detail)
 
 
 # ---------------------------------------------------------------------------

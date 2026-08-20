@@ -16,6 +16,18 @@ Write `.shipwright/designs/design-manifest.md`:
 | 01 | Login | screens/01-login.html | complete | FR-01.01, FR-01.02 |
 | 02 | Dashboard | screens/02-dashboard.html | complete | FR-02.01 |
 
+## Non-UI FRs
+
+> Optional. List an FR here only when it is genuinely backend-only — no
+> screen will ever exist for it (e.g. a background job, a webhook handler).
+> Compliance Group C1 (`check_design_fr_coverage`) treats a listed FR as
+> satisfied instead of reporting it as an orphan. Each line MUST cite the
+> ADR that decided it has no UI — an entry with no `ADR-NNN` reference is
+> ignored (not exempted). Not preserved by `screen_registry write-manifest`
+> regeneration — re-add this section by hand afterwards if it runs again.
+
+- FR-XX.YY — ADR-NNN (background job, no screen) — replace with a real FR id
+
 ## User Flows
 
 | Flow | File | Screens | Status |

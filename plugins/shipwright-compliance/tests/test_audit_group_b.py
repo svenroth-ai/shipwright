@@ -364,8 +364,8 @@ def test_b4_skips_when_no_complete_splits(tmp_path):
 def test_b5_passes_when_every_phase_completed_event_has_matching_task(tmp_path):
     _write(tmp_path / "shipwright_run_config.json", json.dumps({
         "schemaVersion": 2,
-        "phase_tasks": [{"id": "build:01", "phase": "build"}],
-        "completed_phase_task_ids": ["build:01"],
+        "phase_tasks": [{"phaseTaskId": "ptk-a1b2c3d4", "phase": "build"}],
+        "completed_phase_task_ids": ["ptk-a1b2c3d4"],
     }))
     _events(tmp_path / "shipwright_events.jsonl", [
         {"type": "phase_completed", "ts": "2026-04-01T00:00:00+00:00",
@@ -379,7 +379,7 @@ def test_b5_passes_when_every_phase_completed_event_has_matching_task(tmp_path):
 def test_b5_flags_phase_completed_event_without_corresponding_task(tmp_path):
     _write(tmp_path / "shipwright_run_config.json", json.dumps({
         "schemaVersion": 2,
-        "phase_tasks": [{"id": "build:01", "phase": "build"}],
+        "phase_tasks": [{"phaseTaskId": "ptk-a1b2c3d4", "phase": "build"}],
         "completed_phase_task_ids": [],
     }))
     _events(tmp_path / "shipwright_events.jsonl", [
@@ -408,8 +408,8 @@ def test_b5_skips_when_run_config_pre_v2(tmp_path):
 def test_b5_skips_when_no_phase_completed_events(tmp_path):
     _write(tmp_path / "shipwright_run_config.json", json.dumps({
         "schemaVersion": 2,
-        "phase_tasks": [{"id": "build:01", "phase": "build"}],
-        "completed_phase_task_ids": ["build:01"],
+        "phase_tasks": [{"phaseTaskId": "ptk-a1b2c3d4", "phase": "build"}],
+        "completed_phase_task_ids": ["ptk-a1b2c3d4"],
     }))
     _events(tmp_path / "shipwright_events.jsonl", [])
     findings = group_b.run(tmp_path, _default_config(), None)

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-20-compliance-b5-c1-field-mismatch",
+  "date": "2026-08-21",
+  "section": "Iterate — bug: compliance B5/C1 field-mismatch and column-brittle parser",
+  "title": "Fix B5 phaseTaskId field mismatch and C1 column-brittle Screens parser",
+  "context": "B5 read task.get(\"id\") but the schema field is phaseTaskId, so every completed phase falsely failed. C1's Screens-table parser was anchored to exactly 5 columns, so any extra column zeroed out parsing and misreported all FRs, including legitimate backend-only ones.",
+  "decision": "Fixed B5's field name; rewrote C1's parser to match columns by header name; added an optional ## Non-UI FRs manifest section with ADR-cited exemptions.",
+  "consequences": "Both checks now report correctly against real schema-shaped and multi-column inputs. New Non-UI FRs section not preserved by manifest regeneration (filed as trg-44f49504).",
+  "rationale": "Header-name matching survives an inserted column; extraction into a sibling module avoided ratcheting design_checks.py's bloat-cap pin. See spec-ref for full reasoning, 3 rounds of review-found edge-case fixes, and a deliberately deferred diagnostic-wording ambiguity.",
+  "rejected": "Fixing only downstream; a wider-but-still-fixed column count; growing design_checks.py in place; a full parser-result-type refactor for the rows==[] ambiguity (deferred, see spec-ref).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-20-compliance-b5-c1-field-mismatch-b5-c1-fix.md"
+}

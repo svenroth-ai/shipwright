@@ -1,0 +1,91 @@
+{
+  "run_id": "iterate-2026-08-20-compliance-b5-c1-field-mismatch",
+  "date": "2026-08-20T22:09:11.275972Z",
+  "event_at": "2026-08-20T22:08:38.414992+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/compliance-b5-c1-field-mismatch",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-20-compliance-b5-c1-field-mismatch",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "B5 reads phaseTaskId (schema field) instead of id, so a completed phase is correctly matched to its task",
+        "disposition": "tested",
+        "evidence": "test_audit_group_b.py::test_b5_passes_when_every_phase_completed_event_has_matching_task PASSED"
+      },
+      {
+        "behavior": "B5 still flags a phase_completed event with no corresponding phaseTaskId task",
+        "disposition": "tested",
+        "evidence": "test_audit_group_b.py::test_b5_flags_phase_completed_event_without_corresponding_task PASSED"
+      },
+      {
+        "behavior": "C1 Screens-table parser locates file/linked-FR columns by header name and tolerates an inserted column (the reported regression: 6-column manifest)",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_parse_screens_table_tolerates_extra_column PASSED"
+      },
+      {
+        "behavior": "C1 header matcher prefers 'Linked FRs' over an earlier, unrelated ambiguous column (e.g. 'FR Status')",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_parse_screens_table_prefers_linked_frs_over_ambiguous_earlier_fr_column PASSED"
+      },
+      {
+        "behavior": "C1 'Linked FRs' matcher does not fire on 'Unlinked FRs' (word-boundary correctness)",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_parse_screens_table_linked_frs_matcher_ignores_unlinked_column PASSED"
+      },
+      {
+        "behavior": "C1 header matchers are whole-word (do not fire on 'Frame'/other substrings)",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_parse_screens_table_header_matchers_are_whole_word PASSED"
+      },
+      {
+        "behavior": "A backend-only FR listed under '## Non-UI FRs' with a cited ADR is exempted from the screen-mapping requirement",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_fr_coverage_exempts_fr_listed_as_non_ui PASSED"
+      },
+      {
+        "behavior": "An FR not listed as Non-UI still fails coverage when it has no screen mapping (exemption does not weaken the gate generally)",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_fr_coverage_still_fails_when_fr_not_listed_as_non_ui PASSED"
+      },
+      {
+        "behavior": "A Non-UI FR entry with no ADR reference is ignored, not exempted (closed-vocabulary waiver requires citation)",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_parse_non_ui_frs_ignores_entry_without_adr_reference PASSED"
+      },
+      {
+        "behavior": "A stale/misspelled Non-UI FR entry (matches no declared FR) is surfaced even when an unrelated orphan already fails the check",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_summarize_fr_coverage_reports_stale_non_ui_entries_even_when_orphans_exist PASSED"
+      },
+      {
+        "behavior": "An unparseable/empty Screens table is distinguished in the coverage detail message from a genuine per-FR orphan, even when every declared FR is otherwise exempt",
+        "disposition": "tested",
+        "evidence": "test_verifiers_design_screens.py::test_summarize_fr_coverage_flags_unparsed_table_even_when_fully_exempt PASSED"
+      }
+    ],
+    "counts": {
+      "total": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    },
+    "ledger_path": ".shipwright/planning/adr/iterate-2026-08-20-compliance-b5-c1-field-mismatch-b5-c1-fix.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-20-compliance-b5-c1-field-mismatch/surface_verification.json",
+    "justification": "Backend-only compliance-tool bug fix (B5 phase-task field-name mismatch; C1 column-count-brittle Screens-table regex). No UI, no API route, no store mutation, no SSE/WS handler, nothing consumed by a frontend. Verified entirely by pytest unit/regression tests plus 4 rounds of internal+external LLM review against real schema-shaped fixtures."
+  },
+  "declared_removals": []
+}
