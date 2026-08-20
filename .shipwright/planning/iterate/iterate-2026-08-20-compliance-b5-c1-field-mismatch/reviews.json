@@ -130,9 +130,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-20T21:28:55.349106+00:00",
+      "completed_at": "2026-08-20T22:12:47.813481+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"
