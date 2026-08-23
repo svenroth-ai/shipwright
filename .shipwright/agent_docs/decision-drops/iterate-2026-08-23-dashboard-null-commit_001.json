@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-23-dashboard-null-commit",
+  "date": "2026-08-23",
+  "section": "Iterate — bug: dashboard null-commit crash",
+  "title": "Null-tolerant event-field rendering in update_build_dashboard.py",
+  "context": "A work_completed event with explicit commit: null crashed _generate_from_events (dict.get default only fires on a missing key, not a present null), permanently blocking build_dashboard.md regeneration since finalize_iterate.py's F5b call is exception-swallowing best-effort.",
+  "decision": "Guard commit with an explicit is-None check (not truthiness, which would wrongly reformat the common empty-string pre-commit state) via a new _cell_or_dash() helper; extend the same guard to five sibling fields and a split field found by three independent review passes.",
+  "consequences": "No output change for any input this repo's own event log actually contains; a foreign/adopted repo's null-commit event now renders the existing placeholder instead of crashing. Nested-null and the F5b/C2 silent-failure architecture remain unfixed, disclosed as known limitations.",
+  "rationale": "Root-caused via a standalone repro before any fix; is-None chosen over or-truthiness after an empirical count showed 471/543 real events have commit: \"\" (a legitimate value 'or' would have corrupted).",
+  "rejected": "Normalizing commit at the shared read_events() boundary — rejected as a schema mutation in the wrong layer that would also destroy the forensic null signal; widening the fix to generate_session_handoff.py's separate call sites — rejected as unvalidated scope creep beyond the proven bug.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-23-dashboard-null-commit-bloat-exception.md"
+}

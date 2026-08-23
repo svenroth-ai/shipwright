@@ -630,3 +630,131 @@ class TestFrColumnFallback:
         recent_block = content.split("## Recent Changes")[1].split("##")[0]
         # Row exists but FR cell is empty (whitespace between two pipes).
         assert "| ghi7890 |  |" in recent_block
+
+
+class TestNullCommit:
+    """A ``work_completed`` event carrying an explicit JSON ``null`` commit
+    (not merely a missing key) must render the placeholder like a missing
+    commit does, not raise. ``dict.get(key, default)`` only substitutes the
+    default when ``key`` is absent — a present-but-``None`` value passes
+    through untouched and ``None[:7]`` raises ``TypeError``. Regression for
+    the adopted-repo case where a producer wrote ``"commit": null``, which
+    then permanently blocked dashboard regeneration on every later run
+    (finalize_iterate.py's F5b call is best-effort and only logs).
+
+    The fix must guard on ``is None`` specifically, not truthiness — F5b
+    writes ``"commit": ""`` (empty string, not null) for every event before
+    its commit lands, which is the majority of real events (F6.5 is skipped
+    in the worktree flow, so it stays ``""`` permanently). An empty string
+    must keep rendering as an empty cell, exactly as before this fix."""
+
+    def test_recent_changes_null_commit_does_not_raise(self, tmp_project):
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-e66849cc", "ts": "2026-08-17T00:00:00Z",
+             "type": "work_completed", "source": "iterate",
+             "commit": None, "intent": "refactor",
+             "description": "code health refactor"},
+        ])
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("##")[0]
+        assert "| refactor | code health refactor | 0/0 | — |  | 2026-08-17 |" in recent_block
+
+    def test_build_history_null_commit_does_not_raise(self, tmp_project):
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-build-null", "ts": "2026-08-17T00:00:00Z",
+             "type": "work_completed", "source": "build",
+             "section": "01-widgets", "split": "default",
+             "commit": None, "tests": {"passed": 3, "total": 3},
+             "review": {"type": "self-review"}, "affected_frs": []},
+        ])
+        content = generate_dashboard(tmp_project, phase="build", session_id="s")
+        history_block = content.split("## Build History")[1]
+        assert "| 01-widgets | 3/3 | self | — |  |" in history_block
+
+    def test_recent_changes_empty_commit_still_renders_empty(self, tmp_project):
+        """Guard against truthiness (``or``): an empty-string commit — the
+        normal F5b pre-F6 state — must NOT be coerced to the null placeholder."""
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-empty", "ts": "2026-08-17T00:00:00Z",
+             "type": "work_completed", "source": "iterate",
+             "commit": "", "intent": "refactor",
+             "description": "in-flight change"},
+        ])
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("##")[0]
+        assert "| refactor | in-flight change | 0/0 |  |  | 2026-08-17 |" in recent_block
+        assert "| — |" not in recent_block
+
+    def test_sibling_null_fields_do_not_raise(self, tmp_project):
+        """The same foreign-event trust boundary that produced a null
+        commit can produce a null in any sibling field this function reads
+        (`ts`, `tests`, `review`, `affected_frs`, `description`) — an
+        adopted repo's event writer is outside this monorepo's own producer
+        set, so a producer census over THIS repo's writers cannot rule
+        those out. Every one must render its placeholder, not raise."""
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-all-null", "ts": None,
+             "type": "work_completed", "source": "iterate",
+             "commit": None, "intent": "refactor",
+             "description": None, "tests": None, "affected_frs": None},
+        ])
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("##")[0]
+        assert "| refactor | — | 0/0 | — |  |  |" in recent_block
+
+    def test_build_history_sibling_null_fields_do_not_raise(self, tmp_project):
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-build-all-null", "ts": None,
+             "type": "work_completed", "source": "build",
+             "section": None, "split": "default",
+             "commit": None, "tests": None,
+             "review": None, "affected_frs": None},
+        ])
+        content = generate_dashboard(tmp_project, phase="build", session_id="s")
+        history_block = content.split("## Build History")[1]
+        assert "| — | — | — | — |  |" in history_block
+
+    def test_test_status_flat_fallback_null_tests_does_not_raise(self, tmp_project):
+        """Regression for a gap the Stage-1 spec review caught: this is a
+        DIFFERENT function (``_test_status_from_iterate``) reached via the
+        Test Status section, not the Recent Changes / Build History paths
+        the other cases in this class cover. A valid ``ts`` (so the event
+        is picked as the freshest source, `use_iterate=True`) with an
+        explicit ``tests: null`` and no `shipwright_test_results.json` on
+        disk hits the flat-fallback branch that reads `latest_event["tests"]`
+        directly — must not raise."""
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-status-null-tests", "ts": "2026-08-17T00:00:00Z",
+             "type": "work_completed", "source": "iterate",
+             "commit": "abc1234", "intent": "fix",
+             "description": "x", "tests": None},
+        ])
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        assert "## Test Status" not in content
+        # Positive assertion (code review: a bare negative check also passes
+        # if the whole render silently breaks) — the render must still
+        # succeed and produce the Recent Changes row for this same event.
+        assert "| bug | x | 0/0 | abc1234 |  | 2026-08-17 |" in content
+
+    def test_build_history_null_split_does_not_duplicate_section(self, tmp_project):
+        """`split: null` must not raise, AND must not silently double-render
+        the section: an unguarded `we.get("split", "default")` puts the
+        event under dict key `None`, while the build-config merge looks for
+        `"default"` — missing the `None`-keyed group and appending a SECOND
+        synthetic row for the same section under a different heading."""
+        (tmp_project / "shipwright_build_config.json").write_text(
+            json.dumps({"sections": [
+                {"name": "01-widgets", "status": "complete",
+                 "commit": "abc1234", "split": "default"},
+            ]}), encoding="utf-8",
+        )
+        _write_events(tmp_project, [
+            {"v": 1, "id": "evt-build-null-split", "ts": "2026-08-17T00:00:00Z",
+             "type": "work_completed", "source": "build",
+             "section": "01-widgets", "split": None,
+             "commit": "abc1234", "tests": {"passed": 3, "total": 3},
+             "review": {"type": "self-review"}, "affected_frs": []},
+        ])
+        content = generate_dashboard(tmp_project, phase="build", session_id="s")
+        assert content.count("01-widgets") == 1
+        assert "### None" not in content

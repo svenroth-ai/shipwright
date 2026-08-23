@@ -15,6 +15,21 @@ from markdown_table import escape_cell
 from tests_block import skip_suffix  # shared skip-vs-fail SSOT
 
 
+def _cell_or_dash(value: str | None) -> str:
+    """Render a table-cell value, substituting the em-dash placeholder only
+    when `value` is explicitly `None` — never on an empty string.
+
+    An empty string is a real, common value for several `work_completed`
+    fields (e.g. `commit` before F6 lands — the majority of this repo's own
+    events) and must keep rendering as an empty cell, exactly as when the
+    key is present with a normal value. Only a `null` in the source JSON
+    (missing key or explicit `None`) gets the placeholder. Using truthiness
+    (`value or "—"`) here silently reformats every empty-but-legitimate row
+    — see iterate-2026-08-23-dashboard-null-commit.
+    """
+    return "—" if value is None else value
+
+
 def _deterministic_now(project_root: Path) -> str:
     """Banner timestamp derived from events.jsonl, not wall-clock.
 
@@ -319,7 +334,9 @@ def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[st
     """
     layered = _read_iterate_test_results(project_root)
     if layered:
-        parts = [f"Last run: {layered.get('date', latest_event.get('ts', '')[:10])}"]
+        date_raw = layered.get("date")
+        date = date_raw if date_raw is not None else (latest_event.get("ts") or "")[:10]
+        parts = [f"Last run: {date}"]
         for label, key in (("Unit", "unit"), ("Integration", "integration"), ("pgTAP", "pgtap"), ("E2E", "e2e")):
             text = _layer_display(label, layered.get(key, {}))
             if text:
@@ -331,9 +348,9 @@ def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[st
         return parts
 
     # Flat fallback from event's tests dict
-    tests = latest_event.get("tests", {})
+    tests = latest_event.get("tests") or {}
     if tests.get("total", 0) > 0:
-        parts = [f"Last run: {latest_event.get('ts', '')[:10]}"]
+        parts = [f"Last run: {(latest_event.get('ts') or '')[:10]}"]
         parts.append(f"Tests: {tests.get('passed', 0)}/{tests.get('total', 0)}{skip_suffix(tests)}")
         if tests.get("e2e_run"):
             parts.append("(incl. E2E)")
@@ -378,22 +395,22 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             # free-text description into `intent`; adopted repos seed it from git
             # conventional-commit types. See shared/scripts/event_classification.
             intent = normalize_intent(we.get("intent"))
-            desc = we.get("description", "—")
-            tests = we.get("tests", {})
+            desc = _cell_or_dash(we.get("description"))
+            tests = we.get("tests") or {}
             new_str = f"+{tests.get('new', 0)} new, " if tests.get("new") else ""
             tests_cell = f"{new_str}{tests.get('passed', 0)}/{tests.get('total', 0)}{skip_suffix(tests)}"
-            commit = we.get("commit", "—")[:7]
+            commit = _cell_or_dash(we.get("commit"))[:7]
             # FRs column: prefer affected_frs; fall back to change_type tag
             # (docs/tooling/compliance/infra) so non-FR iterates show their
             # classification instead of an empty cell. See Iterate C.1.
-            affected = we.get("affected_frs", [])
+            affected = we.get("affected_frs") or []
             if affected:
                 frs = ", ".join(affected[:3])
             elif we.get("change_type"):
                 frs = we["change_type"]
             else:
                 frs = ""
-            date = we.get("ts", "")[:10]
+            date = (we.get("ts") or "")[:10]
             lines.append(
                 f"| {escape_cell(intent)} | {escape_cell(desc)} | {escape_cell(tests_cell)} "
                 f"| {escape_cell(commit)} | {escape_cell(frs)} | {escape_cell(date)} |"
@@ -402,8 +419,8 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
 
     # --- Test Status ---
     # Pick freshest source: test_run event vs iterate work_completed
-    latest_test_ts = test_runs[-1].get("ts", "") if test_runs else ""
-    latest_iter_ts = iterate_events[-1].get("ts", "") if iterate_events else ""
+    latest_test_ts = (test_runs[-1].get("ts") or "") if test_runs else ""
+    latest_iter_ts = (iterate_events[-1].get("ts") or "") if iterate_events else ""
     use_iterate = bool(iterate_events) and latest_iter_ts > latest_test_ts
 
     if use_iterate:
@@ -412,11 +429,11 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             lines.extend(["## Test Status", " | ".join(parts), ""])
     elif test_runs:
         latest = test_runs[-1]
-        layers = latest.get("layers", {})
-        unit = layers.get("unit", {})
-        e2e = layers.get("e2e", {})
-        smoke = layers.get("smoke", {})
-        parts = [f"Last run: {latest.get('ts', '')[:10]}"]
+        layers = latest.get("layers") or {}
+        unit = layers.get("unit") or {}
+        e2e = layers.get("e2e") or {}
+        smoke = layers.get("smoke") or {}
+        parts = [f"Last run: {(latest.get('ts') or '')[:10]}"]
         if unit:
             parts.append(f"Unit: {unit.get('passed', 0)}/{unit.get('total', 0)}")
         if e2e:
@@ -438,7 +455,7 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
                 # LATEST end across the phase's splits (a multi-split phase records
                 # one phase_completed per split; the last bounds the phase span) —
                 # not the first (iterate-2026-07-11-phase-completed-per-split).
-                phase_tss = [e.get("ts", "") for e in phase_events if e["phase"] == phase]
+                phase_tss = [e.get("ts") or "" for e in phase_events if e["phase"] == phase]
                 ts = max(phase_tss)[:10] if phase_tss else "—"
                 lines.append(f"| {phase} | complete | {ts} |")
             else:
@@ -449,17 +466,17 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
     if build_events:
         splits_seen: dict[str, list[dict]] = {}
         for we in build_events:
-            splits_seen.setdefault(we.get("split", "default"), []).append(we)
+            splits_seen.setdefault(we.get("split") or "default", []).append(we)
 
         # Merge in completed sections from build config that may be missing from events
         # (defends against event deduplication bugs or skipped record_event calls)
         build_info = collect_all_build_sections(project_root)
         for sec in build_info["all"]:
             if sec.get("status") == "complete":
-                split = sec.get("split", "default")
+                split = sec.get("split") or "default"
                 if not any(e.get("section") == sec["name"] for e in splits_seen.get(split, [])):
                     splits_seen.setdefault(split, []).append({
-                        "section": sec["name"], "commit": sec.get("commit", "?"),
+                        "section": sec["name"], "commit": sec.get("commit"),
                         "split": split,
                         "tests": {"passed": sec.get("tests_passed", 0), "total": sec.get("tests_total", 0)},
                         "review": {"type": sec.get("review_type", "self")},
@@ -471,7 +488,7 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
         lines.append("")
 
         for split_name, secs in splits_seen.items():
-            first_date = secs[0].get("ts", "")[:10] if secs else ""
+            first_date = (secs[0].get("ts") or "")[:10] if secs else ""
             lines.extend([
                 f"### {split_name} ({len(secs)} sections, {first_date})",
                 "",
@@ -479,14 +496,14 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
                 "|---------|-------|--------|--------|-----|",
             ])
             for we in secs:
-                tests = we.get("tests", {})
+                tests = we.get("tests") or {}
                 tests_cell = f"{tests.get('passed', 0)}/{tests.get('total', 0)}{skip_suffix(tests)}" if tests.get("total") else "—"
-                review = we.get("review", {})
-                review_cell = review.get("type", "—").replace("-review", "")
-                commit = we.get("commit", "—")[:7]
-                frs = ", ".join(we.get("affected_frs", [])[:3])
+                review = we.get("review") or {}
+                review_cell = _cell_or_dash(review.get("type")).replace("-review", "")
+                commit = _cell_or_dash(we.get("commit"))[:7]
+                frs = ", ".join((we.get("affected_frs") or [])[:3])
                 lines.append(
-                    f"| {escape_cell(we.get('section', '—'))} | {escape_cell(tests_cell)} "
+                    f"| {escape_cell(_cell_or_dash(we.get('section')))} | {escape_cell(tests_cell)} "
                     f"| {escape_cell(review_cell)} | {escape_cell(commit)} | {escape_cell(frs)} |"
                 )
             lines.append("")
