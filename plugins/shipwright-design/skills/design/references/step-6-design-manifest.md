@@ -23,8 +23,10 @@ Write `.shipwright/designs/design-manifest.md`:
 > Compliance Group C1 (`check_design_fr_coverage`) treats a listed FR as
 > satisfied instead of reporting it as an orphan. Each line MUST cite the
 > ADR that decided it has no UI — an entry with no `ADR-NNN` reference is
-> ignored (not exempted). Not preserved by `screen_registry write-manifest`
-> regeneration — re-add this section by hand afterwards if it runs again.
+> ignored (not exempted). Preserved verbatim by `screen_registry write-manifest`
+> regeneration (round-tripped from the existing manifest) as long as it stays
+> a `## Non-UI FRs` header followed by list lines up to the next `## `
+> heading — a hand-edit that breaks that shape is not recovered.
 
 - FR-XX.YY — ADR-NNN (background job, no screen) — replace with a real FR id
 
