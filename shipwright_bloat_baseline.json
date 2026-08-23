@@ -669,9 +669,9 @@
     {
       "path": "shared/scripts/tests/test_build_dashboard.py",
       "limit": 300,
-      "current": 632,
+      "current": 760,
       "state": "exception",
-      "adr": "ADR-124"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-08-23-dashboard-null-commit-bloat-exception.md"
     },
     {
       "path": "shared/scripts/tests/test_validate_env.py",
@@ -795,9 +795,9 @@
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
       "limit": 300,
-      "current": 534,
+      "current": 548,
       "state": "exception",
-      "adr": "ADR-124"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-08-23-dashboard-null-commit-bloat-exception.md"
     },
     {
       "path": "shared/scripts/tools/verifiers/build_checks.py",

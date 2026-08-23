@@ -1,0 +1,1 @@
+update_build_dashboard.py no longer crashes on a work_completed event carrying an explicit null commit (or null ts/tests/review/affected_frs/description/split) — renders the existing placeholder instead, so a null event no longer permanently blocks dashboard regeneration

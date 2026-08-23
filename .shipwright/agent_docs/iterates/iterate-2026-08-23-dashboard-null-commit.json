@@ -1,0 +1,78 @@
+{
+  "run_id": "iterate-2026-08-23-dashboard-null-commit",
+  "date": "2026-08-23T21:35:44.677223Z",
+  "event_at": "2026-08-23T21:35:08.867630+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/dashboard-null-commit",
+  "spec": ".shipwright/planning/iterate/2026-08-23-dashboard-null-commit.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-23-dashboard-null-commit",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "commit: null in Recent Changes event row renders the placeholder instead of raising",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_recent_changes_null_commit_does_not_raise PASSED"
+      },
+      {
+        "behavior": "commit: null in a Build History event row renders the placeholder instead of raising",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_build_history_null_commit_does_not_raise PASSED"
+      },
+      {
+        "behavior": "commit: \"\" (the normal F5b pre-commit state) keeps rendering the empty cell, NOT the null placeholder",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_recent_changes_empty_commit_still_renders_empty PASSED"
+      },
+      {
+        "behavior": "ts/tests/review/affected_frs/description explicit-null in a Recent Changes event row render their placeholders instead of raising",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_sibling_null_fields_do_not_raise PASSED"
+      },
+      {
+        "behavior": "same five fields explicit-null in a Build History event row render their placeholders instead of raising",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_build_history_sibling_null_fields_do_not_raise PASSED"
+      },
+      {
+        "behavior": "_test_status_from_iterate flat-fallback branch (tests: null, no results file) renders cleanly instead of raising AttributeError",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_test_status_flat_fallback_null_tests_does_not_raise PASSED"
+      },
+      {
+        "behavior": "a normal (missing/present-string) commit value elsewhere is unaffected by the fix",
+        "disposition": "tested",
+        "evidence": "covered-by-existing-test: TestFrColumnFallback/TestAliasIntent/TestRunIdEmbed, full 49-test file green"
+      },
+      {
+        "behavior": "shared/tests root (separate pytest process) rendering this function does not regress",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_build_dashboard_md_escaping.py (3) + shared/tests/test_render_determinism.py (6) - 9/9 PASSED"
+      },
+      {
+        "behavior": "split: null in a Build History event does not raise AND does not double-render the section",
+        "disposition": "tested",
+        "evidence": "TestNullCommit::test_build_history_null_split_does_not_duplicate_section PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "justification": "Pure Python library fix in a dashboard-markdown renderer (update_build_dashboard.py) - no startable dev surface, no API/UI route touched. Verified via 49 unit tests in test_build_dashboard.py against the render function directly.",
+    "tests_run": 0,
+    "exit_code": 0
+  },
+  "declared_removals": []
+}

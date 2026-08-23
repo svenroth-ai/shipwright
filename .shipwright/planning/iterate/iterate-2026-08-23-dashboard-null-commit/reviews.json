@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-23-dashboard-null-commit",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T20:39:56.550521+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed fix `(we.get(\"commit\") or \"—\")[:7]` changes the rendering of an empty string commit (`\"commit\": \"\"`) from `\"\"` to `\"—\"`. The spec states the fix restores the existing contract without affecting empty/present-string commits, and the test ledger claims empty-string behaviour is covered – but the `or`‑fallback actually replaces an empty string with the placeholder, contradicting that claim.",
+          "suggestion": "Decide explicitly: if the intent is only to handle `None` (and keep empty string as an empty slice), use `(we.get(\"commit\") if we.get(\"commit\") is not None else \"—\")[:7]`. If empty string should also render the placeholder, update the spec, test ledger, and add a test documenting that choice.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge‑case / test‑coverage",
+          "file": null,
+          "line": null,
+          "finding": "The test plan does not include a case for `\"commit\": \"\"`, which would detect the behaviour change above and confirm the intended rendering.",
+          "suggestion": "Add a test (e.g. `test_empty_string_commit_renders_placeholder` or `test_empty_string_commit_renders_empty`) to make the intended behaviour explicit and prevent future regressions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Using `or` to provide a default would also substitute the placeholder for any falsy value (e.g. `0`, `false`, `[]`) if a malformed event accidentally contains such a value. This is unlikely in practice but could hide data‑quality issues.",
+          "suggestion": "The explicit `is not None` check eliminates this concern; if the team sticks with `or`, consider adding a type‑guard or log‑warning for unexpected non‑string commit values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "No missing dependencies or prerequisites – the change is self‑contained within the dashboard renderer and its tests.  Overall The root‑cause diagnosis and the decision to fix the consumer are sound. The one‑line `or`‑based change, however, inadvertently alters the behaviour for existing empty‑string commits, which needs to be either corrected or intentionally approved with accompanying test coverage.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `(we.get(\"commit\") or \"—\")[:7]` change alters empty-string behavior as well as `null` behavior. Before the change, a present `commit: \"\"` renders as an empty cell; afterward it renders `—`. This appears consistent with the acceptance criterion’s “missing/empty key” wording, but conflicts with the test ledger’s claim that an empty commit value is “unaffected by the fix.”",
+          "suggestion": "Resolve the intended empty-string contract before implementation. If empty commits should render `—`, add an explicit regression assertion for `commit: \"\"` in each relevant rendering path and update any existing expected-output assertions. If empty commits must remain blank, use an explicit `None` check instead, such as `(\"—\" if we.get(\"commit\") is None else we.get(\"commit\"))[:7]`, while retaining the missing-key fallback.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The localized renderer fix is the correct blast-radius-limited solution. Normalizing in `read_events()` would change semantics for unrelated consumers that may distinguish absent, null, and present fields.",
+          "suggestion": "Keep the fix at the two rendering call sites. The proposed dedicated tests for Recent Changes and Build History are appropriate; ensure each fixture is constructed so the event is definitely selected into the intended section and the assertion identifies that event’s row rather than merely finding an unrelated `—` elsewhere in the generated dashboard.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The expression remains dependent on non-empty truthy commit values being strings. A malformed historical event with a truthy non-string `commit` (for example, a number or object) would still fail at `[:7]`. This is not evidence that broader hardening is required, since the specified issue is explicit JSON `null` and normal producers emit strings.",
+          "suggestion": "Do not expand the implementation solely for this theoretical case, but keep the tests focused on the documented accepted event shape (`null`, absent/empty as decided above, and string). If the event schema formally permits arbitrary JSON values for `commit`, add schema validation separately rather than broad coercion in this renderer.  Overall, the approach is sound and appropriately minimal, with no new dependency or security concern. The only required clarification is whether changing existing empty-string rendering to the placeholder is intentional and should be tested as such. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-23T20:35:21.761198+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Findings**\n\n1. **Category**: approach  \n   **Severity**: medium  \n   **Finding**: The proposed fix `(we.get(\"commit\") or \"—\")[:7]` changes the rendering of an **empty string** commit (`\"commit\": \"\"`) from `\"\"` to `\"—\"`. The spec states the fix restores the existing contract without affecting empty/present-string commits, and the test ledger claims empty-string behaviour is covered – but the `or`‑fallback actually replaces an empty string with the placeholder, contradicting that claim.  \n   **Suggestion**: Decide explicitly: if the intent is only to handle `None` (and keep empty string as an empty slice), use `(we.get(\"commit\") if we.get(\"commit\") is not None else \"—\")[:7]`. If empty string *should* also render the placeholder, update the spec, test ledger, and add a test documenting that choice.\n\n2. **Category**: edge‑case / test‑coverage  \n   **Severity**: low  \n   **Finding**: The test plan does not include a case for `\"commit\": \"\"`, which would detect the behaviour change above and confirm the intended rendering.  \n   **Suggestion**: Add a test (e.g. `test_empty_string_commit_renders_placeholder` or `test_empty_string_commit_renders_empty`) to make the intended behaviour explicit and prevent future regressions.\n\n3. **Category**: risk  \n   **Severity**: low  \n   **Finding**: Using `or` to provide a default would also substitute the placeholder for any falsy value (e.g. `0`, `false`, `[]`) if a malformed event accidentally contains such a value. This is unlikely in practice but could hide data‑quality issues.  \n   **Suggestion**: The explicit `is not None` check eliminates this concern; if the team sticks with `or`, consider adding a type‑guard or log‑warning for unexpected non‑string commit values.\n\n4. **Category**: dependency  \n   **Severity**: low  \n   **Finding**: No missing dependencies or prerequisites – the change is self‑contained within the dashboard renderer and its tests.\n\n**Overall**  \nThe root‑cause diagnosis and the decision to fix the  […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed `(we.get(\"commit\") or \"—\")[:7]` change alters empty-string behavior as well as `null` behavior. Before the change, a present `commit: \"\"` renders as an empty cell; afterward it renders `—`. This appears consistent with the acceptance criterion’s “missing/empty key” wording, but conflicts with the test ledger’s claim that an empty commit value is “unaffected by the fix.”  \n   **Suggestion:** Resolve the intended empty-string contract before implementation. If empty commits should render `—`, add an explicit regression assertion for `commit: \"\"` in each relevant rendering path and update any existing expected-output assertions. If empty commits must remain blank, use an explicit `None` check instead, such as `(\"—\" if we.get(\"commit\") is None else we.get(\"commit\"))[:7]`, while retaining the missing-key fallback.\n\n2. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The localized renderer fix is the correct blast-radius-limited solution. Normalizing in `read_events()` would change semantics for unrelated consumers that may distinguish absent, null, and present fields.  \n   **Suggestion:** Keep the fix at the two rendering call sites. The proposed dedicated tests for Recent Changes and Build History are appropriate; ensure each fixture is constructed so the event is definitely selected into the intended section and the assertion identifies that event’s row rather than merely finding an unrelated `—` elsewhere in the generated dashboard.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The expression remains dependent on non-empty truthy commit values being strings. A malformed historical event with a truthy non-string `commit` (for example, a number or object) would still fail at `[:7]`. This is not evidence that broader hardening is required, since the specified issue is explicit JSON `null` and normal producers emit strings.  \n   **Suggestion:** […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "or-truthiness on description/review.type/section/date changes empty-string rendering for foreign event logs",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "split field unguarded, causes double-render bug (not just cosmetic ### None)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "nested-null tolerance undisclosed",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "weak negative-only assertion in test_test_status_flat_fallback_null_tests_does_not_raise",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "is-None-vs-or invariant undocumented at call sites",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "ADR factual errors (715 vs 733, five vs six tests, 531/533/534 confusion)",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "ADR-pending placeholder is the only non-ADR-NNN adr field in the baseline; template/H4 gap",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "module-local normalizer as an alternative to inline guards",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-23T20:58:35.963334+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T20:58:41.463426+00:00",
+      "disposition": "docs/code-only diff, no migrations/async/cross-plugin-imports/irreversible-ops; Stage 3 is conditional per iteration-reviews.md and does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-08-23T21:04:26.006498+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The renderer now distinguishes `None` from `\"\"` for commit cells, applies null-safe defaults to the in-scope sibling fields and Test Status fallback, and includes regression coverage for the historical crash paths and the empty-commit non-regression.\n\nOverall assessment: ship-as-is; the implementation satisfies the stated acceptance criteria within the explicitly disclosed top-level-null scope.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T20:49:08.750189+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T20:35:25.227763+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
