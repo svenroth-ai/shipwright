@@ -18,6 +18,28 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
+_NON_UI_FRS_SECTION_RE = re.compile(r"(## Non-UI FRs\s*\n.*?)(?=\n## |\Z)", re.DOTALL)
+
+
+def _read_existing_non_ui_frs_section(manifest_path: Path) -> str | None:
+    """Return the verbatim ``## Non-UI FRs`` section from an existing
+    manifest, or None if there is no existing manifest or no such section.
+
+    ``generate_manifest`` rebuilds the manifest wholesale from a disk scan
+    (screens/flows/uploads) and has no way to derive this section itself —
+    it is a hand-authored, ADR-cited waiver. Without round-tripping it here,
+    every regeneration silently dropped it and the C1 FR->screen gate
+    (`check_design_fr_coverage`) flipped red with no trace of why
+    (trg-44f49504). The boundary regex mirrors
+    `design_screens_parser.parse_non_ui_frs`'s section match so both readers
+    agree on where the section starts and ends.
+    """
+    if not manifest_path.exists():
+        return None
+    match = _NON_UI_FRS_SECTION_RE.search(manifest_path.read_text(encoding="utf-8"))
+    return match.group(1).rstrip() if match else None
+
+
 @dataclass
 class ScreenEntry:
     number: int
@@ -82,8 +104,14 @@ def scan_designs_dir(designs_dir: Path) -> dict:
 
 
 def generate_manifest(designs_dir: Path, project_name: str = "", profile_name: str = "") -> str:
-    """Generate design-manifest.md content from directory scan."""
+    """Generate design-manifest.md content from directory scan.
+
+    Round-trips an existing ``## Non-UI FRs`` section (see
+    `_read_existing_non_ui_frs_section`) — the only hand-authored section in
+    an otherwise fully-derived file.
+    """
     inventory = scan_designs_dir(designs_dir)
+    non_ui_frs_section = _read_existing_non_ui_frs_section(designs_dir / "design-manifest.md")
 
     lines = [
         "# Design Manifest",
@@ -104,6 +132,11 @@ def generate_manifest(designs_dir: Path, project_name: str = "", profile_name: s
     else:
         lines.append("No screens generated yet.")
     lines.append("")
+
+    # Non-UI FRs (hand-authored; round-tripped verbatim, see above)
+    if non_ui_frs_section:
+        lines.append(non_ui_frs_section)
+        lines.append("")
 
     # Flows
     lines.append("## User Flows")

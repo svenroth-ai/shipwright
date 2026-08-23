@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-23-manifest-nonui-frs-preserve",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:45.993097+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:53.800649+00:00",
+      "disposition": "mini-plan is FEATURE-only at small complexity (Phase Matrix); this is a BUG/CHANGE run",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:54.207762+00:00",
+      "disposition": "Full Code Review is 'only if risk flags' at small complexity (Phase Matrix); none fired for this change",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:54.307231+00:00",
+      "disposition": "Stage 3 doubt-reviewer only runs when Step 8's cascade triggers; it did not at small complexity with no risk flags",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:54.000967+00:00",
+      "disposition": "external LLM review is medium+ only (Phase Matrix skip at small); this run is small",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:54.101755+00:00",
+      "disposition": "Step 8 cascade (spec/code/doubt) triggers only with risk flags at small complexity; none fired for this change",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-23T07:28:53.903097+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

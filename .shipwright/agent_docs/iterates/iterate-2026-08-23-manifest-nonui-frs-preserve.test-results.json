@@ -1,0 +1,83 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-23-manifest-nonui-frs-preserve",
+    "date": "2026-08-23",
+    "unit": {
+      "status": "pass",
+      "passed": 18,
+      "total": 18,
+      "note": "F0 suite: all 18 units green (18/18) in 4.7 min, incl. plugins/shipwright-design (38 tests, was 34) and the unaffected shared/tests design-manifest parser tests (19). Counts here are F0-suite units, not raw test-case totals \u2014 run_test_suite.py reports per-unit PASS/FAIL, not an aggregate case count."
+    },
+    "integration": {
+      "status": "pass",
+      "note": "integration-tests unit PASS within the F0 suite (248.0s); unaffected by this change."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface touched (screen_registry.py is a Python manifest-writer utility; the change is text round-tripping, not rendered UI)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "generate_manifest preserves an existing hand-added ## Non-UI FRs section verbatim across write_manifest regeneration",
+          "disposition": "tested",
+          "evidence": "test_screen_registry.py::test_write_manifest_preserves_hand_added_non_ui_frs_section PASSED"
+        },
+        {
+          "behavior": "generate_manifest omits the section when no prior manifest file exists (first-generation behavior unchanged)",
+          "disposition": "tested",
+          "evidence": "test_screen_registry.py::test_generate_manifest_no_prior_file_omits_non_ui_frs_section PASSED"
+        },
+        {
+          "behavior": "generate_manifest leaves the section absent when the prior manifest had none",
+          "disposition": "tested",
+          "evidence": "test_screen_registry.py::test_write_manifest_without_non_ui_frs_section_stays_absent PASSED"
+        },
+        {
+          "behavior": "the section round-trips when it is the last section in the file (no trailing ## heading to bound it)",
+          "disposition": "tested",
+          "evidence": "test_screen_registry.py::test_generate_manifest_preserves_non_ui_frs_section_at_end_of_file PASSED"
+        },
+        {
+          "behavior": "preservation survives a second successive regeneration, not just a one-shot carry-over",
+          "disposition": "tested",
+          "evidence": "test_screen_registry.py::test_write_manifest_preserves_hand_added_non_ui_frs_section (second write_manifest call assertion) PASSED"
+        }
+      ],
+      "counts": {
+        "total": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": "trg-44f49504 (filed by iterate-2026-08-20-compliance-b5-c1-field-mismatch)"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-23-manifest-nonui-frs-preserve",
+    "commit": "b4ab2a92a3a34a6dd6fab91792c3e274512f0e62",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

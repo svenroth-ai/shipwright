@@ -1,0 +1,21 @@
+{
+  "run_id": "iterate-2026-08-23-manifest-nonui-frs-preserve",
+  "date": "2026-08-23T07:27:35.644353Z",
+  "event_at": "2026-08-23T07:27:21.758626+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/manifest-nonui-frs-preserve",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-23-manifest-nonui-frs-preserve",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "total": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  }
+}
