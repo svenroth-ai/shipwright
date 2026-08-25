@@ -42,8 +42,20 @@ from lib import fr_criteria  # noqa: E402
 from .git_helpers import _run_git  # noqa: E402
 
 
+#: Any heading level names the section — `/shipwright-adopt` emits ``##
+#: Acceptance Criteria`` (top-level); `/shipwright-project`'s own template
+#: (``spec-generation.md:305``, both the abstract template and its worked
+#: example) nests it one level deeper, ``### Acceptance Criteria``, under
+#: ``## 2. Functional Requirements``. A level-2-only regex never matched
+#: the real, shipped shape a project-generated spec.md uses, so THIS reader
+#: fell back to whole-document scanning on every one of them — not a rare
+#: exception but the normal path (Stage-3 doubt review, medium, 2026-08-25).
+_AC_HEADING_RE = re.compile(r"^(#{1,6})\s+Acceptance Criteria\s*$", re.MULTILINE)
+
+
 def _criteria_region(text: str) -> str:
-    """The ``## Acceptance Criteria`` section, or the whole document.
+    """The ``Acceptance Criteria`` section (any heading level), or the
+    whole document.
 
     Bullets elsewhere are not criteria — a requirement discussed under some other
     top-level section, with a list of implementation notes, must not read as a
@@ -52,13 +64,18 @@ def _criteria_region(text: str) -> str:
 
     The fallback is deliberate and is the safe direction: a spec that names its
     criteria some other way is scanned whole rather than yielding nothing. Going
-    SILENT is the one outcome worse than over-firing.
+    SILENT is the one outcome worse than over-firing. That fallback is meant to
+    be a genuine LAST resort, though — not the path every real ``/shipwright-
+    project`` spec takes because the heading match was too narrow; the region
+    terminates at the next heading of the SAME OR HIGHER rank, matching
+    ``fr_criteria.iter_anchored_blocks``'s own rule.
     """
-    heading = re.search(r"^##\s+Acceptance Criteria\s*$", text or "", re.MULTILINE)
+    heading = _AC_HEADING_RE.search(text or "")
     if not heading:
         return text or ""
+    level = len(heading.group(1))
     rest = text[heading.end():]
-    following = re.search(r"^##(?!#)", rest, re.MULTILINE)
+    following = re.search(rf"^#{{1,{level}}}(?!#)", rest, re.MULTILINE)
     return rest[:following.start()] if following else rest
 
 

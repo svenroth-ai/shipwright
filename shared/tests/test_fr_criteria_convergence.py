@@ -84,3 +84,46 @@ def test_strict_false_is_the_one_documented_permissive_exception():
 
     # Explicit strict=False: the documented, tested exception.
     assert fr_criteria.has_criteria(spec_with_prose_gap, "FR-01.01", strict=False) is True
+
+
+def test_the_one_leading_italic_attribution_line_does_not_disqualify_the_run():
+    """`/shipwright-adopt`'s REAL, shipped shape
+    (`plugins/shipwright-adopt/scripts/lib/spec_document.py:181-186`): every
+    criteria-bearing FR renders a single whole-line italic attribution
+    (`_Source: tests._` / `_Source: enrichment._`,
+    `generate_adoption_artifacts.py:308`/`:376`) between the heading and its
+    bullets — not a hypothetical. Before this fix, `strict=True`'s adjacency
+    gate (the shared default since Stage-1) saw that line as disqualifying
+    prose and returned `[]` for EVERY criteria-bearing FR in real adopt
+    output, while `strict=False` callers (I6, the cross-layer gate) still
+    saw the criteria — AC-1's divergence, reintroduced on real producer
+    bytes, not a test fixture (Stage-3 doubt review, high, 2026-08-25)."""
+    adopt_shape = (
+        "## Acceptance Criteria\n\n"
+        "### FR-01.01 — Title\n\n"
+        "_Source: tests._\n\n"
+        "- (E) Given a change, when it runs, then it works.\n"
+        "- (E) Given a failure, when it runs, then it stops.\n"
+    )
+    expected = fr_criteria.criteria_for(adopt_shape, "FR-01.01")
+    assert expected  # sanity: strict=True's default now finds it
+
+    heading = spec_parser.parse_fr_headings(adopt_shape)[0]
+    assert heading.has_acceptance()
+    assert heading.acceptance.split("\n") == expected
+
+    joined = "\n".join(expected)
+    assert criteria_digests(adopt_shape)["FR-01.01"] == hashlib.sha256(
+        joined.encode("utf-8"),
+    ).hexdigest()
+
+    # A SECOND non-bullet line still disqualifies the run — this does not
+    # reopen the door strict=True closed.
+    two_prose_lines = (
+        "## Acceptance Criteria\n\n"
+        "### FR-01.01 — Title\n\n"
+        "_Source: tests._\n\n"
+        "Some genuine prose paragraph.\n\n"
+        "- (E) Given a change, when it runs, then it works.\n"
+    )
+    assert fr_criteria.has_criteria(two_prose_lines, "FR-01.01") is False

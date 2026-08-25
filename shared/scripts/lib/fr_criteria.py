@@ -90,6 +90,21 @@ _ASSERTION_MARKER = re.compile(r"^\([A-Za-z]\)\s*")
 #: A bullet reduced to nothing (a bare ``- [ ]``) is likewise not a criterion.
 _PLACEHOLDERS = frozenset({"tbd", "todo", "tba", "na", "none", "tbc"})
 
+#: A single whole-line italic attribution, e.g. ``_Source: tests._`` —
+#: `/shipwright-adopt`'s real per-FR shape
+#: (``plugins/shipwright-adopt/scripts/lib/spec_document.py:181-184``,
+#: emitted whenever an FR carries mined/enriched criteria:
+#: ``generate_adoption_artifacts.py:308`` / ``:376``). Tolerated as the ONE
+#: exception to "first non-blank line must be a bullet" — narrower than
+#: ``strict=False``'s whole-block permissive scan, because it only ever
+#: skips a single, syntactically-marked (wrapped in ``_..._``) line, not
+#: arbitrary prose (Stage-3 doubt review, high, 2026-08-25: without this,
+#: ``strict=True`` — the shared default since Stage-1 — read ZERO criteria
+#: from every real adopt-generated FR, while I6/the cross-layer gate
+#: (``strict=False``) still saw them: AC-1's divergence, reintroduced on
+#: real producer bytes).
+_LEADING_ATTRIBUTION_RE = re.compile(r"^_[^_\n]+_\.?\s*$")
+
 
 def normalise_fr_id(raw: str) -> str:
     """``FR 7`` -> ``FR-7``. Dotted ids keep their dots."""
@@ -149,6 +164,16 @@ def iter_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
     An id may legitimately be anchored more than once; each occurrence is
     yielded as its own block rather than merged, matching every caller's
     need to pool them (``criteria_for``) or keep them apart.
+
+    A NESTED FR-shaped heading — deeper rank than its enclosing anchor, e.g.
+    ``### FR-01.02`` inside a ``## FR-01.01`` block — still yields its OWN
+    block (Stage-3 doubt review, medium, 2026-08-25): the outer scan
+    advances one line at a time (``i += 1``, never jumping to the parent's
+    end ``j``), so every line still gets its turn as a candidate anchor,
+    including ones already spanned by an enclosing block. The old ``i = j``
+    jump skipped that — a nested id was swallowed into its parent's span
+    and never anchored at all, so it got no digest entry on EITHER side of
+    a diff and ``criteria_changed_keys`` could never see it change.
     """
     lines = content.splitlines()
     n = len(lines)
@@ -170,7 +195,7 @@ def iter_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
                 break
             j += 1
         yield fr_id, lines[i + 1:j]
-        i = j
+        i += 1
 
 
 def _leading_bullet_run(lines: list[str]) -> list[str]:
@@ -185,11 +210,23 @@ def _leading_bullet_run(lines: list[str]) -> list[str]:
     was only a placeholder that ``criteria_texts`` filters to nothing
     (external code review, 2026-08-25). See the module docstring for why
     this adjacency gate exists.
+
+    ONE exception, no wider (Stage-3 doubt review, high, 2026-08-25): a
+    single whole-line italic attribution (``_LEADING_ATTRIBUTION_RE``,
+    e.g. ``_Source: tests._``) between the heading and the bullets is
+    skipped, not treated as the disqualifying prose line — this is
+    `/shipwright-adopt`'s real, shipped shape, not a hypothetical. A
+    SECOND non-bullet line still disqualifies the run; this does not
+    reopen the door ``strict=True`` closed.
     """
     i = 0
     n = len(lines)
     while i < n and not lines[i].strip():
         i += 1
+    if i < n and _LEADING_ATTRIBUTION_RE.match(lines[i].strip()):
+        i += 1
+        while i < n and not lines[i].strip():
+            i += 1
     if i >= n or not _BULLET_RE.match(lines[i]):
         return []
     j = i

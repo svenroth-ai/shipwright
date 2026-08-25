@@ -115,6 +115,35 @@ _PROSE_BETWEEN_TWO_LISTS = (
     "reach S5's fallback.\n"
 )
 
+#: `/shipwright-adopt`'s REAL, shipped per-FR shape — EXACT, not paraphrased
+#: (`plugins/shipwright-adopt/scripts/lib/spec_document.py:181-186`, emitted
+#: whenever an FR carries mined/enriched criteria,
+#: `generate_adoption_artifacts.py:308`/`:376`). Stage-3 doubt review, high,
+#: 2026-08-25: the leading `_Source: tests._` line made `strict=True`'s
+#: adjacency gate (the shared default) read ZERO criteria here, while I6/the
+#: cross-layer gate (`strict=False`) still saw them.
+_ADOPT_ATTRIBUTION_SHAPE = (
+    "## Acceptance Criteria\n\n"
+    "### FR-01.01 — Title\n\n"
+    "_Source: tests._\n\n"
+    "- (E) Given a change, when it runs, then it works.\n"
+    "- (E) Given a failure, when it runs, then it stops.\n"
+)
+
+#: A DEEPER heading nested inside a parent anchor's own span — no wrapping
+#: ``## Acceptance Criteria`` heading, so the whole-document fail-safe scans
+#: it directly (Stage-3 doubt review, medium, 2026-08-25): the old
+#: ``iter_anchored_blocks`` jumped straight to the parent block's end
+#: (``i = j``), so ``### FR-01.02`` never got its own turn as an anchor and
+#: had no digest entry on EITHER side of a diff.
+_NESTED_FR_HEADING = (
+    "# Spec\n\n"
+    "## FR-01.01 — Parent\n\n"
+    "- (E) parent criterion\n\n"
+    "### FR-01.02 — Nested\n\n"
+    "- (E) nested criterion\n"
+)
+
 
 def test_all_three_agree_on_the_shipped_shape():
     """The real-world case (no prose anywhere): I6, S5 and the cross-layer
@@ -181,3 +210,42 @@ def test_prose_between_two_bullet_lists_only_s5_reads_the_first():
     assert criteria_digests(_PROSE_BETWEEN_TWO_LISTS)["FR-01.01"] != criteria_digests(
         _SHIPPED,
     )["FR-01.01"]
+
+
+def test_all_three_agree_on_the_real_adopt_attribution_shape():
+    """`/shipwright-adopt`'s REAL per-FR shape inserts a single whole-line
+    italic attribution between the heading and its bullets whenever an FR
+    carries mined or enriched criteria — not a hypothetical, every
+    criteria-bearing FR in real adopt output takes this exact shape. Before
+    the Stage-3 doubt-review fix, `strict=True`'s adjacency gate (the shared
+    default since Stage-1) read this attribution line as disqualifying
+    prose and returned `[]` for every one of them, while I6/the cross-layer
+    gate (`strict=False`) still saw the criteria — AC-1's divergence,
+    reintroduced on real producer bytes, not a test fixture (Stage-3 doubt
+    review, high, 2026-08-25)."""
+    i6_list = _group_i_criteria_for(_ADOPT_ATTRIBUTION_SHAPE, "FR-01.01")
+    assert i6_list  # sanity: I6 found something
+
+    heading = spec_parser.parse_fr_headings(_ADOPT_ATTRIBUTION_SHAPE)[0]
+    assert heading.has_acceptance()  # S5's adjacency gate now tolerates it too
+    assert "\n".join(i6_list) == heading.acceptance
+
+    i6_digest = hashlib.sha256("\n".join(i6_list).encode("utf-8")).hexdigest()
+    assert criteria_digests(_ADOPT_ATTRIBUTION_SHAPE)["FR-01.01"] == i6_digest
+
+
+def test_a_nested_fr_heading_still_yields_its_own_anchor_for_i6_too():
+    """A DEEPER heading nested inside a parent anchor's span (`### FR-01.02`
+    inside `## FR-01.01`) must still get its own block — the old
+    `iter_anchored_blocks` jumped straight past it (`i = j`), so it was
+    swallowed into the parent's span and never anchored at all: no digest
+    entry on either side of a diff, and `criteria_changed_keys` could never
+    see it change (Stage-3 doubt review, medium, 2026-08-25). Both `criteria_
+    digests` (the cross-layer gate) and I6's real `has_criteria` must see
+    BOTH ids."""
+    digests = criteria_digests(_NESTED_FR_HEADING)
+    assert "FR-01.01" in digests
+    assert "FR-01.02" in digests
+
+    assert _group_i_has_criteria(_NESTED_FR_HEADING, "FR-01.01") is True
+    assert _group_i_has_criteria(_NESTED_FR_HEADING, "FR-01.02") is True

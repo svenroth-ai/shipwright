@@ -291,6 +291,83 @@ through, not new behaviour. Full affected-suite re-run after both fixes:
 (4 passed), and the compliance plugin's `group_i_criteria` suites (30
 passed) — no regression.
 
+## Post-Review Remediation — Stage-3 doubt review, 1 HIGH + 2 MEDIUM (2026-08-25)
+
+PR #648 passed Stage 1 and Stage 2, then Stage 3 (`doubt-reviewer`,
+adversarial) found three real correctness bugs against ACTUAL producer
+output — not scope/judgment questions, no operator sign-off needed. Two
+LOW findings were left as follow-up, folded into the existing `trg-968e4d87`
+triage card. All three fixes live in `shared/scripts/lib/fr_criteria.py`
+and `shared/scripts/tools/verifiers/_layer_coverage_ac.py`.
+
+**HIGH — S5 was blind to `/shipwright-adopt`'s real output.**
+`plugins/shipwright-adopt/scripts/lib/spec_document.py:164-187` renders,
+whenever an FR carries mined/enriched criteria
+(`generate_adoption_artifacts.py:308`/`:376` sets this): heading / blank
+line / `_Source: {source}._` / blank line / bullets — verified directly
+against both source files, not assumed. The Stage-1 adjacency default
+(`strict=True`) made `_leading_bullet_run` return `[]` the moment the first
+non-blank body line wasn't a bullet, and `_Source: tests._` isn't one — so
+`parse_fr_headings`'s fallback read NOTHING for every criteria-bearing FR
+in real adopt output, while I6 and the cross-layer gate (`strict=False`)
+still saw those criteria: AC-1's divergence, reintroduced on real producer
+bytes rather than any synthetic fixture. Fixed narrowly: `_leading_bullet_
+run` now tolerates exactly ONE leading whole-line italic attribution
+(`_LEADING_ATTRIBUTION_RE`, matching `_Source: tests._` / `_Source:
+enrichment._`) between the heading and the bullets before applying the
+same adjacency rule as before — a SECOND non-bullet line still
+disqualifies the run, so this does not reopen the door `strict=True`
+closed for genuine prose. The exact shape
+(`### FR-X — Y\n\n_Source: tests._\n\n- (E) ...`) is now a fixture in both
+`shared/tests/test_fr_criteria_convergence.py` and
+`integration-tests/test_fr_criteria_three_way_convergence.py` (the latter
+through I6's real subprocess entry point), so this cannot regress
+silently again.
+
+**MEDIUM — nested FR heading levels vanished from the pooling walk.**
+`iter_anchored_blocks` advanced `i = j` (the next same-or-higher-rank
+heading) after yielding a block, so a DEEPER heading nested inside that
+block (e.g. `## FR-01.01` ... `### FR-01.02` ...) was swallowed into the
+parent's span instead of yielded as its own anchor — a real regression
+versus the old `_FR_SECTION_RE` walk, which did find it. The id vanished
+from BOTH base and head, so `criteria_changed_keys` could never compare
+it — silent `could_not_determine` degradation on the cross-layer HARD
+gate, not a loud failure. Fixed: the outer scan now advances `i += 1`
+(never jumping past unscanned lines), so a nested anchor still gets its
+own turn. Regression tests added in both
+`shared/tests/test_layer_coverage_criteria.py` (digests) and the
+three-way convergence test (I6's real `has_criteria`), asserting both ids
+appear.
+
+**MEDIUM — `### Acceptance Criteria` (level 3, `/shipwright-project`'s
+actual template shape, `spec-generation.md:305`, both the abstract
+template and its worked example) didn't match `_criteria_region`'s
+level-2-only regex.** For every project-generated spec this was the
+NORMAL path, not a rare exception — and combined with the wider anchor
+surface, a stray bolded FR reference in a sibling section (e.g. `###
+Removed Requirements`) could get pooled into that FR's digest: a new
+false-RED path on the HARD gate. Fixed: `_criteria_region` now matches any
+heading level (1-6) named "Acceptance Criteria" and terminates at the next
+heading of the SAME OR HIGHER rank, matching `iter_anchored_blocks`'s own
+rule exactly (rather than the second option offered — restricting the
+fallback's anchor surface — since the real template shapes both
+producers ship always carry a proper heading; the fallback stays a
+genuine last resort). Regression test added:
+`test_level_3_acceptance_criteria_heading_scopes_correctly`.
+
+None of the three fixes change this ADR's Consequences claims: this
+repo's own `.shipwright/planning/01-adopted/spec.md` has zero `_Source:`
+attribution lines, uses `## Acceptance Criteria` (level 2, already
+matched), and has no nested FR headings — verified directly, not assumed;
+the 20/20 catalog-resolution count is unaffected. `check_s5_fr_coherence`
+re-run against the real repo post-fix: identical WARN, same single
+pre-existing gap. Full re-verification: `shared/tests` 152 passed (S5 +
+layer-coverage families), `plugins/shipwright-compliance` group_i suites
+30 passed, `plugins/shipwright-adopt` spec_document/acceptance suites 25
+passed, `integration-tests/test_fr_criteria_three_way_convergence.py` 5
+passed, `integration-tests/test_requirements_catalog_parsers.py` 4 passed,
+ruff clean, `verify_local.py` 3/3 gates green — no regression.
+
 Deferred (triage card filed, kind: improvement, referencing PR #648): the
 cross-layer gate's two newly-widened, unlisted/untested block-termination
 rules (a same-or-lower non-FR heading now ends a block; a criterion line
