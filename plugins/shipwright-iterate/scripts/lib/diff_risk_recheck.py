@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Callable
@@ -62,6 +63,14 @@ CI_ESCALATION_REASON_CODE = "ci_supplychain_requires_operator"
 #: Step 3.7's diff-size arm, mirrored onto Step 3.5 (AC5). Strictly greater-than,
 #: matching the contract's "> 100" wording exactly.
 PLAN_REVIEW_DIFF_LOC_THRESHOLD = 100
+
+#: Canonical run_id shape — SSoT: shared/scripts/lib/iterate_entry.py RUN_ID_STRICT.
+#: Copied local (same reason as session_plan.RUN_ID_STRICT: this plugin-lib
+#: never imports shared/ at runtime; pinning test keeps it in lock-step).
+#: Checked here — the first script in the runner contract to receive
+#: ``run_id`` — so a doomed run_id fails now (Step 3.4), not at F5c after
+#: F3/F4/F5/F5b already ran on it (iterate-2026-08-25-r0-…'s Reflection).
+RUN_ID_STRICT = re.compile(r"^iterate-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$")
 
 Detector = Callable[[list[str]], bool]
 
@@ -225,6 +234,23 @@ def main() -> int:
              "with the diff-driven flags — never replaced.",
     )
     args = parser.parse_args()
+
+    # Fail fast on a malformed run_id — earliest point in the runner contract
+    # that receives one; F5c enforces the same shape with no escape hatch, but
+    # only after F3/F4/F5/F5b already ran on the doomed run_id.
+    if args.run_id and not RUN_ID_STRICT.match(args.run_id):
+        print(json.dumps({
+            "error": (
+                f"run_id {args.run_id!r} does not match the canonical shape "
+                f"{RUN_ID_STRICT.pattern!r}. A campaign sub-iterate's display "
+                "id (e.g. 'R0') must be lowercased before it is embedded in "
+                "run_id ('...-r0-...') — keep the uppercase form only in "
+                "branch names, PR titles and the sub_iterate_id field, never "
+                "inside the run_id token itself."
+            ),
+            "escalate": {"required": False},
+        }))
+        return 2
 
     try:
         if args.changed_files is not None:

@@ -274,12 +274,12 @@ def test_main_passes_stage1_flags_through(monkeypatch, capsys):
 
 @pytest.mark.covers("FR-01.11")
 def test_main_exit_0_once_an_ack_exists(monkeypatch, capsys, tmp_path):
-    ack = drr.ack_path(tmp_path, "run-1")
+    ack = drr.ack_path(tmp_path, "iterate-2026-08-05-run-1")
     ack.parent.mkdir(parents=True)
     ack.write_text("{}", encoding="utf-8")
     code, out = _run_main(monkeypatch, capsys, [
         "--changed-files", WORKFLOW,
-        "--project-root", str(tmp_path), "--run-id", "run-1",
+        "--project-root", str(tmp_path), "--run-id", "iterate-2026-08-05-run-1",
     ])
     assert code == 0
     assert out["ci_ack_recorded"] is True
@@ -288,11 +288,11 @@ def test_main_exit_0_once_an_ack_exists(monkeypatch, capsys, tmp_path):
 @pytest.mark.covers("FR-01.11")
 def test_main_still_exits_3_when_the_ack_is_for_another_run(monkeypatch, capsys, tmp_path):
     """Run-bound on purpose: a previous run's ack must not license this diff."""
-    ack = drr.ack_path(tmp_path, "some-other-run")
+    ack = drr.ack_path(tmp_path, "iterate-2026-08-05-some-other-run")
     ack.parent.mkdir(parents=True)
     ack.write_text("{}", encoding="utf-8")
     code, _ = _run_main(monkeypatch, capsys, [
         "--changed-files", WORKFLOW,
-        "--project-root", str(tmp_path), "--run-id", "run-1",
+        "--project-root", str(tmp_path), "--run-id", "iterate-2026-08-05-run-1",
     ])
     assert code == 3
