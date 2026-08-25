@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-25-r1a-evidence-staging-multiroot",
+  "date": "2026-08-25",
+  "section": "R1a follow-up: Stage-3 doubt-review fixes",
+  "title": "Fix 3 real bugs + rebut 2 bounded doubts from Stage-3 doubt-review",
+  "context": "Stage-3 doubt-review of round-2 HEAD (0b1d5a5c) confirmed the 3 Stage-2 fixes hold and found 5 new doubts: false comment + silent class-based-test join failure; CLI silently stages nothing on a --junit typo; destroy-before-validate ordering + unscoped doc; non-atomic staging sequence (bounded); ancestor-freshness staleness cost (pre-existing). See spec_ref for full detail.",
+  "decision": "Fixed 1-3: _classname_to_path strips trailing CapWords class segment(s), comment corrected. evidence_drop.py CLI hard-validates every NAMED source before staging, exits 1 on a missing one. run_full_suite_evidence.py now discovers roots BEFORE clearing prior evidence; F5.md scoped as this monorepo's own tool. Rebutted 4-5 in the ADR as accepted/bounded risks, no code change.",
+  "consequences": "No currently @covers-tagged test in this repo is class-based, so fix 1 changes NO current coverage number -- closes a latent gap for the first class-based test. Fixes 2-3 close silent-waste failure modes. New/updated tests: test_execution_evidence.py (+3), test_evidence_drop.py (+3), test_run_full_suite_evidence_ordering.py (new file).",
+  "rationale": "Advisory-must-address gating: each doubt needed a fix or a written rebuttal, not silent dismissal.",
+  "rejected": "Hardening the non-atomic staging sequence pre-emptively (no workflow here runs two staging ops in one worktree concurrently).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md"
+}

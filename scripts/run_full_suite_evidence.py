@@ -219,6 +219,25 @@ def main(argv: list[str] | None = None) -> int:
     if not args.skip_sync:
         subprocess.run(["uv", "sync", "--extra", "dev"], cwd=str(repo_root), check=True)
 
+    # Validate BEFORE destroying (Stage-3 review): discover roots from the target's
+    # own conftest FIRST, while the previous run's evidence is still intact. A
+    # missing/broken conftest — e.g. a wrong --project-root — must fail loud without
+    # taking the prior valid evidence down with it. Fail-closed either way (never
+    # false-green), but a crash-after-destroy is needlessly irreversible when the
+    # crash-before-destroy costs nothing.
+    discover_test_roots = _load_discover_test_roots(repo_root)
+    roots = discover_test_roots(repo_root)
+    raw_dir = repo_root / ".shipwright" / "runs" / "full-suite-evidence" / "raw"
+    if raw_dir.is_dir():
+        for stale in raw_dir.glob("*.xml"):
+            stale.unlink()
+    plans = plan_all_roots(repo_root, roots, raw_dir)
+
+    print(f"Discovered {len(plans)} test root(s):", flush=True)
+    for plan in plans:
+        print(f"  - {plan.rel_root}  (cwd={plan.cwd.relative_to(repo_root).as_posix() or '.'}, "
+              f"base={plan.base or '(none)'})", flush=True)
+
     shared_scripts = repo_root / "shared" / "scripts"
     if str(shared_scripts) not in sys.path:
         sys.path.insert(0, str(shared_scripts))
@@ -232,19 +251,6 @@ def main(argv: list[str] | None = None) -> int:
     # observe (and fail on) that stale file mid-run (e.g. a repo-wide file scanner
     # tripping over an oversized/foreign junit.xml it cannot read).
     evidence_drop.clear_evidence_reports(repo_root)
-
-    discover_test_roots = _load_discover_test_roots(repo_root)
-    roots = discover_test_roots(repo_root)
-    raw_dir = repo_root / ".shipwright" / "runs" / "full-suite-evidence" / "raw"
-    if raw_dir.is_dir():
-        for stale in raw_dir.glob("*.xml"):
-            stale.unlink()
-    plans = plan_all_roots(repo_root, roots, raw_dir)
-
-    print(f"Discovered {len(plans)} test root(s):", flush=True)
-    for plan in plans:
-        print(f"  - {plan.rel_root}  (cwd={plan.cwd.relative_to(repo_root).as_posix() or '.'}, "
-              f"base={plan.base or '(none)'})", flush=True)
 
     results = [run_root(plan) for plan in plans]
 

@@ -225,6 +225,40 @@ def test_cli_stage_rejects_the_same_source_path_under_different_bases(tmp_path):
         ])
 
 
+def test_cli_stage_hard_fails_on_a_named_junit_path_that_does_not_exist(tmp_path):
+    # Stage-3 review: a NAMED --junit path that is a typo must never silently stage
+    # nothing and exit 0 -- the operator only finds out later when F11 reads blanket
+    # MISSING. Nonzero exit, nothing staged.
+    rc = evidence_drop.main([
+        "stage", "--project-root", str(tmp_path), "--run-id", "iterate-typo",
+        "--junit", str(tmp_path / "does-not-exist.xml"),
+    ])
+    assert rc != 0
+    assert evidence_drop.read_provenance(tmp_path) is None
+
+
+def test_cli_stage_hard_fails_on_a_missing_playwright_or_vitest_path(tmp_path):
+    junit = _report(tmp_path, "junit.xml", "<testsuites/>")
+    rc = evidence_drop.main([
+        "stage", "--project-root", str(tmp_path), "--run-id", "iterate-typo-2",
+        "--junit", str(junit),
+        "--vitest", str(tmp_path / "typo-vitest.json"),
+    ])
+    assert rc != 0
+    # A prior clear/no-op means nothing was staged, not a partial stage of the junit.
+    assert evidence_drop.read_provenance(tmp_path) is None
+
+
+def test_cli_stage_still_succeeds_when_every_named_source_exists(tmp_path):
+    junit = _report(tmp_path, "junit.xml", "<testsuites/>")
+    rc = evidence_drop.main([
+        "stage", "--project-root", str(tmp_path), "--run-id", "iterate-typo-3",
+        "--junit", str(junit),
+    ])
+    assert rc == 0
+    assert evidence_drop.read_provenance(tmp_path)["run_id"] == "iterate-typo-3"
+
+
 def test_clear_removes_pre_e_b_legacy_junit_xml(tmp_path):
     # External-review finding: a run staged before this iterate could have left a
     # single evidence/junit.xml behind; clear must sweep it too, or a fresh run that

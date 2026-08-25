@@ -7,27 +7,25 @@ a run's JUnit / Playwright / Vitest reports into the conventional
 ``.shipwright/compliance/evidence/`` drop locations, **clearing the dir first** so a prior
 run's stale report can never re-ingest as this run's evidence, and records **provenance**
 (run_id + head commit + per-report mtime) so a consumer never has to treat the index's
-``generated_at`` as proof the evidence matches HEAD (TT-EV explicitly warned that it is not).
+``generated_at`` as proof the evidence matches HEAD.
 
-Freshness contract (consumer side, :func:`evidence_is_fresh`): evidence is trusted only
-when a provenance sidecar exists AND its ``run_id`` equals the current run's — a fail-closed
-guard. No provenance (or a mismatched run_id) ⇒ the gate loads EMPTY evidence ⇒ every layer
-is MISSING ⇒ the gate blocks rather than crediting a stale pass.
+Freshness contract (consumer side, :func:`evidence_is_fresh`): trusted only when a
+provenance sidecar exists AND its ``run_id`` equals the current run's — fail-closed; no
+provenance (or a mismatched run_id) ⇒ empty evidence ⇒ every layer MISSING.
 
 **Multi-root JUnit staging (R1a, E-B).** 18 pytest test-roots (ADR-044: one process per
 root) means one process can never emit a single ``junit.xml`` spanning all of them.
 ``stage_reports``/the CLI accept **repeated** ``--junit <base>=<path>`` so every root's
 report is staged **byte-identical** (E-A) as ``junit-01.xml`` ... ``junit-NN.xml``, each
-report's ``base`` (the runner's own dir, for id-rebase — see
-``_evidence_readers.norm_path``) recorded per-report in ``_provenance.json``. The bare
-single-report form ``--junit <path>`` (base = project root ``""``) stays valid ONLY when
-sole; a bare path among 2+ is REJECTED as ambiguous, never silently defaulted.
+report's ``base`` recorded per-report in ``_provenance.json``. The bare single-report form
+(base = project root ``""``) stays valid ONLY when sole; a bare path among 2+ is REJECTED.
 """
 
 from __future__ import annotations
 
 import json
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -64,18 +62,15 @@ def clear_evidence_reports(project_root: Path) -> None:
     """Remove the runner reports, the provenance sidecar, AND the normalized evidence index
     before a run.
 
-    Clearing the reports alone is not enough (external-review MUST-FIX): the gate reads the
-    SEPARATELY-persisted ``test-evidence-index.json``, so a stale index/report from a prior run
-    could be trusted beside a fresh provenance sidecar. A removal that FAILS is fatal, not
-    swallowed (MUST-FIX 2): if an old report/index cannot be purged we must NOT proceed to
-    stage — a stale artifact left in place is a false-green vector. A genuinely-absent file is
-    a no-op; only a real ``OSError`` (lock/permission) propagates.
+    Reports alone is not enough: the gate also reads the SEPARATELY-persisted
+    ``test-evidence-index.json``, so a stale index could be trusted beside a fresh
+    provenance sidecar. A removal that FAILS is fatal, not swallowed — an old
+    report/index left in place is a false-green vector. Absent is a no-op; only a
+    real ``OSError`` propagates.
 
-    Every ``junit-*.xml`` is swept via the glob (E-B) — a prior run may have staged more
-    (or fewer) reports than this one. Also sweeps the PRE-E-B single-file name
-    (``evidence/junit.xml``, written before this iterate) — external-review finding:
-    left in place, ``discover_reports``' legacy fallback would read it as current once
-    a fresh multi-root run produced zero staged reports.
+    Every ``junit-*.xml`` is swept via the glob (E-B), plus the PRE-E-B single-file
+    name (``evidence/junit.xml``) — left in place, the legacy fallback would read it
+    as current once a fresh multi-root run produced zero staged reports.
     """
     d = evidence_dir(project_root)
     targets = [d / name for name in [*REPORT_NAMES.values(), "junit.xml", _PROVENANCE_NAME]]
@@ -99,17 +94,17 @@ def stage_reports(
     """Clear the evidence dir, copy each provided report to its conventional name, and
     write the provenance sidecar. Returns the provenance dict.
 
-    A source path that does not exist is skipped (never fabricates evidence). ``run_id``
-    is the freshness key the gate checks; ``head_commit`` + per-report mtime are recorded
-    for audit (a report older than the run is visible in the sidecar).
+    A source path that does not exist is skipped (never fabricates evidence) — correct
+    HERE, a library call already scoped to reports the caller confirmed exist; the CLI
+    (:func:`main`) additionally hard-validates every NAMED source first, since a
+    human-typed typo is not a legitimate skip (Stage-3 review). ``run_id`` is the
+    freshness key the gate checks; ``head_commit`` + per-report mtime are recorded.
 
     ``junit`` is the legacy single-report form (base = project root, ``""``).
     ``junit_reports`` (E-B) is the multi-root form: an ordered ``[(base, path), ...]``
-    list, one entry per pytest-root's report — each is staged **byte-identical** (E-A)
-    as ``junit-01.xml`` .. ``junit-NN.xml`` (numbering only the ones that actually
-    exist; a missing source is skipped, never fabricated, exactly like the single-report
-    form). When both ``junit`` and ``junit_reports`` are given, ``junit`` is treated as
-    an additional entry with base ``""``, prepended.
+    list, staged **byte-identical** (E-A) as ``junit-01.xml`` .. ``junit-NN.xml``
+    (numbering only the ones that exist). When both are given, ``junit`` is prepended
+    as an additional entry with base ``""``.
     """
     d = evidence_dir(project_root)
     d.mkdir(parents=True, exist_ok=True)
@@ -196,22 +191,17 @@ def _parse_junit_args(values: list[str]) -> list[tuple[str, str]]:
     """Parse repeated ``--junit`` CLI values into ``[(base, path), ...]`` (E-B/E-C).
 
     Each value is either ``<path>`` (bare — legacy single-report form, base = project
-    root ``""``) or ``<base>=<path>`` (E-B repeatable multi-root form). The bare form is
-    ONLY accepted when it is the SOLE ``--junit`` — as soon as a second ``--junit`` is
-    given, EVERY value must carry an explicit ``base=`` (an empty base is spelled
-    ``=<path>``). A bare path among 2+ values is **rejected**, not silently defaulted
-    to the project root (AC: "ein Report ohne Basis wird abgelehnt").
+    root ``""``) or ``<base>=<path>`` (E-B repeatable multi-root form). Bare is ONLY
+    accepted when it is the SOLE ``--junit``; with 2+, every value needs an explicit
+    ``base=`` (empty base spelled ``=<path>``) — a bare path among 2+ is REJECTED, not
+    silently defaulted (AC: "ein Report ohne Basis wird abgelehnt").
 
-    A **duplicate base is legal and common** — this repo alone has FOUR roots
-    (``integration-tests``, ``shared/tests``, ``shared/scripts/tests``,
-    ``shared/scripts/tools/tests``) that all rebase at base ``""`` (Stage-2 review:
-    rejecting a repeated base broke the workflow E-B exists for, and disagreed with
-    the ``stage_reports``/``run_full_suite_evidence.py`` API path, which never
-    rejected it). Staged entries are an ORDERED LIST of ``{name, base}`` — nothing is
-    keyed by base, so nothing "wins" or is silently overwritten by a same-base
-    sibling. What IS rejected: an exact duplicate ``(base, path)`` pair, or the same
-    source ``path`` given twice under any base — both are a copy-paste mistake,
-    never a legitimate multi-root call.
+    A **duplicate base is legal and common** — this repo alone has FOUR roots that all
+    rebase at base ``""`` (Stage-2 review: rejecting a repeated base broke the workflow
+    E-B exists for, and disagreed with the ``stage_reports`` API, which never rejected
+    it). Staged entries are an ORDERED LIST — nothing is keyed by base, so nothing
+    silently overwrites a same-base sibling. What IS rejected: an exact duplicate
+    ``(base, path)`` pair, or the same source ``path`` twice — both a copy-paste mistake.
     """
     if not values:
         return []
@@ -237,21 +227,38 @@ def _parse_junit_args(values: list[str]) -> list[tuple[str, str]]:
     return parsed
 
 
+def _missing_named_sources(
+    junit_reports: list[tuple[str, str]], playwright: str | None, vitest: str | None
+) -> list[str]:
+    """Every NAMED ``--junit``/``--playwright``/``--vitest`` source that does not exist.
+
+    ``stage_reports`` itself skips a missing source silently — right for a
+    programmatic caller like ``run_full_suite_evidence.stage_all``, which already
+    filtered to roots it KNOWS produced a report. The CLI is different: every path
+    here was NAMED BY A HUMAN, so missing means typo, not a legitimate skip —
+    Stage-3 review found the CLI staged nothing and exited 0 on a typo (same bug
+    class already fixed for ``--head-commit`` defaulting to empty).
+    """
+    missing = [path for _, path in junit_reports if not Path(path).is_file()]
+    for src in (playwright, vitest):
+        if src is not None and not Path(src).is_file():
+            missing.append(src)
+    return missing
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI so the iterate F0.5/F5 lifecycle can drive the emit-side without embedding it
     in (and ratcheting) the grandfathered ``surface_verification.py``. ``clear`` empties
     the evidence dir before a run; ``stage`` drops this run's reports + provenance after.
 
-        uv run shared/scripts/lib/evidence_drop.py clear   --project-root .
+        uv run shared/scripts/lib/evidence_drop.py clear --project-root .
         # single report (legacy form, base = project root):
-        uv run shared/scripts/lib/evidence_drop.py stage --project-root . \\
-            --run-id iterate-2026-07-15-foo --head-commit "$(git rev-parse HEAD)" \\
-            --junit junit.xml --playwright test-results.json --vitest vitest-report.json
+        uv run shared/scripts/lib/evidence_drop.py stage --project-root . --run-id foo \\
+            --head-commit "$(git rev-parse HEAD)" --junit junit.xml
         # N reports, one per pytest test-root (E-B — repeatable, base required per flag):
-        uv run shared/scripts/lib/evidence_drop.py stage --project-root . \\
-            --run-id iterate-2026-08-25-foo --head-commit "$(git rev-parse HEAD)" \\
-            --junit =.shipwright/runs/full-suite/shared-tests.xml \\
-            --junit plugins/shipwright-compliance=.shipwright/runs/full-suite/shipwright-compliance.xml
+        uv run shared/scripts/lib/evidence_drop.py stage --project-root . --run-id foo \\
+            --head-commit "$(git rev-parse HEAD)" --junit =shared-tests.xml \\
+            --junit plugins/shipwright-compliance=compliance-tests.xml
     """
     import argparse  # noqa: PLC0415 — CLI-only
 
@@ -277,6 +284,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"cleared": str(evidence_dir(root))}))
         return 0
     junit_reports = _parse_junit_args(args.junit)
+    missing = _missing_named_sources(junit_reports, args.playwright, args.vitest)
+    if missing:
+        for path in missing:
+            print(f"ERROR: --junit/--playwright/--vitest source not found: {path!r}", file=sys.stderr)
+        print("ERROR: stage aborted — a named source that does not exist is a typo, "
+              "never a silent skip. Nothing was staged.", file=sys.stderr)
+        return 1
     prov = stage_reports(
         root, run_id=args.run_id, head_commit=args.head_commit,
         junit_reports=junit_reports, playwright=args.playwright, vitest=args.vitest,

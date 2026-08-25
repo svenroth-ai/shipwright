@@ -263,3 +263,47 @@ All four affected test files re-run after the fixes (`test_evidence_drop.py` 18,
 3, `test_layer_coverage_evidence_multiroot.py` 4 — 42 total, all pass), plus the
 `plugins/shipwright-compliance` execution-evidence suite (38 pass), `ruff` clean,
 and `scripts/verify_local.py` (3/3 gates green).
+
+## Stage-3 doubt-review (confirmed the 3 Stage-2 fixes hold; found 5 new doubts)
+
+Gating: advisory-must-address, not a commit veto — each fixed or rebutted below.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | MEDIUM: `_evidence_readers._classname_to_path`'s comment claimed "pytest always emits `file`" — factually wrong against this repo's OWN staged evidence (`.shipwright/compliance/evidence/junit-05.xml` has no `file=` on any `<testcase>`, confirmed by direct inspection). The naive `classname.replace(".", "/")` fallback is therefore not a rare fallback but the path ALWAYS taken, and for a class-based test (`tests.test_foo.TestBar`) it mangled the class segment into the path (`tests/test_foo/TestBar.py`), joining nothing — a silent, permanent MISSING. No `@covers`-tagged test in this repo is class-based today, so latent here; live-on-arrival for the first one, here or in any adopted repo. | accepted-and-fixed: strips trailing CapWords-shaped segment(s) (pytest's own class-naming convention) before rejoining, so `tests.test_foo.TestBar` → `tests/test_foo.py` and nested classes (`TestOuter.TestInner`) are both stripped. Corrected the false comment. New tests in `test_execution_evidence.py`: `test_junit_classname_fallback_strips_the_trailing_class_segment` (using this repo's real `TestCorrelation` classname), `_module_only_is_unaffected`, `_strips_nested_class_segments` — 19/19 pass. Heuristic limitation documented in the new docstring: a module segment that itself starts uppercase defeats it (fail-closed — a MISSING, never a false pass). |
+| 2 | MEDIUM: `evidence_drop.py`'s CLI silently staged nothing and exited 0 when a NAMED `--junit`/`--playwright`/`--vitest` source path was a typo — `stage_reports` correctly skips a missing source (never fabricates evidence), but the CLI wrapper let that success-with-nothing-staged reach the operator as exit 0. Same bug class as the `--head-commit` fix in the Stage-2 round: a wasted pass discovered only when F11 later reads blanket MISSING. | accepted-and-fixed: new `_missing_named_sources` helper hard-validates every NAMED source in `main()` BEFORE calling `stage_reports`; any missing path prints an `ERROR:` line naming it and exits 1, nothing staged. `stage_reports` itself is UNCHANGED — its skip-if-missing is correct at the library level for `run_full_suite_evidence.stage_all`, which already filters to roots it confirmed produced a report (checked: it does, at `junit_reports = [(r.plan.base, r.plan.junit_out) for r in results if r.produced_junit]` — the library-level skip is genuinely dead code for that caller, never needed a change). New tests: `test_cli_stage_hard_fails_on_a_named_junit_path_that_does_not_exist`, `_on_a_missing_playwright_or_vitest_path`, `_still_succeeds_when_every_named_source_exists` — 21/21 pass. |
+| 3 | LOW: `run_full_suite_evidence.py`'s `main()` called `clear_evidence_reports` BEFORE loading `discover_test_roots` from the target's own `conftest.py` — a missing/broken conftest (e.g. a wrong `--project-root`) destroyed the previous run's valid evidence and THEN crashed. Fail-closed (never false-green), but needlessly irreversible. Also: F5.md described this tool as if any adopted repo could point at it, but it hard-requires THIS repo's `conftest.py::discover_test_roots` + `plugins/<name>` monorepo layout. | accepted-and-fixed: root discovery (+ the head-commit resolution, already first) now runs BEFORE `clear_evidence_reports`; a broken conftest fails loud with the prior evidence intact. New test `test_run_full_suite_evidence_ordering.py::test_main_does_not_destroy_prior_evidence_when_conftest_is_broken` (new file — 300-LOC guideline, same split pattern as the head-commit tests). F5.md gained one clarifying sentence scoping the runner as this monorepo's own tool (`evidence_drop` — the CLI and the API — has no such requirement and is the one every project has). |
+
+**Rebuttal 4 (MEDIUM, accepted as an operationally-excluded risk, no code change).**
+`evidence_drop.py`'s clear → copy → write-provenance sequence is not atomic. Two
+writers *in the same worktree* overlapping in time — e.g. an iterate's own F0.5
+clear/stage racing a 20-60 minute full-suite pass — could interleave and produce a
+`_provenance.json` that does not match the bytes beside it, undetected by the
+freshness/ancestor checks. Blast radius is same-worktree-only (each worktree owns its
+own `evidence/` dir under `.shipwright/compliance/`; a different worktree's concurrent
+run is unaffected — a separate checkout, separate evidence dir). Nothing in this
+repo's own workflow runs two staging operations in one worktree concurrently: F0.5 is
+a single synchronous step inside one iterate's F0-F11 sequence, and
+`run_full_suite_evidence.py` is an explicit, standalone operator invocation — no
+automation in this repo schedules it to overlap an iterate's own F0.5 in the same
+worktree. Accepted as excluded by this repo's own operational shape rather than
+hardened (atomic rename via temp-dir-then-promote, or a provenance content hash,
+remain available if a future workflow introduces same-worktree concurrency).
+
+**Rebuttal 5 (LOW, accepted tradeoff, no code change).**
+`_layer_coverage_evidence.py`'s ancestor-based freshness (evidence proven at an
+ancestor commit credits HEAD) is a pre-existing, already-accepted tradeoff, not a new
+defect — this iterate does not change the rule, it only raises the cost of refreshing
+it (a full pass now costs 20-60 minutes instead of never having existed at all), so
+evidence may go more commits stale before someone re-runs it. Still accepted at the
+new cost: the alternative (evidence expires immediately on any HEAD move) would make
+the 20-60 minute full-suite pass a prerequisite for nearly every iterate's F11, which
+is a worse tradeoff than occasionally-stale-but-still-ancestor-proven evidence.
+Optional future hardening (not required, not built here): surface a
+commits-behind-HEAD count in the gate's output so staleness is at least visible.
+
+All fixes re-verified together with the Stage-2 round's suite: `test_evidence_drop.py`
+21, `test_run_full_suite_evidence.py` 17, `test_run_full_suite_evidence_head_commit.py`
+3, `test_run_full_suite_evidence_ordering.py` 1, `test_execution_evidence.py` 19
+(plugins/shipwright-compliance) — all pass. `ruff` clean, `scripts/verify_local.py`
+3/3 gates green.

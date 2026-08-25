@@ -100,6 +100,44 @@ def test_junit_failure_and_skipped_children_map_fail_closed():
     assert (out["t.py::c"]["status"], out["t.py::c"]["executed"]) == ("enabled", "fail")
 
 
+def test_junit_classname_fallback_strips_the_trailing_class_segment():
+    # No file= attribute at all -- this repo's own staged evidence (Stage-3
+    # doubt-review finding) confirms pytest's default xunit2 report never emits
+    # one, so this IS the path always taken, not a rare fallback.
+    xml = (
+        "<testsuites><testsuite>"
+        '<testcase classname="tests.test_accepted_risk_view.TestCorrelation" '
+        'name="test_registered_and_active_is_one_row" />'
+        "</testsuite></testsuites>"
+    )
+    out = read_junit(xml)
+    key = "tests/test_accepted_risk_view.py::test_registered_and_active_is_one_row"
+    assert key in out
+    assert out[key]["executed"] == "pass"
+    # A bogus class-in-the-path id must NOT appear -- that was the silent-MISSING bug.
+    assert "tests/test_accepted_risk_view/TestCorrelation.py::test_registered_and_active_is_one_row" not in out
+
+
+def test_junit_classname_fallback_module_only_is_unaffected():
+    xml = (
+        "<testsuites><testsuite>"
+        '<testcase classname="tests.test_auth" name="test_sign_in" />'
+        "</testsuite></testsuites>"
+    )
+    out = read_junit(xml)
+    assert "tests/test_auth.py::test_sign_in" in out
+
+
+def test_junit_classname_fallback_strips_nested_class_segments():
+    xml = (
+        "<testsuites><testsuite>"
+        '<testcase classname="tests.test_foo.TestOuter.TestInner" name="test_x" />'
+        "</testsuite></testsuites>"
+    )
+    out = read_junit(xml)
+    assert "tests/test_foo.py::test_x" in out
+
+
 def test_playwright_and_vitest_pass_mapping():
     pw = read_playwright(_load(_EV / "playwright.json"))
     assert pw["e2e/dashboard.spec.ts::dashboard shows live orders"]["executed"] == "pass"
