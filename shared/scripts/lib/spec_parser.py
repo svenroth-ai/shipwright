@@ -5,7 +5,7 @@ per-split ``.shipwright/planning/<split>/spec.md``). Used by
 ``tools/verifiers/spec_checks.py`` so every S* check operates on the
 same normalised view of an FR.
 
-Supports the two shapes Shipwright writes today:
+Supports the three shapes Shipwright writes today:
 
 1. **Table form** (iterate specs, split specs)::
 
@@ -28,6 +28,18 @@ Supports the two shapes Shipwright writes today:
    (S5) inspects both the Description and Acceptance Criteria under
    each heading.
 
+3. **Shipped form** (``/shipwright-project``/``/shipwright-adopt`` output)::
+
+       ### FR-01.01 — Title
+       - (E) Given ..., when ..., then ...
+
+   No bold label — bare bullets under the heading, description in the FR
+   table instead. When labelled extraction finds nothing,
+   ``parse_fr_headings`` falls back to ``lib.fr_criteria.leading_criteria``
+   (same reader as ``_layer_coverage_ac``/I6 — see its docstring for the
+   shape + adjacency rule). A table-row heading is a detail section, not
+   a definition (see ``compute_fr_coherence``).
+
 Everything in this module is pure, read-only, and greenfield-safe —
 missing inputs return empty results instead of raising.
 """
@@ -41,6 +53,7 @@ from typing import Iterable
 
 # Package import is safe here (unlike drift_parsers): every consumer reaches this
 # module as ``lib.spec_parser``, so ``lib`` is always the SHARED package (ADR-045).
+from lib import fr_criteria, fr_table_reader
 from lib.planning_discovery import iter_spec_files, iter_split_dirs
 
 
@@ -76,14 +89,9 @@ _ACCEPTANCE_LABELS: frozenset[str] = frozenset({
 
 
 def _normalise_fr_id(raw: str) -> str:
-    """Return a canonical FR id.
-
-    ``FR 7`` → ``FR-7``. Dotted ids keep their dots. Whitespace after
-    ``FR`` is replaced with ``-`` to match the wire convention used in
-    spec tables and RTM rows (``FR-02.03``).
-    """
-    r = raw.strip().replace(" ", "-")
-    return r
+    """``FR 7`` → ``FR-7``; dotted ids keep their dots (wire convention
+    used in spec tables and RTM rows, e.g. ``FR-02.03``)."""
+    return raw.strip().replace(" ", "-")
 
 
 @dataclass(frozen=True)
@@ -109,13 +117,11 @@ def _extract_label_section(
     *,
     target_labels: frozenset[str],
 ) -> str:
-    """Return the block of text under the first matching labelled header.
+    """Return the text under the first matching labelled header.
 
-    Walks the body lines: once we see ``**Description:**`` (or equivalent),
-    accumulate until the next labelled line of the same or higher rank,
-    or the end of the body. Blank lines are preserved as paragraph
-    separators inside the result so ``has_description`` can detect
-    "label present but body empty".
+    Accumulates from ``**Description:**`` (or equivalent) to the next
+    labelled line or end-of-body; blank lines are kept as paragraph
+    separators so ``has_description`` can see "label present but empty".
     """
     out: list[str] = []
     in_target = False
@@ -153,11 +159,9 @@ def _extract_label_section(
 def parse_fr_headings(content: str) -> list[FRHeading]:
     """Parse FR headings and their Description/Acceptance bodies.
 
-    The parser walks the document once to find heading lines, then for
-    each heading extracts the lines up to the next FR-heading (at any
-    rank) and runs the labelled-block scanner.
-
-    Returns ``[]`` when no FR headings are found.
+    Walks the document once for heading lines, then per heading extracts
+    up to the next FR-heading (any rank) and runs the labelled-block
+    scanner. Returns ``[]`` when no FR headings are found.
     """
     lines = content.splitlines()
     heading_hits: list[tuple[int, str, str]] = []
@@ -182,6 +186,11 @@ def parse_fr_headings(content: str) -> list[FRHeading]:
         acceptance = _extract_label_section(
             body_lines, target_labels=_ACCEPTANCE_LABELS,
         )
+        if not acceptance:
+            # Shipped form (S2) — see fr_criteria's docstring.
+            fallback = fr_criteria.leading_criteria(body_lines)
+            if fallback:
+                acceptance = "\n".join(fallback)
         headings.append(FRHeading(
             id=fr_id,
             title=title,
@@ -204,16 +213,10 @@ def count_fr_headings(content: str) -> int:
 def read_top_level_spec(project_root: Path) -> str | None:
     """Return the text of the project's top-level spec, or ``None``.
 
-    Reads ``.shipwright/agent_docs/spec.md`` — the greenfield canonical
-    location written by ``/shipwright-project``. When that file is absent,
-    falls back to the per-split spec that ``/shipwright-adopt`` writes
-    instead: the first deterministically-sorted match of
-    ``.shipwright/planning/*/spec.md``. Returns ``None`` only when neither
-    location has a spec.
-
-    The fallback fixes S1 — and every S-check sharing this reader (S4,
-    ``top_level_spec_is_non_empty``) — for adopted (brownfield) projects, whose
-    spec never lives under ``agent_docs/``.
+    Reads ``.shipwright/agent_docs/spec.md`` (greenfield canonical,
+    ``/shipwright-project``); falls back to the first deterministically-
+    sorted ``.shipwright/planning/*/spec.md`` (``/shipwright-adopt``
+    brownfield layout). ``None`` only when neither location has a spec.
     """
     path = project_root / _AGENT_DOCS_DIRNAME / "spec.md"
     if path.exists():
@@ -268,17 +271,9 @@ _AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
 
 
 def _iter_spec_files(project_root: Path) -> Iterable[Path]:
-    """Yield every spec file we care about for coherence checks.
-
-    Includes:
-
-    - ``.shipwright/agent_docs/spec.md`` (project-level canonical spec).
-    - ``.shipwright/planning/<split>/spec.md`` (split specs from plan phase).
-    - ``.shipwright/planning/iterate/*.md`` (iterate-spec files produced per-run).
-
-    Files are yielded in stable (sorted) order so callers get
-    deterministic reports.
-    """
+    """Yield every spec file for coherence checks, in stable sorted order:
+    ``.shipwright/agent_docs/spec.md``, each ``.shipwright/planning/<split>/spec.md``,
+    and every ``.shipwright/planning/iterate/*.md`` (per-run iterate specs)."""
     top = project_root / _AGENT_DOCS_DIRNAME / "spec.md"
     if top.exists():
         yield top
@@ -299,9 +294,10 @@ def compute_fr_coherence(project_root: Path) -> FRCoherenceReport:
     """Walk every spec file and summarise FR coherence.
 
     "Coherent" means: every FR heading has a non-empty Description
-    **and** Acceptance section. Table-row FRs are ignored for coherence
-    — they're a summary format, not the canonical shape S5 targets
-    (plan § 3 S5).
+    **and** Acceptance section — except a heading whose id is ALSO a row
+    of the file's own FR table (S3): that's a detail section, not a
+    definition, so its table-cell description exempts it from
+    ``missing_description`` regardless of its own body.
     """
     total = 0
     miss_desc: list[str] = []
@@ -319,9 +315,11 @@ def compute_fr_coherence(project_root: Path) -> FRCoherenceReport:
             continue
         rel = path.relative_to(project_root).as_posix()
         scanned.append(rel)
+        # Only a NON-EMPTY cell exempts a heading (external review 2026-08-25).
+        table_row_ids = {r.id for r in fr_table_reader.read_fr_rows(text) if r.text.strip()}
         for h in headings:
             total += 1
-            has_desc = h.has_description()
+            has_desc = h.has_description() or h.id in table_row_ids
             has_accept = h.has_acceptance()
             if not has_desc and not has_accept:
                 miss_both.append(f"{rel}::{h.id}")

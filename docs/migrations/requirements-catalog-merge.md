@@ -164,28 +164,35 @@ deliberately separate work — it needs its own baseline.
   paths the catalog quotes; compacting those paths *out* of the requirement text
   met the same goal without weakening the lint, which is strictly better.
 
-## Known and deliberately not fixed here
+## Fixed since (campaign REQ3.04, sub-iterate R0, 2026-08-25)
 
-**The FR-coherence check (S1 / S5) reports this catalog shape as incoherent.**
+**The FR-coherence check (S1 / S5) used to report this catalog shape as
+incoherent.**
 
-`compute_fr_coherence` calls a requirement coherent when its `### FR-…` heading
-is followed by `**Description:**` and `**Acceptance Criteria:**` labelled blocks.
-This catalog states each description in the **table** and each criterion as a
-`- (E) Given … when … then …` bullet, so every requirement is reported as missing
-both — including the ones that gained real criteria in this very step.
+`compute_fr_coherence` used to call a requirement coherent only when its
+`### FR-…` heading was followed by `**Description:**` and
+`**Acceptance Criteria:**` labelled blocks. This catalog states each
+description in the **table** and each criterion as a `- (E) Given … when …
+then …` bullet, so every requirement used to be reported as missing both —
+including the ones that gained real criteria along the way.
 
-**If you adopt this catalog shape, expect the same report.** It is a WARN and
-never affects an exit code, so nothing is gated on it.
+**If you adopt this catalog shape, this no longer reports a false gap.** It
+was always a WARN and never affected an exit code, so nothing was gated on it
+— but the report itself is now correct, not merely non-blocking.
 
-It was left alone on purpose. Adding the labels would duplicate each description
-— one copy in the table, one in the section — and two copies of one sentence
-drifting apart is exactly what this migration removes. Renaming the headings so
-the check stops matching would degrade the document to dodge a parser, and the
-deep links land on those headings. The correct fix is to teach the check that a
-heading whose ID is also a table row is a *detail section* rather than a second
-definition; that is a change to a shared verifier every project consumes, and it
-needs its own baseline rather than riding along inside a migration.
+The fix, exactly as anticipated below at the time: a shared criteria reader
+(`shared/scripts/lib/fr_criteria.py`) now reads the bullet shape the
+producers actually write — the same reader the cross-layer fold gate and
+Group I's I6 check already used — and `parse_fr_headings` falls back to it
+when no `**Acceptance Criteria:**` label is present. Separately,
+`compute_fr_coherence` now treats a heading whose ID is also a table row as a
+*detail section* rather than a second definition, so its missing
+`**Description:**` label (the description lives in the table cell) is no
+longer reported either. Adding the labels — duplicating each description,
+one copy in the table, one in the section — was never done and remains
+unnecessary; the headings were never renamed.
 
-The false count is pinned by
-`integration-tests/test_requirements_catalog_parsers.py`, so whoever fixes it is
-forced to update this note rather than leave a stale one behind.
+The corrected count is pinned by
+`integration-tests/test_requirements_catalog_parsers.py`, the same test that
+pinned the false one, so a regression here is caught the same way the
+original defect was.

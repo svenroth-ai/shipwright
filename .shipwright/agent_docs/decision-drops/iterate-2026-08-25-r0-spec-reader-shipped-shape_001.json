@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-25-r0-spec-reader-shipped-shape",
+  "date": "2026-08-25",
+  "section": "Iterate — campaign req3-04-ac-identity-mono R0: converge FR-criteria readers",
+  "title": "One shared FR-criteria reader, replacing three independent walks",
+  "context": "Three readers (spec_parser S5, _layer_coverage_ac, group_i_criteria I6) each independently walked FR acceptance criteria and disagreed; S5 never knew the shipped bullet shape, reporting 20/20 false gaps on this repo's own catalog.",
+  "decision": "Extract group_i's richest semantics into shared/scripts/lib/fr_criteria.py; all three callers delegate and share ONE default (adjacency-gated) semantics; the two callers needing the legacy prose-before-bullets tolerance pass an explicit, tested strict=False. compute_fr_coherence exempts a heading whose id is also a non-empty FR-table row.",
+  "consequences": "AC-4 catalog-scoped (operator decision, post Stage-1 review): missing_description/acceptance/both all empty for the catalog (was 20/20 false). Repo-wide report.ok stays False due to one pre-existing unrelated planning doc, honestly documented, not R0's decision. group_i/_layer_coverage_ac shrank; spec_parser net +/-0. Label-form path untouched.",
+  "rationale": "group_i's own docstring already argued this reader is correct; direction (verifiers/plugins read lib/) mirrors the existing _layer_coverage_evidence.py precedent.",
+  "rejected": "A fourth independent parser (rejected: worsens the divergence); changing the label-form path's placeholder handling (rejected: out of scope, R0's own AC pins test_spec_checks.py byte-identical).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-25-r0-spec-reader-shipped-shape-fr-criteria-convergence.md"
+}

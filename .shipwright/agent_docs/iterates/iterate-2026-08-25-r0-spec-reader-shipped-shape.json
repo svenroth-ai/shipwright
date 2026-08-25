@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-25-r0-spec-reader-shipped-shape",
+  "date": "2026-08-25T13:26:35.052128Z",
+  "event_at": "2026-08-25T12:40:48.914547+00:00",
+  "type": "bug",
+  "complexity": "large",
+  "branch": "iterate/spec-reader-shipped-shape",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/campaigns/req3-04-ac-identity-mono/sub-iterates/R0-spec-reader-shipped-shape.md",
+  "adr": "iterate-2026-08-25-r0-spec-reader-shipped-shape"
+}

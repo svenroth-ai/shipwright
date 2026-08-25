@@ -16,59 +16,46 @@ not need to: every requirement node already carries ``spec_path``, and the base
 commit is already resolved for the regeneration, so the criteria can be read from
 git directly. Nothing about the artifact or its schema moves.
 
-Two rules the parser follows, both narrower than "diff the section":
-
-* **A criterion includes its continuation lines.** This repo's own `(E)` bullets
-  wrap, and the guarantee often lives on the second line.
-* **Only criteria count.** Prose around them is excluded, because in a
-  post-rollout repo a resolved change is a HARD gate and a typo fix must not
-  demand executed-passing tests. Criteria text is whitespace-normalised, so
-  re-wrapping a paragraph is not a change either.
+The actual per-FR criteria extraction — anchor matching, checkbox/assertion-
+marker stripping, placeholder rejection, continuation lines, whitespace
+normalisation — is ``lib.fr_criteria`` (campaign REQ3.04 sub-iterate R0):
+this module used to walk it alone, and two OTHER readers (``spec_parser``'s S5,
+Group I's I6) each walked their own narrower version. All three now delegate to
+the one parser; the section-scoping below (``## Acceptance Criteria`` only, or
+the whole document as a fail-safe) stays here because it is specific to this
+gate's git-diffing use, not a property of "what is a criterion".
 """
 
 from __future__ import annotations
 
 import hashlib
 import re
+import sys
+from pathlib import Path
 
-from .git_helpers import _run_git
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-#: A requirement's own section in a spec: ``### FR-XX.YY — Title``. The anchor and
-#: the id form are the ones both generators emit and the manifest schema pins.
-_FR_SECTION_RE = re.compile(r"^###\s+(?P<fr>FR-\d{2}\.\d{2})\b", re.MULTILINE)
+from lib import fr_criteria  # noqa: E402
 
-#: A criterion bullet: ``-``/``*``/``+`` or ``1.``, incl. the ``- [ ]`` checkbox
-#: form used by the worked example in ``shared/fr-authoring.md`` §3.
-_BULLET_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(?P<text>.*\S)\s*$")
+from .git_helpers import _run_git  # noqa: E402
 
 
-def _criteria(body: str) -> list[str]:
-    """The section's criteria, each whitespace-normalised and including any
-    continuation lines that belong to it."""
-    out: list[str] = []
-    current: list[str] | None = None
-    for line in body.splitlines():
-        bullet = _BULLET_RE.match(line)
-        if bullet:
-            if current is not None:
-                out.append(" ".join(current))
-            current = [bullet.group("text")]
-            continue
-        if current is None:
-            continue
-        if not line.strip() or not line[:1].isspace():
-            # A blank line, or a line starting in column 0, ends the criterion.
-            out.append(" ".join(current))
-            current = None
-            continue
-        current.append(line.strip())
-    if current is not None:
-        out.append(" ".join(current))
-    return [" ".join(c.split()) for c in out]
+#: Any heading level names the section — `/shipwright-adopt` emits ``##
+#: Acceptance Criteria`` (top-level); `/shipwright-project`'s own template
+#: (``spec-generation.md:305``, both the abstract template and its worked
+#: example) nests it one level deeper, ``### Acceptance Criteria``, under
+#: ``## 2. Functional Requirements``. A level-2-only regex never matched
+#: the real, shipped shape a project-generated spec.md uses, so THIS reader
+#: fell back to whole-document scanning on every one of them — not a rare
+#: exception but the normal path (Stage-3 doubt review, medium, 2026-08-25).
+_AC_HEADING_RE = re.compile(r"^(#{1,6})\s+Acceptance Criteria\s*$", re.MULTILINE)
 
 
 def _criteria_region(text: str) -> str:
-    """The ``## Acceptance Criteria`` section, or the whole document.
+    """The ``Acceptance Criteria`` section (any heading level), or the
+    whole document.
 
     Bullets elsewhere are not criteria — a requirement discussed under some other
     top-level section, with a list of implementation notes, must not read as a
@@ -77,25 +64,86 @@ def _criteria_region(text: str) -> str:
 
     The fallback is deliberate and is the safe direction: a spec that names its
     criteria some other way is scanned whole rather than yielding nothing. Going
-    SILENT is the one outcome worse than over-firing.
+    SILENT is the one outcome worse than over-firing. That fallback is meant to
+    be a genuine LAST resort, though — not the path every real ``/shipwright-
+    project`` spec takes because the heading match was too narrow; the region
+    terminates at the next heading of the SAME OR HIGHER rank — required to be
+    followed by whitespace, matching the SPIRIT of
+    ``fr_criteria._ANY_HEADING``'s own rule (a bare ``#`` with no trailing
+    space — a fenced code comment, a shell shebang — must never masquerade as
+    a terminator). Not byte-identical to it, though: this ``\\s`` runs against
+    raw multi-line text (so it can match a newline, terminating on a
+    hash-only line at column 0 — a shape no real producer or this repo's own
+    catalog emits, verified directly), where ``_ANY_HEADING`` requires
+    ``\\s+`` against an already newline-stripped line (Stage-3 doubt review,
+    medium, 2026-08-25; wording corrected 2026-08-25 — the two were not
+    actually byte-identical as first claimed).
+
+    A per-FR subheading shape — ``### FR-04.01`` / ``#### Acceptance
+    Criteria`` / bullets, REPEATED per FR (the exact shape
+    ``group_i_criteria``'s own
+    ``test_deeper_subheading_stays_inside_the_block`` pins as supported) —
+    makes ``_AC_HEADING_RE.search`` first-match the DEEPEST FR's own
+    "Acceptance Criteria" subheading, then same-rank termination fires on the
+    very next FR heading: the "found" region collapses to one FR's bullets
+    with no anchor line inside it at all, and ``criteria_digests`` returns
+    ``{}`` for the WHOLE document — silencing this HARD gate, worse than the
+    old level-2-only regex's honest whole-document fallback (Stage-3 doubt
+    review, high, 2026-08-25). Guarded against by comparing the region's own
+    anchor set to the whole document's: a "found" region must never see
+    STRICTLY FEWER FR ids than scanning the whole document would.
     """
-    heading = re.search(r"^##\s+Acceptance Criteria\s*$", text or "", re.MULTILINE)
+    heading = _AC_HEADING_RE.search(text or "")
     if not heading:
         return text or ""
+    level = len(heading.group(1))
     rest = text[heading.end():]
-    following = re.search(r"^##(?!#)", rest, re.MULTILINE)
-    return rest[:following.start()] if following else rest
+    following = re.search(rf"^#{{1,{level}}}(?!#)\s", rest, re.MULTILINE)
+    region = rest[:following.start()] if following else rest
+
+    # `region` is always a literal slice of `text`, so any anchor line found
+    # scanning it is also found scanning the whole document — region_ids is
+    # therefore ALWAYS a subset of whole_ids; a real mismatch can only mean
+    # the region lost anchors the whole document has (never gained any).
+    region_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(region)}
+    whole_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(text or "")}
+    if region_ids != whole_ids:
+        return text or ""
+    return region
 
 
 def criteria_digests(text: str) -> dict[str, str]:
-    """FR id → digest of that requirement's acceptance criteria."""
+    """FR id → digest of that requirement's acceptance criteria.
+
+    ``strict=False``: this gate's own ``test_prose_outside_a_criterion_is_not_a_criterion_change``
+    requires a note between the heading and its bullets not to hide them — the
+    same documented exception ``group_i_criteria.has_criteria`` makes, tracked
+    together in ``lib.fr_criteria``'s module docstring. S5's fallback
+    (``leading_criteria``) does not extend that tolerance.
+
+    POOLS every block anchored to the same id (external code review, medium,
+    2026-08-25) — the same rule ``fr_criteria.criteria_for`` already applies.
+    ``iter_anchored_blocks``'s anchor surface (any heading level, plus the
+    bold form, plus a looser id shape) makes a doubly-anchored id materially
+    more likely than the old, narrower ``_FR_SECTION_RE`` did; a last-write-wins
+    assignment let a criteria-bearing block be silently overwritten by a LATER,
+    empty one for the same id, collapsing the digest to the empty-criteria
+    value and making this HARD gate see "no change" when there was one.
+    """
     region = _criteria_region(text)
-    matches = list(_FR_SECTION_RE.finditer(region))
+    texts_by_id: dict[str, list[str]] = {}
+    for fr_id, block in fr_criteria.iter_anchored_blocks(region):
+        # Per-block, THEN pool the resulting texts (matches criteria_for's own
+        # pattern) — never concatenate raw lines across a block boundary,
+        # which could misread block B's leading indented line as a
+        # continuation of block A's last, still-open bullet.
+        texts_by_id.setdefault(fr_id, []).extend(
+            fr_criteria.block_criteria(block, strict=False),
+        )
     digests: dict[str, str] = {}
-    for i, match in enumerate(matches):
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(region)
-        joined = "\n".join(_criteria(region[match.end():end]))
-        digests[match.group("fr")] = hashlib.sha256(joined.encode("utf-8")).hexdigest()
+    for fr_id, texts in texts_by_id.items():
+        joined = "\n".join(texts)
+        digests[fr_id] = hashlib.sha256(joined.encode("utf-8")).hexdigest()
     return digests
 
 
