@@ -227,10 +227,14 @@ def test_main_loads_conftest_from_project_root_not_the_scripts_own_repo(tmp_path
         encoding="utf-8",
     )
     monkeypatch.setattr(rfse.subprocess, "run", lambda *a, **k: _FakeProc(0))
-    rc = rfse.main(["--project-root", str(tmp_path), "--run-id", "iterate-x", "--skip-sync"])
-    # Zero discovered roots means zero staged reports and a nonzero exit
-    # (roots_with_no_evidence is empty but roots_total is 0 → still no evidence).
-    assert rc == 0  # no roots discovered ⇒ no_evidence list is empty ⇒ exit 0 (nothing attempted)
+    rc = rfse.main([
+        "--project-root", str(tmp_path), "--run-id", "iterate-x", "--skip-sync",
+        "--head-commit", "deadbeef",
+    ])
+    # Stage-2 review: zero discovered roots produced NO evidence at all — the same
+    # HARD-failure class the module docstring declares for one crashed root, not a
+    # quiet success just because nothing individually returned nonzero.
+    assert rc == 1
     prov_path = tmp_path / ".shipwright" / "compliance" / "evidence" / "_provenance.json"
     assert prov_path.is_file()
     import json  # noqa: PLC0415
@@ -251,8 +255,11 @@ def test_main_clears_stale_evidence_before_running_any_root(tmp_path, monkeypatc
     stale = evidence_dir / "junit.xml"
     stale.write_text("STALE-FROM-BEFORE-THIS-RUN", encoding="utf-8")
     monkeypatch.setattr(rfse.subprocess, "run", lambda *a, **k: _FakeProc(0))
-    rc = rfse.main(["--project-root", str(tmp_path), "--run-id", "iterate-x", "--skip-sync"])
-    assert rc == 0
+    rc = rfse.main([
+        "--project-root", str(tmp_path), "--run-id", "iterate-x", "--skip-sync",
+        "--head-commit", "deadbeef",
+    ])
+    assert rc == 1  # zero roots discovered ⇒ HARD failure (Stage-2 review), unrelated to the clear
     assert not stale.is_file()  # cleared before any root ran, not just at the final stage
 
 
@@ -281,7 +288,7 @@ def test_main_wires_discovery_execution_and_staging_together(tmp_path, monkeypat
 
     rc = rfse.main([
         "--project-root", str(repo_root), "--run-id", "iterate-full-suite-smoke",
-        "--skip-sync",
+        "--skip-sync", "--head-commit", "deadbeef",
     ])
     assert rc == 0
     prov_path = repo_root / ".shipwright" / "compliance" / "evidence" / "_provenance.json"

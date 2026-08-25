@@ -182,16 +182,46 @@ def test_cli_stage_rejects_a_bare_junit_path_among_multiple(tmp_path):
         ])
 
 
-def test_cli_stage_rejects_duplicate_bases(tmp_path):
-    # External-review finding: a duplicate base would silently let the later report
-    # win the id-rebase for both — reject instead of picking a winner quietly.
+def test_cli_stage_allows_a_repeated_base_with_distinct_paths(tmp_path):
+    # Stage-2 review: a duplicate BASE is legal and common — this repo has FOUR
+    # roots that all rebase at base "". Staged entries are an ordered list of
+    # {name, base}; nothing is keyed by base, so nothing silently "wins".
+    r1 = _report(tmp_path, "a.xml", "<testsuites/>")
+    r2 = _report(tmp_path, "b.xml", "<testsuites/>")
+    rc = evidence_drop.main([
+        "stage", "--project-root", str(tmp_path), "--run-id", "iterate-dup",
+        "--junit", f"plugins/x={r1}",
+        "--junit", f"plugins/x={r2}",
+    ])
+    assert rc == 0
+    entries = evidence_drop.read_provenance(tmp_path)["reports"]["junit"]
+    assert [e["base"] for e in entries] == ["plugins/x", "plugins/x"]
+    assert [e["name"] for e in entries] == ["junit-01.xml", "junit-02.xml"]
+
+
+def test_cli_stage_rejects_the_exact_same_base_and_path_twice(tmp_path):
+    # An exact duplicate (base, path) pair is a copy-paste mistake, not a
+    # legitimate multi-root call — still rejected.
     r1 = _report(tmp_path, "a.xml", "<testsuites/>")
     r2 = _report(tmp_path, "b.xml", "<testsuites/>")
     with pytest.raises(SystemExit):
         evidence_drop.main([
             "stage", "--project-root", str(tmp_path), "--run-id", "iterate-dup",
             "--junit", f"plugins/x={r1}",
-            "--junit", f"plugins/x={r2}",
+            "--junit", f"plugins/x={r1}",
+            "--junit", f"plugins/y={r2}",
+        ])
+
+
+def test_cli_stage_rejects_the_same_source_path_under_different_bases(tmp_path):
+    # The identical physical report file staged twice (even under different
+    # bases) is still a mistake — reject on the source path alone.
+    r1 = _report(tmp_path, "a.xml", "<testsuites/>")
+    with pytest.raises(SystemExit):
+        evidence_drop.main([
+            "stage", "--project-root", str(tmp_path), "--run-id", "iterate-dup",
+            "--junit", f"plugins/x={r1}",
+            "--junit", f"plugins/y={r1}",
         ])
 
 

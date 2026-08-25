@@ -14,16 +14,14 @@ when a provenance sidecar exists AND its ``run_id`` equals the current run's —
 guard. No provenance (or a mismatched run_id) ⇒ the gate loads EMPTY evidence ⇒ every layer
 is MISSING ⇒ the gate blocks rather than crediting a stale pass.
 
-**Multi-root JUnit staging (R1a, E-B).** This repo has 18 pytest test-roots (ADR-044: one
-process per root), so one process can never emit a single ``junit.xml`` spanning all of
-them. ``stage_reports``/the CLI accept **repeated** ``--junit <base>=<path>`` so every
-root's report is staged **byte-identical** (E-A — never rewritten) as ``junit-01.xml``
-... ``junit-NN.xml``, with each report's ``base`` (the directory its runner ran in, for
-id-rebase — see ``_evidence_readers.norm_path``) recorded per-report in
-``_provenance.json``. The single-report form ``--junit <path>`` (no ``=``) stays valid —
-base defaults to the project root (``""``) — but is REJECTED as ambiguous once more than
-one ``--junit`` is given: a multi-report call must name every base explicitly, never
-silently default one to the project root.
+**Multi-root JUnit staging (R1a, E-B).** 18 pytest test-roots (ADR-044: one process per
+root) means one process can never emit a single ``junit.xml`` spanning all of them.
+``stage_reports``/the CLI accept **repeated** ``--junit <base>=<path>`` so every root's
+report is staged **byte-identical** (E-A) as ``junit-01.xml`` ... ``junit-NN.xml``, each
+report's ``base`` (the runner's own dir, for id-rebase — see
+``_evidence_readers.norm_path``) recorded per-report in ``_provenance.json``. The bare
+single-report form ``--junit <path>`` (base = project root ``""``) stays valid ONLY when
+sole; a bare path among 2+ is REJECTED as ambiguous, never silently defaulted.
 """
 
 from __future__ import annotations
@@ -73,13 +71,11 @@ def clear_evidence_reports(project_root: Path) -> None:
     stage — a stale artifact left in place is a false-green vector. A genuinely-absent file is
     a no-op; only a real ``OSError`` (lock/permission) propagates.
 
-    Every ``junit-*.xml`` is swept via the glob (E-B), not one fixed name — a prior run may
-    have staged more (or fewer) reports than this one, so a leftover ``junit-07.xml`` from a
-    wider prior run must never survive into a narrower one. Also sweeps the PRE-E-B
-    single-file name (``evidence/junit.xml``, written by any run staged before this
-    iterate) — external-review finding: leaving it in place would make ``discover_reports``'
-    legacy fallback (``_JUNIT_CANDIDATES``) see a stale file once a fresh multi-root run
-    produced zero staged reports, reading a pre-migration report as if it were current.
+    Every ``junit-*.xml`` is swept via the glob (E-B) — a prior run may have staged more
+    (or fewer) reports than this one. Also sweeps the PRE-E-B single-file name
+    (``evidence/junit.xml``, written before this iterate) — external-review finding:
+    left in place, ``discover_reports``' legacy fallback would read it as current once
+    a fresh multi-root run produced zero staged reports.
     """
     d = evidence_dir(project_root)
     targets = [d / name for name in [*REPORT_NAMES.values(), "junit.xml", _PROVENANCE_NAME]]
@@ -205,13 +201,25 @@ def _parse_junit_args(values: list[str]) -> list[tuple[str, str]]:
     given, EVERY value must carry an explicit ``base=`` (an empty base is spelled
     ``=<path>``). A bare path among 2+ values is **rejected**, not silently defaulted
     to the project root (AC: "ein Report ohne Basis wird abgelehnt").
+
+    A **duplicate base is legal and common** — this repo alone has FOUR roots
+    (``integration-tests``, ``shared/tests``, ``shared/scripts/tests``,
+    ``shared/scripts/tools/tests``) that all rebase at base ``""`` (Stage-2 review:
+    rejecting a repeated base broke the workflow E-B exists for, and disagreed with
+    the ``stage_reports``/``run_full_suite_evidence.py`` API path, which never
+    rejected it). Staged entries are an ORDERED LIST of ``{name, base}`` — nothing is
+    keyed by base, so nothing "wins" or is silently overwritten by a same-base
+    sibling. What IS rejected: an exact duplicate ``(base, path)`` pair, or the same
+    source ``path`` given twice under any base — both are a copy-paste mistake,
+    never a legitimate multi-root call.
     """
     if not values:
         return []
     if len(values) == 1 and "=" not in values[0]:
         return [("", values[0])]
     parsed: list[tuple[str, str]] = []
-    seen_bases: set[str] = set()
+    seen_pairs: set[tuple[str, str]] = set()
+    seen_paths: set[str] = set()
     for raw in values:
         if "=" not in raw:
             raise SystemExit(
@@ -219,11 +227,12 @@ def _parse_junit_args(values: list[str]) -> list[tuple[str, str]]:
                 "(use --junit <base>=<path>; an explicit empty base is --junit =<path>)"
             )
         base, _, path = raw.partition("=")
-        # external-review finding: a duplicate base would silently overwrite one root's
-        # id-rebase with another's — reject rather than let the later one win quietly.
-        if base in seen_bases:
-            raise SystemExit(f"--junit: duplicate base {base!r} — each root needs a distinct base")
-        seen_bases.add(base)
+        if (base, path) in seen_pairs:
+            raise SystemExit(f"--junit: duplicate --junit {base!r}={path!r} given twice")
+        if path in seen_paths:
+            raise SystemExit(f"--junit: the same source path {path!r} was given more than once")
+        seen_pairs.add((base, path))
+        seen_paths.add(path)
         parsed.append((base, path))
     return parsed
 

@@ -242,3 +242,24 @@ Both fixes applied before commit; re-ran the full affected test surface after
    subsystem, discovered as a direct, mechanical consequence of testing this
    iterate's own change, per the CLAUDE.md doc-placement rule (a generated
    runtime artifact does not belong in git history once its ignore rule exists).
+
+## Stage-2 orchestrator code review (post-push, 3 real findings)
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | HIGH: `evidence_drop.py`'s CLI duplicate-base rejection broke a real, documented workflow — this repo has FOUR roots (`integration-tests`, `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`) that legitimately share base `""`; the CLI disagreed with the `stage_reports`/`run_full_suite_evidence.py` API path, which never rejected a repeated base | accepted-and-fixed: `_parse_junit_args` now rejects only an exact duplicate `(base, path)` pair or the identical source `path` given twice under any base — both are unambiguous copy-paste mistakes; a repeated base with distinct paths (the real 4-root case) is allowed, matching the API. New tests: `test_cli_stage_allows_a_repeated_base_with_distinct_paths`, `test_cli_stage_rejects_the_exact_same_base_and_path_twice`, `test_cli_stage_rejects_the_same_source_path_under_different_bases`. |
+| 2 | MEDIUM: `run_full_suite_evidence.py` silently exited 0 when zero roots were discovered (e.g. a wrong `--project-root`), contradicting the module's own "a root with NO evidence is a HARD failure" doc, and the guarding test's own comment ("nonzero exit") was immediately followed by `assert rc == 0` | accepted-and-fixed: zero discovered roots now prints a `FAILURE:` line and returns 1 — same HARD-failure class as one individually-crashed root. Fixed the three existing tests whose comments already said "nonzero" to actually assert `rc == 1`, plus the module docstring. |
+| 3 | MEDIUM: `--head-commit` defaulted to `""`, but `_layer_coverage_evidence.fresh_evidence` hard-rejects an empty provenance `head_commit` — a 20-60 minute full-suite run staged without explicitly passing the flag had its ENTIRE evidence silently discarded by the F11 gate; F5.md advertised the flag as "optional" | accepted-and-fixed: the default now resolves via a real `git rev-parse HEAD` in `--project-root`; when that cannot resolve AND no explicit flag was given, the tool refuses to run (`FAILURE:` line, exit 1) rather than waste the pass. "optional" dropped from F5.md, plus a correction to F5.md's claim that the runner stages "via this same CLI" — it calls the `evidence_drop.stage_reports` Python API directly (exactly why its own same-base-`""` reports never hit finding 1's bug). New file `test_run_full_suite_evidence_head_commit.py`: default-resolves, refuses-when-unresolvable, explicit-flag-wins. |
+
+**LOW, checked, no action needed**: the reviewer flagged `.shipwright/compliance/
+test-traceability.json`'s `source_commit` as possibly stale mid-branch. Verified via
+`git diff <fork-point> <HEAD> --stat -- .shipwright/compliance/test-traceability.json`
+— empty output, i.e. this iterate's commit does not touch that file at all (it is one
+of the twelve `DERIVED_SNAPSHOTS`, correctly excluded from every F6 `git add`). The
+reviewer was diffing working-tree exploratory-regen noise, not the committed diff.
+
+All four affected test files re-run after the fixes (`test_evidence_drop.py` 18,
+`test_run_full_suite_evidence.py` 17, `test_run_full_suite_evidence_head_commit.py`
+3, `test_layer_coverage_evidence_multiroot.py` 4 — 42 total, all pass), plus the
+`plugins/shipwright-compliance` execution-evidence suite (38 pass), `ruff` clean,
+and `scripts/verify_local.py` (3/3 gates green).

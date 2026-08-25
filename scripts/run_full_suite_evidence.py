@@ -1,10 +1,11 @@
 """Full-suite execution-evidence runner (R1a, E-D/E-E — repo tool, not a plugin tool).
 
 This repo has 18 pytest test-roots (ADR-044: one root per pytest process — a single
-process cannot emit one ``junit.xml`` spanning them). Coverage evidence (`.shipwright/
-compliance/test-evidence-index.json`) was therefore, until this iterate, always ONE
-root's worth — every other root's tagged tests reported ``MISSING`` even when
-enabled and passing (SPEC §4 P0a). This tool drives every discovered root, one pytest
+process cannot emit one ``junit.xml`` spanning them). Coverage evidence
+(``.shipwright/compliance/test-evidence-index.json``) was therefore, until this
+iterate, always ONE root's worth — every other root's tagged tests reported
+``MISSING`` even when enabled and passing (SPEC §4 P0a). This tool drives every
+discovered root, one pytest
 process at a time, each with its own ``--junitxml``, then stages all of them together
 via ``evidence_drop.stage_reports`` (the E-B multi-report form).
 
@@ -34,7 +35,16 @@ contributed NO evidence at all, which is a materially different, more serious ou
 than "ran and some tests failed" (a red root still emits a valid report, and its
 ``executed: fail`` entries are correct, wanted evidence, not something to suppress).
 This tool never aborts early on one root's failure (ADR-044 exit-4 landmine); it always
-attempts every discovered root and stages whatever reports it collected.
+attempts every discovered root and stages whatever reports it collected. **Discovering
+ZERO roots is the same HARD-failure class** (Stage-2 review), not a vacuous success —
+a wrong ``--project-root`` or a conftest that resolves but returns an empty set
+produces NO evidence at all, identically to every individual root crashing.
+
+``--head-commit`` defaults to ``git rev-parse HEAD`` in ``--project-root`` when not
+given, and refuses to run when that cannot be resolved either (Stage-2 review): the
+consumer, ``_layer_coverage_evidence.fresh_evidence``, hard-rejects an empty provenance
+``head_commit``, so an unresolved default used to silently discard this tool's entire
+20-60 minute pass rather than fail loud.
 """
 
 from __future__ import annotations
@@ -176,7 +186,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", default=str(_REPO_ROOT))
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--head-commit", default="")
+    parser.add_argument(
+        "--head-commit", default=None,
+        help="Defaults to `git rev-parse HEAD` in --project-root. Stage-2 review: "
+             "_layer_coverage_evidence.fresh_evidence hard-rejects an empty "
+             "head_commit, so an unset default silently discarded a full 20-60 "
+             "minute run's entire evidence rather than failing loud.",
+    )
     parser.add_argument(
         "--skip-sync", action="store_true",
         help="Skip `uv sync --extra dev` (assume the root venv already has dev deps).",
@@ -184,6 +200,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = Path(args.project_root).resolve()
+    head_commit = args.head_commit
+    if head_commit is None:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=str(repo_root),
+            capture_output=True, text=True, check=False,
+        )
+        head_commit = proc.stdout.strip() if proc.returncode == 0 else ""
+        if not head_commit:
+            print(
+                "FAILURE: --head-commit was not given and `git rev-parse HEAD` could not "
+                "resolve one in --project-root; staged evidence with no head_commit is "
+                "silently discarded in its entirety by the F11 gate (fresh_evidence hard-"
+                "rejects an empty head_commit) — refusing to run rather than waste the pass.",
+                flush=True,
+            )
+            return 1
     if not args.skip_sync:
         subprocess.run(["uv", "sync", "--extra", "dev"], cwd=str(repo_root), check=True)
 
@@ -216,7 +248,7 @@ def main(argv: list[str] | None = None) -> int:
 
     results = [run_root(plan) for plan in plans]
 
-    prov = stage_all(repo_root, results, run_id=args.run_id, head_commit=args.head_commit)
+    prov = stage_all(repo_root, results, run_id=args.run_id, head_commit=head_commit)
 
     no_evidence = [r.plan.rel_root for r in results if not r.produced_junit]
     failed_tests = [r.plan.rel_root for r in results if r.returncode != 0 and r.produced_junit]
@@ -228,6 +260,13 @@ def main(argv: list[str] | None = None) -> int:
         "run_id": prov.get("run_id"),
     }
     print(json.dumps(summary, indent=2), flush=True)
+    if not results:
+        # Stage-2 review: a conftest that resolves (e.g. wrong --project-root) but
+        # returns an empty root set produced NO evidence at all — the same "HARD
+        # failure" class the module docstring already declares for a single crashed
+        # root, not a quiet success just because nothing individually failed.
+        print("FAILURE: zero test roots discovered — produced NO evidence", flush=True)
+        return 1
     return 1 if no_evidence else 0
 
 
