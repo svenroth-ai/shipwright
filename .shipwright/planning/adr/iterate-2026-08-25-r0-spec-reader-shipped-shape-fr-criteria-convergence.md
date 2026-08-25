@@ -368,6 +368,69 @@ passed, `integration-tests/test_fr_criteria_three_way_convergence.py` 5
 passed, `integration-tests/test_requirements_catalog_parsers.py` 4 passed,
 ruff clean, `verify_local.py` 3/3 gates green — no regression.
 
+## Post-Review Remediation — Stage-3 verification pass, 1 HIGH + 1 MEDIUM + 1 LOW (2026-08-25)
+
+The Stage-3 `### Acceptance Criteria` level-3-heading fix above went
+through a further adversarial verification pass and opened a NEW HIGH
+finding — verified directly against `plugins/shipwright-project`'s actual
+template and an existing pinned test, not speculative. This is the fourth
+consecutive round where fixing a real finding, verified against actual
+producer templates rather than only hand-written fixtures, surfaced
+another real bug — recorded honestly rather than smoothed over.
+
+**HIGH — the region could collapse to nothing, silencing the HARD gate.**
+On a per-FR subheading shape (`### FR-04.01` / `#### Acceptance Criteria`
+/ bullets, REPEATED per FR — the same family
+`group_i_criteria`'s own `test_deeper_subheading_stays_inside_the_block`
+pins as supported), `_AC_HEADING_RE.search` first-matched the DEEPEST
+FR's own "Acceptance Criteria" subheading, then same-rank termination
+fired on the very next FR heading — collapsing the "found" region to one
+FR's bullets with no anchor line inside it at all. `criteria_digests`
+then returned `{}` for the WHOLE document: the level-3 widening fix made
+this WORSE than the old level-2-only regex's honest whole-document
+fallback, on real project-generated specs. Fixed: after computing the
+region, its anchor-id set is compared against the whole document's (both
+via `fr_criteria.iter_anchored_blocks`) — a "found" region's slice is
+always a literal substring of the whole document, so its anchor set is
+structurally always a SUBSET of the whole document's; any inequality
+means the region lost real anchors, and the whole document is scanned
+instead. Regression test added:
+`test_a_per_fr_subheading_shape_repeated_twice_still_covers_both_ids`,
+two FRs, asserting the digest map covers both.
+
+**MEDIUM — the terminator regex didn't actually match the heading rule
+it claimed to mirror.** `fr_criteria._ANY_HEADING` is `^(#{1,6})\s+`
+(hashes THEN required whitespace); the terminator was `^#{1,level}(?!#)`
+— no whitespace requirement, so a bare `#` line with no following space
+(a shebang, a `#comment` inside a fenced code block) could terminate the
+region where it shouldn't. No impact on this repo's own catalog today,
+verified directly. Fixed: the terminator now requires `\s` after the hash
+run, genuinely mirroring `_ANY_HEADING`'s rule. Regression test added:
+`test_a_bare_hash_with_no_trailing_space_does_not_terminate_the_region`.
+
+**LOW (documentation only) — the nested-heading overlap from the prior
+round wasn't documented or pinned.** The nested child FR's criteria are
+also still counted in the PARENT's digest (over-firing, this module's
+preferred failure direction, so not a bug) — but nothing stated or tested
+this explicitly. Fixed: one paragraph added to `iter_anchored_blocks`'s
+docstring, and the existing nested-heading test
+(`test_a_nested_fr_heading_still_gets_its_own_digest_entry`) now also
+asserts the parent's own criteria list (via `fr_criteria.criteria_for`)
+explicitly includes the nested block's text, not just that the two
+digests differ.
+
+None of the three fixes change this ADR's Consequences claims — verified
+directly against this repo's own catalog spec again: `criteria_digests`
+against `.shipwright/planning/01-adopted/spec.md` still finds all 20 FR
+ids (unchanged). Full re-verification: `shared/tests` 152 passed (S5 +
+layer-coverage families) + the anchoring suite's 4 tests, `plugins/
+shipwright-compliance` group_i suites 30 passed,
+`integration-tests/test_fr_criteria_three_way_convergence.py` 5 passed,
+`integration-tests/test_requirements_catalog_parsers.py` 4 passed, ruff
+clean, `verify_local.py` 3/3 gates green, `check_s5_fr_coherence` re-run
+against the real repo identical (WARN, same single pre-existing gap) —
+no regression.
+
 Deferred (triage card filed, kind: improvement, referencing PR #648): the
 cross-layer gate's two newly-widened, unlisted/untested block-termination
 rules (a same-or-lower non-FR heading now ends a block; a criterion line

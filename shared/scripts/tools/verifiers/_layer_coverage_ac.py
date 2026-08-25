@@ -67,16 +67,44 @@ def _criteria_region(text: str) -> str:
     SILENT is the one outcome worse than over-firing. That fallback is meant to
     be a genuine LAST resort, though — not the path every real ``/shipwright-
     project`` spec takes because the heading match was too narrow; the region
-    terminates at the next heading of the SAME OR HIGHER rank, matching
-    ``fr_criteria.iter_anchored_blocks``'s own rule.
+    terminates at the next heading of the SAME OR HIGHER rank — required to be
+    followed by whitespace, exactly ``fr_criteria._ANY_HEADING``'s own rule (a
+    bare ``#`` with no trailing space — a fenced code comment, a shell shebang
+    — must never masquerade as a terminator), matching
+    ``fr_criteria.iter_anchored_blocks``'s own rule (Stage-3 doubt review,
+    medium, 2026-08-25).
+
+    A per-FR subheading shape — ``### FR-04.01`` / ``#### Acceptance
+    Criteria`` / bullets, REPEATED per FR (the exact shape
+    ``group_i_criteria``'s own
+    ``test_deeper_subheading_stays_inside_the_block`` pins as supported) —
+    makes ``_AC_HEADING_RE.search`` first-match the DEEPEST FR's own
+    "Acceptance Criteria" subheading, then same-rank termination fires on the
+    very next FR heading: the "found" region collapses to one FR's bullets
+    with no anchor line inside it at all, and ``criteria_digests`` returns
+    ``{}`` for the WHOLE document — silencing this HARD gate, worse than the
+    old level-2-only regex's honest whole-document fallback (Stage-3 doubt
+    review, high, 2026-08-25). Guarded against by comparing the region's own
+    anchor set to the whole document's: a "found" region must never see
+    STRICTLY FEWER FR ids than scanning the whole document would.
     """
     heading = _AC_HEADING_RE.search(text or "")
     if not heading:
         return text or ""
     level = len(heading.group(1))
     rest = text[heading.end():]
-    following = re.search(rf"^#{{1,{level}}}(?!#)", rest, re.MULTILINE)
-    return rest[:following.start()] if following else rest
+    following = re.search(rf"^#{{1,{level}}}(?!#)\s", rest, re.MULTILINE)
+    region = rest[:following.start()] if following else rest
+
+    # `region` is always a literal slice of `text`, so any anchor line found
+    # scanning it is also found scanning the whole document — region_ids is
+    # therefore ALWAYS a subset of whole_ids; a real mismatch can only mean
+    # the region lost anchors the whole document has (never gained any).
+    region_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(region)}
+    whole_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(text or "")}
+    if region_ids != whole_ids:
+        return text or ""
+    return region
 
 
 def criteria_digests(text: str) -> dict[str, str]:

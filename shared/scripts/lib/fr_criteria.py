@@ -91,18 +91,14 @@ _ASSERTION_MARKER = re.compile(r"^\([A-Za-z]\)\s*")
 _PLACEHOLDERS = frozenset({"tbd", "todo", "tba", "na", "none", "tbc"})
 
 #: A single whole-line italic attribution, e.g. ``_Source: tests._`` —
-#: `/shipwright-adopt`'s real per-FR shape
-#: (``plugins/shipwright-adopt/scripts/lib/spec_document.py:181-184``,
-#: emitted whenever an FR carries mined/enriched criteria:
-#: ``generate_adoption_artifacts.py:308`` / ``:376``). Tolerated as the ONE
+#: `/shipwright-adopt`'s real per-FR shape (``spec_document.py:181-184``,
+#: ``generate_adoption_artifacts.py:308``/``:376``). Tolerated as the ONE
 #: exception to "first non-blank line must be a bullet" — narrower than
-#: ``strict=False``'s whole-block permissive scan, because it only ever
-#: skips a single, syntactically-marked (wrapped in ``_..._``) line, not
-#: arbitrary prose (Stage-3 doubt review, high, 2026-08-25: without this,
-#: ``strict=True`` — the shared default since Stage-1 — read ZERO criteria
-#: from every real adopt-generated FR, while I6/the cross-layer gate
-#: (``strict=False``) still saw them: AC-1's divergence, reintroduced on
-#: real producer bytes).
+#: ``strict=False``'s whole-block scan, only one syntactically-marked line,
+#: not arbitrary prose (Stage-3 doubt review, high, 2026-08-25: without
+#: this, real adopt output read ZERO criteria under the shared default
+#: while ``strict=False`` callers still saw them — AC-1's divergence,
+#: reintroduced on real producer bytes).
 _LEADING_ATTRIBUTION_RE = re.compile(r"^_[^_\n]+_\.?\s*$")
 
 
@@ -174,6 +170,12 @@ def iter_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
     jump skipped that — a nested id was swallowed into its parent's span
     and never anchored at all, so it got no digest entry on EITHER side of
     a diff and ``criteria_changed_keys`` could never see it change.
+
+    That fix does not separate the two spans: the parent's block still
+    includes every line up to its own terminator, so a nested child's text
+    is pooled into the PARENT's criteria too, not just its own — over-firing,
+    this module's preferred failure direction, not a bug (Stage-3 doubt
+    review, low, 2026-08-25).
     """
     lines = content.splitlines()
     n = len(lines)
