@@ -315,8 +315,10 @@ def compute_fr_coherence(project_root: Path) -> FRCoherenceReport:
             continue
         rel = path.relative_to(project_root).as_posix()
         scanned.append(rel)
-        # Only a NON-EMPTY cell exempts a heading (external review 2026-08-25).
-        table_row_ids = {r.id for r in fr_table_reader.read_fr_rows(text) if r.text.strip()}
+        # A NON-EMPTY cell exempts (external review 2026-08-25) — but not a
+        # Name-only fallback with no real Description column (trg-467b7b2f).
+        table_row_ids = {r.id for r in fr_table_reader.read_fr_rows(text)
+                          if r.text.strip() and r.text.strip() != r.name.strip()}
         for h in headings:
             total += 1
             has_desc = h.has_description() or h.id in table_row_ids

@@ -152,10 +152,11 @@ def iter_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
     form) in document order.
 
     A block runs from just after its anchor to the next heading of the SAME
-    OR HIGHER rank (for a heading anchor) or ANY heading (for a bold anchor,
-    which has no rank), or the next FR-shaped bold anchor — whichever comes
-    first. A ``| FR-XX.YY | … |`` table row never opens a block: neither
-    anchor regex matches a pipe-prefixed line.
+    OR HIGHER rank (for a heading anchor, need NOT itself be FR-shaped — a
+    deliberate widening, pinned in ``test_fr_criteria_parsing.py``) or ANY
+    heading (for a bold anchor, which has no rank), or the next FR-shaped
+    bold anchor — whichever comes first. A ``| FR-XX.YY | … |`` table row
+    never opens a block: neither anchor regex matches a pipe-prefixed line.
 
     An id may legitimately be anchored more than once; each occurrence is
     yielded as its own block rather than merged, matching every caller's

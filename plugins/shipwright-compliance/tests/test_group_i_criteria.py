@@ -22,7 +22,7 @@ from pathlib import Path
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT))
 
-from scripts.audit.group_i_criteria import has_criteria  # noqa: E402
+from scripts.audit.group_i_criteria import criteria_for, has_criteria  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -212,3 +212,22 @@ def test_real_criterion_alongside_a_placeholder_counts():
 - (E) Given a real criterion, when parsed, then the block is not empty.
 """
     assert has_criteria(block, "FR-05.02") is True
+
+
+# ---------------------------------------------------------------------------
+# criteria_for — I6's own entry point for the LIST, not just has_criteria's
+# boolean (doubt-review round 1, 2026-08-25, trg-467b7b2f). The convergence
+# test in integration-tests/ calls this same function via a subprocess bridge
+# (ADR-044); this in-process call is what gives it direct diff coverage.
+# ---------------------------------------------------------------------------
+
+def test_criteria_for_returns_the_criteria_list():
+    assert criteria_for(_HEADING_FORM, "FR-01.01") == [
+        "Given a described change, when the pipeline is run, then the phases "
+        "execute in order.",
+        "Given a phase fails, when the run continues, then it stops.",
+    ]
+
+
+def test_criteria_for_is_empty_when_there_is_no_block():
+    assert criteria_for(_HEADING_FORM, "FR-01.09") == []
