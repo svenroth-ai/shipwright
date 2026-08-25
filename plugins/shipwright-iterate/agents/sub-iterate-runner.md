@@ -13,7 +13,8 @@ You work on the project directly (no worktree).
 ## Input
 
 You receive these parameters in the prompt:
-- `sub_iterate_id`: ID of this sub-iterate (e.g., `14.2`)
+- `sub_iterate_id`: ID of this sub-iterate (e.g., `14.2`, or uppercase `R0`); `run_id` below lowercases it when embedding — Step 3.4 rejects a malformed `run_id` now, not F5c hours later.
+- `run_id`: minted by the orchestrator, already lowercase (`RUN_ID_STRICT`, SKILL.md §C).
 - `sub_iterate_spec`: Absolute path to the sub-iterate spec file
 - `campaign_path`: Absolute path to the campaign directory
 - `project_root`: Absolute path to the project root
@@ -65,7 +66,7 @@ uv run "{plugin_root}/scripts/lib/diff_risk_recheck.py" \
 Pass Step 2's flags as a COMMA list (a raw JSON array is tolerated) — seven canonical flags
 have no diff-driven detector, so they are UNIONED in; dropping them makes 3.5 skip cases the
 old rule ran. Change set = `{base_branch}` → **working tree**: you commit at F6, so a committed
-range is EMPTY here and the check would silently pass. **Capture stdout AND exit status.**
+range is EMPTY here and the check would silently pass. **Capture stdout AND exit status.** Also the FIRST script call to receive `{run_id}`; it rejects a non-canonical shape immediately (exit 2, case 3 below) — do not "fix" it yourself, return `status:"failed"` and let the orchestrator re-mint.
 
 1. **Exit 3 — STOP.** Do **not** write the CI acknowledgement yourself. Return the
    escalation result-JSON with `reason_code: "ci_supplychain_requires_operator"` + the
@@ -84,9 +85,7 @@ After Step 3.4 and before Finalization, run the external LLM plan review the SKI
 Step 4 (External LLM Review) gate requires for medium+ iterates. Mirror of
 `references/iteration-planning.md` Step 4 with Branch A / Branch B / Branch C semantics.
 
-**Trigger** — identical to Step 3.7's, from Step 3.4's `plan_review_required`:
-effective complexity `medium`+, OR any canonical risk flag, OR diff > 100 lines.
-Before alignment 3.5 lacked the diff-size arm 3.7 had, so a `small` unit skipped it.
+**Trigger** — identical to Step 3.7's, from Step 3.4's `plan_review_required`: effective complexity `medium`+, OR any canonical risk flag, OR diff > 100 lines (before alignment 3.5 lacked this diff-size arm, so a `small` unit skipped it).
 
 **Skip** only when none of the three hold. Procedure:
 

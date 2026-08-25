@@ -1,0 +1,86 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-25-campaign-run-id-lowercase-mint",
+    "date": "2026-08-25",
+    "unit": {
+      "status": "passed",
+      "passed": 948,
+      "total": 949,
+      "note": "plugins/shipwright-iterate: 948 passed, 1 skipped (pre-existing bash-dependent skip, unrelated to this change)."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 526,
+      "total": 528,
+      "note": "integration-tests/: 526 passed, 2 deselected (pre-existing, unrelated)."
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database in this framework repo"
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "no browser surface; this is CLI + skill-prose machinery"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 27,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-25-campaign-run-id-lowercase-mint/f05-surface/",
+      "detail": "test_diff_risk_recheck_persistence.py driven end-to-end against the real diff_risk_recheck.py CLI: 27 tests, exit 0. Covers the literal R0 incident run_id (rejected, exit 2), mixed-case/unshaped/short-date variants (rejected), the lowercased fix (accepted, exit 0, artifact written), and the cross-module RUN_ID_STRICT pinning test."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a non-canonical (e.g. uppercase-embedded) run_id is rejected at Step 3.4, exit 2, actionable message, no artifact written",
+          "disposition": "tested",
+          "evidence": "test_main_rejects_a_run_id_run_id_strict_would_reject[iterate-2026-08-25-R0-spec-reader-shipped-shape / Mixed-Case / not-even-shaped-like-a-run-id / iterate-2026-8-25-short-date] PASSED"
+        },
+        {
+          "behavior": "a correctly pre-lowercased run_id (per campaign-mode.md step 3b's new instruction) is accepted by sub-iterate-runner's Step 3.4 script, exit 0, artifact written",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_main_accepts_a_run_id_run_id_strict_accepts PASSED \u2014 proves the orchestrator-side minting instruction and the runner-side Step 3.4 validation agree on the same shape end-to-end"
+        },
+        {
+          "behavior": "all three RUN_ID_STRICT copies (shared/scripts/lib/iterate_entry.py, session_plan.py, diff_risk_recheck.py) stay byte-identical, so none can drift alone",
+          "disposition": "tested",
+          "evidence": "test_run_id_strict_pinned_to_shared_iterate_entry PASSED"
+        },
+        {
+          "behavior": "no regression to pre-existing diff_risk_recheck.py / diff_change_set.py behavior for a valid run_id",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-iterate full suite (948 passed, 1 pre-existing skip) + integration-tests/ (526 passed, 2 pre-existing deselected)"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-25-campaign-run-id-lowercase-mint",
+    "commit": "d351f642c51de14a6187e36778bc4784f219fdcc",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
