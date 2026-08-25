@@ -27,6 +27,19 @@ def _discovery():
     return mod
 
 
+def _iter_candidate_specs(planning: Path):
+    """The walk ``run_review`` samples its one attached spec from.
+
+    Extracted (S2b pass A) so the golden corpus can invoke this walk
+    directly and behaviourally, in addition to the source-hash freeze that
+    still covers ``run_review`` as a whole (it also calls an external LLM,
+    so it stays frozen at SOURCE level). ``sort=False``: which split is
+    sampled is filesystem-iteration-order dependent, as it always was --
+    unchanged by this extraction.
+    """
+    return _discovery().iter_spec_files(planning, recursive=True, sort=False)
+
+
 def _locate_llm_review() -> Path | None:
     here = Path(__file__).resolve()
     for ancestor in [here, *here.parents]:
@@ -122,7 +135,7 @@ def run_review(
     # Add first split spec. sort=False: which split is sampled is
     # filesystem-iteration-order dependent, as it always was.
     planning = project_root / ".shipwright" / "planning"
-    for spec in _discovery().iter_spec_files(planning, recursive=True, sort=False):
+    for spec in _iter_candidate_specs(planning):
         parts.append(f"## {spec.relative_to(project_root).as_posix()}\n\n{spec.read_text(encoding='utf-8')}\n")
         break
     content = "\n\n---\n\n".join(parts)

@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "iterate-2026-08-05-llm-review-gateway-route: review_runner.run_review's _has_any_api_key() gate widened to also recognize a configured SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL (issue #547) -- fixes the gateway route being unreachable from Adopt's Layer-3 review, found by Stage-2 code review. Source line count 119->120, one added env check.",
+  "regenerated_for": "S2b pass A: review_runner walk extracted and registered; recursive-branch guard/require now raise",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -1695,9 +1695,111 @@
       },
       "kind": "invoked"
     },
+    "disc.review_runner._iter_candidate_specs": {
+      "fixtures": {
+        "absent": {
+          "consumed_type": "list",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": []
+        },
+        "brownfield-single-split": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/<unordered-pick>"
+          ]
+        },
+        "edge": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>"
+          ]
+        },
+        "empty": {
+          "consumed_type": "list",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": []
+        },
+        "greenfield-multi-split": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>"
+          ]
+        },
+        "malformed": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/<unordered-pick>"
+          ]
+        },
+        "mixed-shape": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>",
+            "<root>/<unordered-pick>"
+          ]
+        },
+        "planning-file": {
+          "consumed_type": "list",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": []
+        },
+        "spec-dir": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
+          ]
+        },
+        "zero-row-parse": {
+          "consumed_type": "list[Path]",
+          "outcome": "returned",
+          "type": "generator",
+          "unordered_walk": true,
+          "value": [
+            "<root>/<unordered-pick>"
+          ]
+        }
+      },
+      "kind": "invoked"
+    },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "90763bb51dda65030eabf47e026498db53d25fc32355e89ec934327a35a4efed",
+      "sha256": "cc9bfbc578e97d97a6985f7c7d6423654e13d27b387c21cf35325451f7be7bb1",
       "source_lines": 120
     },
     "disc.rtm.collect_external_review_states": {

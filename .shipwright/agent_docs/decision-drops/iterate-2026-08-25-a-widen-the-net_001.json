@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-25-a-widen-the-net",
+  "date": "2026-08-26",
+  "section": "S2b pass A — campaign s2b-discovery-convergence",
+  "title": "review_runner walk extracted+registered; recursive guard/require now raise",
+  "context": "S2 froze review_runner.run_review only by source-hash (it also calls an external LLM), so an argument change invisible to line count was untested. Separately iter_spec_files' recursive branch silently ignored non-default guard/require: recursive=True, require=is_file ran clean and did nothing for #6/#11.",
+  "decision": "Extract the walk into review_runner._iter_candidate_specs; add a 17th DISCOVERY entry (invoke=planning_dir, order_sensitive) that behaviourally freezes it -- the old source_only run_review entry stays (additive 16->17). iter_spec_files becomes an eager wrapper around a lazy inner generator: recursive=True with guard!=is_dir or require!=exists now raises ValueError at call time; the pre-existing require-membership check stays lazy, unchanged.",
+  "consequences": "run_review's source_only sha256 moves (expected). registry.py crosses 300 lines (299->311), a new undeclared bloat overage, not pre-commit-blocked, visible to Group-H post-merge audit; no baseline edit made. All 5 real recursive call sites pass only recursive=/sort=, so none hit the new ValueError. golden.json regenerated with the exact required reason string.",
+  "rationale": "Zero behavior change verified: new entry's per-fixture counts cross-checked against the identically-shaped setup_design_session.find_specs entry, exact match across all 10 fixtures. External plan+code review caught an over-eager validation-timing risk (require check should stay lazy); fixed, then regen_golden --check confirmed byte-identical.",
+  "rejected": "Sentinel-based explicit-vs-default detection for guard/require -- rejected because A3 requires every call site to pass flags explicitly, which would then falsely trip a sentinel-based check.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
