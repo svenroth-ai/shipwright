@@ -222,11 +222,12 @@ def test_real_criterion_alongside_a_placeholder_counts():
 # ---------------------------------------------------------------------------
 
 def test_criteria_for_returns_the_criteria_list():
-    assert criteria_for(_HEADING_FORM, "FR-01.01") == [
+    first = (
         "Given a described change, when the pipeline is run, then the phases "
-        "execute in order.",
-        "Given a phase fails, when the run continues, then it stops.",
-    ]
+        "execute in order."
+    )
+    second = "Given a phase fails, when the run continues, then it stops."
+    assert criteria_for(_HEADING_FORM, "FR-01.01") == [first, second]
 
 
 def test_criteria_for_is_empty_when_there_is_no_block():
