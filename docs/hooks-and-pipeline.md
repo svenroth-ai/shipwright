@@ -3338,6 +3338,28 @@ uv run "{shared_root}/scripts/tools/run_test_suite.py" \
 | **Long-run visibility** | The canonical parent emits locked, ASCII-safe, length-capped queued/start/completion records per unit plus periodic run-id/completed/total/elapsed heartbeats. During an authoritative serial retry, completed means final unit verdicts and `initial_completed` separately reports returned first attempts. After a proven interruption, exhaustive disjoint file shards of only the affected pytest root are permitted for diagnosis, with one root per process and explicit JUnit/exit evidence. They are never an F0 verdict: the complete canonical runner must still exit zero before F1. |
 | **Opt-in** | No `suite` block → the runner refuses with an actionable message and F0 keeps the project's own test command. Adopted projects are unaffected. |
 
+**A sibling, different-purpose tool: `scripts/run_full_suite_evidence.py` (R1a,
+E-D/E-E).** F0 above runs the whole suite too, but its JUnit reports are never staged
+for the cross-layer compliance gate — it exists to verify THIS iterate's diff, not to
+produce requirement→test execution evidence. Before this iterate, only ONE test-root's
+report was ever staged via `evidence_drop.py stage` (SPEC §4 P0a: 149 enabled, passing
+unit tests on FR-01.06 alone, and the FR still read `unit: MISSING`), because `stage`
+took exactly one `--junit`. `evidence_drop.py stage` now accepts **repeated**
+`--junit <base>=<path>` (`references/F5.md` in shipwright-iterate has the exact form),
+storing each pytest-root's report byte-identical as `junit-01.xml` .. `junit-NN.xml`
+with its `base` recorded per-report in `_provenance.json` for cross-root id-rebase.
+`scripts/run_full_suite_evidence.py` is the **repo tool** (not a plugin tool — it drives
+the whole repo, not one phase) that exercises that repeatable form for a genuine
+full-repo evidence pass: it derives BOTH the root list AND each root's id-rebase base
+from `conftest.py::discover_test_roots` — the SAME function the ADR-044 pytest guard
+uses — so there is no second hand-maintained root table to drift, and a new
+`plugins/<name>/tests` is picked up with zero code changes. It drives each root as its
+own pytest process (ADR-044: one root per process), mirroring `ci.yml`'s own per-root
+invocation shape (`cd` into a plugin dir vs. run from the repo root with `-m "not slow
+and not cross_plugin"` for the `shared/` family), then stages every produced report
+together via the same `evidence_drop.stage_reports` E-B form. Root list and staging are
+therefore driven by real discovery + the real emit-side contract, not duplicated logic.
+
 **F0 is an accelerated PRE-gate.** The retries remove false STOPs, but they cannot
 prove serial equivalence for units that *passed* — a test passing only *because* of
 parallelism would not be caught. **`ci.yml` therefore stays SERIAL by design** and is

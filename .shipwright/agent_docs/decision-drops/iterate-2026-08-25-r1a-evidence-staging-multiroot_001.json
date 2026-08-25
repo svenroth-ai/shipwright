@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-25-r1a-evidence-staging-multiroot",
+  "date": "2026-08-25",
+  "section": "R1a: evidence-staging-multiroot",
+  "title": "Repeatable multi-root JUnit staging for execution evidence",
+  "context": "18 pytest roots (ADR-044) but evidence_drop.py stage took ONE --junit, so only one root's report was ever staged; every other root's tests read MISSING coverage (SPEC 4 P0a: FR-01.06 had 149 enabled tests, still MISSING).",
+  "decision": "stage now accepts repeatable --junit <base>=<path> (E-B), staged byte-identical as junit-01..NN.xml with per-report base in _provenance.json; build_index/refresh_index/fresh_evidence thread bases through (E-C); new repo tool scripts/run_full_suite_evidence.py drives all 18 roots, deriving roots+bases from conftest.py discover_test_roots (E-D/E-E).",
+  "consequences": "A full-suite run produces genuine cross-root coverage evidence; clear sweeps every junit-*.xml plus the pre-migration single junit.xml; a staged report with no matching provenance base is rejected, not defaulted to base=empty.",
+  "rationale": "",
+  "rejected": "Merging raw XML into one file before staging (loses byte-identity, E-A); a hand-maintained root-to-base table in the runner (E-E, rots on new plugin).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md"
+}

@@ -13,6 +13,17 @@ Freshness contract (consumer side, :func:`evidence_is_fresh`): evidence is trust
 when a provenance sidecar exists AND its ``run_id`` equals the current run's — a fail-closed
 guard. No provenance (or a mismatched run_id) ⇒ the gate loads EMPTY evidence ⇒ every layer
 is MISSING ⇒ the gate blocks rather than crediting a stale pass.
+
+**Multi-root JUnit staging (R1a, E-B).** This repo has 18 pytest test-roots (ADR-044: one
+process per root), so one process can never emit a single ``junit.xml`` spanning all of
+them. ``stage_reports``/the CLI accept **repeated** ``--junit <base>=<path>`` so every
+root's report is staged **byte-identical** (E-A — never rewritten) as ``junit-01.xml``
+... ``junit-NN.xml``, with each report's ``base`` (the directory its runner ran in, for
+id-rebase — see ``_evidence_readers.norm_path``) recorded per-report in
+``_provenance.json``. The single-report form ``--junit <path>`` (no ``=``) stays valid —
+base defaults to the project root (``""``) — but is REJECTED as ambiguous once more than
+one ``--junit`` is given: a multi-report call must name every base explicitly, never
+silently default one to the project root.
 """
 
 from __future__ import annotations
@@ -24,12 +35,18 @@ from pathlib import Path
 
 _EVIDENCE_DIR = (".shipwright", "compliance", "evidence")  # artifact-path-canon: legacy
 _PROVENANCE_NAME = "_provenance.json"
-# Conventional drop filenames refresh_index discovers (mirrors _execution_evidence_io).
+# Conventional single-file drop names refresh_index discovers (mirrors
+# _execution_evidence_io). JUnit is NOT single-file any more (E-B) — it is staged as
+# junit-01.xml .. junit-NN.xml, discovered via the JUNIT_GLOB pattern below.
 REPORT_NAMES: dict[str, str] = {
-    "junit": "junit.xml",
     "playwright": "playwright.json",
     "vitest": "vitest.json",
 }
+JUNIT_GLOB = "junit-*.xml"
+
+
+def _junit_report_name(index: int) -> str:
+    return f"junit-{index:02d}.xml"
 
 
 def evidence_dir(project_root: Path) -> Path:
@@ -55,11 +72,20 @@ def clear_evidence_reports(project_root: Path) -> None:
     swallowed (MUST-FIX 2): if an old report/index cannot be purged we must NOT proceed to
     stage — a stale artifact left in place is a false-green vector. A genuinely-absent file is
     a no-op; only a real ``OSError`` (lock/permission) propagates.
+
+    Every ``junit-*.xml`` is swept via the glob (E-B), not one fixed name — a prior run may
+    have staged more (or fewer) reports than this one, so a leftover ``junit-07.xml`` from a
+    wider prior run must never survive into a narrower one. Also sweeps the PRE-E-B
+    single-file name (``evidence/junit.xml``, written by any run staged before this
+    iterate) — external-review finding: leaving it in place would make ``discover_reports``'
+    legacy fallback (``_JUNIT_CANDIDATES``) see a stale file once a fresh multi-root run
+    produced zero staged reports, reading a pre-migration report as if it were current.
     """
     d = evidence_dir(project_root)
-    for target in [d / name for name in list(REPORT_NAMES.values()) + [_PROVENANCE_NAME]] + [
-        _index_path(project_root)
-    ]:
+    targets = [d / name for name in [*REPORT_NAMES.values(), "junit.xml", _PROVENANCE_NAME]]
+    targets += sorted(d.glob(JUNIT_GLOB))
+    targets.append(_index_path(project_root))
+    for target in targets:
         if target.is_file():
             target.unlink()  # raise on failure — a stale artifact must never survive a clear
 
@@ -70,6 +96,7 @@ def stage_reports(
     run_id: str,
     head_commit: str = "",
     junit: Path | str | None = None,
+    junit_reports: list[tuple[str, Path | str]] | None = None,
     playwright: Path | str | None = None,
     vitest: Path | str | None = None,
 ) -> dict:
@@ -79,13 +106,47 @@ def stage_reports(
     A source path that does not exist is skipped (never fabricates evidence). ``run_id``
     is the freshness key the gate checks; ``head_commit`` + per-report mtime are recorded
     for audit (a report older than the run is visible in the sidecar).
+
+    ``junit`` is the legacy single-report form (base = project root, ``""``).
+    ``junit_reports`` (E-B) is the multi-root form: an ordered ``[(base, path), ...]``
+    list, one entry per pytest-root's report — each is staged **byte-identical** (E-A)
+    as ``junit-01.xml`` .. ``junit-NN.xml`` (numbering only the ones that actually
+    exist; a missing source is skipped, never fabricated, exactly like the single-report
+    form). When both ``junit`` and ``junit_reports`` are given, ``junit`` is treated as
+    an additional entry with base ``""``, prepended.
     """
     d = evidence_dir(project_root)
     d.mkdir(parents=True, exist_ok=True)
     clear_evidence_reports(project_root)
 
-    staged: dict[str, dict] = {}
-    for key, src in (("junit", junit), ("playwright", playwright), ("vitest", vitest)):
+    staged: dict[str, object] = {}
+
+    junit_sources: list[tuple[str, Path]] = []
+    if junit is not None:
+        junit_sources.append(("", Path(junit)))
+    for base, src in junit_reports or []:
+        junit_sources.append((str(base), Path(src)))
+
+    junit_entries: list[dict] = []
+    index = 0
+    for base, src_path in junit_sources:
+        if not src_path.is_file():
+            continue  # never fabricates evidence for a report that does not exist
+        index += 1
+        name = _junit_report_name(index)
+        dest = d / name
+        shutil.copyfile(src_path, dest)  # raise on failure — provenance must not claim an unstaged report
+        junit_entries.append({
+            "name": name,
+            "base": base,
+            "mtime": datetime.fromtimestamp(
+                dest.stat().st_mtime, tz=timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        })
+    if junit_entries:
+        staged["junit"] = junit_entries
+
+    for key, src in (("playwright", playwright), ("vitest", vitest)):
         if src is None:
             continue
         src_path = Path(src)
@@ -135,15 +196,53 @@ def evidence_is_fresh(project_root: Path, run_id: str) -> bool:
     return str(prov.get("run_id", "")) == run_id and bool(prov.get("reports"))
 
 
+def _parse_junit_args(values: list[str]) -> list[tuple[str, str]]:
+    """Parse repeated ``--junit`` CLI values into ``[(base, path), ...]`` (E-B/E-C).
+
+    Each value is either ``<path>`` (bare — legacy single-report form, base = project
+    root ``""``) or ``<base>=<path>`` (E-B repeatable multi-root form). The bare form is
+    ONLY accepted when it is the SOLE ``--junit`` — as soon as a second ``--junit`` is
+    given, EVERY value must carry an explicit ``base=`` (an empty base is spelled
+    ``=<path>``). A bare path among 2+ values is **rejected**, not silently defaulted
+    to the project root (AC: "ein Report ohne Basis wird abgelehnt").
+    """
+    if not values:
+        return []
+    if len(values) == 1 and "=" not in values[0]:
+        return [("", values[0])]
+    parsed: list[tuple[str, str]] = []
+    seen_bases: set[str] = set()
+    for raw in values:
+        if "=" not in raw:
+            raise SystemExit(
+                f"--junit {raw!r}: a base is required once more than one --junit is given "
+                "(use --junit <base>=<path>; an explicit empty base is --junit =<path>)"
+            )
+        base, _, path = raw.partition("=")
+        # external-review finding: a duplicate base would silently overwrite one root's
+        # id-rebase with another's — reject rather than let the later one win quietly.
+        if base in seen_bases:
+            raise SystemExit(f"--junit: duplicate base {base!r} — each root needs a distinct base")
+        seen_bases.add(base)
+        parsed.append((base, path))
+    return parsed
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI so the iterate F0.5/F5 lifecycle can drive the emit-side without embedding it
     in (and ratcheting) the grandfathered ``surface_verification.py``. ``clear`` empties
     the evidence dir before a run; ``stage`` drops this run's reports + provenance after.
 
         uv run shared/scripts/lib/evidence_drop.py clear   --project-root .
+        # single report (legacy form, base = project root):
         uv run shared/scripts/lib/evidence_drop.py stage --project-root . \\
             --run-id iterate-2026-07-15-foo --head-commit "$(git rev-parse HEAD)" \\
             --junit junit.xml --playwright test-results.json --vitest vitest-report.json
+        # N reports, one per pytest test-root (E-B — repeatable, base required per flag):
+        uv run shared/scripts/lib/evidence_drop.py stage --project-root . \\
+            --run-id iterate-2026-08-25-foo --head-commit "$(git rev-parse HEAD)" \\
+            --junit =.shipwright/runs/full-suite/shared-tests.xml \\
+            --junit plugins/shipwright-compliance=.shipwright/runs/full-suite/shipwright-compliance.xml
     """
     import argparse  # noqa: PLC0415 — CLI-only
 
@@ -155,7 +254,10 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--project-root", required=True)
     s.add_argument("--run-id", required=True)
     s.add_argument("--head-commit", default="")
-    s.add_argument("--junit", default=None)
+    s.add_argument(
+        "--junit", action="append", default=[],
+        help="<path> (single-report, base=project root) or <base>=<path> (repeatable)",
+    )
     s.add_argument("--playwright", default=None)
     s.add_argument("--vitest", default=None)
     args = parser.parse_args(argv)
@@ -165,9 +267,10 @@ def main(argv: list[str] | None = None) -> int:
         clear_evidence_reports(root)
         print(json.dumps({"cleared": str(evidence_dir(root))}))
         return 0
+    junit_reports = _parse_junit_args(args.junit)
     prov = stage_reports(
         root, run_id=args.run_id, head_commit=args.head_commit,
-        junit=args.junit, playwright=args.playwright, vitest=args.vitest,
+        junit_reports=junit_reports, playwright=args.playwright, vitest=args.vitest,
     )
     print(json.dumps({"staged": sorted(prov.get("reports", {})), "run_id": prov.get("run_id")}))
     return 0
@@ -175,6 +278,7 @@ def main(argv: list[str] | None = None) -> int:
 
 __all__ = [
     "REPORT_NAMES",
+    "JUNIT_GLOB",
     "evidence_dir",
     "clear_evidence_reports",
     "stage_reports",

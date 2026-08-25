@@ -16,6 +16,18 @@ NO HEAD check — a stale all-pass report re-ingests as "fresh". The emit-side o
 (TT5) MUST clear ``.shipwright/compliance/evidence/`` per run and record report
 provenance; a consumer must NOT treat ``generated_at`` as proof the evidence matches
 the current HEAD.
+
+**Multi-root JUnit (R1a, E-C).** ``evidence_drop.stage_reports`` stages one JUnit file
+PER pytest test-root (ADR-044) as ``junit-01.xml`` .. ``junit-NN.xml``, each report's
+``base`` (the dir its runner ran in, for id-rebase) recorded per-report in
+``_provenance.json``. When those staged reports exist, ``discover_reports`` returns ALL
+of them (not just one) and ``refresh_index`` reads EACH with its OWN base so a
+cross-root id actually joins. A report file discovered under the staged convention with
+no matching (or malformed) provenance entry is **rejected** — skipped, not silently
+read at base="" — because a wrong base does not fail to join (safe); it can join the
+WRONG id (unsafe). The legacy single-file fallback (``junit.xml`` at the conventional
+or a bare repo-root/``test-results/`` location, no provenance at all) is unaffected:
+base="" there, exactly as before.
 """
 
 from __future__ import annotations
@@ -32,6 +44,7 @@ from .execution_evidence import build_index
 _JUNIT_CANDIDATES = (".shipwright/compliance/evidence/junit.xml", "junit.xml", "test-results/junit.xml")
 _PLAYWRIGHT_CANDIDATES = (".shipwright/compliance/evidence/playwright.json", "test-results.json", "playwright-report/results.json")
 _VITEST_CANDIDATES = (".shipwright/compliance/evidence/vitest.json", "vitest-report.json")
+_JUNIT_GLOB = "junit-*.xml"  # evidence_drop's multi-root staging convention (E-B)
 
 
 def _first_existing(root: Path, candidates: tuple[str, ...]) -> Path | None:
@@ -42,12 +55,31 @@ def _first_existing(root: Path, candidates: tuple[str, ...]) -> Path | None:
     return None
 
 
+def _staged_junit_reports(root: Path) -> list[Path]:
+    """All evidence_drop-staged ``junit-NN.xml`` reports (E-B), sorted by name."""
+    d = root / ".shipwright" / "compliance" / "evidence"
+    if not d.is_dir():
+        return []
+    return sorted(d.glob(_JUNIT_GLOB))
+
+
 def discover_reports(project_root: Path) -> dict:
-    """Locate raw runner reports under the conventional drop locations."""
+    """Locate raw runner reports under the conventional drop locations.
+
+    ``found["junit"]`` is always a **list** of paths (E-C — 1+ staged reports, or a
+    single legacy-fallback file); ``playwright``/``vitest`` stay single ``Path``s
+    (unaffected — this repo's multi-root problem is pytest-specific, ADR-044).
+    """
     root = Path(project_root)
     found: dict = {}
+    staged = _staged_junit_reports(root)
+    if staged:
+        found["junit"] = staged
+    else:
+        hit = _first_existing(root, _JUNIT_CANDIDATES)
+        if hit is not None:
+            found["junit"] = [hit]
     for key, cands in (
-        ("junit", _JUNIT_CANDIDATES),
         ("playwright", _PLAYWRIGHT_CANDIDATES),
         ("vitest", _VITEST_CANDIDATES),
     ):
@@ -55,6 +87,29 @@ def discover_reports(project_root: Path) -> dict:
         if hit is not None:
             found[key] = hit
     return found
+
+
+def _junit_bases_from_provenance(evidence_d: Path) -> dict[str, str]:
+    """``{report filename: base}`` for every staged JUnit report (E-C).
+
+    Missing/corrupt provenance, or an entry missing ``name``/``base``, is simply
+    ABSENT from the returned map — the caller then rejects (skips) that report
+    rather than guessing a base for it (fail-closed: see module docstring).
+    """
+    prov_path = evidence_d / "_provenance.json"
+    if not prov_path.is_file():
+        return {}
+    data = _read_json(prov_path)
+    if not isinstance(data, dict):
+        return {}
+    entries = (data.get("reports") or {}).get("junit")
+    if not isinstance(entries, list):
+        return {}
+    out: dict[str, str] = {}
+    for entry in entries:
+        if isinstance(entry, dict) and "name" in entry and "base" in entry:
+            out[str(entry["name"])] = str(entry["base"])
+    return out
 
 
 def _read_text(path: Path) -> str | None:
@@ -100,18 +155,52 @@ def refresh_index(project_root: Path) -> Path | None:
     Returns the written path, or ``None`` when no report exists (leaving any prior
     index untouched — fail-closed at the consumer). Paths are normalized against
     ``project_root`` so absolute Vitest / per-plugin pytest ids join.
+
+    ``junit`` is discovered as a LIST (E-C — one or more staged pytest-root reports).
+    When they came from the ``evidence_drop`` multi-report staging convention, EACH is
+    parsed with its OWN base recorded in ``_provenance.json``; a staged report with no
+    matching provenance entry is skipped (fail-closed — see module docstring). The
+    legacy single-file fallback keeps its always-base="" behaviour, unchanged.
     """
     root = Path(project_root)
     reports = discover_reports(root)
     if not reports:
         return None
-    junit = _read_text(reports["junit"]) if "junit" in reports else None
+    junit_paths: list[Path] = reports.get("junit") or []
+    evidence_d = root / ".shipwright" / "compliance" / "evidence"
+    staged_junit_paths = _staged_junit_reports(root)
+    is_staged = bool(staged_junit_paths) and junit_paths == staged_junit_paths
+
+    junit_reports: list[tuple[str, str]] = []
+    source_reports: list[str] = []
+    if is_staged:
+        bases = _junit_bases_from_provenance(evidence_d)
+        for p in junit_paths:
+            base = bases.get(p.name)
+            if base is None:
+                continue  # no recorded base for this staged report — reject, fail-closed
+            text = _read_text(p)
+            if text is not None:
+                junit_reports.append((text, base))
+                source_reports.append(p.relative_to(root).as_posix())
+    else:
+        for p in junit_paths:  # legacy single-file fallback: base="" as before
+            text = _read_text(p)
+            if text is not None:
+                junit_reports.append((text, ""))
+                source_reports.append(p.relative_to(root).as_posix())
+
     playwright = _read_json(reports["playwright"]) if "playwright" in reports else None
     vitest = _read_json(reports["vitest"]) if "vitest" in reports else None
+    if "playwright" in reports:
+        source_reports.append(reports["playwright"].relative_to(root).as_posix())
+    if "vitest" in reports:
+        source_reports.append(reports["vitest"].relative_to(root).as_posix())
+
     index = build_index(
-        junit=junit, playwright=playwright, vitest=vitest, root=root,
+        junit_reports=junit_reports, playwright=playwright, vitest=vitest, root=root,
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        source_reports=[p.relative_to(root).as_posix() for p in reports.values()],
+        source_reports=source_reports,
         waivers=_existing_waivers(_index_path(root)),  # machine refresh must not drop operator waivers
     )
     return _write_index(_index_path(root), index)

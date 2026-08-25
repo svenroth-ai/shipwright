@@ -47,8 +47,11 @@ def load_shared_lib(name: str):
     sys.path.insert(0, shared)
     try:
         # `name` is always a hardcoded module identifier from first-party callers. The
-        # ACTUAL fixed set for THIS loader is four: requirement_model, fr_tag_grammar,
-        # fr_fold_map and jsonl_records (the collector package). The audit groups'
+        # ACTUAL fixed set for THIS loader is five: requirement_model, fr_tag_grammar,
+        # fr_fold_map, jsonl_records (the collector package), and evidence_drop (R1a —
+        # a plugin test needing the shared TT5 emit-side; evidence_drop mutates no
+        # sys.path at import time, same safety condition as jsonl_records below). The
+        # audit groups'
         # drift_parsers / bloat_baseline / events_log / … go through the unrelated
         # `audit_adapters.load_shared_lib`, which loads by file location under a sentinel
         # name and never had the `lib`-precedence problem. Keep them there: this loader

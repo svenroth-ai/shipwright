@@ -9,6 +9,7 @@ pass (external-review MUST-FIX 2, R3 for evidence).
 
 from __future__ import annotations
 
+import fnmatch
 import sys
 from pathlib import Path
 
@@ -52,8 +53,16 @@ def fresh_evidence(project_root: Path, run_id: str, commit_hash: str, evio) -> d
        ``test-results.json`` etc.) that ``clear_evidence_reports`` never purges (false-green)
        AND it WRITES the index (post-F6 tracked-tree drift). This keeps the verifier read-only.
 
-    NOTE (A6, documented deferral): per-runner ``bases`` for monorepo id normalization are not
-    threaded here — the staged reports are assumed already project-root-relative.
+    **Multi-root JUnit (R1a, closes the A6 deferral).** ``reports.junit`` is now a LIST of
+    ``{name, base, mtime}`` entries (evidence_drop E-B — one per pytest test-root, ADR-044).
+    Each is parsed with its OWN recorded ``base`` so a cross-root id (e.g.
+    ``plugins/shipwright-compliance/tests/test_x.py::test_y``) actually joins the manifest.
+    An entry missing ``name``/``base`` is rejected (skipped fail-closed), never guessed at
+    base="" — that used to silently under-cover every layer outside the ONE root whose report
+    happened to reach here first. An entry whose ``name`` is not a bare ``junit-NN.xml``
+    basename (external-review finding: a path-separator or absolute value in a malformed/
+    tampered ``_provenance.json`` could otherwise read a file OUTSIDE the evidence dir) is
+    rejected the same way — only the staged-convention filename is ever read.
 
     Any proof missing / no staged report → EMPTY evidence → every layer ``MISSING``.
     """
@@ -69,14 +78,28 @@ def fresh_evidence(project_root: Path, run_id: str, commit_hash: str, evio) -> d
             return {}
     evd = evidence_drop.evidence_dir(project_root)
     staged = prov.get("reports") or {}
-    junit = _read_text(evd / evidence_drop.REPORT_NAMES["junit"]) if "junit" in staged else None
+    junit_reports: list[tuple[str, str]] = []
+    for r in staged.get("junit") or []:
+        if not isinstance(r, dict) or "name" not in r or "base" not in r:
+            continue  # malformed/missing-base entry — reject, never default to base=""
+        name = r["name"]
+        if (
+            not isinstance(name, str)
+            or "/" in name
+            or "\\" in name
+            or not fnmatch.fnmatchcase(name, evidence_drop.JUNIT_GLOB)
+        ):
+            continue  # not a bare staged-convention filename — reject, never read outside evd
+        text = _read_text(evd / name)
+        if text is not None:
+            junit_reports.append((text, str(r["base"])))
     playwright = _read_json(evd / evidence_drop.REPORT_NAMES["playwright"]) if "playwright" in staged else None
     vitest = _read_json(evd / evidence_drop.REPORT_NAMES["vitest"]) if "vitest" in staged else None
-    if junit is None and playwright is None and vitest is None:
+    if not junit_reports and playwright is None and vitest is None:
         return {}
     try:
         index = evio.build_index(
-            junit=junit, playwright=playwright, vitest=vitest, root=Path(project_root),
+            junit_reports=junit_reports, playwright=playwright, vitest=vitest, root=Path(project_root),
         )
     except Exception:  # noqa: BLE001 — a broken/invalid report degrades to empty (fail-closed)
         return {}
