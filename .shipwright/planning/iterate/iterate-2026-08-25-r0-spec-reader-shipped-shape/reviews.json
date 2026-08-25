@@ -210,38 +210,20 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 1,
       "findings": [
         {
-          "severity": "high",
-          "category": "hidden coupling & blast radius",
-          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:53-79",
-          "line": null,
-          "finding": "Claim under doubt: fix 3 (any-heading-level Acceptance Criteria match + same-or-higher-rank termination) only widens what the gate can see — On a per-FR subheading shape (### FR-04.01 / #### Acceptance Criteria / bullets, repeated per FR), first-match-wins finds the deepest heading and same-rank termination fires on the very next FR heading, collapsing the region to one FR's bullets with no anchor line -- criteria_digests returns {} for the whole document, and changed_criteria_ids compares {} vs {} and reports nothing changed. The old level-2-only regex found no match on that shape and correctly fell back to whole-document scanning. plugins/shipwright-compliance/tests/test_group_i_criteria.py::test_deeper_subheading_stays_inside_the_block pins exactly this per-FR subheading shape as supported.",
-          "suggestion": "After computing the region, compare its anchor set to the whole document's (fr_criteria.iter_anchored_blocks) and fall back to whole-document when the region's set is a strict subset or empty. Add a test on the per-FR '#### Acceptance Criteria' shape with two FRs.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "boundary & contract",
-          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:78",
-          "line": null,
-          "finding": "Claim under doubt: the new terminator matches fr_criteria.iter_anchored_blocks's own heading rule, as the docstring claims — fr_criteria._ANY_HEADING is '^(#{1,6})\\s+' (hashes then required whitespace); the new terminator '^#{1,level}(?!#)' has no whitespace requirement, so a single-# line with no following space (e.g. inside a fenced code block) now terminates the region where the old rule would not have. No impact on this repo's own catalog today, but the rule diverges from what it claims to mirror and the failure direction is silent.",
-          "suggestion": "Require whitespace after the hashes (or reuse fr_criteria._ANY_HEADING directly) so the terminator genuinely matches the heading rule it claims to.",
-          "source": "doubt-reviewer"
-        },
-        {
           "severity": "low",
-          "category": "hidden coupling & blast radius",
-          "file": "shared/scripts/lib/fr_criteria.py:189-198",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:96",
           "line": null,
-          "finding": "Claim under doubt: fix 2 (nested FR heading anchoring) cleanly splits the nested block out of the parent — The child is yielded as its own block, but the parent's block still includes the nested heading's lines (j still walks past deeper headings), so the nested criterion is counted under BOTH the parent and child digest keys -- editing only the child FR flips the parent's digest too, demanding tests for an FR nobody touched. This is over-firing (the module's preferred failure direction), so not a blocker, but the new test only asserts the two digests differ, which passes either way -- nothing pins the overlap, and the docstring doesn't mention it.",
-          "suggestion": "Document the overlap in the iter_anchored_blocks docstring and add an assertion pinning the parent's criteria list explicitly includes the nested block's text.",
+          "finding": "Claim under doubt: the region terminator is exactly fr_criteria._ANY_HEADING's own rule, as the docstring claims — The terminator uses \\s (matches newline) against raw text while _ANY_HEADING requires \\s+ against a line with its trailing newline already stripped -- so a hash-only line at column 0 diverges: it terminates the region but is not itself a heading under _ANY_HEADING's rule. No real producer or this repo's own catalog emits that shape (verified directly), so behaviourally inert today, but the docstring's exact-parity claim is not literally true.",
+          "suggestion": "Correct the docstring's parity claim to name the one deliberate difference, or tighten the regex to [ \\t] instead of \\s to make the claim literally true.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-08-25T14:57:18.046636+00:00",
+      "completed_at": "2026-08-25T15:26:20.755820+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
