@@ -29,6 +29,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# CLI arg-parsing/validation leg lives in its own module (300-LOC guideline);
+# re-exported under their original private names so `main()` — and anything that
+# ever pokes at `evidence_drop._parse_junit_args` — needs no further change.
+try:  # flat import off shared/scripts/lib on sys.path (tool + tests).
+    from _evidence_drop_cli import missing_named_sources as _missing_named_sources
+    from _evidence_drop_cli import parse_junit_args as _parse_junit_args
+except ImportError:  # loaded as a package (lib.evidence_drop).
+    from ._evidence_drop_cli import missing_named_sources as _missing_named_sources  # type: ignore
+    from ._evidence_drop_cli import parse_junit_args as _parse_junit_args  # type: ignore
+
 _EVIDENCE_DIR = (".shipwright", "compliance", "evidence")  # artifact-path-canon: legacy
 _PROVENANCE_NAME = "_provenance.json"
 # Conventional single-file drop names refresh_index discovers (mirrors
@@ -187,63 +197,10 @@ def evidence_is_fresh(project_root: Path, run_id: str) -> bool:
     return str(prov.get("run_id", "")) == run_id and bool(prov.get("reports"))
 
 
-def _parse_junit_args(values: list[str]) -> list[tuple[str, str]]:
-    """Parse repeated ``--junit`` CLI values into ``[(base, path), ...]`` (E-B/E-C).
-
-    Each value is either ``<path>`` (bare — legacy single-report form, base = project
-    root ``""``) or ``<base>=<path>`` (E-B repeatable multi-root form). Bare is ONLY
-    accepted when it is the SOLE ``--junit``; with 2+, every value needs an explicit
-    ``base=`` (empty base spelled ``=<path>``) — a bare path among 2+ is REJECTED, not
-    silently defaulted (AC: "ein Report ohne Basis wird abgelehnt").
-
-    A **duplicate base is legal and common** — this repo alone has FOUR roots that all
-    rebase at base ``""`` (Stage-2 review: rejecting a repeated base broke the workflow
-    E-B exists for, and disagreed with the ``stage_reports`` API, which never rejected
-    it). Staged entries are an ORDERED LIST — nothing is keyed by base, so nothing
-    silently overwrites a same-base sibling. What IS rejected: an exact duplicate
-    ``(base, path)`` pair, or the same source ``path`` twice — both a copy-paste mistake.
-    """
-    if not values:
-        return []
-    if len(values) == 1 and "=" not in values[0]:
-        return [("", values[0])]
-    parsed: list[tuple[str, str]] = []
-    seen_pairs: set[tuple[str, str]] = set()
-    seen_paths: set[str] = set()
-    for raw in values:
-        if "=" not in raw:
-            raise SystemExit(
-                f"--junit {raw!r}: a base is required once more than one --junit is given "
-                "(use --junit <base>=<path>; an explicit empty base is --junit =<path>)"
-            )
-        base, _, path = raw.partition("=")
-        if (base, path) in seen_pairs:
-            raise SystemExit(f"--junit: duplicate --junit {base!r}={path!r} given twice")
-        if path in seen_paths:
-            raise SystemExit(f"--junit: the same source path {path!r} was given more than once")
-        seen_pairs.add((base, path))
-        seen_paths.add(path)
-        parsed.append((base, path))
-    return parsed
-
-
-def _missing_named_sources(
-    junit_reports: list[tuple[str, str]], playwright: str | None, vitest: str | None
-) -> list[str]:
-    """Every NAMED ``--junit``/``--playwright``/``--vitest`` source that does not exist.
-
-    ``stage_reports`` itself skips a missing source silently — right for a
-    programmatic caller like ``run_full_suite_evidence.stage_all``, which already
-    filtered to roots it KNOWS produced a report. The CLI is different: every path
-    here was NAMED BY A HUMAN, so missing means typo, not a legitimate skip —
-    Stage-3 review found the CLI staged nothing and exited 0 on a typo (same bug
-    class already fixed for ``--head-commit`` defaulting to empty).
-    """
-    missing = [path for _, path in junit_reports if not Path(path).is_file()]
-    for src in (playwright, vitest):
-        if src is not None and not Path(src).is_file():
-            missing.append(src)
-    return missing
+# `_parse_junit_args` / `_missing_named_sources` — the CLI arg-parsing/validation
+# leg used by `main()` below — are imported from `_evidence_drop_cli` at the top of
+# this file (300-LOC guideline: pure parsing/validation split out, provenance/staging
+# logic stays here).
 
 
 def main(argv: list[str] | None = None) -> int:
