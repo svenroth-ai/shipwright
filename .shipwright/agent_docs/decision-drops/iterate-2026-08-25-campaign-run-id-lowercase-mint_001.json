@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-25-campaign-run-id-lowercase-mint",
+  "date": "2026-08-26",
+  "section": "Iterate — bug: campaign run_id lowercase-mint fail-fast",
+  "title": "Fail fast on a non-canonical campaign sub-iterate run_id",
+  "context": "A campaign sub-iterate R0's run_id embedded its uppercase display id, passed every check, and only failed at F5c's lowercase-only RUN_ID_STRICT with no escape hatch, hours after F3/F4/F5/F5b had already run.",
+  "decision": "Instruct the orchestrator to lowercase the embedded id when minting run_id, and make diff_risk_recheck.py (Step 3.4, earliest run_id-consuming script) fail fast on a malformed run_id instead of only at F5c.",
+  "consequences": "A wrong run_id is rejected at Step 3.4, before Build's downstream artifacts are produced, with an actionable error naming the fix; RUN_ID_STRICT itself is unweakened.",
+  "rationale": "The prior R0 ADR's Reflection explicitly decided the regex is correct policy and the uppercase run_id was the defect; this run implements that recommendation, and Step 3.4 is the earliest script boundary that receives run_id.",
+  "rejected": "Weakening RUN_ID_STRICT (rejected by the prior ADR as the wrong fix); a new dedicated pre-Step-1 validation script (rejected: no script boundary exists that early, Step 1 is prose).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-25-campaign-run-id-lowercase-mint-fail-fast.md"
+}

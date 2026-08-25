@@ -76,6 +76,6 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR: Keeping shipped profile security floors honest over time](iterate-2026-08-17-vite-hono-floor-profile-floor-drift.md)
 - [Fix B5 phase-task field mismatch and C1's column-count-brittle Screens parser](iterate-2026-08-20-compliance-b5-c1-field-mismatch-b5-c1-fix.md)
 - [Bloat exception — `update_build_dashboard.py` raised to 548-LOC, `test_build_dashboard.py` raised to 760-LOC](iterate-2026-08-23-dashboard-null-commit-bloat-exception.md)
-- [ADR — Pin fr_criteria.py parsing widenings, fix table description exemption](iterate-2026-08-25-fr-criteria-parser-pin-fr-criteria-pins.md)
+- [Fail fast on a non-canonical campaign sub-iterate run_id](iterate-2026-08-25-campaign-run-id-lowercase-mint-fail-fast.md)
 - [One shared FR-criteria reader, replacing three independent walks](iterate-2026-08-25-r0-spec-reader-shipped-shape-fr-criteria-convergence.md)
 - [Repeatable multi-root JUnit staging for execution evidence](iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md)
