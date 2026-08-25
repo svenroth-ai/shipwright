@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-25-fr-criteria-parser-pin",
+  "date": "2026-08-26",
+  "section": "Iterate — change: pin fr_criteria.py parsing widenings + fix table description exemption",
+  "title": "Pin four unpinned fr_criteria.py parsing widenings from PR #648; fix table description exemption",
+  "context": "PR #648 unified 3 FR-criteria readers onto shared/scripts/lib/fr_criteria.py, widening parsing behavior past each predecessor without tests/docs. Two triage cards (trg-968e4d87, trg-467b7b2f) deferred 4 small findings. See spec_ref for full detail.",
+  "decision": "Pinned 2 iter_anchored_blocks termination rules + I6's bullet-semantics widening with tests/doc-line (behavior kept). Fixed compute_fr_coherence's table description exemption (Name-cell fallback bug). Gave I6 its own criteria_for entry point for the convergence test. Full detail in spec_ref.",
+  "consequences": "compute_fr_coherence now correctly flags Name-only tables as missing_description. One residual, confirmed-latent edge case filed as trg-16075b99, not fixed (out of scope). See spec_ref.",
+  "rationale": "Full review cascade run (spec/code/doubt) despite no risk flags at small, given finding 3 is a real correctness fix. All three PASS; one non-blocking note filed as trg-16075b99.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-25-fr-criteria-parser-pin-fr-criteria-pins.md"
+}

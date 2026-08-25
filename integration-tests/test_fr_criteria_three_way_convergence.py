@@ -71,13 +71,18 @@ def _group_i_has_criteria(content: str, fr_id: str) -> bool:
 def _group_i_criteria_for(content: str, fr_id: str) -> list[str]:
     """I6's real criteria LIST (not just the boolean), via the same
     subprocess bridge — code review, medium, 2026-08-25: AC-1 requires the
-    same criteria LIST across readers, not merely the same true/false."""
+    same criteria LIST across readers, not merely the same true/false.
+
+    Calls I6's OWN ``criteria_for`` entry point, not
+    ``group_i_criteria.fr_criteria.criteria_for`` directly — the latter only
+    proves the shared module is reachable through this module's attribute,
+    not that I6's own contract returns the right list (doubt-review round 1,
+    2026-08-25, trg-467b7b2f)."""
     script = (
         "import sys, json\n"
         f"sys.path.insert(0, {str(COMPLIANCE_PLUGIN)!r})\n"
-        "from scripts.audit import group_i_criteria\n"
-        "print(json.dumps(group_i_criteria.fr_criteria.criteria_for("
-        "sys.stdin.read(), sys.argv[1], strict=False)))\n"
+        "from scripts.audit.group_i_criteria import criteria_for\n"
+        "print(json.dumps(criteria_for(sys.stdin.read(), sys.argv[1])))\n"
     )
     result = subprocess.run(
         [sys.executable, "-c", script, fr_id],
@@ -249,3 +254,22 @@ def test_a_nested_fr_heading_still_yields_its_own_anchor_for_i6_too():
 
     assert _group_i_has_criteria(_NESTED_FR_HEADING, "FR-01.01") is True
     assert _group_i_has_criteria(_NESTED_FR_HEADING, "FR-01.02") is True
+
+
+def test_i6_own_entry_point_sees_the_widened_bullet_semantics_too():
+    """I6's OWN ``has_criteria``/``criteria_for`` (via ``group_i_criteria``'s
+    real module, not a bypass) must see the same widened bullet forms
+    ``shared/tests/test_fr_criteria_parsing.py`` pins on ``fr_criteria``
+    directly: a numbered-list marker counts, a placeholder-only bullet does
+    not (trg-968e4d87)."""
+    numbered = (
+        "### FR-01.01 — Title\n\n"
+        "1. Given a change, when it runs, then it works.\n"
+    )
+    assert _group_i_has_criteria(numbered, "FR-01.01") is True
+    assert _group_i_criteria_for(numbered, "FR-01.01") == [
+        "Given a change, when it runs, then it works.",
+    ]
+
+    placeholder_only = "### FR-01.01 — Title\n\n- TBD\n"
+    assert _group_i_has_criteria(placeholder_only, "FR-01.01") is False

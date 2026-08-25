@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-25-fr-criteria-parser-pin",
+  "date": "2026-08-25T22:37:15.796866Z",
+  "event_at": "2026-08-25T17:43:14.594110+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/fr-criteria-parser-pin",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-25-fr-criteria-parser-pin"
+}

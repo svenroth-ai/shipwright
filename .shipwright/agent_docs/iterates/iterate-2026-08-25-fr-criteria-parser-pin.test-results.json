@@ -1,0 +1,113 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-25-fr-criteria-parser-pin",
+    "date": "2026-08-26",
+    "unit": {
+      "status": "passed",
+      "passed": 11548,
+      "total": 11585,
+      "note": "shared/tests 9366 passed/32 skipped, plugins/shipwright-compliance/tests 1655 passed/5 skipped, integration-tests 527 passed/2 deselected. All three roots run individually per ADR-044 one-test-root rule."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 527,
+      "total": 527,
+      "note": "integration-tests root, incl. the new I6-own-entry-point pin in test_fr_criteria_three_way_convergence.py"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; pure Python parser library + compliance-check logic"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "Pure library/test change (parser pinning + one compliance-gate bug fix); no CLI/web runtime surface exercised beyond pytest, which is covered under unit/integration above."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "iter_anchored_blocks: a same-rank non-FR heading ends a heading-anchored block",
+          "disposition": "tested",
+          "evidence": "test_fr_criteria_parsing.py::test_a_same_rank_non_fr_heading_ends_a_heading_anchored_block PASSED"
+        },
+        {
+          "behavior": "iter_anchored_blocks: a lower-rank non-FR heading also ends the block; a deeper one does not",
+          "disposition": "tested",
+          "evidence": "test_fr_criteria_parsing.py::test_a_lower_rank_non_fr_heading_also_ends_the_block + test_a_deeper_non_fr_heading_does_not_end_the_block PASSED"
+        },
+        {
+          "behavior": "iter_anchored_blocks: an FR-shaped bold line truncates a heading-anchored block",
+          "disposition": "tested",
+          "evidence": "test_fr_criteria_parsing.py::test_an_fr_shaped_bold_line_truncates_a_heading_anchored_block PASSED"
+        },
+        {
+          "behavior": "criteria_texts: numbered-list bullets (1./1)) count as criteria",
+          "disposition": "tested",
+          "evidence": "test_fr_criteria_parsing.py::test_numbered_list_bullets_count_as_criteria PASSED"
+        },
+        {
+          "behavior": "criteria_texts: a placeholder-only bullet is dropped, not counted",
+          "disposition": "tested",
+          "evidence": "test_fr_criteria_parsing.py::test_a_placeholder_bullet_is_dropped_not_counted_as_a_criterion PASSED"
+        },
+        {
+          "behavior": "criteria_texts: a continuation line joins onto the bullet that opened it",
+          "disposition": "tested",
+          "evidence": "test_fr_criteria_parsing.py::test_a_continuation_line_joins_onto_the_bullet_that_opened_it PASSED"
+        },
+        {
+          "behavior": "group_i_criteria (I6) own entry point sees the same widened bullet semantics",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_criteria_three_way_convergence.py::test_i6_own_entry_point_sees_the_widened_bullet_semantics_too PASSED"
+        },
+        {
+          "behavior": "compute_fr_coherence: a Name-only table row no longer falsely exempts missing_description (bug fix)",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_description_exemption.py::test_compute_fr_coherence_reports_missing_description_for_name_only_table PASSED (RED before the fix, GREEN after)"
+        },
+        {
+          "behavior": "compute_fr_coherence: a genuine Description column still exempts the heading (regression guard)",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_description_exemption.py::test_a_real_description_column_still_exempts_the_heading PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      },
+      "ledger_path": ".shipwright/triage.jsonl (trg-968e4d87, trg-467b7b2f)"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-25-fr-criteria-parser-pin",
+    "commit": "4cd8d3caf40e70f02de98de09670a2d378b77472",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
