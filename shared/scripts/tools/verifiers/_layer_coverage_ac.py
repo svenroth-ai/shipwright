@@ -68,11 +68,16 @@ def _criteria_region(text: str) -> str:
     be a genuine LAST resort, though — not the path every real ``/shipwright-
     project`` spec takes because the heading match was too narrow; the region
     terminates at the next heading of the SAME OR HIGHER rank — required to be
-    followed by whitespace, exactly ``fr_criteria._ANY_HEADING``'s own rule (a
-    bare ``#`` with no trailing space — a fenced code comment, a shell shebang
-    — must never masquerade as a terminator), matching
-    ``fr_criteria.iter_anchored_blocks``'s own rule (Stage-3 doubt review,
-    medium, 2026-08-25).
+    followed by whitespace, matching the SPIRIT of
+    ``fr_criteria._ANY_HEADING``'s own rule (a bare ``#`` with no trailing
+    space — a fenced code comment, a shell shebang — must never masquerade as
+    a terminator). Not byte-identical to it, though: this ``\\s`` runs against
+    raw multi-line text (so it can match a newline, terminating on a
+    hash-only line at column 0 — a shape no real producer or this repo's own
+    catalog emits, verified directly), where ``_ANY_HEADING`` requires
+    ``\\s+`` against an already newline-stripped line (Stage-3 doubt review,
+    medium, 2026-08-25; wording corrected 2026-08-25 — the two were not
+    actually byte-identical as first claimed).
 
     A per-FR subheading shape — ``### FR-04.01`` / ``#### Acceptance
     Criteria`` / bullets, REPEATED per FR (the exact shape
