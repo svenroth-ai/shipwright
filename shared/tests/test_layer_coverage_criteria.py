@@ -198,3 +198,34 @@ def test_a_spec_without_an_acceptance_criteria_heading_still_parses():
     assert criteria_digests(spec).get("FR-01.01")
 
 
+# --- delegation to lib.fr_criteria (campaign REQ3.04 R0) ---------------------
+# External plan review, both reviewers (2026-08-25): this gate now inherits
+# `fr_criteria`'s placeholder-rejection and marker-stripping, which the old
+# in-module `_criteria` walk never did. Pin the new behaviour rather than
+# leave it an unstated side effect of the delegation.
+
+
+def test_placeholder_only_criterion_digests_the_same_as_no_criteria():
+    """A `- [ ] TBD` bullet is now filtered as a placeholder, same as the old
+    behaviour did NOT do. The digest becomes indistinguishable from "no
+    criteria bullets at all" — both fold to the empty-string digest."""
+    tbd = "## Acceptance Criteria\n\n### FR-01.01 — T\n\n- [ ] TBD\n"
+    empty = "## Acceptance Criteria\n\n### FR-01.01 — T\n\nnothing yet\n"
+    assert criteria_digests(tbd)["FR-01.01"] == criteria_digests(empty)["FR-01.01"]
+
+
+def test_assertion_marker_is_stripped_before_digesting():
+    """`(E)` is decoration, not content — a bullet with and without the marker
+    must digest identically."""
+    marked = "## Acceptance Criteria\n\n### FR-01.01 — T\n\n- (E) Given X, then Y.\n"
+    unmarked = "## Acceptance Criteria\n\n### FR-01.01 — T\n\n- Given X, then Y.\n"
+    assert criteria_digests(marked)["FR-01.01"] == criteria_digests(unmarked)["FR-01.01"]
+
+
+def test_a_real_criterion_still_digests_differently_from_a_placeholder():
+    """The filtering is narrow: a real criterion is never mistaken for TBD."""
+    real = "## Acceptance Criteria\n\n### FR-01.01 — T\n\n- (E) Given X, then Y.\n"
+    placeholder = "## Acceptance Criteria\n\n### FR-01.01 — T\n\n- [ ] TBD\n"
+    assert criteria_digests(real)["FR-01.01"] != criteria_digests(placeholder)["FR-01.01"]
+
+

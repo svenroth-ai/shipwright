@@ -142,21 +142,26 @@ reference, D2 still skips, so the first-run path stays green.
   carried in the ledger as an *untestable behaviour*: it is a **premise** of this
   change rather than something this change delivers, and it belongs to another
   repository's code.
-- **The FR-coherence report about this catalog is knowingly wrong.**
-  `compute_fr_coherence` calls a requirement coherent when its `### FR-…` heading
-  carries `**Description:**` and `**Acceptance Criteria:**` labelled blocks. This
-  catalog states each description in the *table* and each criterion as a `- (E)`
-  bullet, so all fifteen report as missing both — including the eight that gained
-  real criteria here. Pre-S6 the same file produced seven such entries, so the
-  merge roughly **doubled** a false statement inside the campaign whose thesis is
-  removing them. Adding the labels would duplicate every description fifteen
-  times; renaming the headings would degrade the document to dodge a parser, and
-  the deep links land on those headings. The correct fix — teach the check that a
-  heading whose id is also a table row is a *detail section*, not a definition —
-  is a behaviour change to a shared verifier every adopted repo consumes and
-  needs its own baseline. S1/S5 are Tier-2 WARN and gate nothing. The exact count
-  is pinned in `test_requirements_catalog_parsers.py`, so the deferral expires
-  loudly rather than quietly.
+- **The FR-coherence report about this catalog was knowingly wrong — fixed in
+  campaign REQ3.04, sub-iterate R0 (2026-08-25).** `compute_fr_coherence` used
+  to call a requirement coherent only when its `### FR-…` heading carried
+  `**Description:**` and `**Acceptance Criteria:**` labelled blocks. This
+  catalog states each description in the *table* and each criterion as a
+  `- (E)` bullet, so all fifteen used to report as missing both — including
+  the eight that had gained real criteria by then. Pre-S6 the same file
+  produced seven such entries, so the merge roughly **doubled** a false
+  statement inside the campaign whose thesis is removing them. The fix
+  anticipated here shipped as specified: `shared/scripts/lib/fr_criteria.py`
+  is now the one shared reader for "does an FR heading carry acceptance
+  criteria" — the cross-layer fold gate and Group I's I6 check already used
+  this shape, and `parse_fr_headings` now falls back to the same reader when
+  no bold label is present — and `compute_fr_coherence` now treats a heading
+  whose id is also a table row as a *detail section*, not a definition, so its
+  missing `**Description:**` label is no longer reported. The labels were
+  never duplicated and the headings were never renamed. S1/S5 remain Tier-2
+  WARN and gate nothing. The corrected count is pinned in
+  `test_requirements_catalog_parsers.py`, the same test that pinned the false
+  one.
 - **Closed in review, recorded because it shipped open:** whether the
   traceability *collector* short-circuits before classifying tags when it finds
   no requirements — the one falsifier of the argument for leaving D-orphan

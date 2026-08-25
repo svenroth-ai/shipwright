@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-25-r0-spec-reader-shipped-shape",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T12:45:36.589317+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "S1 adopts `group_i_criteria` semantics for all three readers. That means `_layer_coverage_ac` gains placeholder filtering and `(E)` stripping that it currently does not have. The change is described as behavior-changing for S5 and I6, but not explicitly for the Cross-Layer Gate. If that gate currently treats `- [ ] TBD` as a real acceptance criterion, this change could silently hide incomplete coverage.",
+          "suggestion": "Add an explicit test for `_layer_coverage_ac` on placeholder-only criterion input, confirm whether filtering is intended there, and if not, expose a parameter such as `include_placeholders=False` rather than forcing identical semantics on all callers.  2. S3 may suppress `missing_description` for empty table cells",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan says a heading whose ID appears in the FR table should not count as `missing_description`. But it does not specify whether the table cell itself must contain a non-empty description. A row with a blank or placeholder description cell would still be “present” and would incorrectly hide a real gap.",
+          "suggestion": "When building the ID→description mapping from `fr_table_reader.read_fr_rows`, only exempt a heading if the associated table description is non-empty and not placeholder text. Add a unit test for a table row with an empty description cell.  3. Large-file handling could make the 20/20 assertion unreliable",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "spec.md` is called out as large, with reads needing `offset`/`limit`. If heading discovery, table reading, and criteria extraction operate on different chunks, the table section or trailing FR headings may be omitted. That would make the `20 von 20` acceptance and `missing_description == ()` result an artifact of truncation.",
+          "suggestion": "Define one consistent streaming or chunking strategy across discovery, `fr_table_reader`, and the new `fr_criteria` parser. Add a synthetic large-spec test above the 2000-line limit to verify no heading or table section is lost.  4. Import/path behavior needs a root-level guard",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan correctly names ADR-045 and the `sys.modules['tools']` eviction issue, but the acceptance criteria do not include a test that imports `shared.scripts.lib.fr_criteria` from both test roots and the plugin audit path. This is a common failure mode exactly where the three readers currently live.",
+          "suggestion": "Add a small smoke test that imports the new module from `shared/tests`, `integration-tests`, and the `group_i` plugin context. Verify that importing `fr_criteria` does not pull in `tools` or create circular imports with `fr_table_reader`/`spec_parser`.  5. Placeholder handling is inconsistent between label and bullet paths",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan says ordinary labels keep priority and remain unchanged, while bullet placeholders such as `- [ ] TBD` are filtered. If a section contains `Acceptance Criteria: TBD`, the label path may still report acceptance while the fallback path would not. This creates two different notions of “has acceptance” depending on formatting.",
+          "suggestion": "Decide explicitly whether labeled placeholder text should also be filtered. If so, apply placeholder normalization before the label-form priority check. If not, document and test the inconsistency so future consumers are not surprised.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Der Plan benennt ADR-045 und die problematische Import-/`sys.modules['tools']`-Situation, beschreibt aber nicht konkret, wie `plugins/shipwright-compliance/scripts/audit/group_i_criteria.py` zuverlässig `shared/scripts/lib/fr_criteria.py` importiert. „Modul registrieren, bevor es ausgeführt wird“ ist ohne Anpassung des bestehenden Bootstrap-/Loader-Pfads keine implementierbare Abhängigkeit. Ein Import, der nur unter pytest oder nur aus dem Repo-Root funktioniert, wäre besonders wahrscheinlich.",
+          "suggestion": "Den bestehenden, von `_layer_coverage_evidence.py` verwendeten Import-Mechanismus als verbindlichen Weg festlegen und im selben Diff einen Import-Smoke-Test für den tatsächlichen Plugin-/Audit-Entry-Point ergänzen. Der Test sollte den Audit-Loader unter derselben `sys.path`-/Modulregistrierungs-Konstellation wie die Produktion ausführen, nicht nur `fr_criteria` direkt importieren.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Die beabsichtigte Vereinheitlichung verändert auch die bisherige Cross-Layer-Semantik: `_layer_coverage_ac` akzeptiert derzeit Placeholder-Bullets und behält `(E)`, während die neue gemeinsame Semantik Placeholder verwirft und Marker entfernt. Der Plan bezeichnet die Verhaltensänderung explizit für S5 und I6, nicht aber für das Cross-Layer-Gate. Damit ist unklar, ob dessen neue Ergebnisse und eventuelle Gate-Änderungen bewusst akzeptiert sind.",
+          "suggestion": "Die gewünschte Cross-Layer-Verhaltensänderung explizit als Scope aufnehmen und Regressionstests für dessen öffentliche Ergebnisform ergänzen: `(E)` wird normalisiert, `TBD`/`TODO` liefert kein Kriterium, und valide Checkbox- sowie unmarkierte Bullet-Formen bleiben erhalten. Falls das Gate Placeholder bewusst weiterhin zählen soll, muss diese Policy vor der Extraktion getrennt entschieden werden; andernfalls gibt es nicht mehr „genau eine“ Semantik.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Die Schnittstelle des gemeinsamen Zerlegers ist nicht ausreichend präzisiert. Die drei bisherigen Leser arbeiten offenbar auf unterschiedlichen Eingabeebenen: vollständiges Markdown mit FR-Ankern, einzelne FR-Abschnitte und möglicherweise bereits abgegrenzte Textblöcke. Eine API, die nur eine `criteria(text)`-Funktion anbietet, kann entweder die Heading-Anker nicht erkennen oder bei vollständigen Dokumenten Bullets einem falschen FR zuordnen. Der geforderte Test „derselbe Eingabetext, dieselbe Kriterienliste“ deckt diese Abgrenzungsfrage nicht ab.",
+          "suggestion": "Eine kleine, eindeutige API festlegen, etwa: `parse_fr_criteria(document) -> mapping[fr_id, tuple[str, ...]]` für Dokumenteingaben und/oder `extract_criteria(section_body, , anchored=True)` für bereits abgegrenzte Abschnitte. Die gemeinsame Implementierung muss die Abschnittsgrenzen am nächsten gleich- oder höherwertigen Heading beenden. Adapter in den drei Aufrufern dürfen nur noch Eingabe/Resultat übersetzen, aber weder selbst ankern noch Bullets laufen.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Die Adjazenzregel sagt „kein Nicht-Bullet-Prosablock“, lässt aber offen, wie Leerzeilen, Unterüberschriften, Codeblöcke, Blockquotes und mehrere Bullet-Listen behandelt werden. Besonders riskant sind nach einem FR-Heading folgende Unterabschnitte wie `#### Notes` oder `#### Acceptance Criteria`: Ohne eine klare Stop-Regel kann eine spätere Liste trotz fehlender Prosa fälschlich als FR-Acceptance gelten.",
+          "suggestion": "Die Regel als Zustandsautomat testen und dokumentieren: Nach dem FR-Anker sind nur Leerzeilen und unmittelbar folgende zulässige Bullet-/Fortsetzungszeilen erlaubt; Text, andere Markdown-Blöcke oder jede neue Heading-Ebene beendet die Suche. Tests sollten mindestens Leerzeilen vor der Liste, Prosa vor der Liste, eine Unterüberschrift vor der Liste, Codeblock-Bullets und den Übergang zum nächsten FR abdecken.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "S3 kann zu weit greifen, wenn „ID kommt auch in einer FR-Tabelle vor“ mittels Textsuche oder über alle Tabellen geprüft wird. Eine ID kann in einer Referenz-, Traceability- oder Beispiel-Tabelle erscheinen; dann würde ein tatsächlich beschreibungsloser Detail-Heading fälschlich von `missing_description` ausgenommen.",
+          "suggestion": "Die Ausnahme ausschließlich aus strukturierten Resultaten von `fr_table_reader.read_fr_rows` ableiten, mit normalisierter exakter FR-ID-Gleichheit, nicht per Substring/Regex über Markdown. Ergänzen Sie Tests für eine nicht-FR-Tabelle bzw. Referenzzeile mit derselben ID, ähnlich aussehende IDs (`FR-01.01` versus `FR-01.010`) und eine echte FR-Tabellenzeile.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Der Fallback in `parse_fr_headings` ist richtig als Kompatibilitätsstrategie, aber die Label-Priorität allein schützt nicht vor einer Regression der Description-Ableitung. Insbesondere dürfen Acceptance-Label, deren Inhalt auf derselben oder folgenden Zeile steht, weder als Description-Prosa noch als Startpunkt einer ungebundenen Bullet-Suche gelten. Ein einzelner genannter Unit-Test deckt wahrscheinlich nur die einzeilige Variante ab.",
+          "suggestion": "Neben dem bestehenden Test Fälle für leeres Acceptance-Label, mehrzeiliges Label mit Bullets, Description vor dem Label und ausschließlich gelabelte Abschnitte aufnehmen. Die gemeinsame Label-Erkennung sollte von Description- und Criteria-Extraktion verwendet werden, damit die Labelmenge nicht erneut auseinanderläuft.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Die verpflichtende Triage-Karte ist inhaltlich definiert, aber nicht mit Ablageort, Karten-Schema und Referenzziel im Änderungsrecord verknüpft. Das ist praktisch relevant, weil solche Repos Karten häufig durch Discovery-/Canon-Gates validieren und ungetrackte Dateien dort unsichtbar bleiben.",
+          "suggestion": "Den konkreten Kartenpfad, die erforderlichen Metadaten und die Stelle der Lauf-Referenz benennen; Karte und neues Modul vor den Content-/Canon-Checks stagen. Dies kann mit einem gezielten Validierungslauf für die Karte abgesichert werden.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Für diese Änderung ist kein neuer externer Eingabekanal, keine Berechtigung und kein Netzwerkzugriff vorgesehen; ein eigenständiges Security-Risiko ist nicht erkennbar. Das relevante Schutzthema ist Robustheit gegenüber beliebigem Markdown, damit Parser-Regeln nicht versehentlich Inhalte außerhalb eines FR-Abschnitts als Kriterien deklarieren.",
+          "suggestion": "Die oben genannten Abschnitts- und Markdown-Block-Grenzen als Parser-Tests absichern; zusätzliche Dependencies oder dynamische Imports zur Lösung vermeiden.  Insgesamt ist die Konsolidierung in einen `lib`-Zerleger fachlich die richtige, reduzierte Lösung und S3 ist nachvollziehbar durch vorhandene Repo-Entscheidungen gedeckt. Vor dem Merge müssen jedoch der reale Plugin-Importpfad, die bewusst geänderte Cross-Layer-Semantik und die exakte Abschnitts-/Tabellenabgrenzung verbindlich spezifiziert und getestet werden. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-25T12:45:40.087240+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] ## Review of R0 implementation approach\n\n**1. Cross-layer gate semantics change is under-specified**\n- **Category:** risk\n- **Severity:** medium\n- **Finding:** S1 adopts `group_i_criteria` semantics for all three readers. That means `_layer_coverage_ac` gains placeholder filtering and `(E)` stripping that it currently does not have. The change is described as behavior-changing for S5 and I6, but not explicitly for the Cross-Layer Gate. If that gate currently treats `- [ ] TBD` as a real acceptance criterion, this change could silently hide incomplete coverage.\n- **Suggestion:** Add an explicit test for `_layer_coverage_ac` on placeholder-only criterion input, confirm whether filtering is intended there, and if not, expose a parameter such as `include_placeholders=False` rather than forcing identical semantics on all callers.\n\n**2. S3 may suppress `missing_description` for empty table cells**\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** The plan says a heading whose ID appears in the FR table should not count as `missing_description`. But it does not specify whether the table cell itself must contain a non-empty description. A row with a blank or placeholder description cell would still be “present” and would incorrectly hide a real gap.\n- **Suggestion:** When building the ID→description mapping from `fr_table_reader.read_fr_rows`, only exempt a heading if the associated table description is non-empty and not placeholder text. Add a unit test for a table row with an empty description cell.\n\n**3. Large-file handling could make the 20/20 assertion unreliable**\n- **Category:** edge-case\n- **Severity:** medium\n- **Finding:** `spec.md` is called out as large, with reads needing `offset`/`limit`. If heading discovery, table reading, and criteria extraction operate on different chunks, the table section or trailing FR headings may be omitted. That would make the `20 von 20` acceptance and `missing_description == ()` result an artifact of trun […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** Der Plan benennt ADR-045 und die problematische Import-/`sys.modules['tools']`-Situation, beschreibt aber nicht konkret, wie `plugins/shipwright-compliance/scripts/audit/group_i_criteria.py` zuverlässig `shared/scripts/lib/fr_criteria.py` importiert. „Modul registrieren, bevor es ausgeführt wird“ ist ohne Anpassung des bestehenden Bootstrap-/Loader-Pfads keine implementierbare Abhängigkeit. Ein Import, der nur unter pytest oder nur aus dem Repo-Root funktioniert, wäre besonders wahrscheinlich.  \n   **Suggestion:** Den bestehenden, von `_layer_coverage_evidence.py` verwendeten Import-Mechanismus als verbindlichen Weg festlegen und im selben Diff einen Import-Smoke-Test für den tatsächlichen Plugin-/Audit-Entry-Point ergänzen. Der Test sollte den Audit-Loader unter derselben `sys.path`-/Modulregistrierungs-Konstellation wie die Produktion ausführen, nicht nur `fr_criteria` direkt importieren.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Die beabsichtigte Vereinheitlichung verändert auch die bisherige Cross-Layer-Semantik: `_layer_coverage_ac` akzeptiert derzeit Placeholder-Bullets und behält `(E)`, während die neue gemeinsame Semantik Placeholder verwirft und Marker entfernt. Der Plan bezeichnet die Verhaltensänderung explizit für S5 und I6, nicht aber für das Cross-Layer-Gate. Damit ist unklar, ob dessen neue Ergebnisse und eventuelle Gate-Änderungen bewusst akzeptiert sind.  \n   **Suggestion:** Die gewünschte Cross-Layer-Verhaltensänderung explizit als Scope aufnehmen und Regressionstests für dessen öffentliche Ergebnisform ergänzen: `(E)` wird normalisiert, `TBD`/`TODO` liefert kein Kriterium, und valide Checkbox- sowie unmarkierte Bullet-Formen bleiben erhalten. Falls das Gate Placeholder bewusst weiterhin zählen soll, muss diese Policy vor der Extraktion getrennt entschieden werden; andernfalls gibt es nicht mehr „genau eine“ Semantik.\n\n3. **Category:** approa […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T12:46:07.665910+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T12:46:07.778778+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/fr_criteria.py",
+          "line": 159,
+          "finding": "The shared parser deliberately preserves different adjacency semantics for different consumers: `criteria_for()` scans an entire anchored block permissively, while only `leading_criteria()` applies the required no-prose-before-bullets rule. Consequently, I6 and `_layer_coverage_ac` count bullets following a prose block, whereas S5 does not. This violates the requirement that the three readers converge on the same criteria interpretation/list and that a bullet list is counted only when no non-bullet prose intervenes.",
+          "suggestion": "Make adjacency/scoping part of the one shared extraction path used by all three consumers, or pass an explicit shared mode whose behavior is tested as an intentional, specified distinction. In particular, do not let `criteria_for()` accept a later bullet list after prose if that list would be rejected by S5.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/fr_criteria.py",
+          "line": 197,
+          "finding": "Even S5’s adjacency-gated path can include criteria from unrelated later lists. Once the first line is a bullet, `leading_criteria()` passes the complete remaining body to `criteria_texts()`, which resumes parsing whenever it encounters a later bullet after prose. For example, an adjacent `- [ ] TBD`, followed by a prose paragraph and then `- unrelated bullet`, produces a real acceptance criterion from the later list and falsely marks the FR as having acceptance.",
+          "suggestion": "Restrict `leading_criteria()` to the initial contiguous bullet-list region. It should stop collecting permanently when a non-continuation prose line ends that initial list, rather than passing the entire remaining heading body to the permissive scanner.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_fr_criteria_convergence.py:43-56",
+          "line": null,
+          "finding": "The required convergence test does not exercise all three readers. It never imports or calls `group_i_criteria.has_criteria`; instead it calls `fr_criteria.has_criteria` directly, so a broken or removed delegation in Group I would still pass. It also compares S5’s text list with only a digest from the layer reader and a boolean from the shared helper, not a common criteria list on an input that distinguishes the readers’ adjacency behavior.",
+          "suggestion": "Add a test in an appropriate test root that imports and invokes Group I, S5, and the cross-layer reader against the same input. Include prose-before-bullets and prose-between-lists cases so the test verifies the mandated unified semantics rather than only the trivial adjacent happy path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/test_requirements_catalog_parsers.py:151-173",
+          "line": null,
+          "finding": "The catalog pin no longer validates the required end-to-end coherence result. It only calls `parse_fr_headings()` and asserts that all 20 descriptions remain missing at parser level, while the specification explicitly requires `compute_fr_coherence` for this repository/catalog to return empty `missing_acceptance`, `missing_description`, and `missing_both`, with `report.ok == True`. The new synthetic unit test cannot prove that discovery, table-row parsing, and the real delivered catalog combine correctly.",
+          "suggestion": "Add an integration assertion invoking `compute_fr_coherence` on the repository/catalog scope and assert the required empty gap tuples and `report.ok`. Keep the parser-level assertion if useful, but it is not a substitute for the required S3 behavior.  Overall assessment: the core extraction and table-row exemption are largely implemented, but the readers have not actually converged on the required adjacency semantics and the tests do not pin the stated end-to-end behavior. Ship with fixes before merging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-25T12:45:48.574549+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: `shared/scripts/lib/fr_criteria.py:159`\n- Finding: The shared parser deliberately preserves different adjacency semantics for different consumers: `criteria_for()` scans an entire anchored block permissively, while only `leading_criteria()` applies the required no-prose-before-bullets rule. Consequently, I6 and `_layer_coverage_ac` count bullets following a prose block, whereas S5 does not. This violates the requirement that the three readers converge on the same criteria interpretation/list and that a bullet list is counted only when no non-bullet prose intervenes.\n- Suggestion: Make adjacency/scoping part of the one shared extraction path used by all three consumers, or pass an explicit shared mode whose behavior is tested as an intentional, specified distinction. In particular, do not let `criteria_for()` accept a later bullet list after prose if that list would be rejected by S5.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/fr_criteria.py:197`\n- Finding: Even S5’s adjacency-gated path can include criteria from unrelated later lists. Once the first line is a bullet, `leading_criteria()` passes the complete remaining body to `criteria_texts()`, which resumes parsing whenever it encounters a later bullet after prose. For example, an adjacent `- [ ] TBD`, followed by a prose paragraph and then `- unrelated bullet`, produces a real acceptance criterion from the later list and falsely marks the FR as having acceptance.\n- Suggestion: Restrict `leading_criteria()` to the initial contiguous bullet-list region. It should stop collecting permanently when a non-continuation prose line ends that initial list, rather than passing the entire remaining heading body to the permissive scanner.\n\n- Category: test\n- Severity: medium\n- File: `shared/tests/test_fr_criteria_convergence.py:43-56`\n- Finding: The required convergence test does not exercise all three readers. It never imports or calls `group_i_criter […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T12:46:07.568838+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T12:46:07.887984+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

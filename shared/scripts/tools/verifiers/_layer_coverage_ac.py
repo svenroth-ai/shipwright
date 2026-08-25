@@ -16,55 +16,30 @@ not need to: every requirement node already carries ``spec_path``, and the base
 commit is already resolved for the regeneration, so the criteria can be read from
 git directly. Nothing about the artifact or its schema moves.
 
-Two rules the parser follows, both narrower than "diff the section":
-
-* **A criterion includes its continuation lines.** This repo's own `(E)` bullets
-  wrap, and the guarantee often lives on the second line.
-* **Only criteria count.** Prose around them is excluded, because in a
-  post-rollout repo a resolved change is a HARD gate and a typo fix must not
-  demand executed-passing tests. Criteria text is whitespace-normalised, so
-  re-wrapping a paragraph is not a change either.
+The actual per-FR criteria extraction — anchor matching, checkbox/assertion-
+marker stripping, placeholder rejection, continuation lines, whitespace
+normalisation — is ``lib.fr_criteria`` (campaign REQ3.04 sub-iterate R0):
+this module used to walk it alone, and two OTHER readers (``spec_parser``'s S5,
+Group I's I6) each walked their own narrower version. All three now delegate to
+the one parser; the section-scoping below (``## Acceptance Criteria`` only, or
+the whole document as a fail-safe) stays here because it is specific to this
+gate's git-diffing use, not a property of "what is a criterion".
 """
 
 from __future__ import annotations
 
 import hashlib
 import re
+import sys
+from pathlib import Path
 
-from .git_helpers import _run_git
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-#: A requirement's own section in a spec: ``### FR-XX.YY — Title``. The anchor and
-#: the id form are the ones both generators emit and the manifest schema pins.
-_FR_SECTION_RE = re.compile(r"^###\s+(?P<fr>FR-\d{2}\.\d{2})\b", re.MULTILINE)
+from lib import fr_criteria  # noqa: E402
 
-#: A criterion bullet: ``-``/``*``/``+`` or ``1.``, incl. the ``- [ ]`` checkbox
-#: form used by the worked example in ``shared/fr-authoring.md`` §3.
-_BULLET_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(?P<text>.*\S)\s*$")
-
-
-def _criteria(body: str) -> list[str]:
-    """The section's criteria, each whitespace-normalised and including any
-    continuation lines that belong to it."""
-    out: list[str] = []
-    current: list[str] | None = None
-    for line in body.splitlines():
-        bullet = _BULLET_RE.match(line)
-        if bullet:
-            if current is not None:
-                out.append(" ".join(current))
-            current = [bullet.group("text")]
-            continue
-        if current is None:
-            continue
-        if not line.strip() or not line[:1].isspace():
-            # A blank line, or a line starting in column 0, ends the criterion.
-            out.append(" ".join(current))
-            current = None
-            continue
-        current.append(line.strip())
-    if current is not None:
-        out.append(" ".join(current))
-    return [" ".join(c.split()) for c in out]
+from .git_helpers import _run_git  # noqa: E402
 
 
 def _criteria_region(text: str) -> str:
@@ -90,12 +65,10 @@ def _criteria_region(text: str) -> str:
 def criteria_digests(text: str) -> dict[str, str]:
     """FR id → digest of that requirement's acceptance criteria."""
     region = _criteria_region(text)
-    matches = list(_FR_SECTION_RE.finditer(region))
     digests: dict[str, str] = {}
-    for i, match in enumerate(matches):
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(region)
-        joined = "\n".join(_criteria(region[match.end():end]))
-        digests[match.group("fr")] = hashlib.sha256(joined.encode("utf-8")).hexdigest()
+    for fr_id, block in fr_criteria.iter_anchored_blocks(region):
+        joined = "\n".join(fr_criteria.criteria_texts(block))
+        digests[fr_id] = hashlib.sha256(joined.encode("utf-8")).hexdigest()
     return digests
 
 
