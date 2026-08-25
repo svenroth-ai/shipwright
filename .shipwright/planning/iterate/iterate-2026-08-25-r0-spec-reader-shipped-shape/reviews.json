@@ -150,27 +150,121 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_layer_coverage_criteria.py",
+          "line": 155,
+          "finding": "The pooling regression test asserts three inequalities (not empty, not first-block-only, not second-block-only) rather than a positive equality against the expected pooled digest, so a pooling bug that reordered or duplicated blocks would still pass.",
+          "suggestion": "Add a positive assertion pinning the digest to sha256 of the pooled, ordered criteria list.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/test_fr_criteria_three_way_convergence.py",
+          "line": 79,
+          "finding": "The I6 subprocess bridge reaches through I6's module to the shared lib and re-declares strict=False in the test rather than calling an I6-owned entry point, so a change to I6's own delegation parameter would not be observed by this bridge (partially mitigated by a sibling test).",
+          "suggestion": "Add a small criteria_for wrapper to group_i_criteria.py so the strict flag lives in production only.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "integration-tests/test_fr_criteria_three_way_convergence.py",
+          "line": 124,
+          "finding": "Docstring overstates what the test guards against (E)-stripping/placeholder-rule loss, which is only true for a delegation regression, not an absolute pin.",
+          "suggestion": "Narrow the parenthetical to the regression class actually caught (a reader that stopped delegating).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "integration-tests/test_fr_criteria_three_way_convergence.py",
+          "line": 82,
+          "finding": "subprocess.run calls omit explicit encoding='utf-8'; fixtures carry an em-dash, which round-trips today under default locales but could fail on unusual codepages.",
+          "suggestion": "Pass encoding='utf-8' to both subprocess.run calls.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "integration-tests/test_fr_criteria_three_way_convergence.py",
+          "line": 71,
+          "finding": "_group_i_criteria_for duplicates _group_i_has_criteria's subprocess-invocation boilerplate almost verbatim.",
+          "suggestion": "Optional extraction of a shared subprocess helper; judgement call, not required.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-25T12:46:07.665910+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-08-25T14:17:45.723849+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-adopt/scripts/lib/spec_document.py:164-187",
+          "line": null,
+          "finding": "Claim under doubt: S5 now reads the shape /shipwright-project and /shipwright-adopt actually emit (AC-1 'one shared semantics', AC-4) — /shipwright-adopt's real writer emits a prose line BETWEEN the heading and the bullets: spec_document.py:184 renders heading / blank / `_Source: {source}._` / blank / bullets whenever acceptance_criteria is non-empty (generate_adoption_artifacts.py:308/376). The Stage-1 adjacency gate makes leading_criteria return [] the moment the first non-blank body line is not a bullet, so parse_fr_headings' fallback yields nothing for every criteria-bearing adopt-generated FR. I6 and the cross-layer gate (strict=False) still see those criteria; S5 alone does not -- the exact divergence AC-1 forbids, on real producer output, uncaught because every test fixture puts bullets directly under the heading.",
+          "suggestion": "Run parse_fr_headings over real generate_adoption_artifacts.py output and either widen the adjacency gate to skip a leading italic/attribution line, have S5 pass strict=False like the other two readers, or prove the shape never ships -- then add it as a fixture.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/fr_criteria.py:153-173",
+          "line": null,
+          "finding": "Claim under doubt: the delegation cannot make the cross-layer HARD gate blind to a criteria change — iter_anchored_blocks ends each block at i=j (first same-or-higher-rank heading), so a DEEPER FR heading nested inside a block is swallowed rather than yielded as its own anchor -- e.g. `## FR-01.01` followed by `### FR-01.02` yields only FR-01.01; FR-01.02 gets no digest entry. The old _FR_SECTION_RE did produce one there. The id vanishes from both base and head, so criteria_changed_keys never compares it -- a regression to could_not_determine at best, complete silence at worst when another row changed in the same commit.",
+          "suggestion": "A test on `## FR-01.01 ... ### FR-01.02 ...` asserting both ids appear in criteria_digests and in I6's has_criteria; fix the block-termination walk to not swallow nested FR headings.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:70-99",
+          "line": null,
+          "finding": "Claim under doubt: the section-scoping in _criteria_region still confines the gate to real criteria — _criteria_region matches `^##\\s+Acceptance Criteria\\s*$` (level 2), but /shipwright-project's template emits `### Acceptance Criteria` (spec-generation.md:305, level 3) -- so for that producer the whole-document fallback is the NORMAL path. The new anchor surface (any heading level 1-6 with an FR-shaped id, or any bolded FR id on its own line) now pools bullets from a Design-notes/Removed-Requirements section that happens to bold an FR id -- a new false-RED path on the HARD gate, no test.",
+          "suggestion": "Teach _criteria_region the `### Acceptance Criteria` form the project template emits, or restrict the anchor surface when the region fell back to whole-document; add a test with a bolded FR id in a non-criteria section.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/_fr_table_columns.py:22",
+          "line": null,
+          "finding": "Claim under doubt: the table-row exemption only fires for a real, non-empty description — FrTableRow.text falls back through TITLE_COLS=('description','name','text','requirement','title'); a table with no Description column yields the NAME cell, always non-empty, so the exemption fires with no description present at all.",
+          "suggestion": "Exempt only when the header names an actual Description column; add a Description-less table fixture.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "integration-tests/test_fr_criteria_three_way_convergence.py:958-977",
+          "line": null,
+          "finding": "Claim under doubt: the three-way convergence test's I6 arm pins I6's own contract — _group_i_criteria_for calls the SHARED module through the plugin module's attribute (group_i_criteria.fr_criteria.criteria_for), not any API I6 itself exposes -- proves the plugin loaded fr_criteria, not that I6's own return matches.",
+          "suggestion": "Give group_i_criteria its own thin criteria_for wrapper and call that, or narrow the docstring's claim.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-25T12:46:07.778778+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-08-25T14:26:09.117553+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
