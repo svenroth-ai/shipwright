@@ -25,7 +25,8 @@
   "phases_covered": [
     "iterate",
     "changelog",
-    "design"
+    "design",
+    "test"
   ],
   "last_audit": {
     "ran_at": "2026-07-28T11:12:44.234373+00:00",

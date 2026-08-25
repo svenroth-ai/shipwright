@@ -1,0 +1,1 @@
+compliance execution evidence only ever staged ONE of this repo's 18 pytest test-roots (every other root's tests read MISSING coverage); `evidence_drop.py stage` now accepts repeatable `--junit <base>=<path>` and a new `scripts/run_full_suite_evidence.py` drives every discovered root so a full-suite run produces genuine cross-root coverage evidence

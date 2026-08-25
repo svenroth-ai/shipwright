@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-25-r1a-evidence-staging-multiroot",
+  "risk_recheck": {
+    "changed_file_count": 14,
+    "diff_loc": 1108,
+    "risk_flags": [
+      "touches_ci_supplychain",
+      "touches_migrations"
+    ],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

@@ -21,6 +21,7 @@ import pytest
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE.parent))
 
+from scripts.lib.collectors import _lib_loader  # noqa: E402
 from scripts.lib.collectors._execution_evidence_io import refresh_index  # noqa: E402
 from scripts.lib.collectors.execution_evidence import (  # noqa: E402
     build_index,
@@ -30,6 +31,12 @@ from scripts.lib.collectors.execution_evidence import (  # noqa: E402
 )
 from scripts.lib.collectors._test_links_requirements import _cov_status  # noqa: E402
 from scripts.lib.collectors.test_links import build_manifest, generate_file  # noqa: E402
+
+# The plugin has its OWN top-level ``lib`` package, and another suite in this same
+# session binds ``sys.modules['lib']`` to it (ADR-045) — a plain ``from lib import
+# evidence_drop`` after a bare sys.path insert is order-fragile (green run alone, red
+# in the full plugin suite). Go through the precedence-safe loader instead.
+evidence_drop = _lib_loader.load_shared_lib("evidence_drop")
 
 _FIX = _HERE / "fixtures" / "traceability"
 _EV = _FIX / "evidence"
@@ -167,6 +174,65 @@ def test_refresh_index_emits_and_stamps_freshness(tmp_path):
     assert index["results"][_SKIPPED_E2E]["executed"] == "not_run"
     assert index["generated_at"].endswith("Z")
     assert ".shipwright/compliance/evidence/junit.xml" in index["source_reports"]
+
+
+# --- R1a / E-C: multi-root JUnit staged via evidence_drop, each with its own base --
+
+def test_refresh_index_joins_a_staged_multi_root_report_with_its_own_base(tmp_path):
+    # A checked-in fixture, not a comparison against local pytest output (the AC is
+    # explicit: CI runs 3.11, local runs 3.12/3.13, and the raw XML differs) — this
+    # pins the JOIN algorithm: a per-plugin JUnit fragment whose base is recorded in
+    # provenance must land on the project_root-relative manifest id.
+    fragment = (
+        "<testsuites><testsuite>"
+        '<testcase classname="tests.test_x" name="test_y"/>'
+        "</testsuite></testsuites>"
+    )
+    src = tmp_path / "raw-compliance.xml"
+    src.write_text(fragment, encoding="utf-8")
+    evidence_drop.stage_reports(
+        tmp_path, run_id="iterate-fullsuite",
+        junit_reports=[("plugins/shipwright-compliance", src)],
+    )
+    out = refresh_index(tmp_path)
+    index = _load(out)
+    assert index["results"]["plugins/shipwright-compliance/tests/test_x.py::test_y"]["executed"] == "pass"
+
+
+def test_refresh_index_joins_two_staged_roots_with_different_bases(tmp_path):
+    a = tmp_path / "a.xml"
+    a.write_text(
+        '<testsuites><testsuite><testcase file="tests/test_a.py" name="test_a"/></testsuite></testsuites>',
+        encoding="utf-8",
+    )
+    b = tmp_path / "b.xml"
+    b.write_text(
+        '<testsuites><testsuite><testcase file="tests/test_b.py" name="test_b"/></testsuite></testsuites>',
+        encoding="utf-8",
+    )
+    evidence_drop.stage_reports(
+        tmp_path, run_id="iterate-fullsuite",
+        junit_reports=[("shared", a), ("plugins/shipwright-build", b)],
+    )
+    index = _load(refresh_index(tmp_path))
+    assert "shared/tests/test_a.py::test_a" in index["results"]
+    assert "plugins/shipwright-build/tests/test_b.py::test_b" in index["results"]
+
+
+def test_refresh_index_rejects_a_staged_report_with_no_provenance_base(tmp_path):
+    # Fail-closed (AC): a junit-NN.xml present in the evidence dir with NO matching
+    # provenance entry (or a corrupt/absent sidecar) must be REJECTED, never silently
+    # read at base="" — a wrong-but-silent base could join the WRONG id instead of
+    # just failing to join.
+    drop = tmp_path / ".shipwright" / "compliance" / "evidence"
+    drop.mkdir(parents=True)
+    (drop / "junit-01.xml").write_text(
+        '<testsuites><testsuite><testcase file="tests/test_x.py" name="test_x"/></testsuite></testsuites>',
+        encoding="utf-8",
+    )
+    # No _provenance.json at all.
+    index = _load(refresh_index(tmp_path))
+    assert index["results"] == {}
 
 
 def test_stale_index_is_not_trusted_when_no_fresh_reports(tmp_path):

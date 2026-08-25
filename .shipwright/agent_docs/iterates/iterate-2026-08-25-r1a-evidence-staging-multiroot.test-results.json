@@ -1,0 +1,143 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-25-r1a-evidence-staging-multiroot",
+    "date": "2026-08-25",
+    "unit": {
+      "status": "pass",
+      "passed": 16762,
+      "total": 16818,
+      "failed": 0,
+      "note": "Full 18-root local sweep via scripts/run_full_suite_evidence.py (ADR-044, one pytest process per root, mirrors ci.yml's own per-root invocation): all 18 roots green, zero failures, 56 skipped. Per-root counts (console3.log): integration-tests 526, shipwright-adopt 638, shipwright-build 133, shipwright-changelog 81, shipwright-compliance 1652, shipwright-deploy 102, shipwright-design 38, shipwright-grade 390, shipwright-iterate 938, shipwright-plan 82, shipwright-preview 10, shipwright-project 64, shipwright-run 555, shipwright-security 927, shipwright-test 243, shared/scripts/tests 471, shared/scripts/tools/tests 567, shared/tests 9345."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 526,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; this is framework machinery (a shared library, a plugin collector, and a repo-level CLI tool)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 16,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-25-r1a-evidence-staging-multiroot/surface_verification.json",
+      "detail": "Real pytest run (shared/tests/test_evidence_drop.py, 16 passed) + a real invocation of the NEW multi-root staging CLI surface (`evidence_drop.py stage --junit shared=<real-junit>`) against the actual worktree, exit 0."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "E-A: staged JUnit reports are byte-identical, never rewritten",
+          "disposition": "tested",
+          "evidence": "test_evidence_drop.py::test_stage_multiple_junit_reports_are_byte_identical_and_indexed PASSED"
+        },
+        {
+          "behavior": "E-B: repeatable --junit <base>=<path> stages N reports as junit-01..NN.xml; legacy single-report form stays valid",
+          "disposition": "tested",
+          "evidence": "test_evidence_drop.py::test_cli_stage_repeatable_junit_with_explicit_bases, test_cli_clear_and_stage PASSED"
+        },
+        {
+          "behavior": "E-B: a bare --junit path among 2+ is rejected, never silently defaulted to the project root",
+          "disposition": "tested",
+          "evidence": "test_evidence_drop.py::test_cli_stage_rejects_a_bare_junit_path_among_multiple PASSED"
+        },
+        {
+          "behavior": "E-B: a duplicate base across two --junit flags is rejected (external-review finding)",
+          "disposition": "tested",
+          "evidence": "test_evidence_drop.py::test_cli_stage_rejects_duplicate_bases PASSED"
+        },
+        {
+          "behavior": "E-C: bases threaded through refresh_index/fresh_evidence so a cross-root id actually joins",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "test_execution_evidence_join.py (24 cases), test_layer_coverage_evidence_multiroot.py::test_fresh_evidence_joins_multi_root_reports_each_with_its_own_base PASSED"
+        },
+        {
+          "behavior": "E-C: a staged report with no matching provenance base is rejected fail-closed, not defaulted to base=\"\"",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_evidence_multiroot.py::test_fresh_evidence_rejects_a_staged_report_with_no_base_recorded PASSED"
+        },
+        {
+          "behavior": "external-review finding: a provenance name escaping the evidence dir (path traversal) is rejected fail-closed",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_evidence_multiroot.py::test_fresh_evidence_rejects_a_provenance_name_that_escapes_the_evidence_dir PASSED"
+        },
+        {
+          "behavior": "E-D/E-E: root list and id-rebase base are derived from conftest.py::discover_test_roots, no hand-maintained table; a new plugins/<x>/tests root is planned with zero code changes",
+          "disposition": "tested",
+          "evidence": "test_run_full_suite_evidence.py::test_a_brand_new_plugin_root_is_planned_identically_with_zero_code_changes, test_load_discover_test_roots_reaches_the_real_repo_root_conftest PASSED"
+        },
+        {
+          "behavior": "external-review finding: the conftest loader honors --project-root, not the script's own compile-time repo root",
+          "disposition": "tested",
+          "evidence": "test_run_full_suite_evidence.py::test_load_discover_test_roots_honors_a_different_project_root, test_main_loads_conftest_from_project_root_not_the_scripts_own_repo PASSED"
+        },
+        {
+          "behavior": "clear sweeps every junit-*.xml plus the pre-E-B legacy single junit.xml",
+          "disposition": "tested",
+          "evidence": "test_evidence_drop.py::test_clear_sweeps_every_junit_dash_n_file, test_clear_removes_pre_e_b_legacy_junit_xml PASSED"
+        },
+        {
+          "behavior": "run_full_suite_evidence.py clears stale evidence BEFORE running any root, not only at the final stage",
+          "disposition": "tested",
+          "evidence": "test_run_full_suite_evidence.py::test_main_clears_stale_evidence_before_running_any_root PASSED"
+        },
+        {
+          "behavior": "SPEC 4 P0a literal AC: a real full-suite run (18/18 roots staged) produces at least one coverage cell reading ok",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "scripts/run_full_suite_evidence.py real run (console3.log: roots_staged=18, 16762 passed, 0 failed) + update_compliance.py --phase test regen: test-traceability.json coverage {MISSING: 14, ok: 7} (was 0 ok / 21 MISSING before this iterate's fix)"
+        },
+        {
+          "behavior": "a root whose process crashes before writing junit is reported (hard failure), never silently fabricated",
+          "disposition": "tested",
+          "evidence": "test_run_full_suite_evidence.py::test_run_root_reports_no_evidence_when_the_process_never_writes_junit, test_stage_all_skips_roots_with_no_produced_evidence PASSED"
+        },
+        {
+          "behavior": "a root with failing tests still contributes its evidence (never suppressed just because returncode != 0)",
+          "disposition": "tested",
+          "evidence": "test_run_full_suite_evidence.py::test_run_root_still_collects_evidence_from_a_root_with_failing_tests PASSED"
+        }
+      ],
+      "counts": {
+        "total": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      },
+      "ledger_path": ".shipwright/planning/adr/iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-25-r1a-evidence-staging-multiroot",
+    "commit": "7a063a5da455c91b6aed8f03c95578735622f6b3",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

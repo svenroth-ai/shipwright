@@ -56,11 +56,37 @@ def norm_path(raw: str, root: Path | None, base: str = "") -> str:
 
 
 def _classname_to_path(classname: str | None) -> str:
-    """Best-effort JUnit fallback when a ``<testcase>`` has no ``file`` attribute:
-    ``tests.test_auth`` → ``tests/test_auth.py`` (pytest always emits ``file``)."""
+    """JUnit fallback when a ``<testcase>`` has no ``file`` attribute.
+
+    Not a rare fallback in practice: this repo's OWN staged evidence
+    (``.shipwright/compliance/evidence/junit-05.xml``) confirms pytest's default
+    xunit2 report never emits ``file=`` at all, so this is the path ALWAYS taken.
+
+    ``classname`` is dotted module-path segments, optionally followed by ONE OR
+    MORE trailing test-CLASS segments for a class-based test —
+    ``tests.test_foo.TestBar`` is module ``tests/test_foo.py``, class ``TestBar``;
+    ``tests.test_foo.TestOuter.TestInner`` (a nested class) carries two. A
+    module-only classname (``tests.test_foo``) has no trailing class segment at
+    all, so the two shapes must be told apart before rejoining as a path — a
+    plain ``.replace(".", "/")`` mangles the class segment(s) into the path
+    (``tests/test_foo/TestBar.py``), which never joins anything and silently
+    reads MISSING forever.
+
+    Distinguishing them from the string alone: pytest test-module segments are
+    valid Python identifiers under PEP 8 (``test_foo``, lowercase/underscore); a
+    test class is conventionally CapWords (``TestBar``). Strip trailing
+    CapWords-shaped segments — while 2+ segments remain — before rejoining, so a
+    class-based test resolves to its real module file. Best-effort: a module
+    segment that itself starts uppercase defeats the heuristic (same class of
+    limitation ``norm_path`` already accepts for other id shapes — fail-closed,
+    never a false pass, just a MISSING that a differently-shaped id would fix).
+    """
     if not classname:
         return ""
-    return classname.replace(".", "/") + ".py"
+    parts = classname.split(".")
+    while len(parts) > 1 and parts[-1][:1].isupper():
+        parts = parts[:-1]
+    return "/".join(parts) + ".py"
 
 
 def read_junit(text: str, root: Path | None = None, base: str = "") -> dict:

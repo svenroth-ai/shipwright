@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-25-r1a-evidence-staging-multiroot",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T16:37:23.200557+00:00",
+      "disposition": "7/7 checklist items passed; see ADR Self-Review section",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The full-suite runner is specified to run each root with pytest, but the plan does not say what marker expression it uses. The spec itself notes `shared/tests` must run with `-m \"not slow and not cross_plugin\"` or cross_plugin tests will be collected and hard-fail, while plugin/integration roots inherit `-m 'not slow'`. A runner relying only on root `pyproject.toml` addopts will break on `shared/tests` or produce misleading evidence.",
+          "suggestion": "Derive/reuse the same per-tier pytest marker matrix as `.github/workflows/ci.yml:176` for the runner, or share the existing CI pytest invocation. At minimum, pass `not cross_plugin` for shared roots and add a test that `shared/tests` runs successfully and excludes those items.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The implementation approach does not mention updating `clear` or `REPORT_NAMES` from the single `junit.xml` to the new `junit-.xml` naming. If `clear` still only removes `junit.xml`, an old `junit-17.xml` or `junit-18.xml` can survive a clean/stage cycle and be read as evidence for the current run.",
+          "suggestion": "Update `clear` and report discovery to operate on `junit-.xml` explicitly, and test that clearing after a multi-report stage removes every staged report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "build_index` gains `junit_reports` additively, but the plan does not state that the old `_first_existing`/`_JUNIT_CANDIDATES` single-file path is disabled when `junit_reports` is supplied. This risks fallback to a stale `junit.xml` or duplicate parsing.",
+          "suggestion": "Make the two inputs mutually exclusive in `build_index`: if `junit_reports` is provided, do not call `_first_existing`; if both are provided, fail loudly. Add a test with no `junit.xml` but valid `junit-01.xml` to prove no fallback occurs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Bases derived from `discover_test_roots` are not guaranteed to use forward slashes, especially on the Windows operator. Manifest IDs are `/`-relative; a `base` containing backslashes will not join correctly to `plugins/.../tests/test_x.py::test_y`.",
+          "suggestion": "Normalize bases to repo-relative POSIX paths, e.g. `Path.relative_to(repo_root).as_posix()`, both when staging and when reading provenance. Add a fixture/test using backslash-style input.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The runner runs roots one process at a time, but the plan does not explicitly require a unique `--junitxml` path per root. Reusing one temp file would silently leave only the last root’s report for staging.",
+          "suggestion": "Generate a distinct report path per root, collect all produced paths first, and only then call `stage` once with all `--junit` arguments. Test with two roots to assert two staged reports.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The landmine says not to trust pytest’s exit code / an empty XML file, but the plan does not define how the runner decides a root completed successfully. Staging a partial or missing XML file would silently under-report evidence.",
+          "suggestion": "After each pytest process, verify the expected completion signal—parse the `N passed` summary line or validate the generated JUnit XML contains real tests—and abort without staging if a root did not complete. Do not rely solely on `subprocess` return code.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The R1b measurement was not actually performed in CI as required; Q1 simulated `generated_at`/commit changes locally. If the second commit also changed tree content, the conclusion that only `source_commit` differed is not isolated.",
+          "suggestion": "Either run the real local-vs-CI comparison now, or document the measurement as a local simulation with explicit limitations. Use an empty or content-identical second commit to isolate `source_commit`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "junit <base>=<path>` bases are accepted from the CLI and later used to rebase manifest IDs, but the plan does not mention validating that bases are repo-relative or rejecting duplicate bases. A malformed manual invocation could record misleading evidence IDs.",
+          "suggestion": "Parse with `partition('=')`, reject duplicate bases in one `stage` call, and validate that each base is a normalized relative path inside the project root before writing it to `_provenance.json`.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The runner description does not state that it clears the evidence drop before starting, nor that it refuses to stage anything unless every root completed successfully. If an old `junit-NN.xml` remains, or if root 12 of 18 fails after earlier reports were produced, a subsequent index build can consume a mixture of stale and partial evidence. That could make some requirements appear covered by a run that was not a complete suite.",
+          "suggestion": "Make the runner transaction-like: invoke `clear` before executing any root; write per-root JUnit files to a fresh temporary directory; require each root to complete and produce a non-empty, parseable report; only then invoke one `stage` call for all reports. On any root failure, timeout, missing report, or parse failure, do not stage and return failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan repeats the claim that a pytest exit code is “worthless” and that the runner must read the `N passed` line, but does not define a reliable completion/failure contract. A synchronously awaited pytest process has meaningful exit status; terminal-summary parsing is version-, locale-, plugin-, and output-format-dependent, and `N passed` alone does not distinguish failures, collection errors, or a run containing passes plus failures.",
+          "suggestion": "Do not background subprocesses. Run each pytest command synchronously, capture its output for diagnostics, and require pytest’s normal success exit status plus the expected JUnit output file. If this repository has a wrapper that backgrounds pytest, fix/bypass that wrapper rather than replacing process-status handling with summary-text parsing. Explicitly decide whether “no tests collected” (pytest exit 5) is permitted per root; normally it should fail a full-suite evidence run unless a discovered root is intentionally empty and that is encoded in the root-discovery contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Renaming staged output from the legacy `evidence/junit.xml` to `junit-01.xml …` is a storage-format migration. The plan names two readers to update, but the existing `_first_existing` / `_JUNIT_CANDIDATES` behavior strongly suggests there may be additional consumers, cleanup code, diagnostics, tests, and scripts that directly expect `junit.xml`. Also, the stated `clear` criterion only mentions `junit-.xml`, which does not remove the legacy `junit.xml`.",
+          "suggestion": "Search all repository references to `junit.xml`, `REPORT_NAMES`, `_JUNIT_CANDIDATES`, and the evidence directory rather than limiting updates to the two identified readers. During migration, have `clear` remove both legacy `junit.xml` and the new numbered reports. Either retain a deliberate backward-compatible single-report location or update every supported consumer in the same change and add a migration regression test proving a legacy report cannot be read after `clear`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“Derive roots and bases from `discover_test_roots`” is sound only if that function exposes enough canonical information to derive a rebase base unambiguously. A test root path alone does not always establish the intended import/classname base: `tests`, nested plugin tests, shared tools tests, and integration tests can have different collection/rootdir semantics. Inferring the base separately in the runner risks reintroducing the second mapping that E-E is intended to prevent.",
+          "suggestion": "Verify that `discover_test_roots` already returns a canonical root-to-base mapping. If it returns only paths, extend that shared discovery API to return a typed descriptor such as `{test_root, evidence_base}` and make both the runner and relevant tests consume it. Define bases as normalized project-relative POSIX paths, with project root represented consistently (for example `\".\"`), and test all existing root classes—not only a newly added plugin root.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Repeated `--junit <base>=<path>` needs deterministic and validated serialization. Without this, report numbering and provenance ordering can vary by discovery order, paths containing `=`, absolute/relative spelling, or Windows separators. Invalid bases can also silently cause report-to-manifest mismatches even though the XML itself is valid.",
+          "suggestion": "Split the option only on the first `=`, normalize source paths and bases before staging, reject duplicate normalized bases/report paths, and preserve a deterministic root order. Validate that every explicit base resolves within `project_root` and that every report path is a regular readable file. Define the single-report compatibility case precisely: it may default to `\".\"` at CLI parsing time, but a stored provenance entry lacking a normalized base must remain invalid.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The new `base` value becomes persisted provenance and influences path rebasing during evidence attribution. If arbitrary absolute paths or `..` traversal are accepted, a caller can create evidence whose test identities are rebased outside the repository or ambiguously associated with repository files. This is primarily an integrity issue for a local repo tool, but it undermines the fail-closed evidence model.",
+          "suggestion": "Canonicalize bases against `project_root`, reject values escaping it, and persist only normalized project-relative bases. Keep JUnit source-path validation separate from base validation, and ensure errors identify the report/base pair rather than falling back to another report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The runner’s pytest invocation contract is underspecified. The R1b measurement establishes that marker expression, interpreter, platform, working directory, and root-specific configuration affect collection, but the runner description does not say which interpreter, marker arguments, environment, or working directory it uses. A runner that merely invokes `pytest <root> --junitxml ...` can collect a materially different suite from the established CI/root behavior and may fail on the known `cross_plugin` shared-tests case.",
+          "suggestion": "Centralize or reuse the existing suite-command construction used by CI/F0 where possible, including `uv`/interpreter selection, marker expression, root-specific working directory, and relevant environment. Add a runner test that asserts the command produced for `shared/tests` includes the required cross-plugin exclusion and that plugin/integration roots retain their intended marker behavior.  Overall, the multi-report staging and per-report base propagation are the right design and directly address the verified evidence gap. The change should be revised to make full-suite execution atomic and reliable, and to complete the legacy-report migration and canonical root/base contract before relying on its output. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-25T16:36:44.765543+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] Overall assessment: the multi-root staging direction is consistent with the existing fail-closed design, but several implementation specifics are missing—especially the full-suite runner’s pytest marker selection and clearing/discovery of the new `junit-*.xml` names—that could cause the runner to fail or stale evidence to be read as current.\n\n- **Category:** dependency  \n  **Severity:** high  \n  **Finding:** The full-suite runner is specified to run each root with pytest, but the plan does not say what marker expression it uses. The spec itself notes `shared/tests` must run with `-m \"not slow and not cross_plugin\"` or cross_plugin tests will be collected and hard-fail, while plugin/integration roots inherit `-m 'not slow'`. A runner relying only on root `pyproject.toml` addopts will break on `shared/tests` or produce misleading evidence.  \n  **Suggestion:** Derive/reuse the same per-tier pytest marker matrix as `.github/workflows/ci.yml:176` for the runner, or share the existing CI pytest invocation. At minimum, pass `not cross_plugin` for shared roots and add a test that `shared/tests` runs successfully and excludes those items.\n\n- **Category:** risk  \n  **Severity:** high  \n  **Finding:** The implementation approach does not mention updating `clear` or `REPORT_NAMES` from the single `junit.xml` to the new `junit-*.xml` naming. If `clear` still only removes `junit.xml`, an old `junit-17.xml` or `junit-18.xml` can survive a clean/stage cycle and be read as evidence for the current run.  \n  **Suggestion:** Update `clear` and report discovery to operate on `junit-*.xml` explicitly, and test that clearing after a multi-report stage removes every staged report.\n\n- **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** `build_index` gains `junit_reports` additively, but the plan does not state that the old `_first_existing`/`_JUNIT_CANDIDATES` single-file path is disabled when `junit_reports` is supplied. This risks fallback to a stale `junit.xml` […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The runner description does not state that it clears the evidence drop before starting, nor that it refuses to stage anything unless *every* root completed successfully. If an old `junit-NN.xml` remains, or if root 12 of 18 fails after earlier reports were produced, a subsequent index build can consume a mixture of stale and partial evidence. That could make some requirements appear covered by a run that was not a complete suite.  \n   **Suggestion:** Make the runner transaction-like: invoke `clear` before executing any root; write per-root JUnit files to a fresh temporary directory; require each root to complete and produce a non-empty, parseable report; only then invoke one `stage` call for all reports. On any root failure, timeout, missing report, or parse failure, do not stage and return failure.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The plan repeats the claim that a pytest exit code is “worthless” and that the runner must read the `N passed` line, but does not define a reliable completion/failure contract. A synchronously awaited pytest process has meaningful exit status; terminal-summary parsing is version-, locale-, plugin-, and output-format-dependent, and `N passed` alone does not distinguish failures, collection errors, or a run containing passes plus failures.  \n   **Suggestion:** Do not background subprocesses. Run each pytest command synchronously, capture its output for diagnostics, and require pytest’s normal success exit status plus the expected JUnit output file. If this repository has a wrapper that backgrounds pytest, fix/bypass that wrapper rather than replacing process-status handling with summary-text parsing. Explicitly decide whether “no tests collected” (pytest exit 5) is permitted per root; normally it should fail a full-suite evidence run unless a discovered root is intentionally empty and that is encoded in the root-discovery contract.\n\n […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T16:38:04.939754+00:00",
+      "disposition": "delegated_to_orchestrator: sub-iterate-runner has no Agent tool; code-reviewer runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T16:38:05.052340+00:00",
+      "disposition": "delegated_to_orchestrator: sub-iterate-runner has no Agent tool; doubt-reviewer (conditional) runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "scripts/run_full_suite_evidence.py:59-67",
+          "line": null,
+          "finding": "_load_discover_test_roots()` always loads `conftest.py` from the script’s compile-time `_REPO_ROOT`, while `main()` accepts a potentially different `--project-root` at line 177. Invoking the tool with a non-default project root therefore derives test roots from this repository’s conftest rather than the selected project’s conftest, violating the requirement that the root list come from the target repo’s `conftest.py::discover_test_roots`.",
+          "suggestion": "Pass `repo_root` into `_load_discover_test_roots(repo_root)` and load `repo_root / \"conftest.py\"`. Add an integration test using a distinct temporary project root and a distinct conftest discovery implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_evidence.py:77-83",
+          "line": null,
+          "finding": "fresh_evidence()` trusts every provenance `reports.junit` entry’s `name` and reads `evd / str(r[\"name\"])` without verifying that it is a discovered `junit-.xml` basename inside the evidence directory. An absolute name overrides `evd`, and `../` components can escape it; malformed provenance can therefore make the compliance gate consume arbitrary local XML rather than only staged reports. This also fails the specified consumer contract to discover staged reports and look up each report’s matching provenance entry, fail-closed.",
+          "suggestion": "Discover `junit-.xml` from the evidence directory first, build a strictly validated `{basename: base}` provenance map, and only read discovered files with exactly one matching string-valued `base`. Reject absolute names, path separators, duplicate names, and non-string `name`/`base` values; add tests for traversal/absolute names and unmatched provenance entries.  Overall assessment: ship-with-fixes. The core multi-report staging and per-report rebasing are implemented, but the target-root discovery bug and fail-open provenance filename handling should be corrected before release. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-25T16:51:39.960716+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `scripts/run_full_suite_evidence.py:59-67`  \n  Finding: `_load_discover_test_roots()` always loads `conftest.py` from the script’s compile-time `_REPO_ROOT`, while `main()` accepts a potentially different `--project-root` at line 177. Invoking the tool with a non-default project root therefore derives test roots from this repository’s conftest rather than the selected project’s conftest, violating the requirement that the root list come from the target repo’s `conftest.py::discover_test_roots`.  \n  Suggestion: Pass `repo_root` into `_load_discover_test_roots(repo_root)` and load `repo_root / \"conftest.py\"`. Add an integration test using a distinct temporary project root and a distinct conftest discovery implementation.\n\n- Category: security  \n  Severity: medium  \n  File: `shared/scripts/tools/verifiers/_layer_coverage_evidence.py:77-83`  \n  Finding: `fresh_evidence()` trusts every provenance `reports.junit` entry’s `name` and reads `evd / str(r[\"name\"])` without verifying that it is a discovered `junit-*.xml` basename inside the evidence directory. An absolute name overrides `evd`, and `../` components can escape it; malformed provenance can therefore make the compliance gate consume arbitrary local XML rather than only staged reports. This also fails the specified consumer contract to discover staged reports and look up each report’s matching provenance entry, fail-closed.  \n  Suggestion: Discover `junit-*.xml` from the evidence directory first, build a strictly validated `{basename: base}` provenance map, and only read discovered files with exactly one matching string-valued `base`. Reject absolute names, path separators, duplicate names, and non-string `name`/`base` values; add tests for traversal/absolute names and unmatched provenance entries.\n\nOverall assessment: ship-with-fixes. The core multi-report staging and per-report rebasing are implemented, but the target-root discovery bug and fail-open prov […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T16:38:04.835540+00:00",
+      "disposition": "sub-iterate-runner has no Agent tool (Read,Write,Edit,Bash,Glob,Grep only); orchestrator runs spec-reviewer cascade at campaign-mode.md 3f-bis before merge, with --force promotion",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T16:36:50.211589+00:00",
+      "disposition": "sub-iterate-runner has no Agent tool; opus-plan-reviewer is not wired into any caller (documented gap, project_plan_review_has_no_internal_arm) — external plan review (this run's plan row) is the only plan review that fires",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -57,6 +57,7 @@ def validate_index(index: dict) -> None:
 def build_index(
     *,
     junit: str | None = None,
+    junit_reports: list[tuple[str, str]] | None = None,
     playwright: dict | None = None,
     vitest: dict | None = None,
     root: Path | None = None,
@@ -73,11 +74,22 @@ def build_index(
     earlier failure). ``generated_at`` / ``source_reports`` make staleness auditable;
     ``waivers`` (operator-authored) are carried through verbatim so the layer gate
     (TT2/TT5) can honor a valid one via ``layer_satisfied``.
+
+    ``junit_reports`` (E-C, additive to ``junit``/``bases["junit"]``) is
+    ``[(text, base), ...]`` — one entry per staged pytest-root report (ADR-044: one
+    process, one JUnit file, per root), each parsed with **its own** base so a
+    cross-root test id (e.g. ``plugins/shipwright-compliance/tests/test_x.py::test_y``)
+    actually joins the manifest. Every entry folds through the same fail-closed
+    reduction as every other parsed set, so a root that never ran still reads
+    ``not_run`` rather than being silently absent.
     """
     bases = bases or {}
     parsed_sets = []
     if junit:
         parsed_sets.append(read_junit(junit, root=root, base=bases.get("junit", "")))
+    for text, base in junit_reports or []:
+        if text:
+            parsed_sets.append(read_junit(text, root=root, base=base))
     if playwright:
         parsed_sets.append(read_playwright(playwright, root=root, base=bases.get("playwright", "")))
     if vitest:
