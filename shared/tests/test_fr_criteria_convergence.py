@@ -1,20 +1,23 @@
-"""All three FR-criteria readers agree (campaign REQ3.04, sub-iterate R0).
+"""S5 and the cross-layer gate agree via ``lib.fr_criteria`` (campaign
+REQ3.04, sub-iterate R0).
 
-``lib.spec_parser`` (S5), ``tools.verifiers._layer_coverage_ac`` (the
-cross-layer fold gate) and
-``plugins/shipwright-compliance/scripts/audit/group_i_criteria`` (I6) used to
-each walk a spec's acceptance-criteria bullets on their own, and disagreed
-about what counted — see the module docstrings of ``lib.fr_criteria`` and
-``group_i_criteria`` for the history. All three now delegate to
-``lib.fr_criteria``; this test pins that on one shared input, they still read
-the SAME criteria list.
+``lib.spec_parser`` (S5) and ``tools.verifiers._layer_coverage_ac`` (the
+cross-layer fold gate) used to each walk a spec's acceptance-criteria
+bullets on their own, and disagreed about what counted — see the module
+docstrings of ``lib.fr_criteria`` and ``group_i_criteria`` for the history.
+Both now delegate to ``lib.fr_criteria``; this test pins that on the shipped
+shape they still read the SAME criteria list, and that the one documented
+``strict=False`` exception behaves as specified.
 
-``group_i_criteria.has_criteria`` is a pure passthrough to
-``fr_criteria.has_criteria`` (see its own plugin test suite, which pins the
-delegation), so exercising ``fr_criteria`` directly here covers it without
-crossing this repo's pytest test-root boundary (ADR-044): importing the
-compliance plugin's ``scripts`` package from this root would give ``scripts``
-two identities in one session.
+This file cannot ALSO invoke ``group_i_criteria`` (I6) directly: doing so
+from this root would give the compliance plugin's ``scripts`` package a
+second identity in this pytest process (ADR-044). The genuine three-way test
+— I6's real module, S5, and the cross-layer gate, all invoked through their
+real entry points on the same inputs — lives in
+``integration-tests/test_fr_criteria_three_way_convergence.py``, which is a
+different pytest root built for exactly this cross-plugin-boundary case
+(Stage-1 spec review, 2026-08-25: a stand-in that never calls I6's real
+module does not test I6).
 """
 
 from __future__ import annotations
@@ -39,40 +42,33 @@ _SPEC = (
 )
 
 
-def test_all_three_readers_agree_on_the_same_criteria_list():
+def test_s5_and_cross_layer_agree_on_the_same_criteria_list():
     expected = fr_criteria.criteria_for(_SPEC, "FR-01.01")
     assert expected  # sanity: the fixture actually has criteria
 
-    # spec_parser (S5) — via parse_fr_headings' shipped-form fallback (S2).
+    # spec_parser (S5) — via parse_fr_headings' shipped-form fallback (S2),
+    # always the strict/adjacency default.
     heading = spec_parser.parse_fr_headings(_SPEC)[0]
     assert heading.acceptance.split("\n") == expected
 
-    # group_i_criteria (I6) — a pure passthrough, so this IS its answer.
-    assert fr_criteria.has_criteria(_SPEC, "FR-01.01") is True
-
-    # _layer_coverage_ac (cross-layer fold gate) — same list, digested.
+    # _layer_coverage_ac (cross-layer fold gate) — same list, digested. It
+    # calls strict=False, but the shipped shape (no prose before the
+    # bullets) has nothing for strict=False to disagree with strict=True on.
     joined = "\n".join(expected)
     assert criteria_digests(_SPEC)["FR-01.01"] == hashlib.sha256(
         joined.encode("utf-8"),
     ).hexdigest()
 
 
-def test_prose_before_bullets_is_a_deliberate_scoping_difference_not_a_bug():
-    """External plan review (openai, HIGH, 2026-08-25) flagged that
-    ``criteria_for``/``has_criteria`` (I6, the cross-layer gate) read a bullet
-    list even when prose precedes it, while ``leading_criteria`` (S5's
-    fallback) requires strict adjacency and would reject the same input.
-
-    This is intentional, not a missed convergence — see ``fr_criteria``'s own
-    module docstring ("Two entry points, not one..."): I6/the cross-layer gate
-    already scan an EXPLICITLY FR-anchored section (never a broad free-text
-    tree), where a `**Description:**`-style paragraph ahead of the bullets is
-    a legitimate, pre-existing shape (group_i's original behaviour, unchanged
-    by this campaign). S5's fallback alone needs the stricter gate, because
-    IT ALONE walks `.shipwright/planning/iterate/*.md` — arbitrary prose
-    documents where an unrelated bullet list must never be misread as an
-    FR's acceptance. Pinned here so the divergence stays a stated design
-    choice, not an unstated side effect.
+def test_strict_false_is_the_one_documented_permissive_exception():
+    """Since 2026-08-25 (Stage-1 spec review), ``criteria_for``/``has_criteria``
+    default to the SAME adjacency gate ``leading_criteria`` (S5) uses —
+    ``strict=False`` is an explicit, narrow opt-out, not a silent second
+    default. This module-level test pins ``fr_criteria``'s own contract; the
+    two REAL call sites that actually pass ``strict=False`` (I6's
+    ``has_criteria``, the cross-layer gate's ``criteria_digests``) are
+    exercised through their own real entry points in
+    ``integration-tests/test_fr_criteria_three_way_convergence.py``.
     """
     spec_with_prose_gap = (
         "## Acceptance Criteria\n\n"
@@ -81,12 +77,10 @@ def test_prose_before_bullets_is_a_deliberate_scoping_difference_not_a_bug():
         "- (E) Given a change, when it runs, then it works.\n"
     )
 
-    # I6 / the cross-layer gate: permissive, reads the block regardless of
-    # what precedes the bullets within it.
-    assert fr_criteria.has_criteria(spec_with_prose_gap, "FR-01.01") is True
-
-    # S5's fallback: adjacency-gated, sees the prose first and stops — the
-    # heading has NO acceptance via this path (the labelled form doesn't
-    # apply here either, since "Description" is not an acceptance label).
+    # Default (strict=True): adjacency-gated, agrees with S5's fallback.
+    assert fr_criteria.has_criteria(spec_with_prose_gap, "FR-01.01") is False
     heading = spec_parser.parse_fr_headings(spec_with_prose_gap)[0]
     assert not heading.has_acceptance()
+
+    # Explicit strict=False: the documented, tested exception.
+    assert fr_criteria.has_criteria(spec_with_prose_gap, "FR-01.01", strict=False) is True

@@ -22,20 +22,35 @@ callers delegate here; none keeps its own walk.
 parser moved here, not the other way (precedent:
 ``tools/verifiers/_layer_coverage_evidence.py``).
 
-**Two entry points, not one, because the callers ask two different
-questions.** ``criteria_for`` / ``has_criteria`` answer "what does FR-X's
-own section (wherever it is anchored, however many times) say" — the whole
-block between an anchor and the next one is scanned, permissively, because a
-legacy ``**Description:**`` / ``**Acceptance Criteria:**`` paragraph sitting
-between the heading and the bullets must not hide them (group_i's original
-behaviour; ``iter_anchored_blocks`` reproduces it exactly). ``leading_criteria``
-answers a narrower, ADJACENCY-gated question for spec_parser's acceptance
-fallback: does a bullet list start *immediately* under this heading, with no
-prose paragraph first? Without that gate, the fallback would reach into
-``.shipwright/planning/iterate/*.md`` — free-text documents that occasionally
-grow a heading shaped like ``FR-XX.YY`` by coincidence — and read an unrelated
-bullet list anywhere in the document as that FR's "acceptance". Today it is
-"luck, not scope" that nothing there matches
+**One default semantics, one documented, tested opt-out — not two entry
+points with silently different rules (2026-08-25, Stage-1 spec review).**
+``criteria_for`` / ``has_criteria`` and ``leading_criteria`` now agree by
+DEFAULT: both apply the same ADJACENCY gate — a bullet list only counts when
+it starts at the block/body's first non-blank line, with no prose paragraph
+first. This is what makes the convergence test
+(``test_fr_criteria_convergence.py``) hold on the shipped shape (a heading
+followed directly by bare bullets): every real spec this repo ships has no
+prose between heading and bullets, so ``strict=True`` and the old permissive
+scan agree on every one of them.
+
+``criteria_for(..., strict=False)`` / ``has_criteria(..., strict=False)`` is
+the one narrow, EXPLICIT, tested exception: a legacy ``**Description:**`` /
+``**Acceptance Criteria:**`` label paragraph sitting between the heading and
+the bullets must not hide them. Two real, pre-existing tests require exactly
+this and would break if the default silently changed under them:
+``plugins/shipwright-compliance/tests/test_group_i_criteria.py::test_legacy_bold_acceptance_label_still_counts``
+(I6) and
+``shared/tests/test_layer_coverage_criteria.py::test_prose_outside_a_criterion_is_not_a_criterion_change``
+(the cross-layer gate). Both call sites pass ``strict=False`` explicitly,
+each with a comment naming the test it preserves — see
+``group_i_criteria.has_criteria`` and ``_layer_coverage_ac.criteria_digests``.
+
+``leading_criteria`` stays adjacency-gated unconditionally (spec_parser's
+S5 fallback never needs the permissive scan): without that gate the fallback
+would reach into ``.shipwright/planning/iterate/*.md`` — free-text documents
+that occasionally grow a heading shaped like ``FR-XX.YY`` by coincidence —
+and read an unrelated bullet list anywhere in the document as that FR's
+"acceptance". Today it is "luck, not scope" that nothing there matches
 (``test_requirements_catalog_parsers.py``); the gate makes it scope.
 
 Pure: no I/O, greenfield-safe (empty input yields empty output).
@@ -158,45 +173,28 @@ def iter_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
         i = j
 
 
-def criteria_for(content: str, fr_id: str) -> list[str]:
-    """Every criterion text anchored to ``fr_id`` in ``content``, pooled
-    across every occurrence of its anchor."""
-    target = normalise_fr_id(fr_id)
-    out: list[str] = []
-    for anchored_id, block in iter_anchored_blocks(content):
-        if anchored_id == target:
-            out.extend(criteria_texts(block))
-    return out
+def _leading_bullet_run(lines: list[str]) -> list[str]:
+    """The slice of ``lines`` covering the CONTIGUOUS leading bullet run, or
+    ``[]`` when the first non-blank line is not a bullet.
 
-
-def has_criteria(content: str, fr_id: str) -> bool:
-    """True when ``fr_id`` has at least one real acceptance criterion."""
-    return bool(criteria_for(content, fr_id))
-
-
-def leading_criteria(body_lines: list[str]) -> list[str]:
-    """The bullet list that starts a heading's body, or ``[]``.
-
-    Adjacency-gated: only the first non-blank line of ``body_lines`` is
-    allowed to be prose-free. If it is not a bullet, this returns ``[]``
-    outright — a bullet list further down, after a prose paragraph, does
-    NOT count. See the module docstring for why this guard exists.
-
-    Bounded to the CONTIGUOUS leading run (external code review, 2026-08-25):
-    a bullet list ends at the first prose line, and nothing past that point
-    is read — a later, unrelated list further down the SAME body (after that
-    prose) must not extend it, even when the leading run itself was only a
-    placeholder that `criteria_texts` filters to nothing.
+    Shared by ``leading_criteria`` and ``criteria_for(..., strict=True)`` so
+    the two never drift apart again (2026-08-25, Stage-1 spec review): only
+    the first non-blank line is allowed to be prose-free, and the run ends
+    at the first prose line — a later, unrelated bullet list further down
+    (after that prose) is never reached, even when the leading run itself
+    was only a placeholder that ``criteria_texts`` filters to nothing
+    (external code review, 2026-08-25). See the module docstring for why
+    this adjacency gate exists.
     """
     i = 0
-    n = len(body_lines)
-    while i < n and not body_lines[i].strip():
+    n = len(lines)
+    while i < n and not lines[i].strip():
         i += 1
-    if i >= n or not _BULLET_RE.match(body_lines[i]):
+    if i >= n or not _BULLET_RE.match(lines[i]):
         return []
     j = i
     while j < n:
-        line = body_lines[j]
+        line = lines[j]
         if _BULLET_RE.match(line) or (line.strip() and line[:1].isspace()):
             j += 1
             continue
@@ -204,16 +202,55 @@ def leading_criteria(body_lines: list[str]) -> list[str]:
             # A blank line may separate two bullets of the SAME list; only a
             # continuation into ANOTHER bullet keeps the run going.
             k = j
-            while k < n and not body_lines[k].strip():
+            while k < n and not lines[k].strip():
                 k += 1
-            if k < n and _BULLET_RE.match(body_lines[k]):
+            if k < n and _BULLET_RE.match(lines[k]):
                 j = k
                 continue
         break
-    return criteria_texts(body_lines[i:j])
+    return lines[i:j]
+
+
+def block_criteria(lines: list[str], *, strict: bool = True) -> list[str]:
+    """The criteria within an already-isolated anchor block or heading body.
+
+    ``strict`` (default ``True``) applies the adjacency gate: only the
+    CONTIGUOUS leading bullet run counts. ``strict=False`` is the narrow,
+    documented exception — see the module docstring's "One default
+    semantics" section for exactly which two call sites need it and why.
+    """
+    return criteria_texts(_leading_bullet_run(lines) if strict else lines)
+
+
+def criteria_for(content: str, fr_id: str, *, strict: bool = True) -> list[str]:
+    """Every criterion text anchored to ``fr_id`` in ``content``, pooled
+    across every occurrence of its anchor. See ``block_criteria`` for
+    ``strict``."""
+    target = normalise_fr_id(fr_id)
+    out: list[str] = []
+    for anchored_id, block in iter_anchored_blocks(content):
+        if anchored_id == target:
+            out.extend(block_criteria(block, strict=strict))
+    return out
+
+
+def has_criteria(content: str, fr_id: str, *, strict: bool = True) -> bool:
+    """True when ``fr_id`` has at least one real acceptance criterion. See
+    ``block_criteria`` for ``strict``."""
+    return bool(criteria_for(content, fr_id, strict=strict))
+
+
+def leading_criteria(body_lines: list[str]) -> list[str]:
+    """The bullet list that starts a heading's body, or ``[]``.
+
+    spec_parser's S5 fallback — always ``strict`` (see ``block_criteria``);
+    a thin, stably-named wrapper kept for that one caller's readability.
+    """
+    return block_criteria(body_lines, strict=True)
 
 
 __all__ = [
+    "block_criteria",
     "criteria_for",
     "criteria_texts",
     "has_criteria",

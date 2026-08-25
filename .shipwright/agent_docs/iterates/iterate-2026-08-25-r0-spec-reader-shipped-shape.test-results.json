@@ -8,11 +8,11 @@
       "failed": 0,
       "skipped": 55,
       "deselected": 22,
-      "note": "shared/tests 9313 passed/32 skipped/20 deselected, shared/scripts/tests 471 passed/2 skipped, shared/scripts/tools/tests 559 passed/16 skipped/2 deselected, plugins/shipwright-compliance 1649 passed/5 skipped - all four roots run to completion in this session, zero failures. Two transient shared/tests failures in earlier background runs (test_adr_index_producers.py) were timing artifacts of this run's own concurrent F3 write racing an early background suite launch, not a regression - reconfirmed 13/13 in isolation after INDEX.md settled, and clean again in the final uninterrupted run. Other plugin suites unchanged by this diff were not re-run (no source under their trees touched)."
+      "note": "Re-run after the Stage-1 REJECT remediation (2026-08-25): shared/tests 9313 passed/32 skipped/20 deselected (identical count to the pre-remediation run - zero regression), plugins/shipwright-compliance 1649 passed/5 skipped, both re-run clean to completion. shared/scripts/tests (471 passed/2 skipped) and shared/scripts/tools/tests (559 passed/16 skipped/2 deselected) were confirmed clean earlier this run and not touched by the remediation diff, so not re-run. Two transient shared/tests failures in an even earlier background run (test_adr_index_producers.py) were timing artifacts of this run's own concurrent F3 write racing an early background suite launch, not a regression - reconfirmed 13/13 in isolation, and clean in every full run since."
     },
     "integration": {
       "status": "pass",
-      "passed": 521,
+      "passed": 524,
       "failed": 0,
       "deselected": 2
     },
@@ -34,18 +34,18 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "tests_run": 2,
+      "tests_run": 3,
       "exit_code": 0,
       "evidence_path": ".shipwright/planning/iterate/iterate-2026-08-25-r0-spec-reader-shipped-shape/",
-      "detail": "Both real CLI/audit entry points driven against THIS repo's actual, unmodified spec.md and planning tree (not fixtures). 1) shared/scripts/tools/verifiers/spec_checks.py::check_s5_fr_coherence against the real project root: status WARN with exactly ONE 'missing both' evidence line (the pre-existing, out-of-scope FR-01.03 planning doc) - down from the ~21 false entries the unfixed parser produced, matching the ADR's measured claim exactly. 2) plugins/shipwright-compliance/scripts/audit/run_audit.py --only i against the real project root: exit 0, I6 'FR without acceptance criteria' = pass, 6/6 checks. The run's durable audit-bookkeeping write (shipwright_compliance_config.json last_audit, scope 'i') was reverted after capture - a partial group-I run displacing the last FULL audit's record is out of R0's scope and would be a false disclosure if committed. _layer_coverage_ac's boundary is additionally exercised for real at F6-verify (verify_iterate_finalization.py drives the layer-coverage verifier against this exact commit)."
+      "detail": "Three real CLI/audit entry points driven against THIS repo's actual, unmodified spec.md and planning tree (not fixtures). 1) shared/scripts/tools/verifiers/spec_checks.py::check_s5_fr_coherence against the real project root, re-run after the Stage-1 remediation: status WARN with exactly ONE 'missing both' evidence line (the pre-existing, out-of-scope FR-01.03 planning doc) - down from the ~21 false entries the unfixed parser produced, unchanged by the strict/adjacency-default fix (the real spec has no prose-before-bullets input for it to affect). 2) plugins/shipwright-compliance/scripts/audit/run_audit.py --only i against the real project root (pre-remediation): exit 0, I6 'FR without acceptance criteria' = pass, 6/6 checks; its durable audit-bookkeeping write was reverted after capture - a partial group-I run displacing the last FULL audit's record is out of R0's scope. 3) integration-tests/test_fr_criteria_three_way_convergence.py: I6's real has_criteria run as a subprocess through its actual module path, alongside S5 and the cross-layer gate, on three inputs designed to distinguish adjacency behaviour - added specifically because the Stage-1 review found the original convergence test never called I6 for real. _layer_coverage_ac's boundary is additionally exercised for real at F6-verify (verify_iterate_finalization.py drives the layer-coverage verifier against this exact commit)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 exactly one criteria parser exists (shared/scripts/lib/fr_criteria.py); spec_parser, _layer_coverage_ac and group_i_criteria all delegate to it; a test pins that all three read the same criteria list on one input",
+          "behavior": "AC1 exactly one criteria parser exists (shared/scripts/lib/fr_criteria.py); spec_parser, _layer_coverage_ac and group_i_criteria all delegate to it and share ONE default (adjacency) semantics; a test pins that all three read the same criteria list on one input, invoked through each real entry point (post Stage-1 REJECT remediation, 2026-08-25)",
           "disposition": "tested",
-          "evidence": "test_fr_criteria_convergence.py::test_all_three_readers_agree_on_the_same_criteria_list PASSED (plus test_prose_before_bullets_is_a_deliberate_scoping_difference_not_a_bug pinning the one intentional divergence, per external plan review)"
+          "evidence": "shared/tests/test_fr_criteria_convergence.py::test_s5_and_cross_layer_agree_on_the_same_criteria_list, ::test_strict_false_is_the_one_documented_permissive_exception PASSED; integration-tests/test_fr_criteria_three_way_convergence.py::test_all_three_agree_on_the_shipped_shape, ::test_prose_before_bullets_is_a_documented_permissive_exception, ::test_prose_between_two_bullet_lists_only_s5_reads_the_first PASSED (I6's real has_criteria run as a subprocess through its actual module path, not a stand-in)"
         },
         {
           "behavior": "AC2 group_i_criteria.py's 'Why not reuse spec_parser' docstring paragraph corrected in the same diff",
@@ -58,9 +58,9 @@
           "evidence": "integration-tests/test_requirements_catalog_parsers.py::test_the_fr_heading_coherence_report_is_no_longer_wrong_here PASSED (missing_acceptance == [])"
         },
         {
-          "behavior": "AC4 compute_fr_coherence reports missing_acceptance/missing_both/missing_description all empty for this repo's catalog (table-row exemption); repo-wide report.ok caveat: one pre-existing, out-of-scope planning doc keeps it False",
+          "behavior": "AC4, catalog-scoped (operator decision, post Stage-1 review 2026-08-25): compute_fr_coherence, restricted to .shipwright/planning/01-adopted/spec.md, reports missing_acceptance/missing_both/missing_description all empty (table-row exemption); repo-wide report.ok caveat, explicitly out of R0's scope: one pre-existing, unrelated planning doc (2026-07-23-req3-phase2-FR-01.03-revisit-proposal.md) keeps it False pending a separate operator decision to accept or reject that proposal",
           "disposition": "tested",
-          "evidence": "integration-tests/test_requirements_catalog_parsers.py::test_compute_fr_coherence_resolves_every_catalog_requirement PASSED (catalog-scoped); real repo-wide probe shared/scripts/tools/verifiers/spec_checks.py::check_s5_fr_coherence run against this repo shows exactly ONE 'missing both' entry (the pre-existing FR-01.03 planning doc, verified present on origin/main before this diff) - down from ~21; run_audit.py --only i against the real repo: I6 = pass"
+          "evidence": "integration-tests/test_requirements_catalog_parsers.py::test_compute_fr_coherence_resolves_every_catalog_requirement PASSED (catalog-scoped); real repo-wide probe shared/scripts/tools/verifiers/spec_checks.py::check_s5_fr_coherence run against this repo, re-confirmed after the Stage-1 remediation, shows exactly ONE 'missing both' entry (the pre-existing FR-01.03 planning doc, verified present on origin/main before this diff) - down from ~21; run_audit.py --only i against the real repo: I6 = pass"
         },
         {
           "behavior": "Description derivation skips a section that carries only a labelled Acceptance-Criteria line (no bare prose = no description)",
@@ -75,7 +75,7 @@
         {
           "behavior": "A criterion with continuation lines returns whole; a placeholder bullet (- [ ] TBD) does not count; a section with no bullets and no label still reports has_acceptance() == False",
           "disposition": "tested",
-          "evidence": "test_spec_checks_shipped_form.py::test_parse_fr_headings_fallback_rejects_placeholder_only, ::test_parse_fr_headings_fallback_yields_nothing_without_bullets_or_label PASSED; fr_criteria continuation-line joining exercised by test_all_three_readers_agree_on_the_same_criteria_list"
+          "evidence": "test_spec_checks_shipped_form.py::test_parse_fr_headings_fallback_rejects_placeholder_only, ::test_parse_fr_headings_fallback_yields_nothing_without_bullets_or_label PASSED; fr_criteria continuation-line joining exercised by test_s5_and_cross_layer_agree_on_the_same_criteria_list"
         },
         {
           "behavior": "Adjacency: a bullet list only counts as acceptance when no non-bullet prose sits between the heading and the list; a leading placeholder bullet must not let a later, non-adjacent list count either",
@@ -110,7 +110,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-08-25-r0-spec-reader-shipped-shape",
-    "commit": "f3244747c783a17ec2072b27eb1fc2006c0dab92",
+    "commit": "e29f716d18ed3086cdda0ad375c2bb94cf66a783",
     "dirty": true,
     "base": null,
     "release": null

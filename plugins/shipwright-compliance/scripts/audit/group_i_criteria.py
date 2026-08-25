@@ -20,15 +20,22 @@ converged shape both ``/shipwright-project`` and ``/shipwright-adopt`` emit uses
 of this repo's own requirements as missing acceptance while each was fully
 elaborated. That gap is now closed: ``spec_parser`` falls back to the same
 reader this module uses, so all three FR-criteria consumers in this repo (S5,
-the cross-layer fold-detection gate, and I6 here) agree on what counts as a
-criterion — including the two anchor forms (``### FR-XX.YY — Title`` headings,
-``**FR-XX.YY: Name**`` bold labels) and the rule that a ``| FR-XX.YY | … |``
-table row is deliberately **not** an anchor: every spec states each id in its
-requirements table, so a row that counted would make every requirement
-trivially "have criteria". This module keeps its own name and signature —
-``has_criteria`` / ``frs_without_criteria`` are I6's own vocabulary — but the
-anchor matching, checkbox/marker stripping and placeholder rejection all live
-in ``lib.fr_criteria`` now.
+the cross-layer fold-detection gate, and I6 here) agree BY DEFAULT on what
+counts as a criterion — including the two anchor forms (``### FR-XX.YY —
+Title`` headings, ``**FR-XX.YY: Name**`` bold labels) and the rule that a
+``| FR-XX.YY | … |`` table row is deliberately **not** an anchor: every spec
+states each id in its requirements table, so a row that counted would make
+every requirement trivially "have criteria". This module keeps its own name
+and signature — ``has_criteria`` / ``frs_without_criteria`` are I6's own
+vocabulary — but the anchor matching, checkbox/marker stripping and
+placeholder rejection all live in ``lib.fr_criteria`` now.
+
+**One documented exception.** ``has_criteria`` below passes
+``fr_criteria.has_criteria(..., strict=False)``: a ``**Description:**`` /
+``**Acceptance Criteria:**`` label paragraph sitting between the heading and
+its bullets must still count here (``test_legacy_bold_acceptance_label_still_counts``).
+S5's fallback (``leading_criteria``, always adjacency-gated) does not extend
+that tolerance — see ``lib.fr_criteria``'s module docstring.
 
 Loaded via ``load_shared_lib`` (ADR-045): a bare ``from lib import fr_criteria``
 would bind ``sys.modules['lib']`` to the SHARED package for the rest of the
@@ -49,8 +56,12 @@ fr_criteria = load_shared_lib("fr_criteria")
 
 
 def has_criteria(content: str, fr_id: str) -> bool:
-    """True when ``fr_id`` has at least one real acceptance criterion in ``content``."""
-    return fr_criteria.has_criteria(content, fr_id)
+    """True when ``fr_id`` has at least one real acceptance criterion in ``content``.
+
+    ``strict=False``: the one documented, tested exception to the shared
+    adjacency default — see the module docstring.
+    """
+    return fr_criteria.has_criteria(content, fr_id, strict=False)
 
 
 def frs_without_criteria(project_root: Path, rows: Iterable) -> list[str]:

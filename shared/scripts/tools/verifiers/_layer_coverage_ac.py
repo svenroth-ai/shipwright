@@ -63,11 +63,18 @@ def _criteria_region(text: str) -> str:
 
 
 def criteria_digests(text: str) -> dict[str, str]:
-    """FR id → digest of that requirement's acceptance criteria."""
+    """FR id → digest of that requirement's acceptance criteria.
+
+    ``strict=False``: this gate's own ``test_prose_outside_a_criterion_is_not_a_criterion_change``
+    requires a note between the heading and its bullets not to hide them — the
+    same documented exception ``group_i_criteria.has_criteria`` makes, tracked
+    together in ``lib.fr_criteria``'s module docstring. S5's fallback
+    (``leading_criteria``) does not extend that tolerance.
+    """
     region = _criteria_region(text)
     digests: dict[str, str] = {}
     for fr_id, block in fr_criteria.iter_anchored_blocks(region):
-        joined = "\n".join(fr_criteria.criteria_texts(block))
+        joined = "\n".join(fr_criteria.block_criteria(block, strict=False))
         digests[fr_id] = hashlib.sha256(joined.encode("utf-8")).hexdigest()
     return digests
 
