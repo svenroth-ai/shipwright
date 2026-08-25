@@ -243,3 +243,57 @@ tried.** A subprocess crossing into `plugins/shipwright-compliance` was
 already the established pattern one file over
 (`integration-tests/test_compliance_enforcement.py::run_hook`); it should
 have been reached before writing "rejected".
+
+## Post-Review Remediation — Stage-2 code review, two MEDIUM findings (2026-08-25)
+
+PR #648 passed Stage-1 re-review and Stage-2 code review (verdict: no
+blocker), with two MEDIUM findings fixed in this same commit before merge
+(the remaining medium and several lows were explicitly left for follow-up,
+per the reviewer and the operator relaying it):
+
+**Digest pooling (`_layer_coverage_ac.criteria_digests`).** Real correctness
+risk, not cosmetic: it assigned `digests[fr_id] = sha256(...)` per anchored
+block, last-write-wins. `iter_anchored_blocks`'s anchor surface (any heading
+level, plus the bold form, plus a looser id shape) is materially wider than
+the old, narrower `_FR_SECTION_RE` this replaced, making a doubly-anchored FR
+id plausible in real specs, not just contrived ones. A later, empty block for
+the same id would then silently overwrite an earlier, criteria-bearing one —
+collapsing the digest to the empty-criteria value and making this HARD gate
+report "no change" when there was one. Fixed by pooling: extract each
+block's criteria list first (`fr_criteria.block_criteria(block,
+strict=False)`, once per block — never concatenating raw lines across a
+block boundary, which risked misreading a later block's leading indented
+line as a continuation of an earlier block's still-open bullet), then
+accumulate the resulting text lists per id before digesting once — the same
+shape `fr_criteria.criteria_for` already uses. Regression test added:
+`test_an_id_anchored_twice_pools_both_blocks_instead_of_last_write_wins`
+(`shared/tests/test_layer_coverage_criteria.py`), asserting the pooled
+digest differs from either single-block digest alone.
+
+**I6 list-level assertion (three-way convergence test).** The shipped-shape
+case only asserted `_group_i_has_criteria(...) is True` — a boolean that a
+delegation regression silently changing I6's returned LIST (losing `(E)`-
+stripping, a dropped placeholder rule, …) would still pass. Added
+`_group_i_criteria_for`, the same subprocess bridge but returning I6's real
+`criteria_for(..., strict=False)` list, and rewrote
+`test_all_three_agree_on_the_shipped_shape` to assert list/digest-level
+equality: I6's joined list equals S5's `heading.acceptance` exactly, and its
+sha256 equals the cross-layer gate's `criteria_digests()` entry exactly —
+not merely all-truthy or all-different-from-empty.
+
+Neither fix changes this ADR's Consequences claims (catalog resolution
+counts, `report.ok` caveat, line-count deltas) — both are internal
+correctness fixes to the digest/list machinery those claims are read
+through, not new behaviour. Full affected-suite re-run after both fixes:
+`shared/tests/test_layer_coverage*.py` + `test_fr_criteria_convergence.py`
+(101 passed), `integration-tests/test_fr_criteria_three_way_convergence.py`
+(3 passed), `integration-tests/test_requirements_catalog_parsers.py`
+(4 passed), and the compliance plugin's `group_i_criteria` suites (30
+passed) — no regression.
+
+Deferred (triage card filed, kind: improvement, referencing PR #648): the
+cross-layer gate's two newly-widened, unlisted/untested block-termination
+rules (a same-or-lower non-FR heading now ends a block; a criterion line
+starting with `**FR-XX.YY` now truncates the block), and I6's own silently-
+widened bullet semantics (ordered lists, placeholder+continuation) — both
+flagged medium/low by the Stage-2 reviewer as safe to defer past this run.

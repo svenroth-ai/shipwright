@@ -20,6 +20,7 @@ a real subprocess through its actual import path — never a stand-in.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -67,6 +68,28 @@ def _group_i_has_criteria(content: str, fr_id: str) -> bool:
     return json.loads(result.stdout.strip())
 
 
+def _group_i_criteria_for(content: str, fr_id: str) -> list[str]:
+    """I6's real criteria LIST (not just the boolean), via the same
+    subprocess bridge — code review, medium, 2026-08-25: AC-1 requires the
+    same criteria LIST across readers, not merely the same true/false."""
+    script = (
+        "import sys, json\n"
+        f"sys.path.insert(0, {str(COMPLIANCE_PLUGIN)!r})\n"
+        "from scripts.audit import group_i_criteria\n"
+        "print(json.dumps(group_i_criteria.fr_criteria.criteria_for("
+        "sys.stdin.read(), sys.argv[1], strict=False)))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script, fr_id],
+        input=content,
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout.strip())
+
+
 _SHIPPED = (
     "## Acceptance Criteria\n\n"
     "### FR-01.01 — Title\n\n"
@@ -95,13 +118,20 @@ _PROSE_BETWEEN_TWO_LISTS = (
 
 def test_all_three_agree_on_the_shipped_shape():
     """The real-world case (no prose anywhere): I6, S5 and the cross-layer
-    gate must read the identical criteria list — this is what AC-1 requires
-    for every spec this repo actually ships."""
-    assert _group_i_has_criteria(_SHIPPED, "FR-01.01") is True
+    gate must read the identical criteria LIST — not merely all-truthy or
+    all-different-from-empty — this is what AC-1 requires for every spec
+    this repo actually ships. A delegation regression that silently changed
+    I6's returned list (lost `(E)`-stripping, a dropped placeholder rule,
+    …) would still pass a boolean-only check; it must not pass this one."""
+    i6_list = _group_i_criteria_for(_SHIPPED, "FR-01.01")
+    assert i6_list  # sanity: I6 found something
 
     heading = spec_parser.parse_fr_headings(_SHIPPED)[0]
     assert heading.has_acceptance()
+    assert "\n".join(i6_list) == heading.acceptance  # S5's exact list, not just non-empty
 
+    i6_digest = hashlib.sha256("\n".join(i6_list).encode("utf-8")).hexdigest()
+    assert criteria_digests(_SHIPPED)["FR-01.01"] == i6_digest  # cross-layer's exact list too
     assert criteria_digests(_SHIPPED)["FR-01.01"] != criteria_digests(
         "## Acceptance Criteria\n\n### FR-01.01 — Title\n\nnothing yet\n",
     )["FR-01.01"]

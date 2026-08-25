@@ -4,11 +4,11 @@
     "date": "2026-08-25",
     "unit": {
       "status": "pass",
-      "passed": 11992,
+      "passed": 11993,
       "failed": 0,
       "skipped": 55,
       "deselected": 22,
-      "note": "Re-run after the Stage-1 REJECT remediation (2026-08-25): shared/tests 9313 passed/32 skipped/20 deselected (identical count to the pre-remediation run - zero regression), plugins/shipwright-compliance 1649 passed/5 skipped, both re-run clean to completion. shared/scripts/tests (471 passed/2 skipped) and shared/scripts/tools/tests (559 passed/16 skipped/2 deselected) were confirmed clean earlier this run and not touched by the remediation diff, so not re-run. Two transient shared/tests failures in an even earlier background run (test_adr_index_producers.py) were timing artifacts of this run's own concurrent F3 write racing an early background suite launch, not a regression - reconfirmed 13/13 in isolation, and clean in every full run since."
+      "note": "Re-run after the Stage-2 code-review remediation (2026-08-25, digest-pooling fix + I6 list-equality assertion): shared/tests 9314 passed/32 skipped/20 deselected (+1 vs the prior remediation round - the new test_an_id_anchored_twice_pools_both_blocks_instead_of_last_write_wins regression test; zero other change), plugins/shipwright-compliance 1649 passed/5 skipped (unchanged), both re-run clean to completion. shared/scripts/tests (471 passed/2 skipped) and shared/scripts/tools/tests (559 passed/16 skipped/2 deselected) confirmed clean earlier this run and not touched by either remediation diff, so not re-run."
     },
     "integration": {
       "status": "pass",
@@ -45,7 +45,7 @@
         {
           "behavior": "AC1 exactly one criteria parser exists (shared/scripts/lib/fr_criteria.py); spec_parser, _layer_coverage_ac and group_i_criteria all delegate to it and share ONE default (adjacency) semantics; a test pins that all three read the same criteria list on one input, invoked through each real entry point (post Stage-1 REJECT remediation, 2026-08-25)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_fr_criteria_convergence.py::test_s5_and_cross_layer_agree_on_the_same_criteria_list, ::test_strict_false_is_the_one_documented_permissive_exception PASSED; integration-tests/test_fr_criteria_three_way_convergence.py::test_all_three_agree_on_the_shipped_shape, ::test_prose_before_bullets_is_a_documented_permissive_exception, ::test_prose_between_two_bullet_lists_only_s5_reads_the_first PASSED (I6's real has_criteria run as a subprocess through its actual module path, not a stand-in)"
+          "evidence": "shared/tests/test_fr_criteria_convergence.py::test_s5_and_cross_layer_agree_on_the_same_criteria_list, ::test_strict_false_is_the_one_documented_permissive_exception PASSED; integration-tests/test_fr_criteria_three_way_convergence.py::test_all_three_agree_on_the_shipped_shape, ::test_prose_before_bullets_is_a_documented_permissive_exception, ::test_prose_between_two_bullet_lists_only_s5_reads_the_first PASSED (I6's real has_criteria run as a subprocess through its actual module path, not a stand-in); post Stage-2 code-review remediation (2026-08-25): shared/tests/test_layer_coverage_criteria.py::test_an_id_anchored_twice_pools_both_blocks_instead_of_last_write_wins PASSED (criteria_digests now pools every anchored block sharing an FR id instead of last-write-wins); integration-tests/test_fr_criteria_three_way_convergence.py::test_all_three_agree_on_the_shipped_shape now asserts LIST/digest-level equality (I6's real criteria_for(...) list == S5's heading.acceptance == cross-layer criteria_digests()), not just booleans - PASSED"
         },
         {
           "behavior": "AC2 group_i_criteria.py's 'Why not reuse spec_parser' docstring paragraph corrected in the same diff",

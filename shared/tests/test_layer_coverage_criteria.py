@@ -125,6 +125,38 @@ def test_empty_text_yields_nothing():
     assert criteria_digests("") == {}
 
 
+def test_an_id_anchored_twice_pools_both_blocks_instead_of_last_write_wins():
+    """External code review, medium, 2026-08-25: ``iter_anchored_blocks``'s wide
+    anchor surface (any heading level, plus the bold form) makes a doubly-anchored
+    id materially more likely than the old, narrower parser saw. A last-write-wins
+    assignment would let a LATER, empty block for the same id silently overwrite
+    an earlier, criteria-bearing one — collapsing the digest to the empty-criteria
+    value and making this HARD gate see "no change" when there was one."""
+    spec = (
+        "## Acceptance Criteria\n\n"
+        "### FR-01.01 — First anchor\n\n"
+        "- (E) Given the first block, when read, then it counts.\n\n"
+        "**FR-01.01: Second anchor**\n"
+        "- (E) Given the second block, when read, then it ALSO counts.\n"
+    )
+    digests = criteria_digests(spec)
+    empty_digest = criteria_digests(
+        "## Acceptance Criteria\n\n### FR-01.01 — T\n\nnothing yet\n",
+    )["FR-01.01"]
+    first_block_only = criteria_digests(
+        "## Acceptance Criteria\n\n### FR-01.01 — First anchor\n\n"
+        "- (E) Given the first block, when read, then it counts.\n",
+    )["FR-01.01"]
+    second_block_only = criteria_digests(
+        "## Acceptance Criteria\n\n**FR-01.01: Second anchor**\n"
+        "- (E) Given the second block, when read, then it ALSO counts.\n",
+    )["FR-01.01"]
+
+    assert digests["FR-01.01"] != empty_digest
+    assert digests["FR-01.01"] != first_block_only  # not JUST the first block
+    assert digests["FR-01.01"] != second_block_only  # not JUST the second block
+
+
 # --- reading a spec out of git ------------------------------------------------
 
 def _git(root: Path, *args: str) -> str:

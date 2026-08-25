@@ -70,11 +70,29 @@ def criteria_digests(text: str) -> dict[str, str]:
     same documented exception ``group_i_criteria.has_criteria`` makes, tracked
     together in ``lib.fr_criteria``'s module docstring. S5's fallback
     (``leading_criteria``) does not extend that tolerance.
+
+    POOLS every block anchored to the same id (external code review, medium,
+    2026-08-25) — the same rule ``fr_criteria.criteria_for`` already applies.
+    ``iter_anchored_blocks``'s anchor surface (any heading level, plus the
+    bold form, plus a looser id shape) makes a doubly-anchored id materially
+    more likely than the old, narrower ``_FR_SECTION_RE`` did; a last-write-wins
+    assignment let a criteria-bearing block be silently overwritten by a LATER,
+    empty one for the same id, collapsing the digest to the empty-criteria
+    value and making this HARD gate see "no change" when there was one.
     """
     region = _criteria_region(text)
-    digests: dict[str, str] = {}
+    texts_by_id: dict[str, list[str]] = {}
     for fr_id, block in fr_criteria.iter_anchored_blocks(region):
-        joined = "\n".join(fr_criteria.block_criteria(block, strict=False))
+        # Per-block, THEN pool the resulting texts (matches criteria_for's own
+        # pattern) — never concatenate raw lines across a block boundary,
+        # which could misread block B's leading indented line as a
+        # continuation of block A's last, still-open bullet.
+        texts_by_id.setdefault(fr_id, []).extend(
+            fr_criteria.block_criteria(block, strict=False),
+        )
+    digests: dict[str, str] = {}
+    for fr_id, texts in texts_by_id.items():
+        joined = "\n".join(texts)
         digests[fr_id] = hashlib.sha256(joined.encode("utf-8")).hexdigest()
     return digests
 
