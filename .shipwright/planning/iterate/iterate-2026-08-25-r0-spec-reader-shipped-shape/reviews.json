@@ -210,56 +210,38 @@
     "doubt": {
       "review_type": "doubt",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 3,
       "findings": [
         {
           "severity": "high",
-          "category": "boundary & contract",
-          "file": "plugins/shipwright-adopt/scripts/lib/spec_document.py:164-187",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:53-79",
           "line": null,
-          "finding": "Claim under doubt: S5 now reads the shape /shipwright-project and /shipwright-adopt actually emit (AC-1 'one shared semantics', AC-4) — /shipwright-adopt's real writer emits a prose line BETWEEN the heading and the bullets: spec_document.py:184 renders heading / blank / `_Source: {source}._` / blank / bullets whenever acceptance_criteria is non-empty (generate_adoption_artifacts.py:308/376). The Stage-1 adjacency gate makes leading_criteria return [] the moment the first non-blank body line is not a bullet, so parse_fr_headings' fallback yields nothing for every criteria-bearing adopt-generated FR. I6 and the cross-layer gate (strict=False) still see those criteria; S5 alone does not -- the exact divergence AC-1 forbids, on real producer output, uncaught because every test fixture puts bullets directly under the heading.",
-          "suggestion": "Run parse_fr_headings over real generate_adoption_artifacts.py output and either widen the adjacency gate to skip a leading italic/attribution line, have S5 pass strict=False like the other two readers, or prove the shape never ships -- then add it as a fixture.",
+          "finding": "Claim under doubt: fix 3 (any-heading-level Acceptance Criteria match + same-or-higher-rank termination) only widens what the gate can see — On a per-FR subheading shape (### FR-04.01 / #### Acceptance Criteria / bullets, repeated per FR), first-match-wins finds the deepest heading and same-rank termination fires on the very next FR heading, collapsing the region to one FR's bullets with no anchor line -- criteria_digests returns {} for the whole document, and changed_criteria_ids compares {} vs {} and reports nothing changed. The old level-2-only regex found no match on that shape and correctly fell back to whole-document scanning. plugins/shipwright-compliance/tests/test_group_i_criteria.py::test_deeper_subheading_stays_inside_the_block pins exactly this per-FR subheading shape as supported.",
+          "suggestion": "After computing the region, compare its anchor set to the whole document's (fr_criteria.iter_anchored_blocks) and fall back to whole-document when the region's set is a strict subset or empty. Add a test on the per-FR '#### Acceptance Criteria' shape with two FRs.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "medium",
-          "category": "hidden coupling & blast radius",
-          "file": "shared/scripts/lib/fr_criteria.py:153-173",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:78",
           "line": null,
-          "finding": "Claim under doubt: the delegation cannot make the cross-layer HARD gate blind to a criteria change — iter_anchored_blocks ends each block at i=j (first same-or-higher-rank heading), so a DEEPER FR heading nested inside a block is swallowed rather than yielded as its own anchor -- e.g. `## FR-01.01` followed by `### FR-01.02` yields only FR-01.01; FR-01.02 gets no digest entry. The old _FR_SECTION_RE did produce one there. The id vanishes from both base and head, so criteria_changed_keys never compares it -- a regression to could_not_determine at best, complete silence at worst when another row changed in the same commit.",
-          "suggestion": "A test on `## FR-01.01 ... ### FR-01.02 ...` asserting both ids appear in criteria_digests and in I6's has_criteria; fix the block-termination walk to not swallow nested FR headings.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "hidden coupling & blast radius",
-          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:70-99",
-          "line": null,
-          "finding": "Claim under doubt: the section-scoping in _criteria_region still confines the gate to real criteria — _criteria_region matches `^##\\s+Acceptance Criteria\\s*$` (level 2), but /shipwright-project's template emits `### Acceptance Criteria` (spec-generation.md:305, level 3) -- so for that producer the whole-document fallback is the NORMAL path. The new anchor surface (any heading level 1-6 with an FR-shaped id, or any bolded FR id on its own line) now pools bullets from a Design-notes/Removed-Requirements section that happens to bold an FR id -- a new false-RED path on the HARD gate, no test.",
-          "suggestion": "Teach _criteria_region the `### Acceptance Criteria` form the project template emits, or restrict the anchor surface when the region fell back to whole-document; add a test with a bolded FR id in a non-criteria section.",
+          "finding": "Claim under doubt: the new terminator matches fr_criteria.iter_anchored_blocks's own heading rule, as the docstring claims — fr_criteria._ANY_HEADING is '^(#{1,6})\\s+' (hashes then required whitespace); the new terminator '^#{1,level}(?!#)' has no whitespace requirement, so a single-# line with no following space (e.g. inside a fenced code block) now terminates the region where the old rule would not have. No impact on this repo's own catalog today, but the rule diverges from what it claims to mirror and the failure direction is silent.",
+          "suggestion": "Require whitespace after the hashes (or reuse fr_criteria._ANY_HEADING directly) so the terminator genuinely matches the heading rule it claims to.",
           "source": "doubt-reviewer"
         },
         {
           "severity": "low",
-          "category": "boundary & contract",
-          "file": "shared/scripts/lib/_fr_table_columns.py:22",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/fr_criteria.py:189-198",
           "line": null,
-          "finding": "Claim under doubt: the table-row exemption only fires for a real, non-empty description — FrTableRow.text falls back through TITLE_COLS=('description','name','text','requirement','title'); a table with no Description column yields the NAME cell, always non-empty, so the exemption fires with no description present at all.",
-          "suggestion": "Exempt only when the header names an actual Description column; add a Description-less table fixture.",
-          "source": "doubt-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "boundary & contract",
-          "file": "integration-tests/test_fr_criteria_three_way_convergence.py:958-977",
-          "line": null,
-          "finding": "Claim under doubt: the three-way convergence test's I6 arm pins I6's own contract — _group_i_criteria_for calls the SHARED module through the plugin module's attribute (group_i_criteria.fr_criteria.criteria_for), not any API I6 itself exposes -- proves the plugin loaded fr_criteria, not that I6's own return matches.",
-          "suggestion": "Give group_i_criteria its own thin criteria_for wrapper and call that, or narrow the docstring's claim.",
+          "finding": "Claim under doubt: fix 2 (nested FR heading anchoring) cleanly splits the nested block out of the parent — The child is yielded as its own block, but the parent's block still includes the nested heading's lines (j still walks past deeper headings), so the nested criterion is counted under BOTH the parent and child digest keys -- editing only the child FR flips the parent's digest too, demanding tests for an FR nobody touched. This is over-firing (the module's preferred failure direction), so not a blocker, but the new test only asserts the two digests differ, which passes either way -- nothing pins the overlap, and the docstring doesn't mention it.",
+          "suggestion": "Document the overlap in the iter_anchored_blocks docstring and add an assertion pinning the parent's criteria list explicitly includes the nested block's text.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-08-25T14:26:09.117553+00:00",
+      "completed_at": "2026-08-25T14:57:18.046636+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,
