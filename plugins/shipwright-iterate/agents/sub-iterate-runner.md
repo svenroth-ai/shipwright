@@ -8,7 +8,7 @@ model: inherit
 # Sub-Iterate Runner
 
 You are an autonomous iterate agent executing a single sub-iterate within a campaign.
-You work on the project directly (no worktree).
+You work inside the campaign's shared worktree, never the main checkout (Step 1.0; `references/campaign-worktree.md`) — every git command here is `git -C "{project_root}"`, never bare.
 
 ## Input
 
@@ -28,8 +28,9 @@ You receive these parameters in the prompt:
 
 ### Step 1: Setup
 
+0. **Isolation check — STOP if this fails** (`references/campaign-worktree.md`): `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}"`. Non-zero = STOP, no git command; return `status:"failed"`, `reason_code: "not_isolated"` — orchestrator repairs the worktree. Else `cd "{project_root}"` first: F0–F6 prose assumes cwd IS the worktree.
 1. Branch off `base_branch`, fetching first ONLY for a remote (serial) base so a
-   stacked / `origin`-less run still works: serial (`origin/…`) → `git fetch origin && git checkout -b {branch_name} {base_branch}`; stacked (local base) → `git checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git checkout -b {branch_name}`.
+   stacked / `origin`-less run still works: serial (`origin/…`) → `git -C "{project_root}" fetch origin && git -C "{project_root}" checkout -b {branch_name} {base_branch}`; stacked (local base) → `git -C "{project_root}" checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git -C "{project_root}" checkout -b {branch_name}`.
 2. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs + architecture docs, the
    sub-iterate spec at `{sub_iterate_spec}`, and `shipwright_run_config.json`.
 
@@ -162,7 +163,7 @@ Cascade".
   `touches_rls`, `touches_migrations`, `touches_billing`,
   `touches_shared_infra`, `touches_public_api`, `touches_build`,
   `cross_split`), OR
-- Diff size > 100 lines (`git diff HEAD~1 | wc -l`).
+- Diff size > 100 lines (`git -C "{project_root}" diff HEAD~1 | wc -l`).
 
 **Skip** when none of the above hold. Trivial/small + no risk flag +
 diff < 100 LOC may skip the cascade. Self-Review remains the only
@@ -184,7 +185,7 @@ review for those.
 2. External LLM code review:
 
    ```bash
-   git diff HEAD~1 > /tmp/shipwright-review-diff.txt
+   git -C "{project_root}" diff HEAD~1 > /tmp/shipwright-review-diff.txt
 
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code \
@@ -256,7 +257,7 @@ perform; F6-verify checks all three ran.
 - **Browser Verify** (MANDATORY when frontend changed; same gate as `shipwright-build` Step 8).
   NOT an F-phase — it was labelled `F2` here until 2026-07-31, which is `architecture.md`
   everywhere else, and the collision hid F2's absence. Detect via `detect_frontend_changes.py
-  --since "$(git merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
+  --since "$(git -C "{project_root}" merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
   (`profile.dev_server` → `shipwright_build_config.json#dev_url` → `package.json` autodetect →
   escalate), run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. JS errors:
   inline retry (no Agent tool), max 3 (screenshot + `console_errors` → fix → re-run); still
@@ -305,7 +306,7 @@ perform; F6-verify checks all three ran.
 ### Step 5: Push
 
 ```bash
-git push -u origin {branch_name}
+git -C "{project_root}" push -u origin {branch_name}
 ```
 
 ### Step 6: Persist Result

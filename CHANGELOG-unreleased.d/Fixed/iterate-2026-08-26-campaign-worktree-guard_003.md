@@ -1,0 +1,1 @@
+sub-iterate-runner now independently refuses to touch git if its own working directory is not isolated, since a freshly spawned subagent's shell is not guaranteed to inherit the orchestrator's working directory.
