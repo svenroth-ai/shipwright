@@ -123,27 +123,130 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": "2026-08-26T14:19:19.386882+00:00",
-      "disposition": "delegated_to_orchestrator: runner has no Agent tool, orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "scope",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-08-07-decision-log-drops-index.json",
+          "line": null,
+          "finding": "Flagged as an undeclared deletion alongside iterate-2026-08-07-lock-primitive-tail.json. Orchestrator disposition: CONFIRMED BENIGN after direct verification -- append_iterate_entry.py's ITERATE_RETENTION=50 evicts the oldest unpinned entries on append; merge-base had 55 unpinned-ish entries (confirmed via git ls-tree), this run's own new entry pushed it over, retention evicted exactly these two oldest unpinned entries (net -1 file count, matching the diff stat exactly). Machine-generated eviction, not scope creep. Not actioned further.",
+          "suggestion": "None needed -- verified as expected framework behavior, not a defect.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "integration-tests/test_requirements_corpus_found_defects.py",
+          "line": 171,
+          "finding": "test_unsorted_walk_tracks_enumeration_order / test_unsorted_walk_a2_tracks_enumeration_order and probe keys unsorted_seam/unsorted_seam_a2 now assert the walk IS sorted (== not !=), the opposite of what the name implies after the B3 assertion flip.",
+          "suggestion": "Rename in a future pass. Filed as trg-12f6ab89, not actioned here (cosmetic, out of pure-hardening scope).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-rigor",
+          "file": "integration-tests/test_requirements_corpus_found_defects.py",
+          "line": 185,
+          "finding": "The != to == assertion flip loses a liveness guard: != cannot pass vacuously, == can (e.g. a degenerate 1-spec fixture). Verified non-vacuous against the actual edge fixture today, but structurally weaker.",
+          "suggestion": "Add a positive assertion alongside (e.g. the picked path is the alphabetically-first spec). Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/spec_parser.py",
+          "line": 229,
+          "finding": "Long lines (~190 chars) from line-count-neutral trailing comments explaining the require=is_file change, to stay within the grandfathered bloat baseline. Same shape in drift_parsers.py:374-375.",
+          "suggestion": "Move the historical note into the function docstring instead. Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py",
+          "line": 140,
+          "finding": "Comment overstates scope: says a directory named spec.md is skipped, but the separate top.exists() check a few lines above still admits one. Same shape in backfill_test_links.py.",
+          "suggestion": "Scope the comment or cross-reference trg-a95e6fdf. Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": 28,
+          "finding": "The learning about lost early-exit streaming from sort=True is broader than the fact -- only review_runner.py ever streamed; the other 3 sites already fully materialized the walk via list()/re-sort.",
+          "suggestion": "Narrow the learning to the break-style consumer. Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "anthropic",
+      "completed_at": "2026-08-26T15:18:44.747541+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": "2026-08-26T14:19:19.493597+00:00",
-      "disposition": "delegated_to_orchestrator: runner has no Agent tool, orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "sort=True makes the picked spec deterministic",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "B1's raise-to-skip flip is a strict improvement at all 5 sites",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the two rewritten seam probes still guard what they used to",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "merging this lands the change",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "every comment touched by this pass now describes actual behavior",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "anthropic",
+      "completed_at": "2026-08-26T15:17:45.872248+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -200,15 +303,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
-      "provider": null,
-      "completed_at": "2026-08-26T14:19:19.602422+00:00",
-      "disposition": "delegated_to_orchestrator: runner has no Agent tool, orchestrator runs spec-reviewer at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "provider": "anthropic",
+      "completed_at": "2026-08-26T15:17:36.130052+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
