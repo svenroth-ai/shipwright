@@ -2422,6 +2422,69 @@ to the live-board `status.json` as a leak. Every other bare `git` call inside
 the same runner subagent runs the shared F0–F6 finalization prose that assumes
 (only correctly for a standalone iterate) that cwd already IS the worktree.
 
+**Session-liveness lock + worktree identity (2026-08-26, doubt-review follow-up
+of the above; hardened again the same day after a second, adversarial
+doubt-review of the fix itself).** Two gaps the original fix named as known
+limitations, now closed. (1) The worktree above is *shared*: two sessions on
+the same campaign slug both reach it and can race a `git checkout -b`.
+`shared/scripts/checks/check_campaign_session_lock.py`
+(`lib.campaign_session_lock`) claims exclusive ownership at Campaign Worktree
+step 0 — identity-checked first (below), `&&`-joined with `acquire` in the
+same shell line so an identity failure can never fall through to an
+unconditional acquire, right after the worktree resolves; non-zero from
+either exit aborts startup — and renews it every loop iteration (`touch`,
+step 3a) and again immediately before `gh pr checks --watch` (step 3g).
+`touch` distinguishes two failure causes that a single "reclaimed as stale"
+message used to conflate: no lock held at all (call `acquire` first) vs. a
+different session genuinely holding it now (STRICT-STOP). A touch failure is
+**not** routed into step 4 (Finalize) like every other STRICT-STOP — Finalize
+writes `loop_state.json`, and losing the lock means a second session may
+already be driving that same file, so a lock-loss instead stops immediately
+without touching shared state (`references/campaign-mode.md` calls this
+LOCK-LOST, distinct from STRICT-STOP). Step 4 also now `release`s the lock as
+its first action, so a cleanly finished campaign never blocks a later,
+brand-new `SHIPWRIGHT_SESSION_ID` (a routine session restart) for up to the
+staleness window. There is no single OS process to attach an OS-level lock
+to (the loop is a series of independent `uv run` subprocess calls, not one
+long-lived process), so liveness is a heartbeat: a DIFFERENT session may
+reclaim the lock only once its last touch is older than
+`DEFAULT_STALE_AFTER_SECONDS` (2h, an unmeasured, deliberately generous
+guess — not itself a tested bound) — presumed abandoned, never blocked
+forever. The SAME `SHIPWRIGHT_SESSION_ID` always succeeds (the resume path;
+relies on that id staying stable across a Claude Code resume, the same
+assumption `capture_session_id.py` already makes elsewhere).
+**Known residual gap:** a touch only resets the deadline at the instant it
+runs, so it never covers the wait it precedes. TWO windows stay genuinely
+unbounded and untouched while they run: the `sub-iterate-runner` Task itself
+(3c spawn through 3d's wait on its terminal DONE marker) — the loop's longest
+block — and `gh pr checks --watch` plus the merge-status poll after it, which
+the 3g touch only precedes. Either can outrun the staleness threshold and be
+reclaimed out from under a live session. Documented in
+`references/campaign-worktree.md`, not solved here — closing it fully means
+the runner heartbeating the lock itself, since it is the process actually
+occupying the worktree.
+(2) `worktree_location_error` proved location only, not identity — a
+mis-threaded `project_root` pointing at a different, still-valid campaign
+worktree passed unchanged. Both call sites now also pass `--campaign-slug`,
+which additionally requires the worktree's FULL resolved path to match
+`<main_root>/.worktrees/campaign-<slug>` exactly — not the checked-out
+branch, which moves per sub-iterate while the directory is fixed at creation,
+and not the basename alone, which a nested lookalike directory could satisfy;
+`Path.resolve()` reconciles a case-only difference against the real
+filesystem, so the compare behaves correctly on both a case-sensitive and a
+case-insensitive OS without a hand-rolled case rule. See
+`lib/worktree_location.py` for why a branch-prefix check was tried first and
+rejected (it cannot tell two campaigns whose slugs are a hyphenated
+extension of one another, e.g. `req3` vs `req3-04`, from a slug plus a
+sub-iterate suffix). The slug is passed once, explicitly, by whichever caller
+already has it in scope (the orchestrator's `{slug}`, the runner's own
+`campaign_slug` brief parameter) rather than re-derived independently at each
+call site — a `$(basename ...)` re-derivation inside the runner was replaced
+after code review named it a platform-dependent way for the two guards to
+silently disagree. An omitted `--campaign-slug` degrades silently to a
+location-only pass with no other signal, so the CLI's JSON payload carries an
+`identity_checked` boolean for exactly that case.
+
 Two things this adds to the **context-loading** picture for iterate: the run now
 reads the *shared branch's CI state* at startup (previously it read only local
 artifacts), and it may open a second, separate PR — `iterate/fix-main-<sha12>` —

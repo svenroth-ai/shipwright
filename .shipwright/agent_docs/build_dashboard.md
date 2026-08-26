@@ -1,11 +1,39 @@
 # Project Activity Dashboard
-> Updated: 2026-08-10 10:44 UTC | Session: unknown | Run: iterate-2026-08-10-i2-test-evidence-phase-source-contract
+> Updated: 2026-08-26 22:46 UTC | Session: aaa60e21-80cc-4a1a-a672-54e34842958f | Run: iterate-2026-08-26-campaign-worktree-guard-followups
 
-## Recent Changes (526 iterations)
+## Recent Changes (554 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Close the two Known-limitations gaps left open by PR #653's doubt review: add a cross-session heartbeat lock (acquire/touch/release) on the shared campaign worktree, and make check_worktree_location.py's --campaign-slug check compare full resolved paths instead of a basename, so it also rejects a nested lookalike directory and is immune to case-fold mismatches. | 0/0 |  | tooling | 2026-08-26 |
+| change | S2b pass B: converge the 15 shared planning-discovery call sites' remaining behavioral divergences -- require=is_file on the 5 non-recursive readers, sort=True (deterministic pick) on 4 of 6 previously-unsorted sites (fr_gates and state excepted with documented reasons), retire the order_sensitive golden-corpus masks and the dead _mask_unordered code now that every masked target sorts, and make every one of the 15 call sites pass its flags explicitly. | 0/0 |  | tooling | 2026-08-26 |
+| bug | Campaign sub-iterate-runner worktree isolation guard | 17392/17392 |  | tooling | 2026-08-26 |
+| feature | CI regenerates test-traceability.json from a fresh test run and reports structural drift against the committed manifest (advisory, never blocking merges) | 16856/16912 |  | FR-01.10 | 2026-08-26 |
+| bug | Campaign sub-iterate run_id minted with an uppercase-embedded display id (R0) passed every check until F5c's RUN_ID_STRICT, hours into the run, discovered only after F3/F4/F5/F5b artifacts already existed under the doomed id. | 1474/1477 |  | infra | 2026-08-25 |
+| change | Pin 4 small fr_criteria.py parsing-behavior findings deferred from PR #648 (trg-968e4d87, trg-467b7b2f): 2 deliberate-widening pins + doc-lines, 1 compute_fr_coherence bug fix (Name-cell fallback), 1 I6-own-entry-point correction for the three-way convergence test. | 12075/12112 |  | compliance | 2026-08-25 |
+| change | S2b pass A: extract review_runner's inline spec walk into a behaviourally-tracked target (16->17 DISCOVERY registry entries) and close the silent no-op where iter_spec_files' recursive branch ignored a non-default guard/require -- it now raises ValueError at call time. | 0/0 |  | tooling | 2026-08-25 |
+| change | Repeatable multi-root JUnit staging for execution evidence: evidence_drop.py stage now accepts N --junit <base>=<path> reports, threaded through refresh_index/_layer_coverage_evidence, plus a new scripts/run_full_suite_evidence.py driving all 18 pytest roots. | 16762/16818 |  | tooling | 2026-08-25 |
+| bug | Converge three independent FR-acceptance-criteria readers (lib/spec_parser.py S5, tools/verifiers/_layer_coverage_ac.py, plugins/shipwright-compliance/scripts/audit/group_i_criteria.py I6) on one shared parser, shared/scripts/lib/fr_criteria.py, so all three read the shipped heading+bullet shape /shipwright-project and /shipwright-adopt actually emit instead of only the never-produced bold-label form. | 0/0 |  | FR-01.10 | 2026-08-25 |
+| bug | Converge three independent FR-acceptance-criteria readers (lib/spec_parser.py S5, tools/verifiers/_layer_coverage_ac.py, plugins/shipwright-compliance/scripts/audit/group_i_criteria.py I6) on one shared parser, shared/scripts/lib/fr_criteria.py, so all three read the shipped heading+bullet shape /shipwright-project and /shipwright-adopt actually emit instead of only the never-produced bold-label form. | 0/0 |  | FR-01.10 | 2026-08-25 |
+| bug | Fix update_build_dashboard.py crashing on a work_completed event carrying explicit null commit (and sibling null fields), which permanently blocked dashboard regeneration | 0/0 |  | tooling | 2026-08-23 |
+| bug | screen_registry.write_manifest now preserves a hand-added ## Non-UI FRs section across design-manifest.md regeneration | 18/18 |  | tooling | 2026-08-23 |
+| bug | Fix compliance checks B5 (phaseTaskId field mismatch) and C1 (column-brittle Screens-table parser); add Non-UI FRs exemption | 0/0 |  | compliance | 2026-08-20 |
+| bug | Thread uv's --project flag into every external_review.py call site | 0/0 |  | tooling | 2026-08-18 |
+| change | Raise vite-hono profile's shipped hono floor from ^4.7.0 to ^4.12.34 (CVE-2026-69207/-71848/-71849/-71850 fix line) and record a drift-prevention decision (option a: one narrow pinned regression test) in an ADR. | 9275/9275 |  | tooling | 2026-08-17 |
+| change | Behaviour-affecting FR-declaring work_completed events must now carry test evidence (tests.total>0) or a stated no_tests_reason, mirroring the change_type/none_reason no-FR discipline; wired into both record_event.py CLI and finalize_iterate.py F5b via one run_fr_gates() call. This run's own event references the 9 reconcilable FRs with real test evidence, closing the reconciliation backlog for them. | 16160/16212 |  | FR-01.01, FR-01.04, FR-01.05 | 2026-08-16 |
+| bug | Document ITERATE_RETENTION as approximately 50 (not exactly) under parallel worktree merges; self-heals via existing full-directory re-read, no logic change | 0/0 |  | tooling | 2026-08-15 |
+| bug | Gitignore self-heal retraction now also strips a SUPERSEDED rule found before an unambiguous single managed BEGIN/END block, not only inside it, so an already-adopted project whose stale rule predates its own block's scaffolding self-heals on the next adopt/project run. | 55/59 |  | tooling | 2026-08-15 |
+| bug | install-hooks.ps1: port the 4 leadwright-fixed PowerShell fail-open defects, plus the shell-independent --get fix into install-hooks.sh | 9230/9230 |  | tooling | 2026-08-14 |
+| bug | shipwright-adopt: fold detected quality requirements into ordinary FR-table rows instead of an unparseable QR-NN prose list | 1146/1146 |  | tooling | 2026-08-14 |
+| change | Retire the QR-/C- requirement id spaces from shipwright-project's spec-generation reference; quality targets fold into the FR table, Constraints render as unnumbered prose. | 64/64 |  | tooling | 2026-08-14 |
+| bug | shipwright-adopt now seeds .shipwright/planning/adr/ with its own minted ADRs and fails closed on a hollow retroactive ADR | 16658/16658 |  | infra | 2026-08-14 |
+| change | Self-cap detail at the 4 remaining unbounded triage-producer call sites so a pathologically large finding set truncates instead of raising ValueError and vanishing | 11777/11777 |  | tooling | 2026-08-13 |
+| change | Cap triage_item detail at 6000 chars in schema + write paths | 16613/16613 |  | tooling | 2026-08-13 |
+| bug | Fix scope phase-timing mark and implementation iterate-timing span so throughput reporting is no longer degraded on almost every run. | 16522/16522 |  | tooling | 2026-08-11 |
+| feature | sync declared published-package manifest versions into the release commit and fail-closed verify them against the committed blob before tagging | 10199/10199 |  | FR-01.09 | 2026-08-11 |
 | bug | Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings. | 0/0 |  | infra | 2026-08-10 |
+| change | Harden stage-two PR review verdict trust checks | 44/44 |  | FR-01.17 | 2026-08-10 |
+| change | Verify marked local CI gates against the integrated F11 tree before every push. | 38/38 |  | tooling | 2026-08-10 |
 | change | Introduce a lifecycle-aware compliance-audit runner with three explicit authority scopes (branch_feedback/merge/release), separating the Stop hook local diagnostics from the global compliance backlog write authority reserved for delivered merge and verified release commits. | 9118/9118 |  | compliance | 2026-08-10 |
 | change | Replaced authorship exemption with exact-head approval and review-record evidence. | 911/918 (7 skipped) |  | infra | 2026-08-09 |
 | feature | Add docs/token-cost-controllable.md: threshold-based guide (trigger/symptom/action per band) for keeping session/token cost controllable as decision history and session length grow; link from guide.md Ch.9 + Appendix B and README | 18/18 |  | docs | 2026-08-09 |
@@ -533,7 +561,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-08-10 | Smoke: n/a | (iterate)
+Last run: 2026-08-26 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

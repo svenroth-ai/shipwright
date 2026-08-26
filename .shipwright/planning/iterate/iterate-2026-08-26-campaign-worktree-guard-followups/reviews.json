@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-campaign-worktree-guard-followups",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T22:26:27.354706+00:00",
+      "disposition": "Self-review documented in spec section 'Confidence Calibration' (Confidence-pattern check: two-round asymptote, branch-prefix identity flaw self-caught before external review confirmed it independently).",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T22:26:27.664669+00:00",
+      "disposition": "code-reviewer (Stage 2) PASS after 2 rounds (12 findings first round, all fixed; 3 more surfaced by the fix-verification re-run, all fixed) — spec section 'Code Review'. doubt-reviewer (Stage 3) then ran, 13 findings, all fixed — spec section 'Doubt Review'.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md:54-59",
+          "line": null,
+          "finding": "Claim under doubt: identity is verified FIRST, so a mis-substituted {project_root} can never acquire a lock that reports success for the wrong directory — campaign-worktree.md:54-59 emits the two commands as two bare lines in one bash block — no `&&`, no `set -e`. The acquire runs unconditionally even after the identity check exits 1. A mis-substituted {project_root} (main root, a sibling campaign) therefore: (a) prints BLOCK, then (b) prints `check_campaign_session_lock acquire: ALLOW` and writes .shipwright/campaign_session.lock.json into that wrong directory. The ordering fix that closed the code-review finding is enforced only by prose ('Non-zero exit from EITHER = abort'), not by the snippet. This diff's own step 3g does it correctly (`... || STRICT-STOP`), so the inconsistency is inside one change.",
+          "suggestion": "join with `&&` (or prefix `set -e`), matching step 3g's `|| STRICT-STOP` shape; a runtime-prompt shell snippet is code, not documentation",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency-ordering",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:163,296 -> :318",
+          "line": null,
+          "finding": "Claim under doubt: a failed touch safely stops the loop — Both touch call sites say `non-zero = STRICT-STOP, go to step 4`. Step 4 is Finalize: `uv run ... finalize --state .shipwright/loop_state.json` — a state-mutating write inside the shared campaign worktree. But the ONLY reason a touch fails is that session B now owns that worktree and is driving that same loop_state.json. So the prescribed response to 'you lost exclusive claim' is to write the shared state the new owner is using. file_lock prevents a torn write, not a logical one: session A can finalize a loop session B is mid-drain on. Every other STRICT-STOP cause (a red check, a failed unit) is a case where finalizing is right — lock-loss is the one case where it is exactly wrong, and it is routed identically.",
+          "suggestion": "give lock-loss its own terminal branch: do NOT run step 4, do NOT write loop_state.json, report to the operator and stop. One sentence at both call sites.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/campaign_session_lock.py:197-205",
+          "line": null,
+          "finding": "Claim under doubt: touch's failure means the lock was reclaimed as stale — campaign_session_lock.touch() collapses two distinct states into one error: `existing is None` (no lock file at all) and `existing['session_id'] != session_id` (genuinely reclaimed). The message hard-asserts the second cause for both: `currently held by None); the lock was reclaimed as stale.` — factually false in the missing-file case. Two concrete consequences. (1) It makes the diff's OWN documented remedy self-defeating: an operator deletes the state file to unblock session B, and session A's next touch dies with a wrong explanation instead of a recoverable 'lock is gone, re-acquire'. (2) It makes mid-campaign adoption of this feature fatal — a campaign already inside the loop when the plugin cache is synced (this repo's own update-marketplace flow) starts calling `touch` with no prior `acquire` and STRICT-STOPs a healthy campaign. The spec's Out-of-Scope names the update-marketplace timing constraint generically but never names this mechanism.",
+          "suggestion": "split the branches: `existing is None` -> acquire it (first-touch adoption / post-deletion re-claim) or raise a distinctly-worded 'no lock present' error; keep the STRICT-STOP only for the genuine different-owner case",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md:643-654; docs/hooks-and-pipeline.md (new paragraph)",
+          "line": null,
+          "finding": "Claim under doubt: the only uncovered heartbeat window is the 3c-3d sub-iterate-runner Task — A touch immediately BEFORE an unbounded wait does not cover that wait — it resets the deadline at its start. If `gh pr checks --watch` blocks longer than DEFAULT_STALE_AFTER_SECONDS (queued Required Checks, a stuck GH runner; `--watch` has no timeout, and the following `until [ state = MERGED ]; do sleep 5; done` is unbounded too), session A goes stale mid-wait exactly as it would have without the 3g touch. So there are TWO uncovered unbounded windows, not one, and the 3g touch is a mitigation of frequency, not coverage. campaign-worktree.md's gap paragraph names only the runner Task and says 3g 'touches it again immediately before the loop's other unbounded wait', which reads as covered; docs/hooks-and-pipeline.md repeats it. The stage-2 finding was 'docs overclaimed full heartbeat coverage' — the fix removed one overclaim and left a smaller one.",
+          "suggestion": "state the honest invariant once: no heartbeat runs DURING any unbounded wait; both touches only reset the deadline at wait boundaries; the uncovered windows are (a) the runner Task and (b) --watch + the merge poll",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/campaign_session_lock.py:61-70",
+          "line": null,
+          "finding": "Claim under doubt: 2h is sized above one sub-iterate's worst case, so an active campaign never goes stale between touches — The constant's own docstring (campaign_session_lock.py:61-70) asserts 7200s is 'Picked generously above that single-unit worst case' and 'an active campaign keeps renewing well inside this window'. campaign-worktree.md and hooks-and-pipeline.md, in the same diff, assert the opposite: 'A sub-iterate build that runs past DEFAULT_STALE_AFTER_SECONDS can go stale and be reclaimed'. Both cannot be the operative belief, and neither cites a measurement. This decides whether the documented gap is a theoretical edge or the common case — a sub-iterate is build + review cascade + F0 (this repo's shared/tests alone runs 12-15 min) + external review + CI wait + merge poll. If real p95 is near or above 2h, the fix ships with its central safety parameter mis-sized and the 'known gap' is the normal path.",
+          "suggestion": "measure: historical sub-iterate durations are already in shipwright_events.jsonl (work_completed, campaign/sub_iterate_id extras; iterate_throughput_report.py reads them). Cite observed max/p95 and either raise the constant above it or state the expected fire rate of the documented gap.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/campaign_session_lock.py:169-174; plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md:634-637",
+          "line": null,
+          "finding": "Claim under doubt: naming the state file to delete is a safe, cheapest-fix remedy — The remedy is an unverifiable manual override whose failure mode is precisely the split-brain the lock exists to prevent. The design's own thesis is that liveness CANNOT be determined (no OS process to attach to) — so the operator has no way to satisfy the precondition 'If that session is gone'. Worse, it is aligned with the known gap: the moment an operator is most tempted to delete is when the lock looks stuck, which is exactly when a >2h sub-iterate-runner may be live inside the shared worktree. After the delete, session B acquires and spawns a runner while A's runner is still doing `git checkout -b` in the same directory — the original incident, now reachable through a documented instruction. A's own STRICT-STOP does not arrive until its next touch, i.e. after 3d completes. The error text carries no caution at all, and (see the touch finding above) A's eventual diagnosis will be wrong.",
+          "suggestion": "attach the precondition to the instruction — 'only after confirming no sub-iterate-runner Task is running against this worktree' — and print last_touch as a wall-clock time, not just an age, so the operator can reason about it",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:318-331",
+          "line": null,
+          "finding": "Claim under doubt: no release path is warranted; the staleness window is enough — Nothing ever releases the lock — not step 4 Finalize, not step 5. After a campaign completes normally the state file survives with a fresh last_touch, so any NEW session id is refused for up to 2h. That collides with the single most common legitimate recovery in this environment: the operator's session dies or exhausts context mid/post-campaign and they start a fresh Claude Code session, which gets a new session_id. The design's threat ('one operator resuming a session it believed had died') and the routine recovery are the same observable event, and the lock cannot tell them apart — so in practice this guard will fire far more often on legitimate restarts than on real second operators, and its only escape hatch is the unverifiable delete above. A `release` at step 4 (and on a clean campaign completion) is one command and removes the whole class.",
+          "suggestion": "either add a `release` subcommand invoked at step 4, or state explicitly in campaign-worktree.md that a normal completion leaves a lock that blocks a NEW session for up to 2h and that this is intended",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/campaign_session_lock.py:81-86; plugins/shipwright-iterate/agents/sub-iterate-runner.md Step 1.0",
+          "line": null,
+          "finding": "Claim under doubt: the lock survives for as long as the campaign does — The lock state lives INSIDE the worktree it protects (`{campaign_wt}/.shipwright/`). The documented repair for a runner returning reason_code `not_isolated` is 'orchestrator repairs the worktree' — i.e. `git worktree remove` + re-create, which deletes the lock. Two effects, neither documented: any other session can immediately acquire (the guard silently evaporates at the exact moment the worktree is in a bad state), and the legitimate owner's next 3a touch then fails and STRICT-STOPs the campaign it just repaired. Same class applies to any `git clean -xfd` inside the worktree.",
+          "suggestion": "document (or wire) a re-`acquire` after any worktree recreate; or move the state file outside the worktree it guards",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-ordering",
+          "file": "shared/tests/test_campaign_session_lock.py::test_concurrent_acquire_by_different_sessions_has_exactly_one_winner",
+          "line": null,
+          "finding": "Claim under doubt: test_concurrent_acquire_by_different_sessions_has_exactly_one_winner proves the file_lock-guarded critical section actually serializes decisions — It does not, in either direction. (a) With the lock correct, the assertion is satisfied whether the 8 processes overlap in the critical section or run strictly sequentially — there is no rendezvous barrier, so each subprocess reaches `acquire` after its own independent ~100-300ms interpreter+import startup while the critical section is ~ms. (b) Remove `file_lock` entirely and the test still passes on any run where the arrivals happen not to interleave inside the read-modify-write. So it is a probabilistic detector with no negative control and no repetition, and it can never fail when the code is right — which is also why its passing carries no information about serialization. The Confidence Calibration section presents it as 'a genuine multi-process race ... proving the file_lock-guarded critical section actually serializes'.",
+          "suggestion": "add a rendezvous (each subprocess polls for a sentinel file, then proceeds) plus N repetitions, or downgrade the docstring/spec claim to 'a probabilistic detector of lost-update, not a proof of serialization'",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/campaign_session_lock.py:18-21; shared/scripts/hooks/capture_session_id.py:218,279-293",
+          "line": null,
+          "finding": "Claim under doubt: keying on SHIPWRIGHT_SESSION_ID makes the resume path always renew cleanly (AC-2) — Two unproven premises hold up AC-2. (1) The module docstring asserts 'Claude Code keeps one stable SHIPWRIGHT_SESSION_ID across a resume' — nothing in the diff cites this. The value comes from the SessionStart hook payload's `session_id` (capture_session_id.py:218). The only in-repo corroboration I found is indirect (event_once's TTL comment implying a stable id at resume). If a resume ever mints a new id, AC-2 is false and every resume is a 2h block. (2) campaign startup now HARD-fails when `$SHIPWRIGHT_SESSION_ID` is empty (acquire raises, exit 1) — a new startup dependency campaign mode never had, on a var this repo's own hooks defensively fall back to 'unknown' for (bloat_gate_on_stop.py:44, test_bloat_session_id_payload). Fail-closed is defensible; shipping it without evidence that the var is reliably present in the orchestrator's Bash-tool env is not.",
+          "suggestion": "state the evidence for id stability across resume (a real resumed session's observed id, or the Claude Code behavior cited), and confirm empirically that $SHIPWRIGHT_SESSION_ID is populated in the campaign orchestrator's Bash tool environment",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/worktree_location.py:1153-1160",
+          "line": null,
+          "finding": "Claim under doubt: the identity check is EXACT — It is exact on the BASENAME only, while the full expected path is already derivable inside the function — `main_root` is computed two lines above. `<main>/.worktrees/other/campaign-foo` satisfies both `is_under_worktrees` and the basename compare. Contrived, but comparing `Path(project_root).resolve() == (main_root / WORKTREES_DIRNAME / expected_name).resolve()` is strictly stronger, no more expensive, and closes it. Separately: the compare is case-sensitive while Windows' filesystem is not, and `Path.resolve()` returns the on-disk casing — so a `{slug}` differing only in case from the created directory blocks a legitimate campaign with the message 'this is a different campaign's worktree', which is factually wrong.",
+          "suggestion": "compare the full resolved path against main_root/.worktrees/campaign-{slug}; optionally case-fold the compare on Windows or reword the message for the near-miss case",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/checks/check_campaign_session_lock.py:746-755, 817-819",
+          "line": null,
+          "finding": "Claim under doubt: the CLI's exit-code / --json contract is accurate and tested in the shape the docs use — Three small drifts. (1) The module docstring still says exit 1 == 'refused (held by a live different session, or lost since last touch)', but after the stage-2 fix it is also returned for LockTimeout and OSError — contention and infrastructure failure are indistinguishable from the exit code, and the JSON payload has no `reason` field to separate them. An operator told 'delete the state file to reclaim' when the real cause was an unreadable disk will do the wrong thing. (2) Every CLI test passes `--json`; the invocation shape both docs actually prescribe (no `--json`, block-path printing to stderr) is untested. (3) `--stale-after-seconds` exists only on `acquire`, which is correct but undocumented in the CLI docstring's usage block.",
+          "suggestion": "add a `reason` discriminator ('contended' vs 'io_error') to the payload, correct the exit-code docstring, and add one CLI test without --json",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/checks/check_worktree_location.py:863-868; plugins/shipwright-iterate/agents/sub-iterate-runner.md:524",
+          "line": null,
+          "finding": "Claim under doubt: the campaign_slug plumbing has no silently-wrong path — Wrong VALUES fail loudly (empty string and a literal unsubstituted placeholder both mismatch `campaign-{slug}` and block). But an OMITTED flag fails open: `--campaign-slug` defaults to None, so a rendering that drops it silently degrades to the pre-fix location-only check with no signal anywhere — and both call sites are LLM-rendered prose, one of which (sub-iterate-runner.md:524) had to bury the new `campaign_slug` parameter inside another parameter's bullet to stay under a 497/497 bloat exception. A bloat watermark forced a legibility compromise on a load-bearing new runtime-prompt parameter. Nothing in the payload records whether identity was checked, so an after-the-fact transcript audit cannot tell an omission from a pass.",
+          "suggestion": "echo `campaign_slug` (or an `identity_checked: true|false`) into check_worktree_location.py's --json payload so an omission is visible; and give campaign_slug its own bullet in the runner's parameter list even if another line has to give up the LOC",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T22:26:18.008646+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T22:27:18.683138+00:00",
+      "disposition": "Standalone iterate; internal code-reviewer + doubt-reviewer cascade (SKILL.md Step 8, CLAUDE.md standing grant) is the code-level review for this complexity tier. No separate post-build external LLM code review is prescribed; external_review.py --mode iterate already covered pre-build plan/spec review (recorded as 'plan').",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T22:26:27.557137+00:00",
+      "disposition": "Internal spec-reviewer (Stage 1) REJECT, 3 findings, all fixed (misheaded doc paragraph, non-runnable 3g touch snippet, missing acquired_at validation). Full detail in spec section 'Code Review'.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T22:27:18.584599+00:00",
+      "disposition": "No architecture-impact trigger for this change (library/doc fix within an already-shipped feature's follow-up, behavior-only); Step 3.5 step-2a's --mode architecture branch-A call was not warranted.",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
