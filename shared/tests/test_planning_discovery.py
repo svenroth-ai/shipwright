@@ -181,12 +181,6 @@ def test_recursive_with_non_default_guard_raises_valueerror(tmp_path):
 
 
 def test_recursive_with_non_default_require_raises_valueerror(tmp_path):
-    planning = _tree(tmp_path, "01-a")
-    with pytest.raises(ValueError, match="recursive=True"):
-        iter_spec_files(planning, recursive=True, require="is_file")
-
-
-def test_recursive_guard_require_error_fires_at_call_not_first_iteration(tmp_path):
     """Added in S2b pass A2. ``iter_spec_files`` used to be a bare generator,
     so ANY exception raised inside it -- including this one -- would only
     surface once something iterated the result (``next()``/``list()``). This
@@ -201,10 +195,18 @@ def test_recursive_guard_require_error_fires_at_call_not_first_iteration(tmp_pat
 
 def test_recursive_with_default_guard_and_require_is_unaffected(tmp_path):
     """The five real recursive call sites only ever pass recursive=/sort= --
-    never guard= or require= -- so the new check must never fire for them."""
+    never guard= or require= -- so the new check must never fire for them.
+    ``guard``/``require`` is a VALUE-based check (!= the default), not an
+    explicitly-passed-based one -- passing the defaults explicitly must be
+    just as accepted as omitting them, or pass B's "every call site passes
+    its flags explicitly" (A3) would break all five recursive sites."""
     planning = _tree(tmp_path, "01-a", nested=True)
     assert list(iter_spec_files(planning, recursive=True)) != []
     assert list(iter_spec_files(planning, recursive=True, sort=False)) != []
+    assert (
+        list(iter_spec_files(planning, recursive=True, guard="is_dir", require="exists"))
+        != []
+    )
 
 
 def test_laziness_short_circuits_without_walking_every_split(tmp_path):

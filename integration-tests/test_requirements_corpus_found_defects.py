@@ -200,6 +200,13 @@ def test_unsorted_walk_a2_tracks_enumeration_order():
 
     Masking without a compensating probe is not a safety measure, it is a
     blind spot with good manners. (Caught in adversarial review.)
+
+    A THIRD masked target exists as of campaign S2b pass A --
+    ``review_runner``'s extracted walk, also ``order_sensitive`` -- and it is
+    deliberately left WITHOUT a probe here: pass B4 retires ``order_sensitive``
+    and ``_mask_unordered`` entirely once every target is sorted, so a probe
+    built now would be deleted one pass later. Do not read that gap as an
+    oversight, and do not add a third probe without re-reading B4 first.
     """
     result = _probe("unsorted_seam_a2", "edge")
     assert result["forward"] != result["reverse"], (

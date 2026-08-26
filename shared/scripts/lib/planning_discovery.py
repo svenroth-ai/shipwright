@@ -1,6 +1,6 @@
-"""One walk over ``.shipwright/planning/`` — shared by all 16 call sites.
+"""One walk over ``.shipwright/planning/`` — shared by all 15 call sites.
 
-Before this module the repo carried sixteen independent implementations of
+Before this module the repo carried fifteen independent implementations of
 "find the split specs under ``.shipwright/planning/``". They did not agree, and
 the disagreements were invisible because each lived inside a different
 function. The golden corpus (``integration-tests/requirements_corpus/``,

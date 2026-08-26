@@ -1,6 +1,6 @@
 """Target inventory for the requirements golden corpus -- the SSoT.
 
-Every claim this harness makes about "all 16 discovery paths" and "all 5
+Every claim this harness makes about "all 17 discovery paths" and "all 5
 parsers" resolves here. The registry is pure data so that the parent pytest
 process and each realm subprocess read the same inventory.
 
@@ -11,12 +11,13 @@ at module level. Rather than police an import ORDER -- which pytest collection
 can defeat, because another test module may import a target first -- each realm
 is loaded in its own subprocess. Process boundaries dissolve the collision.
 
-**Count.** 17 discovery entries + 5 parser entries, covering 16 distinct
-discovery walks: ``group_i.scan_fr_rows`` appears twice to exercise both
-sides of its keyword-only ``include_retired`` flag; ``review_runner``'s walk
-is likewise covered by two entries -- one source-hash-frozen (``run_review``
-as a whole, which also calls an external LLM) and one behaviourally invoked
-(the walk itself, extracted in campaign S2b pass A). Separately,
+**Count.** 17 discovery entries + 5 parser entries, covering 15 distinct
+discovery walks: two of the 15 are registered twice. ``group_i.scan_fr_rows``
+appears twice to exercise both sides of its keyword-only ``include_retired``
+flag; ``review_runner``'s walk is likewise covered by two entries -- one
+source-hash-frozen (``run_review`` as a whole, which also calls an external
+LLM) and one behaviourally invoked (the walk itself, extracted in campaign
+S2b pass A). Separately,
 ``rtm.collect_requirements`` is registered under BOTH dimensions -- it is
 genuinely both a walk and a parser, and its two cells are identical by
 construction, so do not go hunting for a difference between them. The campaign SPEC says nine discovery

@@ -128,7 +128,8 @@ def _mask_unordered(cell: dict, root: Path) -> dict:
     ``list(planning.rglob("spec.md"))`` with no sort and act on the first
     result, so WHICH spec they touch is filesystem-iteration-order dependent.
     Pinning whichever path won on the machine that generated the baseline would
-    flake between NTFS and ext4.
+    flake between NTFS and ext4. A third target joined them in campaign S2b
+    pass A: ``review_runner``'s extracted walk (also unsorted, ``sort=False``).
 
     Masking is keyed on the ACTUAL spec paths present in the materialized
     fixture, never on text shape. An earlier regex-shaped version replaced any
@@ -141,8 +142,12 @@ def _mask_unordered(cell: dict, root: Path) -> dict:
 
     The order-preservation behaviour itself is pinned against a controlled
     enumeration seam in ``test_requirements_corpus_found_defects.py``, with one
-    probe per masked target -- sorting the result here instead would hide the
-    very behaviour that needs freezing.
+    probe per masked target for the original two -- sorting the result here
+    instead would hide the very behaviour that needs freezing. The third
+    (``review_runner``) target is deliberately left without its own probe:
+    campaign S2b pass B4 retires ``order_sensitive`` and this whole function
+    once every target is sorted, so a probe built now would be deleted one
+    pass later. Do not let that omission read as an oversight.
     """
     raw = json.dumps(cell, sort_keys=True)
     candidates: set[str] = set()
