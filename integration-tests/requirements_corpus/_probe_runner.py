@@ -101,12 +101,15 @@ def probe_d_traceability_populated(root: Path, _extra) -> dict:
 
 
 def probe_unsorted_seam(root: Path, extra) -> dict:
-    """Prove the walk preserves whatever order enumeration hands it.
+    """Prove the walk no longer tracks whatever order enumeration hands it.
 
-    Sorting the real result would HIDE the behaviour being frozen, so instead
-    the enumeration seam is controlled: rglob is replaced with one that yields a
-    deliberately non-lexical order, and we record which spec the walk acted on.
-    Running it twice with opposite orders shows the pick tracks the seam.
+    Before S2b pass B3 this call site relied on unsorted ``rglob`` order, so
+    sorting the real result here would have HIDDEN the behaviour being frozen.
+    Pass B3 added ``sort=True`` at the call site itself, so the walk is now
+    deterministic: the enumeration seam is controlled the same way as before
+    (rglob replaced with one that yields a deliberately non-lexical order),
+    but running it twice with opposite orders now shows the pick is the SAME
+    regardless -- the seam no longer reaches the outcome.
     """
     _paths("adopt")
     import importlib.util
@@ -135,12 +138,15 @@ def probe_unsorted_seam(root: Path, extra) -> dict:
 def probe_unsorted_seam_a2(root: Path, extra) -> dict:
     """The same seam probe for ``adopt_compliance.check_a2_spec_has_frs``.
 
-    It is the OTHER ``order_sensitive`` target: its picked path is masked out of
-    the matrix, so without this probe an S2 change adding ``sorted()`` to its
-    rglob would move no golden cell and no test would look -- a walk would stop
-    being order-dependent and the harness would certify "no behaviour change".
-    (Caught in adversarial review: the mask had exactly one compensating
-    control, covering only one of the two masked targets.)
+    It was the OTHER formerly-``order_sensitive`` target: its picked path used
+    to be masked out of the matrix, so without this probe the S2b pass B3
+    change adding ``sort=True`` to its rglob would have moved no golden cell
+    and no test would have looked -- a walk stopping to be order-dependent
+    would have gone uncertified. (Caught in adversarial review, when only one
+    of the two masked targets had a compensating control.) Now that both are
+    sorted and the mask itself is retired (S2b pass B4), this probe instead
+    demonstrates the determinism directly: forward and reverse enumeration
+    now agree.
     """
     _paths("shared_tools")
     from verifiers.adopt_compliance import check_a2_spec_has_frs

@@ -169,49 +169,45 @@ def test_the_five_parsers_agree_on_which_ids_a_spec_declares(matrix):
 # ---------------------------------------------------------------------------
 
 def test_unsorted_walk_tracks_enumeration_order():
-    """``validate_adoption._validate_spec`` acts on whatever comes back first.
+    """``validate_adoption._validate_spec`` now SORTS before picking (S2b pass B3).
 
-    It does ``list(planning.rglob("spec.md"))`` with no sort and takes ``[0]``,
-    so WHICH spec is validated depends on filesystem iteration order. Asserting
-    a specific path would pin whichever order this machine produced and flake
-    between NTFS and ext4; sorting the result would hide the behaviour entirely.
+    It used to do ``list(planning.rglob("spec.md"))`` with no sort and take
+    ``[0]``, so WHICH spec was validated depended on filesystem iteration
+    order. Campaign S2b pass B3 passed ``sort=True`` at this call site, a
+    declared behaviour change: the walk now sorts internally, so which spec
+    wins no longer depends on enumeration order at all.
 
-    So the seam is controlled instead: enumerate forward, then reversed, and
-    show the outcome tracks the order it was handed. That is the actual
-    behavioural claim -- "this walk has no order of its own".
+    The seam that used to demonstrate order-dependence now demonstrates its
+    absence: enumerate forward, then reversed, and show the outcome is the
+    SAME either way. That is the new behavioural claim -- "this walk has a
+    fixed order of its own, independent of how it was handed to it".
     """
     result = _probe("unsorted_seam", "edge")
-    assert result["forward"] != result["reverse"], (
-        "the walk stopped tracking enumeration order -- if a sort was added, "
-        "that is a behaviour change S2 must declare"
+    assert result["forward"] == result["reverse"], (
+        "the walk started tracking enumeration order again -- if sort=True "
+        "was removed, that is a behaviour change to declare"
     )
 
 
 def test_unsorted_walk_a2_tracks_enumeration_order():
-    """The SECOND masked target needs its own seam probe.
+    """The SECOND formerly-masked target, same S2b pass B3 story.
 
     Both ``validate_adoption._validate_spec`` and
-    ``adopt_compliance.check_a2_spec_has_frs`` are ``order_sensitive``, so both
-    have their picked path masked out of the golden matrix. For a while only
-    the first had a compensating probe -- which meant adding ``sorted()`` to
-    check_a2's rglob would move no golden cell and no test would look. A walk
-    would have stopped being order-dependent and the harness would have
-    certified "no behaviour change".
+    ``adopt_compliance.check_a2_spec_has_frs`` used to be ``order_sensitive``,
+    so both had their picked path masked out of the golden matrix. Pass B3
+    made both sort internally, and pass B4 retired the mask (and
+    ``_mask_unordered`` itself) entirely -- their golden cells now carry the
+    real, deterministic path.
 
-    Masking without a compensating probe is not a safety measure, it is a
-    blind spot with good manners. (Caught in adversarial review.)
-
-    A THIRD masked target exists as of campaign S2b pass A --
-    ``review_runner``'s extracted walk, also ``order_sensitive`` -- and it is
-    deliberately left WITHOUT a probe here: pass B4 retires ``order_sensitive``
-    and ``_mask_unordered`` entirely once every target is sorted, so a probe
-    built now would be deleted one pass later. Do not read that gap as an
-    oversight, and do not add a third probe without re-reading B4 first.
+    A THIRD target, ``review_runner``'s extracted walk, was also sorted by
+    pass B3 and was never masked with its own seam probe (see the pass A/B3/B4
+    history in ``registry.py`` and ``_serialize.py``), so it has no probe here
+    either -- there being nothing left to compensate for.
     """
     result = _probe("unsorted_seam_a2", "edge")
-    assert result["forward"] != result["reverse"], (
-        "check_a2_spec_has_frs stopped tracking enumeration order -- if a sort "
-        "was added, that is a behaviour change S2 must declare"
+    assert result["forward"] == result["reverse"], (
+        "check_a2_spec_has_frs started tracking enumeration order again -- if "
+        "sort=True was removed, that is a behaviour change to declare"
     )
 
 

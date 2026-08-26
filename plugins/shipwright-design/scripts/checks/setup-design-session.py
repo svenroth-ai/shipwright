@@ -45,10 +45,16 @@ def find_specs(project_root: Path) -> list[str]:
     planning = project_root / ".shipwright" / "planning"
     specs = []
 
-    # sort=False, then sorted() on the STRINGS. Path ordering is case-insensitive
-    # on Windows while str ordering is not, so sorting here rather than in the
-    # helper is what keeps this call site's output identical.
-    for spec_file in _discovery().iter_spec_files(planning, recursive=True, sort=False):
+    # sort=True (S2b pass B3), then sorted() on the STRINGS below regardless.
+    # This site re-sorts its own OS-separator strings after the walk, so the
+    # helper's own sort has NO observable effect here -- a known no-op, not a
+    # bug (S2b campaign C3 is what will change what gets sorted, by switching
+    # these strings to posix separators). Path ordering is case-insensitive on
+    # Windows while str ordering is not, so sorting here rather than relying on
+    # the helper is what keeps this call site's output identical.
+    for spec_file in _discovery().iter_spec_files(
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+    ):
         relative = spec_file.relative_to(planning)
         specs.append(str(relative))
 

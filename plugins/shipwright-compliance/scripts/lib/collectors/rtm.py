@@ -162,7 +162,11 @@ def collect_requirements(project_root: Path) -> list[RequirementInfo]:
     # OSError that follows; this one has no try/except at all. Both divergences
     # are frozen here, not reconciled (campaign S2b owns that).
     iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
-    for spec_path in iter_spec_files(planning_dir, guard="exists"):
+    # require="is_file" (S2b pass B1): a directory named spec.md is skipped
+    # rather than reaching read_text() below and raising.
+    for spec_path in iter_spec_files(
+        planning_dir, guard="exists", sort=True, include_iterate=True, require="is_file"
+    ):
         split_name = spec_path.parent.name
         rel_spec = f".shipwright/planning/{split_name}/spec.md"
         content = spec_path.read_text(encoding="utf-8")
@@ -196,7 +200,9 @@ def collect_external_review_states(project_root: Path) -> list[ExternalReviewSta
     # include_iterate=False — iterate runs produce run-scoped markers that are
     # audited separately via events, not per-split RTM rows.
     iter_split_dirs = load_shared_lib("planning_discovery").iter_split_dirs
-    for split_dir in iter_split_dirs(planning_dir, guard="exists", include_iterate=False):
+    for split_dir in iter_split_dirs(
+        planning_dir, guard="exists", sort=True, include_iterate=False
+    ):
         marker_path = split_dir / "external_review_state.json"
         if not marker_path.exists():
             states.append(ExternalReviewState(split=split_dir.name, status="missing"))

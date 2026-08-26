@@ -100,10 +100,13 @@ def _validate_spec(project_root: Path) -> list[str]:
     planning = project_root / ".shipwright" / "planning"
     if not planning.is_dir():
         return ["missing: .shipwright/planning/ directory"]
-    # sort=False: which spec gets validated is filesystem-iteration-order
-    # dependent. Pinned by ``test_unsorted_walk_tracks_enumeration_order``;
-    # adding a sort would be a behaviour change, not a cleanup.
-    specs = list(_discovery().iter_spec_files(planning, recursive=True, sort=False))
+    # sort=True (S2b pass B3): which spec gets validated is now fixed by
+    # sorted path order instead of filesystem-iteration order -- a declared
+    # behaviour change. Pinned by ``test_unsorted_walk_tracks_enumeration_order``
+    # (now asserts forward == reverse instead of !=).
+    specs = list(_discovery().iter_spec_files(
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+    ))
     if not specs:
         return ["missing: .shipwright/planning/<split>/spec.md (no spec found)"]
     spec = specs[0]
