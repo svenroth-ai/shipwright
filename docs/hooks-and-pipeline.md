@@ -2396,6 +2396,32 @@ Both call sites are prose in the skill (SKILL.md §B1b, `references/F11.md`),
 pinned by `plugins/shipwright-iterate/tests/test_main_repair_hooks.py`, and the
 repair procedure itself is `references/main-repair.md`.
 
+**Campaign Worktree (2026-08-26).** B1a is unconditional for a standalone
+`/shipwright-iterate` run, but a `--campaign --autonomous` orchestrator never
+called it under its own campaign-scoped identity, and the `sub-iterate-runner`
+subagents it spawns never call `setup_iterate_worktree.py` at all — the agent
+doc says they "work on the project directly", meaning whatever directory a
+spawned subagent's shell happens to start in. Nothing tied that to an isolated
+worktree, so two campaigns had a runner branch, build and commit straight in
+the main repository checkout. `campaign-mode.md` now mints one worktree per
+**campaign slug** (`.worktrees/campaign-<slug>` on `iterate/campaign-<slug>`,
+via the same `setup_iterate_worktree.py`) at Autonomous Campaign Loop step 0,
+re-entering it on resume rather than recreating it, and every `project_root`
+handed to a runner spawn is this directory. A new location-only check,
+`shared/scripts/checks/check_worktree_location.py` (`lib.worktree_location.
+worktree_location_error`), runs at step 3c immediately before every spawn
+(STRICT-STOP the loop on failure) and again as the runner's own Step 1.0
+before it touches git — defense in depth, since a spawned subagent's shell
+does not reliably inherit the orchestrator's `cd`. It is deliberately NOT the
+fuller F0/F11 leak-guard (`check_iterate_isolation.py`): that one also diffs
+the main tree against a Step-1 snapshot keyed by `run_id`, which a campaign
+sub-iterate never has (no `setup_iterate_worktree.py` call of its own), and
+which would false-flag campaign-mode step 3h's own deliberate main-tree write
+to the live-board `status.json` as a leak. Every other bare `git` call inside
+`sub-iterate-runner.md` was also hardened to `git -C "{project_root}"`, since
+the same runner subagent runs the shared F0–F6 finalization prose that assumes
+(only correctly for a standalone iterate) that cwd already IS the worktree.
+
 Two things this adds to the **context-loading** picture for iterate: the run now
 reads the *shared branch's CI state* at startup (previously it read only local
 artifacts), and it may open a second, separate PR — `iterate/fix-main-<sha12>` —

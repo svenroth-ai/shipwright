@@ -210,12 +210,70 @@ def test_main_fails_on_write_failure_on_the_continue_path(monkeypatch, tmp_path,
 
 
 def test_main_fails_on_unsafe_run_id_on_the_continue_path(monkeypatch, tmp_path, capsys):
-    """`write_recheck_record`'s ValueError for an unsafe --run-id must reach
-    the same exit-2 handling — not a silent exit-0 continue with no artifact."""
+    """A --run-id that RUN_ID_STRICT already rejects (e.g. path traversal) now
+    fails at the earlier shape check (below) before ever reaching
+    `write_recheck_record` — its own path-safety ValueError stays covered
+    directly by `test_write_recheck_record_rejects_unsafe_run_id` as a
+    belt-and-suspenders net for callers that skip the CLI's shape check."""
     exit_code = _run_main(monkeypatch, tmp_path, [
         "--stage1-complexity", "small", "--changed-files", "src/app.py",
         "--diff-loc", "3", "--run-id", "../escape",
     ])
     assert exit_code == 2
     out = json.loads(capsys.readouterr().out)
-    assert "safe path component" in out["recheck_record_error"]
+    assert "does not match the canonical shape" in out["error"]
+    assert not (tmp_path / ".shipwright" / "planning" / "iterate").exists()
+
+
+# ---------------------------------------------------------------------------
+# RUN_ID_STRICT — the early fail-fast shape check (Step 3.4 is the first
+# script in the runner contract to receive run_id; F5c enforces this same
+# shape with no escape hatch, hours later, per iterate-2026-08-25-r0-…)
+# ---------------------------------------------------------------------------
+
+
+def test_run_id_strict_pinned_to_shared_iterate_entry():
+    """Copied local (this plugin-lib never imports shared/ at runtime — same
+    reason as session_plan.RUN_ID_STRICT); this pins both local copies to the
+    shared canonical pattern so none of the three can drift alone."""
+    repo_root = Path(__file__).resolve().parents[3]
+    shared_lib = repo_root / "shared" / "scripts" / "lib"
+    sys.path.insert(0, str(shared_lib))
+    from iterate_entry import RUN_ID_STRICT as shared_run_id_strict
+
+    import session_plan
+
+    assert drr.RUN_ID_STRICT.pattern == shared_run_id_strict.pattern
+    assert session_plan.RUN_ID_STRICT.pattern == shared_run_id_strict.pattern
+
+
+@pytest.mark.parametrize("bad_run_id", [
+    "iterate-2026-08-25-R0-spec-reader-shipped-shape",  # the real R0 incident
+    "iterate-2026-08-25-Mixed-Case",
+    "not-even-shaped-like-a-run-id",
+    "iterate-2026-8-25-short-date",
+])
+def test_main_rejects_a_run_id_run_id_strict_would_reject(monkeypatch, tmp_path, capsys, bad_run_id):
+    exit_code = _run_main(monkeypatch, tmp_path, [
+        "--stage1-complexity", "small", "--changed-files", "src/app.py",
+        "--diff-loc", "3", "--run-id", bad_run_id,
+    ])
+    assert exit_code == 2
+    out = json.loads(capsys.readouterr().out)
+    assert bad_run_id in out["error"]
+    assert "does not match the canonical shape" in out["error"]
+    # No artifact write was even attempted.
+    assert not (tmp_path / ".shipwright" / "planning" / "iterate").exists()
+
+
+def test_main_accepts_a_run_id_run_id_strict_accepts(monkeypatch, tmp_path):
+    """The fix for the R0 incident: the pre-lowercased form of the same id
+    passes and proceeds to the normal recheck + persistence."""
+    exit_code = _run_main(monkeypatch, tmp_path, [
+        "--stage1-complexity", "small", "--changed-files", "src/app.py",
+        "--diff-loc", "3", "--run-id", "iterate-2026-08-25-r0-spec-reader-shipped-shape",
+    ])
+    assert exit_code == 0
+    assert rrr.recheck_record_path(
+        tmp_path, "iterate-2026-08-25-r0-spec-reader-shipped-shape"
+    ).is_file()

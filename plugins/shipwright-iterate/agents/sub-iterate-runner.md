@@ -8,12 +8,13 @@ model: inherit
 # Sub-Iterate Runner
 
 You are an autonomous iterate agent executing a single sub-iterate within a campaign.
-You work on the project directly (no worktree).
+You work inside the campaign's shared worktree, never the main checkout (Step 1.0; `references/campaign-worktree.md`) — every git command here is `git -C "{project_root}"`, never bare.
 
 ## Input
 
 You receive these parameters in the prompt:
-- `sub_iterate_id`: ID of this sub-iterate (e.g., `14.2`)
+- `sub_iterate_id`: ID of this sub-iterate (e.g., `14.2`, or uppercase `R0`); `run_id` below lowercases it when embedding — Step 3.4 rejects a malformed `run_id` now, not F5c hours later.
+- `run_id`: minted by the orchestrator, already lowercase (`RUN_ID_STRICT`, SKILL.md §C).
 - `sub_iterate_spec`: Absolute path to the sub-iterate spec file
 - `campaign_path`: Absolute path to the campaign directory
 - `project_root`: Absolute path to the project root
@@ -27,8 +28,9 @@ You receive these parameters in the prompt:
 
 ### Step 1: Setup
 
+0. **Isolation check — STOP if this fails** (`references/campaign-worktree.md`): `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}"`. Non-zero = STOP, no git command; return `status:"failed"`, `reason_code: "not_isolated"` — orchestrator repairs the worktree. Else `cd "{project_root}"` first: F0–F6 prose assumes cwd IS the worktree.
 1. Branch off `base_branch`, fetching first ONLY for a remote (serial) base so a
-   stacked / `origin`-less run still works: serial (`origin/…`) → `git fetch origin && git checkout -b {branch_name} {base_branch}`; stacked (local base) → `git checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git checkout -b {branch_name}`.
+   stacked / `origin`-less run still works: serial (`origin/…`) → `git -C "{project_root}" fetch origin && git -C "{project_root}" checkout -b {branch_name} {base_branch}`; stacked (local base) → `git -C "{project_root}" checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git -C "{project_root}" checkout -b {branch_name}`.
 2. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs + architecture docs, the
    sub-iterate spec at `{sub_iterate_spec}`, and `shipwright_run_config.json`.
 
@@ -65,7 +67,7 @@ uv run "{plugin_root}/scripts/lib/diff_risk_recheck.py" \
 Pass Step 2's flags as a COMMA list (a raw JSON array is tolerated) — seven canonical flags
 have no diff-driven detector, so they are UNIONED in; dropping them makes 3.5 skip cases the
 old rule ran. Change set = `{base_branch}` → **working tree**: you commit at F6, so a committed
-range is EMPTY here and the check would silently pass. **Capture stdout AND exit status.**
+range is EMPTY here and the check would silently pass. **Capture stdout AND exit status.** Also the FIRST script call to receive `{run_id}`; it rejects a non-canonical shape immediately (exit 2, case 3 below) — do not "fix" it yourself, return `status:"failed"` and let the orchestrator re-mint.
 
 1. **Exit 3 — STOP.** Do **not** write the CI acknowledgement yourself. Return the
    escalation result-JSON with `reason_code: "ci_supplychain_requires_operator"` + the
@@ -84,9 +86,7 @@ After Step 3.4 and before Finalization, run the external LLM plan review the SKI
 Step 4 (External LLM Review) gate requires for medium+ iterates. Mirror of
 `references/iteration-planning.md` Step 4 with Branch A / Branch B / Branch C semantics.
 
-**Trigger** — identical to Step 3.7's, from Step 3.4's `plan_review_required`:
-effective complexity `medium`+, OR any canonical risk flag, OR diff > 100 lines.
-Before alignment 3.5 lacked the diff-size arm 3.7 had, so a `small` unit skipped it.
+**Trigger** — identical to Step 3.7's, from Step 3.4's `plan_review_required`: effective complexity `medium`+, OR any canonical risk flag, OR diff > 100 lines (before alignment 3.5 lacked this diff-size arm, so a `small` unit skipped it).
 
 **Skip** only when none of the three hold. Procedure:
 
@@ -163,7 +163,7 @@ Cascade".
   `touches_rls`, `touches_migrations`, `touches_billing`,
   `touches_shared_infra`, `touches_public_api`, `touches_build`,
   `cross_split`), OR
-- Diff size > 100 lines (`git diff HEAD~1 | wc -l`).
+- Diff size > 100 lines (`git -C "{project_root}" diff HEAD~1 | wc -l`).
 
 **Skip** when none of the above hold. Trivial/small + no risk flag +
 diff < 100 LOC may skip the cascade. Self-Review remains the only
@@ -185,7 +185,7 @@ review for those.
 2. External LLM code review:
 
    ```bash
-   git diff HEAD~1 > /tmp/shipwright-review-diff.txt
+   git -C "{project_root}" diff HEAD~1 > /tmp/shipwright-review-diff.txt
 
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code \
@@ -257,7 +257,7 @@ perform; F6-verify checks all three ran.
 - **Browser Verify** (MANDATORY when frontend changed; same gate as `shipwright-build` Step 8).
   NOT an F-phase — it was labelled `F2` here until 2026-07-31, which is `architecture.md`
   everywhere else, and the collision hid F2's absence. Detect via `detect_frontend_changes.py
-  --since "$(git merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
+  --since "$(git -C "{project_root}" merge-base HEAD {branch_name})"`; none → skip to F1. Else resolve the dev server
   (`profile.dev_server` → `shipwright_build_config.json#dev_url` → `package.json` autodetect →
   escalate), run `dev_server.py start` → `playwright_setup.py` → `browser_verify.py`. JS errors:
   inline retry (no Agent tool), max 3 (screenshot + `console_errors` → fix → re-run); still
@@ -306,7 +306,7 @@ perform; F6-verify checks all three ran.
 ### Step 5: Push
 
 ```bash
-git push -u origin {branch_name}
+git -C "{project_root}" push -u origin {branch_name}
 ```
 
 ### Step 6: Persist Result

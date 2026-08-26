@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-25-fr-criteria-parser-pin",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:33:10.422943+00:00",
+      "disposition": null,
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:33:15.070010+00:00",
+      "disposition": "mini-plan is FEATURE-only at small complexity; this is a CHANGE-type iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/spec_parser.py",
+          "line": 321,
+          "finding": "Value-comparison heuristic (text != name), not a structural came-from-a-named-column flag; a byte-identical Description/Name pair would false-negative. Out of this iterate's declared scope.",
+          "suggestion": "Filed as trg-16075b99 for future follow-up; not fixed here.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-25T22:26:54.590962+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/spec_parser.py",
+          "line": 321,
+          "finding": "Claim under doubt: The text != name fix (compute_fr_coherence) fully closes the description-exemption gap without missing any legitimate case. — TITLE_COLS ranks Name above Requirement/Text/Title, so a table with a Name column plus a Requirement/Text/Title column but no Description column would have the genuine descriptive column silently ignored (r.text reads Name), and the new filter would then deny an exemption that should hold. Checked every real fixture/corpus shape in this repo (golden.json, test_fr_table_reader_contract.py SHAPES, test_rtm_fr_table_shapes.py) and none combines Name with Requirement/Text/Title and no Description — so this is confirmed latent, not live.",
+          "suggestion": "Addendum to trg-16075b99 (already filed, already deferred as out-of-scope) noting the wider blast radius; no code change needed now.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "process",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Delivering the fix for trg-968e4d87/trg-467b7b2f is the end of the triage lifecycle for those two cards. — The triage CLI (triage_cli.py) has no close-because-fixed verb — only dismiss (false-positive/won't-fix), defer, and snooze, none of which semantically fit 'addressed and shipped'. Both cards remain status=triage in the main tree as of this review.",
+          "suggestion": "Flagged to the operator in the run summary; not a code defect in this diff.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-25T22:32:56.812536+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:33:15.177973+00:00",
+      "disposition": "external LLM review is medium+ only per Phase Matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:24:00.050530+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:33:15.304953+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

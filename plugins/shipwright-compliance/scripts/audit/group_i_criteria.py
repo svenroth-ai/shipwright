@@ -64,6 +64,20 @@ def has_criteria(content: str, fr_id: str) -> bool:
     return fr_criteria.has_criteria(content, fr_id, strict=False)
 
 
+def criteria_for(content: str, fr_id: str) -> list[str]:
+    """Every criterion text anchored to ``fr_id``, I6's OWN entry point for
+    the list (not just ``has_criteria``'s boolean).
+
+    Exists so a caller proving I6 sees the same criteria LIST as the other
+    two readers (the three-way convergence test) goes through I6's own
+    vocabulary rather than reaching ``group_i_criteria.fr_criteria``
+    directly — the latter proves the shared module is reachable from this
+    module, not that THIS module's contract returns the right thing
+    (doubt-review round 1, 2026-08-25, trg-467b7b2f).
+    """
+    return fr_criteria.criteria_for(content, fr_id, strict=False)
+
+
 def frs_without_criteria(project_root: Path, rows: Iterable) -> list[str]:
     """Ids among ``rows`` whose OWN spec file gives them no acceptance criteria.
 
@@ -91,4 +105,4 @@ def frs_without_criteria(project_root: Path, rows: Iterable) -> list[str]:
     return sorted(missing)
 
 
-__all__ = ["frs_without_criteria", "has_criteria"]
+__all__ = ["criteria_for", "frs_without_criteria", "has_criteria"]
