@@ -23,6 +23,15 @@
       "adr": null
     },
     {
+      "path": "integration-tests/requirements_corpus/registry.py",
+      "limit": 300,
+      "current": 316,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/s2b-discovery-convergence/sub-iterates/B-pure-hardening.md",
+      "note": "S2b pass A adds a 17th DISCOVERY entry (299->316). Passes B4/C3 both retire dead machinery here (order_sensitive masks, platform_sep/_posixify) and are expected to reclaim the overage; not baselined as a permanent exception."
+    },
+    {
       "path": "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
       "limit": 300,
       "current": 590,

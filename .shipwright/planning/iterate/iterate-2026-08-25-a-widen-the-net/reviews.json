@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-25-a-widen-the-net",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:50:12.852739+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The A2 validating wrapper could accidentally move the existing non-recursive `require` validation from first-iteration time to call time. Today `iter_spec_files(p, require=\"is_file\")` only raises when the iterator is consumed; the change is specified only for the recursive branch.",
+          "suggestion": "Eagerly validate only the new recursive/non-default combination in the public wrapper. Leave the existing non-recursive checks inside the inner generator so their lazy timing is preserved.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "planning_discovery.py` is described as a vendorable neutral leaf (ADR-045). A2 changes the shared copy only, but vendored copies in other plugin realms may still accept the now-invalid recursive `guard`/`require` combinations.",
+          "suggestion": "Confirm whether there is a vendor/sync step that propagates shared-leaf changes. If not, include the vendored copies or explicitly track them as a required follow-up before claiming consistency.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan says the `run_review` source-hash golden cell must change and forbids regenerating green via `regen_golden.py --check`, but it does not specify the allowed mechanism for updating exactly that one cell.",
+          "suggestion": "Identify the exact golden file/key and the manual update command for the `run_review` source-only cell. Add a verification step that only that cell changes and all other golden cells remain untouched.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Extracting the inline walk from `run_review` may require passing local variables or closure state to the new named function. The plan does not inventory those dependencies, so the extraction could subtly alter path construction, sorting, filtering, or error handling.",
+          "suggestion": "Enumerate all state used by the inline walk and pass it explicitly to the extracted function. Review the old/new walk logic side by side as part of the diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "testing",
+          "file": null,
+          "line": null,
+          "finding": "The new `DISCOVERY` entry is primarily validated by incrementing the expected count and updating prose. If the registry meta-test only checks inventory count/names, a broken or misnamed `invoke` could pass without actually exercising the extracted walk.",
+          "suggestion": "Confirm the registry meta-test resolves and runs each entry’s `invoke`, or add a smoke assertion that the new adopt entry returns the expected planning-directory walk.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan names the registry `invoke` target as `\"planning_dir\"` but does not explicitly name the extracted function or show how `run_review` and the registry entry share the same implementation. If `run_review` preserves a duplicate copy, the new entry could freeze dead code.",
+          "suggestion": "Give the extracted function a concrete name, ensure `run_review` calls it, and verify the registry’s `invoke` resolution for `realm: \"adopt\"` points to that same function.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan knowingly pushes `registry.py` over its 300-line limit. This is not pre-commit-blocked, but it will be visible to the Group-H audit and may create avoidable post-merge noise.",
+          "suggestion": "If a small, safe formatting-only reduction can keep `registry.py` under the limit, do it. Otherwise, obtain an explicit pre-merge exception or document the expected violation and line count in the iterate report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan lists four “15” references, but hard-coded counts can also appear in snapshots, docs, or generated files not on the list.",
+          "suggestion": "Run a repo-wide search for the old count/prose before updating, and update every legitimate occurrence while leaving the assertion against the constant untouched.  Overall assessment: The direction is sound and the spec is unusually precise about preserving existing call-site behavior. Before implementation, clarify the golden-cell update path, vendor propagation, lazy-validation timing, and the shared function identity; otherwise the change risks subtle behavioral drift or broken checks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan recognizes that `registry.py` will grow from 299 lines beyond the 300-line limit, but only proposes naming this in the iterate report. If the post-merge Group-H audit treats the limit as an actionable quality gate, this change will immediately create an audit finding with no agreed disposition.",
+          "suggestion": "Before implementation, confirm the audit policy and record an explicit waiver/accepted follow-up for this card if exceeding the limit is intentional. If no waiver is available, reduce existing non-functional registry layout/prose within the same module rather than introducing an abstraction or dependency solely to evade the line count.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A1 requires the existing `source_only` golden hash for `run_review` to change, but the plan does not explicitly state how the corresponding golden artifact will be updated and verified without using `regen_golden.py --check` to broadly regenerate cells. Merely documenting that the hash moves can leave the repository with a stale expected hash, or accidentally admit unrelated golden changes.",
+          "suggestion": "Include an explicit targeted update of the one `run_review` `source_only` expectation, update `regenerated_for` to the required literal, and verify the golden diff contains exactly that source-only hash change and no existing call-site behavioral-cell changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The new registry entry only provides useful coverage if it invokes the extracted function—not merely a function with a compatible `planning_dir` signature. The plan does not name the extracted helper or state that `run_review` must delegate to that exact helper. A direct corpus test of a helper alone would not prove that the production LLM path still uses it.",
+          "suggestion": "Define the helper’s stable name/signature according to the registry’s `invoke: \"planning_dir\"` convention, have `run_review` call it directly, and add or retain a focused test that establishes delegation/unchanged selected-file behavior while mocking the external LLM boundary. This keeps the new behavioral entry connected to the production path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A2’s required behavior applies independently to both non-default `guard` and non-default `require`, but the plan only generally calls for “a new unit test.” A test limited to `require=\"is_file\"` could allow a regression where `guard=\"exists\"` remains silently ignored in the recursive branch. It also would not protect the value-based interpretation that explicitly supplied defaults remain valid.",
+          "suggestion": "Add focused cases for: non-default `require` raising at call time; non-default `guard` raising at call time; both together raising; and explicitly passed default values (`guard=\"is_dir\"`, `require=\"exists\"`) remaining accepted with `recursive=True`. Preserve the existing laziness test so only argument validation is eager, not traversal or result production.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The claim of “no call-site behavior change” is supported for the five identified in-repository recursive users, but `planning_discovery` is described as a neutral vendorable leaf. Out-of-tree consumers that currently pass recursive non-default `guard` or `require` will now receive an intentional synchronous `ValueError` instead of silently ignored options.",
+          "suggestion": "Perform a repository-wide search including plugin copies/generated consumers before merging, and document this as an intentional API-contract tightening in the iterate report or compatibility notes. Do not alter the requested error behavior, but make the compatibility boundary explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The inventory wording is internally easy to misapply: it refers to “five” occurrences of `15`, while the listed locations include two separate line occurrences in `planning_discovery.py` plus the registry and test locations. A partial prose/count update may leave stale inventory claims despite the registry meta-test passing.",
+          "suggestion": "Use a literal repository search for the old inventory text/count before and after the change, enumerate the expected matches in the implementation checklist, and confirm every intended occurrence is updated while unrelated numerical values are left unchanged.  No new authentication, authorization, input-handling, or data-exposure surface is introduced by the proposed extraction and validation changes. The approach is fundamentally sound, but it needs the targeted golden-update procedure and complete validation coverage before implementation is considered ready. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-25T22:49:48.273951+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] **Findings**\n\n- **Category:** risk  \n  **Severity:** medium  \n  **Finding:** The A2 validating wrapper could accidentally move the existing non-recursive `require` validation from first-iteration time to call time. Today `iter_spec_files(p, require=\"is_file\")` only raises when the iterator is consumed; the change is specified only for the recursive branch.  \n  **Suggestion:** Eagerly validate only the new recursive/non-default combination in the public wrapper. Leave the existing non-recursive checks inside the inner generator so their lazy timing is preserved.\n\n- **Category:** dependency  \n  **Severity:** medium  \n  **Finding:** `planning_discovery.py` is described as a vendorable neutral leaf (ADR-045). A2 changes the shared copy only, but vendored copies in other plugin realms may still accept the now-invalid recursive `guard`/`require` combinations.  \n  **Suggestion:** Confirm whether there is a vendor/sync step that propagates shared-leaf changes. If not, include the vendored copies or explicitly track them as a required follow-up before claiming consistency.\n\n- **Category:** risk  \n  **Severity:** medium  \n  **Finding:** The plan says the `run_review` source-hash golden cell must change and forbids regenerating green via `regen_golden.py --check`, but it does not specify the allowed mechanism for updating exactly that one cell.  \n  **Suggestion:** Identify the exact golden file/key and the manual update command for the `run_review` source-only cell. Add a verification step that only that cell changes and all other golden cells remain untouched.\n\n- **Category:** edge-case  \n  **Severity:** medium  \n  **Finding:** Extracting the inline walk from `run_review` may require passing local variables or closure state to the new named function. The plan does not inventory those dependencies, so the extraction could subtly alter path construction, sorting, filtering, or error handling.  \n  **Suggestion:** Enumerate all state used by the inline walk and pass  […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan recognizes that `registry.py` will grow from 299 lines beyond the 300-line limit, but only proposes naming this in the iterate report. If the post-merge Group-H audit treats the limit as an actionable quality gate, this change will immediately create an audit finding with no agreed disposition.  \n   **Suggestion:** Before implementation, confirm the audit policy and record an explicit waiver/accepted follow-up for this card if exceeding the limit is intentional. If no waiver is available, reduce existing non-functional registry layout/prose within the same module rather than introducing an abstraction or dependency solely to evade the line count.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** A1 requires the existing `source_only` golden hash for `run_review` to change, but the plan does not explicitly state how the corresponding golden artifact will be updated and verified without using `regen_golden.py --check` to broadly regenerate cells. Merely documenting that the hash moves can leave the repository with a stale expected hash, or accidentally admit unrelated golden changes.  \n   **Suggestion:** Include an explicit targeted update of the one `run_review` `source_only` expectation, update `regenerated_for` to the required literal, and verify the golden diff contains exactly that source-only hash change and no existing call-site behavioral-cell changes.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The new registry entry only provides useful coverage if it invokes the extracted function—not merely a function with a compatible `planning_dir` signature. The plan does not name the extracted helper or state that `run_review` must delegate to that exact helper. A direct corpus test of a helper alone would not prove that the production LLM path still uses it.  \n   **Suggestion:** Define the helper’s stable name/signature according to […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unknown"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_planning_discovery.py",
+          "line": null,
+          "finding": "A2's value-based (not explicitly-passed) design decision had no test exercising explicit defaults with recursive=True.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "integration-tests/requirements_corpus/registry.py",
+          "line": null,
+          "finding": "Count prose self-contradictory (17 entries / 16 walks arithmetic doesn't work).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/planning_discovery.py",
+          "line": null,
+          "finding": "Module docstring falsely claimed 16 call sites/implementations (unchanged at 15) and test_requirements_corpus_registry.py:56 still said 16 discovery entries.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "integration-tests/requirements_corpus/_serialize.py",
+          "line": null,
+          "finding": "Mask-invariant docstrings (one probe per masked target) became false with a third masked target added and no probe.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": null,
+          "finding": "registry.py's 300-line crossing (299->316) was named in the decision drop but not dispositioned in the baseline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_planning_discovery.py",
+          "line": null,
+          "finding": "Duplicate test byte-identical to another.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/planning/campaigns + iterate/campaigns",
+          "line": null,
+          "finding": "Campaign BRIEF and sub-iterate specs are untracked in the main tree; pass B has no committed source of truth.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T05:51:32.567561+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T05:51:32.699666+00:00",
+      "disposition": "Stage 3 is conditional (migrations/async/cross-plugin/irreversible-ops); this diff is shared-lib validation logic and a test-registry addition, none of which trigger it. Stage 2 passed at 3f-bis.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "integration-tests/requirements_corpus/registry.py",
+          "line": 224,
+          "finding": "The new extracted walk is explicitly unsorted (`sort=False`), and its generated golden cell records `\"unordered_walk\": true`, but the registry marks it `order_sensitive: True`. This is contradictory: filesystem iteration order is not stable, so an order-sensitive corpus assertion can be flaky or incorrectly claim a stable ordering that `run_review` never guaranteed.",
+          "suggestion": "Mark this target as not order-sensitive (or omit the field, if that is the unordered default), consistent with the `sort=False` walk and the golden cell’s `unordered_walk` representation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "integration-tests/requirements_corpus/registry.py:215-224",
+          "line": null,
+          "finding": "Adding the registry entry takes `registry.py` beyond its stated 300-line limit, but the diff contains no iterate report documenting this newly visible Group-H bloat violation. The specification explicitly requires naming this in the iterate report, alongside the intentional `run_review` source-hash movement.",
+          "suggestion": "Add/update the required iterate report to state that the `run_review` source hash intentionally changed due to extraction and that `registry.py` now exceeds the 300-line limit.  Overall assessment: the functional implementation substantially satisfies A1/A2 and includes the required eager-error test, but the corpus metadata contradicts the unsorted behavior and the required iterate-report disclosure is absent. Ship with fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-25T22:49:52.203393+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: test\n- Severity: medium\n- File: `integration-tests/requirements_corpus/registry.py:224`\n- Finding: The new extracted walk is explicitly unsorted (`sort=False`), and its generated golden cell records `\"unordered_walk\": true`, but the registry marks it `order_sensitive: True`. This is contradictory: filesystem iteration order is not stable, so an order-sensitive corpus assertion can be flaky or incorrectly claim a stable ordering that `run_review` never guaranteed.\n- Suggestion: Mark this target as not order-sensitive (or omit the field, if that is the unordered default), consistent with the `sort=False` walk and the golden cell’s `unordered_walk` representation.\n\n- Category: spec\n- Severity: low\n- File: `integration-tests/requirements_corpus/registry.py:215-224`\n- Finding: Adding the registry entry takes `registry.py` beyond its stated 300-line limit, but the diff contains no iterate report documenting this newly visible Group-H bloat violation. The specification explicitly requires naming this in the iterate report, alongside the intentional `run_review` source-hash movement.\n- Suggestion: Add/update the required iterate report to state that the `run_review` source hash intentionally changed due to extraction and that `registry.py` now exceeds the 300-line limit.\n\nOverall assessment: the functional implementation substantially satisfies A1/A2 and includes the required eager-error test, but the corpus metadata contradicts the unsorted behavior and the required iterate-report disclosure is absent. Ship with fixes.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T05:51:48.038104+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-25T22:50:20.656384+00:00",
+      "disposition": "no internal plan-review arm exists (opus-plan-reviewer is unwired); external plan review (Step 3.5, recorded as 'plan') is the only plan review this runner can perform -- documented gap, permanent",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
