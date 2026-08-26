@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-26-changelog-release-notes",
+  "date": "2026-08-26",
+  "section": "Iterate — feature: changelog release notes",
+  "title": "Condensed, mechanically-gated GitHub Release notes",
+  "context": "GitHub Release pages show only a one-line tag message; the raw CHANGELOG.md section is too dense (100-450+ bullets) to publish verbatim.",
+  "decision": "Condense the tagged CHANGELOG section via a tool-less LLM call, then mechanically validate/sanitize before gh release create --verify-tag; always link the full section.",
+  "consequences": "Readable release pages, forward-only. Failure at any stage is reported, never blocks the changelog phase; the tag stays the source of truth.",
+  "rationale": "Architecture Review recommended verbatim republish; declined because the raw section is never lost (linked) and the validator already guards the exact risk (LLM writing unchecked) the reviewers raised.",
+  "rejected": "Option B: verbatim republish, no LLM, no validator — optimizes away the actual complaint instead of solving it.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-26-changelog-release-notes-condensed-release-notes.md"
+}

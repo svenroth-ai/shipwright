@@ -80,3 +80,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR — Pin fr_criteria.py parsing widenings, fix table description exemption](iterate-2026-08-25-fr-criteria-parser-pin-fr-criteria-pins.md)
 - [One shared FR-criteria reader, replacing three independent walks](iterate-2026-08-25-r0-spec-reader-shipped-shape-fr-criteria-convergence.md)
 - [Repeatable multi-root JUnit staging for execution evidence](iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md)
+- [Condensed, mechanically-gated GitHub Release notes](iterate-2026-08-26-changelog-release-notes-condensed-release-notes.md)
