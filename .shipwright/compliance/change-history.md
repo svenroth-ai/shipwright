@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-08-10T10:44:43.260693+00:00
-Source-State: run=iterate-2026-08-10-i2-test-evidence-phase-source-contract
-Consistency-audit: last run 2026-07-28 (13 days earlier) — FAIL
-Total commits: 1407
+Generated: 2026-08-26T12:04:09.737533+00:00
+Source-State: run=iterate-2026-08-26-r1b-ci-manifest-regen-gate
+Consistency-audit: last run 2026-07-28 (29 days earlier) — FAIL
+Total commits: 1432
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 462
-    "feat" : 380
+    "fix" : 480
+    "feat" : 382
     "chore" : 262
-    "docs" : 155
-    "refactor" : 84
-    "test" : 35
+    "docs" : 156
+    "refactor" : 86
+    "test" : 37
     "ci" : 18
     "other" : 9
     "perf" : 1
@@ -23,11 +23,29 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 462 commits
+### Fixes (fix) — 480 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-08-10 | compliance | verify test evidence by phase source | 450d4fee58c1 |
+| 2026-08-26 | iterate | mint campaign sub-iterate run_ids pre-lowercased, fail fast at Step 3.4 (#651) | 4f1cda2c715a |
+| 2026-08-25 | compliance | stage JUnit reports from every pytest test-root, not just one (#649) | 39a82af81392 |
+| 2026-08-25 | spec | converge FR-criteria readers on the shipped heading+bullet shape (#648) | 53458aa836e3 |
+| 2026-08-23 | iterate | treat a null commit/sibling field as missing in update_build_dashboard.py (#647) | 22f522115358 |
+| 2026-08-23 | design | preserve Non-UI FRs section across manifest regeneration (#646) | 8ccd2410a488 |
+| 2026-08-21 | compliance | correct B5 phaseTaskId field mismatch and C1 column-brittle Screens parser (#645) | d337483399b8 |
+| 2026-08-18 | iterate | thread uv's --project into every external_review.py call site (#644) | 839b70d7cac2 |
+| 2026-08-17 | profiles | raise vite-hono's hono floor to the CVE fix line (#643) | cec3b3b7971f |
+| 2026-08-16 | gitignore-canon | retract SUPERSEDED rules found before the managed block (#641) | 33460060d53c |
+| 2026-08-16 | iterate | document retention cap as approximately 50 under parallel merges (#640) | b7082c4c2b50 |
+| 2026-08-14 | adopt | seed canonical ADR folder; fail closed on hollow retroactive ADR (#639) | a6630d7cc740 |
+| 2026-08-14 | project | retire QR-/C- id spaces from spec-generation reference (#637) | 869ac1df47c0 |
+| 2026-08-14 | adopt | fold quality requirements into FR-table rows, not prose (#638) | cbb7dd5e581d |
+| 2026-08-14 | scripts | port 4 fail-open defects in install-hooks.ps1 from leadwright (#636) | b8299e40f448 |
+| 2026-08-13 | triage | self-cap detail at 4 unbounded triage-producer call sites (#635) | 8458b565fc16 |
+| 2026-08-12 | iterate | capture scope and implementation timing marks deterministically (#632) | 65f9827ed799 |
+| 2026-08-10 | compliance | verify test evidence by phase source (#630) | 0c2c0079365f |
+| 2026-08-10 | iterate | verify F11 tree before push (#629) | a06a7227952a |
+| 2026-08-10 | security | harden PR review verdict (#627) | ffd4060b970d |
 | 2026-08-10 | compliance | separate branch feedback from merge and release authority (#625) | 45207eeeba0b |
 | 2026-08-09 | security | require review evidence for PR waiver (#622) | 9679b820dc83 |
 | 2026-08-09 | compliance | make test-evidence freshness source-state based (#620) | acd82c9f74e7 |
@@ -490,10 +508,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 380 commits
+### Features (feat) — 382 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-12 | changelog | sync published-package manifest versions at release (#633) | a81cd8004a67 |
+| 2026-08-10 | triage | add machine-callable transitions (#631) | c9ce4ee1dd5a |
 | 2026-08-09 | triage | expose pending amend delivery (#616) | 083d4c56f296 |
 | 2026-08-08 | triage | add an amend event to correct a card in place (#609) | 569005eb6b02 |
 | 2026-08-08 | shipwright-plan,shipwright-iterate | make the plan-reviewer's model configurable via a plan_review role (#606) | 74c97dbf5897 |
@@ -879,7 +899,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-08-10 | triage | sweep 1 outbox append(s) into branch | 1771ffff76e9 |
+| 2026-08-26 | triage | sweep 3 outbox append(s) into branch | 5e1f8616adea |
 | 2026-08-08 | release | v0.32.0 canon handoff — dashboard, session handoff, phase history | 5f12a9ff7abf |
 | 2026-08-08 | release | v0.32.0 | 11e325232765 |
 | 2026-08-08 | triage | dismiss trg-6d8fbc10, delivered via PR #598 | b67e536d9bef |
@@ -1142,10 +1162,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 155 commits
+### Documentation (docs) — 156 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-10 | — | remove expired refactoring-churn warning from README (#626) | 005f7bfe5843 |
 | 2026-08-09 | — | add threshold-based guide to keeping token cost controllable (#621) | 58cda771438f |
 | 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
 | 2026-08-01 | readme | flag active refactoring window through Aug 10, 2026 | b0c3caf35946 |
@@ -1302,10 +1323,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 84 commits
+### Refactoring (refactor) — 86 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-17 | iterate | gate FR-declaring events on real test evidence (#642) | 274be817157e |
+| 2026-08-13 | triage | cap detail at 6000 chars across schema and write paths (#634) | 5c6abb295795 |
 | 2026-08-08 | events-context | backfill selection keys from git history (#602) | 535d9f938bf8 |
 | 2026-08-08 | triage | merge sweep_outbox's duplicate git-state predicates into main_tree_guards (#594) | 77c1ea2eee64 |
 | 2026-08-05 | iterate | split oversize iterate-entry encoding test file (#568) | 9b4e91de7f97 |
@@ -1391,10 +1414,12 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 35 commits
+### Tests (test) — 37 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-26 | compliance | pin fr_criteria.py parsing widenings, fix table description exemption (#650) | ec777034800c |
+| 2026-08-10 | shared | normalize Windows worktree path aliases (#628) | 5243930c7299 |
 | 2026-08-09 | security | cover review_record_tier CLI path and needs-review label (#624) | e425fb14795f |
 | 2026-08-03 | hooks | stabilize concurrent rearm timing (#542) | b811ef6988c2 |
 | 2026-08-02 | compliance | the evidence refresh is driven through its real producer (#528) | 0797067b1494 |
@@ -1484,7 +1509,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1407 |
+| Total commits | 1432 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1407 |
+| Human-authored commits | 1432 |
 

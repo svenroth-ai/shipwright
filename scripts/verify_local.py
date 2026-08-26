@@ -115,6 +115,12 @@ CI_ONLY_GATES = {
         "wrapper. Cited by triage id on purpose: a reason that names a card no one can "
         "look up reads as accountable without being so."
     ),
+    "Verify test-root JUnit coverage (gate)": (
+        "Checks that every root named in ci.yml's OWN .ci-junit/plan.json produced its "
+        "planned --junit-xml this run. There is no local equivalent of that per-root "
+        "file layout to mirror — plan.json is written fresh by an earlier ci.yml step "
+        "and the paths it names only exist inside this job's own workspace."
+    ),
 }
 
 

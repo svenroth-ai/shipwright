@@ -732,7 +732,7 @@
     {
       "path": "shared/scripts/tools/run_test_suite.py",
       "limit": 300,
-      "current": 518,
+      "current": 529,
       "state": "exception",
       "adr": "ADR-123"
     },

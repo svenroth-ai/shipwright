@@ -93,6 +93,17 @@ jobs:
           rm -f "$TARBALL"
           gitleaks version
 
+      - name: Plan test-root JUnit outputs
+        # AC4: every test-root pytest step below writes its own --junit-xml
+        # to a path resolved from ONE upfront plan.json, using the SAME
+        # base convention F0's retention (AC2) uses via
+        # shared/scripts/lib/suite_root_plan.py — never a hand-maintained
+        # root-to-path table duplicated across this file. Needs pytest
+        # importable: it loads conftest.py's discover_test_roots, which
+        # itself does `import pytest` — a dev-only optional dependency, so
+        # `--with pytest` here, same as the test steps below.
+        run: uv run --with pytest shared/scripts/tools/ci_junit_plan.py plan --out .ci-junit
+
       - name: Run plugin tests
         shell: bash
         run: |
@@ -109,6 +120,10 @@ jobs:
             if [ -f "$plugin/pyproject.toml" ] && [ -d "$plugin/tests" ]; then
               name=$(basename "$plugin")
               echo "--- Running tests in $plugin ---"
+              # AC4: this root's planned --junit-xml, read from the Plan step's
+              # plan.json (absolute path, so it survives the `cd` below).
+              junit_out=$(jq -r --arg r "plugins/$name/tests" \
+                '.[] | select(.rel_root==$r) | .junit_out' .ci-junit/plan.json)
               # Plugins declare pytest as an optional `dev` extra (or not at
               # all), so a plain `uv sync` does not install it. `uv run --with`
               # provisions pytest + pytest-mock on top of the plugin's own env.
@@ -121,11 +136,11 @@ jobs:
                 # `plugins/<name>/scripts/...`. Additive; never gates this step.
                 (cd "$plugin" && COVERAGE_FILE="$ROOT/.cov-data/.coverage.$name" \
                   uv run --with pytest --with pytest-mock --with pytest-cov \
-                  pytest tests/ -v \
+                  pytest tests/ -v --junit-xml="$junit_out" \
                   --cov=scripts --cov-config="$ROOT/pyproject.toml" --cov-report=)
               else
                 # No scripts/ dir (e.g. shipwright-preview) — run tests, no cov.
-                (cd "$plugin" && uv run --with pytest --with pytest-mock pytest tests/ -v)
+                (cd "$plugin" && uv run --with pytest --with pytest-mock pytest tests/ -v --junit-xml="$junit_out")
               fi
             fi
           done
@@ -171,9 +186,11 @@ jobs:
           export COVERAGE_FILE="$PWD/.cov-data/.coverage.shared"
           for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
             echo "--- Running tests in $dir ---"
+            # AC4: this root's planned --junit-xml (see the Plan step above).
+            junit_out=$(jq -r --arg r "$dir" '.[] | select(.rel_root==$r) | .junit_out' .ci-junit/plan.json)
             uv run --with pytest --with pytest-mock --with pytest-cov \
               --with "diff-cover==10.3.0" \
-              pytest "$dir" -v -m "not slow and not cross_plugin" \
+              pytest "$dir" -v -m "not slow and not cross_plugin" --junit-xml="$junit_out" \
               --cov=shared --cov-append --cov-config="$PWD/pyproject.toml" --cov-report=
           done
 
@@ -186,9 +203,11 @@ jobs:
         shell: bash
         run: |
           if [ -d integration-tests ]; then
+            # AC4: this root's planned --junit-xml (see the Plan step above).
+            junit_out=$(jq -r --arg r "integration-tests" '.[] | select(.rel_root==$r) | .junit_out' .ci-junit/plan.json)
             COVERAGE_FILE="$PWD/.cov-data/.coverage.integration" \
               uv run --with pytest --with pytest-mock --with pytest-cov \
-              pytest integration-tests/ -v \
+              pytest integration-tests/ -v --junit-xml="$junit_out" \
               --cov=shared --cov-config="$PWD/pyproject.toml" --cov-report=
           fi
 
@@ -303,6 +322,48 @@ jobs:
         # survives the outbox sweep to origin rather than being quarantined.
         # Also referenced by nothing until now.
         run: uv run scripts/verify_sweep_delivery_surface.py
+
+      - name: Verify test-root JUnit coverage (gate)
+        # AC4: every root planned above must actually have produced its
+        # --junit-xml — a silently-dropped root would either read as false
+        # structural drift in the next step's manifest comparison, or get
+        # masked as a "platform-selection difference" it is not (External
+        # Review, both reviewers).
+        run: uv run shared/scripts/tools/ci_junit_plan.py verify --plan .ci-junit/plan.json
+
+      - name: Check traceability manifest against a fresh regeneration
+        # SPEC D8 (second half): regenerate .shipwright/compliance/
+        # test-traceability.json from THIS run's real, fresh JUnit reports and
+        # compare it against the committed one. Deliberately NOT named
+        # "...(gate)" and registered in NO allowlist:
+        # ci_manifest_drift_check.py's own exit code is 0 (no drift) / 1
+        # (structural drift, advisory) / 2 (a real step failure — git show,
+        # staging, or regeneration itself crashed). Only exit 2 fails this
+        # step; exit 1 is reported via ::warning:: and the job stays green.
+        # This if-scoped form (never a trailing `|| true` / `|| exit 0`) is
+        # why check_ci_gate_coverage.py's is_loose() correctly leaves this
+        # alone: a suppression only counts when it shares ONE line with a
+        # recognized gate command, and this step's run body matches no
+        # GATE_COMMAND and its name carries no GATE_NAME_KEYWORD — it is not
+        # classified as a gate step at all, so LOOSE_GATE_ALLOWLIST needs no
+        # new entry (one would itself fail stale_allowlist_entries(), since
+        # the guard would find nothing loose to match it against). Advisory
+        # until proven reliable over several consecutive green PRs — see the
+        # iterate spec's AC4 design note for what has to be true before this
+        # becomes a real gate.
+        shell: bash
+        run: |
+          set +e
+          uv run shared/scripts/tools/ci_manifest_drift_check.py \
+            --project-root . --run-id "${{ github.run_id }}" \
+            --head-commit "${{ github.sha }}" --plan .ci-junit/plan.json
+          code=$?
+          set -e
+          if [ "$code" -eq 1 ]; then
+            echo "::warning::Traceability manifest structural drift detected against the committed one (advisory, not blocking) - see the step log above."
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
+          fi
 
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml

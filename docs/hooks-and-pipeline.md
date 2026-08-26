@@ -3143,16 +3143,17 @@ This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog
 
 `ci.yml`'s `Python (lint + test)` job is a Required Check, so every step in it
 blocks the merge. Besides lint, the test tiers and the diff-coverage gate, it
-runs three guards:
+runs four guards:
 
 | Step | Script | What it proves |
 |---|---|---|
 | `Run CI-gate guard` | `shared/scripts/tools/check_ci_gate_coverage.py` | no test dir is unreferenced by CI, no quality gate has gone loose (`\|\| true` / `continue-on-error`) outside the documented `LOOSE_GATE_ALLOWLIST`, and `security.yml`'s critical gate still fails closed |
 | `Contract surface (gate)` | `scripts/verify_contract_surface.py` | the bytes `grade.py --format json` and `analyze_codebase.py` actually emit still match the cross-repo contract this repo publishes |
 | `Sweep delivery surface (gate)` | `scripts/verify_sweep_delivery_surface.py` | an operator's triage dismiss survives the outbox sweep to origin instead of being quarantined away |
+| `Verify test-root JUnit coverage (gate)` | `shared/scripts/tools/ci_junit_plan.py verify` | every one of the 18 test roots the earlier `Plan test-root JUnit outputs` step discovered actually produced its planned `--junit-xml` — a silently-dropped root would otherwise read as false structural drift (or a masked platform-selection difference) in the manifest-drift step that follows it |
 
-All three are mirrored locally by `scripts/verify_local.py`, so a push does not
-have to learn about them from a red CI run:
+The first three are mirrored locally by `scripts/verify_local.py`, so a push
+does not have to learn about them from a red CI run:
 
 ```bash
 uv run scripts/verify_local.py     # runs the three above, before you push
@@ -3165,14 +3166,34 @@ importing it would bind `lib` for the whole interpreter and resolve differently
 under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
 lazy import only defers *which* `lib` binds; it does not make it safe.
 
-Two of `ci.yml`'s five guards are deliberately **not** mirrored, each recorded
+Three of `ci.yml`'s six guards are deliberately **not** mirrored, each recorded
 with its reason in `CI_ONLY_GATES`: `Repair-PR safety (gate)` materialises its
 checker from the PR's *base* revision precisely so a branch cannot vouch for
-itself, and `Diff coverage (gate)` belongs in the F0 suite runner that already
-produces coverage (tracked as `trg-392dc923`).
+itself, `Diff coverage (gate)` belongs in the F0 suite runner that already
+produces coverage (tracked as `trg-392dc923`), and `Verify test-root JUnit
+coverage (gate)` checks the files ci.yml's own `.ci-junit/plan.json` scheme
+produced this run — there is no local equivalent of the layout to mirror,
+only CI's own per-root file placement.
 `shared/tests/test_verify_local_ci_drift.py` pins both drift directions across
 every workflow and job — a bespoke guard that lands in neither registry fails
 there, and a local command that stops matching CI's fails per-gate.
+
+**A fourth, deliberately non-blocking, step follows it: `Check traceability
+manifest against a fresh regeneration`** (`shared/scripts/tools/
+ci_manifest_drift_check.py`, SPEC D8's second half). It regenerates
+`.shipwright/compliance/test-traceability.json` from this run's real, staged
+JUnit reports and compares it against the committed one
+(`compare_traceability_manifest.py`'s two-tier diff — structural fields gate,
+execution-derived fields never do). Its own exit code is 0 (no drift) / 1
+(structural drift) / 2 (a step itself failed — `git show`, staging, or
+regeneration crashed); the ci.yml step only fails on exit 2, reporting exit 1
+via `::warning::` instead. It is deliberately named without `(gate)` and
+carries no `LOOSE_GATE_ALLOWLIST` entry: its `run:` body matches no
+`GATE_COMMAND` and its name carries no `GATE_NAME_KEYWORD`, so
+`check_ci_gate_coverage.py` does not classify it as a gate step at all — an
+allowlist entry for it would itself fail `stale_allowlist_entries()`, since
+the guard would find nothing loose to match it against. Advisory until proven
+reliable over several consecutive green PRs.
 
 Two limits to keep in view. **A local pass is never a substitute for the host's
 re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which

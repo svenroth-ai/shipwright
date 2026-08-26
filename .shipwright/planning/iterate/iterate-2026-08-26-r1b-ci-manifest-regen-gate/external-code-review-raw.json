@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: high\n- File: `Spec/design/2026-07-22-req3-campaign-SPEC.md` \u2014 missing from diff\n- Finding: AC6 and the declared Spec Impact are not implemented. The change does not add the required advisory-enforcement note to \u00a74 P0a, nor append the FR-01.10 acceptance-criteria line naming the advisory-first CI regenerate-and-compare check. The new iterate-planning copy describes these requirements, but it does not modify the authoritative specification.\n- Suggestion: Update `Spec/design/2026-07-22-req3-campaign-SPEC.md` with the required P0a advisory note and FR-01.10 AC line before shipping.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/stage_f0_evidence.py:101-135`\n- Finding: AC3 explicitly requires validating unique `unit_id`s **and bases**, but `load_and_validate_manifest()` only tracks `seen_ids`. A malformed side manifest can contain two units with the same `base`; both reports are then passed to `evidence_drop.stage_reports`, potentially producing ambiguous or incorrectly rebased staged evidence.\n- Suggestion: Track `seen_bases` while validating entries and reject duplicate bases with `StageError`; add a test fixture containing distinct unit IDs with the same base.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/compare_traceability_manifest.py:86-103,138-147`\n- Finding: The comparator's promised malformed-input exit contract is not upheld for many malformed manifests. Validation only checks that `tests` and `coverage` keys exist, not their types or that test entries contain an `id`; for example, `\"tests\": null`, a non-list layer value, or a test record without `\"id\"` reaches `execution_report()` and raises `AttributeError`/`TypeError`/`KeyError`. Those exceptions escape `main_with_output()`, making the standalone process exit 1 rather than the required error exit 2.\n- Suggestion: Validate `tests` as a mapping of layer names to lists of test-record mappings and require `id`, `status`, and `executed` fields, or catch all unexpected comparison exceptions and convert them to `ManifestError`/`EXIT_ERROR`. Add CLI-level tests for these malformed shapes.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/ci_manifest_drift_check.py:70-83,133-140`\n- Finding: A syntactically valid but malformed `plan.json` can crash the drift tool with exit code 1 rather than its required fail-closed exit code 2. `stage_ci_reports()` indexes `entry[\"base\"]` and `entry[\"junit_out\"]` without validating that the JSON is a list of correctly shaped objects, and `run()` catches only `DriftCheckError`.\n- Suggestion: Validate plan shape and each required field in `stage_ci_reports()`, translating missing/wrong fields and unexpected staging exceptions into `DriftCheckError`; add tests for `{}`, a non-list plan, and entries missing `base` or `junit_out`.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/tests/test_suite_retention.py:1-150`\n- Finding: AC2 requires a parity test proving F0\u2019s independently maintained `suite_units.discover_units` list matches `discover_test_roots`; no such test is added in this diff. The new `ci_junit_plan` tests establish that some expected roots exist, but do not compare the entire F0 and CI discovery sets, so a newly added root can still silently diverge.\n- Suggestion: Add a parity test analogous to `test_f0_ci_parity.py` that normalizes and compares all `discover_units()` targets against all `discover_test_roots()` roots.\n\n- Category: test\n- Severity: medium\n- File: `shared/scripts/tools/tests/test_stage_f0_evidence.py:79-126`\n- Finding: The staging tests cover duplicate unit IDs and path traversal but omit the required duplicate-base rejection. Since the implementation currently accepts duplicate bases, the listed tests would remain green despite violating AC3\u2019s integrity requirement.\n- Suggestion: Add a test with two distinct unit IDs sharing one base and assert exit 2 before `stage_reports` is called.\n\nOverall assessment: ship-with-fixes. The central CI capture/regeneration flow is present, but authoritative spec updates, required F0/CI parity coverage, duplicate-base validation, and the documented exit-2 malformed-input contract need correction first.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": null,
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider returned an empty reply"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 deepseek did not (deepseek=unavailable, openai=revise)"
+  }
+}

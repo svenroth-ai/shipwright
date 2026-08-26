@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-08-10T10:44:43.260693+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-08-10-i2-test-evidence-phase-source-contract
-Consistency-audit: last run 2026-07-28 (13 days earlier) — FAIL
+Generated: 2026-08-26T12:04:09.737533+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-08-26-r1b-ci-manifest-regen-gate
+Consistency-audit: last run 2026-07-28 (29 days earlier) — FAIL
 
 ## Summary
 
