@@ -19,25 +19,23 @@ formalizes the ad-hoc orchestration pattern.
 >
 > **Where the internal cascade runs here.** The runner subagent has no
 > `Agent` tool, so it cannot spawn `spec-reviewer` / `code-reviewer` /
-> `doubt-reviewer` itself. ADR-029 named the **orchestrator** the
-> delegate; step **`3f-bis`** below is where the delegate acts — after
-> the result is recorded, before the PR is merged. That is the last
-> point at which a REJECT can still stop delivery, because `3g` merges.
+> `doubt-reviewer` itself. ADR-029 named the **orchestrator** the delegate;
+> step **`3f-bis`** below is where the delegate acts — after the result is
+> recorded, before the PR is merged. That is the last point at which a
+> REJECT can still stop delivery, because `3g` merges.
 >
-> The window is `3f-bis` and NOT "in parallel with the runner, after
-> Build", which an earlier version of this note claimed. No such window
-> exists: the orchestrator blocks at `3d` on the runner's **terminal**
-> DONE marker, which the runner emits only after F6 (commit) and Step 5
-> (push). Everything the cascade reviews is therefore already committed
-> — which is why `3f-bis` gates the **merge** rather than the commit.
+> The window is `3f-bis` and NOT "in parallel with the runner, after Build",
+> which an earlier version of this note claimed. No such window exists: the
+> orchestrator blocks at `3d` on the runner's **terminal** DONE marker,
+> emitted only after F6 (commit) and Step 5 (push) — everything the cascade
+> reviews is therefore already committed, which is why `3f-bis` gates the
+> **merge** rather than the commit.
 >
-> The runner still records `spec` / `code` / `doubt` as `not_run`; that
-> is true at the moment it writes them. `3f-bis` promotes those rows
-> with `--force` once the passes have actually run, so the record names
-> the actor that performed each one. (A hand-run `--sub-iterate-id`
-> invocation is a normal standalone session WITH the `Agent` tool — it
-> spawns the cascade itself per SKILL.md Step 8 and never reaches
-> `3f-bis`.)
+> The runner still records `spec` / `code` / `doubt` as `not_run`; that is
+> true at the moment it writes them. `3f-bis` promotes those rows with
+> `--force` once the passes have actually run, so the record names the actor
+> that performed each one. (A hand-run `--sub-iterate-id` invocation is a
+> normal standalone session WITH the `Agent` tool — it spawns the cascade itself per SKILL.md Step 8 and never reaches `3f-bis`.)
 
 ## Why interleaved-serial (and not build-all-then-merge)
 
@@ -93,7 +91,7 @@ If campaign directory doesn't exist yet:
 
 ## Autonomous Campaign Loop
 
-**Pre-requisite:** `.shipwright/planning/iterate/campaigns/{slug}/status.json` must exist. **Campaign Worktree (unconditional, first):** set up/resume it per `references/campaign-worktree.md`; `{project_root}` below is that worktree, never main.
+**Pre-requisite:** `.shipwright/planning/iterate/campaigns/{slug}/status.json` must exist. **Campaign Worktree + session lock (unconditional, first):** set up/resume the worktree and acquire the session-liveness lock per `references/campaign-worktree.md`; `{project_root}` below is that worktree, never main. A lock rejection aborts startup — see that reference for what to tell the operator.
 
 1. **Export env vars:**
    ```bash
@@ -160,7 +158,7 @@ If campaign directory doesn't exist yet:
 3. **Loop (repeat until exit code 2) — build, then MERGE before the next builds:**
 
    ```
-   3a. uv run ... next --state .shipwright/loop_state.json
+   3a. Renew the session lock first (`uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"`, references/campaign-worktree.md; non-zero = **LOCK-LOST — distinct from STRICT-STOP: do NOT proceed to step 4**, because Finalize writes `loop_state.json` and a lock-loss means a second session may already be driving it; stop immediately, write nothing, and report to the operator that this session lost the campaign lock (see references/campaign-worktree.md)), then uv run ... next --state .shipwright/loop_state.json
        → exit 2 = all sub-iterates built + merged → go to step 4 (Finalize)
        → Parse JSON: id, spec_path, base_branch (= fresh origin/<default>), attempt
 
@@ -170,13 +168,13 @@ If campaign directory doesn't exist yet:
    3c. **Worktree guard, then spawn.** Run the spawn-guard command from `references/campaign-worktree.md` first (non-zero = STRICT-STOP, go to step 4, do NOT spawn). Then, Spawn sub-iterate-runner subagent:
        result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
                      model=<finalization tier resolved at loop step 2, omit if "inherit">,
-                     prompt=<brief with sub_iterate_id, run_id (3b), spec, base_branch, plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), etc.>)
+                     prompt=<brief with sub_iterate_id, run_id (3b), spec, base_branch, campaign_slug (this loop's `{slug}`), plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), etc.>)
        The runner branches off base_branch (fresh origin/<default>), builds,
        finalizes, pushes, and leaves the PR OPEN (auto-merge deferred). The brief
-       carries campaign slug (via campaign_path) + sub_iterate_id; the runner
-       contract Step 4 STAMPS both into the work_completed event extras
-       ("campaign" / "sub_iterate_id" — S1) so per-sub status is projectable
-       from events.jsonl alone.
+       carries campaign_path + campaign_slug + sub_iterate_id; the runner
+       contract Step 4 STAMPS campaign_slug + sub_iterate_id into the
+       work_completed event extras ("campaign" / "sub_iterate_id" — S1) so
+       per-sub status is projectable from events.jsonl alone.
 
    3d. Wait for terminal marker (.shipwright/runs/{loop_id}/{id}/DONE, timeout 30s)
 
@@ -293,9 +291,9 @@ If campaign directory doesn't exist yet:
          run_dir=".shipwright/runs/{loop_id}/{id}"
          head_pin=""
          [ -f "$run_dir/reviewed_head" ] && head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
-         gh pr checks "$pr_url" --watch        # blocks until Required Checks finish
-         #   non-zero exit = a check FAILED → STRICT-STOP (as 3f): do not merge,
-         #   do not build the next; surface to the user. Merged subs stay durable.
+         uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
+         gh pr checks "$pr_url" --watch
+         #   non-zero exit = a check FAILED → STRICT-STOP (as 3f): do not merge, do not build the next; surface to the user. Merged subs stay durable.
          gh pr merge "$pr_url" --squash --delete-branch $head_pin
          until [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ]; do sleep 5; done
        A merge conflict / timeout is likewise non-delivered → STRICT-STOP.
@@ -317,8 +315,10 @@ If campaign directory doesn't exist yet:
 
 4. **Finalize:**
    ```bash
+   uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" release --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"
    uv run ... finalize --state .shipwright/loop_state.json
    ```
+   Release FIRST, always, on every path that reaches step 4 (never on the LOCK-LOST path above, which never reaches step 4 at all) — a no-op if this session doesn't hold the lock, so a completed or abandoned-and-repaired campaign never blocks a later, brand-new `SHIPWRIGHT_SESSION_ID` for up to `stale_after_seconds` (references/campaign-worktree.md, "the release step").
    The campaign's top-level lifecycle status reaches `complete`
    **automatically** once every sub-iterate is `complete` — the
    never-downgrade projection (`campaign_status.all_subs_complete`) sets it in

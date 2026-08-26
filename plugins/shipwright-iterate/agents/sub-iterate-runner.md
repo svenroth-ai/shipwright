@@ -17,9 +17,9 @@ You receive these parameters in the prompt:
 - `run_id`: minted by the orchestrator, already lowercase (`RUN_ID_STRICT`, SKILL.md §C).
 - `sub_iterate_spec`: Absolute path to the sub-iterate spec file
 - `campaign_path`: Absolute path to the campaign directory
+- `campaign_slug`: bare slug (orchestrator's `{slug}`, passed explicitly — not re-derived from `campaign_path`'s basename, so the two guards can't disagree)
 - `project_root`: Absolute path to the project root
-- `plugin_root` / `plan_plugin_root`: absolute paths to the shipwright-iterate plugin / shipwright-plan (external_review.py's `uv run --project` target)
-- `shared_root`: Absolute path to the shared directory
+- `plugin_root` / `plan_plugin_root`: absolute paths to the shipwright-iterate plugin / shipwright-plan (external_review.py's `uv run --project` target); `shared_root`: absolute path to the shared directory
 - `base_branch`: Ref to branch off. **serial (campaign default): the FRESH `origin/<default>` remote ref** — every sub-iterate (incl. the first) branches off it, so it starts from a `main` that already contains every prior merged sub-iterate. (stacked: the previous sub-iterate's branch; null for the first stacked sub-iterate.)
 - `session_id`: Shipwright session ID
 - `branch_name`: Target branch name (e.g., `iterate/campaign-14.2-multi-question`)
@@ -28,7 +28,7 @@ You receive these parameters in the prompt:
 
 ### Step 1: Setup
 
-0. **Isolation check — STOP if this fails** (`references/campaign-worktree.md`): `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}"`. Non-zero = STOP, no git command; return `status:"failed"`, `reason_code: "not_isolated"` — orchestrator repairs the worktree. Else `cd "{project_root}"` first: F0–F6 prose assumes cwd IS the worktree.
+0. **Isolation check — STOP if this fails** (`references/campaign-worktree.md`): `uv run "{shared_root}/scripts/checks/check_worktree_location.py" --project-root "{project_root}" --campaign-slug "{campaign_slug}"`. Non-zero = STOP, no git command; return `status:"failed"`, `reason_code: "not_isolated"` — orchestrator repairs the worktree. Else `cd "{project_root}"` first: F0–F6 prose assumes cwd IS the worktree.
 1. Branch off `base_branch`, fetching first ONLY for a remote (serial) base so a
    stacked / `origin`-less run still works: serial (`origin/…`) → `git -C "{project_root}" fetch origin && git -C "{project_root}" checkout -b {branch_name} {base_branch}`; stacked (local base) → `git -C "{project_root}" checkout -b {branch_name} {base_branch}`; first stacked (null base) → `git -C "{project_root}" checkout -b {branch_name}`.
 2. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs + architecture docs, the
@@ -284,7 +284,7 @@ perform; F6-verify checks all three ran.
   compliance MDs / dashboard / handoff: `uv run "{shared_root}/scripts/tools/finalize_iterate.py"
   --project-root "{project_root}" --run-id "{run_id}" --event-extras-json "$extras"`. `$extras` =
   the `references/F5b.md` classification fields **plus the campaign stamp**
-  `"campaign":"{basename of campaign_path}"` + `"sub_iterate_id":"{sub_iterate_id}"`.
+  `"campaign":"{campaign_slug}"` + `"sub_iterate_id":"{sub_iterate_id}"`.
 - **F5c (MANDATORY — iterate entry):** append the per-iterate record via `append_iterate_entry.py`
   (shape: `references/F5c.md`); it fails closed unless F5's root snapshot belongs to this run,
   then installs exact bytes as `iterates/<run_id>.test-results.json` before the summary. F6 stages

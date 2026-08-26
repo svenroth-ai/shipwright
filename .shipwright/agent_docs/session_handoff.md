@@ -1,45 +1,45 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-08-10-i2-test-evidence-phase-source-contract"
+run_id: "iterate-2026-08-26-campaign-worktree-guard-followups"
 phase: "iterate"
-reason: "iterate: I2 phase source contract"
-timestamp: "2026-08-10T10:44:43.260693+00:00"
+reason: "campaign worktree lock release + worktree identity full-path compare"
+timestamp: "2026-08-26T22:46:17.085527+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-10 10:44:43 UTC
+> Auto-generated 2026-08-26 22:46:17 UTC
 
 ## Session Info
 
-- **Session ID**: unknown
-- **Timestamp**: 2026-08-10 10:44:43 UTC
-- **Reason**: iterate: I2 phase source contract
+- **Session ID**: aaa60e21-80cc-4a1a-a672-54e34842958f
+- **Timestamp**: 2026-08-26 22:46:17 UTC
+- **Reason**: campaign worktree lock release + worktree identity full-path compare
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-10-i2-test-evidence-phase-source-contract
-- **Date**: 2026-08-10T10:44:43.052372Z
-- **Type**: bug
+- **Run ID**: iterate-2026-08-26-b-pure-hardening
+- **Date**: 2026-08-26T14:27:18.758847Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/i2-test-evidence-phase-source-contract
-- **ADR**: iterate-2026-08-10-i2-test-evidence-phase-source-contract
+- **Branch**: iterate/pure-hardening
+- **ADR**: iterate-2026-08-26-b-pure-hardening
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md
+- **Spec**: .shipwright/planning/iterate/campaigns/s2b-discovery-convergence/sub-iterates/B-pure-hardening.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/i2-test-evidence-phase-source-contract
-- **Run ID**: `iterate-2026-08-10-i2-test-evidence-phase-source-contract`
-- **Spec**: .shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md
-- **Complexity**: medium — a shared verifier and a compliance producer must share one serialized phase-source contract.
+- **Branch**: iterate/campaign-worktree-guard-followups
+- **Run ID**: iterate-2026-08-26-campaign-worktree-guard-followups
+- **Spec**: .shipwright/planning/iterate/iterate-2026-08-26-campaign-worktree-guard-followups.md
+- **Complexity**: medium (cross_component: this diff edits `campaign-mode.md`,
 - **External Review Marker**: missing
-- **Review Cascade**: unreadable (unsafe run_id '`iterate-2026-08-10-i2-test-evidence-phase-source-contract`' — must be a single path component (letters, digits, dot, dash, underscore))
+- **Review Cascade**: interrupted (plan)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- reviews.json is unreadable — investigate before resuming (unsafe run_id '`iterate-2026-08-10-i2-test-evidence-phase-source-contract`' — must be a single path component (letters, digits, dot, dash, underscore))
+- Step 8 — Review cascade interrupted (pending: plan)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -53,8 +53,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/i2-test-evidence-phase-source-contract
-- **Last Commit**: 450d4fee fix(compliance): verify test evidence by phase source
+- **Branch**: iterate/campaign-worktree-guard-followups
+- **Last Commit**: fd5bb021 chore(triage): sweep 5 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,17 +70,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d17b628b | work_completed | iterate (Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings.) | 2026-08-10 |
-| evt-36c592ee | work_completed | iterate (Introduce a lifecycle-aware compliance-audit runner with three explicit authority scopes (branch_feedback/merge/release), separating the Stop hook local diagnostics from the global compliance backlog write authority reserved for delivered merge and verified release commits.) | 2026-08-10 |
-| evt-de30181b | work_completed | iterate (Replaced authorship exemption with exact-head approval and review-record evidence.) | 2026-08-09 |
-| evt-d77ccdd2 | work_completed | iterate (Add docs/token-cost-controllable.md: threshold-based guide (trigger/symptom/action per band) for keeping session/token cost controllable as decision history and session length grow; link from guide.md Ch.9 + Appendix B and README) | 2026-08-09 |
-| evt-0bbcf4b6 | work_completed | iterate (Expose outbox-only amend delivery independently from append and status delivery.) | 2026-08-09 |
+| evt-4f82a31e | grade_snapshot | — | 2026-08-26 |
+| evt-261a09c8 | work_completed | iterate (Close the two Known-limitations gaps left open by PR #653's doubt review: add a cross-session heartbeat lock (acquire/touch/release) on the shared campaign worktree, and make check_worktree_location.py's --campaign-slug check compare full resolved paths instead of a basename, so it also rejects a nested lookalike directory and is immune to case-fold mismatches.) | 2026-08-26 |
+| evt-400f8649 | work_completed | iterate (S2b pass B: converge the 15 shared planning-discovery call sites' remaining behavioral divergences -- require=is_file on the 5 non-recursive readers, sort=True (deterministic pick) on 4 of 6 previously-unsorted sites (fr_gates and state excepted with documented reasons), retire the order_sensitive golden-corpus masks and the dead _mask_unordered code now that every masked target sorts, and make every one of the 15 call sites pass its flags explicitly.) | 2026-08-26 |
+| evt-0d49637a | grade_snapshot | — | 2026-08-26 |
+| evt-0b14ded5 | work_completed | iterate (Campaign sub-iterate-runner worktree isolation guard) | 2026-08-26 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 526
-- **Last iterate**: bug — Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings. (2026-08-10)
+- **Total work events**: 554
+- **Last iterate**: change — Close the two Known-limitations gaps left open by PR #653's doubt review: add a cross-session heartbeat lock (acquire/touch/release) on the shared campaign worktree, and make check_worktree_location.py's --campaign-slug check compare full resolved paths instead of a basename, so it also rejects a nested lookalike directory and is immune to case-fold mismatches. (2026-08-26)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

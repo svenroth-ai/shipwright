@@ -1,0 +1,26 @@
+{
+  "run_id": "iterate-2026-08-26-campaign-worktree-guard-followups",
+  "date": "2026-08-26T22:46:34.848615Z",
+  "event_at": "2026-08-26T22:46:17.085527+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-worktree-guard-followups",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-26-campaign-worktree-guard-followups.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-26-campaign-worktree-guard-followups",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 25,
+      "tested": 25,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0
+  }
+}
