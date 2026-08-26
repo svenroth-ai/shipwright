@@ -89,7 +89,12 @@ def iter_split_dirs(
 
     entries: Iterator[Path] | list[Path] = planning.iterdir()
     if sort:
-        entries = sorted(entries)
+        # as_posix() key (S2b pass B doubt-review): Path's default ordering is
+        # str(self) on POSIX but str(self).lower() with backslashes on
+        # Windows, so plain sorted(entries) picks a different "first" entry
+        # on different platforms for names differing only in case or where
+        # one is a prefix of another. That defeats sort=True's own purpose.
+        entries = sorted(entries, key=lambda p: p.as_posix())
 
     for entry in entries:
         if not entry.is_dir():
@@ -192,7 +197,8 @@ def _iter_spec_files_lazy(
     if recursive:
         matches: Iterator[Path] | list[Path] = planning.rglob(SPEC_FILENAME)
         if sort:
-            matches = sorted(matches)
+            # as_posix() key: see the matching comment in iter_split_dirs above.
+            matches = sorted(matches, key=lambda p: p.as_posix())
         for match in matches:
             if not include_iterate and ITERATE_DIRNAME in match.parent.parts:
                 continue

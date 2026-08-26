@@ -1776,7 +1776,7 @@
     },
     "disc.review_runner.run_review": {
       "kind": "source_only",
-      "sha256": "cc9bfbc578e97d97a6985f7c7d6423654e13d27b387c21cf35325451f7be7bb1",
+      "sha256": "1640721d874c679a4fb72ed89578e2db0bf823a8b9462c08eda822c5d920066f",
       "source_lines": 120
     },
     "disc.rtm.collect_external_review_states": {

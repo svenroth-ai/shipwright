@@ -41,9 +41,9 @@ def _posixify(value):
     baseline would make the harness red on ubuntu CI from day one -- and the
     natural remedy (regenerate) is precisely the habit this corpus is designed
     to prevent. So the matrix carries the stable posix form and the
-    platform-dependence itself is pinned in a dedicated explicit test, exactly
-    as the unsorted walks are handled. Narrowly scoped so a real backslash in
-    spec CONTENT (e.g. an escaped pipe) is never rewritten.
+    platform-dependence itself is pinned in a dedicated explicit test.
+    Narrowly scoped so a real backslash in spec CONTENT (e.g. an escaped
+    pipe) is never rewritten.
     """
     if isinstance(value, str):
         return value.replace("\\", "/")
