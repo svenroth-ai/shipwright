@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-campaign-worktree-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T07:07:55.159136+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T07:07:25.672971+00:00",
+      "disposition": "bug-fix iterate, no separate mini-plan; external review ran --mode code over the diff directly (SKILL.md Step 4/8 for a typical medium bug/tooling iterate)",
+      "recorded_by": "iterate-runner",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md",
+          "line": 21,
+          "finding": "Setup step 0 computed main_root via `git rev-parse --show-toplevel`, which returns the CURRENT worktree's root, not the true main repo root, when cwd is already inside a linked worktree (the normal case after SKILL.md's unconditional B1a). This silently defeated AC #1.",
+          "suggestion": "Resolved main_root the same way lib.git_base.main_repo_root() does: `main_root=$(dirname \"$(git rev-parse --path-format=absolute --git-common-dir)\")`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md",
+          "line": 55,
+          "finding": "Spawn guard section contradicted campaign-mode.md step 3c's terminal STRICT-STOP ('go to step 4') by telling the reader to repair-and-retry.",
+          "suggestion": "Reworded to be explicitly terminal, matching 3c and every other STRICT-STOP in the loop (3f, 3f-bis, 3g).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T06:40:45.209691+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 31,
+          "finding": "Claim under doubt: Step 1.0's single cd \"{project_root}\" makes cwd IS the worktree true for the entire shared F0-F6 finalization prose the runner executes, many separate Bash-tool calls later. — Argued F4.md:29 and F6.md:14-15/38 are relative/bare git add/commit calls that would silently target the wrong tree if cwd drifted before F4/F6 ran.",
+          "suggestion": "Confirm the Bash tool's own documented contract: 'the working directory persists between commands' within one session. A subagent's own Bash-tool session is exactly that: cwd set by an early command is guaranteed to hold for every later command IN THAT SAME session, regardless of how many other tool calls (Read/Edit/Task) happen between them. This is a platform guarantee, not an assumption under test — Step 1.0's single cd is sufficient by construction.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md",
+          "line": 24,
+          "finding": "Claim under doubt: The campaign worktree, keyed to slug and resumable cross-session, is safe to share across the campaign's whole lifetime with no additional guard. — Two orchestrator sessions resuming the same slug both cd into the same shared worktree; nothing (file_lock only covers loop_state.json writes) stops them from spawning concurrent sub-iterate-runners racing git checkout -b in that one directory.",
+          "suggestion": "A session-liveness lock at campaign-worktree.md's Setup step, or accept in writing that concurrent sessions for one slug are unsupported operator error, matching the framework's pre-existing lack of a session lock on a standalone iterate's own resume path.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/worktree_isolation.py",
+          "line": 159,
+          "finding": "Claim under doubt: The step-3c spawn guard and the runner's own Step 1.0 check together guarantee the runner is operating in ITS campaign's own isolated worktree. — worktree_location_error only checks location (is project_root A worktree under .worktrees/), never identity (slug/branch match) — a mis-threaded project_root pointing at a different, still-valid worktree would pass both checks.",
+          "suggestion": "Extend the check to assert the resolved worktree's branch matches iterate/campaign-{slug}, or accept in writing that identity-checking is out of scope.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-worktree.md",
+          "line": 21,
+          "finding": "Claim under doubt: The bash main_root=$(dirname \"$(git rev-parse --path-format=absolute --git-common-dir)\") computes the same value as lib.git_base.main_repo_root() in every layout. — git_base.py's main_repo_root() falls back to --show-toplevel when --git-common-dir's basename isn't literally .git (e.g. a submodule layout); the bash reimplementation has no such fallback and would diverge in that case.",
+          "suggestion": "Accept the submodule case as out-of-scope/unsupported for Shipwright's own deployment, or replace the hand-rolled bash line with a call into the shared script's own resolution path.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T06:52:51.961033+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/worktree_isolation.py",
+          "line": 184,
+          "finding": "worktree_location_error()` catches `GitError` only from `is_worktree()`, then unconditionally calls `main_repo_root(project_root)`. For a non-Git/stray `--project-root`, `is_worktree()` can return `False` after its internal Git failure, but `main_repo_root()` will raise a new uncaught `GitError`. This produces a traceback rather than the documented blocking result (including valid `--json` output), despite the CLI contract explicitly covering “stray directory, or not a git repo.”",
+          "suggestion": "Return a blocking error immediately when `worktree` is false, or include `main_repo_root()` in the `try` block and convert its `GitError` into a non-empty error string. Add a subprocess test passing a non-Git directory with `--json` and asserting exit 1 plus parseable `decision: \"block\"` JSON.  Ship-with-fixes: the primary isolation mechanism is implemented, but the guard’s documented invalid-directory error path is currently not robust and should be corrected before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-26T07:07:19.178996+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] The diff is thorough and directly addresses every acceptance criterion. The new location guard, campaign worktree setup, spawn‑gate, and `git -C` anchors together close the two root‑cause gaps without introducing new risks. The tests exercise the exact incident shape, verify that the guard does not depend on a snapshot or mis‑flag a legitimate main‑tree write, and cover the external‑worktree edge case. No correctness, security, or regression defects were found in the changed code or its integration.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] - Category: bug\n- Severity: medium\n- File: `shared/scripts/lib/worktree_isolation.py:184`\n- Finding: `worktree_location_error()` catches `GitError` only from `is_worktree()`, then unconditionally calls `main_repo_root(project_root)`. For a non-Git/stray `--project-root`, `is_worktree()` can return `False` after its internal Git failure, but `main_repo_root()` will raise a new uncaught `GitError`. This produces a traceback rather than the documented blocking result (including valid `--json` output), despite the CLI contract explicitly covering “stray directory, or not a git repo.”\n- Suggestion: Return a blocking error immediately when `worktree` is false, or include `main_repo_root()` in the `try` block and convert its `GitError` into a non-empty error string. Add a subprocess test passing a non-Git directory with `--json` and asserting exit 1 plus parseable `decision: \"block\"` JSON.\n\nShip-with-fixes: the primary isolation mechanism is implemented, but the guard’s documented invalid-directory error path is currently not robust and should be corrected before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T06:33:13.511195+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T07:07:29.520568+00:00",
+      "disposition": "no internal plan-reviewer stage for a bug-fix iterate outside /shipwright-plan; opus-plan-reviewer is a /shipwright-plan Step 5 agent, not wired into iterate",
+      "recorded_by": "iterate-runner",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

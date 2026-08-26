@@ -93,7 +93,7 @@ If campaign directory doesn't exist yet:
 
 ## Autonomous Campaign Loop
 
-**Pre-requisite:** `.shipwright/planning/iterate/campaigns/{slug}/status.json` must exist.
+**Pre-requisite:** `.shipwright/planning/iterate/campaigns/{slug}/status.json` must exist. **Campaign Worktree (unconditional, first):** set up/resume it per `references/campaign-worktree.md`; `{project_root}` below is that worktree, never main.
 
 1. **Export env vars:**
    ```bash
@@ -167,7 +167,7 @@ If campaign directory doesn't exist yet:
    3b. export SHIPWRIGHT_LOOP_UNIT_ID="{id}"
        Mint run_id HERE: `iterate-{today}-{id, LOWERCASED}-{desc}` (RUN_ID_STRICT, SKILL.md §C) — `id` may display uppercase (`R0`); LOWERCASE it in run_id, uppercase stays only in branch_name/PR title/`sub_iterate_id` (Step 3.4 now rejects a wrong one immediately, not F5c hours later).
 
-   3c. Spawn sub-iterate-runner subagent:
+   3c. **Worktree guard, then spawn.** Run the spawn-guard command from `references/campaign-worktree.md` first (non-zero = STRICT-STOP, go to step 4, do NOT spawn). Then, Spawn sub-iterate-runner subagent:
        result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
                      model=<finalization tier resolved at loop step 2, omit if "inherit">,
                      prompt=<brief with sub_iterate_id, run_id (3b), spec, base_branch, plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), etc.>)

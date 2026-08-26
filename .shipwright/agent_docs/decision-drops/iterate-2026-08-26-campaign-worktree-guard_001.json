@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-26-campaign-worktree-guard",
+  "date": "2026-08-26",
+  "section": "shipwright-iterate: campaign mode worktree isolation",
+  "title": "Campaign-slug-keyed shared worktree + spawn/self isolation guard",
+  "context": "Two production campaigns had a sub-iterate-runner subagent branch, build and commit directly in the main repository checkout. Root cause: the campaign orchestrator never had a campaign-scoped worktree to hand down, and every runner git command was bare (unsafe if a spawned subagent's shell does not inherit the orchestrator's cd).",
+  "decision": "Mint ONE worktree per campaign slug (.worktrees/campaign-<slug>), shared by the orchestrator and every spawned runner for the campaign's whole lifetime, created/resumed at loop step 0. Add a location-only check (worktree_location_error / check_worktree_location.py) run before every spawn (step 3c, STRICT-STOP) and again by the runner itself (Step 1.0, defense in depth). Every git command in sub-iterate-runner.md changed to git -C \"{project_root}\".",
+  "consequences": "Closes the reported incident completely (location-only check proves isolation, no run_id/snapshot dependency so it works for a campaign sub-iterate). Known, deliberately deferred limitations: no cross-session lock on the shared worktree (trg-16bec646), and the guard proves location not branch identity (trg-50bd22a1) — both filed as follow-up triage, not blocking.",
+  "rationale": "Matches the framework's own pre-existing but never-implemented documented intent (one shared branch-hopping worktree per campaign, not one per sub-iterate) and the user's explicit design directive after the incident.",
+  "rejected": "Per-sub-iterate worktrees — rejected: the interleaved-serial design deliberately shares one worktree per campaign so shared-file/snapshot edits compose without a merge-theater drain.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/iterate/iterate-2026-08-26-campaign-worktree-guard.md"
+}

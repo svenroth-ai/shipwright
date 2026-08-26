@@ -1,0 +1,1 @@
+Added a lightweight, campaign-specific isolation check that needs no prior run snapshot, so it works for a campaign sub-iterate and never misflags the campaign board's own legitimate status write as a leak.
