@@ -159,24 +159,89 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_planning_discovery.py",
+          "line": null,
+          "finding": "A2's value-based (not explicitly-passed) design decision had no test exercising explicit defaults with recursive=True.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "integration-tests/requirements_corpus/registry.py",
+          "line": null,
+          "finding": "Count prose self-contradictory (17 entries / 16 walks arithmetic doesn't work).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/planning_discovery.py",
+          "line": null,
+          "finding": "Module docstring falsely claimed 16 call sites/implementations (unchanged at 15) and test_requirements_corpus_registry.py:56 still said 16 discovery entries.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "integration-tests/requirements_corpus/_serialize.py",
+          "line": null,
+          "finding": "Mask-invariant docstrings (one probe per masked target) became false with a third masked target added and no probe.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": null,
+          "finding": "registry.py's 300-line crossing (299->316) was named in the decision drop but not dispositioned in the baseline.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_planning_discovery.py",
+          "line": null,
+          "finding": "Duplicate test byte-identical to another.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/planning/campaigns + iterate/campaigns",
+          "line": null,
+          "finding": "Campaign BRIEF and sub-iterate specs are untracked in the main tree; pass B has no committed source of truth.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-08-25T22:50:20.762679+00:00",
-      "disposition": "delegated_to_orchestrator: this runner has no Agent tool and cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; orchestrator runs it at campaign-mode.md 3f-bis before merge and promotes this row with --force",
-      "recorded_by": "none",
+      "completed_at": "2026-08-26T05:51:32.567561+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-25T22:50:20.869721+00:00",
-      "disposition": "delegated_to_orchestrator: same cascade as code -- doubt-reviewer is conditional within the orchestrator's Step 8/3f-bis run, not reachable by this no-Agent-tool runner",
+      "completed_at": "2026-08-26T05:51:32.699666+00:00",
+      "disposition": "Stage 3 is conditional (migrations/async/cross-plugin/irreversible-ops); this diff is shared-lib validation logic and a test-registry addition, none of which trigger it. Stage 2 passed at 3f-bis.",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
@@ -218,15 +283,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-08-25T22:50:20.977901+00:00",
-      "disposition": "delegated_to_orchestrator: Stage-1 spec-reviewer (HARD-GATE) is spawned by the orchestrator's review cascade at 3f-bis, not by this sub-iterate runner",
-      "recorded_by": "none",
+      "completed_at": "2026-08-26T05:51:48.038104+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
