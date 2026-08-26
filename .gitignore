@@ -127,6 +127,12 @@ Spec/
 *.md.lock
 *.json.lock
 
+# CI-only scratch dir for the traceability-manifest drift check
+# (ci_manifest_drift_check.py, ci_junit_plan.py) — plan.json, staged JUnit
+# reports, and the regen helper script; never meant to be committed, and a
+# stray local run must not get swept in by `git add -A`.
+/.ci-junit/
+
 # Git worktrees (per Shipwright parallel-iterate convention — see /shipwright-iterate B1a)
 .worktrees/
 

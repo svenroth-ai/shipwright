@@ -1,0 +1,86 @@
+{
+  "run_id": "iterate-2026-08-26-r1b-ci-manifest-regen-gate",
+  "date": "2026-08-26T12:08:32.980327Z",
+  "event_at": "2026-08-26T12:04:09.737533+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/r1b-ci-manifest-regen-gate",
+  "spec": ".shipwright/planning/iterate/2026-08-26-r1b-ci-manifest-regen-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-26-r1b-ci-manifest-regen-gate",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1: structural tier excludes tests+coverage wholesale, never gates on platform-only test-id differences",
+        "disposition": "tested",
+        "evidence": "test_compare_traceability_manifest.py::TestExecutionTierNeverGates (4 cases) PASSED"
+      },
+      {
+        "behavior": "AC1: real structural drift (priority/required_layers/added-requirement/orphans change) exits 1",
+        "disposition": "tested",
+        "evidence": "test_compare_traceability_manifest.py::TestStructuralDriftGates (4 cases) PASSED"
+      },
+      {
+        "behavior": "AC1: malformed manifest input (missing/wrong-shape fields, missing file, malformed JSON) always exits 2, never an unhandled crash",
+        "disposition": "tested",
+        "evidence": "test_compare_traceability_manifest.py::TestErrorHandling (9 cases, incl. 3 external-review regressions) PASSED"
+      },
+      {
+        "behavior": "AC2: F0 suite runner retains each unit's own JUnit report + side-manifest via atomic pending\u2192published publish, pruned to the last 5",
+        "disposition": "tested",
+        "evidence": "test_suite_retention.py (9 cases) PASSED"
+      },
+      {
+        "behavior": "AC2: F0's own unit discovery matches the canonical test-root discovery in BOTH directions, against this repo's REAL 18 roots (no mocks)",
+        "disposition": "tested",
+        "evidence": "test_f0_unit_root_parity.py (2 cases, both directions) PASSED"
+      },
+      {
+        "behavior": "AC3: stage_f0_evidence.py refuses an incomplete/red/malformed retained run (unit-set mismatch, non-pass outcome, missing report, malformed side-manifest incl. a missing base field) and stages only a complete green run",
+        "disposition": "tested",
+        "evidence": "test_stage_f0_evidence.py (11 cases) PASSED; also driven for REAL this run \u2014 staged 18/18 reports from this iterate's own F0 retention run"
+      },
+      {
+        "behavior": "AC4: ci.yml's CI-gate coverage guard recognizes the new drift-check step and JUnit-coverage gate as covered gates",
+        "disposition": "tested",
+        "evidence": "verify_local.py 'Run CI-gate guard' PASS, this session"
+      },
+      {
+        "behavior": "AC4: ci_junit_plan.py plan/verify derive the expected root/base set from the shared discovery and refuse an incomplete JUnit set",
+        "disposition": "tested",
+        "evidence": "test_ci_junit_plan.py PASSED"
+      },
+      {
+        "behavior": "AC4: ci_manifest_drift_check.py surfaces EVERY step's failure as exit 2, including an unanticipated exception (doubt-reviewer Stage 3 fix)",
+        "disposition": "tested",
+        "evidence": "test_ci_manifest_drift_check.py (12 cases, incl. 2 doubt-review regressions) PASSED"
+      },
+      {
+        "behavior": "End-to-end: the full AC1-AC4 chain proven for real against this repo's own live tree, not mocked",
+        "disposition": "tested",
+        "evidence": "F0 GREEN 18/18 units (16856/16912 tests, 0 failed); stage_f0_evidence.py staged 18 real reports this run; diff-coverage 88% >=80%",
+        "category": "integration"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 59,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-26-r1b-ci-manifest-regen-gate/surface_verification.json",
+    "detail": "uv run pytest over the six new tool test files (test_ci_manifest_drift_check.py, test_compare_traceability_manifest.py, test_stage_f0_evidence.py, test_ci_junit_plan.py, test_suite_retention.py, test_f0_unit_root_parity.py) \u2014 59 tests, all real (no mocked subprocess boundary for the CLI smoke tests), including the doubt-review regression tests."
+  },
+  "declared_removals": []
+}
