@@ -98,7 +98,9 @@ def scan_specs(project_root: Path, *, include_retired: bool = False) -> SpecScan
     # after the is_dir filter is equivalent (one shared parent), so the shared
     # helper's sort-first order matches the previous filter-first one.
     iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
-    for spec in iter_spec_files(planning, require="is_file"):
+    for spec in iter_spec_files(
+        planning, guard="is_dir", sort=True, include_iterate=True, require="is_file"
+    ):
         any_spec = True
         split_name = spec.parent.name
         rel = f".shipwright/planning/{split_name}/spec.md"

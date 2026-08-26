@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "S2b pass A: review_runner walk extracted and registered; recursive-branch guard/require now raise",
+  "regenerated_for": "S2b passes A+B: pass A, plus require=is_file on non-recursive sites, sort=True except fr_gates and state, order_sensitive masks dissolved",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -137,10 +137,8 @@
         },
         "spec-dir": {
           "outcome": "returned",
-          "type": "list[Path]",
-          "value": [
-            "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
-          ]
+          "type": "list",
+          "value": []
         },
         "zero-row-parse": {
           "outcome": "returned",
@@ -157,7 +155,6 @@
         "absent": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
             "evidence": "missing .shipwright/planning/ directory",
             "id": "A2",
@@ -169,9 +166,8 @@
         "brownfield-single-split": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
-            "evidence": "FR found in <unordered-pick>",
+            "evidence": "FR found in .shipwright/planning/01-adopted/spec.md",
             "id": "A2",
             "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
             "provenance": "adopt_spec_check",
@@ -181,9 +177,8 @@
         "edge": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
-            "evidence": "FR found in <unordered-pick>",
+            "evidence": "FR found in .shipwright/planning/.hidden-split/spec.md",
             "id": "A2",
             "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
             "provenance": "adopt_spec_check",
@@ -193,7 +188,6 @@
         "empty": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
             "evidence": "no .shipwright/planning/<split>/spec.md found",
             "id": "A2",
@@ -205,9 +199,8 @@
         "greenfield-multi-split": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
-            "evidence": "FR found in <unordered-pick>",
+            "evidence": "FR found in .shipwright/planning/01-auth/spec.md",
             "id": "A2",
             "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
             "provenance": "adopt_spec_check",
@@ -217,9 +210,8 @@
         "malformed": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
-            "evidence": "FR found in <unordered-pick>",
+            "evidence": "FR found in .shipwright/planning/01-broken/spec.md",
             "id": "A2",
             "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
             "provenance": "adopt_spec_check",
@@ -229,9 +221,8 @@
         "mixed-shape": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
-            "evidence": "FR found in <unordered-pick>",
+            "evidence": "FR found in .shipwright/planning/01-greenfield-template/spec.md",
             "id": "A2",
             "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
             "provenance": "adopt_spec_check",
@@ -241,7 +232,6 @@
         "planning-file": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
             "evidence": "missing .shipwright/planning/ directory",
             "id": "A2",
@@ -257,9 +247,8 @@
         "zero-row-parse": {
           "outcome": "returned",
           "type": "dict",
-          "unordered_walk": true,
           "value": {
-            "evidence": "FR found in <unordered-pick>",
+            "evidence": "FR found in .shipwright/planning/01-reordered-only/spec.md",
             "id": "A2",
             "name": "A2 .shipwright/planning/<split>/spec.md has >= 1 FR",
             "provenance": "adopt_spec_check",
@@ -336,10 +325,8 @@
         },
         "spec-dir": {
           "outcome": "returned",
-          "type": "list[Path]",
-          "value": [
-            "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
-          ]
+          "type": "list",
+          "value": []
         },
         "zero-row-parse": {
           "outcome": "returned",
@@ -1701,86 +1688,77 @@
           "consumed_type": "list",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": []
         },
         "brownfield-single-split": {
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
-            "<root>/<unordered-pick>"
+            "<root>/.shipwright/planning/01-adopted/spec.md"
           ]
         },
         "edge": {
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>"
+            "<root>/.shipwright/planning/.hidden-split/spec.md",
+            "<root>/.shipwright/planning/01-live/spec.md",
+            "<root>/.shipwright/planning/03-nested/deeper/spec.md",
+            "<root>/.shipwright/planning/iterate/spec.md",
+            "<root>/.shipwright/planning/spec.md"
           ]
         },
         "empty": {
           "consumed_type": "list",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": []
         },
         "greenfield-multi-split": {
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>"
+            "<root>/.shipwright/planning/01-auth/spec.md",
+            "<root>/.shipwright/planning/02-dashboard/spec.md",
+            "<root>/.shipwright/planning/03-reporting/spec.md"
           ]
         },
         "malformed": {
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
-            "<root>/<unordered-pick>"
+            "<root>/.shipwright/planning/01-broken/spec.md"
           ]
         },
         "mixed-shape": {
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>",
-            "<root>/<unordered-pick>"
+            "<root>/.shipwright/planning/01-greenfield-template/spec.md",
+            "<root>/.shipwright/planning/02-greenfield-example/spec.md",
+            "<root>/.shipwright/planning/03-adopt-disk/spec.md",
+            "<root>/.shipwright/planning/04-adopt-writer/spec.md",
+            "<root>/.shipwright/planning/05-fixture-fr/spec.md",
+            "<root>/.shipwright/planning/06-reordered/spec.md",
+            "<root>/.shipwright/planning/07-header-blind/spec.md",
+            "<root>/.shipwright/planning/08-converged/spec.md"
           ]
         },
         "planning-file": {
           "consumed_type": "list",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": []
         },
         "spec-dir": {
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
             "<root>/.shipwright/planning/01-spec-is-a-dir/spec.md"
           ]
@@ -1789,9 +1767,8 @@
           "consumed_type": "list[Path]",
           "outcome": "returned",
           "type": "generator",
-          "unordered_walk": true,
           "value": [
-            "<root>/<unordered-pick>"
+            "<root>/.shipwright/planning/01-reordered-only/spec.md"
           ]
         }
       },
@@ -2377,8 +2354,9 @@
           "outcome": "raised"
         },
         "spec-dir": {
-          "exception": "OSError:not-a-readable-file",
-          "outcome": "raised"
+          "outcome": "returned",
+          "type": "list",
+          "value": []
         },
         "zero-row-parse": {
           "outcome": "returned",
@@ -2881,7 +2859,6 @@
         "absent": {
           "outcome": "returned",
           "type": "list[str]",
-          "unordered_walk": true,
           "value": [
             "missing: .shipwright/planning/ directory"
           ]
@@ -2889,21 +2866,16 @@
         "brownfield-single-split": {
           "outcome": "returned",
           "type": "list",
-          "unordered_walk": true,
           "value": []
         },
         "edge": {
           "outcome": "returned",
-          "type": "list[str]",
-          "unordered_walk": true,
-          "value": [
-            "spec.md has no FR-NN.MM reference: <unordered-pick>"
-          ]
+          "type": "list",
+          "value": []
         },
         "empty": {
           "outcome": "returned",
           "type": "list[str]",
-          "unordered_walk": true,
           "value": [
             "missing: .shipwright/planning/<split>/spec.md (no spec found)"
           ]
@@ -2911,25 +2883,21 @@
         "greenfield-multi-split": {
           "outcome": "returned",
           "type": "list",
-          "unordered_walk": true,
           "value": []
         },
         "malformed": {
           "outcome": "returned",
           "type": "list",
-          "unordered_walk": true,
           "value": []
         },
         "mixed-shape": {
           "outcome": "returned",
           "type": "list",
-          "unordered_walk": true,
           "value": []
         },
         "planning-file": {
           "outcome": "returned",
           "type": "list[str]",
-          "unordered_walk": true,
           "value": [
             "missing: .shipwright/planning/ directory"
           ]
@@ -2941,7 +2909,6 @@
         "zero-row-parse": {
           "outcome": "returned",
           "type": "list",
-          "unordered_walk": true,
           "value": []
         }
       },
@@ -5257,8 +5224,9 @@
           "outcome": "raised"
         },
         "spec-dir": {
-          "exception": "OSError:not-a-readable-file",
-          "outcome": "raised"
+          "outcome": "returned",
+          "type": "list",
+          "value": []
         },
         "zero-row-parse": {
           "outcome": "returned",

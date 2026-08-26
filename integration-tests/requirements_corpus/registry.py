@@ -143,8 +143,8 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "shared_tools", "module": "verifiers.adopt_compliance",
         "attr": "check_a2_spec_has_frs", "invoke": "project_root",
         "source": "shared/scripts/tools/verifiers/adopt_compliance.py",
-        "note": "UNSORTED rglob. One of the few sites that FAILs on empty.",
-        "order_sensitive": True,
+        "note": "SORTED rglob (S2b pass B3, was unsorted). One of the few sites "
+                "that FAILs on empty.",
     },
     {
         "id": "disc.rtm.collect_requirements",
@@ -191,9 +191,8 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "adopt", "module": "checks/validate_adoption.py",
         "attr": "_validate_spec", "invoke": "project_root",
         "source": "plugins/shipwright-adopt/scripts/checks/validate_adoption.py",
-        "note": "UNSORTED rglob then [0] -- which spec is validated is "
-                "filesystem-iteration-order dependent.",
-        "order_sensitive": True,
+        "note": "SORTED rglob (S2b pass B3, was unsorted) then [0] -- which spec "
+                "is validated is now fixed by sorted path order.",
     },
     {
         "id": "disc.setup_adopt._detect_existing_artifacts",
@@ -221,10 +220,9 @@ DISCOVERY: tuple[dict, ...] = (
         "source": "plugins/shipwright-adopt/scripts/lib/review_runner.py",
         "note": "Extracted (S2b pass A) out of run_review's inline walk so it "
                 "is behaviourally invocable, not just source-hash frozen. "
-                "Same UNSORTED rglob as validate_adoption; run_review itself "
-                "still `break`s after the first hit, this entry records the "
-                "whole walk.",
-        "order_sensitive": True,
+                "SORTED rglob (S2b pass B3, was unsorted like validate_adoption); "
+                "run_review itself still `break`s after the first hit, this "
+                "entry records the whole walk.",
     },
     {
         "id": "disc.state.detect_state",

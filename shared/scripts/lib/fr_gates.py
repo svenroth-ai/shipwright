@@ -68,7 +68,7 @@ def collect_known_fr_ids(project_root) -> tuple[frozenset[str], bool]:
         # sort=False keeps raw iterdir order, and the generator still
         # short-circuits on the first hit exactly as the old ``any()`` did.
         specs_found = next(
-            iter_spec_files(planning, sort=False, require="is_file"), None
+            iter_spec_files(planning, guard="is_dir", sort=False, include_iterate=True, require="is_file"), None
         ) is not None
         if not specs_found:
             return frozenset(), False

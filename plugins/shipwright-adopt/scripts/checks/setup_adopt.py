@@ -111,7 +111,9 @@ def _detect_existing_artifacts(project_root: Path) -> list[str]:
         if (project_root / rel).is_file():
             found.append(rel)
     planning = project_root / ".shipwright" / "planning"
-    for spec in _discovery().iter_spec_files(planning, recursive=True):
+    for spec in _discovery().iter_spec_files(
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+    ):
         try:
             rel = spec.relative_to(project_root).as_posix()
         except ValueError:

@@ -33,11 +33,15 @@ def _iter_candidate_specs(planning: Path):
     Extracted (S2b pass A) so the golden corpus can invoke this walk
     directly and behaviourally, in addition to the source-hash freeze that
     still covers ``run_review`` as a whole (it also calls an external LLM,
-    so it stays frozen at SOURCE level). ``sort=False``: which split is
-    sampled is filesystem-iteration-order dependent, as it always was --
-    unchanged by this extraction.
+    so it stays frozen at SOURCE level). ``sort=True`` (S2b pass B3): which
+    split is sampled by ``run_review``'s ``break`` is now fixed by sorted
+    path order instead of filesystem-iteration order -- a declared
+    behaviour change from the unsorted walk this extraction originally
+    preserved.
     """
-    return _discovery().iter_spec_files(planning, recursive=True, sort=False)
+    return _discovery().iter_spec_files(
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+    )
 
 
 def _locate_llm_review() -> Path | None:

@@ -226,7 +226,7 @@ def read_top_level_spec(project_root: Path) -> str | None:
             return None
     # Adopt layout: the spec lives under a planning split, not agent_docs.
     planning = project_root / _PLANNING_DIRNAME
-    for candidate in iter_spec_files(planning):   # was sorted(glob("*/spec.md"))
+    for candidate in iter_spec_files(planning, guard="is_dir", sort=True, include_iterate=True, require="is_file"):  # was sorted(glob("*/spec.md")); require="is_file" added S2b B1
         try:
             return candidate.read_text(encoding="utf-8", errors="ignore")
         except OSError:
@@ -280,7 +280,7 @@ def _iter_spec_files(project_root: Path) -> Iterable[Path]:
 
     planning = project_root / _PLANNING_DIRNAME
     # Still a generator (corpus records "generator"); iterate/ stays special-cased.
-    for split_dir in iter_split_dirs(planning):
+    for split_dir in iter_split_dirs(planning, guard="is_dir", sort=True, include_iterate=True):
         if split_dir.name == "iterate":
             for iter_spec in sorted(split_dir.glob("*.md")):
                 yield iter_spec

@@ -1,0 +1,101 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-26-b-pure-hardening",
+    "date": "2026-08-26",
+    "unit": {
+      "status": "pass",
+      "passed": 11778,
+      "failed": 0,
+      "note": "shared/tests 9381 passed/31 skipped, plugins/shipwright-adopt 638, plugins/shipwright-compliance 1657 passed/5 skipped, plugins/shipwright-design 38, plugins/shipwright-project 64 -- all realms touched by the 15 planning-discovery call sites. Untouched plugins (build/changelog/deploy/run/security/test/plan/preview) not re-run."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 528,
+      "failed": 0,
+      "note": "2 deselected (unrelated pre-existing markers), unchanged by this diff."
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is shared-lib/plugin backend discovery-walk hardening"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 48,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-26-b-pure-hardening/surface_verification.json",
+      "detail": "uv run pytest integration-tests/test_requirements_corpus_matrix.py integration-tests/test_requirements_corpus_found_defects.py integration-tests/test_requirements_corpus_registry.py -v -- 48 passed, exit 0."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "B1: the 5 non-recursive sites (drift_parsers, spec_parser.read_top_level_spec, backfill_test_links, rtm.collect_requirements, _test_links_io) reject a directory named spec.md via require=is_file, degrading to empty rather than raising",
+          "disposition": "tested",
+          "evidence": "test_requirements_corpus_matrix.py::test_target_behaviour_matches_the_frozen_baseline[disc.drift_parsers.collect_requirements_from_planning|disc.spec_parser.read_top_level_spec|disc.backfill_test_links.discover_specs|disc.rtm.collect_requirements|disc._test_links_io.discover_specs] PASSED against the regenerated golden.json"
+        },
+        {
+          "behavior": "B1: the spec-dir fixture still discriminates >=5 distinct signatures across targets after hardening",
+          "disposition": "tested",
+          "evidence": "test_requirements_corpus_matrix.py::test_corpus_discriminates_between_targets PASSED"
+        },
+        {
+          "behavior": "B3: sort=True at #6/#11/#13/#15 makes the picked spec deterministic (forward enumeration order == reverse)",
+          "disposition": "tested",
+          "evidence": "test_requirements_corpus_found_defects.py::test_unsorted_walk_tracks_enumeration_order and ::test_unsorted_walk_a2_tracks_enumeration_order PASSED (both rewritten from != to ==)"
+        },
+        {
+          "behavior": "B3: #4 (fr_gates) and #14 (state) remain sort=False with unchanged observable behavior",
+          "disposition": "tested",
+          "evidence": "test_requirements_corpus_matrix.py::test_target_behaviour_matches_the_frozen_baseline[disc.fr_gates.collect_known_fr_ids|disc.state.detect_state] PASSED against the unchanged golden cells for those two targets"
+        },
+        {
+          "behavior": "B4: no registry entry sets order_sensitive; _mask_unordered and its calling branch are removed as dead code",
+          "disposition": "tested",
+          "evidence": "test_requirements_corpus_registry.py (9 tests) PASSED + ruff check (no unused import / dead-code lint escape) + manual grep confirming zero remaining references"
+        },
+        {
+          "behavior": "A3: every one of the 15 production call sites resolves to the same effective guard/sort/include_iterate/require values before and after adding explicit kwargs (no accidental default drift)",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "the golden-corpus per-target matrix test pins the OBSERVABLE effective value at every one of the 15 sites; a wrong explicit kwarg would surface there as a golden diff. Whether the kwarg was passed EXPLICITLY vs implicitly-via-default is a style/hygiene property with no independent runtime observable, verified instead by direct code-diff audit against the campaign BRIEF (documented in the ADR)."
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-26-b-pure-hardening",
+    "commit": "44136e09da9f547b1eae6bde12d98e4076451cd3",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

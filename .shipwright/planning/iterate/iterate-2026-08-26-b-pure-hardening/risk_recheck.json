@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-b-pure-hardening",
+  "risk_recheck": {
+    "changed_file_count": 20,
+    "diff_loc": 774,
+    "risk_flags": [
+      "touches_auth",
+      "touches_shared_infra"
+    ],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

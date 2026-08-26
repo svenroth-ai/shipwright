@@ -14,7 +14,6 @@ change it cannot see.
 from __future__ import annotations
 
 import dataclasses
-import json
 from pathlib import Path
 
 MAX_TEXT = 400  # cap file-text payloads so the golden file stays reviewable
@@ -121,47 +120,6 @@ def _type_of(value) -> str:
         return f"list[{_neutral_type_name(value[0])}]"
     return _neutral_type_name(value)
 
-def _mask_unordered(cell: dict, root: Path) -> dict:
-    """Replace the spec path an UNSORTED walk happened to pick.
-
-    ``validate_adoption`` and ``adopt_compliance`` both take
-    ``list(planning.rglob("spec.md"))`` with no sort and act on the first
-    result, so WHICH spec they touch is filesystem-iteration-order dependent.
-    Pinning whichever path won on the machine that generated the baseline would
-    flake between NTFS and ext4. A third target joined them in campaign S2b
-    pass A: ``review_runner``'s extracted walk (also unsorted, ``sort=False``).
-
-    Masking is keyed on the ACTUAL spec paths present in the materialized
-    fixture, never on text shape. An earlier regex-shaped version replaced any
-    substring that merely looked like a spec path, which destroyed compile-time
-    literals -- ``"A2 .shipwright/planning/<split>/spec.md has >= 1 FR"`` and
-    ``"missing: .shipwright/planning/<split>/spec.md (no spec found)"`` -- some
-    of them emitted on branches that return before any walk happens. That made
-    an operator-facing message change invisible to the matrix. Masking by value
-    touches only paths that really were picked. (Caught in adversarial review.)
-
-    The order-preservation behaviour itself is pinned against a controlled
-    enumeration seam in ``test_requirements_corpus_found_defects.py``, with one
-    probe per masked target for the original two -- sorting the result here
-    instead would hide the very behaviour that needs freezing. The third
-    (``review_runner``) target is deliberately left without its own probe:
-    campaign S2b pass B4 retires ``order_sensitive`` and this whole function
-    once every target is sorted, so a probe built now would be deleted one
-    pass later. Do not let that omission read as an oversight.
-    """
-    raw = json.dumps(cell, sort_keys=True)
-    candidates: set[str] = set()
-    for spec in _spec_files(root):
-        rel = spec.relative_to(root)
-        candidates.add(rel.as_posix())
-        candidates.add(str(rel))
-        candidates.add(spec.as_posix())
-        candidates.add(str(spec))
-    # longest first, so a nested path is not partly replaced by its parent
-    for path in sorted(candidates, key=len, reverse=True):
-        raw = raw.replace(json.dumps(path)[1:-1], "<unordered-pick>")
-    return json.loads(raw)
-
 def _record(call, root: Path, target: dict | None = None) -> dict:
     """Invoke *call* and record outcome kind, type, laziness, value.
 
@@ -193,7 +151,4 @@ def _record(call, root: Path, target: dict | None = None) -> dict:
     if target and target.get("platform_sep"):
         cell["value"] = _posixify(cell["value"])
         cell["platform_sep_normalized"] = True
-    if target and target.get("order_sensitive"):
-        cell = _mask_unordered(cell, root)
-        cell["unordered_walk"] = True
     return cell

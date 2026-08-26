@@ -59,7 +59,10 @@ def discover_specs(project_root: Path) -> list[Path]:
     if top.exists():
         out.append(top)
     planning = project_root / ".shipwright" / "planning"
-    out.extend(iter_spec_files(planning, include_iterate=False))
+    # require="is_file" (S2b pass B1): a directory named spec.md is skipped.
+    out.extend(iter_spec_files(
+        planning, guard="is_dir", sort=True, include_iterate=False, require="is_file"
+    ))
     root_spec = project_root / "spec.md"
     if root_spec.exists():
         out.append(root_spec)
