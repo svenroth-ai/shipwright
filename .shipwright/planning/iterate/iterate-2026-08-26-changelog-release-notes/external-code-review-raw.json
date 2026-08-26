@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/tools/publish_release_notes.py:55-60`  \n  Finding: The required full-CHANGELOG link is not a link to the released version\u2019s CHANGELOG section/anchor. `_changelog_blob_url()` deliberately emits only `.../blob/v{version}/CHANGELOG.md`, and the code comments explicitly reject using an anchor. The acceptance criteria require trailing links to the CHANGELOG anchor and compare view.  \n  Suggestion: Construct a validated URL to the tagged version section (including an appropriate fragment), or otherwise change the approved specification if a file-level blob link is intentionally the desired behavior. Add a test asserting the published footer includes the required section link.\n\n- Category: bug  \n  Severity: high  \n  File: `shared/scripts/tools/extract_changelog_section.py:82-87`  \n  Finding: Extraction rejects a `CHANGELOG.md` whose *entire tagged file* exceeds 64 KiB before it can find the requested section. The size limit is supposed to protect the section sent to the LLM, but an accumulated changelog naturally grows beyond 64 KiB even when the just-released section is small. This will permanently skip release creation for later releases.  \n  Suggestion: Remove the whole-file size rejection and apply `MAX_SECTION_BYTES` only after locating and slicing the target section; if memory protection is needed, implement bounded/streaming section scanning instead. Add a fixture with a >64 KiB changelog containing a small valid target section.\n\n- Category: security  \n  Severity: medium  \n  File: `shared/scripts/tools/validate_release_notes.py:106-115`  \n  Finding: The own-repository link restriction is bypassable because it uses a raw string prefix. For example, `https://github.com/acme/widgets-archive/issues/1` starts with `https://github.com/acme/widgets` and is accepted even though it points to a different repository. This violates the requirement that links be restricted to this project\u2019s repository.  \n  Suggestion: Parse URLs and require hostname `github.com` plus path segments whose first two components exactly equal the resolved owner and repository. Add negative tests for repository-prefix collisions such as `widgets-archive` and `widgets.evil`.\n\n- Category: security  \n  Severity: medium  \n  File: `shared/scripts/tools/validate_release_notes.py:96-99`  \n  Finding: Mention/reference neutralization can turn content already inside an inline code span into live Markdown. For example, `` `reported by @user` `` becomes `` `reported by `@user` ``, closing the code span before `@user`; GitHub can then render a live mention. The same issue applies to `#NNN` references.  \n  Suggestion: Tokenize or preserve Markdown code spans before applying substitutions, or neutralize references with an escaping mechanism that cannot terminate existing code spans. Add tests for mentions and issue references inside inline and fenced code blocks.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/tools/publish_release_notes.py:100-102`  \n  Finding: Despite the stated \u201cnever-swallowed\u201d/best-effort contract, filesystem failures while creating or writing `.shipwright/runtime/release_notes_v{version}.md` are uncaught. A read-only project/runtime directory raises `OSError`, produces no summary JSON status, and exits nonzero; similarly, prompt-file reads and unexpected helper exceptions can escape this orchestrator.  \n  Suggestion: Wrap each remaining I/O stage (especially prompt read, runtime directory creation, and note write) in exception handling that returns a distinct skipped/failed JSON result. Add a test that makes `mkdir` or `open` raise and verifies phase-safe status reporting.\n\n- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/tools/validate_release_notes.py:124-162`  \n  Finding: The validator does not enforce several required output-shape constraints: it accepts empty allowed sections and does not reject emoji. The prompt asks the model to comply, but an LLM response containing `## Fixed` with no content or an emoji passes the mechanical gate and can be published, contrary to the required \u201cno emoji\u201d and omission-of-empty-sections behavior.  \n  Suggestion: Add deterministic emoji detection and validate that every allowed heading has non-whitespace content before the next heading/footer. Add tests for an empty allowed section and an emoji-containing otherwise-valid response.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/lib/repo_identity.py:18-21`  \n  Finding: Valid Git SSH remotes in URI form, such as `ssh://git@github.com/acme/widgets.git`, are rejected even though the change claims SSH origin support. Such projects resolve no repository identity and silently skip validation/publishing and the next-release advisory.  \n  Suggestion: Support the `ssh://git@github.com/owner/repo(.git)` form in `normalize_github_origin`, with tests alongside the existing SCP-style SSH and HTTPS forms.\n\nOverall assessment: the main release flow is well structured, but it currently has a release-blocking changelog-size bug and misses several explicit safety/output requirements. Ship with fixes before relying on it for forward releases.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": null,
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider returned an empty reply"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 deepseek did not (deepseek=unavailable, openai=revise)"
+  }
+}

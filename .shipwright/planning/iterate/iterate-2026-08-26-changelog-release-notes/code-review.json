@@ -1,0 +1,35 @@
+{
+  "section": "changelog-release-notes",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/validate_release_notes.py",
+      "line": 197,
+      "finding": "_check_no_empty_sections was called against full_body (body + footer), so the LAST heading's content window ran to end-of-string and was masked by the footer's own non-empty link text, silently passing a genuinely empty trailing section.",
+      "suggestion": "Scope the empty-section check to body alone, before the footer is appended.",
+      "disposition": "accepted-and-fixed",
+      "fix": "validate() now calls _check_no_empty_sections(body) instead of _check_no_empty_sections(full_body); regression test test_rejects_an_empty_last_heading_even_with_the_footer_appended added."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/condense_release_notes.py",
+      "line": 187,
+      "finding": "return 0 if result.get(\"status\") == \"ok\" else 0 — dead ternary, both branches identical.",
+      "suggestion": "Replace with a plain return 0.",
+      "disposition": "accepted-and-fixed",
+      "fix": "Replaced with `return 0  # non-fatal by contract — the caller reads \"status\", never the exit code`."
+    },
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "shared/scripts/lib/repo_identity.py",
+      "line": 1,
+      "finding": "Placed under shared/scripts/lib/ despite matching the ADR-045 shape (no intra-package imports, consumed by both shared/scripts/tools/* and a plugin's own scripts/checks/) that the repo's own documented convention (changelog_sections.py's docstring) says belongs at shared/scripts/ top level. The one consumer that imported it as lib.repo_identity (package-qualified) was live evidence of the exact collision risk this convention exists to prevent.",
+      "suggestion": "Move to shared/scripts/repo_identity.py, matching changelog_sections.py's established precedent.",
+      "disposition": "accepted-and-fixed",
+      "fix": "Moved to shared/scripts/repo_identity.py with an ADR-045 rationale docstring; updated all five import sites (validate_release_notes.py, create_github_release.py, publish_release_notes.py, setup-changelog.py, test_repo_identity.py) to the top-level import form. Full suite re-run green (68 shared + 87 plugin tests)."
+    }
+  ]
+}

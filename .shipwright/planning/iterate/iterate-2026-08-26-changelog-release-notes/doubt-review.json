@@ -1,0 +1,27 @@
+{
+  "stage": "doubt",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "security",
+      "claim_under_doubt": "validate_release_notes.py's fixed heading vocabulary gate makes it impossible for CHANGELOG text to reach the public release page under an unauthorized heading.",
+      "disproof_attempt": "_check_headings scanned only with _HEADING_RE, an exact '^##\\s+...$' match. Any other legal ATX heading form (a single '#', '###'+, or a 1-3-space-indented '## ') is still a real, GitHub-rendered heading per CommonMark/GFM but was invisible to the scan. Confirmed live by hand-tracing: a body containing '  ## Not In Vocab' and '### Also Sneaky' headings validated ok=True and both unauthorized headings plus attacker-controlled text appeared unchanged in sanitized_body — a live bypass, not a hypothetical one.",
+      "file": "shared/scripts/tools/validate_release_notes.py",
+      "line": 152,
+      "what_would_resolve_it": "Scan with a heading-level-aware regex covering every legal ATX form (1-3 leading spaces, 1-6 hashes) and reject any heading whose hash count isn't exactly 2, before checking H2 heading text against the allowed vocabulary.",
+      "disposition": "accepted-and-fixed",
+      "fix": "Added _ANY_ATX_HEADING_RE and rewrote _check_headings to scan with it, rejecting any heading whose hash-count != 2 with a clear reason, then validating H2 text against ALLOWED_HEADINGS as before. Regression tests: test_rejects_a_non_h2_atx_heading (# / ### / ####), test_rejects_an_indented_h2_heading_outside_the_vocabulary, test_allows_an_indented_h2_heading_inside_the_vocabulary."
+    },
+    {
+      "severity": "low",
+      "lens": "test-coverage",
+      "claim_under_doubt": "A future rename or move of release-notes-prompt.md would be caught by the test suite before it silently degrades condensation.",
+      "disproof_attempt": "_PROMPT_PATH is hardcoded in publish_release_notes.py and every existing test that touches it mocks Path.is_file/read_text, so no test ever exercises the real filesystem path — a rename would make every real run report condensation_failed:prompt file missing forever, with all tests still green.",
+      "file": "shared/scripts/tools/publish_release_notes.py",
+      "line": 44,
+      "what_would_resolve_it": "Add one real (non-mocked) test asserting _PROMPT_PATH.is_file() against the actual repo filesystem.",
+      "disposition": "accepted-and-fixed",
+      "fix": "Added test_prompt_path_resolves_to_a_real_file, asserting prn._PROMPT_PATH.is_file() with no mocking."
+    }
+  ]
+}

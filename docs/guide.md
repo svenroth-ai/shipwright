@@ -1088,6 +1088,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 - Every published package manifest you've declared (e.g. `bootstrapper/package.json`), updated to the released version in the same commit — see below
 - A pull request on GitHub (if you are on a feature branch)
 - Tags and main branch pushed to origin
+- A GitHub Release with a short, readable, LLM-condensed summary of what changed, linking back to the full `CHANGELOG.md` section (best-effort — never blocks the release; see step 8)
 
 **How it works:**
 
@@ -1098,7 +1099,8 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 5. In guided mode, shows you the entry for review with options to accept, edit, or cancel. In autonomous mode, it proceeds without prompting.
 6. If your project declares published package manifests in `shipwright_changelog_config.json`, writes the released version into each one, in the same commit as the changelog. A published manifest is otherwise easy to forget — a release can tag `v0.24.0` while the manifest a registry actually receives still says `v0.23.0` — so this is checked twice: once after writing, and again against the commit itself right before the tag is created. Either check failing stops the release before it tags. No manifests declared means this step does nothing.
 7. Commits the changelog (and any synced manifests), creates an annotated git tag, and pushes both to origin.
-8. If you are on a feature branch, it creates a GitHub PR with the changelog as the body. In autonomous mode, the PR is merged immediately; in guided mode, it stays open for your review.
+8. Publishes a GitHub Release for the tag: extracts the just-released `CHANGELOG.md` section, condenses it into a short human-readable body (a single, tool-less LLM call — it can only return text, never take an action), and runs the result through a deterministic gate (fixed section headings, size cap, no raw HTML or off-repo links) before publishing. This step is best-effort and forward-only — a failure never blocks the release, and pre-existing tags from before this feature are not backfilled.
+9. If you are on a feature branch, it creates a GitHub PR with the changelog as the body. In autonomous mode, the PR is merged immediately; in guided mode, it stays open for your review.
 
 **Standalone usage:** Yes. You can run `/shipwright-changelog` on any git repository with Conventional Commits, whether or not it was built with Shipwright. It is a self-contained release tool.
 

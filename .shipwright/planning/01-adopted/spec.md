@@ -18,7 +18,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.06 | Adopted | /shipwright-test | Must | Run the project's tests at every level it has — unit, integration, database, end-to-end and smoke — and produce one record in which each level carries an explicit outcome or a stated reason it did not run. Compare the built screens back to their mockups, hold the project to the performance budgets it declared, and report which of the declared pairs of code that write and read the same stored format appear to have no test covering them. | code | unit (inferred) |
 | FR-01.07 | Adopted | /shipwright-security | Must | Scan the project with several independent checks — flaws in the code, unsafe dependencies, leaked secrets, and attempts to hijack the assistant's own instructions — and report everything they find in one shape, publishing it to the code host's security surface as well. Inside a project the framework already manages, it drives the fixes through to completion; pointed at any other repository it reports what it found and offers to hand the findings over to be worked through. A finding the project formally accepts is recorded in a register kept with the project, so it stays visible instead of quietly disappearing. | code | unit (inferred) |
 | FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
-| FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, and open the release pull request. | code | unit (inferred) |
+| FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, open the release pull request, and publish a readable summary to the code host's release page (best-effort, forward-only). | code | unit (inferred) |
 | FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
 | FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | code | unit (inferred) |
 | FR-01.12 | Adopted | /shipwright-preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
@@ -624,6 +624,23 @@ _Where the work detail lives_ at the end of this document.
   version is marked with its tag. A manifest still found at its previous
   version stops the release rather than letting the tag claim a version the
   manifest does not carry. A project that has declared none is unaffected.
+- (E) Given the version marking already exists, when the release is
+  delivered, then a release page is also created on the code host for that
+  version, carrying a short, readable summary of what changed and a link
+  back to the full release note — so a reader who finds only the version
+  marking is not left with a one-line label standing in for the whole
+  release. The summary is produced by condensing the full release note for
+  readability, but is checked against a fixed, expected shape before
+  publishing — never published unchecked — and the version marking and the
+  link back to the full record are always constructed directly from the
+  recorded facts of the release, never left to the condensing step.
+- (E) Given creating the release page fails for any reason, when the rest of
+  the release has already completed, then the release itself is not undone
+  or held back — only the release page is missing, and that is reported
+  rather than silently dropped. Given a version was released before this
+  capability existed, when later releases are processed, then that earlier
+  version's release page is not created retroactively — only releases going
+  forward get one.
 
 <a id="fr-0110"></a>
 ### FR-01.10 — /shipwright-compliance

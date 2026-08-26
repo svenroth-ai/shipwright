@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 8 iterate-spec acceptance criteria and both appended FR-01.09 ACs (.shipwright/planning/01-adopted/spec.md) are implemented faithfully: tagged-blob extraction with semver+remote-verified previous-version resolution, tool-less LLM condensation, a deterministic sanitize-and-validate gate whose returned body is what's actually published, gh release view-then-create with --verify-tag, gh-missing/unauthenticated/failed all reported in the Step 7 banner and never blocking, the advisory next-release check in setup-changelog.py, and forward-only scope (no backfill code path exists). docs/hooks-and-pipeline.md, docs/guide.md, and release-workflow.md were updated in the same diff per this repo's own CLAUDE.md rule. Code-reviewer (Stage 2) may proceed."
+}
