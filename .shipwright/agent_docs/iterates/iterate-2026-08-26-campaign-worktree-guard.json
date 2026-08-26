@@ -1,0 +1,88 @@
+{
+  "run_id": "iterate-2026-08-26-campaign-worktree-guard",
+  "date": "2026-08-26T07:29:07.983963Z",
+  "event_at": "2026-08-26T07:28:39.840660+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-worktree-guard",
+  "spec": ".shipwright/planning/iterate/iterate-2026-08-26-campaign-worktree-guard.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-26-campaign-worktree-guard",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "worktree_location_error returns \"\" for an isolated worktree",
+        "disposition": "tested",
+        "evidence": "test_worktree_location_error.py::test_worktree_location_error_empty_for_isolated_worktree PASSED"
+      },
+      {
+        "behavior": "worktree_location_error flags the bare main repo checkout (the exact incident)",
+        "disposition": "tested",
+        "evidence": "test_worktree_location_error.py::test_worktree_location_error_flags_main_repo PASSED"
+      },
+      {
+        "behavior": "a main-tree write after isolation never flips the verdict (no snapshot diff)",
+        "disposition": "tested",
+        "evidence": "test_worktree_location_error.py::test_worktree_location_error_never_diffs_the_main_tree PASSED"
+      },
+      {
+        "behavior": "a genuine linked worktree still fails if it lives outside <main_root>/.worktrees/",
+        "disposition": "tested",
+        "evidence": "test_worktree_location_error.py::test_worktree_location_error_flags_a_linked_worktree_outside_worktrees_dir PASSED (external review finding)"
+      },
+      {
+        "behavior": "a stray non-git directory returns a blocking string, not a traceback",
+        "disposition": "tested",
+        "evidence": "test_worktree_location_error.py::test_worktree_location_error_blocks_a_stray_non_git_directory PASSED (in-process, for diff-coverage) + test_check_worktree_location.py::test_blocks_a_stray_non_git_directory PASSED (subprocess CLI, external review finding)"
+      },
+      {
+        "behavior": "check_worktree_location.py CLI allows an isolated worktree / blocks the main repo checkout",
+        "disposition": "tested",
+        "evidence": "test_check_worktree_location.py::test_allows_isolated_worktree + test_blocks_the_main_repo_checkout PASSED"
+      },
+      {
+        "behavior": "the CLI needs no Step-1 snapshot \u2014 real subprocess against a real freshly-created worktree with no snapshot file at all",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_check_worktree_location.py::test_does_not_require_a_run_id_snapshot PASSED (real git worktree add, real subprocess invocation of the shipped script)"
+      },
+      {
+        "behavior": "existing worktree_isolation.py / check_iterate_isolation.py behavior unbroken by the new function",
+        "disposition": "tested",
+        "evidence": "test_worktree_isolation_lib.py (26/26) + test_check_iterate_isolation.py full suite PASSED"
+      },
+      {
+        "behavior": "sub-iterate-runner.md prose/doc-shape meta-tests still pass with every bare git command replaced by git -C",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/ full suite (949 collected) incl. test_sub_iterate_runner_contract.py, test_sub_iterate_runner_finalization.py, test_sub_iterate_runner_step_3_4.py, test_campaign_review_contract_prose.py PASSED"
+      },
+      {
+        "behavior": "new/edited reference files stay within their runtime-prompt LOC ceilings",
+        "disposition": "tested",
+        "evidence": "test_skill_references_link.py::test_every_new_reference_under_loc_budget + test_sub_iterate_runner_step_3_4.py::test_runner_doc_within_bloat_ceiling PASSED (campaign-mode.md=400, sub-iterate-runner.md=497/ADR-119, campaign-worktree.md=108)"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-08-26-campaign-worktree-guard.md"
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_worktree_location_error.py shared/tests/test_check_worktree_location.py shared/tests/test_external_review_project_flag.py -q",
+    "exit_code": 0,
+    "tests_run": 16,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-26-campaign-worktree-guard/surface_verification.log",
+    "timestamp": "2026-08-26T07:24:47.584Z"
+  },
+  "declared_removals": []
+}
