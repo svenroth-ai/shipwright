@@ -80,14 +80,20 @@ _LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 _INLINE_CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
 # Common emoji-bearing ranges — "no emoji" is an explicit AC (operator
 # request from turn one of this feature), so it is enforced mechanically
-# rather than left to the prompt alone.
+# rather than left to the prompt alone. Each astral range is its own
+# single-range character class, alternated, rather than one combined
+# multi-range bracket expression — CodeQL's regex-range analysis
+# (py/overly-permissive-regex-range) misreads a bracket class built from
+# several concatenated \U literals spanning the astral plane as overlapping
+# U+FFFD; behavior is identical (verified against every range boundary),
+# this form just doesn't trip that false positive.
 _EMOJI_RE = re.compile(
-    "["
-    "\U0001F300-\U0001FAFF"
-    "\U00002600-\U000027BF"
-    "\U0001F1E6-\U0001F1FF"
-    "\U0000FE0F"
-    "]"
+    "(?:"
+    "[\U0001F300-\U0001FAFF]"
+    "|[\U00002600-\U000027BF]"
+    "|[\U0001F1E6-\U0001F1FF]"
+    "|[\U0000FE0F]"
+    ")"
 )
 
 
