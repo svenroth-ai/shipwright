@@ -1,44 +1,45 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-08-26-r1b-ci-manifest-regen-gate"
+run_id: "iterate-2026-08-10-i2-test-evidence-phase-source-contract"
 phase: "iterate"
-reason: "iterate: CI manifest regen-and-compare gate"
-timestamp: "2026-08-26T12:04:09.737533+00:00"
+reason: "iterate: I2 phase source contract"
+timestamp: "2026-08-10T10:44:43.260693+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-08-26 12:04:09 UTC
+> Auto-generated 2026-08-10 10:44:43 UTC
 
 ## Session Info
 
-- **Session ID**: b2722339-c533-4f0f-89bc-aec219079cea
-- **Timestamp**: 2026-08-26 12:04:09 UTC
-- **Reason**: iterate: CI manifest regen-and-compare gate
+- **Session ID**: unknown
+- **Timestamp**: 2026-08-10 10:44:43 UTC
+- **Reason**: iterate: I2 phase source contract
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-08-25-campaign-run-id-lowercase-mint
-- **Date**: 2026-08-25T22:41:20.227004Z
+- **Run ID**: iterate-2026-08-10-i2-test-evidence-phase-source-contract
+- **Date**: 2026-08-10T10:44:43.052372Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/campaign-run-id-lowercase-mint
-- **ADR**: iterate-2026-08-25-campaign-run-id-lowercase-mint
+- **Complexity**: medium
+- **Branch**: iterate/i2-test-evidence-phase-source-contract
+- **ADR**: iterate-2026-08-10-i2-test-evidence-phase-source-contract
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/r1b-ci-manifest-regen-gate
-- **Run ID**: iterate-2026-08-26-r1b-ci-manifest-regen-gate
-- **Spec**: .shipwright/planning/iterate/2026-08-26-r1b-ci-manifest-regen-gate.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-08-26T08:25:13))
-- **Review Cascade**: complete
+- **Branch**: iterate/i2-test-evidence-phase-source-contract
+- **Run ID**: `iterate-2026-08-10-i2-test-evidence-phase-source-contract`
+- **Spec**: .shipwright/planning/iterate/iterate-2026-08-10-i2-test-evidence-phase-source-contract.md
+- **Complexity**: medium — a shared verifier and a compliance producer must share one serialized phase-source contract.
+- **External Review Marker**: missing
+- **Review Cascade**: unreadable (unsafe run_id '`iterate-2026-08-10-i2-test-evidence-phase-source-contract`' — must be a single path component (letters, digits, dot, dash, underscore))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
+- reviews.json is unreadable — investigate before resuming (unsafe run_id '`iterate-2026-08-10-i2-test-evidence-phase-source-contract`' — must be a single path component (letters, digits, dot, dash, underscore))
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +53,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/r1b-ci-manifest-regen-gate
-- **Last Commit**: 5e1f8616 chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/i2-test-evidence-phase-source-contract
+- **Last Commit**: 450d4fee fix(compliance): verify test evidence by phase source
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +70,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-6a0d62c3 | work_completed | iterate (CI regenerates test-traceability.json from a fresh test run and reports structural drift against the committed manifest (advisory, never blocking merges)) | 2026-08-26 |
-| evt-a06003b6 | work_completed | iterate (Campaign sub-iterate run_id minted with an uppercase-embedded display id (R0) passed every check until F5c's RUN_ID_STRICT, hours into the run, discovered only after F3/F4/F5/F5b artifacts already existed under the doomed id.) | 2026-08-25 |
-| evt-77efb2f5 | work_completed | iterate (Pin 4 small fr_criteria.py parsing-behavior findings deferred from PR #648 (trg-968e4d87, trg-467b7b2f): 2 deliberate-widening pins + doc-lines, 1 compute_fr_coherence bug fix (Name-cell fallback), 1 I6-own-entry-point correction for the three-way convergence test.) | 2026-08-25 |
-| evt-68b6257e | grade_snapshot | — | 2026-08-25 |
-| evt-f3042b73 | work_completed | iterate (Repeatable multi-root JUnit staging for execution evidence: evidence_drop.py stage now accepts N --junit <base>=<path> reports, threaded through refresh_index/_layer_coverage_evidence, plus a new scripts/run_full_suite_evidence.py driving all 18 pytest roots.) | 2026-08-25 |
+| evt-d17b628b | work_completed | iterate (Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings.) | 2026-08-10 |
+| evt-36c592ee | work_completed | iterate (Introduce a lifecycle-aware compliance-audit runner with three explicit authority scopes (branch_feedback/merge/release), separating the Stop hook local diagnostics from the global compliance backlog write authority reserved for delivered merge and verified release commits.) | 2026-08-10 |
+| evt-de30181b | work_completed | iterate (Replaced authorship exemption with exact-head approval and review-record evidence.) | 2026-08-09 |
+| evt-d77ccdd2 | work_completed | iterate (Add docs/token-cost-controllable.md: threshold-based guide (trigger/symptom/action per band) for keeping session/token cost controllable as decision history and session length grow; link from guide.md Ch.9 + Appendix B and README) | 2026-08-09 |
+| evt-0bbcf4b6 | work_completed | iterate (Expose outbox-only amend delivery independently from append and status delivery.) | 2026-08-09 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 550
-- **Last iterate**: feature — CI regenerates test-traceability.json from a fresh test run and reports structural drift against the committed manifest (advisory, never blocking merges) (2026-08-26)
+- **Total work events**: 526
+- **Last iterate**: bug — Replace I2 mtime freshness with phase-run provenance and enforce Decision-Drop scanner findings. (2026-08-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
