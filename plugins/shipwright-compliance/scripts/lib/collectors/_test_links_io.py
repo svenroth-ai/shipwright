@@ -137,7 +137,10 @@ def discover_specs(project_root: Path) -> list[Path]:
         out.append(top)
     planning = project_root / ".shipwright" / "planning"
     iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
-    out.extend(iter_spec_files(planning, include_iterate=False))
+    # require="is_file" (S2b pass B1): a directory named spec.md is skipped.
+    out.extend(iter_spec_files(
+        planning, guard="is_dir", sort=True, include_iterate=False, require="is_file"
+    ))
     return out
 
 

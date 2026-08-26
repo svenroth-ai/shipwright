@@ -89,7 +89,12 @@ def iter_split_dirs(
 
     entries: Iterator[Path] | list[Path] = planning.iterdir()
     if sort:
-        entries = sorted(entries)
+        # as_posix() key (S2b pass B doubt-review): Path's default ordering is
+        # str(self) on POSIX but str(self).lower() with backslashes on
+        # Windows, so plain sorted(entries) picks a different "first" entry
+        # on different platforms for names differing only in case or where
+        # one is a prefix of another. That defeats sort=True's own purpose.
+        entries = sorted(entries, key=lambda p: p.as_posix())
 
     for entry in entries:
         if not entry.is_dir():
@@ -116,15 +121,21 @@ def iter_spec_files(
         ``True`` switches to ``rglob``, which descends into nested
         sub-directories AND matches a loose ``spec.md`` sitting directly in
         ``planning``. Five callers do this. ``rglob`` never raises on an absent
-        or non-directory ``planning``, so ``guard`` and ``require`` do not
-        apply here — a caller needing to tell those cases apart must check
-        before calling (``adopt_compliance`` does, for its message).
+        or non-directory ``planning`` and never applies ``require`` before
+        yielding a match, so ``guard``/``require`` cannot silently take effect
+        there. Combining ``recursive=True`` with a non-default ``guard``
+        (!= ``"is_dir"``) or ``require`` (!= ``"exists"``) therefore raises
+        ``ValueError`` **at call time** (S2b pass A) instead of quietly doing
+        nothing — a caller needing to tell absent/non-directory ``planning``
+        apart must check before calling (``adopt_compliance`` does, for its
+        message).
 
     ``require``
         ``"exists"`` accepts any entry at that path — including a *directory*
         named ``spec.md``, which then explodes at ``read_text``. ``"is_file"``
         rejects it. Two callers guard properly, the rest do not; the corpus's
-        ``spec-dir`` fixture keeps the difference honest.
+        ``spec-dir`` fixture keeps the difference honest. Only meaningful
+        together with ``recursive=False`` — see above.
 
     Hidden splits are NOT an axis: pathlib's ``glob``/``rglob`` do match a
     leading dot, so recursive callers see ``.hidden-split/`` exactly like the
@@ -138,7 +149,47 @@ def iter_spec_files(
     itself. Adding ``filename=`` here would offer that caller a shape that
     silently drops every missing row. If S2b needs a second target, give it the
     split dirs — not a filename knob.
+
+    The new recursive-branch ``ValueError`` above fires as soon as this
+    function is CALLED: this is a plain function wrapping an inner
+    generator, not a generator itself. The pre-existing ``require``
+    membership check below stays inside that inner generator, exactly
+    where it always lived, so its own timing (lazy — fires at first
+    ``next()``, not at call time) is untouched by this change; only the new
+    check's timing differs (caught in external plan review of S2b pass A:
+    an earlier draft made both checks eager, which was a wider timing
+    change than A2 asked for). Either way, a caller relying on
+    ``any()``/``next()`` short-circuiting over the walk's RESULTS still
+    gets that behaviour untouched.
     """
+    if recursive and (guard != "is_dir" or require != "exists"):
+        raise ValueError(
+            "recursive=True ignores guard/require, so combining it with a "
+            f"non-default guard ({guard!r}) or require ({require!r}) is "
+            "rejected rather than silently doing nothing"
+        )
+    return _iter_spec_files_lazy(
+        planning,
+        guard=guard,
+        sort=sort,
+        include_iterate=include_iterate,
+        recursive=recursive,
+        require=require,
+    )
+
+
+def _iter_spec_files_lazy(
+    planning: Path | str,
+    *,
+    guard: str,
+    sort: bool,
+    include_iterate: bool,
+    recursive: bool,
+    require: str,
+) -> Iterator[Path]:
+    """The actual walk. The recursive-combo check lives in the public wrapper
+    (eager); this pre-existing membership check stays here (lazy), unchanged
+    from before this function was split out."""
     if require not in _REQUIRES:
         raise ValueError(f"require must be one of {_REQUIRES}, got {require!r}")
     planning = Path(planning)
@@ -146,7 +197,8 @@ def iter_spec_files(
     if recursive:
         matches: Iterator[Path] | list[Path] = planning.rglob(SPEC_FILENAME)
         if sort:
-            matches = sorted(matches)
+            # as_posix() key: see the matching comment in iter_split_dirs above.
+            matches = sorted(matches, key=lambda p: p.as_posix())
         for match in matches:
             if not include_iterate and ITERATE_DIRNAME in match.parent.parts:
                 continue

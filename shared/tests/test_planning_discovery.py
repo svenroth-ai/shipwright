@@ -108,6 +108,17 @@ def test_invalid_require_rejected(tmp_path):
         list(iter_spec_files(_tree(tmp_path, "01-a"), require="exists_ok"))
 
 
+def test_invalid_require_still_raises_at_first_iteration_not_at_call(tmp_path):
+    """This membership check predates S2b pass A2 and must keep its ORIGINAL
+    lazy timing -- unlike the new recursive-combo check below, which is
+    deliberately eager. (Caught in external plan review of S2b pass A: an
+    earlier draft made this check eager too, a wider timing change than A2
+    asked for.)"""
+    gen = iter_spec_files(_tree(tmp_path, "01-a"), require="exists_ok")
+    with pytest.raises(ValueError, match="require must be one of"):
+        next(gen)
+
+
 # --------------------------------------------------------------------------
 # sort / include_iterate / require / recursive
 # --------------------------------------------------------------------------
@@ -161,6 +172,41 @@ def test_hidden_splits_are_included_by_both_modes(tmp_path):
     planning = _tree(tmp_path, "01-a", ".hidden-split")
     assert ".hidden-split" in _names(iter_spec_files(planning))
     assert ".hidden-split" in _names(iter_spec_files(planning, recursive=True))
+
+
+def test_recursive_with_non_default_guard_raises_valueerror(tmp_path):
+    planning = _tree(tmp_path, "01-a")
+    with pytest.raises(ValueError, match="recursive=True"):
+        iter_spec_files(planning, recursive=True, guard="exists")
+
+
+def test_recursive_with_non_default_require_raises_valueerror(tmp_path):
+    """Added in S2b pass A2. ``iter_spec_files`` used to be a bare generator,
+    so ANY exception raised inside it -- including this one -- would only
+    surface once something iterated the result (``next()``/``list()``). This
+    proves it now fires from the call expression alone: if the function were
+    still a plain generator, merely calling it here (never touching the
+    returned object) would NOT raise and this block would fail with
+    "DID NOT RAISE"."""
+    planning = _tree(tmp_path, "01-a")
+    with pytest.raises(ValueError, match="recursive=True"):
+        iter_spec_files(planning, recursive=True, require="is_file")
+
+
+def test_recursive_with_default_guard_and_require_is_unaffected(tmp_path):
+    """The five real recursive call sites only ever pass recursive=/sort= --
+    never guard= or require= -- so the new check must never fire for them.
+    ``guard``/``require`` is a VALUE-based check (!= the default), not an
+    explicitly-passed-based one -- passing the defaults explicitly must be
+    just as accepted as omitting them, or pass B's "every call site passes
+    its flags explicitly" (A3) would break all five recursive sites."""
+    planning = _tree(tmp_path, "01-a", nested=True)
+    assert list(iter_spec_files(planning, recursive=True)) != []
+    assert list(iter_spec_files(planning, recursive=True, sort=False)) != []
+    assert (
+        list(iter_spec_files(planning, recursive=True, guard="is_dir", require="exists"))
+        != []
+    )
 
 
 def test_laziness_short_circuits_without_walking_every_split(tmp_path):

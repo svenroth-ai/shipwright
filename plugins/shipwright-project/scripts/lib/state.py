@@ -69,7 +69,9 @@ def detect_state(planning_dir: Path | str) -> DetectStateResult:
     splits = sorted(
         [
             d.name
-            for d in _discovery().iter_split_dirs(planning_dir, guard="none", sort=False)
+            for d in _discovery().iter_split_dirs(
+                planning_dir, guard="none", sort=False, include_iterate=True
+            )
             if is_valid_split_dir(d.name)
         ],
         key=get_split_index,

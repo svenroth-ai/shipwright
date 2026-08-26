@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-b-pure-hardening",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T14:11:51.412840+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "B4 removes `_mask_unordered` and its calling code, but the plan does not mention cleaning up any tests that import or exercise that function. Removing it without deleting or adjusting related tests will cause import errors or broken assertions in CI.",
+          "suggestion": "Locate all tests (unit and integration) that reference `_mask_unordered` or the `order_sensitive`/`unordered_walk` keys and remove or update them in the same diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes that the two `order_sensitive` entries (`registry.py:143` and `:192`) belong to sites that will be sorted by B3 (#6, #11, #13, #15). If either entry corresponds to an unsorted site (e.g., #4 or #14) or an undiscovered one, removing `order_sensitive` would remove necessary unordered-masking and introduce flaky test outcomes.",
+          "suggestion": "Before executing B4, explicitly cross-check that all `order_sensitive` entries are among the sites receiving `sort=True`; if not, keep them masked or adjust the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan states “Vorbedingung: Durchgang A ist gemergt” but does not repeat the hard prerequisite that REQ3.04a (`trg-a8f4b029`) must already be merged. Although the broader specification declares this, the orchestrated run should verify it explicitly.",
+          "suggestion": "Add a pre-flight check in the orchestrator (or a manual step) to confirm REQ3.04a is merged before starting B.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The instruction to “count the spec-dir column before regenerating” is ambiguous—the actual check must happen after code changes and golden regeneration, via the matrix test’s `≥5` distinct-signature assertion. The plan’s wording could mislead the runner into a premature, manual check that cannot produce the needed data.",
+          "suggestion": "Clarify that after applying code changes and regenerating golden, the integration tests must pass `matrix.py:152`; if the spec-dir fixture’s distinct-signature count drops below 5, the run must abort and be investigated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "B4 mentions removing dead code but does not address whether any remaining imports of `_mask_unordered` exist outside the `_serialize` module. If such imports linger, they will break the build.",
+          "suggestion": "Scan the codebase for all imports of `_mask_unordered` and remove them (or the entire unused function if the module is imported for it). Ensure the diff includes those cleanups.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "B’s required application of A3 touches `spec_parser.py` at least at sites #2 and #3 after REQ3.04a has already consumed the file’s stated bloat reserve (`350` lines against a `300` limit). The mini-plan acknowledges the A prerequisite but does not say how the subsequent explicit-flag edits avoid failing the anti-ratchet / Group-H audit.",
+          "suggestion": "Before starting B, inspect the merged REQ3.04a result and ensure the A3 edits to `spec_parser.py` are line-count neutral (for example, compact existing calls rather than adding multiline argument blocks), or include a small justified reduction in the same file. Make passing the relevant bloat check an explicit B preflight condition.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Setting `sort=True` on recursive sites #6, #11, #13, and #15 likely changes the helper from a streaming `rglob` traversal to materializing all discovered paths before yielding. Since B2 explicitly retains unbounded traversal into historical iterate and campaign subtrees, this can create noticeable runtime and memory regressions on long-lived repositories—particularly on paths where only the first item is consumed (`specs[0]` / `break`).",
+          "suggestion": "Confirm the helper’s actual sorting implementation and measure or add a targeted test using a realistically nested planning tree. If it necessarily materializes, record that as an accepted operational cost of determinism and ensure the affected commands do not run over broader roots than `.shipwright/planning`; do not characterize B2 as harmless merely because traversal depth itself is unchanged.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "B4 removes `_mask_unordered` and its serialization branch on the assumption that no registry entry still declares `order_sensitive`. That establishes the registry-side condition, but the removal is safe only if there are no direct callers of `_mask_unordered`, alternate serialization inputs using `unordered_walk`, or non-registry corpus fixtures relying on the masked representation.",
+          "suggestion": "Add an explicit repository-wide reference check as part of B4 and run the full corpus/serialization test set after removal. If the project has a registry-schema validation test, extend it to reject orphaned `unordered_walk` fields so this invariant remains enforced.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Every call-site passes every flag explicitly” is an important A3 invariant, but B’s acceptance criteria do not make it mechanically verifiable. It would be easy to update only the four B3 sites and the five B1 sites while missing unchanged sites such as #3, #4, #10, #12, or #14.",
+          "suggestion": "During implementation, use the authoritative 15-site inventory as a checklist and add a focused source-level assertion only if the existing corpus framework already supports such checks. At minimum, include the complete before/after argument matrix in the iterate report and review the diff against it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No new authorization, injection, or data-exposure path is introduced by this pass. The main relevant safety change—requiring `is_file` for the specified non-recursive readers—reduces accidental attempts to read directories. The remaining recursive directory-read cases are intentionally deferred and continue to fail locally rather than silently producing misleading audit output.",
+          "suggestion": "Preserve the existing exception/failure behavior for the excluded recursive sites and avoid converting filesystem errors into empty results during the golden regeneration work.  Overall, the approach is sound and carefully protects the intended behavioral changes with corpus evidence. It should proceed after addressing the `spec_parser.py` bloat preflight and confirming the recursive-sort and dead-code-removal assumptions. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-26T14:10:31.636280+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** dependency  \n  **Severity:** medium  \n  **Finding:** B4 removes `_mask_unordered` and its calling code, but the plan does not mention cleaning up any tests that import or exercise that function. Removing it without deleting or adjusting related tests will cause import errors or broken assertions in CI.  \n  **Suggestion:** Locate all tests (unit and integration) that reference `_mask_unordered` or the `order_sensitive`/`unordered_walk` keys and remove or update them in the same diff.\n\n- **Category:** risk  \n  **Severity:** medium  \n  **Finding:** The plan assumes that the two `order_sensitive` entries (`registry.py:143` and `:192`) belong to sites that will be sorted by B3 (#6, #11, #13, #15). If either entry corresponds to an unsorted site (e.g., #4 or #14) or an undiscovered one, removing `order_sensitive` would remove necessary unordered-masking and introduce flaky test outcomes.  \n  **Suggestion:** Before executing B4, explicitly cross-check that all `order_sensitive` entries are among the sites receiving `sort=True`; if not, keep them masked or adjust the plan.\n\n- **Category:** dependency  \n  **Severity:** low  \n  **Finding:** The mini-plan states “Vorbedingung: Durchgang A ist gemergt” but does not repeat the hard prerequisite that REQ3.04a (`trg-a8f4b029`) must already be merged. Although the broader specification declares this, the orchestrated run should verify it explicitly.  \n  **Suggestion:** Add a pre-flight check in the orchestrator (or a manual step) to confirm REQ3.04a is merged before starting B.\n\n- **Category:** risk  \n  **Severity:** low  \n  **Finding:** The instruction to “count the spec-dir column before regenerating” is ambiguous—the actual check must happen *after* code changes and golden regeneration, via the matrix test’s `≥5` distinct-signature assertion. The plan’s wording could mislead the runner into a premature, manual check that cannot produce the needed data.  \n  **Suggestion:** Clarify that after applying  […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** B’s required application of A3 touches `spec_parser.py` at least at sites #2 and #3 after REQ3.04a has already consumed the file’s stated bloat reserve (`350` lines against a `300` limit). The mini-plan acknowledges the A prerequisite but does not say how the subsequent explicit-flag edits avoid failing the anti-ratchet / Group-H audit.  \n   **Suggestion:** Before starting B, inspect the merged REQ3.04a result and ensure the A3 edits to `spec_parser.py` are line-count neutral (for example, compact existing calls rather than adding multiline argument blocks), or include a small justified reduction in the same file. Make passing the relevant bloat check an explicit B preflight condition.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Setting `sort=True` on recursive sites #6, #11, #13, and #15 likely changes the helper from a streaming `rglob` traversal to materializing all discovered paths before yielding. Since B2 explicitly retains unbounded traversal into historical iterate and campaign subtrees, this can create noticeable runtime and memory regressions on long-lived repositories—particularly on paths where only the first item is consumed (`specs[0]` / `break`).  \n   **Suggestion:** Confirm the helper’s actual sorting implementation and measure or add a targeted test using a realistically nested planning tree. If it necessarily materializes, record that as an accepted operational cost of determinism and ensure the affected commands do not run over broader roots than `.shipwright/planning`; do not characterize B2 as harmless merely because traversal depth itself is unchanged.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** B4 removes `_mask_unordered` and its serialization branch on the assumption that no registry entry still declares `order_sensitive`. That establishes the registry-side condition, but the removal is safe only if there a […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "scope",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-08-07-decision-log-drops-index.json",
+          "line": null,
+          "finding": "Flagged as an undeclared deletion alongside iterate-2026-08-07-lock-primitive-tail.json. Orchestrator disposition: CONFIRMED BENIGN after direct verification -- append_iterate_entry.py's ITERATE_RETENTION=50 evicts the oldest unpinned entries on append; merge-base had 55 unpinned-ish entries (confirmed via git ls-tree), this run's own new entry pushed it over, retention evicted exactly these two oldest unpinned entries (net -1 file count, matching the diff stat exactly). Machine-generated eviction, not scope creep. Not actioned further.",
+          "suggestion": "None needed -- verified as expected framework behavior, not a defect.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "integration-tests/test_requirements_corpus_found_defects.py",
+          "line": 171,
+          "finding": "test_unsorted_walk_tracks_enumeration_order / test_unsorted_walk_a2_tracks_enumeration_order and probe keys unsorted_seam/unsorted_seam_a2 now assert the walk IS sorted (== not !=), the opposite of what the name implies after the B3 assertion flip.",
+          "suggestion": "Rename in a future pass. Filed as trg-12f6ab89, not actioned here (cosmetic, out of pure-hardening scope).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-rigor",
+          "file": "integration-tests/test_requirements_corpus_found_defects.py",
+          "line": 185,
+          "finding": "The != to == assertion flip loses a liveness guard: != cannot pass vacuously, == can (e.g. a degenerate 1-spec fixture). Verified non-vacuous against the actual edge fixture today, but structurally weaker.",
+          "suggestion": "Add a positive assertion alongside (e.g. the picked path is the alphabetically-first spec). Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/spec_parser.py",
+          "line": 229,
+          "finding": "Long lines (~190 chars) from line-count-neutral trailing comments explaining the require=is_file change, to stay within the grandfathered bloat baseline. Same shape in drift_parsers.py:374-375.",
+          "suggestion": "Move the historical note into the function docstring instead. Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py",
+          "line": 140,
+          "finding": "Comment overstates scope: says a directory named spec.md is skipped, but the separate top.exists() check a few lines above still admits one. Same shape in backfill_test_links.py.",
+          "suggestion": "Scope the comment or cross-reference trg-a95e6fdf. Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": ".shipwright/agent_docs/conventions.md",
+          "line": 28,
+          "finding": "The learning about lost early-exit streaming from sort=True is broader than the fact -- only review_runner.py ever streamed; the other 3 sites already fully materialized the walk via list()/re-sort.",
+          "suggestion": "Narrow the learning to the break-style consumer. Filed as trg-12f6ab89.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "anthropic",
+      "completed_at": "2026-08-26T15:18:44.747541+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "sort=True makes the picked spec deterministic",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "B1's raise-to-skip flip is a strict improvement at all 5 sites",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the two rewritten seam probes still guard what they used to",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "merging this lands the change",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "every comment touched by this pass now describes actual behavior",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "anthropic",
+      "completed_at": "2026-08-26T15:17:45.872248+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py:133` — `top` is still admitted with `top.exists()`. A directory at that `spec.md` location is therefore returned despite the new `require=\"is_file\"` on the planning walk, leaving the same directory-as-spec failure mode that B1 is intended to eliminate.",
+          "line": null,
+          "finding": "Change the direct check to `top.is_file()`, and add a corpus fixture/probe for a directory at this top-level location.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/backfill_test_links.py:56` — The direct `top.exists()` path is still appended when `top` is a directory. The new `require=\"is_file\"` only protects entries yielded from `iter_spec_files`, not this separately added candidate.",
+          "line": null,
+          "finding": "Use `top.is_file()` before appending it.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/backfill_test_links.py:66` — `root_spec` is likewise appended based on `exists()` rather than `is_file()`. A repository-root directory named `spec.md` will still be handed to later backfill processing as though it were readable spec content.",
+          "line": null,
+          "finding": "Change this condition to `if root_spec.is_file():`; cover both direct candidates with directory fixtures so the B1 hardening cannot regress.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "plugins/shipwright-project/scripts/lib/state.py:69` — The diff retains the intended `sort=False` behavior, but does not include the required Iterate report documenting why #14 remains unsorted (nor the required B2 statement accepting unbounded recursion, including the known no-op at #15). Source comments do not satisfy the specification’s explicit report requirement.",
+          "line": null,
+          "finding": "Add/update the B Iterate report with the required rationale for #4/#14, the accepted recursive depth, and the #15 known no-op.  Overall assessment: ship-with-fixes. The central deterministic sorting and mask retirement work is implemented, but B1 remains incomplete for direct `spec.md` candidates that bypass `iter_spec_files`, and the required Iterate-report record is absent.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-26T14:19:10.380737+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-compliance/scripts/lib/collectors/_test_links_io.py:133` — `top` is still admitted with `top.exists()`. A directory at that `spec.md` location is therefore returned despite the new `require=\"is_file\"` on the planning walk, leaving the same directory-as-spec failure mode that B1 is intended to eliminate.\n- Suggestion: Change the direct check to `top.is_file()`, and add a corpus fixture/probe for a directory at this top-level location.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/backfill_test_links.py:56` — The direct `top.exists()` path is still appended when `top` is a directory. The new `require=\"is_file\"` only protects entries yielded from `iter_spec_files`, not this separately added candidate.\n- Suggestion: Use `top.is_file()` before appending it.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/backfill_test_links.py:66` — `root_spec` is likewise appended based on `exists()` rather than `is_file()`. A repository-root directory named `spec.md` will still be handed to later backfill processing as though it were readable spec content.\n- Suggestion: Change this condition to `if root_spec.is_file():`; cover both direct candidates with directory fixtures so the B1 hardening cannot regress.\n\n- Category: spec\n- Severity: low\n- File: `plugins/shipwright-project/scripts/lib/state.py:69` — The diff retains the intended `sort=False` behavior, but does not include the required Iterate report documenting why #14 remains unsorted (nor the required B2 statement accepting unbounded recursion, including the known no-op at #15). Source comments do not satisfy the specification’s explicit report requirement.\n- Suggestion: Add/update the B Iterate report with the required rationale for #4/#14, the accepted recursive depth, and the #15 known no-op.\n\nOverall assessment: ship-with-fixes. The central deterministic sorting and mask retirement work is implemented, but B1 rema […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "anthropic",
+      "completed_at": "2026-08-26T15:17:36.130052+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T14:19:19.713452+00:00",
+      "disposition": "no internal plan-review arm exists (opus-plan-reviewer is unwired); external plan review (Step 3.5, recorded as 'plan') is the only plan review this runner can perform -- documented gap, permanent",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

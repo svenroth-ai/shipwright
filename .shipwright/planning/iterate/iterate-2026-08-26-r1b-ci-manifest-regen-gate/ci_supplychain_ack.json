@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-r1b-ci-manifest-regen-gate",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-26-r1b-ci-manifest-regen-gate",
+    "paths_fingerprint": "85e33643e27ad15b78045ec8b3c1d15c7d757ff089754f3e00b581dc2015b213",
+    "consistent_with": "ADR-118",
+    "statement": "Adds new plan/verify/regen/compare steps to the EXISTING ci.yml job (test-root JUnit planning, coverage verification, advisory manifest-drift check) — no new uses: third-party action, no token-permission change, no trigger change. GitHub-owned actions stay on mutable tags, third-party actions stay SHA-pinned, matching ADR-118 unchanged.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ]
+  }
+}

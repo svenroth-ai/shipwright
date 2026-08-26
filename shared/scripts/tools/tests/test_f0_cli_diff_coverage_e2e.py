@@ -66,6 +66,12 @@ _RUNNER_FILES = (
     "scripts/lib/iterate_timings_extra.py",
     "scripts/lib/main_health_diagnosis.py",
     "scripts/lib/repo_root.py",
+    # suite_root_plan: run_test_suite.py's new AC2 retention step (Retention ->
+    # base_for_root) reaches this via scripts.tools.suite_retention below —
+    # missing here reproduces the exact ModuleNotFoundError that first
+    # surfaced when this AC's own full local proof run hit this synthetic
+    # repo (iterate-2026-08-26-r1b-ci-manifest-regen-gate).
+    "scripts/lib/suite_root_plan.py",
     "scripts/tools/measure_diff_coverage.py",
     "scripts/tools/combine_coverage.py",
     "scripts/tools/run_test_suite.py",
@@ -81,6 +87,8 @@ _RUNNER_FILES = (
     "scripts/tools/suite_process.py",
     "scripts/tools/suite_process_child.py",
     "scripts/tools/suite_race_triage.py",
+    # AC2: run_test_suite.py now retains every unit's report via Retention.
+    "scripts/tools/suite_retention.py",
     "scripts/tools/suite_timing.py",
     "scripts/tools/suite_units.py",
 )

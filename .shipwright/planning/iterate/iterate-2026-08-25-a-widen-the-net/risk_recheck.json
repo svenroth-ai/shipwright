@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-25-a-widen-the-net",
+  "risk_recheck": {
+    "changed_file_count": 28,
+    "diff_loc": 4454,
+    "risk_flags": [],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

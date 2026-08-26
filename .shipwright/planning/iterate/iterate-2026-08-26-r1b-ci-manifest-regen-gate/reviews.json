@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-r1b-ci-manifest-regen-gate",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T10:54:01.791270+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The structural-tier algorithm is internally contradictory. Mini-plan step 1 says to drop `tests[].status`/`.executed` and then compare dicts with `==`, but that still compares the full set of test-id keys under each requirement’s `tests` map. A test id present in only one manifest—exactly the Windows-vs-Linux platform-selection case AC1 says must not count as drift—would produce a structural key difference and exit non-zero. This also contradicts the planned unit test expecting a test-id-only-in-one-side case to exit 0.",
+          "suggestion": "Define structural comparison as: requirement-level key sets must match, but nested `tests` maps are compared only over the intersection of test ids. Test-id presence/asymmetry should be reported exclusively in the execution tier. Add regression cases for both left-only and right-only test ids.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC4 assumes the three existing CI pytest invocations collectively cover the same roots and collection parameters as the manifest-generation path, but the plan only adds a parity test for local F0 discovery vs `discover_test_roots`. If a CI invocation is missing a root, uses a different marker expression, or produces a different split, `generate_file()` will rebuild the manifest from incomplete or divergent evidence, causing false structural drift—or masking a missing root as a platform-selection difference.",
+          "suggestion": "Before `generate_file()` in the CI step, enumerate the bases recovered from the staged JUnit filenames and assert they exactly match the expected full root/base set from `discover_test_roots` or the shared planner. Fail the step if the set is incomplete or unexpected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Wrapping the comparator with `|| true` masks both real drift and operational failures such as invalid JSON, a missing file, or an unhandled exception. The plan says infra failures must fail-closed, but the compare command is the one place a broken comparator would silently produce a green advisory step.",
+          "suggestion": "Give `compare_traceability_manifest.py` a defined exit-code contract: 0 = no structural drift, 1 = structural drift only, 2 = usage/runtime error. In CI, suppress only exit code 1 (or use an explicit advisory mode), and update the gate-coverage matcher/allowlist logic accordingly. Unit-test the exit-code contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "stage_f0_evidence.py` only refuses when a report is missing, but a fully reported red run—where every unit produced a JUnit file but one or more failed—would still be staged as evidence. That conflicts with AC2’s “green run” precondition and could regenerate the manifest from failed results.",
+          "suggestion": "Record overall success/non-failure status in the side-manifest and make `stage_f0_evidence.py` refuse to stage a run that is not green, or explicitly document why red-run staging is considered valid.  Overall, the broad design is sensible and the internal review already addressed several major issues, but the comparator normalization and CI coverage assumptions need to be corrected before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed structural comparison conflicts with the stated platform-selection behavior. Step 1 says to remove only `tests[].status` and `tests[].executed` and then compare the remaining parsed dictionaries. That still compares the `tests` map keys themselves, so a test ID present only on Linux CI or only in a Windows-generated committed manifest becomes a structural mismatch and makes `--check` fail. This contradicts AC1’s explicit requirement that one-sided test IDs be reported as platform-selection differences and “never counted as drift.”",
+          "suggestion": "Normalize `tests` separately from the requirement-level structural object: remove the entire `tests` map before structural comparison, then perform execution-tier comparison over the intersection of test IDs and separately report left-only/right-only IDs. Add a unit test where manifests differ only by a one-sided test ID and confirm structural exit code is zero.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "CI report capture is not yet specified to prove completeness or uniqueness across the existing plugin/shared-tier loops. Merely adding `--junit-xml` and staging every discovered scratch report can silently omit a loop iteration, overwrite a report path, or stage two reports for the same base. In that case `test_links.generate_file()` receives partial evidence even though the CI staging step has nonzero reports and succeeds.",
+          "suggestion": "Make the CI staging helper derive the expected `(unit_id/base)` set from the same shared plan/unit source, require exactly one report for every expected base, and reject unknown, duplicate, missing, or empty reports. Ensure report filenames are collision-free across every loop iteration. Add fixture tests for missing, duplicate, and unexpected report filenames.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The F0 side-manifest’s completeness check is based only on report-file presence. A failed authoritative attempt can still produce valid JUnit XML, and the proposed retention step explicitly copies reports “on any outcome where it exists.” If a caller invokes staging after a failed or partially failed F0 run, `stage_f0_evidence.py` could stage failing evidence as though it were a complete successful full-suite evidence set.",
+          "suggestion": "Record the authoritative attempt outcome in the side-manifest and have staging require one authoritative, successful report per discovered unit, in addition to file existence. Retain failed reports for diagnostics if useful, but distinguish them from reports eligible for complete-run evidence staging.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Retention and pruning semantics do not address concurrent or interrupted F0 runs. Pruning based on run directories can delete another active run’s artifacts, and a partially written side-manifest can be consumed by staging if a process is interrupted between report copies and final manifest publication.",
+          "suggestion": "Write reports and the side-manifest into a temporary per-run directory, atomically publish the completed directory/manifest only after all authoritative reports are present, and prune only completed runs while excluding the current run. If concurrent F0 execution is supported, use a narrow retention lock around pruning/publishing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Extracting `plan_root()` into a shared import location creates a new dependency boundary, but the plan does not name the canonical owner or address import compatibility for both direct script execution and test invocation. Moving it carelessly can create import-path problems or duplicate “shared” planning logic elsewhere.",
+          "suggestion": "Place the function in the existing shared library/package that both tools already import from, keep a compatibility import/re-export in `run_full_suite_evidence.py` if existing callers use it, and add direct-script invocation coverage for both tools. Keep this as a small function extraction rather than introducing a new wrapper package or dependency.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The comparator test list does not cover the most important execution-tier outcome: the same test ID on both sides with different `status` or `executed`. It also does not pin malformed or incomplete manifest behavior. Without these tests, a future simplification could accidentally make execution mismatches gating, omit them from output, or treat absent leaves as equality.",
+          "suggestion": "Add tests for: shared test ID with differing `status`; shared test ID with differing `executed`; one-sided IDs without structural failure; and malformed/missing required JSON fields failing loudly rather than yielding a misleading clean comparison. Preserve a clear distinction between a comparator input error and a structural-drift verdict.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "stage_f0_evidence.py` consumes a path-bearing side-manifest. If it accepts arbitrary `report_path`, duplicate bases, or paths outside the run directory, stale or unrelated XML can be staged into the trusted evidence directory. This is particularly easy to trigger accidentally in local workflows and undermines the provenance guarantees the required `run_id` and `head_commit` are intended to provide.",
+          "suggestion": "Validate the side-manifest schema, require unique unit IDs and bases, resolve each report path, and require it to be an existing regular file beneath `.shipwright/runs/<run-id>/` (or the explicitly supplied CI scratch root for the CI helper). Reject traversal, duplicates, and unexpected entries before calling `stage_reports`.  Overall, the approach is sound and appropriately avoids a redundant full test pass, but the comparison normalization and report-set completeness rules need to be made explicit before implementation; otherwise normal cross-platform selection differences or partial CI capture can produce incorrect results. The advisory hardening documentation is sensible, provided the eventual base-revision execution requirement is treated as mandatory before the check blocks merges. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-26T08:25:13.704583+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[deepseek] - **Category:** approach  \n  **Severity:** high  \n  **Finding:** The structural-tier algorithm is internally contradictory. Mini-plan step 1 says to drop `tests[*].status`/`.executed` and then compare dicts with `==`, but that still compares the full set of test-id keys under each requirement’s `tests` map. A test id present in only one manifest—exactly the Windows-vs-Linux platform-selection case AC1 says must not count as drift—would produce a structural key difference and exit non-zero. This also contradicts the planned unit test expecting a test-id-only-in-one-side case to exit 0.  \n  **Suggestion:** Define structural comparison as: requirement-level key sets must match, but nested `tests` maps are compared only over the intersection of test ids. Test-id presence/asymmetry should be reported exclusively in the execution tier. Add regression cases for both left-only and right-only test ids.\n\n- **Category:** dependency  \n  **Severity:** high  \n  **Finding:** AC4 assumes the three existing CI pytest invocations collectively cover the same roots and collection parameters as the manifest-generation path, but the plan only adds a parity test for local F0 discovery vs `discover_test_roots`. If a CI invocation is missing a root, uses a different marker expression, or produces a different split, `generate_file()` will rebuild the manifest from incomplete or divergent evidence, causing false structural drift—or masking a missing root as a platform-selection difference.  \n  **Suggestion:** Before `generate_file()` in the CI step, enumerate the bases recovered from the staged JUnit filenames and assert they exactly match the expected full root/base set from `discover_test_roots` or the shared planner. Fail the step if the set is incomplete or unexpected.\n\n- **Category:** risk  \n  **Severity:** medium  \n  **Finding:** Wrapping the comparator with `|| true` masks both real drift and operational failures such as invalid JSON, a missing file, or an unhandled except […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed structural comparison conflicts with the stated platform-selection behavior. Step 1 says to remove only `tests[*].status` and `tests[*].executed` and then compare the remaining parsed dictionaries. That still compares the `tests` map keys themselves, so a test ID present only on Linux CI or only in a Windows-generated committed manifest becomes a structural mismatch and makes `--check` fail. This contradicts AC1’s explicit requirement that one-sided test IDs be reported as platform-selection differences and “never counted as drift.”  \n   **Suggestion:** Normalize `tests` separately from the requirement-level structural object: remove the entire `tests` map before structural comparison, then perform execution-tier comparison over the intersection of test IDs and separately report left-only/right-only IDs. Add a unit test where manifests differ only by a one-sided test ID and confirm structural exit code is zero.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** CI report capture is not yet specified to prove completeness or uniqueness across the existing plugin/shared-tier loops. Merely adding `--junit-xml` and staging every discovered scratch report can silently omit a loop iteration, overwrite a report path, or stage two reports for the same base. In that case `test_links.generate_file()` receives partial evidence even though the CI staging step has nonzero reports and succeeds.  \n   **Suggestion:** Make the CI staging helper derive the expected `(unit_id/base)` set from the same shared plan/unit source, require exactly one report for every expected base, and reject unknown, duplicate, missing, or empty reports. Ensure report filenames are collision-free across every loop iteration. Add fixture tests for missing, duplicate, and unexpected report filenames.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The F0 side-manifest’s complete […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/stage_f0_evidence.py",
+          "line": 206,
+          "finding": "The side-manifest validation checks each entry for 'unit_id' and 'outcome' but not 'base', yet main() later indexes e[\"base\"] (line 285, junit_reports comprehension) outside any try block. An entry missing 'base' crashes with an uncaught KeyError traceback and Python's default exit 1 - violating both the module's own documented contract and the exit-2 convention every refusal path in this tool otherwise honors. This is the identical malformed-input class as External-Code-Review findings #3 (compare_traceability_manifest) and #4 (ci_manifest_drift_check), both accepted-and-fixed in this same iterate - this third tool has the same gap on one field.",
+          "suggestion": "Add '\"base\" not in entry' to the malformed-unit-entry check in load_and_validate_manifest() (line 206) and add one regression test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/ci_manifest_drift_check.py",
+          "line": 42,
+          "finding": "The comparator is imported by inserting the tools directory itself at sys.path[0] and importing bare 'compare_traceability_manifest', while the same file is simultaneously importable as 'scripts.tools.compare_traceability_manifest' via the _SHARED_ROOT insert two lines above - two distinct module objects for one file in a single process (ADR-044/045 dual-binding class).",
+          "suggestion": "Replace the second sys.path.insert + bare import with 'from scripts.tools import compare_traceability_manifest as _compare_mod'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".github/workflows/ci.yml",
+          "line": 29,
+          "finding": "The three jq lookups do not assert a match; an unmatched root silently produces an empty --junit-xml value. Fail-safe today because the end-of-job coverage-verification gate catches it, but the failure surfaces two steps and many minutes later with an indirect message.",
+          "suggestion": "Add an explicit non-empty check after each jq lookup; optionally extend ci_junit_plan.py's shape validation to mirror stage_ci_reports.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/run_test_suite.py",
+          "line": 323,
+          "finding": "The per-attempt report path convention (r.xml under <tmp>/p|s/u{idx}/) is reconstructed at three call sites instead of one shared helper.",
+          "suggestion": "Hoist into one helper or module constant shared by _exec and both retention.record call sites.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T11:19:38.595872+00:00",
+      "disposition": "REVISE -- medium finding + low architecture finding fixed; two low findings acknowledged-deferred non-blocking",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/tools/ci_manifest_drift_check.py (run/main) + .github/workflows/ci.yml (drift-check step wrapper)",
+          "line": null,
+          "finding": "Claim under doubt: \"Exit 2 can come from ANY step (a crash) - the caller (ci.yml) must never swallow it\" (ci_manifest_drift_check.py docstring; AC1/AC4's exit-code contract) — run() catches ONLY DriftCheckError. Any other exception escaping steps 1-3 exits the process with Python's default code 1 - which is EXIT_STRUCTURAL_DRIFT - and ci.yml's wrapper then prints '::warning:: structural drift' and exits 0. Concrete uncaught paths: (a) OSError from scratch_path.write_text; (b) OSError from evidence_drop.stage_reports; (c) TypeError from Path(path).is_file() in stage_ci_reports when plan.json carries junit_out: null - the Stage-2/external fixes validated field PRESENCE, not type, so a JSON null passed validation and crashed three lines later.",
+          "suggestion": "Wrap run()/main() in a catch-all (except Exception: return EXIT_ERROR) with a regression test; OR make the ci.yml wrapper key the advisory branch on a printed sentinel token instead of the raw exit code 1.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": ".github/workflows/ci.yml (plugin/shared/integration loops vs. verify step); shared/scripts/tools/ci_junit_plan.py (_cmd_verify)",
+          "line": null,
+          "finding": "Claim under doubt: \"Advisory - never blocking merges\" describes what this diff adds to CI — The 'Verify test-root JUnit coverage (gate)' step is a NEW HARD gate in the required job, and its expected set (discover_test_roots) is not constrained against its PRODUCERS: the plugin loop only runs roots matching pyproject.toml && tests/, the shared loop is a hardcoded 3-dir list, integration-tests is guarded by an existence check. A future test root matching discover_test_roots but none of ci.yml's predicates gets planned but never run -> verify exits 2 -> hard red on an unrelated PR.",
+          "suggestion": "A test asserting every discover_test_roots entry is runnable by ci.yml's predicates; or state in writing that this is deliberate fail-closed behavior with a loud, self-describing failure.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/ci_manifest_drift_check.py; .gitignore (no /.ci-junit/ entry)",
+          "line": null,
+          "finding": "Claim under doubt: ci_manifest_drift_check.py is CI-only, so mutating the tracked manifest + clearing the evidence dir is harmless — Nothing enforces CI-only. A local invocation in the LIVE tree clears .shipwright/compliance/evidence/ and restages under a different run_id, and overwrites the tracked test-traceability.json in place. Its scratch dir .ci-junit/ was NOT in .gitignore - a local run plants plan.json, _regen_test_links.py, committed-manifest.json and up to 18 XMLs at repo root, which a routine git add -A would sweep in.",
+          "suggestion": "Add /.ci-junit/ to .gitignore (one line, zero risk). For the tool itself, a reasoned rebuttal is acceptable if it names the recovery path explicitly.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-ordering",
+          "file": "shared/scripts/tools/suite_retention.py (_prune_old_runs, publish)",
+          "line": null,
+          "finding": "Claim under doubt: Retention pruning caps local disk usage (AC2: pruned to the last N=5 published runs) — _prune_old_runs only walks published/. A pending/ dir from an interrupted or crashed F0 run is NEVER pruned by anything, and each holds up to 18 JUnit XMLs plus a manifest, in the durable main-tree store that survives worktree removal.",
+          "suggestion": "Prune pending/ dirs older than some age alongside published pruning; or a written rebuttal that orphaned pending dirs are small/rare enough to accept.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T11:31:14.332752+00:00",
+      "disposition": "1 high fixed, 2 medium (1 partial-fix + 1 rebuttal), 1 low rebuttal -- all four answered in writing per advisory-must-address",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "Spec/design/2026-07-22-req3-campaign-SPEC.md` — missing from diff",
+          "line": null,
+          "finding": "AC6 and the declared Spec Impact are not implemented. The change does not add the required advisory-enforcement note to §4 P0a, nor append the FR-01.10 acceptance-criteria line naming the advisory-first CI regenerate-and-compare check. The new iterate-planning copy describes these requirements, but it does not modify the authoritative specification.",
+          "suggestion": "Update `Spec/design/2026-07-22-req3-campaign-SPEC.md` with the required P0a advisory note and FR-01.10 AC line before shipping.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/stage_f0_evidence.py:101-135",
+          "line": null,
+          "finding": "AC3 explicitly requires validating unique `unit_id`s and bases, but `load_and_validate_manifest()` only tracks `seen_ids`. A malformed side manifest can contain two units with the same `base`; both reports are then passed to `evidence_drop.stage_reports`, potentially producing ambiguous or incorrectly rebased staged evidence.",
+          "suggestion": "Track `seen_bases` while validating entries and reject duplicate bases with `StageError`; add a test fixture containing distinct unit IDs with the same base.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/compare_traceability_manifest.py:86-103,138-147",
+          "line": null,
+          "finding": "The comparator's promised malformed-input exit contract is not upheld for many malformed manifests. Validation only checks that `tests` and `coverage` keys exist, not their types or that test entries contain an `id`; for example, `\"tests\": null`, a non-list layer value, or a test record without `\"id\"` reaches `execution_report()` and raises `AttributeError`/`TypeError`/`KeyError`. Those exceptions escape `main_with_output()`, making the standalone process exit 1 rather than the required error exit 2.",
+          "suggestion": "Validate `tests` as a mapping of layer names to lists of test-record mappings and require `id`, `status`, and `executed` fields, or catch all unexpected comparison exceptions and convert them to `ManifestError`/`EXIT_ERROR`. Add CLI-level tests for these malformed shapes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/ci_manifest_drift_check.py:70-83,133-140",
+          "line": null,
+          "finding": "A syntactically valid but malformed `plan.json` can crash the drift tool with exit code 1 rather than its required fail-closed exit code 2. `stage_ci_reports()` indexes `entry[\"base\"]` and `entry[\"junit_out\"]` without validating that the JSON is a list of correctly shaped objects, and `run()` catches only `DriftCheckError`.",
+          "suggestion": "Validate plan shape and each required field in `stage_ci_reports()`, translating missing/wrong fields and unexpected staging exceptions into `DriftCheckError`; add tests for `{}`, a non-list plan, and entries missing `base` or `junit_out`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/tests/test_suite_retention.py:1-150",
+          "line": null,
+          "finding": "AC2 requires a parity test proving F0’s independently maintained `suite_units.discover_units` list matches `discover_test_roots`; no such test is added in this diff. The new `ci_junit_plan` tests establish that some expected roots exist, but do not compare the entire F0 and CI discovery sets, so a newly added root can still silently diverge.",
+          "suggestion": "Add a parity test analogous to `test_f0_ci_parity.py` that normalizes and compares all `discover_units()` targets against all `discover_test_roots()` roots.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_stage_f0_evidence.py:79-126",
+          "line": null,
+          "finding": "The staging tests cover duplicate unit IDs and path traversal but omit the required duplicate-base rejection. Since the implementation currently accepts duplicate bases, the listed tests would remain green despite violating AC3’s integrity requirement.",
+          "suggestion": "Add a test with two distinct unit IDs sharing one base and assert exit 2 before `stage_reports` is called.  Overall assessment: ship-with-fixes. The central CI capture/regeneration flow is present, but authoritative spec updates, required F0/CI parity coverage, duplicate-base validation, and the documented exit-2 malformed-input contract need correction first. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-26T11:03:28.872911+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: `Spec/design/2026-07-22-req3-campaign-SPEC.md` — missing from diff\n- Finding: AC6 and the declared Spec Impact are not implemented. The change does not add the required advisory-enforcement note to §4 P0a, nor append the FR-01.10 acceptance-criteria line naming the advisory-first CI regenerate-and-compare check. The new iterate-planning copy describes these requirements, but it does not modify the authoritative specification.\n- Suggestion: Update `Spec/design/2026-07-22-req3-campaign-SPEC.md` with the required P0a advisory note and FR-01.10 AC line before shipping.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/stage_f0_evidence.py:101-135`\n- Finding: AC3 explicitly requires validating unique `unit_id`s **and bases**, but `load_and_validate_manifest()` only tracks `seen_ids`. A malformed side manifest can contain two units with the same `base`; both reports are then passed to `evidence_drop.stage_reports`, potentially producing ambiguous or incorrectly rebased staged evidence.\n- Suggestion: Track `seen_bases` while validating entries and reject duplicate bases with `StageError`; add a test fixture containing distinct unit IDs with the same base.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/compare_traceability_manifest.py:86-103,138-147`\n- Finding: The comparator's promised malformed-input exit contract is not upheld for many malformed manifests. Validation only checks that `tests` and `coverage` keys exist, not their types or that test entries contain an `id`; for example, `\"tests\": null`, a non-list layer value, or a test record without `\"id\"` reaches `execution_report()` and raises `AttributeError`/`TypeError`/`KeyError`. Those exceptions escape `main_with_output()`, making the standalone process exit 1 rather than the required error exit 2.\n- Suggestion: Validate `tests` as a mapping of layer names to lists of test-record mappings and require `id`, `status`, and `exec […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T11:12:38.897865+00:00",
+      "disposition": "PASS -- 3rd pass, AC3 text fix confirmed, no regression",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T08:13:25.325804+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

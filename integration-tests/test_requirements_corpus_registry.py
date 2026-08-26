@@ -53,7 +53,7 @@ def golden() -> dict:
 
 
 def test_registry_holds_exactly_the_claimed_inventory():
-    """15 discovery + 5 parsers, no duplicates.
+    """17 discovery + 5 parsers, no duplicates.
 
     The whole harness rests on the claim "every discovery path and every parser
     is pinned". Without a count assertion, a target could be dropped from the

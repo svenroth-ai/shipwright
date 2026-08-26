@@ -27,6 +27,23 @@ def _discovery():
     return mod
 
 
+def _iter_candidate_specs(planning: Path):
+    """The walk ``run_review`` samples its one attached spec from.
+
+    Extracted (S2b pass A) so the golden corpus can invoke this walk
+    directly and behaviourally, in addition to the source-hash freeze that
+    still covers ``run_review`` as a whole (it also calls an external LLM,
+    so it stays frozen at SOURCE level). ``sort=True`` (S2b pass B3): which
+    split is sampled by ``run_review``'s ``break`` is now fixed by sorted
+    path order instead of filesystem-iteration order -- a declared
+    behaviour change from the unsorted walk this extraction originally
+    preserved.
+    """
+    return _discovery().iter_spec_files(
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+    )
+
+
 def _locate_llm_review() -> Path | None:
     here = Path(__file__).resolve()
     for ancestor in [here, *here.parents]:
@@ -119,10 +136,10 @@ def run_review(
         p = project_root / rel
         if p.exists():
             parts.append(f"## {rel}\n\n{p.read_text(encoding='utf-8')}\n")
-    # Add first split spec. sort=False: which split is sampled is
-    # filesystem-iteration-order dependent, as it always was.
+    # Add first split spec. sort=True (S2b pass B): which split is sampled
+    # is now deterministic by path, not filesystem-iteration-order dependent.
     planning = project_root / ".shipwright" / "planning"
-    for spec in _discovery().iter_spec_files(planning, recursive=True, sort=False):
+    for spec in _iter_candidate_specs(planning):
         parts.append(f"## {spec.relative_to(project_root).as_posix()}\n\n{spec.read_text(encoding='utf-8')}\n")
         break
     content = "\n\n---\n\n".join(parts)

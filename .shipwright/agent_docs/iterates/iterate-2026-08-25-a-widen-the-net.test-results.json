@@ -1,0 +1,116 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-25-a-widen-the-net",
+    "date": "2026-08-25",
+    "unit": {
+      "status": "pass",
+      "passed": 12295,
+      "failed": 0,
+      "note": "F0 canonical run_test_suite.py: 18/18 units GREEN (6.2 min), diff-coverage 100% on the two changed source files. Hand-verified roots this diff touches: shared/tests 9373 passed/31 skipped, integration-tests 527 passed/2 deselected (requirements_corpus subset: 60 passed), shipwright-adopt 638 passed, shipwright-compliance 1655 passed/5 skipped, shipwright-project 64 passed, shipwright-design 38 passed. The remaining 8 F0 units (build/changelog/deploy/grade/iterate/plan/preview/run/security/shared-scripts-(tools)-tests) reported PASS via the suite runner; per-test counts were not captured for those, as this iterate does not touch them."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 527,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; backend/test-infra only (surface=none)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-08-25T22:25:32.971Z",
+      "justification": "Backend/test-infra only: shared discovery helper + golden-corpus registry/tests. No route, API, SSE/WS, store mutation, or UI-consumed code touched (detect_frontend_changes.py: has_frontend_changes=false). Zero behavior change at any of the 16 production call sites."
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "EXPECTED_DISCOVERY_COUNT==17 and the registry meta-test stays green",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_requirements_corpus_registry.py::test_registry_holds_exactly_the_claimed_inventory PASSED"
+        },
+        {
+          "behavior": "New registry entry behaviourally invokes the extracted walk, not merely a same-shaped stand-in",
+          "disposition": "tested",
+          "evidence": "test_target_behaviour_matches_the_frozen_baseline[disc.review_runner._iter_candidate_specs] PASSED; per-fixture item counts cross-checked byte-for-byte against the identically-shaped disc.setup_design_session.find_specs entry across all 10 fixtures -- exact match"
+        },
+        {
+          "behavior": "iter_spec_files(recursive=True, guard=non-default) raises ValueError at CALL time",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_recursive_with_non_default_guard_raises_valueerror PASSED"
+        },
+        {
+          "behavior": "iter_spec_files(recursive=True, require=non-default) raises ValueError at CALL time, not at first iteration",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_recursive_with_non_default_require_raises_valueerror PASSED, ::test_recursive_guard_require_error_fires_at_call_not_first_iteration PASSED"
+        },
+        {
+          "behavior": "recursive=True with explicit DEFAULT guard/require is unaffected (no false-positive raise)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_recursive_with_default_guard_and_require_is_unaffected PASSED"
+        },
+        {
+          "behavior": "pre-existing require-membership ValueError keeps its ORIGINAL lazy (first-next()) timing, unwidened by the new eager wrapper",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_invalid_require_still_raises_at_first_iteration_not_at_call PASSED (added after external code review finding)"
+        },
+        {
+          "behavior": "test_planning_discovery.py:166-171 laziness probe stays green, UNMODIFIED",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_planning_discovery.py::test_laziness_short_circuits_without_walking_every_split PASSED, file diff shows no edit to this test"
+        },
+        {
+          "behavior": "Zero behavior change at any of the 16 production call sites of iter_split_dirs/iter_spec_files",
+          "disposition": "tested",
+          "evidence": "regen_golden.py --check byte-identical except the two documented cells (new entry, run_review sha256); full green suites for every consuming plugin realm: shipwright-adopt, shipwright-project, shipwright-compliance, shipwright-design, integration-tests"
+        },
+        {
+          "behavior": "golden.json regenerated_for carries the exact required literal string",
+          "disposition": "tested",
+          "evidence": "python check: data['regenerated_for'] == 'S2b pass A: review_runner walk extracted and registered; recursive-branch guard/require now raise'"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-25-a-widen-the-net",
+    "commit": "39a82af81392ff22911ed8c3f6e3fe7147df7e4c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

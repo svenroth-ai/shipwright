@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC1-AC4 implemented and proven end-to-end against this repo's own tree (F0 GREEN, 87% diff-coverage, real structural drift correctly detected as exit 1); AC5/AC6 docs and SPEC/brief status notes done. One documented divergence from the SPEC's original 'failt hart' framing: the compare step is advisory-only, exactly as decided during plan-review (both external reviewers flagged the naive hard-gate as false-red-prone on the very first PR) and recorded in the SPEC's own P0a status note."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Every external call (git show, subprocess uv run, file reads) raises a typed error (DriftCheckError/StageError/ManifestError) on failure; nothing is silently swallowed. ci_manifest_drift_check.py's own three-step orchestration returns EXIT_ERROR (2) on any pre-comparison failure, never falling through to a false-clean comparison."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No SQL/HTML (n/a, no web routes). stage_f0_evidence.py explicitly guards path traversal (report_path must resolve beneath the run directory) and rejects duplicate unit ids. All subprocess calls use fixed argv with shell=False (nosec-annotated). No secrets in source."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "49 new/edited unit tests assert on outcomes (exit codes, staged file contents, manifest diffs) not internals; each new tool has a happy path plus every documented failure mode, plus a real-subprocess CLI smoke test added specifically to catch the sys.path-masking bug class this same build caught and fixed in three files."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "No N+1 patterns. Retention writes once per unit during the run it already executes; pruning caps retained runs at 5. ci.yml's plan/verify/drift-check steps each run once per job, not per test root."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "New files sit under shared/scripts/tools and shared/scripts/lib, matching the existing convention; all are under 300 lines except run_test_suite.py (pre-existing ADR-123 exception, baseline refreshed 518->529 and verified against the anti-ratchet gate)."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "touches_io_boundary applies (extensive json.dump/json.load across the new tools). Producer/consumer pairs and their round-trip tests: ci_junit_plan.py plan -> plan.json -> {lookup, verify, ci.yml jq lookups, ci_manifest_drift_check.py's stage_ci_reports} (test_ci_junit_plan.py write_plan->lookup/verify); suite_retention.py Retention.publish() -> manifest.json side-manifest -> stage_f0_evidence.py (test_suite_retention.py record->publish->read, test_stage_f0_evidence.py full round trip via real Retention fixtures); compare_traceability_manifest.py's own committed/regenerated manifest pair, proven against a REAL regeneration of this repo's own tracked manifest in the full local proof run, not just synthetic fixtures. None of these are user-edited formats, so the 8-probe boundary-probes.md checklist (aimed at hand-edited configs) does not apply verbatim; the round-trip coverage above is the applicable substitute."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: no findings."
+    }
+  ]
+}

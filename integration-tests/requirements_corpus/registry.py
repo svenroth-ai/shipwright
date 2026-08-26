@@ -1,6 +1,6 @@
 """Target inventory for the requirements golden corpus -- the SSoT.
 
-Every claim this harness makes about "all 15 discovery paths" and "all 5
+Every claim this harness makes about "all 17 discovery paths" and "all 5
 parsers" resolves here. The registry is pure data so that the parent pytest
 process and each realm subprocess read the same inventory.
 
@@ -11,9 +11,13 @@ at module level. Rather than police an import ORDER -- which pytest collection
 can defeat, because another test module may import a target first -- each realm
 is loaded in its own subprocess. Process boundaries dissolve the collision.
 
-**Count.** 16 discovery entries + 5 parser entries, covering 15 distinct
-discovery walks: ``group_i.scan_fr_rows`` appears twice to exercise both
-sides of its keyword-only ``include_retired`` flag. Separately,
+**Count.** 17 discovery entries + 5 parser entries, covering 15 distinct
+discovery walks: two of the 15 are registered twice. ``group_i.scan_fr_rows``
+appears twice to exercise both sides of its keyword-only ``include_retired``
+flag; ``review_runner``'s walk is likewise covered by two entries -- one
+source-hash-frozen (``run_review`` as a whole, which also calls an external
+LLM) and one behaviourally invoked (the walk itself, extracted in campaign
+S2b pass A). Separately,
 ``rtm.collect_requirements`` is registered under BOTH dimensions -- it is
 genuinely both a walk and a parser, and its two cells are identical by
 construction, so do not go hunting for a difference between them. The campaign SPEC says nine discovery
@@ -139,8 +143,8 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "shared_tools", "module": "verifiers.adopt_compliance",
         "attr": "check_a2_spec_has_frs", "invoke": "project_root",
         "source": "shared/scripts/tools/verifiers/adopt_compliance.py",
-        "note": "UNSORTED rglob. One of the few sites that FAILs on empty.",
-        "order_sensitive": True,
+        "note": "SORTED rglob (S2b pass B3, was unsorted). One of the few sites "
+                "that FAILs on empty.",
     },
     {
         "id": "disc.rtm.collect_requirements",
@@ -187,9 +191,8 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "adopt", "module": "checks/validate_adoption.py",
         "attr": "_validate_spec", "invoke": "project_root",
         "source": "plugins/shipwright-adopt/scripts/checks/validate_adoption.py",
-        "note": "UNSORTED rglob then [0] -- which spec is validated is "
-                "filesystem-iteration-order dependent.",
-        "order_sensitive": True,
+        "note": "SORTED rglob (S2b pass B3, was unsorted) then [0] -- which spec "
+                "is validated is now fixed by sorted path order.",
     },
     {
         "id": "disc.setup_adopt._detect_existing_artifacts",
@@ -203,11 +206,23 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "adopt", "module": "lib/review_runner.py",
         "attr": "run_review", "invoke": "source_only",
         "source": "plugins/shipwright-adopt/scripts/lib/review_runner.py",
-        "note": "Walk is INLINE inside a function that calls an external LLM, "
-                "so it is not behaviourally invocable. Frozen at SOURCE level "
-                "instead -- a weaker guarantee, stated plainly rather than "
-                "papered over. Same UNSORTED rglob-then-break as "
-                "validate_adoption.",
+        "note": "run_review as a WHOLE also calls an external LLM, so IT is "
+                "not behaviourally invocable and stays frozen at SOURCE "
+                "level -- a weaker guarantee, stated plainly rather than "
+                "papered over. Since S2b pass A its walk is extracted into "
+                "_iter_candidate_specs (next entry), which IS behaviourally "
+                "invocable; this entry's sha256 moved when that happened.",
+    },
+    {
+        "id": "disc.review_runner._iter_candidate_specs",
+        "realm": "adopt", "module": "lib/review_runner.py",
+        "attr": "_iter_candidate_specs", "invoke": "planning_dir",
+        "source": "plugins/shipwright-adopt/scripts/lib/review_runner.py",
+        "note": "Extracted (S2b pass A) out of run_review's inline walk so it "
+                "is behaviourally invocable, not just source-hash frozen. "
+                "SORTED rglob (S2b pass B3, was unsorted like validate_adoption); "
+                "run_review itself still `break`s after the first hit, this "
+                "entry records the whole walk.",
     },
     {
         "id": "disc.state.detect_state",
@@ -291,7 +306,7 @@ PARSERS: tuple[dict, ...] = (
 
 TARGETS: tuple[dict, ...] = DISCOVERY + PARSERS
 
-EXPECTED_DISCOVERY_COUNT = 16
+EXPECTED_DISCOVERY_COUNT = 17
 EXPECTED_PARSER_COUNT = 5
 
 

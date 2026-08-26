@@ -70,6 +70,7 @@ from scripts.tools.suite_race_triage import (  # noqa: E402
 from scripts.tools.suite_report import (  # noqa: E402
     render_retry_block, render_run_report, reproduce_command, suite_command,
 )
+from scripts.tools.suite_retention import Retention  # noqa: E402
 from scripts.tools.suite_host_resources import (  # noqa: E402
     HostLeaseError, f0_cpu_lease, normalize_cpu_weight, uv_warmup_lease,
 )
@@ -284,6 +285,10 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
     budget = _Budget(normalize_cpu_weight(requested_budget))
     cancel_event = threading.Event()
     started = time.time()
+    # Every unit's OWN JUnit report, on ANY outcome - not just failures - so
+    # stage_f0_evidence.py (AC3) can stage the SAME run F0 already performed
+    # instead of a second pytest pass. None (no run_id) means no retention.
+    retention = Retention(project_root, run_id) if run_id else None
 
     def _xdist_workers(unit_id: str) -> int | None:
         requested = config.xdist.get(unit_id)
@@ -314,6 +319,8 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
             finally:
                 budget.release(weight)
             outcome = classify(rc, ran)
+            if retention is not None:
+                retention.record(unit, tmp_root / "p" / f"u{idx}" / "r.xml", outcome)
             result = UnitResult(
                 unit.id, outcome, rc, secs, out, started_utc=started_utc,
                 truncated=truncated, cancelled=cancelled)
@@ -390,12 +397,16 @@ def run_suite(project_root: Path, config: SuiteConfig | None = None, *,
                     rc=rc, seconds=retry_secs, output=out, pytest_ran=ran,
                     truncated=retry_truncated)
                 res.evidence_error = res.evidence_error or error
+            if retention is not None:  # supersedes the initial attempt's report
+                retention.record(unit, tmp_root / "s" / f"u{idx}" / "r.xml", res.outcome)
             _emit_unit_event(stream, run_id=run_id, event="complete",
                              unit_id=res.unit_id, weight=retry_weight or 1,
                              outcome=res.outcome, seconds=retry_secs,
                              phase="serial-retry", retry_kind=retry_state)
             completed_units += 1
 
+    if retention is not None:
+        retention.publish()
     failed = [r for r in results if r.outcome != PASS or r.evidence_error]
     return SuiteResult(results, 1 if failed else 0, time.time() - started,
                        tuple(config.xdist),

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-26-b-pure-hardening",
+  "date": "2026-08-26",
+  "section": "Iterate — hardening: S2b pass B, 15 planning-discovery call sites",
+  "title": "S2b pass B — pure hardening of planning-discovery call sites",
+  "context": "15 call sites share one walk (S2, S2b pass A) but still diverge on require/sort. Pass B converges them per-site, one golden regenerate.",
+  "decision": "B1: require=is_file at 5 non-recursive sites. B3: sort=True at 4 of 6 unsorted sites (fr_gates, state excepted). B4: retire order_sensitive masks + dead _mask_unordered. A3: every site explicit.",
+  "consequences": "4 golden cells flip raise->[] (B1); several unordered-pick placeholders resolve to real paths (B3/B4); 2 seam-probe tests flip != to ==; sort=True on recursive sites loses early-exit streaming (accepted cost).",
+  "rationale": "fr_gates stays sort=False (boolean short-circuit); state.py stays sort=False (stable-sort tie-break is semantic). #15 sort=True is a known no-op until campaign pass C3.",
+  "rejected": "Broadening to fix the exists()-not-is_file() bypass checks in _test_links_io/backfill_test_links top-level reads (external code review finding): out of the 15-site inventory, filed as triage trg-a95e6fdf instead.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-26-b-pure-hardening-s2b-pass-b.md"
+}

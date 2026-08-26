@@ -23,6 +23,15 @@
       "adr": null
     },
     {
+      "path": "integration-tests/requirements_corpus/registry.py",
+      "limit": 300,
+      "current": 314,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/s2b-discovery-convergence/sub-iterates/B-pure-hardening.md",
+      "note": "S2b pass A added a 17th DISCOVERY entry (299->316). Pass B4 removed the three order_sensitive flags (316->314). Pass C3 is expected to remove platform_sep/_posixify and reclaim the rest of the overage; not baselined as a permanent exception."
+    },
+    {
       "path": "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
       "limit": 300,
       "current": 590,
@@ -732,7 +741,7 @@
     {
       "path": "shared/scripts/tools/run_test_suite.py",
       "limit": 300,
-      "current": 518,
+      "current": 529,
       "state": "exception",
       "adr": "ADR-123"
     },
