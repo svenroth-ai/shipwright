@@ -23,8 +23,8 @@ from lib.worktree_isolation import (
 
 
 def worktree_location_error(project_root: Path) -> str:
-    """"" if project_root is an isolated worktree, else why it is unsafe for
-    further git commands."""
+    """Return "" if project_root is an isolated worktree, else a string
+    describing why it is unsafe for further git commands."""
     try:
         worktree = is_worktree(project_root)
     except GitError as exc:
