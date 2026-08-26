@@ -86,3 +86,27 @@ def test_a_real_description_column_still_exempts_the_heading(proj: Path):
     ))
     report = spec_parser.compute_fr_coherence(proj)
     assert not any("FR-01.01" in x for x in report.missing_description)
+
+
+def test_a_real_description_column_exempts_even_when_it_matches_the_name_cell(
+    proj: Path,
+):
+    """iterate-2026-08-25-fr-criteria-parser-pin's fix compared the picked
+    cell's TEXT against the Name cell's text to detect the fallback — but a
+    table with a genuine, separate Description column whose content happens
+    to equal its Name column's would false-negative under that heuristic
+    (the two strings are equal, so it reads as "no real description" even
+    though one exists). The fix is structural: ``FrTableRow.text_from_named_col``
+    records whether ``text`` came from the Name column or a real title-ish
+    column, so the exemption no longer depends on the two cells' content
+    differing."""
+    _write_top_spec(proj, (
+        "| FR | Name | Description | Priority |\n"
+        "|----|------|--------------|----------|\n"
+        "| FR-01.01 | User Login | User Login | Must |\n"
+        "\n"
+        "## FR-01.01: User Login\n"
+        "**Acceptance Criteria:** works.\n"
+    ))
+    report = spec_parser.compute_fr_coherence(proj)
+    assert not any("FR-01.01" in x for x in report.missing_description)
