@@ -104,6 +104,25 @@ def test_text_from_named_col_is_true_even_when_it_equals_the_name_cell() -> None
     assert row.text_from_named_col is True
 
 
+def test_text_from_named_col_is_true_for_a_name_plus_requirement_column() -> None:
+    """Round 3 (trg-9838de27): a table with a ``Name`` column AND one of
+    Text/Requirement/Title but no ``Description`` must NOT report the same
+    ``False`` as the genuine name-only fallback above — the real column must
+    win over ``Name`` even though ``Name`` sits to its left in ``TITLE_COLS``.
+    RED before the ``title_cell`` fix, green after."""
+    from fr_table_reader import read_fr_rows
+
+    doc = (
+        "| FR | Name | Requirement | Priority |\n"
+        "|----|------|-------------|----------|\n"
+        "| FR-01.01 | Login feature | Users can log in | Must |\n"
+    )
+    (row,) = read_fr_rows(doc)
+    assert row.name == "Login feature"
+    assert row.text == "Users can log in"
+    assert row.text_from_named_col is True
+
+
 def test_text_from_named_col_is_false_when_no_title_column_exists_at_all() -> None:
     from fr_table_reader import read_fr_rows
 
