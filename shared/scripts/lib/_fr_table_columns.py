@@ -134,6 +134,37 @@ def named_cell(
     return (cells[idx] if idx < len(cells) else ""), True
 
 
+def title_cell(cells: list[str], colmap: dict[str, int]) -> tuple[str, bool]:
+    """``(picked title/description cell, came_from_a_genuine_description_col)``.
+
+    ``named_cell`` does not apply here (see its docstring): ``TITLE_COLS`` is a
+    PREFERENCE order, not a synonym set, so the same left-to-right walk ``pick``
+    does is required to know which column actually won, not just which are
+    present.
+
+    The boolean is ``False`` exactly when ``name`` is the column that won the
+    walk, and ``True`` for any other TITLE_COLS column — a real
+    Description/Text/Requirement/Title cell counts even when its content
+    happens to equal the Name cell's. A value-equality check (``text != name``)
+    cannot make that distinction: a genuine Description column whose author
+    happened to copy the Name text would false-negative under it (trg-16075b99)
+    — this flag is the structural fix, letting a caller like
+    ``compute_fr_coherence`` ask "was there a real column" instead of "do the
+    two strings differ".
+
+    NOT fixed here — still latent, tracked as ``trg-9838de27``: ``name`` still
+    ranks ABOVE ``text``/``requirement``/``title`` in ``TITLE_COLS``, so a table
+    with a ``Name`` column and one of those three but no ``Description`` still
+    has the real column silently outranked, and this flag reports ``False`` for
+    it exactly as if no title-ish column existed at all.
+    """
+    for name in TITLE_COLS:
+        idx = colmap.get(name)
+        if idx is not None and idx < len(cells):
+            return cells[idx], name not in NAME_COLS
+    return "", False
+
+
 def layers_cell(cells: list[str], colmap: dict[str, int]) -> tuple[str, bool]:
     """``(raw Layers cell, came_from_a_named_column)`` — see ``named_cell``."""
     return named_cell(cells, colmap, LAYERS_COLS)
@@ -159,4 +190,5 @@ __all__ = [
     "named_cell",
     "normalise_priority",
     "pick",
+    "title_cell",
 ]

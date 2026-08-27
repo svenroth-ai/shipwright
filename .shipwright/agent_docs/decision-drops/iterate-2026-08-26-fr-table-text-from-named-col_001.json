@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-26-fr-table-text-from-named-col",
+  "date": "2026-08-26",
+  "section": "Iterate — change: FR-table description exemption structural fix",
+  "title": "text_from_named_col replaces a value-equality check in compute_fr_coherence's FR-table description exemption",
+  "context": "trg-16075b99 (filed by code-review during iterate-2026-08-25-fr-criteria-parser-pin): compute_fr_coherence's Name-only-fallback fix compared the picked description-ish cell's text against the Name cell's text. A table with a genuine, separate Description column whose content happens to equal its Name column's still false-negatived under that heuristic.",
+  "decision": "Added title_cell() to _fr_table_columns.py (mirrors layers_cell/basis_cell in spirit but walks TITLE_COLS's own preference order, since it is not a synonym set) returning (text, from_named_col). Added the required FrTableRow.text_from_named_col field, wired through fr_table_reader.read_fr_rows. compute_fr_coherence's exemption now filters on text_from_named_col instead of a text != name comparison.",
+  "consequences": "The exemption is now structurally correct: it exempts a heading whenever its table row's text came from a real title-ish column, regardless of whether that column's value happens to match Name. TITLE_COLS's own ordering (Name outranks Text/Requirement/Title) is unchanged and remains a separate, confirmed-latent residual, filed as trg-9838de27.",
+  "rationale": "Full review cascade run despite small complexity and no risk flags, because the diff (138 changed lines) crossed the 100-line Full-Code-Review trigger. spec-reviewer, code-reviewer (7 findings, all addressed or deliberately deferred with new tracking) and the external cascade (GPT approve; DeepSeek degraded) all completed; doubt-reviewer not_applicable (no migrations/async/cross-plugin/irreversible-ops surface).",
+  "rejected": "Fixing the TITLE_COLS Name-outranks-Text/Requirement/Title ordering in this same diff — confirmed latent against every fixture/corpus shape this repo ships, and explicitly out of this card's scope (matches the prior ADR's own rejection of the same fix). Tracked as trg-9838de27 instead.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -39,6 +39,12 @@ class FrTableRow:
     #: The requirement's semantic body (Description / Requirement / Text / …).
     text: str
     priority: str
+    #: True when ``text`` came from a real column — see
+    #: ``_fr_table_columns.title_cell``. Unlike ``layers_from_named_col``/
+    #: ``basis_from_named_col`` ("the header named this column"), ``False``
+    #: here also covers a title-ish column that WAS named but ``name``
+    #: outranked it (trg-16075b99).
+    text_from_named_col: bool
     #: Raw Layers cell — unparsed, because layer semantics are the caller's.
     layers_cell: str
     #: True when the governing header actually NAMED a Layers column — the

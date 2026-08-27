@@ -66,6 +66,69 @@ def test_the_header_is_readable_by_the_reader_that_consumes_it() -> None:
     assert row.basis_cell == "interview"
     assert row.basis_from_named_col is True
     assert row.layers_from_named_col is True
+    assert row.text_from_named_col is True
+
+
+def test_text_from_named_col_is_false_for_a_name_only_fallback() -> None:
+    """No Description/Text/Requirement/Title column: ``text`` falls back onto
+    Name, and the flag must say so — this is the distinction
+    ``compute_fr_coherence`` needs to tell a real (if terse) description apart
+    from the Name-fallback (trg-16075b99)."""
+    from fr_table_reader import read_fr_rows
+
+    doc = (
+        "| FR | Name | Priority |\n"
+        "|----|------|----------|\n"
+        "| FR-01.01 | User Login | Must |\n"
+    )
+    (row,) = read_fr_rows(doc)
+    assert row.text == "User Login"
+    assert row.text == row.name
+    assert row.text_from_named_col is False
+
+
+def test_text_from_named_col_is_true_even_when_it_equals_the_name_cell() -> None:
+    """A genuine Description column is still a real description when its
+    content happens to equal the Name cell's — value-equality against ``name``
+    cannot tell the two cases apart, but the column identity can."""
+    from fr_table_reader import read_fr_rows
+
+    doc = (
+        "| FR | Name | Description | Priority |\n"
+        "|----|------|--------------|----------|\n"
+        "| FR-01.01 | User Login | User Login | Must |\n"
+    )
+    (row,) = read_fr_rows(doc)
+    assert row.text == "User Login"
+    assert row.text == row.name
+    assert row.text_from_named_col is True
+
+
+def test_text_from_named_col_is_false_when_no_title_column_exists_at_all() -> None:
+    from fr_table_reader import read_fr_rows
+
+    doc = (
+        "| FR | Priority |\n"
+        "|----|----------|\n"
+        "| FR-01.01 | Must |\n"
+    )
+    (row,) = read_fr_rows(doc)
+    assert row.text == ""
+    assert row.text_from_named_col is False
+
+
+def test_title_cell_falls_through_on_a_row_too_short_to_reach_description() -> None:
+    """A row narrower than its own header's Description column must fall
+    through to Name rather than raise — the same guard ``pick`` relies on."""
+    from fr_table_reader import read_fr_rows
+
+    doc = (
+        f"{FR_TABLE_HEADER}\n{FR_TABLE_SEPARATOR}\n"
+        "| FR-01.01 | Adopted | Login | Must |\n"
+    )
+    (row,) = read_fr_rows(doc)
+    assert row.text == "Login"
+    assert row.text_from_named_col is False
 
 
 # ---------------------------------------------------------------------------

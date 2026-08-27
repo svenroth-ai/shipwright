@@ -135,13 +135,13 @@ LAYERS_COLS = _cols.LAYERS_COLS
 NAME_COLS = _cols.NAME_COLS
 PRIORITIES = _cols.PRIORITIES
 PRIORITY_COLS = _cols.PRIORITY_COLS
-TITLE_COLS = _cols.TITLE_COLS
 normalise_priority = _cols.normalise_priority
 _basis_cell = _cols.basis_cell
 _header_map = _cols.header_map
 _is_separator_row = _cols.is_separator_row
 _layers_cell = _cols.layers_cell
 _pick = _cols.pick
+_title_cell = _cols.title_cell
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
 _REMOVED_HEADING = "removed requirements"
@@ -261,10 +261,12 @@ def read_fr_rows(content: str, *, rejects: list | None = None) -> list[FrTableRo
 
         layers_cell, layers_named = _layers_cell(cells, colmap)
         basis_cell, basis_named = _basis_cell(cells, colmap)
+        text, text_named = _title_cell(cells, colmap)
         rows.append(FrTableRow(
             id=cells[0],
             name=_pick(cells, colmap, NAME_COLS),
-            text=_pick(cells, colmap, TITLE_COLS),
+            text=text,
+            text_from_named_col=text_named,
             priority=normalise_priority(_pick(cells, colmap, PRIORITY_COLS)),
             layers_cell=layers_cell,
             layers_from_named_col=layers_named,
@@ -290,7 +292,6 @@ __all__ = [
     "NAME_COLS",
     "PRIORITIES",
     "PRIORITY_COLS",
-    "TITLE_COLS",
     "normalise_priority",
     "read_active_fr_rows",
     "read_fr_rows",

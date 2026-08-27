@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-26-fr-table-text-from-named-col",
+    "date": "2026-08-26",
+    "unit": {
+      "status": "pass",
+      "passed": 16348,
+      "failed": 0,
+      "note": "Canonical run_test_suite.py, all 18 units GREEN (5.9 min): shared/tests 9415 (28 skipped), shared/scripts/tests 473 (2 skipped), shared/scripts/tools/tests 634 (8 skipped), shipwright-adopt 638, shipwright-build 133, shipwright-changelog 81, shipwright-compliance 1662 (5 skipped), shipwright-deploy 102, shipwright-design 38, shipwright-grade 391 (1 skipped), shipwright-iterate 949 (5 skipped), shipwright-plan 82, shipwright-preview 10, shipwright-project 64, shipwright-run 555, shipwright-security 934 (7 skipped), shipwright-test 243. integration-tests counted separately below."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 528,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface \u2014 pure internal parsing-library change"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-08-26T20:41:48.230Z",
+      "justification": "Pure internal parsing-library change (shared/scripts/lib/_fr_table_columns.py, _fr_table_row.py, fr_table_reader.py, spec_parser.py) with no UI, no API route, no store mutation, no SSE/WS handler, and no user-facing surface of any kind \u2014 a Python dataclass field plus a compliance-gate heuristic swap, verified by unit + integration tests. Small complexity, no touches_io_boundary flag."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "text_from_named_col is False for a Name-only fallback (no Description/Text/Requirement/Title column)",
+          "disposition": "tested",
+          "evidence": "test_fr_table_shape.py::test_text_from_named_col_is_false_for_a_name_only_fallback PASSED"
+        },
+        {
+          "behavior": "text_from_named_col is True for a genuine title-ish column, even when its content equals the Name cell's (the false-negative this run fixes)",
+          "disposition": "tested",
+          "evidence": "test_fr_table_shape.py::test_text_from_named_col_is_true_even_when_it_equals_the_name_cell PASSED"
+        },
+        {
+          "behavior": "text_from_named_col is False when no title-ish column exists at all",
+          "disposition": "tested",
+          "evidence": "test_fr_table_shape.py::test_text_from_named_col_is_false_when_no_title_column_exists_at_all PASSED"
+        },
+        {
+          "behavior": "title_cell falls through to Name (no crash) on a row too short to reach a declared Description column",
+          "disposition": "tested",
+          "evidence": "test_fr_table_shape.py::test_title_cell_falls_through_on_a_row_too_short_to_reach_description PASSED"
+        },
+        {
+          "behavior": "the canonical header round-trip still reports text_from_named_col correctly alongside the existing layers/basis flags",
+          "disposition": "tested",
+          "evidence": "test_fr_table_shape.py::test_the_header_is_readable_by_the_reader_that_consumes_it PASSED"
+        },
+        {
+          "behavior": "compute_fr_coherence still reports missing_description for a genuine Name-only table (pre-existing behavior preserved)",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_description_exemption.py::test_compute_fr_coherence_reports_missing_description_for_name_only_table PASSED"
+        },
+        {
+          "behavior": "compute_fr_coherence still exempts a heading with a normal, distinct Description column value (pre-existing behavior preserved)",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_description_exemption.py::test_a_real_description_column_still_exempts_the_heading PASSED"
+        },
+        {
+          "behavior": "compute_fr_coherence exempts a heading whose real Description column's content happens to equal its Name column's (the end-to-end fix)",
+          "disposition": "tested",
+          "evidence": "test_spec_checks_description_exemption.py::test_a_real_description_column_exempts_even_when_it_matches_the_name_cell PASSED"
+        }
+      ],
+      "counts": {
+        "total": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": null
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-26-fr-table-text-from-named-col",
+    "commit": "1e9033d32d3e630ab4a970bb65b8793f082cf751",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

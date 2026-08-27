@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-26-fr-table-text-from-named-col",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T19:59:07.662060+00:00",
+      "disposition": "self-review: title_cell() mirrors layers_cell/basis_cell semantics, all existing + new tests green, ruff clean",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T20:14:35.776406+00:00",
+      "disposition": "Mini-Plan is FEATURE-only at small complexity per Phase Matrix; this run is intent=CHANGE",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_fr_table_columns.py",
+          "line": 156,
+          "finding": "TITLE_COLS still ranks name above text/requirement/title, so a Name+Text table with no Description still reports text_from_named_col=False. Confirmed latent (no shipped fixture combines Name with Text/Requirement/Title and no Description). ADDRESSED: docstring now states this plainly as an unfixed residual instead of implying deliberate design, and it is tracked as new triage card trg-9838de27 (kept out of this card's scope, matching the ADR's prior explicit rejection of fixing it inline).",
+          "suggestion": "Fixed docstring wording; filed trg-9838de27 to track the residual.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/_fr_table_columns.py",
+          "line": 152,
+          "finding": "Wrong triage citation: trg-467b7b2f is dismissed and describes a different defect; the card this diff actually resolves is trg-16075b99. FIXED at all 4 sites (_fr_table_columns.py, _fr_table_row.py, spec_parser.py, test_fr_table_shape.py).",
+          "suggestion": "Citation corrected to trg-16075b99 everywhere.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/_fr_table_row.py",
+          "line": 49,
+          "finding": "text_from_named_col's semantics diverge from the layers_from_named_col/basis_from_named_col convention (\"header named this column\") and the old comment falsely claimed to mirror them. FIXED: comment now states the difference explicitly instead of claiming a mirror, and trims the duplicated rationale per the layers_cell/basis_cell one-line precedent. Field name kept as originally requested by this card's scope text.",
+          "suggestion": "Comment rewritten; field name retained per scope.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_fr_table_columns.py",
+          "line": 158,
+          "finding": "The idx < len(cells) fallthrough guard was untested. FIXED: added test_title_cell_falls_through_on_a_row_too_short_to_reach_description using the canonical FR_TABLE_HEADER with a truncated row.",
+          "suggestion": "Test added.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/_fr_table_columns.py",
+          "line": 156,
+          "finding": "title_cell re-implements pick's walk instead of sharing it, risking future drift. Non-blocking per reviewer's own assessment (LOC-saved ~2, below the reducibility contract's blocking bar).",
+          "suggestion": "Left as-is — optional refactor, out of this card's minimal scope.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/_fr_table_row.py",
+          "line": 42,
+          "finding": "The rationale for text_from_named_col was restated at length in 4 places. FIXED: FrTableRow's field comment trimmed to reference title_cell instead of restating the argument, matching the layers_cell/basis_cell precedent.",
+          "suggestion": "Comment trimmed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/fr_table_reader.py",
+          "line": 137,
+          "finding": "Removing the dead TITLE_COLS re-export (done to satisfy the 300-line bloat gate) left no comment explaining the asymmetry with the other re-exported *_COLS constants.",
+          "suggestion": "Left as-is — one-line, non-blocking, and the file is already at its 300-line cap so adding it back would require trimming elsewhere; noted here for the record instead.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-26T20:14:19.540807+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T20:14:35.665231+00:00",
+      "disposition": "doubt-reviewer is conditional per iteration-reviews.md Stage 3: only fires for migrations/async-concurrency/cross-plugin-imports/irreversible-ops; this diff is pure single-module parsing logic + tests, none of those apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T20:19:48.080780+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] No concrete defects found. The implementation follows the specified preference walk, records whether the selected text originated from `Name`, updates the coherence exemption to use that structural signal, and includes regression coverage for the equal-Name/Description false-negative case. No security concerns are introduced.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "No real contradiction: DeepSeek returned an empty reply (degraded, provider-side), not a dissenting verdict. GPT (openai) reviewed the full diff and approved with no findings; nothing to reconcile between two answers since only one answered."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T20:52:10.589452+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-26T20:14:35.889843+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
