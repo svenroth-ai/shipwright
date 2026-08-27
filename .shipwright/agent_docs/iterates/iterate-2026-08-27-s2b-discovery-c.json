@@ -38,7 +38,7 @@
         "evidence": "ruff clean + grep confirms zero remaining references + full corpus suite PASSED"
       },
       {
-        "behavior": "C4: _test_links_io.discover_specs skips a directory named agent_docs/spec.md",
+        "behavior": "C4: _test_links_io.discover_specs skips a directory literally named agent_docs holding spec.md",
         "disposition": "tested",
         "evidence": "test_test_links_io_spec_directory.py (2 cases) PASSED"
       },
