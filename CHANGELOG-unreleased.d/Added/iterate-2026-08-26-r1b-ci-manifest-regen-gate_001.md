@@ -1,1 +1,0 @@
-CI now regenerates test-traceability.json from a fresh test run and reports structural drift against the committed manifest (advisory-only, non-blocking, until proven reliable over several green PRs).

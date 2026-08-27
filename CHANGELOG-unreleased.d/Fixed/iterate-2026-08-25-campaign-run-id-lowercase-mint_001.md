@@ -1,1 +1,0 @@
-Campaign sub-iterate run_ids are now minted pre-lowercased, with a fail-fast check at the earliest script boundary (Step 3.4) rejecting a malformed run_id before finalization artifacts are built on it

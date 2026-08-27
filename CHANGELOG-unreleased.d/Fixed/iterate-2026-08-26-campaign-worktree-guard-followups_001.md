@@ -1,1 +1,0 @@
-Campaign mode: two orchestrator sessions on the same campaign slug can no longer race the shared worktree — a heartbeat session lock (acquire/touch/release) now serializes them, and worktree-location checks now verify the campaign's identity, not just that it is *a* campaign worktree.

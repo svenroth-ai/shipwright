@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0] - 2026-08-27
+
+### Added
+
+- Add docs/token-cost-controllable.md: a threshold-based guide for keeping session/token cost controllable as a project's decision history and session length grow, linked from the guide's Quality and Safety chapter and Appendix B
+- Make `triage_cli.py` the machine-callable transition surface for Command Center triage writes, with resolved JSON results, stable failure exits, and race-safe command coverage.
+- shipwright-changelog: sync declared published-package manifest versions (e.g. package.json) into the release commit and fail-closed verify them against the committed blob before tagging, closing a class of drift where a release tag and changelog advance while the published manifest still ships the old version
+- FR-gate now requires real test evidence (`tests.total > 0`) or a stated `--no-tests-reason` for behaviour-affecting, FR-declaring iterate events, closing a hole where 40% of FR-declaring events carried no test evidence at all
+- Design manifests can list backend-only FRs under a new '## Non-UI FRs' section (with a cited ADR) to exempt them from C1's screen-mapping requirement.
+- Added a lightweight, campaign-specific isolation check that needs no prior run snapshot, so it works for a campaign sub-iterate and never misflags the campaign board's own legitimate status write as a leak.
+- /shipwright-changelog publishes a short, readable GitHub Release for each pushed tag — an LLM-condensed, mechanically sanitized summary linking back to the full CHANGELOG.md section; best-effort and forward-only.
+- CI now regenerates test-traceability.json from a fresh test run and reports structural drift against the committed manifest (advisory-only, non-blocking, until proven reliable over several green PRs).
+
+### Changed
+
+- Track AGENTS.md as the shared Codex operating contract.
+- Expose outbox-only triage amendments as an independent delivery signal in the JSON listing contract.
+- docs/hooks-and-pipeline.md now accurately maps Stop/branch feedback, delivery/merge authority, and release authority; derived snapshots remain release-owned.
+- Document F0 as early feedback and the accepted late F11 delivery stop.
+- Cap triage_item detail at 6000 characters (schema + append/amend write paths) so a pathologically long finding from any producer can't silently fail to promote in the Command Center.
+- fr_criteria.py's block-termination and bullet-semantics widening (from PR #648's reader unification) is now pinned with dedicated tests and documented, not just implicit behavior.
+- Documented the new campaign worktree mechanism in the framework's hooks-and-pipeline reference.
+- discovery: planning-discovery call sites now exclude iterate/ run docs from spec/adoption/FR discovery by default; design-session spec paths are now platform-invariant (posix separators)
+
+### Fixed
+
+- Fail closed when Git operation probes time out during .gitignore and .gitattributes self-healing.
+- Bound event-once claim-cache growth by reaping expired sibling claims using each claim's own TTL.
+- Keep explicitly pinned iterate summaries when F5c retention trims history.
+- Fixed plan review command examples so copied multi-line commands execute correctly.
+- Fixed skipped review markers so they report a self-review fallback only when it ran.
+- Added bounded branch-routing regression coverage for plan external-review guidance.
+- Hardened four best-effort event readers against deeply nested JSON input.
+- Hardened subprocess text readers against malformed UTF-8 output.
+- Preserved CRLF source-state banners during compliance provenance stamping.
+- Iterate runs no longer lose in-flight state to a mid-phase context-window compaction: the mini-plan now persists at every complexity tier, review-cascade findings are backstopped by a code-level SubagentStop salvage hook, and resume (B1) reads reviews.json directly instead of a stale handoff snapshot.
+- Keep recurring triage findings tied to dismissed and promoted operator decisions.
+- Branch/Stop compliance audits now present Group-E pending-release drift as local diagnostics only and never append, refresh, or dismiss the global compliance backlog.
+- Branch/Stop compliance audits with a real non-E failure also stay locally visible without mutating the global compliance backlog.
+- Merge authority now audits the delivered PR's exact mergeCommit (never branch HEAD or local main) in a detached worktree, and updates Groups A-D/F-I only when coverage is complete.
+- Merge coverage now records Group E as not_applicable (and complete); a genuinely absent, crashed, unavailable, or wrong-commit group is recorded as missing and leaves the backlog untouched.
+- A verified release commit runs full A-I audit authority and may refresh or dismiss Group E as well as every other group.
+- The 5-to-13-to-5 Group-E branch-noise regression can no longer mutate the global compliance backlog while branch diagnostics stay visible.
+- Validate test-evidence freshness against the completed iterate run recorded in its Source-State, so unchanged checkouts do not become stale after 24 hours.
+- Make iterate throughput reports show scope-to-F5b wall time, instrumented coverage, and implausible timing evidence without counting it as work.
+- I2 now verifies test-evidence provenance by phase run identity instead of filesystem mtime.
+- Recheck marked local CI gates against the integrated F11 tree before each delivery push.
+- Iterate throughput reporting: the scope phase-timing mark and the implementation iterate-timing span are now captured on every run instead of depending on agent-emitted CLI calls.
+- Triage producers (phase-quality, compliance, artifact-drift, security) now truncate an oversized finding detail instead of raising and silently dropping the finding
+- shipwright-adopt now seeds .shipwright/planning/adr/ with its own minted ADRs (adoption ADR + retroactive ADRs) instead of writing only to decision_log.md; harvested third-party ADRs are left untouched
+- shipwright-adopt fails closed on a hollow retroactive ADR (missing subject/sha) instead of silently rendering an empty ADR and reporting adoption as successful
+- shipwright-adopt: quality requirements detected during onboarding now render as ordinary Functional Requirement rows instead of an unparseable QR-NN prose list, so an iterate implementing one can name it via --affected-frs
+- shipwright-project's spec-generation reference no longer mints QR-/C- requirement ids that nothing in the framework reads; quality targets now fold into the FR table as ordinary requirements, and Constraints render as unnumbered prose.
+- install-hooks.ps1 could silently overwrite a foreign `core.hooksPath` or report success on a failed write; both scripts now fail closed (ported from svenroth-ai/leadwright)
+- Gitignore self-heal now retracts a SUPERSEDED template rule even when it predates a project's managed BEGIN/END block (e.g. an adopted-before-markers-existed project), instead of only stripping matches inside the block
+- Documented append_iterate_entry.py's retention cap as approximately 50 (not exactly), which self-heals a bounded one-entry-per-branch overshoot that parallel worktree merges can otherwise leave behind
+- `finalize_iterate.py` no longer silently swallows a malformed explicit `tests` block behind a green finalize, and reports the actual triggering FR-gate error code instead of a hardcoded one
+- External code review now reliably reaches DeepSeek/OpenAI in consumer projects — every uv run .../external_review.py invocation now passes uv's own --project flag pointed at the plugin declaring its openai dependency, instead of silently degrading to internal-only reviewers.
+- Compliance check B5 no longer misreports every completed phase as having no matching task (it was reading the wrong field name, id instead of phaseTaskId).
+- Compliance check C1's design-manifest Screens-table parser now matches columns by header name instead of a fixed 5-column layout, so an added column no longer breaks FR-coverage detection.
+- update_build_dashboard.py no longer crashes on a work_completed event carrying an explicit null commit (or null ts/tests/review/affected_frs/description/split) — renders the existing placeholder instead, so a null event no longer permanently blocks dashboard regeneration
+- shipwright-design: design-manifest.md regeneration no longer drops a hand-added ## Non-UI FRs section (it round-trips verbatim), fixing the C1 FR->screen gate flipping red with no trace of why
+- requirements corpus: extract review_runner's spec walk into a behaviourally-tracked target (16->17 discovery entries) and make iter_spec_files reject recursive=True combined with a non-default guard/require instead of silently no-op'ing
+- Campaign sub-iterate run_ids are now minted pre-lowercased, with a fail-fast check at the earliest script boundary (Step 3.4) rejecting a malformed run_id before finalization artifacts are built on it
+- FR-table description exemption (compute_fr_coherence) no longer falls back to the Name cell when a spec table has no real Description column, which previously produced a false 'has description' verdict.
+- converge S5, the cross-layer fold gate, and Group I's I6 onto one shared FR-criteria reader (`shared/scripts/lib/fr_criteria.py`), fixing S5's FR-coherence check falsely reporting every requirement in the shipped bullet shape as missing acceptance/description
+- compliance execution evidence only ever staged ONE of this repo's 18 pytest test-roots (every other root's tests read MISSING coverage); `evidence_drop.py stage` now accepts repeatable `--junit <base>=<path>` and a new `scripts/run_full_suite_evidence.py` drives every discovered root so a full-suite run produces genuine cross-root coverage evidence
+- requirements corpus / planning-discovery: harden the 15 shared call sites -- require=is_file on the 5 non-recursive readers, sort=True (deterministic pick) on 4 previously-unsorted sites, retire the order_sensitive golden masks now that every masked target sorts
+- Campaign mode: two orchestrator sessions on the same campaign slug can no longer race the shared worktree — a heartbeat session lock (acquire/touch/release) now serializes them, and worktree-location checks now verify the campaign's identity, not just that it is *a* campaign worktree.
+- Campaign session lock: a lost lock no longer routes through Finalize (which would write shared loop state a second session may already own), and the lock is released on clean completion so a routine session restart is never blocked by its own prior run.
+- Campaign mode now mints (or resumes) one worktree per campaign slug before doing anything else, instead of relying on whatever directory the driving session happened to start in.
+- Every sub-iterate-runner spawn is now preceded by a location check that STRICT-STOPs the campaign loop rather than spawning a runner into an unverified directory.
+- sub-iterate-runner now independently refuses to touch git if its own working directory is not isolated, since a freshly spawned subagent's shell is not guaranteed to inherit the orchestrator's working directory.
+- Every git command inside sub-iterate-runner's workflow is now explicitly scoped to its own directory, closing the exact path by which a sub-iterate previously landed changes directly on main.
+- FR-table description exemption (`compute_fr_coherence`) no longer misses a genuine Description column whose content happens to match the Name column — a new `text_from_named_col` flag on `FrTableRow` replaces the old value-equality check.
+- FR-table reader: a table with a Name column and a Text/Requirement/Title column but no Description column no longer has its genuine descriptive column silently outranked by Name — `text_from_named_col` now reports `True` for it.
+- compliance: a broken (file, not directory) planning path now surfaces as an explicit external-review finding instead of crashing the collector
+- compliance/backfill: two more spec.md discovery walks now skip a directory shaped like a file instead of raising on read
+
+### Security
+
+- Scan tracked Decision-Drop JSON recursively and fail closed when it cannot be safely inspected.
+- Require exact-head trusted approval and completed review evidence before a PR-review waiver can skip Tier-3.
+- Hardened the PR-review verdict against force-push history, impostor check contexts, stale cancellation, and sensitive-path waiver bypasses.
+- Raised the vite-hono profile's shipped hono floor from ^4.7.0 to ^4.12.34, the fix line for CVE-2026-69207/-71848/-71849/-71850; a pinned regression test guards against the floor regressing below it again.
+
 ## [0.32.0] - 2026-08-08
 
 ### Added

@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-08-26T22:45:56.204722+00:00
-Source-State: run=iterate-2026-08-26-campaign-worktree-guard-followups
-Consistency-audit: last run 2026-07-28 (29 days earlier) — FAIL
-Total commits: 1436
+Generated: 2026-08-27T12:15:00.971395+00:00
+Source-State: run=iterate-2026-08-27-s2b-discovery-c base=396067c331f7 release=v0.33.0
+Consistency-audit: last run 2026-07-28 (30 days earlier) — FAIL
+Total commits: 1440
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 483
-    "feat" : 383
-    "chore" : 262
+    "fix" : 486
+    "feat" : 384
+    "chore" : 261
     "docs" : 156
-    "refactor" : 86
+    "refactor" : 87
     "test" : 37
     "ci" : 18
     "other" : 9
@@ -23,10 +23,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 483 commits
+### Fixes (fix) — 486 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-27 | compliance | title_cell() tries genuine title columns before Name fallback (#659) | c23172a640c5 |
+| 2026-08-27 | compliance | text_from_named_col replaces value-equality in FR-table description exemption (#656) | 2e77f1c76c7f |
+| 2026-08-27 | iterate | campaign worktree session lock release + full-path identity compare (#658) | 860f19990a7e |
 | 2026-08-26 | discovery | converge require/sort behavior at the 15 planning-discovery call sites (#655) | 9e98a45d514b |
 | 2026-08-26 | discovery | extract review_runner walk into a tracked target; recursive guard/require now raise (#652) | 44136e09da9f |
 | 2026-08-26 | iterate | isolate campaign sub-iterate-runner in its own worktree (#653) | a9e3a3b74302 |
@@ -511,10 +514,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 383 commits
+### Features (feat) — 384 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-27 | changelog | publish a condensed GitHub Release page for each tagged release (#657) | 8255aca2f148 |
 | 2026-08-26 | compliance | add CI gate to regenerate and compare test-traceability.json (#654) | 3d5ae1c5ac9e |
 | 2026-08-12 | changelog | sync published-package manifest versions at release (#633) | a81cd8004a67 |
 | 2026-08-10 | triage | add machine-callable transitions (#631) | c9ce4ee1dd5a |
@@ -899,11 +903,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 262 commits
+### Chores (chore) — 261 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-08-26 | triage | sweep 5 outbox append(s) into branch | fd5bb0215448 |
 | 2026-08-08 | release | v0.32.0 canon handoff — dashboard, session handoff, phase history | 5f12a9ff7abf |
 | 2026-08-08 | release | v0.32.0 | 11e325232765 |
 | 2026-08-08 | triage | dismiss trg-6d8fbc10, delivered via PR #598 | b67e536d9bef |
@@ -1327,10 +1330,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 86 commits
+### Refactoring (refactor) — 87 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-27 | discovery | S2b pass C -- explicit finding, include_iterate convergence, posix separators (#660) | 396067c331f7 |
 | 2026-08-17 | iterate | gate FR-declaring events on real test evidence (#642) | 274be817157e |
 | 2026-08-13 | triage | cap detail at 6000 chars across schema and write paths (#634) | 5c6abb295795 |
 | 2026-08-08 | events-context | backfill selection keys from git history (#602) | 535d9f938bf8 |
@@ -1513,7 +1517,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1436 |
+| Total commits | 1440 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1436 |
+| Human-authored commits | 1440 |
 
