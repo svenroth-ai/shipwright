@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-27-fr-table-titlecols-split",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:39:05.979480+00:00",
+      "disposition": null,
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:38:12.446692+00:00",
+      "disposition": "plan review is medium+ only, this run is small",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:39:13.983342+00:00",
+      "disposition": "Full Code Review is only-if-risk-flags at small complexity per the Phase Matrix; no risk flags were classified for this diff",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:39:14.106252+00:00",
+      "disposition": "doubt-reviewer is Stage 3, conditional on code-reviewer (Stage 2) having run; code review did not run at this complexity",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:39:14.258949+00:00",
+      "disposition": "External LLM review is medium+ only (auto); this run is small",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:39:13.856082+00:00",
+      "disposition": "Full Code Review cascade (spec-reviewer/code-reviewer/doubt-reviewer) is only-if-risk-flags at small complexity per the Phase Matrix; no risk flags were classified for this diff",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-27T10:38:12.570396+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

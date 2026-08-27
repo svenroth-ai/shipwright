@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-27-fr-table-titlecols-split",
+  "date": "2026-08-27",
+  "section": "Iterate — bug: FR-table title_cell() Name-outranks-description round 3",
+  "title": "title_cell() tries genuine title columns before the Name fallback",
+  "context": "title_cell() walked the flat TITLE_COLS tuple (description, name, text, requirement, title) in order, so a table with a Name column plus one of Text/Requirement/Title but no Description hit the Name entry before ever reaching the real column, and text_from_named_col reported False for a genuine descriptive cell (trg-9838de27, round 3 of the same function after PR #650 and #656).",
+  "decision": "Derive _TITLE_PREFERRED_COLS (TITLE_COLS minus NAME_COLS) and walk it first inside title_cell(); Name is tried only as a last-resort second pass. The shared TITLE_COLS tuple and pick() are left untouched, preserving pick()'s documented Name-outranks-Description-by-position semantics for the converged repo shape.",
+  "consequences": "text_from_named_col now reports True for the previously-latent shape (Name + Text/Requirement/Title, no Description); every shipped fixture shape (5 historical shapes, column-order, description-equals-name, name-only-fallback, row-too-short) re-verified unchanged. Added the missing regression fixture in shared/tests/test_fr_table_shape.py, confirmed RED against the pre-fix code and GREEN after.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

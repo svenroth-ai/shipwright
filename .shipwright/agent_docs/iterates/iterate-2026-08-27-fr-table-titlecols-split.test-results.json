@@ -1,0 +1,85 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-27-fr-table-titlecols-split",
+    "date": "2026-08-27",
+    "unit": {
+      "status": "passed",
+      "passed": 11193,
+      "total": 11230
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 528,
+      "total": 528
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "title_cell() returns the real Description/Text/Requirement/Title cell (text_from_named_col=True) for a table with a Name column AND one of text/requirement/title but no Description column",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_table_shape.py::test_text_from_named_col_is_true_for_a_name_plus_requirement_column PASSED (verified RED against pre-fix code via git stash, GREEN after)"
+        },
+        {
+          "behavior": "title_cell() still falls back to Name (text_from_named_col=False) when no title-ish column is present at all",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "shared/tests/test_fr_table_shape.py::test_text_from_named_col_is_false_for_a_name_only_fallback (pre-existing, unchanged by this diff, re-run green)"
+        },
+        {
+          "behavior": "title_cell() still prefers a genuine Description column over Name even when the two cells hold identical text",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "shared/tests/test_fr_table_shape.py::test_text_from_named_col_is_true_even_when_it_equals_the_name_cell (pre-existing, unchanged by this diff, re-run green)"
+        },
+        {
+          "behavior": "pick() column-order semantics (TITLE_COLS tuple, unreordered) are unaffected by the title_cell() two-pass walk",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_fr_table_reader_contract.py::test_every_historical_shape_parses[5 shapes] + test_column_order_is_not_load_bearing PASSED \u2014 all pass unchanged"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 2,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.1,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-08-26T22:38:43Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-27-fr-table-titlecols-split",
+    "commit": "0564ce7a68ba05dd7b588fe6777b6dfec1dd112c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

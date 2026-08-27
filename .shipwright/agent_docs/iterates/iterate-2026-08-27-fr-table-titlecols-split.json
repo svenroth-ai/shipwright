@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-08-27-fr-table-titlecols-split",
+  "date": "2026-08-27T10:56:35.742668Z",
+  "event_at": "2026-08-26T22:46:17.085527+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/fr-table-titlecols-split",
+  "spec": "",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-27-fr-table-titlecols-split"
+}

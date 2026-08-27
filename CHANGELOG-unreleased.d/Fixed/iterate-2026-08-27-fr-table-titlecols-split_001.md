@@ -1,0 +1,1 @@
+FR-table reader: a table with a Name column and a Text/Requirement/Title column but no Description column no longer has its genuine descriptive column silently outranked by Name — `text_from_named_col` now reports `True` for it.

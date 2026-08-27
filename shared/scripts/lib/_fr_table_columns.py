@@ -134,13 +134,29 @@ def named_cell(
     return (cells[idx] if idx < len(cells) else ""), True
 
 
+#: The genuinely-preferred group of ``TITLE_COLS`` — every real description-ish
+#: column, tried before the ``Name`` fallback. ``TITLE_COLS`` itself is left
+#: untouched (see ``pick``'s docstring: reordering it would change every
+#: ``pick`` caller, not just this walk), so this is derived rather than a
+#: second hand-maintained literal.
+_TITLE_PREFERRED_COLS: tuple[str, ...] = tuple(
+    name for name in TITLE_COLS if name not in NAME_COLS
+)
+
+
 def title_cell(cells: list[str], colmap: dict[str, int]) -> tuple[str, bool]:
     """``(picked title/description cell, came_from_a_genuine_description_col)``.
 
     ``named_cell`` does not apply here (see its docstring): ``TITLE_COLS`` is a
-    PREFERENCE order, not a synonym set, so the same left-to-right walk ``pick``
-    does is required to know which column actually won, not just which are
-    present.
+    PREFERENCE order, not a synonym set, so a left-to-right walk is required to
+    know which column actually won, not just which are present. Unlike
+    ``pick``, the walk here is split in two: every genuinely descriptive column
+    (``_TITLE_PREFERRED_COLS`` — Description/Text/Requirement/Title, in
+    ``TITLE_COLS`` order) is tried FIRST, and ``Name`` is tried only as a last
+    resort. ``pick`` keeps the flat ``TITLE_COLS`` walk (Name ranks above
+    Text/Requirement/Title there) because ``pick`` has no way to report "this
+    was a fallback" — this flag is exactly that report, so it earns the
+    two-pass walk ``pick`` doesn't need.
 
     The boolean is ``False`` exactly when ``name`` is the column that won the
     walk, and ``True`` for any other TITLE_COLS column — a real
@@ -152,16 +168,20 @@ def title_cell(cells: list[str], colmap: dict[str, int]) -> tuple[str, bool]:
     ``compute_fr_coherence`` ask "was there a real column" instead of "do the
     two strings differ".
 
-    NOT fixed here — still latent, tracked as ``trg-9838de27``: ``name`` still
-    ranks ABOVE ``text``/``requirement``/``title`` in ``TITLE_COLS``, so a table
-    with a ``Name`` column and one of those three but no ``Description`` still
-    has the real column silently outranked, and this flag reports ``False`` for
-    it exactly as if no title-ish column existed at all.
+    Previously (trg-9838de27) ``name`` ranked ABOVE ``text``/``requirement``/
+    ``title`` in the walk, so a table with a ``Name`` column and one of those
+    three but no ``Description`` had the real column silently outranked, and
+    this flag reported ``False`` for it exactly as if no title-ish column
+    existed at all. The two-pass walk above closes that.
     """
-    for name in TITLE_COLS:
+    for name in _TITLE_PREFERRED_COLS:
         idx = colmap.get(name)
         if idx is not None and idx < len(cells):
-            return cells[idx], name not in NAME_COLS
+            return cells[idx], True
+    for name in NAME_COLS:
+        idx = colmap.get(name)
+        if idx is not None and idx < len(cells):
+            return cells[idx], False
     return "", False
 
 
