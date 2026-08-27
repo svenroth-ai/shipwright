@@ -102,10 +102,14 @@ def _validate_spec(project_root: Path) -> list[str]:
         return ["missing: .shipwright/planning/ directory"]
     # sort=True (S2b pass B3): which spec gets validated is now fixed by
     # sorted path order instead of filesystem-iteration order -- a declared
-    # behaviour change. Pinned by ``test_unsorted_walk_tracks_enumeration_order``
+    # behaviour change. Pinned by ``test_sorted_walk_ignores_enumeration_order``
     # (now asserts forward == reverse instead of !=).
+    # include_iterate=False (S2b pass C2): iterate/ holds per-run iterate
+    # specs, not a split spec -- on this repo it excludes the four real
+    # nested `iterate/<run-id>/spec.md` files this walk previously (and
+    # wrongly) risked picking as `specs[0]`, the one spec actually validated.
     specs = list(_discovery().iter_spec_files(
-        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=False, require="exists"
     ))
     if not specs:
         return ["missing: .shipwright/planning/<split>/spec.md (no spec found)"]

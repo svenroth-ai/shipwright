@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-27-s2b-discovery-c",
+  "date": "2026-08-27",
+  "section": "Iterate — change: S2b discovery-convergence pass C",
+  "title": "Explicit finding, include_iterate convergence, posix separators",
+  "context": "S2b converges planning_discovery's 15 call sites one flag at a time; pass C closes the guard-error, include_iterate default, and separator-format questions.",
+  "decision": "Only rtm.collect_external_review_states (#8) converts its raise to an explicit finding; include_iterate=False flips at 9 of 12 sites (2 exceptions, 1 no-op); find_specs emits posix separators; two same-class .exists()/.is_file() bugs fixed outside the 15-site inventory.",
+  "consequences": "4 real nested iterate/spec.md files stop being offered as adoption/FR/design-session candidates at 4 recursive sites; a broken planning path surfaces as one finding instead of crashing 2 collectors; find_specs sort order is now platform-invariant.",
+  "rationale": "Operator-narrowed C1 scope avoids widening RequirementInfo's contract across unaudited downstream consumers for a case already broken; C2 exceptions preserve 2 already-decided, deliberately different behaviors.",
+  "rejected": "Converting rtm.collect_requirements (#7) alongside #8 -- rejected per the operator's risk-first instruction, since #7's contract-widening could not be ruled safe without auditing every consumer.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md"
+}

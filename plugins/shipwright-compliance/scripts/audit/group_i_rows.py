@@ -97,9 +97,11 @@ def scan_specs(project_root: Path, *, include_retired: bool = False) -> SpecScan
     # "exists": a *directory* named spec.md is not scanned. Sorting before vs
     # after the is_dir filter is equivalent (one shared parent), so the shared
     # helper's sort-first order matches the previous filter-first one.
+    # include_iterate=False (S2b pass C2): iterate/ holds per-run iterate
+    # specs, not a split spec -- irrelevant to the naming-hygiene audit.
     iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
     for spec in iter_spec_files(
-        planning, guard="is_dir", sort=True, include_iterate=True, require="is_file"
+        planning, guard="is_dir", sort=True, include_iterate=False, require="is_file"
     ):
         any_spec = True
         split_name = spec.parent.name

@@ -31,7 +31,7 @@ from requirements_corpus import _probe_runner  # noqa: E402
 EXPECTED_PROBE_NAMES = {
     "t1", "t2", "group_d_empty", "group_i_empty",
     "d_traceability_empty", "d_traceability_populated",
-    "unsorted_seam", "unsorted_seam_a2",
+    "sorted_seam", "sorted_seam_a2",
 }
 
 

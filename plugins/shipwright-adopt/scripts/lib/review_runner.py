@@ -37,10 +37,13 @@ def _iter_candidate_specs(planning: Path):
     split is sampled by ``run_review``'s ``break`` is now fixed by sorted
     path order instead of filesystem-iteration order -- a declared
     behaviour change from the unsorted walk this extraction originally
-    preserved.
+    preserved. ``include_iterate=False`` (S2b pass C2): iterate/ holds
+    per-run iterate specs, not a split spec -- on this repo it excludes the
+    four real nested ``iterate/<run-id>/spec.md`` files this walk previously
+    (and wrongly) risked sampling as the one spec sent to external review.
     """
     return _discovery().iter_spec_files(
-        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=False, require="exists"
     )
 
 

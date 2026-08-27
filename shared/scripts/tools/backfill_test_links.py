@@ -56,7 +56,10 @@ def discover_specs(project_root: Path) -> list[Path]:
     """Find the spec.md files whose FR tables seed the mapping."""
     out: list[Path] = []
     top = project_root / ".shipwright" / "agent_docs" / "spec.md"
-    if top.exists():
+    # is_file() (S2b pass C4): matches the require="is_file" gate below --
+    # this site is outside the 15-site planning_discovery inventory, but a
+    # spec.md DIRECTORY here reached read_text() and raised the same way.
+    if top.is_file():
         out.append(top)
     planning = project_root / ".shipwright" / "planning"
     # require="is_file" (S2b pass B1): a directory named spec.md is skipped.
@@ -64,7 +67,7 @@ def discover_specs(project_root: Path) -> list[Path]:
         planning, guard="is_dir", sort=True, include_iterate=False, require="is_file"
     ))
     root_spec = project_root / "spec.md"
-    if root_spec.exists():
+    if root_spec.is_file():  # S2b pass C4: same directory-named-spec.md defect
         out.append(root_spec)
     return out
 

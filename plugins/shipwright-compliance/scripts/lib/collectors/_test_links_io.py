@@ -133,7 +133,10 @@ def spec_hash(spec_texts: list[str]) -> str:
 def discover_specs(project_root: Path) -> list[Path]:
     out: list[Path] = []
     top = project_root / ".shipwright" / "agent_docs" / "spec.md"
-    if top.exists():
+    # is_file() (S2b pass C4): matches the require="is_file" gate below --
+    # this site is outside the 15-site planning_discovery inventory, but a
+    # spec.md DIRECTORY here reached read_text() and raised the same way.
+    if top.is_file():
         out.append(top)
     planning = project_root / ".shipwright" / "planning"
     iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files

@@ -32,6 +32,22 @@ def _paths(realm: str) -> None:
             sys.path.insert(0, p)
 
 
+def _eligible_candidate_count(iter_spec_files_fn, planning: Path) -> int:
+    """Count candidates through the SAME discovery config the probed site uses.
+
+    A plain ``rglob('spec.md')`` count over-counts: it includes ``iterate/``
+    entries even though both probed targets pass ``include_iterate=False``,
+    so a liveness guard built on it can stay "alive" from iterate/ noise
+    alone while the candidate set the target actually sees has shrunk to
+    one -- exactly the case the guard exists to catch (external code review,
+    S2b pass C). Delegating to the exact call each site makes keeps the two
+    from drifting apart.
+    """
+    return sum(1 for _ in iter_spec_files_fn(
+        planning, recursive=True, guard="is_dir", include_iterate=False, require="exists",
+    ))
+
+
 def probe_t1(root: Path, _extra) -> dict:
     _paths("shared_tools")
     from verifiers.traceability_checks import check_t1_all_spec_frs_mapped
@@ -100,7 +116,7 @@ def probe_d_traceability_populated(root: Path, _extra) -> dict:
             "layer": list(check_layer(populated))}
 
 
-def probe_unsorted_seam(root: Path, extra) -> dict:
+def probe_sorted_seam(root: Path, extra) -> dict:
     """Prove the walk no longer tracks whatever order enumeration hands it.
 
     Before S2b pass B3 this call site relied on unsorted ``rglob`` order, so
@@ -132,10 +148,18 @@ def probe_unsorted_seam(root: Path, extra) -> dict:
             Path.rglob = real_rglob
         out[label] = [e.replace(str(root), "<root>").replace("\\", "/")
                       for e in errors]
+    # Liveness guard (S2b pass C5, nit 2): forward == reverse is only a
+    # meaningful claim if there was more than one candidate to reorder --
+    # on a single-spec fixture it would pass trivially even with sort=True
+    # removed entirely. Recorded so the test asserts this POSITIVELY rather
+    # than trusting the fixture never shrinks silently.
+    out["candidate_count"] = _eligible_candidate_count(
+        mod._discovery().iter_spec_files, root / ".shipwright" / "planning"
+    )
     return out
 
 
-def probe_unsorted_seam_a2(root: Path, extra) -> dict:
+def probe_sorted_seam_a2(root: Path, extra) -> dict:
     """The same seam probe for ``adopt_compliance.check_a2_spec_has_frs``.
 
     It was the OTHER formerly-``order_sensitive`` target: its picked path used
@@ -149,6 +173,7 @@ def probe_unsorted_seam_a2(root: Path, extra) -> dict:
     now agree.
     """
     _paths("shared_tools")
+    from lib.planning_discovery import iter_spec_files
     from verifiers.adopt_compliance import check_a2_spec_has_frs
 
     real_rglob = Path.rglob
@@ -164,6 +189,10 @@ def probe_unsorted_seam_a2(root: Path, extra) -> dict:
             Path.rglob = real_rglob
         out[label] = {k: str(v).replace(str(root), "<root>").replace("\\", "/")
                       for k, v in finding.items()}
+    # Liveness guard (S2b pass C5, nit 2): see probe_sorted_seam above.
+    out["candidate_count"] = _eligible_candidate_count(
+        iter_spec_files, root / ".shipwright" / "planning"
+    )
     return out
 
 
@@ -188,8 +217,8 @@ PROBES = {
     "group_i_empty": probe_group_i_empty,
     "d_traceability_empty": probe_d_traceability_empty,
     "d_traceability_populated": probe_d_traceability_populated,
-    "unsorted_seam": probe_unsorted_seam,
-    "unsorted_seam_a2": probe_unsorted_seam_a2,
+    "sorted_seam": probe_sorted_seam,
+    "sorted_seam_a2": probe_sorted_seam_a2,
 }
 
 

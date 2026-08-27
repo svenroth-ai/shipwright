@@ -371,8 +371,8 @@ def collect_requirements_from_planning(
 
     out: list[FunctionalRequirement] = []
     # guard="exists" keeps the historical behaviour that a planning FILE raises
-    # NotADirectoryError rather than degrading to []; require="is_file" (S2b B1) also skips a directory named spec.md.
-    for spec_path in _discovery().iter_spec_files(planning_dir, guard="exists", sort=True, include_iterate=True, require="is_file"):
+    # NotADirectoryError rather than degrading to []; require="is_file" (S2b B1) also skips a directory named spec.md; include_iterate=False (S2b C2) excludes iterate/ -- FR coherence has no reason to read it.
+    for spec_path in _discovery().iter_spec_files(planning_dir, guard="exists", sort=True, include_iterate=False, require="is_file"):
         split_name = spec_path.parent.name
         rel_spec = f"{PLANNING_DIRNAME}/{split_name}/spec.md"
         try:

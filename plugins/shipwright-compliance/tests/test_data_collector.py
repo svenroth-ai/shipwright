@@ -927,6 +927,16 @@ class TestCollectExternalReviewStates:
         states = collect_external_review_states(root)
         assert states[0].status == "missing"
 
+    def test_planning_path_is_a_file_reported_as_error(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        root.mkdir()
+        (root / ".shipwright").mkdir()
+        (root / ".shipwright" / "planning").write_text("not a directory")
+        states = collect_external_review_states(root)
+        assert len(states) == 1
+        assert states[0].status == "error"
+        assert states[0].reason == "planning path is not a directory"
+
 
 class TestCollectAll:
     def test_returns_compliance_data(self, project_root: Path):

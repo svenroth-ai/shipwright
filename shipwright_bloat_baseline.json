@@ -272,7 +272,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_data_collector.py",
       "limit": 300,
-      "current": 1029,
+      "current": 1039,
       "state": "exception",
       "adr": "ADR-092"
     },
