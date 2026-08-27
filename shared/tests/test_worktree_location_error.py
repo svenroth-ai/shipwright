@@ -85,3 +85,86 @@ def test_worktree_location_error_flags_a_linked_worktree_outside_worktrees_dir(
     error = worktree_location_error(outside_wt)
     assert error != ""
     assert ".worktrees/" in error
+
+
+# --- expected_campaign_slug (identity, not just location) -------------------
+#
+# Checked against the worktree DIRECTORY's basename, not the checked-out
+# branch — a branch-prefix check was tried first and rejected (external
+# review): it cannot distinguish two campaigns whose slugs are themselves a
+# hyphenated extension of one another (req3 vs req3-04) from a slug plus a
+# sub-iterate suffix, since both share the same '-'-separated shape. The
+# directory basename never gains a sub-iterate suffix, so it is exact.
+
+
+def _add_campaign_worktree(work: Path, dirname: str, branch: str | None = None) -> Path:
+    wt = work / ".worktrees" / dirname
+    subprocess.run(
+        ["git", "-C", str(work), "worktree", "add", str(wt),
+         "-b", branch or f"iterate/{dirname}", "main"],
+        capture_output=True, text=True, check=True,
+    )
+    return wt
+
+
+def test_expected_slug_passes_when_the_directory_name_matches(git_origin_repo):
+    work, _ = git_origin_repo
+    wt = _add_campaign_worktree(work, "campaign-req3-04")
+    assert worktree_location_error(wt, expected_campaign_slug="req3-04") == ""
+
+
+def test_expected_slug_is_unaffected_by_which_branch_is_checked_out(git_origin_repo):
+    """The directory name is fixed at creation and never changes; the branch
+    checked out inside it DOES change once Step 1 of sub-iterate-runner.md
+    branches off it — the identity check must not care which branch that is."""
+    work, _ = git_origin_repo
+    wt = _add_campaign_worktree(work, "campaign-req3-04",
+                                 branch="iterate/campaign-req3-04-r0-spec-reader")
+    assert worktree_location_error(wt, expected_campaign_slug="req3-04") == ""
+
+
+def test_expected_slug_rejects_a_different_valid_campaign_worktree(git_origin_repo):
+    """The exact gap this fix closes: project_root IS an isolated worktree
+    under .worktrees/ (location check passes) but belongs to a DIFFERENT
+    campaign — a stale prior campaign, or a sibling one."""
+    work, _ = git_origin_repo
+    wt = _add_campaign_worktree(work, "campaign-other")
+    error = worktree_location_error(wt, expected_campaign_slug="req3-04")
+    assert error != ""
+    assert "req3-04" in error
+
+
+def test_expected_slug_rejects_an_adjacent_hyphenated_slug(git_origin_repo):
+    """The case a branch-prefix check could not close: a DIFFERENT campaign
+    whose slug is this one's slug plus a hyphenated suffix (req3-04 vs req3)
+    is a different worktree directory, so it is correctly rejected."""
+    work, _ = git_origin_repo
+    wt = _add_campaign_worktree(work, "campaign-req3-04")
+    error = worktree_location_error(wt, expected_campaign_slug="req3")
+    assert error != ""
+
+
+def test_expected_slug_none_keeps_prior_behavior(git_origin_repo):
+    """Omitting expected_campaign_slug is unaffected by this fix — every
+    pre-existing call site (and test) keeps working unchanged."""
+    work, _ = git_origin_repo
+    wt = _add_campaign_worktree(work, "campaign-anything")
+    assert worktree_location_error(wt) == ""
+
+
+def test_expected_slug_rejects_a_nested_directory_sharing_the_right_basename(
+    git_origin_repo,
+):
+    """A basename-only compare would let <main>/.worktrees/other/campaign-foo
+    pass for slug "foo" (is_under_worktrees allows any depth under
+    .worktrees/) — the full resolved-path compare (doubt-reviewer,
+    iterate-2026-08-26-campaign-worktree-guard-followups) closes it."""
+    work, _ = git_origin_repo
+    wt = work / ".worktrees" / "other" / "campaign-foo"
+    subprocess.run(
+        ["git", "-C", str(work), "worktree", "add", str(wt),
+         "-b", "iterate/nested", "main"],
+        capture_output=True, text=True, check=True,
+    )
+    error = worktree_location_error(wt, expected_campaign_slug="foo")
+    assert error != ""

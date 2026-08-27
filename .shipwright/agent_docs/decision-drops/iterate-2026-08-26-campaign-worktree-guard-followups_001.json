@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-26-campaign-worktree-guard-followups",
+  "date": "2026-08-27",
+  "section": "Iterate — change: campaign worktree guard doubt-review follow-ups",
+  "title": "Campaign session lock + worktree identity check, hardened by two adversarial doubt-review rounds",
+  "context": "PR #653's doubt-review left two known limitations open in campaign-mode's shared worktree: no cross-session lock, and worktree_location proved location, not identity.",
+  "decision": "Added a heartbeat session lock (acquire/touch/release) and an exact worktree-identity check; both were then adversarially doubt-reviewed and hardened (LOCK-LOST routing, touch's no-lock/wrong-owner split, && ordering, full-path identity compare, rendezvous concurrency test).",
+  "consequences": "Two sessions can no longer race the shared campaign worktree; a stale or misdirected worktree is rejected by identity, not just location; a lock-loss no longer risks Finalize writing loop_state.json out from under a second session.",
+  "rationale": "A cheap heartbeat lock (no single OS process spans the loop) over an already-isolated, git-ignored directory; adversarial doubt-review is standing policy for concurrency and irreversible-operation diffs (CLAUDE.md).",
+  "rejected": "Branch-prefix identity check (ambiguous for req3 vs req3-04); an OS-level lock (nothing long-lived to attach it to); general first-creation-race arbitration inside setup_iterate_worktree.py (out of scope).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

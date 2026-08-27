@@ -1,0 +1,1 @@
+/shipwright-changelog publishes a short, readable GitHub Release for each pushed tag — an LLM-condensed, mechanically sanitized summary linking back to the full CHANGELOG.md section; best-effort and forward-only.

@@ -2,7 +2,7 @@
 name: shipwright-changelog
 description: "Parses Conventional Commits from git history, generates Keep-a-Changelog entries, creates version tags, and opens PRs.\nTRIGGER when: user wants to create a changelog, generate release notes, tag a version, create a release, bump version number, create a PR for release, or review unreleased changes.\nDO NOT TRIGGER when: user asks to write code (/shipwright-build), run tests (/shipwright-test), fix a bug (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design)."
 license: MIT
-compatibility: Requires uv (Python 3.11+), git repository required, gh CLI for PR creation
+compatibility: Requires uv (Python 3.11+), git repository required, gh CLI for PR creation and best-effort GitHub Release publishing
 ---
 
 # Shipwright Changelog Skill
@@ -23,17 +23,10 @@ SHIPWRIGHT-CHANGELOG: Release Management
 ================================================================================
 Analyzes git history, generates changelog, creates PR.
 
-Usage: /shipwright-changelog
-   or: /shipwright-changelog --from v0.1.0
-   or: Invoked by /shipwright-run (orchestrator)
+Usage: /shipwright-changelog | /shipwright-changelog --from v0.1.0 | invoked by /shipwright-run (orchestrator)
 
-Steps:
-  1. Analyze commits since last tag
-  2. Categorize by Conventional Commits type
-  3. Generate changelog entry
-  4. Preview and confirm with user
-  5. Commit changelog + create tag
-  6. Create PR (if feature branches exist)
+Steps: analyze commits -> categorize -> generate entry -> confirm -> sync
+manifests/evidence -> commit + tag -> publish GitHub Release -> optional PR
 ================================================================================
 ```
 
@@ -105,6 +98,8 @@ The setup script returns:
 - `last_tag` — most recent semver tag (or null if none)
 - `commits_since_tag` — list of commit messages + hashes
 - `branch` — current branch name
+- `previous_tag_has_release` — advisory tri-state, never a gate. `false` prints
+  one line (`Notice: {last_tag} has no GitHub Release — see release-workflow.md`); `true`/`null` print nothing.
 
 If no commits since last tag: print "No unreleased changes" and stop.
 
@@ -305,10 +300,7 @@ git commit -m "chore(release): v{version}" -- \
        --verify-commit "$(git rev-parse HEAD)" \
        --result-file ".shipwright/runtime/manifest_sync_result.json" \
   && git tag -a v{version} -m "Release v{version}"
-# The chain starts at `git commit`: a failed/no-op commit must not leave
-# `$(git rev-parse HEAD)` re-resolving to the PREVIOUS commit and tagging
-# the wrong one. `git commit -- <paths>` reads the WORKTREE, not the index —
-# see manifest-sync.md's "the pair that actually closes the card's regression".
+# The chain starts at `git commit` — a failed/no-op commit must not leave `$(git rev-parse HEAD)` re-resolving to the PREVIOUS commit and tagging the wrong one; `git commit -- <paths>` reads the WORKTREE, not the index (manifest-sync.md's "the pair that actually closes the card's regression").
 ```
 
 > `.shipwright/planning/adr/` is a DIRECTORY pathspec deliberately, and leaving it unstaged breaks CI — both in [compliance-evidence.md](references/compliance-evidence.md). `decision_log_index.md` needs the same treatment (Step 4 refreshes it every non-dry-run pass, drops or not) — leaving it unstaged reds `test_decision_log_index_producers.py::test_committed_index_is_not_stale` on main. `decision-drops/` is TRACKED (iterate-2026-08-08-track-decision-drops): Step 4 already deleted the drops it folded, and `-A` is what stages that deletion — skip it and the next release re-folds the same drops under new ADR numbers. `&&` withholds the tag on ANY nonzero exit here, including the audit subprocess failing to even start (e.g. `uv`/PyYAML unavailable) — a genuinely verified evidence commit with `status: "verified_release_audit_incomplete"` reads as environmental, not a real block; re-run once the dependency resolves. The manifest `--verify-commit` reads the COMMITTED blob, never the worktree — full contract in [manifest-sync.md](references/manifest-sync.md); a project with no declared manifests sees it report `status: "ok"` immediately, at negligible cost.
@@ -345,6 +337,18 @@ If already on main: skip PR, just push tag.
 git push --tags origin main
 ```
 
+**Create GitHub Release (best-effort, never blocks this phase):** condenses
+the just-released `CHANGELOG.md` section into a short, human-readable body
+and publishes it. Rationale, the LLM/mechanical split, and every reported
+outcome: [release-workflow.md](references/release-workflow.md).
+```bash
+uv run "{shared_root}/scripts/tools/publish_release_notes.py" \
+  --project-root "$(pwd)" --version "{version}"
+```
+Read `status` from the JSON and add ONE line to the closing summary:
+`ok`/`exists` (with `url`) print the release link; `skipped`/`failed` print
+`reason` verbatim — never swallowed, never a hard stop.
+
 **Record changelog event** (captures version and PR URL for downstream consumers):
 ```bash
 uv run "{shared_root}/scripts/tools/record_event.py" \
@@ -377,24 +381,18 @@ uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase changelog \
   --reason "release v{version}"
 
-# C4 — SKIPPED by policy.
-# C5 — n/a (this plugin prepends the released version block; adding a
-#      new [Unreleased] bullet would collide with the next release).
+# C4 — SKIPPED by policy. C5 — n/a (this plugin prepends the released version block; adding a new [Unreleased] bullet would collide with the next release).
 
 # phase_history (NEW 12.4)
 uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase changelog --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"version":"v{version}","outcome":"tagged"}'
 
-# Mark changelog phase complete (triggers compliance update automatically).
-# _validate_changelog() now runs test_checks + the new check_git_tag_exists
-# and check_changelog_version_matches_tag Sonder-Checks, so a broken tag
-# push or a CHANGELOG drift blocks this call.
+# Mark changelog phase complete (triggers compliance update automatically). _validate_changelog() now runs test_checks + check_git_tag_exists/check_changelog_version_matches_tag, so a broken tag push or CHANGELOG drift blocks this call.
 uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step changelog --status complete
 
-# update-step regenerates the seven evidence documents a SECOND time — unstamped,
-# at a different commit than the one just tagged. Put the committed copies back.
+# update-step regenerates the seven evidence documents a SECOND time, unstamped, at a different commit than the one just tagged — put the committed copies back.
 uv run "{shared_root}/scripts/tools/refresh_compliance_docs.py" \
   --project-root "$(pwd)" --restore
 ```
@@ -409,6 +407,7 @@ Commits:    {N} categorized
 Changelog:  CHANGELOG.md updated
 Tag:        v{version} created
 PR:         {PR_URL | "skipped (on main)"}
+Release:    {release URL | "skipped: <reason>" | "failed: <reason>"}
 
 Tags + main pushed to origin
 ================================================================================

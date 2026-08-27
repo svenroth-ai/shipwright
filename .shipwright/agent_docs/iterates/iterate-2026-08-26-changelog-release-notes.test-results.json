@@ -1,0 +1,491 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-26-changelog-release-notes",
+    "date": "2026-08-26",
+    "unit": {
+      "status": "pass",
+      "passed": 113,
+      "failed": 0,
+      "total": 113,
+      "note": "The 7 test files this iterate adds/extends (105 in shared/tests across repo_identity, extract_changelog_section, condense_release_notes, validate_release_notes, create_github_release, publish_release_notes; 8 in the shipwright-changelog plugin's setup-changelog advisory check). F0's canonical suite runner (run_test_suite.py) additionally re-ran the FULL 18-unit repo suite (9450+ tests) GREEN with diff-coverage 97% against origin/main."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no CRUD/DB change; F0's integration-tests unit ran and passed as part of the full-repo suite, unaffected by this change"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; CLI/skill-prose + shared-script change, covered by the cli surface_verification below"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 105,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-08-26-changelog-release-notes/surface_verification.json",
+      "detail": "uv run pytest over the 6 shared/tests files (repo_identity, extract_changelog_section, condense_release_notes, validate_release_notes, create_github_release, publish_release_notes) -v. The plugin-side advisory check (test_setup_changelog_previous_release.py, 8 tests) is a separate pytest root (one-root-per-process rule) and is covered instead by F0's own shipwright-changelog unit (PASS)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Normalize supported GitHub origin URL forms (ssh/https, `.git` suffix, trailing slash)",
+          "disposition": "tested",
+          "evidence": "`test_normalize_github_origin`"
+        },
+        {
+          "behavior": "Reject a non-GitHub or malformed origin URL",
+          "disposition": "tested",
+          "evidence": "`test_normalize_github_origin`"
+        },
+        {
+          "behavior": "Resolve repo identity from a real git remote",
+          "disposition": "tested",
+          "evidence": "`test_resolve_repo_identity_reads_git_remote`"
+        },
+        {
+          "behavior": "No remote configured resolves to `None`",
+          "disposition": "tested",
+          "evidence": "`test_resolve_repo_identity_no_remote_returns_none`"
+        },
+        {
+          "behavior": "Extract the section for an existing tagged version",
+          "disposition": "tested",
+          "evidence": "`test_extract_section_present`"
+        },
+        {
+          "behavior": "Tag exists but its CHANGELOG carries no heading for it",
+          "disposition": "tested",
+          "evidence": "`test_extract_section_absent_raises`"
+        },
+        {
+          "behavior": "Ambiguous (duplicate) version heading refuses rather than guesses",
+          "disposition": "tested",
+          "evidence": "`test_extract_section_ambiguous_raises`"
+        },
+        {
+          "behavior": "Version tag itself doesn't exist / isn't pushed",
+          "disposition": "tested",
+          "evidence": "`test_extract_missing_tag_raises`"
+        },
+        {
+          "behavior": "Previous-version resolution is semver-aware, not string-sorted (`v0.10.0` > `v0.9.0`)",
+          "disposition": "tested",
+          "evidence": "`test_extract_previous_version_semver_ordering`"
+        },
+        {
+          "behavior": "A previous tag never pushed to origin is omitted from the compare link",
+          "disposition": "tested",
+          "evidence": "`test_extract_previous_tag_not_on_remote_is_omitted`"
+        },
+        {
+          "behavior": "Non-semver tag noise is ignored when picking the previous version",
+          "disposition": "tested",
+          "evidence": "`test_extract_ignores_non_semver_tag_noise`"
+        },
+        {
+          "behavior": "Oversized section is refused, never silently truncated",
+          "disposition": "tested",
+          "evidence": "`test_extract_oversized_section_refused`"
+        },
+        {
+          "behavior": "Round-trip byte-equality against the real aggregator's own rendering",
+          "disposition": "tested",
+          "evidence": "`test_aggregator_extractor_round_trip`"
+        },
+        {
+          "behavior": "No API key configured skips condensation without raising",
+          "disposition": "tested",
+          "evidence": "`test_no_api_key_skips`"
+        },
+        {
+          "behavior": "Successful completion returns condensed text",
+          "disposition": "tested",
+          "evidence": "`test_openrouter_success`"
+        },
+        {
+          "behavior": "Empty completion is reported as an error, never published",
+          "disposition": "tested",
+          "evidence": "`test_empty_completion_reports_error`"
+        },
+        {
+          "behavior": "A provider exception is caught and reported, never raised",
+          "disposition": "tested",
+          "evidence": "`test_provider_exception_reports_error_not_raise`"
+        },
+        {
+          "behavior": "The completion call carries no `tools`/`functions` definitions",
+          "disposition": "tested",
+          "evidence": "`test_call_carries_no_tool_definitions`"
+        },
+        {
+          "behavior": "The condensation prompt file exists and keeps its required section-heading markers",
+          "disposition": "tested",
+          "evidence": "`test_release_notes_prompt_file_exists_with_required_markers`"
+        },
+        {
+          "behavior": "A well-formed condensed body passes and its sanitized form carries the footer",
+          "disposition": "tested",
+          "evidence": "`test_happy_path`"
+        },
+        {
+          "behavior": "Empty body fails validation",
+          "disposition": "tested",
+          "evidence": "`test_empty_body_fails`"
+        },
+        {
+          "behavior": "Oversized body fails validation",
+          "disposition": "tested",
+          "evidence": "`test_oversized_body_fails`"
+        },
+        {
+          "behavior": "A heading outside the fixed vocabulary fails validation",
+          "disposition": "tested",
+          "evidence": "`test_bad_heading_fails`"
+        },
+        {
+          "behavior": "Footer missing the version string fails validation",
+          "disposition": "tested",
+          "evidence": "`test_missing_version_string_fails`"
+        },
+        {
+          "behavior": "First release (no previous tag) passes without a compare link",
+          "disposition": "tested",
+          "evidence": "`test_first_release_no_compare_link_passes`"
+        },
+        {
+          "behavior": "A normal release's sanitized body carries the compare link",
+          "disposition": "tested",
+          "evidence": "`test_normal_release_footer_carries_compare_link`"
+        },
+        {
+          "behavior": "Unsafe URL forms (image, autolink, raw `<img>`/`<a>`, bare URL) are rejected",
+          "disposition": "tested",
+          "evidence": "`test_rejects_unsafe_url_forms` (5 cases)"
+        },
+        {
+          "behavior": "A link to a host other than the repo's own is rejected",
+          "disposition": "tested",
+          "evidence": "`test_rejects_external_link_host`"
+        },
+        {
+          "behavior": "A link to the repo's own host is allowed",
+          "disposition": "tested",
+          "evidence": "`test_allows_own_repo_link`"
+        },
+        {
+          "behavior": "`@mentions` are neutralized (backtick-wrapped) in the sanitized output",
+          "disposition": "tested",
+          "evidence": "`test_neutralizes_mention`"
+        },
+        {
+          "behavior": "`#NNN` issue/PR references are neutralized in the sanitized output",
+          "disposition": "tested",
+          "evidence": "`test_neutralizes_issue_ref`"
+        },
+        {
+          "behavior": "`gh` not installed skips release creation",
+          "disposition": "tested",
+          "evidence": "`test_skips_when_gh_not_found`"
+        },
+        {
+          "behavior": "`gh` below the `--verify-tag` minimum version skips",
+          "disposition": "tested",
+          "evidence": "`test_skips_when_gh_version_too_old`"
+        },
+        {
+          "behavior": "Unauthenticated `gh` skips",
+          "disposition": "tested",
+          "evidence": "`test_skips_when_unauthenticated`"
+        },
+        {
+          "behavior": "A malformed version string is rejected before it reaches `gh`'s argv",
+          "disposition": "tested",
+          "evidence": "`test_rejects_invalid_version`"
+        },
+        {
+          "behavior": "Unresolved repo identity skips",
+          "disposition": "tested",
+          "evidence": "`test_skips_when_repo_identity_unresolved`"
+        },
+        {
+          "behavior": "An already-existing release reports `exists`, never attempts create",
+          "disposition": "tested",
+          "evidence": "`test_reports_exists_without_creating`"
+        },
+        {
+          "behavior": "An indeterminate `gh release view` failure reports `failed`, never falls through to create",
+          "disposition": "tested",
+          "evidence": "`test_view_failure_reports_failed_not_create`"
+        },
+        {
+          "behavior": "A successful create's exact argv shape (`--verify-tag`, `--repo`, no stray flags)",
+          "disposition": "tested",
+          "evidence": "`test_success_argv_shape`"
+        },
+        {
+          "behavior": "A `gh release create` failure is reported, never swallowed",
+          "disposition": "tested",
+          "evidence": "`test_create_failure_reported`"
+        },
+        {
+          "behavior": "Orchestrator: an extract failure stops the chain before condense is called",
+          "disposition": "tested",
+          "evidence": "`test_extract_failure_reported_and_stops`"
+        },
+        {
+          "behavior": "Orchestrator: a condensation failure stops the chain before repo-identity/create",
+          "disposition": "tested",
+          "evidence": "`test_condensation_failure_reported_and_stops`"
+        },
+        {
+          "behavior": "Orchestrator: unresolved repo identity is reported as a condensation-stage failure",
+          "disposition": "tested",
+          "evidence": "`test_unresolved_repo_identity_reported`"
+        },
+        {
+          "behavior": "Orchestrator: a validation failure stops the chain before create is called",
+          "disposition": "tested",
+          "evidence": "`test_validation_failure_reported_and_stops`"
+        },
+        {
+          "behavior": "Orchestrator: the full success path writes the sanitized body to disk and calls create with it",
+          "disposition": "tested",
+          "evidence": "`test_success_writes_sanitized_body_and_calls_create`"
+        },
+        {
+          "behavior": "Orchestrator: a first release (no previous tag) omits the compare link from the written body",
+          "disposition": "tested",
+          "evidence": "`test_first_release_has_no_compare_link`"
+        },
+        {
+          "behavior": "Orchestrator: the CHANGELOG link is always the tagged blob URL, never a computed heading-anchor slug",
+          "disposition": "tested",
+          "evidence": "`test_urls_never_guess_a_heading_anchor`"
+        },
+        {
+          "behavior": "Orchestrator's footer construction matches `validate_release_notes`'s own contract",
+          "disposition": "tested",
+          "evidence": "`test_validate_expected_footer_used_consistently`"
+        },
+        {
+          "behavior": "Advisory check: no previous tag is not applicable (`None`), never blocks",
+          "disposition": "tested",
+          "evidence": "`test_no_previous_tag_is_not_applicable`"
+        },
+        {
+          "behavior": "Advisory check: `gh` unavailable is indeterminate (`None`)",
+          "disposition": "tested",
+          "evidence": "`test_gh_missing_is_indeterminate`"
+        },
+        {
+          "behavior": "Advisory check: previous tag has a release (`True`)",
+          "disposition": "tested",
+          "evidence": "`test_release_found_is_true`"
+        },
+        {
+          "behavior": "Advisory check: previous tag confirmed to have no release (`False`) \u2014 the only state that prints a notice",
+          "disposition": "tested",
+          "evidence": "`test_release_not_found_is_false`"
+        },
+        {
+          "behavior": "Advisory check: an indeterminate `gh` failure is `None`, never misreported as `False`",
+          "disposition": "tested",
+          "evidence": "`test_indeterminate_gh_failure_is_none`"
+        },
+        {
+          "behavior": "Advisory check: unresolved repo identity is `None`",
+          "disposition": "tested",
+          "evidence": "`test_unresolved_repo_identity_is_none`"
+        },
+        {
+          "behavior": "`create_github_release.py`\u2192GitHub Releases API pair (real network call)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "`requires-external-nondeterministic-service` \u2014 never invoke a real producer to verify it; substituted by the argv-shape probe (row 39) per boundary-probe plan above"
+        },
+        {
+          "behavior": "Extraction succeeds even when the WHOLE tagged file exceeds the section-size cap (external code review found this as a live, release-blocking bug on this repo's own 450KB+ CHANGELOG.md)",
+          "disposition": "tested",
+          "evidence": "`test_extract_succeeds_when_whole_file_exceeds_the_section_cap`"
+        },
+        {
+          "behavior": "Link-host check rejects a repo whose name merely starts with ours (`widgets-archive` vs `widgets`)",
+          "disposition": "tested",
+          "evidence": "`test_rejects_link_to_a_repo_whose_name_merely_starts_with_ours`"
+        },
+        {
+          "behavior": "Mention/issue-ref neutralization does not break an existing inline code span open",
+          "disposition": "tested",
+          "evidence": "`test_neutralizes_mention_without_breaking_an_existing_code_span`"
+        },
+        {
+          "behavior": "Mention/issue-ref neutralization still fires for a mention next to (not inside) a code span",
+          "disposition": "tested",
+          "evidence": "`test_neutralizes_a_mention_that_sits_right_next_to_a_code_span`"
+        },
+        {
+          "behavior": "Body containing an emoji is rejected",
+          "disposition": "tested",
+          "evidence": "`test_rejects_emoji`"
+        },
+        {
+          "behavior": "A heading with no content before the next heading is rejected",
+          "disposition": "tested",
+          "evidence": "`test_rejects_a_heading_with_no_content`"
+        },
+        {
+          "behavior": "An empty LAST heading is rejected even once the footer is appended (the empty-section check must scope to the pre-footer body, not body+footer \u2014 a second-order bug in the row-61 fix, caught by code-reviewer)",
+          "disposition": "tested",
+          "evidence": "`test_rejects_an_empty_last_heading_even_with_the_footer_appended`"
+        },
+        {
+          "behavior": "Orchestrator reports a failed status (never crashes) when the prompt file is unreadable",
+          "disposition": "tested",
+          "evidence": "`test_prompt_read_failure_reported_and_stops`"
+        },
+        {
+          "behavior": "Orchestrator reports a failed status (never crashes) when writing the notes file fails (read-only FS, disk full)",
+          "disposition": "tested",
+          "evidence": "`test_notes_write_failure_reported_and_stops`"
+        },
+        {
+          "behavior": "`normalize_github_origin` recognizes the `ssh://git@github.com/owner/repo` URI form, not just SCP-style SSH",
+          "disposition": "tested",
+          "evidence": "`test_normalize_github_origin`"
+        },
+        {
+          "behavior": "A non-H2 ATX heading (`#`, `###`+) cannot smuggle unauthorized text past the vocabulary/empty-section gate \u2014 the narrow exact-`## ` scan missed every other legal heading level (doubt-reviewer HIGH finding, confirmed live by hand-tracing before the fix)",
+          "disposition": "tested",
+          "evidence": "`test_rejects_a_non_h2_atx_heading` (3 cases)"
+        },
+        {
+          "behavior": "A 1-3-space-indented `## ` heading outside the allowed vocabulary is still rejected (indentation alone was never the bypass \u2014 the unchecked heading level was)",
+          "disposition": "tested",
+          "evidence": "`test_rejects_an_indented_h2_heading_outside_the_vocabulary`"
+        },
+        {
+          "behavior": "A 1-3-space-indented `## ` heading using an allowed name still passes",
+          "disposition": "tested",
+          "evidence": "`test_allows_an_indented_h2_heading_inside_the_vocabulary`"
+        },
+        {
+          "behavior": "Orchestrator: `_PROMPT_PATH` resolves to a real file on disk, not just a mocked one (doubt-reviewer LOW finding \u2014 every other test mocks `Path.is_file`, so a future rename of `release-notes-prompt.md` would silently degrade condensation to `skipped` forever without ever failing a test)",
+          "disposition": "tested",
+          "evidence": "`test_prompt_path_resolves_to_a_real_file`"
+        },
+        {
+          "behavior": "`_detect_provider` prefers `openrouter` when both keys are set, falls back to `direct` when only `OPENAI_API_KEY` is set",
+          "disposition": "tested",
+          "evidence": "`test_detect_provider_prefers_openrouter_over_direct`, `test_detect_provider_falls_back_to_direct`"
+        },
+        {
+          "behavior": "The direct-OpenAI provider path (success / empty completion / provider exception) mirrors the openrouter path's behavior",
+          "disposition": "tested",
+          "evidence": "`test_direct_provider_success`, `test_direct_provider_empty_completion_reports_error`, `test_direct_provider_exception_reports_error_not_raise`"
+        },
+        {
+          "behavior": "A missing `openai` package is a reported provider error, not an uncaught `ImportError`",
+          "disposition": "tested",
+          "evidence": "`test_openrouter_reports_missing_package_as_error`"
+        },
+        {
+          "behavior": "`condense_release_notes.py`'s own CLI (`main`) reports a missing section/prompt file and prints the condense result on success",
+          "disposition": "tested",
+          "evidence": "`test_main_reports_missing_section_file`, `test_main_reports_missing_prompt_file`, `test_main_success_prints_condense_result`"
+        },
+        {
+          "behavior": "`_gh_version`/`_gh_authenticated` parse a real `gh` CLI reply, tolerate an unparseable version string, a nonzero exit, and the subprocess call itself raising",
+          "disposition": "tested",
+          "evidence": "`test_gh_version_parses_real_output`, `test_gh_version_none_when_output_unparseable`, `test_gh_version_none_on_nonzero_exit`, `test_gh_version_none_when_run_raises`, `test_gh_authenticated_true_and_false`, `test_gh_authenticated_false_when_run_raises`"
+        },
+        {
+          "behavior": "`_release_view` reports indeterminate when the `gh` call itself raises, and tolerates non-JSON stdout on a found release",
+          "disposition": "tested",
+          "evidence": "`test_release_view_indeterminate_when_run_raises`, `test_release_view_tolerates_non_json_stdout`"
+        },
+        {
+          "behavior": "A missing notes file, and the `gh release create` call itself raising, are both reported as `failed`",
+          "disposition": "tested",
+          "evidence": "`test_missing_notes_file_reports_failed`, `test_create_call_raises_reports_failed`"
+        },
+        {
+          "behavior": "`create_github_release.py`'s own CLI (`main`) prints the create-release result",
+          "disposition": "tested",
+          "evidence": "`test_main_prints_json_result`"
+        },
+        {
+          "behavior": "`_git`'s own OSError/TimeoutExpired branch, and `_remote_has_tag` treating a real (unmocked) failing `git ls-remote` \u2014 no `origin` remote configured \u2014 as `False` rather than raising",
+          "disposition": "tested",
+          "evidence": "`test_git_helper_raises_when_subprocess_itself_fails`, `test_remote_has_tag_false_when_git_command_itself_fails`"
+        },
+        {
+          "behavior": "`extract_changelog_section.py`'s own CLI (`main`) reports an extraction failure as exit 1 with a JSON error, and prints the extracted section on success",
+          "disposition": "tested",
+          "evidence": "`test_main_prints_error_json_and_exits_1_when_extraction_fails`, `test_main_prints_ok_json_on_success`"
+        },
+        {
+          "behavior": "A relative in-page anchor link (`[text](#section)`) is always allowed, never reaching the host allowlist",
+          "disposition": "tested",
+          "evidence": "`test_allows_a_relative_in_page_anchor_link`"
+        },
+        {
+          "behavior": "`validate_release_notes.py`'s own CLI (`main`) reports a missing body file, writes the sanitized body to `--out-file` only on success, and never writes it on a validation failure",
+          "disposition": "tested",
+          "evidence": "`test_main_reports_missing_body_file`, `test_main_writes_sanitized_body_on_success`, `test_main_does_not_write_out_file_on_failure`"
+        },
+        {
+          "behavior": "The orchestrator reports a missing (not just unreadable) prompt file, and `publish_release_notes.py`'s own CLI (`main`) prints the `publish()` result",
+          "disposition": "tested",
+          "evidence": "`test_prompt_missing_reported_and_stops`, `test_main_prints_publish_result`"
+        },
+        {
+          "behavior": "`resolve_repo_identity` returns `None` when the `git remote get-url` call itself raises (not just a nonzero exit)",
+          "disposition": "tested",
+          "evidence": "`test_resolve_repo_identity_none_when_git_itself_fails`"
+        },
+        {
+          "behavior": "Advisory check: `gh --version`'s own nonzero exit, and the `gh release view` call itself raising, are both indeterminate",
+          "disposition": "tested",
+          "evidence": "`test_gh_version_nonzero_exit_is_indeterminate`, `test_gh_release_view_raising_is_indeterminate`"
+        }
+      ],
+      "counts": {
+        "testable": 83,
+        "tested": 83,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-08-26-changelog-release-notes.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 80.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-07-04T00:00:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-26-changelog-release-notes",
+    "commit": "a9e3a3b743021b0945dadc09b9a5cbf39c30f833",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
