@@ -81,7 +81,7 @@ def _parser_cells(fn, target: dict, root: Path) -> dict:
     """Drive a parser over every spec file the fixture contains."""
     conv = target["invoke"]
     if conv == "project_root":  # rtm walks itself
-        return _record(lambda: fn(root), root, target)
+        return _record(lambda: fn(root), root)
     out = {}
     for spec in _spec_files(root):
         rel = spec.relative_to(root).as_posix()
@@ -99,7 +99,7 @@ def _parser_cells(fn, target: dict, root: Path) -> dict:
             call = lambda p=spec, s=split, r=rel: fn(p, s, r)  # noqa: E731
         else:
             raise AssertionError(f"unknown parser convention {conv!r}")
-        out[rel] = _record(call, root, target)
+        out[rel] = _record(call, root)
     return {"per_spec": out}
 
 
@@ -148,7 +148,7 @@ def collect(realm: str, repo_root: Path) -> dict:
                 else:
                     per_fixture[fixture] = _record(
                         lambda f=fn, t=target, r=root: _invoke(f, t, r),
-                        root, target,
+                        root,
                     )
         results[tid] = {"kind": "invoked", "fixtures": per_fixture}
     return results

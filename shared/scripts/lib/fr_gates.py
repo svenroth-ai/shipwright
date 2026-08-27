@@ -67,8 +67,10 @@ def collect_known_fr_ids(project_root) -> tuple[frozenset[str], bool]:
         # divergence: a *directory* named spec.md does not count as a spec here.
         # sort=False keeps raw iterdir order, and the generator still
         # short-circuits on the first hit exactly as the old ``any()`` did.
+        # include_iterate=False (S2b pass C2): iterate/ holds per-run iterate
+        # specs, not a split spec -- irrelevant to "does this repo have any FR".
         specs_found = next(
-            iter_spec_files(planning, guard="is_dir", sort=False, include_iterate=True, require="is_file"), None
+            iter_spec_files(planning, guard="is_dir", sort=False, include_iterate=False, require="is_file"), None
         ) is not None
         if not specs_found:
             return frozenset(), False

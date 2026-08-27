@@ -52,11 +52,19 @@ def find_specs(project_root: Path) -> list[str]:
     # these strings to posix separators). Path ordering is case-insensitive on
     # Windows while str ordering is not, so sorting here rather than relying on
     # the helper is what keeps this call site's output identical.
+    # include_iterate=False (S2b pass C2): iterate/ holds per-run iterate
+    # specs, not a split spec -- on this repo it excludes the four real
+    # nested `iterate/<run-id>/spec.md` files this walk previously (and
+    # wrongly) offered as candidates for a new design session.
     for spec_file in _discovery().iter_spec_files(
-        planning, recursive=True, guard="is_dir", sort=True, include_iterate=True, require="exists"
+        planning, recursive=True, guard="is_dir", sort=True, include_iterate=False, require="exists"
     ):
         relative = spec_file.relative_to(planning)
-        specs.append(str(relative))
+        # .as_posix() (S2b pass C3): was str(relative), which emits OS-native
+        # separators -- "\\" is 0x5C, "/" is 0x2F, so sorting siblings like
+        # "01-a" / "01-a2" could tie-break differently on Windows than on
+        # Linux. Posix separators make the sort below platform-invariant.
+        specs.append(relative.as_posix())
 
     return sorted(specs)
 

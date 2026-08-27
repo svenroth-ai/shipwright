@@ -237,15 +237,9 @@ DISCOVERY: tuple[dict, ...] = (
         "realm": "design", "module": "checks/setup-design-session.py",
         "attr": "find_specs", "invoke": "project_root",
         "source": "plugins/shipwright-design/scripts/checks/setup-design-session.py",
-        "note": "Returns planning-relative strings using the OS separator, and "
-                "rglob -- the only site that sees a loose spec.md sitting "
-                "directly in the planning dir.",
-        # Its output really is platform-dependent, so the matrix stores the
-        # posix form and the OS-separator behaviour is pinned in a dedicated
-        # test. Baking the Windows form in would make CI (ubuntu) red on the
-        # first run, and the obvious remedy -- regenerate -- is the habit this
-        # corpus exists to prevent. (Caught in adversarial review.)
-        "platform_sep": True,
+        "note": "Returns planning-relative POSIX strings (S2b pass C3, was the "
+                "OS separator) -- rglob is the only site that sees a loose "
+                "spec.md sitting directly in the planning dir.",
     },
 )
 

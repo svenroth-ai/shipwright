@@ -1,0 +1,19 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "REJECT",
+  "spec_citations": [
+    {
+      "spec_ref": ".shipwright/planning/iterate/2026-08-27-s2b-discovery-c.md:115-123 (Affected Boundaries)",
+      "divergence": "Diff reverts already-merged PR #656's title_cell() two-pass fix in _fr_table_columns.py back to the pre-fix single-pass walk, deletes its regression test and its decision-drop/agent_docs/changelog/events records, and adds three unrelated old agent_docs iterate JSON files never named by the spec.",
+      "diff_location": "full-diff.txt:1189-1252 (_fr_table_columns.py), :1395-1420 (test_fr_table_shape.py), :14-33,355-372,389-484,1425-1434 (fr-table-titlecols-split artifacts + events.jsonl), :34-354 (unrelated agent_docs additions)",
+      "kind": "out-of-scope"
+    },
+    {
+      "spec_ref": ".shipwright/planning/iterate/2026-08-27-s2b-discovery-c.md:148 (Test Completeness Ledger, C4 _test_links_io row)",
+      "divergence": "The cited test file exists on disk matching the C4 claim exactly but is untracked and absent from full-diff.txt -- it would not ship with this change.",
+      "diff_location": "plugins/shipwright-compliance/tests/test_test_links_io_spec_directory.py (on disk, absent from diff)",
+      "kind": "missing"
+    }
+  ],
+  "summary": "C1-C5 source changes and the golden.json regenerated_for string are all correctly and faithfully implemented per spec. Blocked by two issues: (1) the diff reverts already-merged PR #656 and pulls in unrelated stale agent_docs content, evidently because the branch predates and hasn't been rebased onto current origin/main; (2) the C4 test claimed in the Test Completeness Ledger for _test_links_io.discover_specs exists on disk but is untracked and absent from the diff."
+}

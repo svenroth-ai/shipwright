@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "C1-C5 implemented exactly per the campaign BRIEF, narrowed by the operator's live decision to convert only #8 (not #7) this pass; no scope creep."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "collect_external_review_states now catches NotADirectoryError explicitly and returns a structured error row instead of letting it escape; C4 replaces two unguarded raises with is_file() gates."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "n/a",
+      "note": "No user input, SQL, HTML rendering, secrets, or auth/permission surface touched — this is filesystem-discovery and test-corpus code only."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Every new/renamed test asserts a real outcome (explicit error row's reason field, a skipped directory not raising, candidate_count liveness guards); the sort=True/False revert-and-restore experiment confirmed the C5 seam probes are not vacuous before adding the guard."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "No query patterns, no unbounded list endpoints; changes are directory-walk guard logic and a path-separator fix."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "File locations match existing plugin/shared layout. spec_parser.py, drift_parsers.py, and test_data_collector.py exceed 300 lines predating this change. The session's bloat anti-ratchet caught two real ratchets before commit: (1) a C5 nit moving comments into docstrings grew spec_parser.py/drift_parsers.py further -- fixed by reverting to inline comments extended in place, net line delta against origin/main now exactly zero; (2) the mandatory C1 test grew test_data_collector.py past its existing ADR-092 bloat-exception `current` ceiling -- fixed by trimming a redundant docstring, then deliberately bumping `current` (1029->1039) in shipwright_bloat_baseline.json, since ADR-092 already argues this specific file is a deep test module and a legitimate new test is exactly the case that exception exists for."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Serialized format changed: integration-tests/requirements_corpus/golden.json. Producer: regen_golden.py (run with --reason, the exact string mandated by the BRIEF's Q1). Consumers: the golden-pinned tests in test_requirements_corpus_registry.py / test_requirements_corpus_found_defects.py / test_requirements_corpus_probe_table.py. Round-trip (regenerate -> full corpus suite reads it -> green) verified directly; no touches_io_boundary risk flag fired (this is a committed test fixture, not a runtime config/state file)."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "`uv run shared/scripts/tools/scan_test_hygiene.py --diff` reported no findings."
+    }
+  ]
+}

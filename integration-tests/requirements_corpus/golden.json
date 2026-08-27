@@ -68,7 +68,7 @@
       }
     }
   },
-  "regenerated_for": "S2b passes A+B: pass A, plus require=is_file on non-recursive sites, sort=True except fr_gates and state, order_sensitive masks dissolved",
+  "regenerated_for": "S2b passes A+B+C: passes A+B, plus explicit not-a-directory finding, include_iterate=False with the setup_adopt and spec_parser exceptions, posix separators in setup-design-session",
   "schema_version": 1,
   "targets": {
     "disc._test_links_io.discover_specs": {
@@ -403,20 +403,6 @@
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live",
               "text": "Row after a later heading"
-            },
-            {
-              "id": "FR-01.01",
-              "priority": "Must",
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate",
-              "text": "User can log in"
-            },
-            {
-              "id": "FR-01.02",
-              "priority": "Should",
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate",
-              "text": "User can log out"
             }
           ]
         },
@@ -876,26 +862,6 @@
               "retired": false,
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live"
-            },
-            {
-              "basis": "",
-              "basis_declared": false,
-              "description": "User can log in",
-              "id": "FR-01.01",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate"
-            },
-            {
-              "basis": "",
-              "basis_declared": false,
-              "description": "User can log out",
-              "id": "FR-01.02",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate"
             }
           ]
         },
@@ -1327,26 +1293,6 @@
               "retired": false,
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live"
-            },
-            {
-              "basis": "",
-              "basis_declared": false,
-              "description": "User can log in",
-              "id": "FR-01.01",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate"
-            },
-            {
-              "basis": "",
-              "basis_declared": false,
-              "description": "User can log out",
-              "id": "FR-01.02",
-              "name": "",
-              "retired": false,
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate"
             }
           ]
         },
@@ -1706,7 +1652,6 @@
             "<root>/.shipwright/planning/.hidden-split/spec.md",
             "<root>/.shipwright/planning/01-live/spec.md",
             "<root>/.shipwright/planning/03-nested/deeper/spec.md",
-            "<root>/.shipwright/planning/iterate/spec.md",
             "<root>/.shipwright/planning/spec.md"
           ]
         },
@@ -1975,8 +1920,19 @@
           ]
         },
         "planning-file": {
-          "exception": "NotADirectoryError",
-          "outcome": "raised"
+          "outcome": "returned",
+          "type": "list[ExternalReviewState]",
+          "value": [
+            {
+              "findings_count": 0,
+              "provider": null,
+              "reason": "planning path is not a directory",
+              "self_review_fallback_ran": false,
+              "split": "(planning root)",
+              "status": "error",
+              "timestamp": ""
+            }
+          ]
         },
         "spec-dir": {
           "outcome": "returned",
@@ -2083,22 +2039,6 @@
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live",
               "text": "Row after a later heading"
-            },
-            {
-              "id": "FR-01.01",
-              "priority": "Must",
-              "sections": [],
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate",
-              "text": "User can log in"
-            },
-            {
-              "id": "FR-01.02",
-              "priority": "Should",
-              "sections": [],
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate",
-              "text": "User can log out"
             }
           ]
         },
@@ -2461,13 +2401,11 @@
       "fixtures": {
         "absent": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list",
           "value": []
         },
         "brownfield-single-split": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             "01-adopted/spec.md"
@@ -2475,25 +2413,21 @@
         },
         "edge": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             ".hidden-split/spec.md",
             "01-live/spec.md",
             "03-nested/deeper/spec.md",
-            "iterate/spec.md",
             "spec.md"
           ]
         },
         "empty": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list",
           "value": []
         },
         "greenfield-multi-split": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             "01-auth/spec.md",
@@ -2503,7 +2437,6 @@
         },
         "malformed": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             "01-broken/spec.md"
@@ -2511,7 +2444,6 @@
         },
         "mixed-shape": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             "01-greenfield-template/spec.md",
@@ -2526,13 +2458,11 @@
         },
         "planning-file": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list",
           "value": []
         },
         "spec-dir": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             "01-spec-is-a-dir/spec.md"
@@ -2540,7 +2470,6 @@
         },
         "zero-row-parse": {
           "outcome": "returned",
-          "platform_sep_normalized": true,
           "type": "list[str]",
           "value": [
             "01-reordered-only/spec.md"
@@ -4953,22 +4882,6 @@
               "spec_path": ".shipwright/planning/01-live/spec.md",
               "split": "01-live",
               "text": "Row after a later heading"
-            },
-            {
-              "id": "FR-01.01",
-              "priority": "Must",
-              "sections": [],
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate",
-              "text": "User can log in"
-            },
-            {
-              "id": "FR-01.02",
-              "priority": "Should",
-              "sections": [],
-              "spec_path": ".shipwright/planning/iterate/spec.md",
-              "split": "iterate",
-              "text": "User can log out"
             }
           ]
         },

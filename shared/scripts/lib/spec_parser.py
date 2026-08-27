@@ -226,7 +226,7 @@ def read_top_level_spec(project_root: Path) -> str | None:
             return None
     # Adopt layout: the spec lives under a planning split, not agent_docs.
     planning = project_root / _PLANNING_DIRNAME
-    for candidate in iter_spec_files(planning, guard="is_dir", sort=True, include_iterate=True, require="is_file"):  # was sorted(glob("*/spec.md")); require="is_file" added S2b B1
+    for candidate in iter_spec_files(planning, guard="is_dir", sort=True, include_iterate=False, require="is_file"):  # was sorted(glob("*/spec.md")); require="is_file" S2b B1; include_iterate=False S2b C2 (excludes iterate/; _iter_spec_files below keeps its own R0 M6 exception)
         try:
             return candidate.read_text(encoding="utf-8", errors="ignore")
         except OSError:

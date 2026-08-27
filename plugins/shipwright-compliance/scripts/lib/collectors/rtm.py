@@ -159,13 +159,19 @@ def collect_requirements(project_root: Path) -> list[RequirementInfo]:
 
     # guard="exists" preserves this walk raising NotADirectoryError on a
     # planning FILE. Its claimed mirror, drift_parsers, swallows the read_text
-    # OSError that follows; this one has no try/except at all. Both divergences
-    # are frozen here, not reconciled (campaign S2b owns that).
+    # OSError that follows; this one has no try/except at all. S2b pass C1
+    # left this divergence frozen deliberately: RequirementInfo is a pure
+    # data record with no status/reason slot, so turning this raise into an
+    # explicit finding (like collect_external_review_states below) would mean
+    # widening its return contract, not just adding a value -- larger,
+    # differently-shaped work than this pass's scope.
     iter_spec_files = load_shared_lib("planning_discovery").iter_spec_files
     # require="is_file" (S2b pass B1): a directory named spec.md is skipped
     # rather than reaching read_text() below and raising.
+    # include_iterate=False (S2b pass C2): iterate/ holds per-run iterate
+    # specs, not a split spec -- irrelevant to the RTM's requirements table.
     for spec_path in iter_spec_files(
-        planning_dir, guard="exists", sort=True, include_iterate=True, require="is_file"
+        planning_dir, guard="exists", sort=True, include_iterate=False, require="is_file"
     ):
         split_name = spec_path.parent.name
         rel_spec = f".shipwright/planning/{split_name}/spec.md"
@@ -200,9 +206,22 @@ def collect_external_review_states(project_root: Path) -> list[ExternalReviewSta
     # include_iterate=False — iterate runs produce run-scoped markers that are
     # audited separately via events, not per-split RTM rows.
     iter_split_dirs = load_shared_lib("planning_discovery").iter_split_dirs
-    for split_dir in iter_split_dirs(
-        planning_dir, guard="exists", sort=True, include_iterate=False
-    ):
+    try:
+        split_dirs = list(iter_split_dirs(
+            planning_dir, guard="exists", sort=True, include_iterate=False
+        ))
+    except NotADirectoryError:
+        # guard="exists" (campaign S2b pass C1): a `.shipwright/planning` FILE
+        # reaches iterdir() and raises. This is the one call site that already
+        # emits a row per split condition, so the broken path gets the same
+        # treatment instead of crashing the whole compliance collection.
+        return [ExternalReviewState(
+            split="(planning root)",
+            status="error",
+            reason="planning path is not a directory",
+        )]
+
+    for split_dir in split_dirs:
         marker_path = split_dir / "external_review_state.json"
         if not marker_path.exists():
             states.append(ExternalReviewState(split=split_dir.name, status="missing"))

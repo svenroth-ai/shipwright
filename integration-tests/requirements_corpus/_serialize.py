@@ -27,32 +27,6 @@ def _spec_files(root: Path) -> list[Path]:
     return sorted(p for p in planning.rglob("spec.md") if p.is_file())
 
 
-def _posixify(value):
-    """Canonicalize OS path separators inside an already-normalized value.
-
-    Applied ONLY to targets flagged ``platform_sep`` in the registry --
-    currently just ``setup-design-session.find_specs``, which returns
-    ``str(relative_path)`` and therefore emits a backslash-separated
-    string on Windows
-    and ``01-auth/spec.md`` on Linux.
-
-    That output is genuinely platform-dependent, so no serialization can be both
-    faithful and identical across platforms. Baking the Windows form into the
-    baseline would make the harness red on ubuntu CI from day one -- and the
-    natural remedy (regenerate) is precisely the habit this corpus is designed
-    to prevent. So the matrix carries the stable posix form and the
-    platform-dependence itself is pinned in a dedicated explicit test.
-    Narrowly scoped so a real backslash in spec CONTENT (e.g. an escaped
-    pipe) is never rewritten.
-    """
-    if isinstance(value, str):
-        return value.replace("\\", "/")
-    if isinstance(value, list):
-        return [_posixify(v) for v in value]
-    if isinstance(value, dict):
-        return {k: _posixify(v) for k, v in value.items()}
-    return value
-
 def _norm(value, root: Path):
     """Normalize a value for JSON, preserving type identity and order."""
     if isinstance(value, Path):
@@ -120,7 +94,7 @@ def _type_of(value) -> str:
         return f"list[{_neutral_type_name(value[0])}]"
     return _neutral_type_name(value)
 
-def _record(call, root: Path, target: dict | None = None) -> dict:
+def _record(call, root: Path) -> dict:
     """Invoke *call* and record outcome kind, type, laziness, value.
 
     The exception MESSAGE is deliberately not recorded -- only its type. OS
@@ -148,7 +122,4 @@ def _record(call, root: Path, target: dict | None = None) -> dict:
     }
     if lazy:
         cell["consumed_type"] = _type_of(result)
-    if target and target.get("platform_sep"):
-        cell["value"] = _posixify(cell["value"])
-        cell["platform_sep_normalized"] = True
     return cell

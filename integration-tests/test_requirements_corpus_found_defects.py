@@ -168,7 +168,7 @@ def test_the_five_parsers_agree_on_which_ids_a_spec_declares(matrix):
 # Unsorted walks -- pinned against a controlled seam, not against luck
 # ---------------------------------------------------------------------------
 
-def test_unsorted_walk_tracks_enumeration_order():
+def test_sorted_walk_ignores_enumeration_order():
     """``validate_adoption._validate_spec`` now SORTS before picking (S2b pass B3).
 
     It used to do ``list(planning.rglob("spec.md"))`` with no sort and take
@@ -182,14 +182,23 @@ def test_unsorted_walk_tracks_enumeration_order():
     SAME either way. That is the new behavioural claim -- "this walk has a
     fixed order of its own, independent of how it was handed to it".
     """
-    result = _probe("unsorted_seam", "edge")
+    result = _probe("sorted_seam", "edge")
+    # Liveness guard (S2b pass C5, nit 2): forward == reverse only proves
+    # anything if there was more than one candidate to reorder -- on a
+    # single-spec fixture it would pass even with sort=True removed entirely.
+    # A positive assertion, not a comment, so the guard cannot silently stop
+    # applying if the fixture ever shrinks.
+    assert result["candidate_count"] >= 2, (
+        "the 'edge' fixture no longer offers multiple spec.md candidates -- "
+        "this probe can no longer distinguish sorted from unsorted order"
+    )
     assert result["forward"] == result["reverse"], (
         "the walk started tracking enumeration order again -- if sort=True "
         "was removed, that is a behaviour change to declare"
     )
 
 
-def test_unsorted_walk_a2_tracks_enumeration_order():
+def test_sorted_walk_a2_ignores_enumeration_order():
     """The SECOND formerly-masked target, same S2b pass B3 story.
 
     Both ``validate_adoption._validate_spec`` and
@@ -204,7 +213,12 @@ def test_unsorted_walk_a2_tracks_enumeration_order():
     history in ``registry.py`` and ``_serialize.py``), so it has no probe here
     either -- there being nothing left to compensate for.
     """
-    result = _probe("unsorted_seam_a2", "edge")
+    result = _probe("sorted_seam_a2", "edge")
+    # Liveness guard (S2b pass C5, nit 2): see test_sorted_walk_ignores_enumeration_order.
+    assert result["candidate_count"] >= 2, (
+        "the 'edge' fixture no longer offers multiple spec.md candidates -- "
+        "this probe can no longer distinguish sorted from unsorted order"
+    )
     assert result["forward"] == result["reverse"], (
         "check_a2_spec_has_frs started tracking enumeration order again -- if "
         "sort=True was removed, that is a behaviour change to declare"

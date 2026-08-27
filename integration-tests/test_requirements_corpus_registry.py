@@ -16,7 +16,6 @@ golden matrix RESTS on rather than the matrix itself:
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import sys
@@ -209,19 +208,44 @@ def test_reading_a_directory_as_a_spec_raises_this_platform_s_oserror():
             )
 
 
-def test_platform_separator_behaviour_is_pinned():
-    """The platform-dependence itself, frozen where the matrix cannot hold it.
+def test_find_specs_emits_posix_separators_on_every_platform():
+    """find_specs is now platform-INVARIANT (S2b pass C3, was OS-separator).
 
-    The matrix stores the posix form so it stays portable — but that would
-    otherwise LAUNDER the fact that this target emits the OS separator. So the
-    property is asserted directly here, where it holds on both platforms. If S2
-    changes ``str(relative)`` to ``relative.as_posix()``, this fails on Windows
-    and the change has to be declared rather than absorbed.
+    Before C3 this pinned the fact that ``str(relative_path)`` emits the OS
+    separator — genuinely platform-dependent, so it belonged in a dedicated
+    test rather than the matrix. After C3 (``relative.as_posix()``) there is
+    no platform difference left to pin.
 
-    Same shape as the unsorted-walk probes: mask the unportable thing in the
-    matrix, pin the real property in a dedicated test.
+    Its earlier form (``assert all(os.sep in s for s in specs)``) would have
+    been a silent tautology on Linux — ``/`` is Linux's ``os.sep`` too — and
+    could only ever fail on Windows, the one platform this suite's own CI
+    does not run on. Replaced with an assertion that checks the actual
+    intent: no OS-native backslash survives, on any platform.
+
+    That behavioural check has the SAME blind spot the earlier one had, one
+    layer down: on Linux, ``os.sep`` is already ``"/"``, so
+    ``str(relative_path)`` and ``relative_path.as_posix()`` produce identical
+    output there — a revert of the C3 fix back to ``str(relative)`` would
+    still pass every assertion below on the one platform this suite's CI
+    actually runs on (external code review, S2b pass C). Guarded here with a
+    source-level check instead, which fails on any host regardless of its
+    native separator.
     """
     design = REPO_ROOT / "plugins" / "shipwright-design" / "scripts"
+    find_specs_src = (design / "checks" / "setup-design-session.py").read_text(encoding="utf-8")
+    match = re.search(r"def find_specs\(.*?(?=\ndef |\Z)", find_specs_src, re.S)
+    assert match, "find_specs() not found in setup-design-session.py"
+    body = match.group(0)
+    code_lines = [ln for ln in body.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    code_only = "\n".join(code_lines)
+    assert "specs.append(relative.as_posix())" in code_only, (
+        "find_specs no longer calls .as_posix() — the behavioural assertion "
+        "below cannot detect this on Linux CI, where os.sep is already '/'"
+    )
+    assert "specs.append(str(relative))" not in code_only, (
+        "find_specs reverted to str(relative), which is platform-dependent — "
+        "the behavioural assertion below cannot catch this on Linux CI"
+    )
     code = (
         "import sys, json, importlib.util\n"
         f"sys.path.insert(0, {str(design)!r})\n"
@@ -242,7 +266,8 @@ def test_platform_separator_behaviour_is_pinned():
     assert proc.returncode == 0, proc.stderr[-1500:]
     specs = json.loads(proc.stdout)
     assert specs, "fixture produced no specs — the probe is not exercising anything"
-    assert all(os.sep in s for s in specs), (
-        f"find_specs stopped emitting the OS separator ({os.sep!r}): {specs}. "
-        "That is a behaviour change — declare it and update this test."
+    assert not any("\\" in s for s in specs), (
+        f"find_specs emitted an OS-native backslash separator: {specs}. "
+        "That is a behaviour change back toward platform-dependence — "
+        "declare it and update this test."
     )

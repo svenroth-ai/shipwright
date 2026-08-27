@@ -172,6 +172,19 @@ def test_discover_specs_and_default_test_roots(tmp_path):
     assert bf._default_test_roots(tmp_path / "empty") == [tmp_path / "empty"]   # fallback
 
 
+def test_discover_specs_skips_a_directory_named_spec_md(tmp_path):
+    """S2b pass C4: a spec.md DIRECTORY used to reach discover_specs' output
+    list via .exists(), then explode at read_text() downstream. Both the
+    agent_docs and repo-root positions now gate on is_file() like the shared
+    planning_discovery helper's require="is_file" already does for splits."""
+    root = tmp_path / "proj"
+    (root / ".shipwright/agent_docs/spec.md").mkdir(parents=True)
+    (root / "spec.md").mkdir()
+    specs = bf.discover_specs(root)
+    assert (root / ".shipwright/agent_docs/spec.md") not in specs
+    assert (root / "spec.md") not in specs
+
+
 def test_iter_test_files_scans_a_repo_nested_under_a_prune_named_ancestor(tmp_path):
     """Every iterate runs INSIDE ``.worktrees/<slug>/``, and ``.worktrees`` is a prune name.
     Pruning on the whole ``path.parts`` (ancestors included) false-prunes EVERY file when the

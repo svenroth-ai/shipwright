@@ -1,0 +1,79 @@
+{
+  "run_id": "iterate-2026-08-27-s2b-discovery-c",
+  "date": "2026-08-27T12:16:02.337829Z",
+  "event_at": "2026-08-27T12:15:00.971395+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/s2b-discovery-c",
+  "spec": ".shipwright/planning/iterate/2026-08-27-s2b-discovery-c.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-27-s2b-discovery-c",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "C1: rtm.collect_external_review_states (#8) returns an explicit finding on a planning-file (not-a-directory) path",
+        "disposition": "tested",
+        "evidence": "test_planning_path_is_a_file_reported_as_error PASSED"
+      },
+      {
+        "behavior": "C1: planning-file corpus fixture still splits {raised,returned} across disc.* targets; dupes==0 preserved",
+        "disposition": "tested",
+        "evidence": "test_planning_as_a_file_still_splits_the_targets, test_corpus_discriminates_between_targets (golden-pinned) PASSED"
+      },
+      {
+        "behavior": "C2: 9 sites now exclude iterate/ by default; the 2 exceptions and 1 no-op site are untouched",
+        "disposition": "tested",
+        "evidence": "golden-corpus diff -- exactly 8 targets changed, matching the analysis exactly; full corpus suite PASSED"
+      },
+      {
+        "behavior": "C3: setup-design-session.find_specs emits posix separators unconditionally, detectable on Linux CI (not just behaviorally, which is blind there)",
+        "disposition": "tested",
+        "evidence": "test_find_specs_emits_posix_separators_on_every_platform (source-level + behavioral assertion) PASSED"
+      },
+      {
+        "behavior": "C3: platform_sep apparatus fully removed, no dead code",
+        "disposition": "tested",
+        "evidence": "ruff clean + grep confirms zero remaining references + full corpus suite PASSED"
+      },
+      {
+        "behavior": "C4: _test_links_io.discover_specs skips a directory literally named agent_docs holding spec.md",
+        "disposition": "tested",
+        "evidence": "test_test_links_io_spec_directory.py (2 cases) PASSED"
+      },
+      {
+        "behavior": "C4: backfill_test_links.discover_specs skips a directory at both agent_docs and repo-root spec.md",
+        "disposition": "tested",
+        "evidence": "test_discover_specs_skips_a_directory_named_spec_md PASSED"
+      },
+      {
+        "behavior": "C5: renamed sorted-seam tests carry a real liveness guard, correctly scoped to each probed target's own discovery config",
+        "disposition": "tested",
+        "evidence": "test_sorted_walk_ignores_enumeration_order, test_sorted_walk_a2_ignores_enumeration_order PASSED"
+      },
+      {
+        "behavior": "no regression across every plugin, shared/, and integration-tests this diff's shared discovery library touches",
+        "disposition": "tested",
+        "evidence": "full 18-unit F0 suite (17033 passed, 0 failed, 64 skipped) + verify_local.py 3/3 mirrored gates PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-27-s2b-discovery-c.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure internal CLI/lib tooling (discovery guards, path serialization) -- no runnable web/dev-server surface; this run's own unit + integration suites are the verification"
+  }
+}
