@@ -1,1 +1,0 @@
-shipwright-adopt: quality requirements detected during onboarding now render as ordinary Functional Requirement rows instead of an unparseable QR-NN prose list, so an iterate implementing one can name it via --affected-frs

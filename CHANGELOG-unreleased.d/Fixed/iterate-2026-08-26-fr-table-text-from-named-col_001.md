@@ -1,1 +1,0 @@
-FR-table description exemption (`compute_fr_coherence`) no longer misses a genuine Description column whose content happens to match the Name column — a new `text_from_named_col` flag on `FrTableRow` replaces the old value-equality check.

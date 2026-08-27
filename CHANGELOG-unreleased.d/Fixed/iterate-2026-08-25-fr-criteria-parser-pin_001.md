@@ -1,1 +1,0 @@
-FR-table description exemption (compute_fr_coherence) no longer falls back to the Name cell when a spec table has no real Description column, which previously produced a false 'has description' verdict.

@@ -1,1 +1,0 @@
-Gitignore self-heal now retracts a SUPERSEDED template rule even when it predates a project's managed BEGIN/END block (e.g. an adopted-before-markers-existed project), instead of only stripping matches inside the block

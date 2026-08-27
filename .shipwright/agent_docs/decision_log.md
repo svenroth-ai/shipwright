@@ -4632,3 +4632,618 @@ shipwright/
 - **Consequences:** Every store consumer must now recognize amend (triage core+schema, triage_integrity, triage_validate+triage_gc_core, sweep_quarantine, sweep_drift_events, triage_cli). Two follow-ups deferred to trg-d5ef8039: delivery-visibility parity (mitigated inline) and WebUI TS reader parity (open question, unverified from this repo).
 - **Rejected:** A mutable field update (reintroduces the concurrent-write collision class); dismiss-and-re-file kept as the only path (the measured problem); widening undeliveredDecisions (silent miscounting); a separate third resolution pass for amend (ordering disagreement risk).
 - **Details:** [iterate-2026-08-08-triage-amend-event-third-event-kind.md](../planning/adr/iterate-2026-08-08-triage-amend-event-third-event-kind.md)
+
+---
+
+### ADR-348: Track Codex operating contract
+- **Date:** 2026-08-08
+- **Section:** Iterate — change
+- **Run-ID:** iterate-2026-08-08-codex-operating-contract
+- **Context:** Codex operating rules were supplied repeatedly instead of being tracked as durable repository guidance.
+- **Decision:** Track the source AGENTS.md, align runtime-specific facts with CLAUDE.md, and keep stable Codex policy concise.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Future iterates can rely on the tracked contract while detailed F0-F11 procedures remain in the iterate skill.
+
+---
+
+### ADR-349: Fail closed on incomplete coordination signals
+- **Date:** 2026-08-09
+- **Section:** Iterate — bug: shared script reliability fixes
+- **Run-ID:** iterate-2026-08-08-p2-52-shared-scripts-fixes
+- **Context:** Git probe timeouts and unscanned decision records could silently permit unsafe work. Unique stop-event claims also accumulated without bound.
+- **Decision:** Treat timed-out probes as in-progress, scan every decoded Decision-Drop text value without opt-out, and reap expired claims by their stored TTL.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Ambiguous coordination and agent-authored records must not be treated as safe, while cleanup remains fail-open for delivery continuity.
+- **Consequences:** Self-heal may skip during an ambiguous Git state; deep Decision-Drops produce a high finding; old claims are bounded.
+- **Rejected:** Treating nonzero probes as absent, scanning serialized JSON, and using one caller TTL for all claims were rejected.
+
+---
+
+### ADR-350: Protect permanently pinned F5c summaries
+- **Date:** 2026-08-09
+- **Section:** Iterate - bug: retention pins
+- **Run-ID:** iterate-2026-08-08-retention-pins
+- **Context:** P1.14 recovery records require two F5c summaries to remain locally reachable, but age-only retention evicted them.
+- **Decision:** Declare permanent run IDs in the run config and retain them outside the 50-entry unpinned cache.
+- **Commit:** (assigned post-merge)
+- **Rationale:** This keeps the ordinary recency cache bounded while making deliberate recovery exceptions explicit and testable.
+- **Consequences:** Recovered summaries remain available and malformed pin configuration stops finalization before retention can delete entries.
+- **Rejected:** Only restoring evicted files, or moving all history out of F5c, because neither prevents the next retention sweep.
+
+---
+
+### ADR-351: Harden plan review and best-effort readers
+- **Date:** 2026-08-09
+- **Section:** Iterate — bug: six small defects
+- **Run-ID:** iterate-2026-08-08-six-small-defects
+- **Context:** Six independent small defects allowed malformed commands, misleading marker state, fragile routing checks, or failures at malformed input boundaries.
+- **Decision:** Use explicit continuations and flags, bounded branch tests, and recovery-preserving reader behavior.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each correction is narrow, regression-tested, and preserves existing interfaces.
+- **Consequences:** Review markers now report only actual fallbacks; malformed external data remains diagnostic instead of crashing readers.
+- **Rejected:** Broader review-flow redesigns and unrelated reader refactors were excluded.
+
+---
+
+### ADR-352: Making an interrupted iterate resumable from disk alone
+- **Date:** 2026-08-09
+- **Section:** Iterate — bug: compaction-state-audit
+- **Run-ID:** iterate-2026-08-09-compaction-state-audit
+- **Context:** Autonomous iterate sessions can be killed mid-phase by context-window compaction; three gaps meant resume from disk alone was unreliable. See spec-ref.
+- **Decision:** Persist the mini-plan at every complexity tier; add an immediate-write mandate + SubagentStop salvage hook for review findings; B1 reads reviews.json directly, gated on self.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Each gap is a different artifact reaching disk at a different phase point; each fix closes an existing carve-out or wires an existing read path rather than inventing new machinery.
+- **Consequences:** handoff_iterate.py gains a new reviews.json consumer; the salvage hook adds a new write surface a resuming session must know to feed into record_review_pass.py.
+- **Rejected:** Reviewer Write access (capability-surface blast radius); a --mark-pending pre-spawn write (redundant with init); hardening the mini-plan run_id heuristic (inconsistent single-site gold-plating); the dual-import fallback pattern (verified not applicable to this file's loading path).
+- **Details:** [iterate-2026-08-09-compaction-state-audit-review-cascade-durability.md](../planning/adr/iterate-2026-08-09-compaction-state-audit-review-cascade-durability.md)
+
+---
+
+### ADR-353: Preserve recurring triage decisions
+- **Date:** 2026-08-09
+- **Section:** Iterate
+- **Run-ID:** iterate-2026-08-09-dismissed-recurring
+- **Context:** Recurring producers minted new cards after terminal operator decisions.
+- **Decision:** Treat matching dismissed and promoted cards as durable; only producer-owned automatic resolutions reopen their original ID.
+- **Commit:** (assigned post-merge)
+- **Rationale:** source plus dedup key already identifies the logical condition.
+- **Consequences:** Unchanged conditions retain their decision trail; material conditions remain distinct.
+- **Rejected:** Separate condition fingerprint; W3 changes; PR pending-check changes
+
+---
+
+### ADR-354: Keep amend delivery independent and additive
+- **Date:** 2026-08-09
+- **Section:** Iterate — change: amend delivery signal
+- **Run-ID:** iterate-2026-08-09-p2-56-amend-delivery-signal
+- **Context:** A tracked card can have a valid correction only in the outbox while its append is already delivered.
+- **Decision:** Expose pendingAmendDelivery and undeliveredAmends beside the existing append and status facts; retain contract version 2.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Amends accumulate and require tracked-target plus canonical-equivalence checks; the established additive-field rule keeps v2 compatible.
+- **Consequences:** Consumers can distinguish pending corrections without changing existing status semantics or breaking the pinned v2 consumer.
+- **Rejected:** Do not merge amend ids into undeliveredDecisions or bump the unchanged WebUI consumer to v3.
+- **Details:** [spec.md](../planning/iterate/iterate-2026-08-09-p2-56-amend-delivery-signal/spec.md)
+
+---
+
+### ADR-355: Separate branch feedback from merge and release authority
+- **Date:** 2026-08-10
+- **Section:** P2.59
+- **Run-ID:** iterate-2026-08-09-p2-59-branch-feedback-authority
+- **Context:** The compliance-audit Stop hook could mirror branch-local findings into the global compliance backlog, conflating branch feedback with merge/release authority. No lifecycle scope distinguished branch, merge, and release audits.
+- **Decision:** One lifecycle-aware audit runner (lib/compliance_lifecycle.py, tools/audit_compliance_lifecycle.py) now exposes three explicit authority scopes: branch_feedback (local-only, never mirrors), merge (audits the exact delivered mergeCommit in a detached worktree, Group E not_applicable), and release (full A-I authority after a verified compliance-evidence commit).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Separating feedback visibility from write authority keeps expected branch noise (e.g. pending-release Group E drift) locally visible to the operator without polluting the shared backlog.
+- **Consequences:** The Stop hook never writes the global backlog; only a verified merge or release commit can. Coverage distinguishes not_applicable from missing so a crashed or absent group can no longer silently pass as complete.
+- **Rejected:** A single-scope mirror with an E-specific suppression flag was rejected: it would not generalize to a genuinely missing or crashed group and could not distinguish merge from release authority.
+- **Details:** [2026-08-09-p2-59-branch-feedback-authority.md](../planning/iterate/2026-08-09-p2-59-branch-feedback-authority.md)
+
+---
+
+### ADR-356: Bind PR-review waivers to reviewed evidence
+- **Date:** 2026-08-09
+- **Section:** Iterate — change: evidence-backed PR review waiver
+- **Run-ID:** iterate-2026-08-09-review-evidence-tier
+- **Context:** Maintainer authorship could exempt a PR even when its delivered review record showed required review types were not run.
+- **Decision:** Require a valid current-head review record, a trusted exact-head collaborator approval, and successful waiver consumption before Tier-3 may be skipped.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The GitHub API binds authorization to the immutable event SHA while reviews.json proves the internal review cascade completed.
+- **Consequences:** Later pushes, unknown tier outputs, unavailable evidence, and gate changes all fall back to Tier-3 review.
+- **Rejected:** Maintainer authorship and a persistent label alone were rejected because neither proves review evidence for the current head.
+
+---
+
+### ADR-357: Source-State is the W3 freshness identity
+- **Date:** 2026-08-09
+- **Section:** Iterate — bug: test-evidence freshness
+- **Run-ID:** iterate-2026-08-09-test-evidence-freshness-w3
+- **Context:** The W3 verifier rejected unchanged evidence solely because its file mtime exceeded 24 hours.
+- **Decision:** Compare the report Source-State run identity with the latest completed iterate work event, including legacy adr_id producers.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The finalizer records work_completed before regenerating the report, making the run identity reproducible evidence.
+- **Consequences:** Fresh clones and unchanged checkouts remain valid while a newer completed run makes prior evidence stale.
+- **Rejected:** File mtime is checkout-dependent and cannot distinguish current evidence from stale evidence.
+
+---
+
+### ADR-358: Report iterate coverage against scope-to-F5b wall time
+- **Date:** 2026-08-09
+- **Section:** TC5.1
+- **Run-ID:** iterate-2026-08-09-timing-coverage
+- **Context:** The old throughput report treated the timing envelope as wall-clock time and allowed long agent marks to distort timing coverage and duration statistics.
+- **Decision:** Measure wall time from the durable scope mark through the work_completed event; report instrumented time and ratio separately; preserve agent intervals beyond name-specific credible limits as unavailable implausible-duration evidence.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Scope and F5b are durable run boundaries; elapsed wall-clock alone does not prove operator wait.
+- **Consequences:** Historical runs without a scope mark report wall coverage as unavailable. Current zero-emission runs report zero instrumentation. Implausible completed or cancelled agent intervals remain inspectable but do not enter work coverage or phase rollups.
+- **Rejected:** Adding duplicate skill boundaries; inferring an operator-wait cause; silently dropping the interval.
+
+---
+
+### ADR-359: Threshold-based token-cost guide, organized by trigger not narrative
+- **Date:** 2026-08-09
+- **Section:** Iterate — feature: token cost controllability guide
+- **Run-ID:** iterate-2026-08-09-token-cost-controllable
+- **Context:** Operators need a lookup for when growing decision history and long sessions start costing tokens, without reading a report of measured spend.
+- **Decision:** Add docs/token-cost-controllable.md: 5 bands (decision-log KB/lines, long sessions) each stating trigger/symptom/action; link from guide.md Ch.9 + Appendix B and README.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Rule: recommendations not shipped defaults, since a plugin cannot set a user's Claude Code settings or a project's model-tier bill without consent.
+- **Consequences:** New page recommends settings (autoCompactWindow, effort, model tier) without setting them; guide.md/README gain pointers; numbers were measured and corrected against this repo's real decision_log.md during drafting.
+- **Rejected:** A narrative report of this repo's own measured cost was rejected per operator direction; a report format buries the lookup a reader actually needs.
+- **Details:** [request-spec.md](../planning/iterate/iterate-2026-08-09-token-cost-controllable/request-spec.md)
+
+---
+
+### ADR-360: Replace I2 mtime freshness with phase provenance
+- **Date:** 2026-08-10
+- **Section:** Iterate — bug: I2 test-evidence phase source
+- **Run-ID:** iterate-2026-08-10-i2-test-evidence-phase-source-contract
+- **Context:** Filesystem mtimes cannot identify the phase run that generated test evidence.
+- **Decision:** Stamp and verify per-phase run identities; classify Decision-Drop overrides as critical.
+- **Commit:** (assigned post-merge)
+- **Consequences:** I2 is content-provenance based while metadata remains snapshot-normalized.
+
+---
+
+### ADR-361: Verify the integrated F11 tree before every push
+- **Date:** 2026-08-10
+- **Section:** Iterate — change: F11 pre-push verification
+- **Run-ID:** iterate-2026-08-10-p2-39-f11-verify-local
+- **Context:** F0 checks an earlier working tree, while F11 integration and delivery refresh can change the commit CI judges.
+- **Decision:** Keep F0 and rerun the marked local CI-gate mirror after integration/regeneration before each F11 push.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Only the post-integration tree contains workflow and allowlist changes merged from main, so it is the local tree CI will judge.
+- **Consequences:** A red late check stops delivery after the work commit; the accepted cost is one extra local run on each integrated push.
+- **Rejected:** Replacing F0 alone delays ordinary feedback; checking only the initial F11 push misses delivery refreshes.
+- **Details:** [iterate-2026-08-10-p2-39-f11-verify-local-f11-prepush-verification.md](../planning/adr/iterate-2026-08-10-p2-39-f11-verify-local-f11-prepush-verification.md)
+
+---
+
+### ADR-362: Fail closed on stale or impersonated PR-review contexts
+- **Date:** 2026-08-10
+- **Section:** Iterate — change: PR-review hardening
+- **Run-ID:** iterate-2026-08-10-pr-review-hardening
+- **Context:** Stage two posts the required status after reviewing a pull request, so stale branch history and suppression-control changes must not inherit approval.
+- **Decision:** Read force-push history and same-named check runs, avoid cancelled verdicts and persisted checkout credentials, and require review for sensitive or truncated path evidence.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The controls retain one trusted status producer and prevent a waiver from blessing content the reviewer did not see.
+- **Consequences:** A branch rewrite, forged context, cancellation, or incomplete sensitive-path list now fails closed and requires a fresh review.
+- **Rejected:** Current-head-only checks, persisted credentials, and assuming paginated file results are complete leave bypasses.
+
+---
+
+### ADR-363: Write and fail-closed-verify published manifest versions at release, not just gate on them
+- **Date:** 2026-08-12
+- **Section:** shipwright-changelog — release manifest version sync
+- **Run-ID:** iterate-2026-08-11-changelog-manifest-version-sync
+- **Context:** shipwright-webui 2026-08-10: a release tagged v0.24.0 (CHANGELOG.md + git tag) while bootstrapper/package.json still said 0.23.0 -- the version npm would actually receive. Both external reviewers (Branch A architecture review) proposed the smaller alternative: a read-only pre-tag gate that fails the release if a declared manifest does not already match, leaving the operator to bump it by hand.
+- **Decision:** Keep the write+stage+verify-commit mechanism as the card explicitly scoped it (write the version into each declared manifest in the same release commit, so tag and manifest cannot diverge by construction), and descope only the new standing detective check from release-blocking ERROR to informational WARNING.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A read-only gate still requires the operator to hand-edit the exact manifest correctly before re-running -- the same fallible step that produced the original drift. The standing check's proportionality objection is separately valid once the pre-tag gate exists: its only job left is catching drift the gate never saw, which does not need release-blocking severity.
+- **Consequences:** plugins/shipwright-changelog/skills/changelog/SKILL.md crossed its 400-line runtime-prompt limit (399 -> requires exception) adding the new Step 5.4 -- promoted to state=exception in shipwright_bloat_baseline.json (adr=ADR-348, provisional pending sequential aggregation) rather than gutting unrelated pre-existing Step 4 operational documentation to make room.
+- **Rejected:** Read-only pre-tag gate only (both external reviewers' 'smallest thing') -- does not deliver the card's explicit 'by construction' requirement. Standing check at ERROR severity -- would foreclose legitimate post-release manifest edits without special-case handling.
+- **Details:** [iterate-2026-08-11-changelog-manifest-version-sync.md](../planning/iterate/iterate-2026-08-11-changelog-manifest-version-sync.md)
+
+---
+
+### ADR-364: Deterministic scope mark + hook-backstopped implementation span
+- **Date:** 2026-08-12
+- **Section:** Iterate — bug: timing scope-mark gap
+- **Run-ID:** iterate-2026-08-11-timing-scope-mark-gap
+- **Context:** TC5.1 fixed throughput-report reading logic, but scope mark and implementation span were agent-prose-only writers that almost never fired (9/10 recent runs degraded).
+- **Decision:** Relocate the scope mark into setup_iterate_worktree.py (the one deterministic call every run makes); backstop the implementation span via a new PostToolUse hook keyed off Write/Edit/Bash signals.
+- **Commit:** (assigned post-merge)
+- **Rationale:** No single deterministic call exists for the implementation-span boundary itself, so a hook backstop was the only option; scope had one, so it was relocated instead.
+- **Consequences:** Throughput reports show real coverage/wall-clock on every run; the hook adds cheap per-call state checks (git-free fast paths for no-active-iterate and cache-hit cases).
+- **Rejected:** A third agent-prose reminder (repeats the failure mode); embedding capture in record_review_pass.py (already at the 395-line bloat cap).
+
+---
+
+### ADR-365: Shared detail cap across all triage write paths
+- **Date:** 2026-08-13
+- **Section:** Iterate — change: triage detail maxLength
+- **Run-ID:** iterate-2026-08-13-triage-detail-maxlength
+- **Context:** shipwright-webui is lowering its promoted-task description cap to ~6000 chars (Windows console line-limit). triage_item.schema.json's detail field had no maxLength, and only github_triage self-capped, so any other producer could mint an unbounded detail that fails to promote downstream.
+- **Decision:** Add maxLength:6000 to both schema branches (append/amend) and enforce it at write time in append_triage_item, append_triage_item_idempotent, and amend_triage_item via a shared check_detail_length/check_amend_detail guard, so an over-cap detail raises ValueError immediately.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Net-zero-line swaps and file relocation (not editing the bloat baseline) match this repo's anti-ratchet philosophy of finding redundancy rather than raising the cap. Guarding all three write paths closes the gap fully, since amend or the idempotent append could otherwise bypass the append-side cap.
+- **Consequences:** A pathologically long detail from any producer now fails fast at append/amend time. triage.py and test_triage_schema.py are bloat-pinned at exact line counts (882/558); the guard call was funded by a net-zero-line swap (3 straight check_optional_str calls -> a for-loop) rather than growing the file.
+- **Rejected:** Raising the bloat-baseline for triage.py/test_triage_schema.py instead of a net-zero swap -- rejected, would ratchet the baseline for an unrelated reason. Guarding only append_triage_item -- rejected since amend_triage_item and the idempotent append are separate writers of the same wire event.
+
+---
+
+### ADR-366: Self-cap detail at the 4 remaining unbounded triage-producer call sites
+- **Date:** 2026-08-13
+- **Section:** Iterate — change: triage detail self-cap
+- **Run-ID:** iterate-2026-08-13-triage-detail-selfcap
+- **Context:** append_triage_item now enforces a shared 6000-char detail cap (iterate-2026-08-13-triage-detail-maxlength). Four producers still built detail via an unbounded loop/join with no self-cap, unlike sbom_generator.py/test_evidence.py/journey_coverage.py/warning_followups.py/security_card.py. A large finding set at any of the four raised ValueError inside the best-effort except-Exception wrapper, silently dropping the finding.
+- **Decision:** Add a local _DETAIL_MAX_LEN=1024 self-cap (truncate+ellipsis, matching security_card.py) at _triage_bundle.py:_build_detail, triage_bundle_render.py:build_detail, and security_triage_emit.py:emit_findings_to_triage. artifact_sync.py:_emit_drift_to_triage uses a plain [:_DETAIL_MAX_LEN] slice (no ellipsis, matching journey_coverage.py/warning_followups.py) since that file was already at the repo's 300-line cap and the fix had to land net-zero LOC.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Matches the codebase's own established file-local self-cap convention rather than inventing a new pattern; the artifact_sync.py deviation (no ellipsis) is itself an existing precedent, not a new one.
+- **Consequences:** A large finding set at any of the four sites is now recorded truncated instead of vanishing. artifact_sync.py stays at exactly 300 lines (a decorative divider comment was removed to fund the fix). 22 new/updated unit tests across 3 pytest roots cover over-cap, under-cap, and the exact cap boundary at every site.
+- **Rejected:** A shared truncate_detail() helper -- non-blocking code-review suggestion, deferred: this diff crosses the codebase's own 'shared helper waits for a third producer' bar, but cross-plugin wiring cost outweighs the ~10-15 LOC saved here; left as a follow-up. Raising the artifact_sync.py bloat baseline instead of a net-zero-LOC fix -- rejected, matches this repo's find-redundancy-not-the-cap philosophy.
+
+---
+
+### ADR-367: Adopt seeds its own canonical ADR folder; hollow retroactive ADRs fail closed
+- **Date:** 2026-08-14
+- **Section:** Iterate — bug: adopt ADR canonical-seed + hollow-ADR fail-closed
+- **Run-ID:** iterate-2026-08-14-adopt-adr-canonical-seed
+- **Context:** Adopt minted its own ADRs only into decision_log.md, never into the canonical .shipwright/planning/adr/ folder; a hollow retroactive ADR (missing subject/sha) rendered empty and adoption still reported success.
+- **Decision:** Step E now seeds .shipwright/planning/adr/ with adopt's own minted ADRs and refreshes INDEX.md; _resolve_retroactive_adrs fails closed before write_agent_docs overwrites anything, deriving subject from the commit when possible.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Harvested ADRs must stay exactly where the maintainer put them; adopt's own decisions belong in the same canonical folder every other plugin writes to, so future tooling (INDEX.md, rebuild_adr_index.py) treats them uniformly.
+- **Consequences:** Adopted projects get a real ADR spec folder for adopt's own decisions; a hollow retroactive ADR now aborts adoption instead of shipping a broken record. Third-party harvested ADRs are untouched (additive-only).
+- **Rejected:** Importing shared/scripts/lib/adr_index.py directly from adopt's lib package — ADR-045 rules out the cross-plugin lib collision, so ADR_SPEC_FOLDER is duplicated and pinned by a regex test instead.
+- **Details:** [iterate-2026-08-14-adopt-adr-canonical-seed.md](../planning/adr/iterate-2026-08-14-adopt-adr-canonical-seed.md)
+
+---
+
+### ADR-368: Fold adopt QR items into FR-table rows instead of an unparseable prose list
+- **Date:** 2026-08-14
+- **Section:** shipwright-adopt
+- **Run-ID:** iterate-2026-08-14-fr-qr-fold-adopt
+- **Context:** generate_adoption_artifacts.py rendered detected quality requirements (qr_items) as a prose QR-NN bullet list that fr_gates.collect_known_fr_ids never parses, so --affected-frs QR-02 was rejected at finalize for any adopted-project iterate implementing a quality requirement (trg-8db840a6, measured on leadwright).
+- **Decision:** Render QR items through the same FR table shape as detected features (spec_document.fold_features), continuing the existing FR-GG.MM id sequence -- one requirement id space, one table shape, matching the parallel greenfield decision (trg-8ba54b66). No new column, no category marker. Ids continue past whatever is already on disk (active AND removed rows) so a regeneration never renumbers or reuses an id something else still means.
+- **Commit:** (assigned post-merge)
+- **Consequences:** A QR-derived requirement is now addressable via --affected-frs and reachable by every FR-table consumer (RTM, traceability, the existence gate) for free. Residual: base-feature id assignment in generate_adoption_artifacts.py stays purely positional and is not identity-preserving across regenerations for ANY row type -- a pre-existing characteristic, not introduced here, and out of scope (closing it fully is campaign-sized).
+- **Rejected:** Widening fr_gates.collect_known_fr_ids to accept QR- ids (fail-open reflex the gate exists to close); giving QRs a Basis-column category marker (Basis is a closed provenance vocabulary, not a category axis).
+
+---
+
+### ADR-369: Retire QR-/C- requirement id spaces (greenfield)
+- **Date:** 2026-08-14
+- **Section:** Iterate — change: retire QR-/C- id spaces (greenfield spec-generation)
+- **Run-ID:** iterate-2026-08-14-fr-qr-fold-project
+- **Context:** spec-generation.md minted QR-/C- ids nothing in the framework reads; fr_table_reader, RTM, and compliance only accept canonical FR-XX.YY. Two producers even disagreed on the QR shape.
+- **Decision:** One id space: FR. Quality targets fold into the FR table as ordinary rows; Constraints keep their section but lose their ids (prose only). No new Category column.
+- **Commit:** (assigned post-merge)
+- **Rationale:** An id nothing reads looks referenceable and is not, which is worse than unnumbered prose. The requirement text already carries the quality attribute; a Category column would re-open producer divergence campaign S5 closed.
+- **Consequences:** Every fresh spec.md has one id space every consumer can read. A new regression test locks the retirement against the real fr_table_reader. Existing specs and the adopt-side producer are untouched (separate paired task).
+- **Rejected:** Add a consumer for QR-/C- instead of retiring them; add a Category column instead of folding by wording; migrate the historical adopted spec's QR-01 row in the same change.
+- **Details:** [iterate-2026-08-14-fr-qr-fold-project-qr-id-retirement.md](../planning/adr/iterate-2026-08-14-fr-qr-fold-project-qr-id-retirement.md)
+
+---
+
+### ADR-370: Fix 4 fail-open defects in install-hooks.ps1, ported from leadwright
+- **Date:** 2026-08-14
+- **Section:** scripts/install-hooks
+- **Run-ID:** iterate-2026-08-14-install-hooks-failopen
+- **Context:** leadwright forked scripts/install-hooks.ps1 and fixed two fail-open bugs (unchecked git config write, --default flag unsafe on git<2.18) the canonical version still carried; reading the port also surfaced two more (Write-Error skips the following exit 1 under Stop; Set-Location without -LiteralPath).
+- **Decision:** Ported all 4 fixes into scripts/install-hooks.ps1 and the shell-independent --get fix into install-hooks.sh. Unlike leadwright's own port, which fixed the write-check with throw (terminating) while fixing the Write-Error bug with Console.Error.WriteLine+exit (non-terminating), both fixes here use Console.Error.WriteLine+explicit exit for consistency.
+- **Commit:** (assigned post-merge)
+- **Rationale:** throw and Write-Error share the same terminating-error trap that Write-Error's own fix exists to avoid; using it for the write-check would reintroduce the identical hazard one line away.
+- **Consequences:** A caller that dot-sources install-hooks.ps1 wrapped in try/catch now gets a reliable, non-stale $LASTEXITCODE on any failure path. install-hooks.sh only needed the --get fix (set -e already covers native failures).
+- **Rejected:** leadwright's throw for the write-check — rejected because it carries the same stale-$LASTEXITCODE risk under dot-sourcing that motivated fixing Write-Error in the first place.
+
+---
+
+### ADR-371: Gitignore retraction reaches rules that predate the managed block
+- **Date:** 2026-08-16
+- **Section:** Iterate — bug: gitignore retraction reaches rules outside the managed block
+- **Run-ID:** iterate-2026-08-15-gitignore-selfheal-outside-block-retraction
+- **Context:** SUPERSEDED retraction only stripped a match inside the BEGIN/END block; a rule that predates a project's block (adopted before markers existed, e.g. shipwright-webui) sits outside it and was never stripped, silently losing every future ADR drop.
+- **Decision:** Extend _strip_superseded to also cover the region before an unambiguous single block, and anywhere when no markers exist; never after a well-formed block. Malformed markers bound to the first complete BEGIN-to-END region via one shared (lo,hi) computation, not a re-arming toggle.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Position is the only signal available to a pure text transform; safe because every SUPERSEDED entry is a curated /.shipwright/-namespaced literal, now mechanically enforced by a namespace test.
+- **Consequences:** An already-adopted project self-heals a retracted rule on its next adopt/project run regardless of position relative to its block. Does not recover ADRs already lost, and does not touch webui's own .gitignore (separate card).
+- **Rejected:** Per-line git-blame authorship check (no such signal available cheaply); re-splitting into a sibling module (reverted — sys.modules['lib'] collision); treating any malformed file as strip-nothing (loses real utility for the common single-block-plus-junk case).
+- **Details:** [iterate-2026-08-15-gitignore-selfheal-outside-block-retraction.md](../planning/adr/iterate-2026-08-15-gitignore-selfheal-outside-block-retraction.md)
+
+---
+
+### ADR-372: Document retention as approximate rather than merge-time re-checking
+- **Date:** 2026-08-15
+- **Section:** Iterate — bug: retention-cap parallel-merge race
+- **Run-ID:** iterate-2026-08-15-retention-cap-parallel-merge
+- **Context:** append_iterate_entry.py's ITERATE_RETENTION=50 assumes serialized appends; independent worktrees off the same origin/main tip can each evict the same oldest entry and merge to 51 tracked files.
+- **Decision:** Chose fix (b): document the cap as approximately 50 (not exactly), since _apply_retention already self-heals any overshoot on the next append by re-reading the full on-disk directory.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The self-heal was already true of the existing code -- only the promise in the docs was false. Building fix (a) (merge-time re-check) would add real machinery for a bounded, self-correcting, one-entry-per-branch overshoot.
+- **Consequences:** No new merge-time or periodic re-check machinery; docstring/comment and F5c.md now state the true, honest invariant; a regression test pins both the overshoot and the self-heal.
+- **Rejected:** (a) re-check at merge/periodically and trim to 50 newest: adds new machinery (no merge-hook infra exists in this framework) to guard an overshoot that already self-heals within one append cycle; rejected as disproportionate to the actual impact.
+- **Details:** [iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md](../planning/adr/iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md)
+
+---
+
+### ADR-373: Behaviour-affecting FR-declaring events must carry test evidence or a stated reason
+- **Date:** 2026-08-17
+- **Section:** Iterate — change: FR-gate test evidence
+- **Run-ID:** iterate-2026-08-16-fr-gate-test-evidence
+- **Context:** record_event.py builds an event's tests block purely from CLI args; a caller passing none gets no block and nothing objects. 48/119 (40%) FR-declaring work_completed events carry no tests.total. compute_reconciliation keys reconciliation on touched-without-later-tested-reference, never age, so those FRs stay permanently needing re-verification with nothing in the log to satisfy it.
+- **Decision:** Add a third FR-gate (missing_test_evidence_error) mirroring the existing change_type/none_reason no-FR discipline: a behaviour-affecting, FR-declaring event must carry tests.total>0 or a valid no_tests_reason. Wired into both write paths via one run_fr_gates() call (record_event.py CLI + finalize_iterate.py F5b), closing ADR-059's documented CLI/F5b-parity bypass. This run's own event references the 9 reconcilable FRs with real test evidence, closing the backlog.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirroring change_type/none_reason exactly (not inventing a new vocabulary) keeps the two write-time disciplines consistent and reviewable in one shape; unifying the CLI and F5b write paths into one run_fr_gates() call also fixes ADR-059's own external-review finding #2/#8 (FR-gate parity) as a side effect.
+- **Consequences:** Every FEATURE/CHANGE/BUG iterate declaring FRs and behaviour-affecting must now record test evidence or say why not -- the 40% silent hole cannot recur. compute_reconciliation over the post-merge log reports the 9 FRs reconciled; FR-01.16/18/19 correctly remain needing re-verification. Historical events are not backfilled (append-only log).
+- **Rejected:** Building a standalone reconciliation/backfill tool for the 48 historical events -- rejected: the event log is append-only, backfilling would rewrite history, and the card mandated this run's own event as the instrument. Teaching only the new gate to read the per-FR fr_impact map -- rejected: would make the two FR-gates disagree; that gap is BP-1's, a separate follow-up.
+- **Details:** [iterate-2026-08-16-fr-gate-test-evidence-test-evidence-gate.md](../planning/adr/iterate-2026-08-16-fr-gate-test-evidence-test-evidence-gate.md)
+
+---
+
+### ADR-374: Keeping shipped profile security floors honest over time
+- **Date:** 2026-08-17
+- **Section:** Iterate — change: vite-hono-floor
+- **Run-ID:** iterate-2026-08-17-vite-hono-floor
+- **Context:** vite-hono.json shipped a hono floor vulnerable to CVEs; two consumer repos hand-patched their own copies without the source profile changing.
+- **Decision:** Raise the floor to 4.12.34; keep drift prevention narrow (option a) — one pinned regression test, not a general registry+checker (built, then reverted per architecture review).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two independent architecture reviewers (reject/revise) converged on a single pinned test over a general registry as the smallest thing that would do the job; operator chose to simplify.
+- **Consequences:** Every future scaffold from vite-hono.json starts at >=4.12.34; this profile's regression is caught, other profiles/packages are not until discovered and given their own pinned test.
+- **Rejected:** A live vulnerability-database gate (no live network dep by standing decision); a hand-curated registry+checker (built, reviewed, reverted as disproportionate); scaffold-time resolver script (no chokepoint exists).
+- **Details:** [iterate-2026-08-17-vite-hono-floor-profile-floor-drift.md](../planning/adr/iterate-2026-08-17-vite-hono-floor-profile-floor-drift.md)
+
+---
+
+### ADR-375: Thread uv's --project into every external_review.py call site
+- **Date:** 2026-08-18
+- **Section:** Iterate — bug: external-review-project-flag
+- **Run-ID:** iterate-2026-08-18-external-review-project-flag
+- **Context:** Every documented uv run .../external_review.py invocation omitted uv's own --project flag. uv resolves dependency context from cwd, not the script path, so openai silently failed to import in any consumer project lacking a root pyproject.toml — degrading external review to internal-only reviewers unnoticed.
+- **Decision:** Add --project pointed at shipwright-plan (owns the openai dependency) to all 9 call sites, reusing the existing {plan_plugin_root}/{plugin_root} placeholder convention; thread plan_plugin_root as a new declared Input into sub-iterate-runner.md where it was not already in scope; add a repo-wide static regression test.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The monorepo's own root pyproject.toml also declares openai, masking the bug locally; verified from a directory with no pyproject.toml at all (the real consumer failure mode), against both the monorepo and installed plugin-cache copies.
+- **Consequences:** External review reliably reaches DeepSeek/OpenAI in any consumer project, not only this monorepo. sub-iterate-runner.md gained one Input parameter; campaign-mode.md documents supplying it.
+- **Rejected:** Hardcoding the monorepo path (breaks every real consumer). PEP 723 inline metadata on external_review.py (both external Architecture Review passes independently recommended this as smaller; declined for this run — already explicitly out-of-scope in the initiating card and Internal Plan Review; implementation was already complete and reviewed by the time Architecture Review ran; left as a follow-up).
+- **Details:** [2026-08-18-external-review-project-flag.md](../planning/iterate/2026-08-18-external-review-project-flag.md)
+
+---
+
+### ADR-376: Fix B5 phaseTaskId field mismatch and C1 column-brittle Screens parser
+- **Date:** 2026-08-21
+- **Section:** Iterate — bug: compliance B5/C1 field-mismatch and column-brittle parser
+- **Run-ID:** iterate-2026-08-20-compliance-b5-c1-field-mismatch
+- **Context:** B5 read task.get("id") but the schema field is phaseTaskId, so every completed phase falsely failed. C1's Screens-table parser was anchored to exactly 5 columns, so any extra column zeroed out parsing and misreported all FRs, including legitimate backend-only ones.
+- **Decision:** Fixed B5's field name; rewrote C1's parser to match columns by header name; added an optional ## Non-UI FRs manifest section with ADR-cited exemptions.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Header-name matching survives an inserted column; extraction into a sibling module avoided ratcheting design_checks.py's bloat-cap pin. See spec-ref for full reasoning, 3 rounds of review-found edge-case fixes, and a deliberately deferred diagnostic-wording ambiguity.
+- **Consequences:** Both checks now report correctly against real schema-shaped and multi-column inputs. New Non-UI FRs section not preserved by manifest regeneration (filed as trg-44f49504).
+- **Rejected:** Fixing only downstream; a wider-but-still-fixed column count; growing design_checks.py in place; a full parser-result-type refactor for the rows==[] ambiguity (deferred, see spec-ref).
+- **Details:** [iterate-2026-08-20-compliance-b5-c1-field-mismatch-b5-c1-fix.md](../planning/adr/iterate-2026-08-20-compliance-b5-c1-field-mismatch-b5-c1-fix.md)
+
+---
+
+### ADR-377: Null-tolerant event-field rendering in update_build_dashboard.py
+- **Date:** 2026-08-23
+- **Section:** Iterate — bug: dashboard null-commit crash
+- **Run-ID:** iterate-2026-08-23-dashboard-null-commit
+- **Context:** A work_completed event with explicit commit: null crashed _generate_from_events (dict.get default only fires on a missing key, not a present null), permanently blocking build_dashboard.md regeneration since finalize_iterate.py's F5b call is exception-swallowing best-effort.
+- **Decision:** Guard commit with an explicit is-None check (not truthiness, which would wrongly reformat the common empty-string pre-commit state) via a new _cell_or_dash() helper; extend the same guard to five sibling fields and a split field found by three independent review passes.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Root-caused via a standalone repro before any fix; is-None chosen over or-truthiness after an empirical count showed 471/543 real events have commit: "" (a legitimate value 'or' would have corrupted).
+- **Consequences:** No output change for any input this repo's own event log actually contains; a foreign/adopted repo's null-commit event now renders the existing placeholder instead of crashing. Nested-null and the F5b/C2 silent-failure architecture remain unfixed, disclosed as known limitations.
+- **Rejected:** Normalizing commit at the shared read_events() boundary — rejected as a schema mutation in the wrong layer that would also destroy the forensic null signal; widening the fix to generate_session_handoff.py's separate call sites — rejected as unvalidated scope creep beyond the proven bug.
+- **Details:** [iterate-2026-08-23-dashboard-null-commit-bloat-exception.md](../planning/adr/iterate-2026-08-23-dashboard-null-commit-bloat-exception.md)
+
+---
+
+### ADR-378: screen_registry round-trips the hand-authored Non-UI FRs section
+- **Date:** 2026-08-23
+- **Section:** Iterate — change: preserve Non-UI FRs section across manifest regeneration
+- **Run-ID:** iterate-2026-08-23-manifest-nonui-frs-preserve
+- **Context:** trg-44f49504 (filed by iterate-2026-08-20-compliance-b5-c1-field-mismatch): write_manifest rebuilt design-manifest.md wholesale from a disk scan and silently dropped any hand-added ## Non-UI FRs section on regeneration, so the C1 FR->screen gate flipped red again with no trace of why.
+- **Decision:** generate_manifest now reads the existing design-manifest.md before rebuilding and re-emits its ## Non-UI FRs section verbatim, placed right after ## Screens per the Step 6 template.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Round-tripping the raw section text (not re-deriving FR ids) keeps the writer decoupled from the reader's ADR-citation validation, which C1 already owns.
+- **Consequences:** A hand-authored, ADR-cited Non-UI FRs waiver now survives repeated write-manifest regenerations; the Step 6 doc caveat claiming it is not preserved was corrected.
+- **Rejected:** Cross-plugin import of design_screens_parser.parse_non_ui_frs was rejected — it returns only FR ids, losing prose/comments, and would couple the writer to the compliance verifier's reader module.
+
+---
+
+### ADR-379: review_runner walk extracted+registered; recursive guard/require now raise
+- **Date:** 2026-08-26
+- **Section:** S2b pass A — campaign s2b-discovery-convergence
+- **Run-ID:** iterate-2026-08-25-a-widen-the-net
+- **Context:** S2 froze review_runner.run_review only by source-hash (it also calls an external LLM), so an argument change invisible to line count was untested. Separately iter_spec_files' recursive branch silently ignored non-default guard/require: recursive=True, require=is_file ran clean and did nothing for #6/#11.
+- **Decision:** Extract the walk into review_runner._iter_candidate_specs; add a 17th DISCOVERY entry (invoke=planning_dir, order_sensitive) that behaviourally freezes it -- the old source_only run_review entry stays (additive 16->17). iter_spec_files becomes an eager wrapper around a lazy inner generator: recursive=True with guard!=is_dir or require!=exists now raises ValueError at call time; the pre-existing require-membership check stays lazy, unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Zero behavior change verified: new entry's per-fixture counts cross-checked against the identically-shaped setup_design_session.find_specs entry, exact match across all 10 fixtures. External plan+code review caught an over-eager validation-timing risk (require check should stay lazy); fixed, then regen_golden --check confirmed byte-identical.
+- **Consequences:** run_review's source_only sha256 moves (expected). registry.py crosses 300 lines (299->316); baselined as state=deferred-plan with plan_ref to the pass-B sub-iterate spec, since B4/C3 are expected to reclaim the overage rather than carry it as a permanent exception. All 5 real recursive call sites pass only recursive=/sort=, so none hit the new ValueError. golden.json regenerated with the exact required reason string.
+- **Rejected:** Sentinel-based explicit-vs-default detection for guard/require -- rejected because A3 requires every call site to pass flags explicitly, which would then falsely trip a sentinel-based check.
+
+---
+
+### ADR-380: Fail fast on a non-canonical campaign sub-iterate run_id
+- **Date:** 2026-08-26
+- **Section:** Iterate — bug: campaign run_id lowercase-mint fail-fast
+- **Run-ID:** iterate-2026-08-25-campaign-run-id-lowercase-mint
+- **Context:** A campaign sub-iterate R0's run_id embedded its uppercase display id, passed every check, and only failed at F5c's lowercase-only RUN_ID_STRICT with no escape hatch, hours after F3/F4/F5/F5b had already run.
+- **Decision:** Instruct the orchestrator to lowercase the embedded id when minting run_id, and make diff_risk_recheck.py (Step 3.4, earliest run_id-consuming script) fail fast on a malformed run_id instead of only at F5c.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The prior R0 ADR's Reflection explicitly decided the regex is correct policy and the uppercase run_id was the defect; this run implements that recommendation, and Step 3.4 is the earliest script boundary that receives run_id.
+- **Consequences:** A wrong run_id is rejected at Step 3.4, before Build's downstream artifacts are produced, with an actionable error naming the fix; RUN_ID_STRICT itself is unweakened.
+- **Rejected:** Weakening RUN_ID_STRICT (rejected by the prior ADR as the wrong fix); a new dedicated pre-Step-1 validation script (rejected: no script boundary exists that early, Step 1 is prose).
+- **Details:** [iterate-2026-08-25-campaign-run-id-lowercase-mint-fail-fast.md](../planning/adr/iterate-2026-08-25-campaign-run-id-lowercase-mint-fail-fast.md)
+
+---
+
+### ADR-381: Pin four unpinned fr_criteria.py parsing widenings from PR #648; fix table description exemption
+- **Date:** 2026-08-26
+- **Section:** Iterate — change: pin fr_criteria.py parsing widenings + fix table description exemption
+- **Run-ID:** iterate-2026-08-25-fr-criteria-parser-pin
+- **Context:** PR #648 unified 3 FR-criteria readers onto shared/scripts/lib/fr_criteria.py, widening parsing behavior past each predecessor without tests/docs. Two triage cards (trg-968e4d87, trg-467b7b2f) deferred 4 small findings. See spec_ref for full detail.
+- **Decision:** Pinned 2 iter_anchored_blocks termination rules + I6's bullet-semantics widening with tests/doc-line (behavior kept). Fixed compute_fr_coherence's table description exemption (Name-cell fallback bug). Gave I6 its own criteria_for entry point for the convergence test. Full detail in spec_ref.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Full review cascade run (spec/code/doubt) despite no risk flags at small, given finding 3 is a real correctness fix. All three PASS; one non-blocking note filed as trg-16075b99.
+- **Consequences:** compute_fr_coherence now correctly flags Name-only tables as missing_description. One residual, confirmed-latent edge case filed as trg-16075b99, not fixed (out of scope). See spec_ref.
+- **Details:** [iterate-2026-08-25-fr-criteria-parser-pin-fr-criteria-pins.md](../planning/adr/iterate-2026-08-25-fr-criteria-parser-pin-fr-criteria-pins.md)
+
+---
+
+### ADR-382: One shared FR-criteria reader, replacing three independent walks
+- **Date:** 2026-08-25
+- **Section:** Iterate — campaign req3-04-ac-identity-mono R0: converge FR-criteria readers
+- **Run-ID:** iterate-2026-08-25-r0-spec-reader-shipped-shape
+- **Context:** Three readers (spec_parser S5, _layer_coverage_ac, group_i_criteria I6) each independently walked FR acceptance criteria and disagreed; S5 never knew the shipped bullet shape, reporting 20/20 false gaps on this repo's own catalog.
+- **Decision:** Extract group_i's richest semantics into shared/scripts/lib/fr_criteria.py; all three callers delegate and share ONE default (adjacency-gated) semantics; the two callers needing the legacy prose-before-bullets tolerance pass an explicit, tested strict=False. compute_fr_coherence exempts a heading whose id is also a non-empty FR-table row.
+- **Commit:** (assigned post-merge)
+- **Rationale:** group_i's own docstring already argued this reader is correct; direction (verifiers/plugins read lib/) mirrors the existing _layer_coverage_evidence.py precedent.
+- **Consequences:** AC-4 catalog-scoped (operator decision, post Stage-1 review): missing_description/acceptance/both all empty for the catalog (was 20/20 false). Repo-wide report.ok stays False due to one pre-existing unrelated planning doc, honestly documented, not R0's decision. group_i/_layer_coverage_ac shrank; spec_parser net +/-0. Label-form path untouched.
+- **Rejected:** A fourth independent parser (rejected: worsens the divergence); changing the label-form path's placeholder handling (rejected: out of scope, R0's own AC pins test_spec_checks.py byte-identical).
+- **Details:** [iterate-2026-08-25-r0-spec-reader-shipped-shape-fr-criteria-convergence.md](../planning/adr/iterate-2026-08-25-r0-spec-reader-shipped-shape-fr-criteria-convergence.md)
+
+---
+
+### ADR-383: Repeatable multi-root JUnit staging for execution evidence
+- **Date:** 2026-08-25
+- **Section:** R1a: evidence-staging-multiroot
+- **Run-ID:** iterate-2026-08-25-r1a-evidence-staging-multiroot
+- **Context:** 18 pytest roots (ADR-044) but evidence_drop.py stage took ONE --junit, so only one root's report was ever staged; every other root's tests read MISSING coverage (SPEC 4 P0a: FR-01.06 had 149 enabled tests, still MISSING).
+- **Decision:** stage now accepts repeatable --junit <base>=<path> (E-B), staged byte-identical as junit-01..NN.xml with per-report base in _provenance.json; build_index/refresh_index/fresh_evidence thread bases through (E-C); new repo tool scripts/run_full_suite_evidence.py drives all 18 roots, deriving roots+bases from conftest.py discover_test_roots (E-D/E-E).
+- **Commit:** (assigned post-merge)
+- **Consequences:** A full-suite run produces genuine cross-root coverage evidence; clear sweeps every junit-*.xml plus the pre-migration single junit.xml; a staged report with no matching provenance base is rejected, not defaulted to base=empty.
+- **Rejected:** Merging raw XML into one file before staging (loses byte-identity, E-A); a hand-maintained root-to-base table in the runner (E-E, rots on new plugin).
+- **Details:** [iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md](../planning/adr/iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md)
+
+---
+
+### ADR-384: Fix 3 real bugs found by orchestrator Stage-2 code review before merge
+- **Date:** 2026-08-25
+- **Section:** R1a follow-up: Stage-2 code review fixes
+- **Run-ID:** iterate-2026-08-25-r1a-evidence-staging-multiroot
+- **Context:** Stage-2 code review of pushed PR #649 (commit 31aeccfa) found 3 real bugs: (1) CLI rejected any repeated --junit base, but 4 roots legitimately share base ''; (2) zero discovered roots silently exited 0; (3) --head-commit defaulted to empty, silently discarded by the F11 gate. See spec_ref for full detail.
+- **Decision:** (1) Narrowed CLI duplicate check to exact (base,path) pair or duplicate source path, matching the API's always-correct behavior. (2) Zero roots now exits 1 with a FAILURE line. (3) --head-commit now defaults to 'git rev-parse HEAD', refusing to run when unresolvable. F5.md's 'optional' claim and 'via this same CLI' claim both corrected.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Same review bar as the original R1a build: no-blocker overall does not mean skip individual findings.
+- **Consequences:** The documented multi-root workflow now works via the CLI. An empty/misconfigured full-suite run is now a hard failure. Full-suite evidence is HEAD-attributable by default. 42+38 targeted tests, ruff, verify_local.py all green.
+- **Rejected:** Leaving the over-broad duplicate-base rejection in place; silently defaulting zero-roots to success.
+- **Details:** [iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md](../planning/adr/iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md)
+
+---
+
+### ADR-385: Fix 3 real bugs + rebut 2 bounded doubts from Stage-3 doubt-review
+- **Date:** 2026-08-25
+- **Section:** R1a follow-up: Stage-3 doubt-review fixes
+- **Run-ID:** iterate-2026-08-25-r1a-evidence-staging-multiroot
+- **Context:** Stage-3 doubt-review of round-2 HEAD (0b1d5a5c) confirmed the 3 Stage-2 fixes hold and found 5 new doubts: false comment + silent class-based-test join failure; CLI silently stages nothing on a --junit typo; destroy-before-validate ordering + unscoped doc; non-atomic staging sequence (bounded); ancestor-freshness staleness cost (pre-existing). See spec_ref for full detail.
+- **Decision:** Fixed 1-3: _classname_to_path strips trailing CapWords class segment(s), comment corrected. evidence_drop.py CLI hard-validates every NAMED source before staging, exits 1 on a missing one. run_full_suite_evidence.py now discovers roots BEFORE clearing prior evidence; F5.md scoped as this monorepo's own tool. Rebutted 4-5 in the ADR as accepted/bounded risks, no code change.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Advisory-must-address gating: each doubt needed a fix or a written rebuttal, not silent dismissal.
+- **Consequences:** No currently @covers-tagged test in this repo is class-based, so fix 1 changes NO current coverage number -- closes a latent gap for the first class-based test. Fixes 2-3 close silent-waste failure modes. New/updated tests: test_execution_evidence.py (+3), test_evidence_drop.py (+3), test_run_full_suite_evidence_ordering.py (new file).
+- **Rejected:** Hardening the non-atomic staging sequence pre-emptively (no workflow here runs two staging ops in one worktree concurrently).
+- **Details:** [iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md](../planning/adr/iterate-2026-08-25-r1a-evidence-staging-multiroot-junit-multiroot-staging.md)
+
+---
+
+### ADR-386: S2b pass B — pure hardening of planning-discovery call sites
+- **Date:** 2026-08-26
+- **Section:** Iterate — hardening: S2b pass B, 15 planning-discovery call sites
+- **Run-ID:** iterate-2026-08-26-b-pure-hardening
+- **Context:** 15 call sites share one walk (S2, S2b pass A) but still diverge on require/sort. Pass B converges them per-site, one golden regenerate.
+- **Decision:** B1: require=is_file at 5 non-recursive sites. B3: sort=True at 4 of 6 unsorted sites (fr_gates, state excepted). B4: retire order_sensitive masks + dead _mask_unordered. A3: every site explicit.
+- **Commit:** (assigned post-merge)
+- **Rationale:** fr_gates stays sort=False (boolean short-circuit); state.py stays sort=False (stable-sort tie-break is semantic). #15 sort=True is a known no-op until campaign pass C3.
+- **Consequences:** 4 golden cells flip raise->[] (B1); several unordered-pick placeholders resolve to real paths (B3/B4); 2 seam-probe tests flip != to ==; sort=True on recursive sites loses early-exit streaming (accepted cost).
+- **Rejected:** Broadening to fix the exists()-not-is_file() bypass checks in _test_links_io/backfill_test_links top-level reads (external code review finding): out of the 15-site inventory, filed as triage trg-a95e6fdf instead.
+- **Details:** [iterate-2026-08-26-b-pure-hardening-s2b-pass-b.md](../planning/adr/iterate-2026-08-26-b-pure-hardening-s2b-pass-b.md)
+
+---
+
+### ADR-387: Campaign session lock + worktree identity check, hardened by two adversarial doubt-review rounds
+- **Date:** 2026-08-27
+- **Section:** Iterate — change: campaign worktree guard doubt-review follow-ups
+- **Run-ID:** iterate-2026-08-26-campaign-worktree-guard-followups
+- **Context:** PR #653's doubt-review left two known limitations open in campaign-mode's shared worktree: no cross-session lock, and worktree_location proved location, not identity.
+- **Decision:** Added a heartbeat session lock (acquire/touch/release) and an exact worktree-identity check; both were then adversarially doubt-reviewed and hardened (LOCK-LOST routing, touch's no-lock/wrong-owner split, && ordering, full-path identity compare, rendezvous concurrency test).
+- **Commit:** (assigned post-merge)
+- **Rationale:** A cheap heartbeat lock (no single OS process spans the loop) over an already-isolated, git-ignored directory; adversarial doubt-review is standing policy for concurrency and irreversible-operation diffs (CLAUDE.md).
+- **Consequences:** Two sessions can no longer race the shared campaign worktree; a stale or misdirected worktree is rejected by identity, not just location; a lock-loss no longer risks Finalize writing loop_state.json out from under a second session.
+- **Rejected:** Branch-prefix identity check (ambiguous for req3 vs req3-04); an OS-level lock (nothing long-lived to attach it to); general first-creation-race arbitration inside setup_iterate_worktree.py (out of scope).
+
+---
+
+### ADR-388: Campaign-slug-keyed shared worktree + spawn/self isolation guard
+- **Date:** 2026-08-26
+- **Section:** shipwright-iterate: campaign mode worktree isolation
+- **Run-ID:** iterate-2026-08-26-campaign-worktree-guard
+- **Context:** Two production campaigns had a sub-iterate-runner subagent branch, build and commit directly in the main repository checkout. Root cause: the campaign orchestrator never had a campaign-scoped worktree to hand down, and every runner git command was bare (unsafe if a spawned subagent's shell does not inherit the orchestrator's cd).
+- **Decision:** Mint ONE worktree per campaign slug (.worktrees/campaign-<slug>), shared by the orchestrator and every spawned runner for the campaign's whole lifetime, created/resumed at loop step 0. Add a location-only check (worktree_location_error / check_worktree_location.py) run before every spawn (step 3c, STRICT-STOP) and again by the runner itself (Step 1.0, defense in depth). Every git command in sub-iterate-runner.md changed to git -C "{project_root}".
+- **Commit:** (assigned post-merge)
+- **Rationale:** Matches the framework's own pre-existing but never-implemented documented intent (one shared branch-hopping worktree per campaign, not one per sub-iterate) and the user's explicit design directive after the incident.
+- **Consequences:** Closes the reported incident completely (location-only check proves isolation, no run_id/snapshot dependency so it works for a campaign sub-iterate). Known, deliberately deferred limitations: no cross-session lock on the shared worktree (trg-16bec646), and the guard proves location not branch identity (trg-50bd22a1) — both filed as follow-up triage, not blocking.
+- **Rejected:** Per-sub-iterate worktrees — rejected: the interleaved-serial design deliberately shares one worktree per campaign so shared-file/snapshot edits compose without a merge-theater drain.
+- **Details:** [iterate-2026-08-26-campaign-worktree-guard.md](../planning/iterate/iterate-2026-08-26-campaign-worktree-guard.md)
+
+---
+
+### ADR-389: Condensed, mechanically-gated GitHub Release notes
+- **Date:** 2026-08-26
+- **Section:** Iterate — feature: changelog release notes
+- **Run-ID:** iterate-2026-08-26-changelog-release-notes
+- **Context:** GitHub Release pages show only a one-line tag message; the raw CHANGELOG.md section is too dense (100-450+ bullets) to publish verbatim.
+- **Decision:** Condense the tagged CHANGELOG section via a tool-less LLM call, then mechanically validate/sanitize before gh release create --verify-tag; always link the full section.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Architecture Review recommended verbatim republish; declined because the raw section is never lost (linked) and the validator already guards the exact risk (LLM writing unchecked) the reviewers raised.
+- **Consequences:** Readable release pages, forward-only. Failure at any stage is reported, never blocks the changelog phase; the tag stays the source of truth.
+- **Rejected:** Option B: verbatim republish, no LLM, no validator — optimizes away the actual complaint instead of solving it.
+- **Details:** [iterate-2026-08-26-changelog-release-notes-condensed-release-notes.md](../planning/adr/iterate-2026-08-26-changelog-release-notes-condensed-release-notes.md)
+
+---
+
+### ADR-390: text_from_named_col replaces a value-equality check in compute_fr_coherence's FR-table description exemption
+- **Date:** 2026-08-26
+- **Section:** Iterate — change: FR-table description exemption structural fix
+- **Run-ID:** iterate-2026-08-26-fr-table-text-from-named-col
+- **Context:** trg-16075b99 (filed by code-review during iterate-2026-08-25-fr-criteria-parser-pin): compute_fr_coherence's Name-only-fallback fix compared the picked description-ish cell's text against the Name cell's text. A table with a genuine, separate Description column whose content happens to equal its Name column's still false-negatived under that heuristic.
+- **Decision:** Added title_cell() to _fr_table_columns.py (mirrors layers_cell/basis_cell in spirit but walks TITLE_COLS's own preference order, since it is not a synonym set) returning (text, from_named_col). Added the required FrTableRow.text_from_named_col field, wired through fr_table_reader.read_fr_rows. compute_fr_coherence's exemption now filters on text_from_named_col instead of a text != name comparison.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Full review cascade run despite small complexity and no risk flags, because the diff (138 changed lines) crossed the 100-line Full-Code-Review trigger. spec-reviewer, code-reviewer (7 findings, all addressed or deliberately deferred with new tracking) and the external cascade (GPT approve; DeepSeek degraded) all completed; doubt-reviewer not_applicable (no migrations/async/cross-plugin/irreversible-ops surface).
+- **Consequences:** The exemption is now structurally correct: it exempts a heading whenever its table row's text came from a real title-ish column, regardless of whether that column's value happens to match Name. TITLE_COLS's own ordering (Name outranks Text/Requirement/Title) is unchanged and remains a separate, confirmed-latent residual, filed as trg-9838de27.
+- **Rejected:** Fixing the TITLE_COLS Name-outranks-Text/Requirement/Title ordering in this same diff — confirmed latent against every fixture/corpus shape this repo ships, and explicitly out of this card's scope (matches the prior ADR's own rejection of the same fix). Tracked as trg-9838de27 instead.
+
+---
+
+### ADR-391: Advisory CI drift check for test-traceability.json
+- **Date:** 2026-08-26
+- **Section:** Iterate — feature: CI manifest regen-and-compare gate
+- **Run-ID:** iterate-2026-08-26-r1b-ci-manifest-regen-gate
+- **Context:** SPEC D8's second half (REQ3.04b) needs CI to prove the committed test-traceability.json still reflects a real fresh test run, not whatever was last staged on someone's machine.
+- **Decision:** Add compare_traceability_manifest.py (two-tier structural/execution diff) plus ci_manifest_drift_check.py (capture/stage/regen/compare orchestration) as a new CI step, reporting drift advisory-only via a 3-way exit contract (0/1/2) until proven reliable over several consecutive green PRs.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The structural/execution tier split avoids re-introducing the platform-selection false positive AC1 exists to prevent; advisory-first matches SPEC D8's phased hardening plan and the R1a precondition's empirical Q1/Q2 findings.
+- **Consequences:** F0's run_test_suite.py gains a retention/staging chain (suite_retention.py, stage_f0_evidence.py) so its own JUnit reports become reusable compliance evidence; ci.yml gains one advisory drift step and one new hard JUnit-coverage gate.
+- **Rejected:** Architecture reviewers proposed dropping AC2/AC3 (F0 retention) as unconsumed by the CI check alone; rejected because it also closes a separate, already-approved gap (finalize discarding F0's own full-suite evidence).
+- **Details:** [2026-08-26-r1b-ci-manifest-regen-gate.md](../planning/iterate/2026-08-26-r1b-ci-manifest-regen-gate.md)
+
+---
+
+### ADR-392: title_cell() tries genuine title columns before the Name fallback
+- **Date:** 2026-08-27
+- **Section:** Iterate — bug: FR-table title_cell() Name-outranks-description round 3
+- **Run-ID:** iterate-2026-08-27-fr-table-titlecols-split
+- **Context:** title_cell() walked the flat TITLE_COLS tuple (description, name, text, requirement, title) in order, so a table with a Name column plus one of Text/Requirement/Title but no Description hit the Name entry before ever reaching the real column, and text_from_named_col reported False for a genuine descriptive cell (trg-9838de27, round 3 of the same function after PR #650 and #656).
+- **Decision:** Derive _TITLE_PREFERRED_COLS (TITLE_COLS minus NAME_COLS) and walk it first inside title_cell(); Name is tried only as a last-resort second pass. The shared TITLE_COLS tuple and pick() are left untouched, preserving pick()'s documented Name-outranks-Description-by-position semantics for the converged repo shape.
+- **Commit:** (assigned post-merge)
+- **Consequences:** text_from_named_col now reports True for the previously-latent shape (Name + Text/Requirement/Title, no Description); every shipped fixture shape (5 historical shapes, column-order, description-equals-name, name-only-fallback, row-too-short) re-verified unchanged. Added the missing regression fixture in shared/tests/test_fr_table_shape.py, confirmed RED against the pre-fix code and GREEN after.
+
+---
+
+### ADR-393: Explicit finding, include_iterate convergence, posix separators
+- **Date:** 2026-08-27
+- **Section:** Iterate — change: S2b discovery-convergence pass C
+- **Run-ID:** iterate-2026-08-27-s2b-discovery-c
+- **Context:** S2b converges planning_discovery's 15 call sites one flag at a time; pass C closes the guard-error, include_iterate default, and separator-format questions.
+- **Decision:** Only rtm.collect_external_review_states (#8) converts its raise to an explicit finding; include_iterate=False flips at 9 of 12 sites (2 exceptions, 1 no-op); find_specs emits posix separators; two same-class .exists()/.is_file() bugs fixed outside the 15-site inventory.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Operator-narrowed C1 scope avoids widening RequirementInfo's contract across unaudited downstream consumers for a case already broken; C2 exceptions preserve 2 already-decided, deliberately different behaviors.
+- **Consequences:** 4 real nested iterate/spec.md files stop being offered as adoption/FR/design-session candidates at 4 recursive sites; a broken planning path surfaces as one finding instead of crashing 2 collectors; find_specs sort order is now platform-invariant.
+- **Rejected:** Converting rtm.collect_requirements (#7) alongside #8 -- rejected per the operator's risk-first instruction, since #7's contract-widening could not be ruled safe without auditing every consumer.
+- **Details:** [iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md](../planning/adr/iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md)

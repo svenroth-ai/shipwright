@@ -1,1 +1,0 @@
-requirements corpus: extract review_runner's spec walk into a behaviourally-tracked target (16->17 discovery entries) and make iter_spec_files reject recursive=True combined with a non-default guard/require instead of silently no-op'ing

@@ -1,1 +1,0 @@
-Iterate runs no longer lose in-flight state to a mid-phase context-window compaction: the mini-plan now persists at every complexity tier, review-cascade findings are backstopped by a code-level SubagentStop salvage hook, and resume (B1) reads reviews.json directly instead of a stale handoff snapshot.

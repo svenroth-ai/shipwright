@@ -1,1 +1,0 @@
-requirements corpus / planning-discovery: harden the 15 shared call sites -- require=is_file on the 5 non-recursive readers, sort=True (deterministic pick) on 4 previously-unsorted sites, retire the order_sensitive golden masks now that every masked target sorts

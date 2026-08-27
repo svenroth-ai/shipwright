@@ -1,1 +1,0 @@
-Campaign session lock: a lost lock no longer routes through Finalize (which would write shared loop state a second session may already own), and the lock is released on clean completion so a routine session restart is never blocked by its own prior run.

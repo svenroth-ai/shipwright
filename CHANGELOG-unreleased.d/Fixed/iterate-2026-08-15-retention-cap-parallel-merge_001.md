@@ -1,1 +1,0 @@
-Documented append_iterate_entry.py's retention cap as approximately 50 (not exactly), which self-heals a bounded one-entry-per-branch overshoot that parallel worktree merges can otherwise leave behind

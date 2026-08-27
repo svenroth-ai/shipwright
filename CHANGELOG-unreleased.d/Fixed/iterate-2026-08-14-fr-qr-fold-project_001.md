@@ -1,1 +1,0 @@
-shipwright-project's spec-generation reference no longer mints QR-/C- requirement ids that nothing in the framework reads; quality targets now fold into the FR table as ordinary requirements, and Constraints render as unnumbered prose.

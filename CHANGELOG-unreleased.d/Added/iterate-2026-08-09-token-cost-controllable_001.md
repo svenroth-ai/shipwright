@@ -1,1 +1,0 @@
-Add docs/token-cost-controllable.md: a threshold-based guide for keeping session/token cost controllable as a project's decision history and session length grow, linked from the guide's Quality and Safety chapter and Appendix B

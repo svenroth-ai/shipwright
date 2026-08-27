@@ -1,1 +1,0 @@
-shipwright-changelog: sync declared published-package manifest versions (e.g. package.json) into the release commit and fail-closed verify them against the committed blob before tagging, closing a class of drift where a release tag and changelog advance while the published manifest still ships the old version

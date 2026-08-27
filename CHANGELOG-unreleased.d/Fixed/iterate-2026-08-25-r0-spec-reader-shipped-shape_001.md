@@ -1,1 +1,0 @@
-converge S5, the cross-layer fold gate, and Group I's I6 onto one shared FR-criteria reader (`shared/scripts/lib/fr_criteria.py`), fixing S5's FR-coherence check falsely reporting every requirement in the shipped bullet shape as missing acceptance/description
