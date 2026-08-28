@@ -52,7 +52,9 @@ _STDERR_EXCERPT_CHARS = 500
 
 
 def _run(args: list[str], *, timeout: float = 30.0) -> subprocess.CompletedProcess:
-    return subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(
+        args, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout
+    )
 
 
 def _gh_version() -> tuple[int, int, int] | None:

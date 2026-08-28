@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-28-changelog-encoding-cp1252",
+  "date": "2026-08-28",
+  "section": "Iterate — bug: fix Windows subprocess text-decoding in changelog release-notes tooling",
+  "title": "Decode captured subprocess stdout as UTF-8 with replacement in the release-notes chain",
+  "context": "extract_changelog_section._git() called subprocess.run(text=True) with no encoding=. On Windows this decodes via the locale codec (cp1252); a byte the tagged CHANGELOG.md genuinely contains (e.g. a mis-encoded em-dash) crashes subprocess's reader thread, leaving stdout None and the caller's .splitlines() raising AttributeError. Both webui v0.25.0 and monorepo v0.33.0 had to hand-write release notes over this — v0.33.0's own 'hardened subprocess text readers' fix (ce65a88f) missed this call site.",
+  "decision": "Add encoding=\"utf-8\", errors=\"replace\" to the three subprocess.run(text=True) call sites in publish_release_notes.py's own call chain: extract_changelog_section._git(), create_github_release._run() (gh CLI output, e.g. a non-ASCII release title, has the identical exposure), and repo_identity.resolve_repo_identity() (defense-in-depth on the remaining call site in the chain). This mirrors the established pattern from ce65a88f.",
+  "consequences": "publish_release_notes.py now degrades to the Unicode replacement character instead of crashing when a subprocess emits a byte undecodable in the process locale, so a release with non-ASCII CHANGELOG.md content or a non-ASCII gh release title publishes correctly on Windows instead of requiring a hand-written GitHub Release.",
+  "rationale": "Reproduced empirically: a child process writing byte 0x8f crashes subprocess's reader thread under text=True with no encoding on Windows (UnicodeDecodeError in cp1252), confirming the exact reported failure mode. The fix was verified red (git stash) before green (fix restored) for all three new regression tests.",
+  "rejected": "Catching UnicodeDecodeError around each call site was rejected — it cannot help, because the decode happens inside subprocess's own background reader thread, not in the caller's stack; encoding= must be passed into subprocess.run itself.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

@@ -62,6 +62,8 @@ def resolve_repo_identity(project_root: Path) -> str | None:
             cwd=str(project_root),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired):
