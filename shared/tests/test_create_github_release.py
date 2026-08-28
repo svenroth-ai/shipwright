@@ -60,6 +60,16 @@ def test_skips_when_repo_identity_unresolved(tmp_path: Path):
     assert result == {"status": "skipped", "reason": "repo_identity_unresolved"}
 
 
+def test_run_survives_a_non_utf8_stdout_byte():
+    """Same Windows cp1252-decode crash as `extract_changelog_section._git`
+    (a `gh` release title/body can legitimately carry non-ASCII) — `_run`
+    must not let a locale-undecodable byte turn `stdout` into `None`."""
+    result = cgr._run([sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\x8f')"])
+    assert result.returncode == 0
+    assert result.stdout is not None
+    assert "�" in result.stdout
+
+
 def test_reports_exists_without_creating(tmp_path: Path):
     with patch.object(cgr, "_gh_version", return_value=(2, 60, 0)), \
          patch.object(cgr, "_gh_authenticated", return_value=True), \

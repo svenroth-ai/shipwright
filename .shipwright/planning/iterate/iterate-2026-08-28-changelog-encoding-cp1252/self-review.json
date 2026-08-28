@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "Fixes exactly the reported defect (missing encoding= on _git's subprocess.run) and audits+fixes the same pattern in the two other subprocess.run sites reachable from publish_release_notes.py's call chain (create_github_release._run, repo_identity.resolve_repo_identity); nothing beyond that scope was touched."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "No boundary contract changed; the existing OSError/TimeoutExpired try/except around each subprocess.run call is untouched, only the decode behavior changed."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No user input reaches SQL/HTML; no secrets added; version-string argv validation elsewhere is unaffected by this change."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Three new regression tests spawn a real child process emitting a byte undecodable in cp1252 and assert on the outcome (stdout is not None / no crash) rather than internals; each was verified to fail against the pre-fix code (git stash) and pass after."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "No loops, queries, or pagination involved."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Mirrors the established encoding=\"utf-8\", errors=\"replace\" pattern from commit ce65a88f (pr_blockers.py, watch_pr_delivery.py); all touched files stay well under 300 lines."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No serialized format changed — this is a subprocess text-decode fix, not a producer/consumer format change."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reported no findings."
+    }
+  ]
+}

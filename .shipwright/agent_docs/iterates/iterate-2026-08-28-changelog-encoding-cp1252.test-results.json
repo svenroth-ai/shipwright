@@ -1,0 +1,83 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-28-changelog-encoding-cp1252",
+    "date": "2026-08-28",
+    "unit": {
+      "status": "pass",
+      "passed": 17036,
+      "failed": 0,
+      "total": 17094,
+      "note": "Green and complete across all 18 discovered F0 units (14 plugins + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests): 17094 tests total, 17036 passed, 0 failed, 0 errors, 58 skipped. No local degradation this run; full evidence retained at .shipwright/runs/f0-evidence/published/f0-4959ff809efd-195b18c5/ under the main repo root."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no CRUD/DB surface \u2014 this is a subprocess text-decoding fix"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface \u2014 pure internal Python CLI/lib change"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface exercised by this change"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure internal Python subprocess text-decoding fix (extract_changelog_section.py, create_github_release.py, repo_identity.py) with no runnable web/dev-server surface and no UI/API consumption; the F0 unit suite plus 3 new real-subprocess regression tests are the verification"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "extract_changelog_section._git() survives a stdout byte undecodable in the process locale (Windows cp1252) instead of crashing the reader thread and returning None",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_extract_changelog_section.py::test_git_helper_survives_a_non_utf8_stdout_byte PASSED (verified red pre-fix via git stash, green post-fix)"
+        },
+        {
+          "behavior": "create_github_release._run() survives the same undecodable byte instead of returning stdout=None",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_create_github_release.py::test_run_survives_a_non_utf8_stdout_byte PASSED (verified red pre-fix via git stash, green post-fix)"
+        },
+        {
+          "behavior": "repo_identity.resolve_repo_identity() survives the same undecodable byte instead of crashing with AttributeError on stdout.strip()",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_repo_identity.py::test_resolve_repo_identity_survives_a_non_utf8_stdout_byte PASSED (verified red pre-fix via git stash, green post-fix)"
+        },
+        {
+          "behavior": "existing extract/create-release/repo-identity call paths (normal git/gh output, error paths, JSON parsing) are unaffected by the encoding change",
+          "disposition": "tested",
+          "evidence": "all 46 pre-existing tests across the three affected test files still PASS unchanged (49 total in the 3 files)"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.1,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-08-26T22:38:43Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-26-campaign-worktree-guard-followups",
+    "commit": "fd5bb0215448edc1b31f587232da196a24d72ac2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

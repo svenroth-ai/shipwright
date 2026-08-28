@@ -54,3 +54,19 @@ def test_resolve_repo_identity_no_remote_returns_none(tmp_path: Path):
 def test_resolve_repo_identity_none_when_git_itself_fails(tmp_path: Path):
     with patch("repo_identity.subprocess.run", side_effect=OSError("git not found")):
         assert resolve_repo_identity(tmp_path) is None
+
+
+def test_resolve_repo_identity_survives_a_non_utf8_stdout_byte(tmp_path: Path):
+    """Same Windows cp1252-decode crash as the other two `gh`/`git` readers
+    in the release-notes chain — a locale-undecodable byte must not turn
+    `stdout` into `None` (`.strip()` would then raise `AttributeError`)."""
+    real_run = subprocess.run
+
+    def _non_utf8_child(*_args, **kwargs):
+        return real_run(
+            [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\x8f')"],
+            **kwargs,
+        )
+
+    with patch("repo_identity.subprocess.run", side_effect=_non_utf8_child):
+        assert resolve_repo_identity(tmp_path) is None

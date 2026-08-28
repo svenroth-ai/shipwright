@@ -174,6 +174,28 @@ def test_git_helper_raises_when_subprocess_itself_fails(tmp_path: Path):
             ecs._git(["status"], tmp_path)
 
 
+def test_git_helper_survives_a_non_utf8_stdout_byte(tmp_path: Path):
+    """Windows repro: without an explicit ``encoding=``, ``text=True``
+    decodes via the locale's codec (cp1252 on Windows). A byte a changelog
+    can genuinely contain (e.g. an em-dash mis-encoded upstream) crashes
+    that decode inside subprocess's reader thread, leaving ``stdout`` as
+    ``None`` — which then raised ``AttributeError`` on ``.splitlines()`` in
+    ``_extract_section``. ``encoding="utf-8", errors="replace"`` must
+    survive it instead."""
+    real_run = subprocess.run
+
+    def _non_utf8_child(*_args, **kwargs):
+        return real_run(
+            [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\x8f')"],
+            **kwargs,
+        )
+
+    with patch("tools.extract_changelog_section.subprocess.run", side_effect=_non_utf8_child):
+        output = ecs._git(["status"], tmp_path)
+    assert output is not None
+    assert "�" in output
+
+
 def test_remote_has_tag_false_when_git_command_itself_fails(tmp_path: Path):
     """A repo with no `origin` remote configured makes `git ls-remote --tags
     origin ...` fail for real (not mocked) — `_remote_has_tag` must treat
