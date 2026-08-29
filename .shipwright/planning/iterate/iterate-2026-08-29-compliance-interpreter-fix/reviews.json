@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-29-compliance-interpreter-fix",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:03.085199+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:09.968956+00:00",
+      "disposition": "mini-plan is advisory and freely skippable at small complexity (Override Classes); root-cause investigation via F-debug.md substituted for a plan on this bug-fix path",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "consistency",
+          "file": "shared/scripts/tools/finalize_iterate.py",
+          "line": 194,
+          "finding": "shared/scripts/tools/finalize_iterate.py's _update_compliance subprocess.run call was missing encoding=\"utf-8\", unlike the other two fixed call sites, which is inconsistent and could let a UnicodeDecodeError be silently swallowed by the surrounding bare `except Exception`.",
+          "suggestion": "Add encoding=\"utf-8\", errors=\"replace\" to match the other two call sites. FIXED in this iterate; re-verified via test_finalize_iterate_capture_order.py and the full shared/tests suite.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:03.295884+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: All three fixed call sites are now consistently hardened against subprocess I/O quirks. — finalize_security_compliance.py and compliance_runner.py set encoding=\"utf-8\" but not errors=\"replace\", unlike finalize_iterate.py after the code-review fix — a non-UTF-8 byte in the compliance subprocess's stdout would raise UnicodeDecodeError there instead of degrading gracefully. FIXED: added errors=\"replace\" to both remaining sites; re-verified via the full test suites for both trees.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: finalize_security_compliance.py's _run_update_compliance degrades gracefully on every failure, matching its own documented error-dict contract. — Unlike sys.executable (always present, starts instantly), `uv` is an external binary that can be absent (FileNotFoundError) or need a slow first-time venv sync (TimeoutExpired) — either would raise UNCAUGHT out of _run_update_compliance, unlike every other failure branch in that function. FIXED: wrapped the call in try/except (subprocess.TimeoutExpired, OSError) returning the same {\"updated_reports\": [], \"error\": ...} contract; added a new parametrized regression test (test_run_update_compliance_does_not_raise_when_uv_itself_fails) exercising both exception types, confirmed RED before the fix and GREEN after.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The original 30s subprocess timeout is adequate for the new uv-based dispatch. — A cold `uv` venv sync (first-ever resolve/install of jsonschema/pyyaml) or a lock-wait under concurrent sessions sharing the same plugin cache can plausibly exceed 30s, causing spurious TimeoutExpired failures that never existed under the old always-present sys.executable call. FIXED: bumped the timeout constant to 60s at all three sites, and the paired outer Stop-fallback timeout in generate_handoff_on_stop.py from 60s to 90s to preserve the 'outer strictly exceeds inner' invariant — re-verified via test_runconfig_timeout_invariant.py (red at 60/60, green at 60/90).",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: This iterate leaves nothing about compliance-update error diagnostics unaddressed. — Confirmed pre-existing, out-of-scope finding: compliance-update callers discard the subprocess's stdout JSON diagnostics on non-zero exit, making failures harder to debug. This predates the iterate and is not introduced or worsened by it. Not fixed here by decision — filed as a tracked follow-up instead: triage card trg-106aef51.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:03.396154+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:10.185822+00:00",
+      "disposition": "external LLM code review is medium+ only (SKILL.md Phase Matrix); this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:03.187116+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-29T14:42:10.078712+00:00",
+      "disposition": "plan_internal only runs at medium+ complexity (iteration-planning.md); this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
