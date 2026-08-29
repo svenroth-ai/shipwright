@@ -35,6 +35,7 @@ You can drive all of this from the Claude Code VSCode Extension or CLI terminal,
 - **Full pipeline** -- `/shipwright-run "..."` drives the complete initial build, from requirements through deployment.
 - **Daily iteration** -- `/shipwright-iterate "..."` for every change after the first deploy. Classifies intent, assesses complexity, runs the right amount of process.
 - **Single skill** -- `/shipwright-plan`, `/shipwright-test`, `/shipwright-security`, or any other skill on its own -- even on projects that never used Shipwright before.
+- **Grading any repo** -- `/shipwright-grade <path|url>` is read-only and needs no Shipwright adoption at all: point it at any git repository (yours or someone else's) for a Control Grade (A–F) assessment.
 
 All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top. Claude runs in an embedded terminal on the task page, you just stop juggling windows and VS Code sessions to see what's where.
 
@@ -121,9 +122,10 @@ User Description
   Out-of-band (not part of the orchestrator pipeline):
   /shipwright-security ..... OSS (Semgrep/Trivy/Gitleaks) | Aikido | CI workflow — run manually after test
   /shipwright-compliance ... Auto-background doc update after every phase + on-demand detective audit
+  /shipwright-grade ........ Read-only Control Grade (A–F) for any repo — no adoption required
 ```
 
-The orchestrator runs **7 phases** (project → design → plan → build → test → changelog → deploy). Security and compliance are **separate skills, not pipeline phases**: security is invoked manually after test (or scheduled via `.github/workflows/security.yml`), and compliance fires as a non-blocking auto-background side-effect after every completed phase plus an on-demand `/shipwright-compliance` detective audit.
+The orchestrator runs **7 phases** (project → design → plan → build → test → changelog → deploy). Security, compliance, and grading are **separate skills, not pipeline phases**: security is invoked manually after test (or scheduled via `.github/workflows/security.yml`), compliance fires as a non-blocking auto-background side-effect after every completed phase plus an on-demand `/shipwright-compliance` detective audit, and `/shipwright-grade` is a standalone, read-only assessment you can run against any repository at any time (see Appendix B).
 
 Each phase is a standalone Claude Code plugin. `/shipwright-run` orchestrates the full pipeline for the initial build, `/shipwright-iterate` drives daily changes afterwards, and every single skill can be invoked on its own. Pick the entry point that matches your moment: the terminal or VS Code Extension directly for single-project flow, or the Command Center WebUI when you're tracking multiple projects at once and want one board that says where everything stands.
 
@@ -290,7 +292,7 @@ git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
 claude plugin marketplace add ~/shipwright
 ```
 
-Install all 13 plugins. Use the snippet for your shell:
+Install all 14 plugins. Use the snippet for your shell:
 
 **bash / zsh / Git Bash:**
 
@@ -298,7 +300,7 @@ Install all 13 plugins. Use the snippet for your shell:
 for p in shipwright-run shipwright-project shipwright-design shipwright-plan \
          shipwright-build shipwright-test shipwright-deploy shipwright-changelog \
          shipwright-compliance shipwright-security shipwright-iterate \
-         shipwright-preview shipwright-adopt; do
+         shipwright-preview shipwright-adopt shipwright-grade; do
   claude plugin install "${p}@shipwright"
 done
 ```
@@ -310,7 +312,7 @@ foreach ($p in @('shipwright-run','shipwright-project','shipwright-design',
                  'shipwright-plan','shipwright-build','shipwright-test',
                  'shipwright-deploy','shipwright-changelog','shipwright-compliance',
                  'shipwright-security','shipwright-iterate','shipwright-preview',
-                 'shipwright-adopt')) {
+                 'shipwright-adopt','shipwright-grade')) {
   claude plugin install "$($p)@shipwright"
 }
 ```
@@ -368,6 +370,7 @@ shipwright() {
     --plugin-dir ~/shipwright/plugins/shipwright-compliance \
     --plugin-dir ~/shipwright/plugins/shipwright-preview \
     --plugin-dir ~/shipwright/plugins/shipwright-adopt \
+    --plugin-dir ~/shipwright/plugins/shipwright-grade \
     "$@"
 }
 ```
@@ -390,6 +393,7 @@ function shipwright {
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-compliance `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-preview `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-adopt `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-grade `
     @args
 }
 ```
@@ -423,7 +427,8 @@ Add the following to `~/.claude/settings.json`:
     "shipwright-compliance@shipwright": true,
     "shipwright-iterate@shipwright": true,
     "shipwright-preview@shipwright": true,
-    "shipwright-adopt@shipwright": true
+    "shipwright-adopt@shipwright": true,
+    "shipwright-grade@shipwright": true
   }
 }
 ```
@@ -443,7 +448,7 @@ cd ~/shipwright && uv sync
 claude plugin list
 ```
 
-All 13 shipwright plugins should show `✔ enabled`. Then in Claude Code (NEW session, restart if you just installed):
+All 14 shipwright plugins should show `✔ enabled`. Then in Claude Code (NEW session, restart if you just installed):
 
 ```
 /shipwright-run
@@ -827,6 +832,8 @@ Behaviour means the requirement it belongs to is corrected — description and a
 
 A round claiming it changed a requirement is refused unless a requirements file genuinely differs from what it said when that round started — each round takes a snapshot before it revises anything, which is what makes "this round corrected it" checkable rather than merely asserted. Judging behaviour-versus-appearance is a human read; the declaration and the check are not.
 
+**Backend-only requirements need no screen.** An FR that will genuinely never have a UI (a background job, a webhook handler) is listed under a hand-authored `## Non-UI FRs` section in `design-manifest.md`, each line citing the ADR that decided it has no UI -- an entry with no `ADR-NNN` reference is ignored, not exempted. Compliance's Group C1 (`check_design_fr_coverage`) then treats that FR as satisfied instead of reporting it as an orphan, and the section round-trips verbatim through every manifest regeneration.
+
 **Standalone usage.** Yes. `/shipwright-design` works independently as long as specs exist. You can also iterate on individual screens or process feedback files at any time. The review viewer at `.shipwright/designs/index.html` is your primary tool for reviewing and providing feedback.
 
 ---
@@ -994,6 +1001,10 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 **Failures you already accepted are reported separately.** If your project has a `shipwright_known_failures.json` listing failures that predate onboarding, the test phase reads that same list the audit phase reads, and reports those failures as known-and-accepted rather than as fresh breakage. Without this, an onboarded project reports a permanently red run while the audit calls the same run fine -- and the real cost is not the disagreement, it is that you learn to ignore red.
 
+**Tag your tests so they count as coverage.** A test only shows up in the traceability matrix (Section 4.10) if it carries the canonical `@FR-XX.YY` token -- `@FR-`, two digits, a dot, two digits -- in the form idiomatic to its runner: `@pytest.mark.covers("FR-01.03")` in Python, a `// @covers FR-01.03` comment on the line immediately before a JS/TS test, a Playwright `tag: ['@FR-01.03']`, or a `@FR-01.03` suffix on a Vitest title. Tagged-but-skipped tests close nothing -- coverage requires the tag on a test that is enabled **and** executed-passing. `/shipwright-compliance` regenerates `.shipwright/compliance/test-traceability.json` (per-FR, per-layer coverage) from these tags; a spec clean-up can fold a fine-grained FR into a broader one via a `## FR-Fold-Map` table without having to rewrite existing tags.
+
+**Committing a skipped or `.only`/`fit` test is a hygiene gate, not a style note.** A silently skipped test (no CI guard), an unconditional `.only`/`fit`, or a quarantined test past its stated expiry fails the mechanical test-hygiene probe (`scan_test_hygiene.py`), enforced at `/shipwright-iterate`'s F0.5 / Self-Review Step 8 on the diff you're about to commit -- not retroactively on the whole suite.
+
 **Standalone usage:** Yes. You can run `/shipwright-test` at any time against any project with a recognized profile. It works independently of the pipeline. The `--fix` flag and `--e2e-only` flag give you targeted control outside the pipeline.
 
 ---
@@ -1059,6 +1070,8 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 **Usage:** Always standalone (security is no longer a pipeline phase; see banner above). Runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
 
 > **Aikido backend -- legacy / not re-verified:** The current scanner flow (report persistence, iterate handoff, orchestrator decouple) was built and verified against the OSS backend only. The Aikido path in SKILL.md Step 6 is preserved and should continue to function via `aikido_client.py report`, but has not been re-run end-to-end against it. New deployments are encouraged to use the OSS backend; if you use Aikido, please report any regressions in GitHub issues.
+
+**Accepted-risk register.** A finding you deliberately keep (a `.trivyignore` suppression, a dismissed GitHub code-scanning alert) is recorded in `shipwright_accepted_risks.yaml` -- human-authored, with a reason and a re-review date -- so the suppression and its justification can't drift apart silently. `accepted_risks_cli.py check` verifies both directions offline (a suppression with no register entry, or a register entry with no suppression); `expire` fails once a re-review date has passed; `converge` (not wired into CI by design) reconciles GitHub-dismissal entries against live code-scanning state when you choose to run it.
 
 **CI integration:** `.github/workflows/security.yml` is shipped DORMANT -- only `workflow_dispatch` is active out of the box. The workflow is fully wired (SARIF upload to GitHub Security tab, PR-comment, fork-PR guards, weekly cron) but the auto-triggers are commented out so consumers activate them deliberately at Phase B / Go-Live. `/shipwright-adopt` Step E.13 scaffolds the same template into brownfield repos that don't already have a security workflow. **Operational details (Phase-B activation, fork-PR semantics, the `actions: read` permissions footgun, and the convention lock) live at [docs/security-ci-setup.md](security-ci-setup.md).**
 
@@ -1191,7 +1204,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - **A:** Artifact presence + path integrity. `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files. The composite handler also runs **A5** (CI security-workflow integrity) so `.github/workflows/security.yml` parity drift surfaces here.
 - **B:** Config ↔ config ↔ event-log coherence. `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events; **B7** reverse-direction git-log scan catches commits without events.
 - **C:** Planning internal coherence (preventive re-run): every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
-- **D:** Implementation evidence. Every FR has at least one `work_completed` event (D5 enforces FR-or-`spec_impact=none` linkage), every built section has `test_count > 0`.
+- **D:** Implementation evidence. Every FR has at least one `work_completed` event (D5 enforces FR-or-`spec_impact=none` linkage), every built section has `test_count > 0`. **D-orphan** flags a `@FR` test tag that names a removed/unresolvable FR (LOW hygiene, unless a `## FR-Fold-Map` entry rescues it — see Section 4.6). **D-layer** flags an FR still missing an executed-passing test in a layer its spec requires.
 - **E:** Compliance-doc content staleness. Regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks. A **snapshot-provenance audit** widens coverage to the 8 tracked compliance + agent-doc MDs and walks worktree branch lineage via `find_snapshot_commit` so post-merge state stays clean.
 - **F:** ADR structural integrity (preventive re-run F1–F3): unique sequential IDs, valid status enum, supersession refs exist. **F4–F7 doc-hygiene detectors** on top: F4 flags ADRs > 60 lines without a `**Details:** [spec-folder link](...)`; F5 reconciles every decision-drop declaring `architecture_impact` against the *text* of `architecture.md` (the same content oracle the F11 `check_architecture_documented` finalize gate uses); F6 caps `CLAUDE.md` at 200 lines; F7 flags > 5 inline `Iterate X (ADR-N)` annotations leaking into CLAUDE.md.
 - **G:** Agent-docs freshness vs. git activity. Conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
@@ -2395,6 +2408,8 @@ The `/shipwright-compliance` skill generates audit-ready documentation from the 
 | **Test Evidence** | Test progression timeline showing how the test suite evolved over time |
 | **Change History** | Conventional Commits mapped to requirements, with commit hashes and timestamps |
 | **SBOM (Software Bill of Materials)** | Dependencies with versions, extracted from `package.json` / `package-lock.json` |
+| **Test Traceability** (`test-traceability.json`) | Per-FR, per-layer test coverage derived from `@FR-XX.YY` test tags (Section 4.6) — the machine-readable index the RTM's coverage columns are rendered from |
+| **CI Security** (`ci-security.json`) | Public-safe summary pulled from the latest `security.yml` CI run: findings by severity, critical-gate pass/fail, accepted-risk register with expiry — no finding detail |
 
 #### How current are these documents?
 
@@ -2484,7 +2499,7 @@ Once oriented, common follow-up actions:
 | Make any code change (feature / fix / refactor) | `/shipwright-iterate "<description>"` | Adaptive complexity; runs the right amount of process |
 | See the running app in a browser | `/shipwright-preview` | Starts the dev server, returns the URL |
 | Run tests on demand | `/shipwright-test` | Auto-detects unit/integration/E2E from profile |
-| Check that artifacts are still in sync | `/shipwright-compliance` | Cross-artifact detective audit (8 check groups, A–H) |
+| Check that artifacts are still in sync | `/shipwright-compliance` | Cross-artifact detective audit (9 check groups, A–I) |
 | Tag a release | `/shipwright-changelog` | Aggregates `[Unreleased]` entries, bumps semver, opens PR |
 | Deploy to DEV/PROD | `/shipwright-deploy` | DEV auto, PROD manual (per design principle) |
 
@@ -2664,7 +2679,7 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 | `/shipwright-security` | -- | -- | **Out-of-band**, not part of `PIPELINE_STEPS`. Run security scan (OSS backend by default; Aikido optional/legacy). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. CI activation steps and the GitHub Actions workflow shape live at [docs/security-ci-setup.md](security-ci-setup.md). |
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. Also **recomputes and checks in the seven compliance evidence documents** (Step 5.5) and, for any published package manifest declared in `shipwright_changelog_config.json`, **writes and verifies the released version into it in the same commit** (Step 5.4/6) — a manifest left at the previous version stops the release before it tags. |
 | `/shipwright-deploy` | -- | `--prod`, `--rollback` | Deploy via the project's deploy profile (Jelastic is the verified reference target; Vercel / Compose-VPS ship as declarative stubs). DEV deploys automatically; PROD requires `--prod` and explicit confirmation. Runs a smoke test after deploy, rolls back on failure. |
-| `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both`, `--refresh-pr` | **Out-of-band** detective cross-artifact audit (Groups A–H). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). `--refresh-pr` skips the audit and instead opens an ordinary **documents-only pull request** bringing the seven committed evidence documents up to date between releases — the on-demand half of the release-time refresh (see § 10, "How current are these documents?"). Requires a clean checkout of an up-to-date default branch; uses your own `gh` login, no bot credential. |
+| `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both`, `--refresh-pr` | **Out-of-band** detective cross-artifact audit (Groups A–I). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). `--refresh-pr` skips the audit and instead opens an ordinary **documents-only pull request** bringing the seven committed evidence documents up to date between releases — the on-demand half of the release-time refresh (see § 10, "How current are these documents?"). Requires a clean checkout of an up-to-date default branch; uses your own `gh` login, no bot credential. |
 | `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + .shipwright/agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase; runs once per repo. |
 | `/shipwright-grade` | `<path\|url>` | `--format terminal\|markdown\|json\|html`, `--allow-network`, `--allow-network-private`, `--no-clone` | **Out-of-band**, read-only, not a pipeline phase. Grade any git repository against the Control Grade rubric (A–F) — the same `compute_grade` engine the compliance dashboard uses. A repo with a healthy `.shipwright/` (event log + RTM) grades **authoritatively** (grader-grade == dashboard-grade); every other repo is a labelled **heuristic** cold-repo projection from git history + structure, with underivable dimensions rendered honest `n/a`. Grades a local path or shallow-clones a URL / `owner/repo` into a purged tempdir (`--no-clone` forbids). A **local path** is local-only by default (privacy-first, even with a public remote); a **public URL / `owner/repo`** defaults to network-on (its identity is already sent to clone it) — auto-disabling on a private/unverifiable remote and falling back to the honest local grade when `gh` is unavailable (never a false `F`). `--allow-network` forces enrichment on for a local path; without it, GitHub CI/SARIF and reviewed-PR-provenance dims (test-health, security, change-traceability) render honest `n/a`. The standalone CLI is `plugins/shipwright-grade/scripts/tools/grade.py` (the `npx`/`uvx` seed). `--format json` carries a `schema_version` (`major.minor`) — the Command Center WebUI renders this model field-for-field, so its shape is a versioned contract (major = breaking, the consumer refuses to render; minor = additive). |
 
