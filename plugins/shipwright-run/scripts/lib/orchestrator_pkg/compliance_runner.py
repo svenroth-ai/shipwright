@@ -26,8 +26,11 @@ from typing import Any
 # spawns ``orchestrator update-step`` (generate_handoff_on_stop) MUST allow
 # STRICTLY more than this, or the orchestrator is killed mid-write before
 # ``save_run_config`` runs and the phase is never marked complete
-# (audit WP2/F13). Enforced by test_runconfig_timeout_invariant.py.
-COMPLIANCE_SUBPROCESS_TIMEOUT_SECONDS = 30
+# (audit WP2/F13). Enforced by test_runconfig_timeout_invariant.py. Headroom
+# above 30s: since this launches `uv run --project <compliance_plugin>`
+# rather than `sys.executable`, a first-ever sync of that plugin's venv may
+# need to resolve/install jsonschema/pyyaml, which the old call never did.
+COMPLIANCE_SUBPROCESS_TIMEOUT_SECONDS = 60
 
 
 def _shim():
@@ -67,12 +70,20 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
         record_failed(project_root, phase, reason="script_missing")
         return None
 
+    # `uv run --project`, not `sys.executable`: `update_compliance.py` needs
+    # jsonschema/pyyaml, declared only in the compliance plugin's own
+    # pyproject.toml. `sys.executable` is the orchestrator's own venv, which
+    # carries neither — cross-plugin ModuleNotFoundError otherwise (same
+    # class of bug as finalize_iterate.py._update_compliance). `compliance_script`
+    # is `<compliance_plugin>/scripts/tools/update_compliance.py`.
+    compliance_plugin = compliance_script.parents[2]
     try:
         result = subprocess.run(
-            [sys.executable, str(compliance_script),
+            ["uv", "run", "--project", str(compliance_plugin), "python",
+             str(compliance_script),
              "--project-root", str(project_root),
              "--phase", phase],
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=COMPLIANCE_SUBPROCESS_TIMEOUT_SECONDS,
             cwd=str(project_root),
         )

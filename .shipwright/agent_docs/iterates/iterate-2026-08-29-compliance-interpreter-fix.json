@@ -1,0 +1,60 @@
+{
+  "run_id": "iterate-2026-08-29-compliance-interpreter-fix",
+  "date": "2026-08-29T14:34:28.509845Z",
+  "event_at": "2026-08-29T14:33:30.510815+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/compliance-interpreter-fix",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-08-29-compliance-interpreter-fix",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "finalize_iterate.py::_update_compliance launches update_compliance.py via the compliance plugin's own uv environment (not the caller's sys.executable)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_finalize_iterate_capture_order.py::test_update_compliance_runs_in_the_compliance_plugins_own_environment PASSED"
+      },
+      {
+        "behavior": "finalize_security_compliance.py::_run_update_compliance does the same",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py::test_run_update_compliance_uses_the_compliance_plugins_own_environment PASSED"
+      },
+      {
+        "behavior": "compliance_runner.py::run_compliance_update does the same",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_compliance_runner_uv_env.py::test_run_compliance_update_uses_the_compliance_plugins_own_environment PASSED"
+      },
+      {
+        "behavior": "finalize_security_compliance.py's subprocess call degrades to the same error-dict contract (never raises) when uv itself is absent or times out",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py::test_run_update_compliance_does_not_raise_when_uv_itself_fails[exc0,exc1] PASSED"
+      },
+      {
+        "behavior": "the paired outer (Stop-fallback) / inner (compliance_runner.py) subprocess timeouts still satisfy 'outer strictly exceeds inner' after both were bumped for cold-venv-sync headroom",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-run/tests/test_runconfig_timeout_invariant.py::test_phase_completion_outer_timeout_exceeds_compliance_inner PASSED"
+      },
+      {
+        "behavior": "no regression in the three touched plugin/shared test trees or the referencing integration tests",
+        "disposition": "tested",
+        "evidence": "shared/tests (9539 passed, 33 skipped) + plugins/shipwright-security/tests (930 passed, 7 skipped) + plugins/shipwright-run/tests (556 passed) + integration-tests subset (28 passed) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 6,
+      "tested": 6,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure internal cross-plugin subprocess dispatch fix (compliance regen interpreter selection) \u2014 no runnable web/dev-server surface; this run's own unit + integration suites are the verification"
+  },
+  "declared_removals": []
+}

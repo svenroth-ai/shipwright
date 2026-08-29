@@ -1,0 +1,96 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-29-compliance-interpreter-fix",
+    "date": "2026-08-29",
+    "unit": {
+      "status": "pass",
+      "passed": 11025,
+      "failed": 0,
+      "note": "shared/tests full suite (9539 passed, 33 skipped) + plugins/shipwright-security/tests full suite (930 passed, 7 skipped) + plugins/shipwright-run/tests full suite (556 passed) \u2014 the three trees touched by this fix. shared/tests was run before the final round of doubt-review fixups (encoding parity, exception handling, timeout bumps); every file touched after that run (finalize_iterate.py, shared/scripts/hooks/generate_handoff_on_stop.py) was re-verified with its own targeted test files (test_finalize_iterate_capture_order.py, test_generate_handoff_on_stop.py, test_generate_handoff_dedup.py, test_stop_hooks_write_runtime.py \u2014 24/24 passed), all green."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 28,
+      "failed": 0,
+      "note": "integration-tests/ files that reference the touched compliance modules (test_shared_contracts_consumers.py, test_shared_contracts_consumers_behavior.py, test_fold_map_e2e.py)"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a backend Python subprocess-launch fix"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure internal cross-plugin subprocess dispatch fix (compliance regen interpreter selection) \u2014 no runnable web/dev-server surface; this run's own unit + integration suites are the verification"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "finalize_iterate.py::_update_compliance launches update_compliance.py via the compliance plugin's own uv environment (not the caller's sys.executable)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalize_iterate_capture_order.py::test_update_compliance_runs_in_the_compliance_plugins_own_environment PASSED"
+        },
+        {
+          "behavior": "finalize_security_compliance.py::_run_update_compliance does the same",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py::test_run_update_compliance_uses_the_compliance_plugins_own_environment PASSED"
+        },
+        {
+          "behavior": "compliance_runner.py::run_compliance_update does the same",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_compliance_runner_uv_env.py::test_run_compliance_update_uses_the_compliance_plugins_own_environment PASSED"
+        },
+        {
+          "behavior": "finalize_security_compliance.py's subprocess call degrades to the same error-dict contract (never raises) when uv itself is absent or times out \u2014 a new failure mode introduced by switching from sys.executable to an external uv binary",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py::test_run_update_compliance_does_not_raise_when_uv_itself_fails[exc0,exc1] PASSED"
+        },
+        {
+          "behavior": "the paired outer (Stop-fallback, generate_handoff_on_stop.py) / inner (compliance_runner.py) subprocess timeouts still satisfy 'outer strictly exceeds inner' after both were bumped for cold-venv-sync headroom (30s/60s \u2192 60s/90s)",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_runconfig_timeout_invariant.py::test_phase_completion_outer_timeout_exceeds_compliance_inner PASSED"
+        },
+        {
+          "behavior": "no regression in the three touched plugin/shared test trees or the referencing integration tests",
+          "disposition": "tested",
+          "evidence": "shared/tests (9539 passed, 33 skipped) + plugins/shipwright-security/tests (930 passed, 7 skipped) + plugins/shipwright-run/tests (556 passed) + integration-tests subset (28 passed) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.1,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-08-26T22:38:43Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-29-compliance-interpreter-fix",
+    "commit": "31517fe7260437403d855395267ddaf0aea7d86b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
