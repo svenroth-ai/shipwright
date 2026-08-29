@@ -82,13 +82,24 @@ def _run_update_compliance(project_root: Path) -> dict:
     if not script.exists():
         return {"updated_reports": [], "error": f"missing: {script}"}
 
-    proc = subprocess.run(
-        [sys.executable, str(script),
-         "--project-root", str(project_root),
-         "--phase", "security"],
-        capture_output=True, text=True, encoding="utf-8", timeout=30,
-        cwd=str(project_root),
-    )
+    # `uv run --project`, not `sys.executable`: `update_compliance.py` needs
+    # jsonschema/pyyaml, declared only in the compliance plugin's own
+    # pyproject.toml. `sys.executable` is this (security) plugin's own venv,
+    # which carries neither — cross-plugin ModuleNotFoundError otherwise
+    # (same class of bug as finalize_iterate.py._update_compliance). Unlike
+    # the old `sys.executable` call, `uv` is an external binary that can be
+    # absent or need a slow first-time sync — caught below, where the old
+    # call never needed a try/except at all.
+    try:
+        proc = subprocess.run(
+            ["uv", "run", "--project", str(compliance_plugin), "python", str(script),
+             "--project-root", str(project_root),
+             "--phase", "security"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=60, cwd=str(project_root),
+        )
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        return {"updated_reports": [], "error": f"{type(exc).__name__}: {exc}"}
     if proc.returncode != 0 or not proc.stdout.strip():
         return {
             "updated_reports": [],

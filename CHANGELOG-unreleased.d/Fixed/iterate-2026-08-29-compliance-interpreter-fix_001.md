@@ -1,0 +1,1 @@
+compliance evidence regen (finalize_iterate, security, and run orchestrator finalization) now launches update_compliance.py inside the shipwright-compliance plugin's own environment instead of the calling plugin's, fixing a ModuleNotFoundError: jsonschema failure when the caller's venv lacked the compliance plugin's dependencies

@@ -156,3 +156,45 @@ def test_no_run_id_means_no_flag(repo: Path, monkeypatch):
     finalize_iterate._update_compliance(repo, None)
 
     assert "--run-id" not in (captured.get("cmd") or [])
+
+
+def test_update_compliance_runs_in_the_compliance_plugins_own_environment(
+    repo: Path, monkeypatch,
+):
+    """``update_compliance.py`` needs ``jsonschema``/``pyyaml``, declared ONLY in
+    ``plugins/shipwright-compliance/pyproject.toml``. Launching it with
+    ``sys.executable`` runs it under WHICHEVER interpreter is executing
+    ``finalize_iterate.py`` — typically another plugin's own ``uv``-managed venv,
+    which carries no such dependency — and fails with
+    ``ModuleNotFoundError: No module named 'jsonschema'`` (reproduced live on
+    macOS, trg-jsonschema-interpreter-mismatch). The call must instead route
+    through the compliance plugin's OWN environment, mirroring the pattern
+    already used for the same class of problem in
+    ``shared/scripts/tools/ci_manifest_drift_check.py`` and
+    ``plugins/shipwright-adopt/tests/test_seed_traceability_baseline.py``:
+    ``["uv", "run", "--project", <compliance_plugin_dir>, "python", <script>, ...]``.
+    """
+    captured: dict = {}
+
+    class _Result:
+        returncode = 0
+        stdout = "{}"
+        stderr = ""
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return _Result()
+
+    monkeypatch.setattr(finalize_iterate.subprocess, "run", fake_run)
+    finalize_iterate._update_compliance(repo, RUN)
+
+    cmd = captured.get("cmd") or []
+    assert cmd[:2] == ["uv", "run"], (
+        f"must launch via `uv run`, not the caller's bare interpreter: {cmd}")
+    assert "--project" in cmd, f"must pin the compliance plugin's own venv: {cmd}"
+    plugin_dir = Path(cmd[cmd.index("--project") + 1])
+    assert plugin_dir.name == "shipwright-compliance", (
+        f"--project must point at the compliance plugin, not the caller's own "
+        f"plugin: {plugin_dir}")
+    assert sys.executable not in cmd, (
+        f"the caller's own interpreter must not appear in the argv: {cmd}")

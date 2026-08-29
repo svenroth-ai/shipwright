@@ -182,13 +182,13 @@ def _update_compliance(project_root: Path, run_id: str | None = None) -> list[st
     if not script.exists():
         return []
 
-    try:
+    try:  # `uv run --project`: needs the compliance plugin's own jsonschema/pyyaml.
         result = subprocess.run(
-            [sys.executable, str(script),
+            ["uv", "run", "--project", str(compliance_plugin), "python", str(script),
              "--project-root", str(project_root),
              "--phase", "iterate",
              *(["--run-id", run_id] if run_id else [])],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
         )
         if result.returncode == 0:
             compliance_dir = project_root / ".shipwright" / "compliance"
