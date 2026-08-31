@@ -1,0 +1,6 @@
+{
+  "stage": 1,
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All three callers implement the described fix shape identically (json.loads(stdout) -> extract generator_errors -> join into message, fallback to stderr on JSONDecodeError/TypeError). Fallback-for-other-failure-classes preserved. Test coverage present per site plus a stderr-fallback regression test. Scope check: update_compliance.py (producer) untouched, no unrelated refactors."
+}

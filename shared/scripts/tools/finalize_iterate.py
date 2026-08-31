@@ -168,6 +168,19 @@ def _update_dashboard(project_root: Path, session_id: str, run_id: str) -> str |
         return None
 
 
+def _compliance_failure_detail(result: subprocess.CompletedProcess) -> str:
+    """Generator-error detail parsed from stdout JSON; else falls back to stderr."""
+    try:
+        payload = json.loads(result.stdout)
+    except (json.JSONDecodeError, TypeError):
+        payload = None
+    errors = payload.get("generator_errors") if isinstance(payload, dict) else None
+    valid = [e for e in errors if isinstance(e, dict)] if isinstance(errors, list) else []
+    if not valid:
+        return (result.stderr or "")[:200]
+    return "; ".join(f"{e.get('report')}: {e.get('error')}: {e.get('detail')}" for e in valid)
+
+
 def _update_compliance(project_root: Path, run_id: str | None = None) -> list[str]:
     """Regenerate compliance reports. Returns list of written paths.
 
@@ -195,7 +208,7 @@ def _update_compliance(project_root: Path, run_id: str | None = None) -> list[st
             if compliance_dir.is_dir():
                 return [str(f.relative_to(project_root)) for f in compliance_dir.iterdir() if f.is_file()]
         else:
-            print(f"[finalize_iterate] compliance failed: {result.stderr[:200]}", file=sys.stderr)
+            print(f"[finalize_iterate] compliance failed: {_compliance_failure_detail(result)}", file=sys.stderr)
     except Exception as exc:
         print(f"[finalize_iterate] compliance failed: {exc}", file=sys.stderr)
     return []
