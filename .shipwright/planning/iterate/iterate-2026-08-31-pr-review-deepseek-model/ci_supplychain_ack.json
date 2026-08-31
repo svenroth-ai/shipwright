@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-31-pr-review-deepseek-model",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-08-31-pr-review-deepseek-model",
+    "paths_fingerprint": "5bdd4fe96ef4d2fe06ee60035ec54f0e6a6345e6b1c3b7a47fa529caa28bf77a",
+    "consistent_with": "ADR-167",
+    "statement": "Swaps the Tier-3 PR-review OpenRouter model from anthropic/claude-sonnet-4.6 to deepseek/deepseek-v4-pro (ADR-167 already licenses a model switch via SHIPWRIGHT_PR_REVIEW_MODEL) and layers on a fail-closed ZDR provider-routing constraint reused from the review cascade's existing DeepSeek arm; no trust source, permission, or the free-form model-override contract is widened. A comment documenting the single-provider rollback circularity (Stage-3 doubt review, accepted-and-documented) was added next to the env var; no behavioral change.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml"
+    ]
+  }
+}

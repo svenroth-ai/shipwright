@@ -227,7 +227,20 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHIPWRIGHT_PR_REVIEW_MODEL: anthropic/claude-sonnet-4.6
+          # ZDR-pinned to a single live provider (novita — the allowlist's
+          # `together` entry has no live endpoint for this model). An outage
+          # there fails EVERY Tier-3 PR's required check simultaneously, and
+          # a rollback PR editing this line is itself Tier-3 and reviewed by
+          # THIS file as committed on the default branch (workflow_run always
+          # runs the base branch's workflow, never the PR's) — so it cannot go
+          # green through the normal path while novita is down. Recovery in
+          # that case is a maintainer's `gh pr merge --admin` on the rollback
+          # PR, with the internal review passes (spec/code/doubt) still
+          # required as evidence (iterate-2026-08-31-pr-review-deepseek-model,
+          # Stage-3 doubt review — accepted, not built around, per that
+          # iterate's decision to keep this a live-tested swap rather than add
+          # canary/rollback machinery).
+          SHIPWRIGHT_PR_REVIEW_MODEL: deepseek/deepseek-v4-pro
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
         run: |

@@ -32,6 +32,12 @@ SENSITIVE_PATH_RE = re.compile(
     r"plugins/.+/(?:hooks|skills|agents)/"
     r"|plugins/shipwright-security/scripts/tools/review_record_tier\.py"
     r"|shared/scripts/lib/"
+    # Load-bearing for the required PR-review gate since
+    # iterate-2026-08-31-pr-review-deepseek-model: pr_review.py fails the gate
+    # closed if this file's `deepseek_routing` block drifts from the exact
+    # provider allowlist the code expects — same trust class as the lib code
+    # it configures, so a config-only edit here must be reviewed too.
+    r"|shared/config/external_review\.json"
     r"|\.github/workflows/"
     r"|\.github/actions/"
     r"|shared/templates/github-actions/"

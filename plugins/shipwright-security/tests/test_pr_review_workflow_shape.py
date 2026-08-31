@@ -26,6 +26,7 @@ absent required context is `pending`, which blocks.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,12 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 STAGE1_PATH = REPO_ROOT / ".github" / "workflows" / "pr-review.yml"
 STAGE2_PATH = REPO_ROOT / ".github" / "workflows" / "pr-review-run.yml"
+
+_PLUGIN_LIB = Path(__file__).resolve().parents[1] / "scripts" / "lib"
+if str(_PLUGIN_LIB) not in sys.path:
+    sys.path.insert(0, str(_PLUGIN_LIB))
+
+import pr_review_openrouter as _openrouter  # noqa: E402
 
 
 def _read(path: Path) -> str:
@@ -249,43 +256,17 @@ class TestSecrets:
         assert "SHIPWRIGHT_PR_REVIEW_MODEL" in stage2, \
             "model must be selectable via SHIPWRIGHT_PR_REVIEW_MODEL env"
 
+    def test_model_env_matches_code_default(self, stage2):
+        # A presence-only check (above) would stay green on a stale value —
+        # the exact drift this repo already produced once across the
+        # workflow file and two test files. Pin the two to equal, not just
+        # both-exist.
+        match = re.search(r"SHIPWRIGHT_PR_REVIEW_MODEL:\s*(\S+)", stage2)
+        assert match, "SHIPWRIGHT_PR_REVIEW_MODEL: <value> not found in stage 2"
+        assert match.group(1) == _openrouter.DEFAULT_MODEL, (
+            f"workflow pins {match.group(1)!r} but pr_review_openrouter.DEFAULT_MODEL "
+            f"is {_openrouter.DEFAULT_MODEL!r} — these must never drift apart"
+        )
 
-# ---------------------------------------------------------------------------
-# Supply-chain + injection hardening (this PR is itself security-scanned)
-# ---------------------------------------------------------------------------
-
-class TestHardening:
-
-    @pytest.mark.parametrize("path", [STAGE1_PATH, STAGE2_PATH])
-    def test_third_party_actions_sha_pinned(self, path):
-        text = _read(path)
-        for m in re.finditer(r"uses:\s*astral-sh/setup-uv@(\S+)", text):
-            assert re.fullmatch(r"[0-9a-f]{40}", m.group(1)), \
-                f"astral-sh/setup-uv must be SHA-pinned, got {m.group(1)!r}"
-
-    @pytest.mark.parametrize("path", [STAGE1_PATH, STAGE2_PATH])
-    def test_no_direct_github_context_in_run_body(self, path):
-        # run-shell-injection guard: never interpolate ${{ github.* }} directly
-        # inside a `run:` shell body — hoist into env first. Tracks the run-block
-        # by indentation so the legitimate `${{ github.* }}` in `env:` blocks is
-        # not flagged (only deeper-indented run-block lines count).
-        text = _read(path)
-        offenders = []
-        run_indent = None
-        for line in text.splitlines():
-            if not line.strip():
-                continue
-            indent = len(line) - len(line.lstrip())
-            if run_indent is not None:
-                if indent > run_indent:
-                    if "${{ github." in line:
-                        offenders.append(line.strip())
-                    continue
-                run_indent = None  # block ended (dedent to <= run: indent)
-            stripped = line.strip()
-            if stripped.startswith("run:"):
-                if "${{ github." in line:  # inline run on the same line
-                    offenders.append(stripped)
-                if stripped in ("run: |", "run: >") or stripped.startswith(("run: |", "run: >")):
-                    run_indent = indent
-        assert not offenders, f"raw ${{{{ github.* }}}} in run body (injection risk): {offenders}"
+# Supply-chain + injection hardening moved to test_pr_review_workflow_hardening.py
+# to keep this module inside the file-size guideline.
