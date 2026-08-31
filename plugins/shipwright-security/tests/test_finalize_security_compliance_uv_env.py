@@ -89,3 +89,79 @@ def test_run_update_compliance_does_not_raise_when_uv_itself_fails(
 
     assert result["updated_reports"] == []
     assert "error" in result and result["error"]
+
+
+def test_run_update_compliance_surfaces_generator_errors_from_stdout(
+    tmp_path, monkeypatch,
+):
+    """On a generator-error exit, ``update_compliance.py`` writes
+    ``{"success": false, "generator_errors": [...]}`` to STDOUT and leaves
+    stderr EMPTY. The old code read only ``proc.stderr``, so the ``error``
+    field came back blank with no clue what broke."""
+    import json as _json
+
+    fsc = _load_finalize_module()
+
+    payload = {
+        "success": False,
+        "generator_errors": [
+            {"report": "sbom", "error": "ValueError", "detail": "no lockfile"},
+        ],
+    }
+
+    class _FailResult:
+        returncode = 1
+        stdout = _json.dumps(payload)
+        stderr = ""
+
+    monkeypatch.setattr(fsc.subprocess, "run", lambda *a, **k: _FailResult())
+    result = fsc._run_update_compliance(tmp_path)
+
+    assert result["updated_reports"] == []
+    assert "ValueError" in result["error"]
+    assert "no lockfile" in result["error"]
+
+
+def test_run_update_compliance_falls_back_to_stderr_when_stdout_is_not_json(
+    tmp_path, monkeypatch,
+):
+    """A failure that never produces JSON on stdout (uv error, bare traceback)
+    must keep falling back to the real stderr — the generator-error path must
+    not swallow this other failure class."""
+    fsc = _load_finalize_module()
+
+    class _FailResult:
+        returncode = 1
+        stdout = ""
+        stderr = "uv: command not found"
+
+    monkeypatch.setattr(fsc.subprocess, "run", lambda *a, **k: _FailResult())
+    result = fsc._run_update_compliance(tmp_path)
+
+    assert result["updated_reports"] == []
+    assert "uv: command not found" in result["error"]
+
+
+@pytest.mark.parametrize("malformed_generator_errors", ["failure", [None], [42]])
+def test_run_update_compliance_malformed_generator_errors_falls_back_to_stderr(
+    tmp_path, monkeypatch, malformed_generator_errors,
+):
+    """A malformed-but-JSON-valid `generator_errors` (not a list of dicts) must
+    not raise `AttributeError` from `e.get(...)` — it must fall back to the
+    real stderr (external code-review finding, openai/medium)."""
+    import json as _json
+
+    fsc = _load_finalize_module()
+
+    payload = {"success": False, "generator_errors": malformed_generator_errors}
+
+    class _FailResult:
+        returncode = 1
+        stdout = _json.dumps(payload)
+        stderr = "real stderr text"
+
+    monkeypatch.setattr(fsc.subprocess, "run", lambda *a, **k: _FailResult())
+    result = fsc._run_update_compliance(tmp_path)
+
+    assert result["updated_reports"] == []
+    assert "real stderr text" in result["error"]

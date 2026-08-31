@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-08-31-compliance-error-surfacing",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-31T05:35:09.866052+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-31T05:35:10.059557+00:00",
+      "disposition": "small complexity; mini-plan / external plan review is medium+ only per phase matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py",
+          "line": null,
+          "finding": "Sibling helpers (security, run) lacked a dedicated regression test for the non-JSON-stdout stderr-fallback path that finalize_iterate.py's new test covers.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py",
+          "line": null,
+          "finding": "The warn-log JSON field stayed keyed \"stderr\" even though its value may now be parsed from stdout, misleading a downstream reader about which stream the diagnostic came from.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-08-31T05:46:43.626852+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-31T05:46:49.681116+00:00",
+      "disposition": "diff touches no migrations, async/concurrency, cross-plugin imports, or irreversible ops; Stage 3 is conditional on those per iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py:47-50",
+          "line": null,
+          "finding": "The error-path formatter assumes every truthy `generator_errors` value is an iterable of dictionaries. A valid-but-malformed JSON response such as `{\"generator_errors\":\"failure\"}` or `{\"generator_errors\":[null]}` causes `e.get(...)` to raise `AttributeError` rather than falling back to stderr. This can prevent the compliance failure from being logged and recorded.",
+          "suggestion": "Validate that `generator_errors` is a non-empty list and that each item is a dictionary before formatting; otherwise return the stderr fallback. Apply the same defensive validation in all three local helpers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/tools/finalize_security_compliance.py:107-110",
+          "line": null,
+          "finding": "_generator_error_detail` has the same unchecked assumption that `generator_errors` contains dictionaries. Malformed structured stdout therefore makes `_run_update_compliance` raise while handling a subprocess failure, instead of returning its documented error result.",
+          "suggestion": "Accept and format only a list of mapping objects, with malformed/empty values treated as an unsupported failure response and falling back to `proc.stderr`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/finalize_iterate.py:176-178",
+          "line": null,
+          "finding": "A malformed but JSON-valid `generator_errors` field can raise from the new diagnostic path (`e.get` on a non-dict). Although `_update_compliance`'s outer `except` eventually logs the exception, it discards the original stderr diagnostic, violating the specified stderr fallback for unsupported failure output.",
+          "suggestion": "Guard the field and entries before formatting, and return the existing stderr slice when the expected list-of-objects schema is not present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-run/tests/test_compliance_runner_uv_env.py:54-95",
+          "line": null,
+          "finding": "The new compliance-runner test verifies only the generator-error stdout case. It does not verify the required fallback for non-JSON stdout/stderr failures, so a regression that returns an empty diagnostic or stops using stderr in that branch would still pass.",
+          "suggestion": "Add a non-JSON stdout result with a known stderr message and assert that the emitted warning contains that message.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py:92-120",
+          "line": null,
+          "finding": "The added security-finalize test covers only structured generator errors. The pre-existing uv-failure test shown asserts merely that an error exists, not that stderr is preserved, leaving the explicit fallback acceptance criterion unverified for this caller.",
+          "suggestion": "Strengthen or add a test with non-JSON stdout and a distinctive stderr value, asserting that value is included in `result[\"error\"]`.  Overall assessment: ship-with-fixes. The intended stdout diagnostics are surfaced for the expected producer schema, but the new failure handling must not itself fail on malformed JSON structures, and fallback coverage is incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-08-31T05:49:44.228358+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: bug\n- Severity: medium\n- File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py:47-50`\n- Finding: The error-path formatter assumes every truthy `generator_errors` value is an iterable of dictionaries. A valid-but-malformed JSON response such as `{\"generator_errors\":\"failure\"}` or `{\"generator_errors\":[null]}` causes `e.get(...)` to raise `AttributeError` rather than falling back to stderr. This can prevent the compliance failure from being logged and recorded.\n- Suggestion: Validate that `generator_errors` is a non-empty list and that each item is a dictionary before formatting; otherwise return the stderr fallback. Apply the same defensive validation in all three local helpers.\n\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-security/scripts/tools/finalize_security_compliance.py:107-110`\n- Finding: `_generator_error_detail` has the same unchecked assumption that `generator_errors` contains dictionaries. Malformed structured stdout therefore makes `_run_update_compliance` raise while handling a subprocess failure, instead of returning its documented error result.\n- Suggestion: Accept and format only a list of mapping objects, with malformed/empty values treated as an unsupported failure response and falling back to `proc.stderr`.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/finalize_iterate.py:176-178`\n- Finding: A malformed but JSON-valid `generator_errors` field can raise from the new diagnostic path (`e.get` on a non-dict). Although `_update_compliance`'s outer `except` eventually logs the exception, it discards the original stderr diagnostic, violating the specified stderr fallback for unsupported failure output.\n- Suggestion: Guard the field and entries before formatting, and return the existing stderr slice when the expected list-of-objects schema is not present.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-run/tests/test_compliance_runner_uv_env.py:54-95`\n- […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      },
+      "contradiction_resolution": "only openai answered (deepseek returned an empty reply, degraded); openai gave verdict revise citing 3 medium-severity AttributeError-on-malformed-input findings across the 3 callers, all fixed (dict-type guard on each generator_errors entry, falls back to stderr when the shape is wrong) plus 2 low-severity test-coverage gaps, also fixed with parametrized regression tests in all 3 suites; not a genuine two-reviewer contradiction to reconcile, deepseek simply did not answer"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-31T05:37:10.012102+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-08-31T05:35:10.247025+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

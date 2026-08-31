@@ -67,6 +67,28 @@ def _is_ci_or_noninteractive() -> bool:
     return False
 
 
+def _generator_error_detail(proc: subprocess.CompletedProcess) -> str:
+    """Best diagnostic for a non-zero ``update_compliance.py`` exit.
+
+    On a generator-error exit it writes ``{"success": false, "generator_errors":
+    [...]}`` to STDOUT and leaves stderr EMPTY (the failure is a caught exception
+    turned into structured JSON, never a traceback) — the reverse of where a
+    caller looks by default. Prefer that structured detail; fall back to stderr
+    for any other failure (missing script, uv/venv error, timeout).
+    """
+    try:
+        payload = json.loads(proc.stdout)
+    except (json.JSONDecodeError, TypeError):
+        payload = None
+    errors = payload.get("generator_errors") if isinstance(payload, dict) else None
+    valid = [e for e in errors if isinstance(e, dict)] if isinstance(errors, list) else []
+    if valid:
+        return "; ".join(
+            f"{e.get('report')}: {e.get('error')}: {e.get('detail')}" for e in valid
+        )
+    return (proc.stderr or "")[:300]
+
+
 def _run_update_compliance(project_root: Path) -> dict:
     """Invoke ``update_compliance.py --phase security`` and return its JSON.
 
@@ -103,7 +125,7 @@ def _run_update_compliance(project_root: Path) -> dict:
     if proc.returncode != 0 or not proc.stdout.strip():
         return {
             "updated_reports": [],
-            "error": f"non-zero exit {proc.returncode}: {(proc.stderr or '')[:300]}",
+            "error": f"non-zero exit {proc.returncode}: {_generator_error_detail(proc)}",
         }
     try:
         return json.loads(proc.stdout)

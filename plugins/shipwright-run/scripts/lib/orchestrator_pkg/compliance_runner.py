@@ -33,6 +33,28 @@ from typing import Any
 COMPLIANCE_SUBPROCESS_TIMEOUT_SECONDS = 60
 
 
+def _generator_error_detail(result: subprocess.CompletedProcess) -> str:
+    """Best diagnostic for a non-zero ``update_compliance.py`` exit.
+
+    On a generator-error exit it writes ``{"success": false, "generator_errors":
+    [...]}`` to STDOUT and leaves stderr EMPTY (the failure is a caught exception
+    turned into structured JSON, never a traceback) — the reverse of where a
+    caller looks by default. Prefer that structured detail; fall back to stderr
+    for any other failure (missing script, uv/venv error, timeout).
+    """
+    try:
+        payload = json.loads(result.stdout)
+    except (json.JSONDecodeError, TypeError):
+        payload = None
+    errors = payload.get("generator_errors") if isinstance(payload, dict) else None
+    valid = [e for e in errors if isinstance(e, dict)] if isinstance(errors, list) else []
+    if valid:
+        return "; ".join(
+            f"{e.get('report')}: {e.get('error')}: {e.get('detail')}" for e in valid
+        )
+    return (result.stderr or "")[:500]
+
+
 def _shim():
     """Return the imported ``orchestrator`` shim if present, else None.
 
@@ -94,7 +116,9 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
             "level": "warn",
             "message": f"Compliance update failed for phase '{phase}'",
             "returncode": result.returncode,
-            "stderr": (result.stderr or "")[:500],
+            # May be parsed from stdout (generator_errors) rather than the
+            # process's actual stderr — see _generator_error_detail.
+            "detail": _generator_error_detail(result),
         }) + "\n")
         record_failed(
             project_root, phase,

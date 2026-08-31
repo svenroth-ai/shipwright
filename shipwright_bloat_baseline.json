@@ -727,7 +727,7 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 575,
+      "current": 588,
       "state": "exception",
       "adr": "ADR-096"
     },

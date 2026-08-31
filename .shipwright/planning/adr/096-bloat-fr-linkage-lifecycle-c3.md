@@ -112,6 +112,46 @@ bump measurement already on file) is raised to `575`; `adr` stays `ADR-096` —
 same controlling reason (this file legitimately absorbs new finalize-step
 wiring), not a new exception class. Re-Review-Date unchanged.
 
+### Addendum 2026-08-31 (compliance-error-surfacing)
+
+`finalize_iterate.py` 575 → 587 (+12): `_update_compliance` used to log only
+`result.stderr` on a non-zero `update_compliance.py` exit. On a
+generator-error exit that script writes its diagnostic (`generator_errors`)
+to STDOUT and leaves stderr EMPTY — the reverse of where the caller looked —
+so the operator saw an empty `[finalize_iterate] compliance failed: ` line
+with no clue what broke (surfaced during doubt-review of
+iterate-2026-08-29-compliance-interpreter-fix; the same bug existed in the
+two other callers, `finalize_security_compliance.py` and
+`compliance_runner.py`, both far under their own bloat caps and fixed there
+without needing an exception). The fix is one new private helper,
+`_compliance_failure_detail` (10 lines: parse stdout JSON, extract
+`generator_errors` if present, else fall back to the existing stderr slice),
+called from the one `else` branch that used to read `result.stderr` directly;
++2 lines are the mandatory PEP8 blank-line separators around the new
+function. Trimmed before this addendum: the helper's docstring was cut from
+a 6-line explanation to one line (the "why" — stdout-not-stderr — is
+preserved here instead, matching this file's own established pattern of
+keeping rationale in the ADR rather than in-file when the in-file cost would
+re-cross the ceiling); a standalone `shared/scripts/lib/` extraction was
+tried first and rejected (see Rejected alternatives) because it added an
+import line without recovering enough to matter. Same controlling reason as
+the rest of this ADR — this file legitimately absorbs new finalize-step
+wiring, and this is a correctness fix to an *existing* finalize step, not a
+new one. `575` (the iterate-timing-attribution addendum's measurement) is
+raised to `587`; `adr` stays `ADR-096`. Re-Review-Date unchanged.
+
+**+1 further (587 → 588), same addendum:** the external code-review cascade
+(openai via openrouter) found the helper assumed every truthy
+`generator_errors` value was a list of dicts — a malformed-but-valid JSON
+producer response (e.g. `{"generator_errors": "failure"}` or
+`{"generator_errors": [null]}`) would raise `AttributeError` from `e.get(...)`
+instead of falling back to stderr, silently losing the diagnostic the whole
+fix exists to preserve. One added line (`valid = [e for e in errors if
+isinstance(e, dict)] if isinstance(errors, list) else []`) filters to
+well-shaped entries before formatting; falls back to the stderr slice when
+nothing valid remains. Applied identically to the two sibling helpers
+(neither needed an exception bump). `588` is the new `current`.
+
 ## Consequences
 
 The four files now operate against the new limits; further additions must stay
@@ -146,6 +186,16 @@ as the Ousterhout argument above.
 - **Skip the regression tests** — unacceptable: the empirical-completeness gate
   mandates them; without them a future change could silently reopen the bypass
   or re-break D3.
+- **(2026-08-31 addendum) Extract `_compliance_failure_detail` into a new
+  `shared/scripts/lib/` module instead of bumping the ceiling** — tried first,
+  rejected: the extraction still needs one `from lib.… import …` line in this
+  file (this file already imports six sibling `lib.*` helpers the same way),
+  so it only traded 10 in-file lines for 1 import line — not enough to clear
+  575, and it would make the two OTHER fixed callers
+  (`finalize_security_compliance.py`, `compliance_runner.py`, both far under
+  their caps) inconsistent with this one for no benefit, since neither imports
+  from `shared/scripts/lib` today and both keep their own local copy of the
+  same helper.
 
 ---
 

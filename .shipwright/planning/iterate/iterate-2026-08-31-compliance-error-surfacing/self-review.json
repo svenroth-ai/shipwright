@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All three callers (finalize_iterate.py, finalize_security_compliance.py, compliance_runner.py) now parse generator_errors from update_compliance.py's stdout JSON on non-zero exit and surface it, with stderr fallback preserved for other failure classes."},
+    {"name": "Error Handling", "verdict": "pass", "note": "New helpers never raise: JSON parse failures are caught (json.JSONDecodeError, TypeError) and fall back to stderr."},
+    {"name": "Security Basics", "verdict": "n/a", "note": "No user input, SQL, HTML, or secrets involved."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Each site has a red-then-green test asserting the surfaced diagnostic string (outcome), plus a companion test pinning the non-JSON-stdout stderr fallback."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "No loops or queries added; single json.loads on an already-captured string."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Consistent per-site helper naming (_generator_error_detail / _compliance_failure_detail); no file approaches the 300-line cap."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer (update_compliance.py stdout JSON) to consumer (each of the 3 callers) is exactly the boundary fixed; new tests feed real JSON payloads through the parse path end to end."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff reports no findings."}
+  ]
+}

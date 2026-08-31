@@ -1,0 +1,95 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-08-31-compliance-error-surfacing",
+    "date": "2026-08-31",
+    "unit": {
+      "status": "pass",
+      "passed": 11040,
+      "failed": 0,
+      "note": "shared/tests full suite (9544 passed, 33 skipped, 20 deselected) + plugins/shipwright-security/tests full suite (935 passed, 7 skipped) + plugins/shipwright-run/tests full suite (561 passed) \u2014 the three trees touched by this fix, all re-run green after the code-review and external-review rounds of fixups."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 5,
+      "failed": 0,
+      "note": "integration-tests/test_shared_contracts_consumers_behavior.py \u2014 the one integration file referencing the touched compliance-dispatch modules"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a backend Python subprocess-output-parsing fix"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure internal CLI/subprocess diagnostic-surfacing fix (three finalize/orchestrator callers of update_compliance.py) \u2014 no runnable web/dev-server surface; this run's own unit + integration suites are the verification"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "finalize_iterate.py::_update_compliance surfaces update_compliance.py's generator_errors (written to stdout, with empty stderr) on a non-zero exit, instead of logging an empty stderr slice",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_finalize_iterate_compliance_error_detail.py::test_generator_error_detail_from_stdout_reaches_stderr_log PASSED"
+        },
+        {
+          "behavior": "finalize_security_compliance.py::_run_update_compliance does the same",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py::test_run_update_compliance_surfaces_generator_errors_from_stdout PASSED"
+        },
+        {
+          "behavior": "compliance_runner.py::run_compliance_update does the same",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_compliance_runner_uv_env.py::test_run_compliance_update_surfaces_generator_errors_from_stdout PASSED"
+        },
+        {
+          "behavior": "all three callers fall back to the real stderr for a failure that never produces JSON on stdout (uv error, bare traceback) \u2014 the generator-error path must not swallow this other failure class",
+          "disposition": "tested",
+          "evidence": "test_finalize_iterate_compliance_error_detail.py::test_non_json_stderr_failure_still_surfaces + test_finalize_security_compliance_uv_env.py::test_run_update_compliance_falls_back_to_stderr_when_stdout_is_not_json + test_compliance_runner_uv_env.py::test_run_compliance_update_falls_back_to_stderr_when_stdout_is_not_json PASSED"
+        },
+        {
+          "behavior": "all three callers fall back to the real stderr, without raising AttributeError, when generator_errors is JSON-valid but not a list of dicts (external code-review finding, openai/medium)",
+          "disposition": "tested",
+          "evidence": "test_finalize_iterate_compliance_error_detail.py::test_malformed_generator_errors_falls_back_to_stderr_without_raising[failure/[None]/[42]] + test_finalize_security_compliance_uv_env.py::test_run_update_compliance_malformed_generator_errors_falls_back_to_stderr[failure/[None]/[42]] + test_compliance_runner_uv_env.py::test_run_compliance_update_malformed_generator_errors_falls_back_to_stderr[failure/[None]/[42]] PASSED"
+        },
+        {
+          "behavior": "no regression across the three touched plugin/shared test trees or the referencing integration test",
+          "disposition": "tested",
+          "evidence": "shared/tests (9544 passed, 33 skipped) + plugins/shipwright-security/tests (935 passed, 7 skipped) + plugins/shipwright-run/tests (561 passed) + integration-tests/test_shared_contracts_consumers_behavior.py (5 passed) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.1,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-08-26T22:38:43Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-08-31-compliance-error-surfacing",
+    "commit": "965257a332db59d435e06c9b0d1d6ab61eb80535",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

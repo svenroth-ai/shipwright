@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py:47-50`\n- Finding: The error-path formatter assumes every truthy `generator_errors` value is an iterable of dictionaries. A valid-but-malformed JSON response such as `{\"generator_errors\":\"failure\"}` or `{\"generator_errors\":[null]}` causes `e.get(...)` to raise `AttributeError` rather than falling back to stderr. This can prevent the compliance failure from being logged and recorded.\n- Suggestion: Validate that `generator_errors` is a non-empty list and that each item is a dictionary before formatting; otherwise return the stderr fallback. Apply the same defensive validation in all three local helpers.\n\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-security/scripts/tools/finalize_security_compliance.py:107-110`\n- Finding: `_generator_error_detail` has the same unchecked assumption that `generator_errors` contains dictionaries. Malformed structured stdout therefore makes `_run_update_compliance` raise while handling a subprocess failure, instead of returning its documented error result.\n- Suggestion: Accept and format only a list of mapping objects, with malformed/empty values treated as an unsupported failure response and falling back to `proc.stderr`.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/finalize_iterate.py:176-178`\n- Finding: A malformed but JSON-valid `generator_errors` field can raise from the new diagnostic path (`e.get` on a non-dict). Although `_update_compliance`'s outer `except` eventually logs the exception, it discards the original stderr diagnostic, violating the specified stderr fallback for unsupported failure output.\n- Suggestion: Guard the field and entries before formatting, and return the existing stderr slice when the expected list-of-objects schema is not present.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-run/tests/test_compliance_runner_uv_env.py:54-95`\n- Finding: The new compliance-runner test verifies only the generator-error stdout case. It does not verify the required fallback for non-JSON stdout/stderr failures, so a regression that returns an empty diagnostic or stops using stderr in that branch would still pass.\n- Suggestion: Add a non-JSON stdout result with a known stderr message and assert that the emitted warning contains that message.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py:92-120`\n- Finding: The added security-finalize test covers only structured generator errors. The pre-existing uv-failure test shown asserts merely that an error exists, not that stderr is preserved, leaving the explicit fallback acceptance criterion unverified for this caller.\n- Suggestion: Strengthen or add a test with non-JSON stdout and a distinctive stderr value, asserting that value is included in `result[\"error\"]`.\n\nOverall assessment: ship-with-fixes. The intended stdout diagnostics are surfaced for the expected producer schema, but the new failure handling must not itself fail on malformed JSON structures, and fallback coverage is incomplete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": null,
+      "via": "openrouter",
+      "status": "degraded",
+      "reason": "provider returned an empty reply"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "deepseek": "unavailable"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "degraded"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 deepseek did not (deepseek=unavailable, openai=revise)"
+  }
+}

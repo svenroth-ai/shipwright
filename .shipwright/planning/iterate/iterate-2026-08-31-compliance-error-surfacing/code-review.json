@@ -1,0 +1,23 @@
+{
+  "section": "iterate-2026-08-31-compliance-error-surfacing",
+  "verdict": "approve",
+  "summary": "Fix is correct, minimal, well-scoped, and matches the bug spec exactly. No security, performance, or architecture issues. Bloat-baseline bump (575->587) honestly justified and consistent with ADR-096. Two low-severity findings raised and both fixed before commit.",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_finalize_security_compliance_uv_env.py",
+      "finding": "Sibling helpers (security, run) lacked a dedicated regression test for the non-JSON-stdout stderr-fallback path that finalize_iterate.py's new test covers.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Added test_run_update_compliance_falls_back_to_stderr_when_stdout_is_not_json (security) and test_run_compliance_update_falls_back_to_stderr_when_stdout_is_not_json (run orchestrator)."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/compliance_runner.py",
+      "finding": "The warn-log JSON field stayed keyed \"stderr\" even though its value may now be parsed from stdout, misleading a downstream reader about which stream the diagnostic came from.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Renamed the key to \"detail\" with an inline comment; updated the one test asserting on it (no other consumers found)."
+    }
+  ]
+}
