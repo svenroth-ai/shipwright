@@ -55,7 +55,7 @@ class TestFileContract:
         # a module split is exactly what silently breaks it.
         for name in pr_review.__all__:
             assert hasattr(pr_review, name), f"__all__ names {name}, which does not resolve"
-        assert pr_review.DEFAULT_MODEL == "anthropic/claude-sonnet-4.6"
+        assert pr_review.DEFAULT_MODEL == pr_review.DEEPSEEK_MODEL
 
 
 # --- main() orchestration — boundaries monkeypatched ---
@@ -68,12 +68,17 @@ def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n", raise_c
     # Isolate orchestration from the filesystem prompt files (cwd-dependent).
     monkeypatch.setattr(pr_review, "load_prompts", lambda d: ("SYSTEM", "USER\n{PR_META}\n{DIFF}"))
     monkeypatch.setattr(pr_review, "fetch_pr_diff", lambda pr, repo: diff)
+    # This suite is about orchestration, not DeepSeek routing (that's
+    # test_pr_review_deepseek_routing.py) — stub the resolver so these tests
+    # don't depend on shared/config/external_review.json's health.
+    monkeypatch.setattr(pr_review, "resolve_extra_body", lambda model: {})
 
-    def fake_call(api_key, model, messages, timeout=120):
+    def fake_call(api_key, model, messages, timeout=120, *, extra_body=None):
         # Capture what actually reaches the MODEL. Asserting only on the posted
         # comment let the meta wiring rot silently: dropping the file lists from
         # the build_pr_meta call left the whole suite green.
         posted["messages"] = messages
+        posted["extra_body"] = extra_body
         if raise_call is not None:
             raise raise_call
         return review_json
@@ -132,6 +137,9 @@ class TestMainOrchestration:
         assert pr_review.main(ARGV) == 2
         err = capsys.readouterr().err
         assert "rate limited" in err  # raw response dumped to logs
+
+    # DeepSeek ZDR routing gate tests moved to test_pr_review_deepseek_routing.py
+    # to keep this module inside the file-size guideline.
 
     def test_truncation_fails_closed_needs_human(self, monkeypatch):
         # A partial diff means we did NOT see the whole change, so a large diff

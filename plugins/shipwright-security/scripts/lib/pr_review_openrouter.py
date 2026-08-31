@@ -15,9 +15,13 @@ import json
 import urllib.error
 import urllib.request
 
-__all__ = ["DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL", "call_openrouter"]
+__all__ = ["DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL", "call_openrouter"]
 
-DEFAULT_MODEL = "anthropic/claude-sonnet-4.6"
+# One named constant — DEFAULT_MODEL, the ZDR-routing model match, and every
+# test/workflow assertion all read this, so they cannot drift into three
+# copies of the same literal.
+DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
+DEFAULT_MODEL = DEEPSEEK_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ONE default for the whole tool — the CLI flag and the direct call share it.
@@ -29,13 +33,17 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_TIMEOUT = 600
 
 
-def _post_openrouter(api_key: str, model: str, messages: list[dict], timeout: int) -> dict:
-    """POST the chat-completion request and return the parsed JSON body."""
-    payload = {
-        "model": model,
-        "messages": messages,
-        "response_format": {"type": "json_object"},
-    }
+def _post_openrouter(api_key: str, model: str, messages: list[dict], timeout: int,
+                      *, extra_body: dict | None = None) -> dict:
+    """POST the chat-completion request and return the parsed JSON body.
+
+    `extra_body` (e.g. a DeepSeek ZDR provider-routing constraint) is merged
+    UNDER the transport's own keys — `{**extra_body, **payload}`, not the
+    reverse — so a config-derived dict can never overwrite `model`,
+    `messages`, or `response_format`, even if it later grows a colliding key.
+    """
+    payload = {**(extra_body or {}), "model": model, "messages": messages,
+               "response_format": {"type": "json_object"}}
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         OPENROUTER_URL,
@@ -58,14 +66,15 @@ def _post_openrouter(api_key: str, model: str, messages: list[dict], timeout: in
 
 
 def call_openrouter(api_key: str, model: str, messages: list[dict],
-                    timeout: int = DEFAULT_TIMEOUT) -> str:
+                    timeout: int = DEFAULT_TIMEOUT, *,
+                    extra_body: dict | None = None) -> str:
     """Call OpenRouter and return the assistant message content string.
 
     Raises RuntimeError on transport failure (HTTP error, timeout) or an
     unexpected response shape — the caller maps that to exit 2.
     """
     try:
-        data = _post_openrouter(api_key, model, messages, timeout)
+        data = _post_openrouter(api_key, model, messages, timeout, extra_body=extra_body)
     except urllib.error.HTTPError as e:
         detail = ""
         try:

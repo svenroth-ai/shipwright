@@ -1,0 +1,54 @@
+{
+  "section": "iterate-2026-08-31-pr-review-deepseek-model",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_pr_review_model_policy.py",
+      "line": 22,
+      "finding": "`_SHARED_LIB = Path(__file__).resolve().parents[4] / \"shared\" / \"scripts\" / \"lib\"` is off by one: from `plugins/<plugin>/tests/` the repo root is `parents[3]`. `parents[4]` is the directory ABOVE the repo root, so the computed path does not exist and a bogus entry is inserted at sys.path[0] for the whole session. The import on the next line succeeds only by accident, because importing pr_review_model_policy already inserted the correct shared-lib path as a side effect.",
+      "suggestion": "Use `parents[3]`."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_pr_review_deepseek_routing.py",
+      "line": 99,
+      "finding": "The central security invariant of this diff — that the DEFAULT (DeepSeek) model actually delivers the ZDR provider body through main() to call_openrouter — has no end-to-end assertion. Only the negative arm (non-DeepSeek override returns {}) is pinned.",
+      "suggestion": "Add a sibling test with the default model that runs main() through _wire and asserts the ZDR provider body reached call_openrouter."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+      "line": 151,
+      "finding": "except (DeepSeekRoutingPolicyError, OSError, json.JSONDecodeError) misses UnicodeDecodeError (non-UTF-8 config file) and AttributeError (a config that parses to a valid non-object). Both escape as an unredacted traceback exiting 1 instead of the documented redacted EXIT_ERROR.",
+      "suggestion": "Widen to except Exception, matching the two neighboring boundaries in main()."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/tests/test_pr_review_deepseek_routing.py",
+      "line": 55,
+      "finding": "Both fail-closed tests assert only that call_openrouter was never invoked, not that fetch_pr_diff/read_reviewed_head were also unreached (the stricter ordering the AC requires).",
+      "suggestion": "Have _wire count fetch_pr_diff and read_reviewed_head invocations and assert both are 0 in the two fail-closed tests."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_verdict.py",
+      "line": 51,
+      "finding": "`if fn is post_review_state_fn:` distinguishes the two posting failures by object identity, which becomes unreliable now that the posters are caller-supplied (a caller passing the same callable for both would misattribute a comment-post failure to the state).",
+      "suggestion": "Carry the distinction explicitly in the loop tuple instead of identity comparison."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-security/tests/test_pr_review_script.py",
+      "line": 69,
+      "finding": "Because DEFAULT_MODEL is now a DeepSeek identity, every main() orchestration test in test_pr_review_script.py and test_pr_review_stale_verdicts.py transitively runs the REAL resolve_extra_body against the real shared/config/external_review.json — an implicit, undocumented coupling unrelated to what those suites test.",
+      "suggestion": "Stub resolve_extra_body to {} inside those _wire helpers so only the DeepSeek-specific modules own the config dependency."
+    }
+  ],
+  "disposition": "All 6 findings fixed in this iterate — see the iterate spec's 'Code Review (spec-reviewer + code-reviewer)' section for the exact fix per finding. Full suite re-verified green (955 passed, 7 skipped) and ruff clean after the fixes."
+}

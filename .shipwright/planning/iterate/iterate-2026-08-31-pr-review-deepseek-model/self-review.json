@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "All 4 ACs implemented: DEFAULT_MODEL/workflow env switched to deepseek/deepseek-v4-pro, extra_body threaded through call_openrouter/_post_openrouter, ZDR routing reused (not reimplemented) via pr_review_model_policy, non-DeepSeek override never loads external_review.json. No extras beyond spec (max_tokens cap and finish_reason surfacing were explicitly declined, not added)."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "resolve_extra_body() failures (DeepSeekRoutingPolicyError, OSError, json.JSONDecodeError) are caught in main() before nonce/network call, redacted via _redact(), and mapped to EXIT_ERROR — fail-closed with no partial network call."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No raw user input reaches the request (model comes from env var set by workflow config, not PR content); API key redacted in all error paths; ZDR provider pin (novita/together only, allow_fallbacks:false, data_collection:deny, zdr:true) enforced via the existing, code-owned config rather than duplicated; no new secrets/hardcoded credentials."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Tests assert on outcomes (payload key sets, exit codes, whether load_review_config was called, whether a network call would have proceeded) not internals. Happy-path (ZDR body attached for DeepSeek) and error-path (fails closed before any network call on broken routing/malformed JSON; non-DeepSeek override never touches the config) both covered."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "Single outbound HTTP call, unchanged cardinality; no loops over DB/API calls and no pagination surface introduced."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "New pr_review_model_policy.py keeps the DeepSeek-identity policy out of the pure-HTTP pr_review_openrouter.py, per internal review's layering finding. pr_review.py, test_pr_review_script.py and test_pr_review_workflow_shape.py each crossed the 300-line soft guideline (none are in shipwright_bloat_baseline.json, so this is advisory only) — flagged to the user rather than silently split."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No touches_io_boundary risk flag fired (only .github/workflows/pr-review-run.yml + Python source touched, no .env*/hooks.json/settings.json/*_config.json/*_state.json). The only in-process 'serialized format' is the OpenRouter request body dict, constructed and consumed in the same process (test_merges_extra_body_defensively proves the merge order); no cross-process producer/consumer pair was introduced."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'test_hygiene: no findings' on all new/changed test files."
+    }
+  ]
+}

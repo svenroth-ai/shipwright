@@ -75,6 +75,9 @@ def test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths():
     assert tier.decide([PATH, "plugins/shipwright-security/scripts/tools/review_record_tier.py"], ["skip-pr-review"], record, True)[0] is True
     assert tier.decide([PATH, "shared/scripts/lib/__init__.py"], ["skip-pr-review"], record, True)[0] is True
     assert tier.decide([PATH, "shared/scripts/lib/atomic_write.py"], ["skip-pr-review"], record, True)[0] is True
+    # Load-bearing for THIS gate since iterate-2026-08-31-pr-review-deepseek-model:
+    # a config-only drift here reds the required check the same as a lib edit.
+    assert tier.decide([PATH, "shared/config/external_review.json"], ["skip-pr-review"], record, True)[0] is True
 
 
 def test_waiver_cannot_cover_a_change_to_a_suppression_or_hook_channel():

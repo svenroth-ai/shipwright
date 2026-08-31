@@ -75,11 +75,19 @@ from pr_review_gh import (  # noqa: E402
     post_pr_review_state,
 )
 from pr_review_openrouter import (  # noqa: E402
+    DEEPSEEK_MODEL,
     DEFAULT_MODEL,
     DEFAULT_TIMEOUT,
     OPENROUTER_URL,
     call_openrouter,
 )
+# The one place this tool reaches into shared/scripts/lib — see the module
+# docstring for why it isn't wired inside pr_review_openrouter.py instead.
+from pr_review_model_policy import (  # noqa: E402
+    DeepSeekRoutingPolicyError,
+    resolve_extra_body,
+)
+from pr_review_verdict import post_verdict  # noqa: E402
 
 # The re-export surface: every name a caller or test is entitled to reach
 # through `pr_review.<symbol>`. Kept complete on purpose — a name that is
@@ -90,9 +98,9 @@ __all__ = [
     "dismiss_own_stale_verdicts", "fetch_pr_diff", "filter_generated_paths",
     "load_prompts", "new_nonce", "nothing_reviewed_summary",
     "parse_review_response", "post_pr_comment", "post_pr_review_state",
-    "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body",
-    "truncate_diff",
-    "call_openrouter", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL"]
+    "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body", "truncate_diff",
+    "call_openrouter", "DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL",
+    "DeepSeekRoutingPolicyError", "resolve_extra_body", "post_verdict"]
 
 
 def _fix_windows_encoding() -> None:
@@ -104,35 +112,11 @@ def _fix_windows_encoding() -> None:
             pass
 
 
-def _post_verdict(args, api_key: str, body: str, decision: str, summary: str,
-                  nonce: str) -> bool:
-    """Post the comment + review state. Best-effort: a posting failure must not
-    flip the gate, which reflects the review outcome (the exit code), not the
-    side-effect. Shared so every fail-closed path leaves the same trail — a red
-    check with no comment tells the reader nothing.
-
-    The review-state body is stamped with this run's nonce, which is how the
-    stale-verdict cleanup later recognises its OWN review among the PR's. Returns
-    whether that state landed: without it there is no anchor, and cleanup that
-    cannot identify itself must not guess.
-    """
-    # Stamped BEFORE the loop, not inside its iterable: Python builds that tuple
-    # before entering the body, so a `stamp_review_body` that raised would
-    # escape the try/except below — turning a passing review into exit 1 on the
-    # one call in this construct that the best-effort contract does not cover.
-    stamped = stamp_review_body(summary, nonce)
-    state_posted = True
-    for fn, call_args, what in (
-        (post_pr_comment, (args.pr_number, args.repo, body), "PR comment"),
-        (post_pr_review_state, (args.pr_number, args.repo, decision, stamped), "review state"),
-    ):
-        try:
-            fn(*call_args)
-        except Exception as e:  # noqa: BLE001
-            print(_redact(f"[pr_review] failed to post {what}: {e}", api_key), file=sys.stderr)
-            if fn is post_pr_review_state:
-                state_posted = False
-    return state_posted
+def _post_verdict(args, api_key: str, body: str, decision: str, summary: str, nonce: str) -> bool:
+    """Binds `post_verdict` to THIS module's poster names — see that
+    function's docstring for why they're passed rather than imported there."""
+    return post_verdict(args.pr_number, args.repo, api_key, body, decision, summary, nonce,
+                        post_comment_fn=post_pr_comment, post_review_state_fn=post_pr_review_state)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -154,6 +138,22 @@ def main(argv: list[str] | None = None) -> int:
         print("[pr_review] OPENROUTER_API_KEY is not set — cannot review.", file=sys.stderr)
         return EXIT_ERROR
     model = os.environ.get("SHIPWRIGHT_PR_REVIEW_MODEL", DEFAULT_MODEL)
+    # Resolved BEFORE anything else network-bound: for a non-DeepSeek model this
+    # never touches shared/config/external_review.json at all (see
+    # pr_review_model_policy). For a DeepSeek model, a missing/malformed config
+    # or invalid ZDR-routing policy must fail this REQUIRED gate closed, before
+    # the diff is even fetched — the same routing guarantee already enforced
+    # for the plan/code review cascade's DeepSeek arm.
+    try:
+        extra_body = resolve_extra_body(model)
+    except Exception as e:  # noqa: BLE001 — broad ON PURPOSE (ADR-045: shared/scripts/lib
+        # loads both top-level and as a package, so a narrower except naming
+        # DeepSeekRoutingPolicyError could miss an `is`-distinct instance of that
+        # same class and escape unredacted); type name keeps a code bug diagnosable.
+        print(_redact(
+            f"[pr_review] reviewer misconfigured (DeepSeek ZDR routing policy) — "
+            f"not your change: {type(e).__name__}: {e}", api_key), file=sys.stderr)
+        return EXIT_ERROR
     # Minted before the first post, because EVERY posting path stamps it.
     nonce = new_nonce()
 
@@ -233,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     try:
-        raw = call_openrouter(api_key, model, messages, args.timeout)
+        raw = call_openrouter(api_key, model, messages, args.timeout, extra_body=extra_body)
     except Exception as e:  # noqa: BLE001 — any transport/shape failure is a non-blocking error
         print(_redact(f"[pr_review] OpenRouter call failed: {e}", api_key), file=sys.stderr)
         return EXIT_ERROR

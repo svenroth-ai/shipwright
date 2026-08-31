@@ -36,6 +36,9 @@ def _wire(monkeypatch, *, review_json=_PASS, diff="diff --git a b\n+x\n"):
     seen = {"order": []}
     monkeypatch.setenv("OPENROUTER_API_KEY", FAKE_KEY)
     monkeypatch.setattr(pr_review, "load_prompts", lambda d: ("SYSTEM", "USER\n{PR_META}\n{DIFF}"))
+    # This suite is about the stale-verdict cleanup, not DeepSeek routing —
+    # stub the resolver so it doesn't depend on the shared config's health.
+    monkeypatch.setattr(pr_review, "resolve_extra_body", lambda model: {})
 
     def fake_diff(pr, repo):
         seen["order"].append("diff")
@@ -43,7 +46,7 @@ def _wire(monkeypatch, *, review_json=_PASS, diff="diff --git a b\n+x\n"):
 
     monkeypatch.setattr(pr_review, "fetch_pr_diff", fake_diff)
     monkeypatch.setattr(pr_review, "call_openrouter",
-                        lambda key, model, messages, timeout=120: review_json)
+                        lambda key, model, messages, timeout=120, **kw: review_json)
     monkeypatch.setattr(pr_review, "post_pr_comment",
                         lambda pr, repo, body: seen.update(comment=body))
     monkeypatch.setattr(pr_review, "post_pr_review_state",

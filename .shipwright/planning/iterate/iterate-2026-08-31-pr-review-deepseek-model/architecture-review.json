@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "openrouter",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **The question, answered in one sentence.** Yes: changing the existing Tier-3 review gate\u2019s model and applying the already-established DeepSeek routing policy adds no standing mechanism and is proportionate to a per-push cost/latency reduction.\n\n2. **The smallest thing that would do** \u2014 Change the existing default/workflow model identifier to `deepseek/deepseek-v4-pro` and call the existing `deepseek_openrouter_extra_body` only when that resolved identity is selected.\n\n3. **What it costs to keep** \u2014 Continued ownership of the existing model-selection environment variable and the shared DeepSeek routing configuration/provider allowlist; this change adds one consumer, not a new policy or credential.\n\n4. **What it forecloses** \u2014 none identified.\n\n5. **Findings**\n\nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "deepseek": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 this should exist as a configuration change to an existing CI gate, not as a new standing mechanism.\n\n2. **The smallest thing that would do.** Update `DEFAULT_MODEL` and the workflow env var to `deepseek/deepseek-v4-pro`, and reuse the existing `deepseek_openrouter_extra_body` when the resolved model is DeepSeek, failing closed if that routing config is missing or malformed.\n\n3. **What it costs to keep.** The PR-review gate gains a dependency on the already-maintained `deepseek_routing` block in `shared/config/external_review.json`; future changes to that block now affect one more consumer.\n\n4. **What it forecloses.** None identified.\n\n5. **Findings.**  \nNo findings.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "deepseek": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "deepseek": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: deepseek=approve, openai=approve"
+  }
+}

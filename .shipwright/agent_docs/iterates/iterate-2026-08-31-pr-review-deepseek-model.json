@@ -1,0 +1,111 @@
+{
+  "run_id": "iterate-2026-08-31-pr-review-deepseek-model",
+  "date": "2026-08-31T15:19:28.200104Z",
+  "event_at": "2026-08-31T15:18:56.540882+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/pr-review-deepseek-model",
+  "spec": ".shipwright/planning/iterate/2026-08-31-pr-review-deepseek-model.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-08-31-pr-review-deepseek-model",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "resolve_extra_body returns the ZDR body for deepseek/deepseek-v4-pro",
+        "disposition": "tested",
+        "evidence": "test_pr_review_model_policy.py::TestResolveExtraBody::test_deepseek_model_returns_the_zdr_body PASSED"
+      },
+      {
+        "behavior": "is_deepseek_model/resolve_extra_body match a variant/cased DeepSeek identity (:free, mixed case, padding whitespace)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_model_policy.py::TestIsDeepseekModel::test_matches_the_deepseek_namespace (parametrized) + TestResolveExtraBody::test_deepseek_variant_form_also_gets_the_zdr_body PASSED"
+      },
+      {
+        "behavior": "resolve_extra_body returns {} for a non-DeepSeek model, without ever calling load_review_config",
+        "disposition": "tested",
+        "evidence": "test_pr_review_model_policy.py::TestResolveExtraBody::test_non_deepseek_model_returns_empty_without_loading_config PASSED"
+      },
+      {
+        "behavior": "resolve_extra_body propagates DeepSeekRoutingPolicyError on a malformed deepseek_routing block",
+        "disposition": "tested",
+        "evidence": "test_pr_review_model_policy.py::TestResolveExtraBody::test_broken_routing_config_propagates PASSED"
+      },
+      {
+        "behavior": "_post_openrouter merges extra_body into the payload, transport keys always winning over a hostile override",
+        "disposition": "tested",
+        "evidence": "test_pr_review_openrouter.py::TestPostOpenRouter::test_merges_extra_body_defensively PASSED"
+      },
+      {
+        "behavior": "_post_openrouter payload is byte-identical to today's shape when extra_body is omitted",
+        "disposition": "tested",
+        "evidence": "test_pr_review_openrouter.py::TestPostOpenRouter::test_builds_authorized_json_request (asserts the payload key set) PASSED"
+      },
+      {
+        "behavior": "call_openrouter passes extra_body through to _post_openrouter",
+        "disposition": "tested",
+        "evidence": "test_pr_review_openrouter.py::TestCallOpenRouter::test_extra_body_is_passed_through PASSED"
+      },
+      {
+        "behavior": "pr_review.py main() fails closed (EXIT_ERROR, call_openrouter never invoked) on a broken deepseek_routing config",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestDeepSeekRoutingGate::test_fails_closed_before_any_network_call_on_broken_deepseek_routing PASSED"
+      },
+      {
+        "behavior": "pr_review.py main() fails closed on a malformed/unreadable external_review.json",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestDeepSeekRoutingGate::test_fails_closed_on_malformed_external_review_json PASSED"
+      },
+      {
+        "behavior": "pr_review.py main() proceeds normally (no config touched) on a non-DeepSeek model override",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestDeepSeekRoutingGate::test_non_deepseek_override_never_touches_the_review_config PASSED"
+      },
+      {
+        "behavior": "DEFAULT_MODEL/DEEPSEEK_MODEL equal deepseek/deepseek-v4-pro",
+        "disposition": "tested",
+        "evidence": "test_pr_review_openrouter.py::TestDefaults::test_default_model_is_deepseek PASSED"
+      },
+      {
+        "behavior": "every existing pr_review.py orchestration test still passes with the new DeepSeek default and the new extra_body parameter threaded through",
+        "disposition": "tested",
+        "evidence": "full test_pr_review_script.py + test_pr_review_deepseek_routing.py + test_pr_review_stale_verdicts.py suites, part of the 17077 passed above"
+      },
+      {
+        "behavior": "workflow's SHIPWRIGHT_PR_REVIEW_MODEL equals pr_review_openrouter.DEFAULT_MODEL",
+        "disposition": "tested",
+        "evidence": "test_pr_review_workflow_shape.py::TestSecrets::test_model_env_matches_code_default PASSED"
+      },
+      {
+        "behavior": "end-to-end DeepSeek+ZDR+response_format production payload produces valid strict JSON",
+        "disposition": "tested",
+        "evidence": "live probe (not a CI-repeatable unit test - a paid external call; recorded as empirical evidence in the iterate spec's Confidence Calibration section, not a regression-suite member)"
+      },
+      {
+        "behavior": "pr_review.py main() with the DEFAULT model (no override) threads the real ZDR provider body through to call_openrouter",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestDeepSeekRoutingGate::test_the_default_deepseek_model_actually_delivers_the_zdr_body PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    },
+    "ledger_path": ".shipwright/planning/iterate/2026-08-31-pr-review-deepseek-model.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-08-31-pr-review-deepseek-model/surface_verification.json",
+    "justification": "CI-script backend change with no startable web/cli/api dev surface. The actual OpenRouter network call was exercised live (ZDR routing probe + production-payload probe, see Confidence Calibration) rather than only mocked; the remaining behavior (payload construction, fail-closed branching) is covered by mocked unit tests."
+  },
+  "declared_removals": []
+}

@@ -83,3 +83,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [S2b pass B — pure hardening of the 15 planning-discovery call sites](iterate-2026-08-26-b-pure-hardening-s2b-pass-b.md)
 - [Condensed, mechanically-gated GitHub Release notes](iterate-2026-08-26-changelog-release-notes-condensed-release-notes.md)
 - [S2b pass C — explicit finding, include_iterate convergence, posix separators](iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md)
+- [Tier-3 PR-review gate: DeepSeek model swap with reused ZDR routing](iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md)

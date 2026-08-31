@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-08-31-pr-review-deepseek-model",
+  "date": "2026-08-31",
+  "section": "Iterate — change: PR-review DeepSeek model swap",
+  "title": "Tier-3 PR-review gate: DeepSeek model swap with reused ZDR routing",
+  "context": "The Tier-3 CI PR-review gate called anthropic/claude-sonnet-4.6; DeepSeek v4 Pro is cheaper/faster and the review cascade already has a fail-closed ZDR routing policy for it.",
+  "decision": "Swap DEFAULT_MODEL to deepseek/deepseek-v4-pro; add pr_review_model_policy.py to reuse the cascade's ZDR extra_body for deepseek/ models and return {} without loading config for any other model.",
+  "consequences": "Cheaper gate; new dependency on shared/config/external_review.json's health for DeepSeek calls (added to SENSITIVE_PATH_RE); single-live-provider rollback risk documented, not engineered around.",
+  "rationale": "Reuse over reimplementation avoids a second place for the ZDR allowlist to drift; the non-DeepSeek short-circuit runs before any config load, per two independent plan-review findings.",
+  "rejected": "GLM 5.3/Flash (not live-tested this iterate); adding a second live ZDR provider (out of scope, touches deepseek_routing's own values).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md"
+}

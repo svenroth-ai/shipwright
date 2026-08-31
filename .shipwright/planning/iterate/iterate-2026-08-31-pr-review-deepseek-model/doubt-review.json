@@ -1,0 +1,43 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin imports",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "reversibility",
+      "claim_under_doubt": "swapping the required PR-review gate's model to deepseek/deepseek-v4-pro is safe because a live probe confirmed the payload works and the operator accepted 'no additional rollback machinery'",
+      "disproof_attempt": "allow_fallbacks:false + only=[novita,together], and together has no live endpoint for this model (this iterate's own documented known limitation) leaves exactly ONE provider serving a REQUIRED merge gate. A novita outage fails EVERY Tier-3 PR's required check simultaneously. Rollback is circular: SHIPWRIGHT_PR_REVIEW_MODEL is hardcoded in pr-review-run.yml, workflow_run always runs the DEFAULT BRANCH's copy of that workflow (never the PR's), so a rollback PR is reviewed by main's own still-broken logic and cannot go green through the normal path. Recovery = gh pr merge --admin. Nothing in the spec/workflow documented this.",
+      "what_would_resolve_it": "Either engineer redundancy, or accept it explicitly and document the admin-override recovery procedure next to the model env var."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling",
+      "claim_under_doubt": "reusing the cascade's ZDR routing config is purely additive",
+      "disproof_attempt": "shared/config/external_review.json is now load-bearing for the required PR-review gate (a config-only drift reds every Tier-3 PR), but was not in review_record_tier.py's SENSITIVE_PATH_RE alongside the lib code it configures.",
+      "what_would_resolve_it": "Add shared/config/external_review.json to SENSITIVE_PATH_RE."
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the Goal's framing ('PR diffs are never sent through an unverified OpenRouter route') reads as a property of the gate generally",
+      "disproof_attempt": "It's a property of the deepseek/ namespace only (AC-3's deliberate short-circuit) — a router/aggregator model identity outside that namespace gets no provider pin at all.",
+      "what_would_resolve_it": "Narrow the Goal/docstring wording to scope the claim to DeepSeek calls specifically."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the dependency-injected posters in post_verdict are safe now that the is_state flag replaced identity comparison",
+      "disproof_attempt": "post_comment_fn/post_review_state_fn are bare Callable with different arities; a future mismatched call site raises TypeError inside the best-effort try, silently suppressing the stale-verdict cleanup.",
+      "what_would_resolve_it": "Parameterize the Callable annotations so an arity/argument mismatch is a type error."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the broadened except Exception around resolve_extra_body() is harmless",
+      "disproof_attempt": "It reports every exception as 'reviewer misconfigured (DeepSeek ZDR routing policy)' even when the real cause is a code bug, misdirecting on-call diagnosis. Separately: narrowing it back to DeepSeekRoutingPolicyError would be WRONG — ADR-045 dual-import means a raised instance may not be `is`-identical to the imported class, so the broad catch is load-bearing, not just defensive.",
+      "what_would_resolve_it": "Include type(e).__name__ in the stderr line; comment why the except must stay broad."
+    }
+  ],
+  "summary": "1 high, 2 medium, 2 low. All addressed — see the iterate spec's 'Doubt Review (Stage 3)' section for the disposition on each."
+}
