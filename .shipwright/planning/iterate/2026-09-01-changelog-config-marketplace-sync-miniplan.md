@@ -24,9 +24,45 @@
 
 **Post-spec-review addendum:** the four new files above (`manifest_sync_marketplace.py`, `manifest_sync_errors.py`, `test_manifest_sync_core_marketplace.py`, plus the two `*_marketplace.py` test files) were not in the original plan — the Stop hook's bloat gate blocked completion on three files that crossed the 300-line guideline, so they were split after the fact. No behavior changed; `manifest_sync_core.__all__` still exports `ManifestSyncError` and every existing consumer's import path is unaffected.
 
-**Not touched:** `sync_release_manifests.py` itself — it already calls
-`manifest_sync_core` generically per declared `format`, so the new format
-needs no changes there.
+**Post-code-review addendum (round 2):** the first code-review pass found two
+Medium correctness bugs — both fixed, both re-verified clean by a second
+code-review pass:
+
+1. **Stranded-nested-entry blind spot.** The "is this manifest already
+   current" check compared only the root `version`, so a `marketplace_json`
+   manifest whose root matched the target but had a stale nested
+   `plugins[]` entry was silently skipped by `sync()` and silently PASSED by
+   both `verify_commit()` and `check_manifest_version_matches_tag()` — the
+   exact regression class this iterate exists to close would sneak past the
+   gate meant to catch it. Fixed with a new `describe_version_state(text,
+   fmt, target_version) -> (matches, detail)` in `manifest_sync_core.py`,
+   wired into all three call sites. `sync_release_manifests.py` grew past
+   300 lines wiring it in, so `verify_commit()` was split out into a new
+   `shared/scripts/tools/sync_release_manifests_verify.py`.
+2. **No drift test for the config's own plugin roster.** Fixed with new
+   `shared/tests/test_changelog_config_manifest_roster.py`, asserting the
+   config's declared 14 `package_json` paths match
+   `plugins/*/.claude-plugin/plugin.json` on disk and that
+   `marketplace.json` is declared.
+
+Three new regression tests exercise the bug class directly (root matches,
+one nested entry stale):
+`test_sync_still_writes_when_root_matches_but_a_plugin_entry_is_stale`,
+`test_verify_commit_fails_when_root_matches_but_a_plugin_entry_is_stale`,
+`test_marketplace_manifest_with_stale_plugin_entry_warns`.
+
+**Final file list**, superseding the table above: add
+`shared/scripts/lib/manifest_sync_paths.py` (path/config-loading primitives
+split out of `manifest_sync_core.py`, same 300-line-guideline reason —
+re-exported so `sync_release_manifests.py` and `changelog_checks.py`'s
+existing imports are unaffected) and
+`shared/scripts/tools/sync_release_manifests_verify.py` (new, `verify_commit`
+split out of `sync_release_manifests.py`).
+
+**Not touched:** the underlying `sync()`/`verify_commit()` *orchestration*
+shape — both already dispatch to `manifest_sync_core` generically per
+declared `format`; only the "is this current" comparison inside them
+changed (see addendum above).
 
 ## Data model changes
 
@@ -89,6 +125,10 @@ skipped at small.)
   | 11 | `verify_commit` reads a `marketplace_json`'s COMMITTED blob correctly (root + nested) | tested | `test_verify_commit_passes_marketplace_json_when_write_landed_in_commit` PASSED |
   | 12 | the standing drift check (`check_manifest_version_matches_tag`) works unchanged for `marketplace_json` | tested | `test_matching_marketplace_manifest_passes` PASSED |
   | 13 | this monorepo's own new config (14 `plugin.json` + `marketplace.json`) resolves against the real files | tested | empirical dry-run probe above, `status: ok`, 15/15 entries |
+  | 14 | `sync()` still writes (self-heals) a manifest whose root matches the target but has a stale nested `plugins[]` entry | tested | `test_sync_still_writes_when_root_matches_but_a_plugin_entry_is_stale` PASSED |
+  | 15 | `verify_commit` fails (`verify_mismatch`) on a committed blob with root matching but a nested entry stale | tested | `test_verify_commit_fails_when_root_matches_but_a_plugin_entry_is_stale` PASSED |
+  | 16 | the standing check (`check_manifest_version_matches_tag`) warns on root-matches-but-nested-stale | tested | `test_marketplace_manifest_with_stale_plugin_entry_warns` PASSED |
+  | 17 | this monorepo's declared `package_json` roster equals the real `plugins/*/.claude-plugin/plugin.json` files on disk, and `marketplace.json` is declared | tested | `test_every_plugin_json_on_disk_is_declared`, `test_marketplace_json_is_declared_with_the_marketplace_format` PASSED |
 
   0 untested-testable.
 
