@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-01-external-review-retry-degradation",
+  "date": "2026-09-01",
+  "section": "Iterate — bug: external review retry + partial degradation",
+  "title": "Retry-on-empty-reply budgeted by llm_client.max_retries + loud partial degradation",
+  "context": "max_retries/retry_codes were decorative — a 200-OK-but-empty reply skipped retries entirely, letting DeepSeek's arm silently degrade for weeks.",
+  "decision": "Retry a degraded reply up to llm_client.max_retries times (same value passed to OpenAI()'s transport retry); report partial degradation loudly + auto-file a deduped triage card.",
+  "consequences": "Config now controls both retry layers; a silently-missing reviewer opinion is visible via partially_degraded output + warning + triage card, without failing the gate.",
+  "rationale": "One config value for both layers avoids reintroducing config-vs-behavior drift; the bounded worst case is rarely reached since an exhausted SDK retry raises rather than looping.",
+  "rejected": "A separate hardcoded app-level retry budget (reverted after external review); wiring the dead retry_codes list (no public SDK hook, deleted instead).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-01-external-review-retry-degradation-retry-budget.md"
+}

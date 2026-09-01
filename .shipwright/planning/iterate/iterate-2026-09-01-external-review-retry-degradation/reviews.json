@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-01-external-review-retry-degradation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T20:57:54.870562+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T20:58:03.316305+00:00",
+      "disposition": "BUG path has no mini-plan/external plan-review step; that phase applies only to FEATURE/CHANGE",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/config/external_review.json",
+          "line": 51,
+          "finding": "retry_codes under llm_client was dead config — no code path reads it. Same bug class this PR fixes for max_retries.",
+          "suggestion": "Wire it or delete it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/external_review_degraded.py",
+          "line": 181,
+          "finding": "file_partial_degradation_triage wrapped the whole per-leg loop in one try/except, so one leg's filing failure would silently suppress filing for any remaining legs.",
+          "suggestion": "Move try/except inside the loop so each leg files independently.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-01T21:10:22.319667+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "root-cause vs. symptom-patch",
+          "file": "shared/scripts/lib/external_review_degraded.py",
+          "line": null,
+          "finding": "Claim under doubt: retrying the identical request while classify_reply keeps returning degraded fixes DeepSeek's observed empty-reply pattern — retrying the same params may not recover a systematic reasoning-token-budget-exhaustion failure mode, which would degrade identically on every retry.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: reusing llm_client.max_retries for both the SDK's transport-level retry and the app-level degraded-content retry loop is safe — the two layers could compound multiplicatively to (max_retries+1)^2 real network calls with no combined wall-clock ceiling.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: the last-retry-raises case is correctly reported, not silently masked — confirmed no exception is swallowed, but the loop's scope (degraded-content only, not raised-exception retries) could read as broader than it is.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: llm_client.max_retries from config is safe to pass straight through with no validation — a hand-edited negative max_retries reaches range(max_retries+1) as range(<=0), producing zero network calls that misleadingly read as 'provider returned nothing'.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-01T21:19:42.532152+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/external_review_degraded.py:132-133, 162",
+          "line": null,
+          "finding": "The application-level retry for classified degraded replies is hard-coded to one retry (`DEGRADED_REPLY_RETRIES = 1`) rather than being budgeted by `llm_client.max_retries`, as AC1 explicitly requires. Consequently, a configured `max_retries: 3` only produces two completion attempts for HTTP-200 empty/truncated replies, rather than the configured retry budget; changing the shipped configuration has no effect on the failure mode this change is intended to fix.",
+          "suggestion": "Pass `max_retries` into `retrying_completion` (or derive its loop bound from `llm_client_settings`) and use it as the degraded-reply retry count. Keep the same value in `OpenAI(..., max_retries=...)` for SDK transport retries as already implemented.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_external_review_retry.py:132-153",
+          "line": null,
+          "finding": "The retry-budget tests explicitly validate behavior contrary to AC1: `test_degraded_reply_retry_budget_is_independent_of_llm_client_max_retries` asserts that `max_retries=10` still causes only two completion calls. This would preserve the central spec violation and does not test that the configured retry budget controls degraded-reply retries.",
+          "suggestion": "Replace this test with assertions that `max_retries=N` performs `N + 1` completion attempts for continuously degraded responses (and stops earlier after a successful response). Retain separate tests verifying that the value is passed to the SDK constructor.  Overall assessment: ship-with-fixes. The transport-level retry wiring and partial-degradation reporting/triage path are implemented, but the primary degraded-reply retry behavior does not honor the configured retry budget required by AC1. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-01T21:35:33.800007+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[deepseek] <no review returned: provider returned an empty reply>\n\n[openai] - Category: spec\n- Severity: high\n- File: shared/scripts/lib/external_review_degraded.py:132-133, 162\n- Finding: The application-level retry for classified degraded replies is hard-coded to one retry (`DEGRADED_REPLY_RETRIES = 1`) rather than being budgeted by `llm_client.max_retries`, as AC1 explicitly requires. Consequently, a configured `max_retries: 3` only produces two completion attempts for HTTP-200 empty/truncated replies, rather than the configured retry budget; changing the shipped configuration has no effect on the failure mode this change is intended to fix.\n- Suggestion: Pass `max_retries` into `retrying_completion` (or derive its loop bound from `llm_client_settings`) and use it as the degraded-reply retry count. Keep the same value in `OpenAI(..., max_retries=...)` for SDK transport retries as already implemented.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_external_review_retry.py:132-153\n- Finding: The retry-budget tests explicitly validate behavior contrary to AC1: `test_degraded_reply_retry_budget_is_independent_of_llm_client_max_retries` asserts that `max_retries=10` still causes only two completion calls. This would preserve the central spec violation and does not test that the configured retry budget controls degraded-reply retries.\n- Suggestion: Replace this test with assertions that `max_retries=N` performs `N + 1` completion attempts for continuously degraded responses (and stops earlier after a successful response). Retain separate tests verifying that the value is passed to the SDK constructor.\n\nOverall assessment: ship-with-fixes. The transport-level retry wiring and partial-degradation reporting/triage path are implemented, but the primary degraded-reply retry behavior does not honor the configured retry budget required by AC1.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "deepseek": "unavailable"
+      },
+      "model_tier": "inherit"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T21:01:34.554696+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T20:58:03.444295+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
