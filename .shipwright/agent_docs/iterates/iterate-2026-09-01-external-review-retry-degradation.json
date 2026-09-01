@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-01-external-review-retry-degradation",
-  "date": "2026-09-01T21:52:38.714297Z",
+  "date": "2026-09-01T21:55:15.250453Z",
   "event_at": "2026-09-01T21:51:58.004163+00:00",
   "type": "bug",
   "complexity": "small",
@@ -11,6 +11,98 @@
   "adr": "iterate-2026-09-01-external-review-retry-degradation",
   "test_completeness": {
     "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1: an empty-content reply is retried and a later success wins",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_empty_reply_is_retried_and_a_later_success_wins PASSED"
+      },
+      {
+        "behavior": "AC1: retries exhaust and the leg reports degraded",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_retries_exhaust_and_report_degraded PASSED"
+      },
+      {
+        "behavior": "AC1: the degraded-reply retry count is budgeted by llm_client.max_retries (configured N -> N+1 attempts)",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_degraded_reply_retry_count_is_budgeted_by_llm_client_max_retries PASSED"
+      },
+      {
+        "behavior": "AC1: llm_client.max_retries is wired into the OpenAI() client constructor (real transport-level retry)",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_max_retries_is_wired_into_the_openrouter_client_constructor PASSED"
+      },
+      {
+        "behavior": "AC1: a negative configured max_retries is clamped to zero rather than reaching the SDK negative",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_negative_max_retries_is_clamped_to_zero PASSED"
+      },
+      {
+        "behavior": "AC1: max_retries defaults sanely when config omits it",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_max_retries_defaults_when_config_omits_it PASSED"
+      },
+      {
+        "behavior": "AC1: the direct-OpenAI path (no OpenRouter key) shares the same retry behavior",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_review_with_openai_also_retries_an_empty_reply PASSED"
+      },
+      {
+        "behavior": "AC1: a truncated/cut-off reply (finish_reason) is retried the same as an empty reply",
+        "disposition": "tested",
+        "evidence": "test_external_review_retry.py::test_a_finish_reason_degradation_is_also_retried PASSED"
+      },
+      {
+        "behavior": "AC2: one degraded leg alongside a succeeding leg is reported as partially_degraded with the failing leg named",
+        "disposition": "tested",
+        "evidence": "test_external_review_reply.py (partially_degraded assertions) PASSED"
+      },
+      {
+        "behavior": "AC2: a partial degradation prints a loud stderr warning",
+        "disposition": "tested",
+        "evidence": "test_external_review_reply.py::test_partial_degradation_prints_a_loud_warning PASSED"
+      },
+      {
+        "behavior": "AC2: total degradation (every leg failed) does not ALSO report partially_degraded",
+        "disposition": "tested",
+        "evidence": "test_external_review_reply.py::test_full_degradation_does_not_also_report_partial PASSED"
+      },
+      {
+        "behavior": "AC2: a merely-skipped leg (no API key / no route) is not counted as a partial degradation",
+        "disposition": "tested",
+        "evidence": "test_external_review_reply.py::test_no_partial_flag_when_a_leg_is_merely_skipped PASSED"
+      },
+      {
+        "behavior": "AC3: a degraded leg auto-files a deduped triage card",
+        "disposition": "tested",
+        "evidence": "test_external_review_partial_degradation_triage.py::test_a_degraded_leg_files_a_triage_card PASSED"
+      },
+      {
+        "behavior": "AC3: filing is idempotent within the dedup window (no duplicate card on repeated failures)",
+        "disposition": "tested",
+        "evidence": "test_external_review_partial_degradation_triage.py::test_filing_is_idempotent_within_the_dedup_window PASSED"
+      },
+      {
+        "behavior": "AC3: no triage card is filed when every leg succeeds",
+        "disposition": "tested",
+        "evidence": "test_external_review_partial_degradation_triage.py::test_no_triage_card_when_both_legs_succeed PASSED"
+      },
+      {
+        "behavior": "AC3: a triage-filing failure never breaks the review gate's own exit code",
+        "disposition": "tested",
+        "evidence": "test_external_review_partial_degradation_triage.py::test_triage_filing_failure_never_breaks_the_review_gate PASSED"
+      },
+      {
+        "behavior": "AC3: one leg's filing failure does not suppress filing for another leg",
+        "disposition": "tested",
+        "evidence": "test_external_review_partial_degradation_triage.py::test_one_legs_filing_failure_does_not_suppress_the_others PASSED"
+      },
+      {
+        "behavior": "live validation: this run's own external-review cascade call hit a real DeepSeek empty-reply degradation and the fix correctly reported partially_degraded + auto-filed triage card trg-d920e1ab",
+        "disposition": "tested",
+        "evidence": "external-code-review.json (this run's Step-8 cascade output) + .shipwright/triage.jsonl trg-d920e1ab"
+      }
+    ],
     "counts": {
       "testable": 18,
       "tested": 18,
