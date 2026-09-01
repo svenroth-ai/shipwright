@@ -30,6 +30,8 @@ def _write_manifest(path: Path, extra: dict | None = None, version: str = "0.1.0
     path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
 
 
+
+
 def test_sync_no_config_is_ok_noop(tmp_path):
     result = sync(tmp_path, "1.0.0", dry_run=False, stage=False)
     assert result == {

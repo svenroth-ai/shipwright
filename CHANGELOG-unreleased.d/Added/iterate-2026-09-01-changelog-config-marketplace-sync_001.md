@@ -1,0 +1,1 @@
+sync_release_manifests.py supports a new `marketplace_json` manifest format that bumps a top-level version field and every entry in a nested catalog array together in one write pass, for manifests (like marketplace.json) that carry their version in more than one place.

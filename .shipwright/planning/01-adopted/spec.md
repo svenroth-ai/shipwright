@@ -624,6 +624,12 @@ _Where the work detail lives_ at the end of this document.
   version is marked with its tag. A manifest still found at its previous
   version stops the release rather than letting the tag claim a version the
   manifest does not carry. A project that has declared none is unaffected.
+- (E) Given a declared manifest that carries its version in more than one
+  place — once at the top level and again inside a list of named entries,
+  such as a catalog of the products it publishes — when a release is
+  prepared, then every one of those version occurrences is written together
+  in the same pass, so no entry in the catalog is left naming an older
+  version than the file it lives in.
 - (E) Given the version marking already exists, when the release is
   delivered, then a release page is also created on the code host for that
   version, carrying a short, readable summary of what changed and a link

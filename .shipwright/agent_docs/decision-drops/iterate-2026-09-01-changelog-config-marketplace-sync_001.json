@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-01-changelog-config-marketplace-sync",
+  "date": "2026-09-01",
+  "section": "Iterate — feature: dogfood release-manifest sync + marketplace_json format",
+  "title": "Declare this monorepo's own release manifests and bump multi-occurrence version fields together",
+  "context": "The monorepo had no shipwright_changelog_config.json, so sync_release_manifests.py was a no-op at release time: the 14 plugin.json + marketplace.json version stamps were never bumped automatically. v0.33.0 shipped with every plugin stranded at the prior version; corrected by hand in v0.33.1. marketplace.json also carries its version twice (root + each plugins[] entry), a shape the existing package_json format cannot represent. Full context: see spec_ref.",
+  "decision": "Add shipwright_changelog_config.json declaring all 15 manifests (14 package_json + marketplace.json under a new marketplace_json format). render_marketplace_write bumps root + every plugins[].version together in one pass. A new describe_version_state() closes a root-only-comparison bug a second code-review pass found, wired into sync()/verify_commit()/the standing drift check, with regression tests. Full detail: see spec_ref.",
+  "consequences": "Every future monorepo release keeps all 15 manifests in lockstep with the release tag; the v0.33.0-class regression cannot recur silently. sync_release_manifests.py and changelog_checks.py depend on manifest_sync_core.describe_version_state(); the module is now six small cooperating files instead of two, each under the 300-line guideline. Full detail: see spec_ref.",
+  "rationale": "A root-only comparison is the natural first implementation and passed the initial review; a second code-review pass specifically re-verifying the fix (not just re-scanning for new issues) is what caught that the bug class could still slip past the release gate itself, not just the write path — so the fix had to reach describe_version_state, not just render_marketplace_write.",
+  "rejected": "Considered comparing only render_marketplace_write's own lockstep check and leaving sync()/verify_commit()/the standing check on a root-only comparison — rejected because that leaves the release gate itself blind to the exact drift class the format exists to catch.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-01-changelog-config-marketplace-sync-marketplace-json-format.md"
+}

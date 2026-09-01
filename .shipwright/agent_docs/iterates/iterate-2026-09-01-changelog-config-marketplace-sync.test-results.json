@@ -1,0 +1,144 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-01-changelog-config-marketplace-sync",
+    "date": "2026-09-01",
+    "unit": {
+      "status": "pass",
+      "passed": 10650,
+      "failed": 0,
+      "total": 10650,
+      "note": "Green across the three test roots this change touches: shared/scripts/tests (480 passed, 2 skipped), shared/scripts/tools/tests (623 passed, 16 skipped, 2 deselected), shared/tests (9547 passed, 34 skipped, 20 deselected). Each root run as its own pytest process per the repo's one-test-root-per-process rule (ADR-044). uvx ruff@0.15.15 check . and scripts/verify_local.py both clean."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no changes under integration-tests/; the new integration-shaped coverage (cross-format sync() orchestration, committed-blob verify_commit) lives in shared/scripts/tools/tests/ and is counted in the unit block above"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this change is pure internal CLI/lib tooling (release-manifest version sync)"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 34,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-01-changelog-config-marketplace-sync/surface_verification.json",
+      "justification": null
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "read_manifest_version returns the top-level version for a well-formed marketplace_json manifest",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_marketplace.py::test_read_marketplace_version_happy_path PASSED"
+        },
+        {
+          "behavior": "rejects a marketplace_json manifest with no plugins key, or plugins that isn't a list, or a plugins[] entry that isn't an object",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_marketplace.py::test_read_marketplace_version_missing_plugins_key + test_read_marketplace_version_plugins_not_a_list + test_read_marketplace_version_plugin_entry_not_an_object PASSED"
+        },
+        {
+          "behavior": "still requires the top-level version field for marketplace_json; accepts an empty plugins list",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_marketplace.py::test_read_marketplace_version_missing_top_level_version + test_read_marketplace_version_empty_plugins_list_ok PASSED"
+        },
+        {
+          "behavior": "render_manifest_write bumps root + every plugins[].version via the byte-preserving surgical path when all entries are in lockstep",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_marketplace.py::test_render_marketplace_write_surgical_when_all_in_lockstep PASSED"
+        },
+        {
+          "behavior": "self-heals (full JSON re-render) when a plugins[] entry has already drifted from current_version",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_marketplace.py::test_render_marketplace_write_drifted_entry_falls_back_to_full_render PASSED"
+        },
+        {
+          "behavior": "round-trip: a written marketplace_json reads back consistently (root + every plugin entry)",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core_marketplace.py::test_render_marketplace_write_round_trips_through_read PASSED"
+        },
+        {
+          "behavior": "sync() orchestrates one package_json + one marketplace_json entry declared together in one config",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "test_sync_release_manifests_marketplace.py::test_sync_marketplace_manifest_bumps_root_and_nested_entries PASSED"
+        },
+        {
+          "behavior": "sync() still writes (self-heals) a manifest whose root already matches the target but has a stale nested plugins[] entry, instead of wrongly skipping it as already-current",
+          "disposition": "tested",
+          "evidence": "test_sync_release_manifests_marketplace.py::test_sync_still_writes_when_root_matches_but_a_plugin_entry_is_stale PASSED"
+        },
+        {
+          "behavior": "verify_commit reads a marketplace_json's COMMITTED blob correctly (root + nested) and passes",
+          "category": "integration",
+          "disposition": "tested",
+          "evidence": "test_sync_release_manifests_git_marketplace.py::test_verify_commit_passes_marketplace_json_when_write_landed_in_commit PASSED"
+        },
+        {
+          "behavior": "verify_commit fails (verify_mismatch) when the committed blob's root matches but a nested plugins[] entry is stale",
+          "disposition": "tested",
+          "evidence": "test_sync_release_manifests_git_marketplace.py::test_verify_commit_fails_when_root_matches_but_a_plugin_entry_is_stale PASSED"
+        },
+        {
+          "behavior": "the standing drift check (check_manifest_version_matches_tag) passes for a fully in-lockstep marketplace_json manifest",
+          "disposition": "tested",
+          "evidence": "test_changelog_checks_manifest_sync.py::test_matching_marketplace_manifest_passes PASSED"
+        },
+        {
+          "behavior": "the standing drift check warns when a marketplace_json's root matches the tag but a nested plugins[] entry is stale",
+          "disposition": "tested",
+          "evidence": "test_changelog_checks_manifest_sync.py::test_marketplace_manifest_with_stale_plugin_entry_warns PASSED"
+        },
+        {
+          "behavior": "this monorepo's own shipwright_changelog_config.json declares exactly the 14 real plugins/*/.claude-plugin/plugin.json files on disk, and .claude-plugin/marketplace.json with the marketplace_json format",
+          "disposition": "tested",
+          "evidence": "test_changelog_config_manifest_roster.py::test_every_plugin_json_on_disk_is_declared + test_marketplace_json_is_declared_with_the_marketplace_format PASSED"
+        },
+        {
+          "behavior": "this monorepo's own new config resolves against the real files end-to-end (empirical, not fixture)",
+          "disposition": "tested",
+          "evidence": "sync_release_manifests.py --project-root . --version 0.33.1 --dry-run: status=ok, 15/15 entries recognized, all unchanged"
+        },
+        {
+          "behavior": "no regression in the pre-existing package_json format this diff's module splits touch",
+          "disposition": "tested",
+          "evidence": "test_manifest_sync_core.py (24/24) + test_sync_release_manifests.py (16/16) + test_sync_release_manifests_git.py (10/10) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 15,
+        "tested": 15,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-09-01-changelog-config-marketplace-sync-miniplan.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.1,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-08-26T22:38:43Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-01-changelog-config-marketplace-sync",
+    "commit": "726b4d128acd7fa1ad4d2fa97bb6f79ae3ef2cff",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

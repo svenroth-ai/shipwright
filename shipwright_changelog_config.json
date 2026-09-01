@@ -1,0 +1,19 @@
+{
+  "published_manifests": [
+    {"path": "plugins/shipwright-run/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-project/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-design/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-plan/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-build/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-test/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-deploy/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-changelog/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-security/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-compliance/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-iterate/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-preview/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-adopt/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": "plugins/shipwright-grade/.claude-plugin/plugin.json", "format": "package_json"},
+    {"path": ".claude-plugin/marketplace.json", "format": "marketplace_json"}
+  ]
+}

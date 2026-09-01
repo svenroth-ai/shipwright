@@ -29,8 +29,24 @@ if the write didn't actually land.
 No file, no `published_manifests` key, or an empty list — all mean "no
 manifests declared." The sync step is then a clean no-op: nothing is read,
 written, or verified, and the release proceeds exactly as it did before this
-mechanism existed. `package_json` is the only implemented `format`
-(`version` field); any other value is a named failure, not a silent skip.
+mechanism existed. Two `format` values are implemented; any other value is a
+named failure, not a silent skip:
+
+- **`package_json`** — a single top-level `"version"` field (`package.json`,
+  a plugin's own `.claude-plugin/plugin.json`, …).
+- **`marketplace_json`** — a top-level `"version"` field AND a `"plugins"`
+  array whose entries each carry their own `"version"` — a catalog manifest
+  (`.claude-plugin/marketplace.json`) that names its own release version
+  once and then repeats it per listed item. A release writes the SAME
+  version into all of them together, never just the top-level field —
+  that is what this format exists to close: this monorepo's own
+  `marketplace.json` shipped v0.33.0 with every one of its 14 `plugins[]`
+  entries still reading `0.32.0`, because nothing synced the nested field.
+
+This monorepo declares its own 14 `plugins/*/.claude-plugin/plugin.json`
+(`package_json`) plus its root `.claude-plugin/marketplace.json`
+(`marketplace_json`) in its own `shipwright_changelog_config.json` — dogfood,
+not just documentation.
 
 **Operator precondition, not tool-checked:** this no-op is indistinguishable
 from "the config exists but is gitignored in this checkout" — confirm
@@ -99,7 +115,8 @@ exact set Step 5.4 actually wrote and staged.
 | `path_is_symlink` | any symlink component in the declared path — **in-root symlinks are refused too**, not just escaping ones: `git add` stages the symlink entry, not the resolved target's changed blob, so a write through an in-root symlink would let the worktree and the staged/committed content diverge |
 | `manifest_missing` | the declared file doesn't exist |
 | `manifest_dirty_before_sync` | the declared file already has uncommitted changes before this tool touched it — refusing to fold unrelated edits into the release commit via `--stage` |
-| `unsupported_format` | `format` isn't `package_json` |
+| `unsupported_format` | `format` isn't `package_json` or `marketplace_json` |
+| `invalid_manifest_structure` | (`marketplace_json` only) `"plugins"` is missing, isn't an array, or one of its entries isn't a JSON object |
 | `parse_error` | the manifest isn't valid JSON |
 | `missing_version_field` | no top-level `"version"` key (e.g. a `"private": true` workspace root) — never injected |
 | `invalid_version_type` | `"version"` present but not a string |
@@ -123,9 +140,15 @@ process's working directory.
   not built here.
 - **Publishing itself.** Whether/when/how the package reaches npm
   (`npm publish`, `NPM_TOKEN`) is a separate operator task.
-- **Formats other than `package_json`.** Any other value in `format` fails
-  closed (`unsupported_format`) rather than a generic version-rewriting
-  engine nobody has asked for yet.
+- **Formats other than `package_json`/`marketplace_json`.** Any other value
+  in `format` fails closed (`unsupported_format`) rather than a generic
+  version-rewriting engine nobody has asked for yet.
+- **A `marketplace_json` manifest whose `plugins[]` entries are already
+  individually drifted from the top-level version at the START of a sync**
+  is still written — the tool self-heals by forcing every entry to the
+  released version — but the drift is not separately reported; only
+  `reformatted: true` hints that the byte-preserving surgical path could
+  not be used.
 - **The `manifest_dirty_before_sync` guard, outside a git repo.** It reads
   `git status`, so a `--project-root` that isn't a git checkout at all (this
   tool's own unit-test fixtures, or a non-git project) sees no dirty-check

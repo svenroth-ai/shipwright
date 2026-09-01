@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Implements exactly the two asks: root shipwright_changelog_config.json declaring the 14 plugin.json manifests, and a new marketplace_json format in manifest_sync_core.py bumping root+plugins[].version together; no extra scope."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Every new branch (missing/non-list plugins, non-object plugin entry) raises a named ManifestSyncError status; fail-closed, consistent with the module's existing philosophy."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input, SQL, or HTML involved; existing path-containment (resolve_contained_path) governs all writes unchanged; no secrets."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Tests assert on outcomes (parsed JSON content, byte-preservation, status codes); each new behavior has a happy path plus at least one error path."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "Release-time CLI over at most 15 small JSON files; no loops over unbounded data."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Every crossing of the 300-line guideline was resolved by extraction along a real conceptual seam, never left flagged-not-fixed: manifest_sync_core.py -> manifest_sync_errors.py (ManifestSyncError alone, ADR-248 neutral-leaf pattern) + manifest_sync_marketplace.py (format-specific validate/render) + manifest_sync_paths.py (config-loading/path-containment primitives); test_manifest_sync_core.py -> test_manifest_sync_core_marketplace.py; sync_release_manifests.py -> sync_release_manifests_verify.py (verify_commit split out after wiring describe_version_state pushed it over); test_sync_release_manifests.py / test_sync_release_manifests_git.py -> _marketplace.py siblings. All touched source/test files confirmed <=300 lines as of this note; wc -l re-run after the code-review round-2 fixes."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer (sync_release_manifests.py's render_manifest_write) / consumer (read_manifest_version) pair for marketplace_json identified; a real round-trip test exists in both the unit suite and a git-committed-blob integration test (touches_io_boundary fired -> mandatory, satisfied)."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff reported no findings."}
+  ]
+}

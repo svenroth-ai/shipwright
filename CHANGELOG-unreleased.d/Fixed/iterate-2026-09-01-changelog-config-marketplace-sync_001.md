@@ -1,0 +1,1 @@
+This monorepo now declares its own 14 plugin.json manifests plus marketplace.json in shipwright_changelog_config.json, so `/shipwright-changelog` release tooling actually bumps their version stamps instead of leaving them stranded at the prior release.

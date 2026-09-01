@@ -269,3 +269,6 @@ def test_surgical_substitution_ambiguous_falls_back_to_full_render():
     assert reformatted is True
     parsed = json.loads(new_text)
     assert parsed["version"] == "2.0.0"
+
+
+# marketplace_json coverage lives in test_manifest_sync_core_marketplace.py

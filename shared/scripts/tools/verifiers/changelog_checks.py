@@ -46,10 +46,10 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.manifest_sync_core import (  # noqa: E402
     ManifestSyncError,
+    describe_version_state,
     git as manifest_git,
     git_relative_path,
     load_declared_manifests,
-    read_manifest_version,
 )
 
 from .common import (
@@ -228,14 +228,12 @@ def check_manifest_version_matches_tag(project_root: Path) -> CheckResult:
             mismatches.append(f"{entry['path']}: not found at HEAD")
             continue
         try:
-            committed_version = read_manifest_version(blob.stdout, entry["format"])
+            matches, detail = describe_version_state(blob.stdout, entry["format"], target)
         except ManifestSyncError as exc:
             mismatches.append(f"{entry['path']}: {exc.detail}")
             continue
-        if committed_version != target:
-            mismatches.append(
-                f"{entry['path']}: committed={committed_version!r} != tag={target!r}"
-            )
+        if not matches:
+            mismatches.append(f"{entry['path']}: {detail}")
 
     if mismatches:
         return CheckResult(name, False, "; ".join(mismatches), severity=Severity.WARNING.value)
