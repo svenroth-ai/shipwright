@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-08-27T12:15:00.971395+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-08-27-s2b-discovery-c base=396067c331f7 release=v0.33.0
-Consistency-audit: last run 2026-07-28 (30 days earlier) — FAIL
+Generated: 2026-08-31T15:18:56.540882+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-08-31-pr-review-deepseek-model base=c50bdd7fecd5 release=v0.33.1
+Consistency-audit: last run 2026-07-28 (34 days earlier) — FAIL
 
 ## Summary
 

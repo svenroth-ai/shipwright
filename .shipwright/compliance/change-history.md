@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-08-27T12:15:00.971395+00:00
-Source-State: run=iterate-2026-08-27-s2b-discovery-c base=396067c331f7 release=v0.33.0
-Consistency-audit: last run 2026-07-28 (30 days earlier) — FAIL
-Total commits: 1440
+Generated: 2026-08-31T15:18:56.540882+00:00
+Source-State: run=iterate-2026-08-31-pr-review-deepseek-model base=c50bdd7fecd5 release=v0.33.1
+Consistency-audit: last run 2026-07-28 (34 days earlier) — FAIL
+Total commits: 1446
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 486
+    "fix" : 489
     "feat" : 384
-    "chore" : 261
+    "chore" : 263
     "docs" : 156
-    "refactor" : 87
+    "refactor" : 88
     "test" : 37
     "ci" : 18
     "other" : 9
@@ -23,10 +23,13 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 486 commits
+### Fixes (fix) — 489 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-31 | compliance | surface update_compliance.py's generator-error diagnostic (#665) | a6a6b58fa2a9 |
+| 2026-08-29 | compliance | launch update_compliance.py via the compliance plugin's own uv environment (#664) | 073916063a28 |
+| 2026-08-28 | changelog | decode subprocess stdout as UTF-8 with replacement in release-notes tooling (#662) | 3b337b2a6a60 |
 | 2026-08-27 | compliance | title_cell() tries genuine title columns before Name fallback (#659) | c23172a640c5 |
 | 2026-08-27 | compliance | text_from_named_col replaces value-equality in FR-table description exemption (#656) | 2e77f1c76c7f |
 | 2026-08-27 | iterate | campaign worktree session lock release + full-path identity compare (#658) | 860f19990a7e |
@@ -903,10 +906,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 261 commits
+### Chores (chore) — 263 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-29 | docs | sync guide.md with grade plugin, compliance groups A-I, traceability tagging (#663) | 31517fe72604 |
+| 2026-08-27 | release | v0.33.0 (#661) | 8a3759f2f430 |
 | 2026-08-08 | release | v0.32.0 canon handoff — dashboard, session handoff, phase history | 5f12a9ff7abf |
 | 2026-08-08 | release | v0.32.0 | 11e325232765 |
 | 2026-08-08 | triage | dismiss trg-6d8fbc10, delivered via PR #598 | b67e536d9bef |
@@ -1330,10 +1335,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 87 commits
+### Refactoring (refactor) — 88 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-08-31 | security | swap Tier-3 PR-review gate to DeepSeek with reused ZDR routing (#666) | c50bdd7fecd5 |
 | 2026-08-27 | discovery | S2b pass C -- explicit finding, include_iterate convergence, posix separators (#660) | 396067c331f7 |
 | 2026-08-17 | iterate | gate FR-declaring events on real test evidence (#642) | 274be817157e |
 | 2026-08-13 | triage | cap detail at 6000 chars across schema and write paths (#634) | 5c6abb295795 |
@@ -1517,7 +1523,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1440 |
+| Total commits | 1446 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1440 |
+| Human-authored commits | 1446 |
 

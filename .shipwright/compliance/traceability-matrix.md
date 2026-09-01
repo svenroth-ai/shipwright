@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-08-27T12:15:00.971395+00:00
-Source-State: run=iterate-2026-08-27-s2b-discovery-c base=396067c331f7 release=v0.33.0
-Consistency-audit: last run 2026-07-28 (30 days earlier) — FAIL
+Generated: 2026-08-31T15:18:56.540882+00:00
+Source-State: run=iterate-2026-08-31-pr-review-deepseek-model base=c50bdd7fecd5 release=v0.33.1
+Consistency-audit: last run 2026-07-28 (34 days earlier) — FAIL
 
 ## Requirements Coverage
 
@@ -35,6 +35,10 @@ Consistency-audit: last run 2026-07-28 (30 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-5ed8d982"></a>The automated code review that runs on every pull request now uses a cheaper AI model, with the same privacy protections it already had. | iterate | change |  | — | — | 2026-08-31 |
+| <a id="evt-8a21f78f"></a>update_compliance.py's generator-error diagnostic (written to stdout, with empty stderr) is now surfaced by all three callers instead of being silently discarded | iterate | bug |  | — | — | 2026-08-31 |
+| <a id="evt-846971b0"></a>Fixed a crash where running the compliance report update from inside another Shipwright tool (iterate finalize, security finalize, or the run orchestrator) could fail with a missing-module error, because it was accidentally run using the wrong tool's own Python setup instead of the compliance tool's own setup. | iterate | bug |  | — | — | 2026-08-29 |
+| <a id="evt-bdc64b52"></a>GitHub Release notes now publish correctly on Windows even when the changelog or a release title contains a special character like an em-dash. | iterate | bug |  | 17036/17094 | — | 2026-08-28 |
 | <a id="evt-3c8e4d1a"></a>A broken (file-shaped) planning folder now shows up as one clear error instead of crashing a compliance report. Per-run working notes (iterate/) are now correctly excluded from spec/adoption/requirement discovery in 9 more places. Spec file paths are now always written the same way regardless of Windows vs Linux. Two more places that used to crash on an oddly-shaped folder now just skip it. | iterate | change |  | 17033/17097 | — | 2026-08-27 |
 | <a id="evt-8efe64f1"></a>fix title_cell() Name-outranks-description-ish-column round 3 (trg-9838de27) | iterate | change |  | 11721/11758 | — | 2026-08-27 |
 | <a id="evt-261a09c8"></a>Adds campaign_session_lock release() + LOCK-LOST/STRICT-STOP routing, and full-resolved-path worktree identity checking with an identity_checked payload field. | iterate | change |  | — | — | 2026-08-26 |
@@ -600,7 +604,7 @@ Consistency-audit: last run 2026-07-28 (30 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 558 |
+| Iterate changes | 562 |
 | Requirements total | 20 |
 | Requirements verified | 18/20 |
 | Must-have verified | 14/14 |
