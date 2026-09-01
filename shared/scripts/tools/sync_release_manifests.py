@@ -37,16 +37,18 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.manifest_sync_core import (  # noqa: E402
     ManifestSyncError,
+    describe_version_state,
     git,
-    git_relative_path,
     load_declared_manifests,
     read_manifest_version,
     render_manifest_write,
     resolve_contained_path,
     validate_version,
 )
-
-_NO_MANIFESTS_NOTE = "no published manifests declared"
+from tools.sync_release_manifests_verify import (  # noqa: E402
+    NO_MANIFESTS_NOTE as _NO_MANIFESTS_NOTE,
+    verify_commit,
+)
 
 
 def _is_dirty(project_root: Path, rel: str) -> bool:
@@ -125,7 +127,8 @@ def sync(project_root: Path, version: str, *, dry_run: bool, stage: bool) -> dic
     written: list[tuple[Path, bytes]] = []
     manifests_result = []
     for p in prepared:
-        if p["current_version"] == version:
+        matches, _ = describe_version_state(p["text"], p["format"], version)
+        if matches:
             manifests_result.append(
                 {"path": p["path"], "format": p["format"], "changed": False, "reformatted": False}
             )
@@ -170,92 +173,6 @@ def sync(project_root: Path, version: str, *, dry_run: bool, stage: bool) -> dic
             result["manifest_pathspec"] = list(paths)
 
     return result
-
-
-def verify_commit(project_root: Path, sha: str, version: str, result_file: Path) -> dict:
-    """Re-read every manifest from the frozen ``--result-file`` list at the
-    COMMITTED blob (``git show <sha>:<path>``) — never the worktree or the
-    (mutable) config again."""
-    try:
-        validate_version(version)
-    except ManifestSyncError as exc:
-        return {"status": exc.status, "detail": exc.detail, "version": version, "manifests": []}
-
-    try:
-        recorded = json.loads(result_file.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return {"status": "result_file_invalid", "detail": str(exc), "version": version, "manifests": []}
-    if not isinstance(recorded, dict):
-        return {
-            "status": "result_file_invalid", "detail": "--result-file must contain a JSON object",
-            "version": version, "manifests": [],
-        }
-
-    # Written unconditionally (incl. on a failed/dry-run sync, at a fixed
-    # path persisting across releases) — status, dry_run, AND version must
-    # all check out before the manifest list is trusted, or a stale/failed
-    # run recreates the card's regression inside the gate's own state.
-    if recorded.get("status") != "ok":
-        return {
-            "status": "sync_incomplete",
-            "detail": f"--result-file records status {recorded.get('status')!r}, not 'ok'",
-            "version": version, "manifests": [],
-        }
-    if recorded.get("dry_run"):
-        return {
-            "status": "sync_incomplete",
-            "detail": "--result-file records a --dry-run sync — nothing was actually staged",
-            "version": version, "manifests": [],
-        }
-    if recorded.get("version") != version:
-        return {
-            "status": "result_file_stale",
-            "detail": f"--result-file records version {recorded.get('version')!r}, "
-                      f"not the release being verified ({version!r})",
-            "version": version, "manifests": [],
-        }
-
-    manifests = recorded.get("manifests") or []
-    if not isinstance(manifests, list):
-        return {
-            "status": "result_file_invalid", "detail": "--result-file 'manifests' must be a JSON array",
-            "version": version, "manifests": [],
-        }
-    if not manifests:
-        return {"status": "ok", "version": version, "manifests": [], "note": _NO_MANIFESTS_NOTE}
-
-    checked = []
-    for m in manifests:
-        if not isinstance(m, dict) or not isinstance(m.get("path"), str) or not isinstance(m.get("format"), str):
-            return {
-                "status": "result_file_invalid",
-                "detail": f"--result-file 'manifests' entry is malformed: {m!r}",
-                "version": version, "manifests": checked,
-            }
-        rel, fmt = m["path"], m["format"]
-        git_rel = git_relative_path(project_root, rel)
-        blob = git(project_root, "show", f"{sha}:{git_rel}")
-        if blob.returncode != 0:
-            return {
-                "status": "verify_mismatch", "detail": f"{rel} not found at commit {sha}",
-                "path": rel, "version": version, "manifests": checked,
-            }
-        try:
-            committed_version = read_manifest_version(blob.stdout, fmt)
-        except ManifestSyncError as exc:
-            return {
-                "status": exc.status, "detail": exc.detail, "path": rel,
-                "version": version, "manifests": checked,
-            }
-        if committed_version != version:
-            return {
-                "status": "verify_mismatch",
-                "detail": f"{rel}: committed version {committed_version!r} != released {version!r}",
-                "path": rel, "version": version, "manifests": checked,
-            }
-        checked.append({"path": rel, "committed_version": committed_version})
-
-    return {"status": "ok", "version": version, "manifests": checked}
 
 
 def main(argv: list[str] | None = None) -> int:

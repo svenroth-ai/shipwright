@@ -14,15 +14,23 @@ JSON output rather than letting a bare exception escape.
 from __future__ import annotations
 
 import json
-import posixpath
 import re
-import stat
 import subprocess
-from pathlib import Path, PurePosixPath
+from pathlib import Path
+
+from .manifest_sync_errors import ManifestSyncError
+from .manifest_sync_marketplace import (
+    find_stale_plugin_entries,
+    render_marketplace_write,
+    validate_marketplace_structure,
+)
+from .manifest_sync_paths import CONFIG_NAME, load_declared_manifests, resolve_contained_path
 
 __all__ = [
     "ManifestSyncError",
     "SUPPORTED_FORMATS",
+    "CONFIG_NAME",
+    "describe_version_state",
     "git",
     "git_relative_path",
     "load_declared_manifests",
@@ -32,8 +40,7 @@ __all__ = [
     "validate_version",
 ]
 
-CONFIG_NAME = "shipwright_changelog_config.json"
-SUPPORTED_FORMATS = ("package_json",)
+SUPPORTED_FORMATS = ("package_json", "marketplace_json")
 
 #: Bare SemVer 2.0.0 X.Y.Z, no leading "v" — canonical semver.org pattern,
 #: rejects leading zeroes (`01.2.3`, `1.2.3-01`) unlike a digit-only regex.
@@ -43,21 +50,6 @@ _SEMVER_RE = re.compile(
     r"(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?"
     r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
 )
-_DRIVE_LETTER_RE = re.compile(r"^[A-Za-z]:")
-
-
-class ManifestSyncError(RuntimeError):
-    """A named, fail-closed failure. ``status`` is one of the closed
-    vocabulary documented in ``manifest-sync.md``'s status table — never a
-    bare unclassified message."""
-
-    def __init__(self, status: str, detail: str, *, path: str | None = None) -> None:
-        super().__init__(detail)
-        self.status = status
-        self.detail = detail
-        self.path = path
-
-
 def validate_version(version: str) -> None:
     """Bare semver, no leading ``v``, no whitespace/control chars.
 
@@ -107,120 +99,18 @@ def git_relative_path(root: Path, project_relative_path: str) -> str:
     return f"{prefix}{posix_rel}" if prefix else posix_rel
 
 
-def _canonicalize(raw_path: str) -> str:
-    """Fold ``./`` prefixes and ``..`` segments so aliases like
-    ``a/../package.json`` and ``package.json`` dedupe to the same key —
-    duplicate-path detection must compare where a path actually points,
-    not its literal spelling."""
-    posix = raw_path.replace("\\", "/")
-    normalized = posixpath.normpath(posix)
-    return PurePosixPath(normalized).as_posix()
-
-
-def load_declared_manifests(project_root: Path) -> list[dict]:
-    """The validated, canonicalized ``published_manifests`` list.
-
-    An absent config file, a null/absent ``published_manifests``, or an
-    empty list all mean "no manifests declared" — a legitimate no-op,
-    returned as ``[]``, never an error. Anything else malformed raises
-    :class:`ManifestSyncError` (``invalid_config`` / ``duplicate_manifest_path``)
-    fail-closed, since this config is read even from projects
-    ``/shipwright-adopt`` runs against untrusted brownfield repos.
-    """
-    config_path = project_root / CONFIG_NAME
-    if not config_path.is_file():
-        return []
-    try:
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ManifestSyncError("invalid_config", f"{CONFIG_NAME}: {exc}") from exc
-    if raw is None:
-        return []
-    if not isinstance(raw, dict):
-        raise ManifestSyncError("invalid_config", f"{CONFIG_NAME} must be a JSON object")
-    declared = raw.get("published_manifests")
-    if declared is None:
-        return []
-    if not isinstance(declared, list):
-        raise ManifestSyncError("invalid_config", "published_manifests must be a JSON array")
-
-    entries: list[dict] = []
-    seen: dict[str, str] = {}
-    for i, item in enumerate(declared):
-        if not isinstance(item, dict):
-            raise ManifestSyncError("invalid_config", f"published_manifests[{i}] must be an object")
-        raw_path = item.get("path")
-        fmt = item.get("format")
-        if not isinstance(raw_path, str) or not raw_path:
-            raise ManifestSyncError(
-                "invalid_config", f"published_manifests[{i}].path must be a non-empty string"
-            )
-        if not isinstance(fmt, str) or not fmt:
-            raise ManifestSyncError(
-                "invalid_config", f"published_manifests[{i}].format must be a non-empty string"
-            )
-        canonical = _canonicalize(raw_path)
-        if canonical in seen:
-            raise ManifestSyncError(
-                "duplicate_manifest_path",
-                f"{raw_path!r} and {seen[canonical]!r} both resolve to {canonical!r}",
-            )
-        seen[canonical] = raw_path
-        entries.append({"path": canonical, "format": fmt})
-    return entries
-
-
-def _is_reparse_point(path: Path) -> bool:
-    """A Windows junction ``Path.is_symlink()`` misses (CPython only sets
-    ``S_IFLNK`` for ``IO_REPARSE_TAG_SYMLINK``, not ``_MOUNT_POINT``) — and
-    ``mklink /J`` needs no admin/Developer Mode, unlike a real symlink."""
-    try:
-        attrs = path.lstat().st_file_attributes
-    except (AttributeError, OSError):
-        return False
-    return bool(attrs & stat.FILE_ATTRIBUTE_REPARSE_POINT)
-
-
-def resolve_contained_path(project_root: Path, rel_path: str) -> Path:
-    """Resolve ``rel_path`` under ``project_root``, refusing escape or a
-    symlink/junction anywhere along the way — in-root too, not just
-    escaping: ``git add`` stages the link entry, not the resolved target's
-    changed blob, letting worktree and committed content diverge. Then
-    confirms the resolved path still falls under the (symlink-resolved)
-    root, belt-and-suspenders against a ``..``-escape the walk missed.
-    """
-    if PurePosixPath(rel_path).is_absolute() or _DRIVE_LETTER_RE.match(rel_path):
-        raise ManifestSyncError(
-            "path_outside_project", f"absolute path not allowed: {rel_path}", path=rel_path
-        )
-    project_root_resolved = project_root.resolve()
-    cursor = project_root_resolved
-    for part in PurePosixPath(rel_path).parts:
-        cursor = cursor / part
-        if cursor.is_symlink() or _is_reparse_point(cursor):
-            raise ManifestSyncError(
-                "path_is_symlink", f"{rel_path} contains a symlink at {part!r}", path=rel_path
-            )
-    candidate = project_root / rel_path
-    resolved = candidate.resolve()
-    try:
-        resolved.relative_to(project_root_resolved)
-    except ValueError:
-        raise ManifestSyncError(
-            "path_outside_project", f"{rel_path} resolves outside the project root", path=rel_path
-        ) from None
-    return candidate
-
-
 def read_manifest_version(text: str, fmt: str) -> str:
     """Parse manifest ``text`` and return its top-level ``version`` string.
 
-    Only ``package_json`` is implemented. A duplicate top-level
-    ``"version"`` key is refused (``ambiguous_manifest_structure``) rather
-    than silently taking whichever value Python's JSON decoder happened to
-    keep — the check is scoped to the ROOT object's own keys, not every
-    nested ``"version"`` field a manifest might legitimately carry
-    elsewhere (e.g. inside a tool's own nested config block).
+    ``package_json`` (a single top-level field) and ``marketplace_json`` (the
+    same top-level field, plus a ``plugins`` array of entries each carrying
+    their own) are implemented. A duplicate top-level ``"version"`` key is
+    refused (``ambiguous_manifest_structure``) rather than silently taking
+    whichever value Python's JSON decoder happened to keep — the check is
+    scoped to the ROOT object's own keys, not every nested ``"version"``
+    field a manifest might legitimately carry elsewhere (e.g. inside a
+    tool's own nested config block, or — for ``marketplace_json`` — inside
+    each ``plugins[]`` entry).
     """
     if fmt not in SUPPORTED_FORMATS:
         raise ManifestSyncError("unsupported_format", f"format {fmt!r} is not supported")
@@ -255,7 +145,39 @@ def read_manifest_version(text: str, fmt: str) -> str:
         raise ManifestSyncError(
             "invalid_version_type", f'"version" is not a string: {version!r}'
         )
+
+    if fmt == "marketplace_json":
+        validate_marketplace_structure(parsed)
+
     return version
+
+
+def describe_version_state(text: str, fmt: str, target_version: str) -> tuple[bool, str]:
+    """``(matches, detail)`` — whether ``text`` is ALREADY fully at
+    ``target_version``, and if not, why.
+
+    For ``package_json`` this is just ``read_manifest_version(...) ==
+    target_version`` — one field, one comparison. For ``marketplace_json``
+    it is stricter: the root field can equal ``target_version`` while one
+    or more ``plugins[]`` entries are still stranded at an older value (a
+    partial earlier sync, or a hand-edit) — exactly the drift class this
+    format exists to close. A caller comparing only the return of
+    ``read_manifest_version`` would call such a manifest "current" and
+    both skip re-writing it and pass a commit-verification check over it,
+    silently reintroducing the stranded-plugin regression this tool was
+    built to prevent. ``detail`` is empty iff ``matches`` is True.
+    """
+    version = read_manifest_version(text, fmt)
+    if version != target_version:
+        return False, f"committed version {version!r} != released {target_version!r}"
+    if fmt == "marketplace_json":
+        stale = find_stale_plugin_entries(json.loads(text), target_version)
+        if stale:
+            return False, (
+                f"root version {target_version!r} matches, but plugins entries "
+                f"still carry a different version: {', '.join(stale)}"
+            )
+    return True, ""
 
 
 def render_manifest_write(
@@ -275,6 +197,9 @@ def render_manifest_write(
     """
     if fmt not in SUPPORTED_FORMATS:
         raise ManifestSyncError("unsupported_format", f"format {fmt!r} is not supported")
+
+    if fmt == "marketplace_json":
+        return render_marketplace_write(original_text, current_version, new_version)
 
     pattern = re.compile(r'("version"\s*:\s*")' + re.escape(current_version) + r'(")')
     matches = list(pattern.finditer(original_text))

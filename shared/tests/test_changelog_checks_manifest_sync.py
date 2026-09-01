@@ -114,3 +114,34 @@ def test_malformed_config_warns_not_errors(repo):
     r = check_manifest_version_matches_tag(repo)
     assert r.ok is False
     assert r.severity == Severity.WARNING.value
+
+
+def test_matching_marketplace_manifest_passes(repo):
+    """The check is format-generic — no code change needed for
+    marketplace_json, only this coverage addition confirming it."""
+    _write_config(repo, [{"path": "marketplace.json", "format": "marketplace_json"}])
+    body = {"name": "acme", "version": "1.2.0", "plugins": [{"name": "a", "version": "1.2.0"}]}
+    (repo / "marketplace.json").write_text(json.dumps(body), encoding="utf-8")
+    _commit_and_tag(repo, "v1.2.0")
+    r = check_manifest_version_matches_tag(repo)
+    assert r.ok is True
+    assert "v1.2.0" in r.detail
+
+
+def test_marketplace_manifest_with_stale_plugin_entry_warns(repo):
+    """Regression: root equals the tag but a nested plugins[] entry is
+    stranded at an older version — comparing only the root would call this
+    'current' and mute the exact drift class this format exists to surface."""
+    _write_config(repo, [{"path": "marketplace.json", "format": "marketplace_json"}])
+    body = {
+        "name": "acme", "version": "1.2.0",
+        "plugins": [{"name": "a", "version": "1.2.0"}, {"name": "b", "version": "1.1.0"}],
+    }
+    (repo / "marketplace.json").write_text(json.dumps(body), encoding="utf-8")
+    _commit_and_tag(repo, "v1.2.0")
+
+    r = check_manifest_version_matches_tag(repo)
+
+    assert r.ok is False
+    assert r.severity == Severity.WARNING.value
+    assert "b" in r.detail

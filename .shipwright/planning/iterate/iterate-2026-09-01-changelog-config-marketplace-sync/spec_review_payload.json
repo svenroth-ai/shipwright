@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "New FR-01.09 AC (spec.md L627-632, 'version in more than one place ... written together in the same pass') is fully and faithfully implemented: render_marketplace_write bumps root + every plugins[] entry in one pass, describe_version_state closes the root-matches-but-nested-stale gap and is wired into sync(), verify_commit(), and the standing check as claimed. Config declares exactly the 14 real plugin.json paths + marketplace.json, backed by a drift test. No scope creep, no contradiction with a design reference (none exists for this FR). Code-reviewer (Stage 2) may proceed."
+}

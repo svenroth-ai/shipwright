@@ -47,6 +47,8 @@ def _write_manifest(path: Path, version: str = "0.1.0") -> None:
     path.write_text(json.dumps({"name": "pkg", "version": version}, indent=2) + "\n", encoding="utf-8")
 
 
+
+
 def _commit_all(root: Path, message: str) -> str:
     _run(root, "add", "-A")
     _run(root, "commit", "-q", "-m", message)

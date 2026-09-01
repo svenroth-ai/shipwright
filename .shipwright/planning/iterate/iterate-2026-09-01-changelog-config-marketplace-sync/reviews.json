@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-01-changelog-config-marketplace-sync",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:07:20.177539+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:36:18.980544+00:00",
+      "disposition": "complexity=small; external plan review is Advisory-tier at small, not bought by this run (no scope keyword/risk flag warranting medium+)",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:36:08.049312+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:36:18.875395+00:00",
+      "disposition": "no doubt-reviewer trigger met: no migrations, no async/concurrency, no cross-plugin imports (all changes within shared/scripts/lib and shared/scripts/tools), no irreversible ops (writes are atomic with restore-on-failure and already tested)",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:36:19.193359+00:00",
+      "disposition": "complexity=small; external code review is not bought at small complexity",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:33:11.182839+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-01T10:36:19.089156+00:00",
+      "disposition": "complexity=small; internal plan-reviewer arm only wired for medium+ external-review flow",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
