@@ -1,18 +1,21 @@
 """Model-identity policy for the Tier-3 PR reviewer's OpenRouter call.
 
 Owns the ONE decision this gate needs beyond a bare model string: whether the
-resolved `SHIPWRIGHT_PR_REVIEW_MODEL` is in the DeepSeek vendor namespace and,
-if so, must carry `shared/scripts/lib/external_review_routing`'s fail-closed
-ZDR provider-routing constraint — the same one already enforced for the
-review cascade's DeepSeek arm (`shared/config/external_review.json`).
+resolved `SHIPWRIGHT_PR_REVIEW_MODEL` is in a ZDR-gated vendor namespace
+(`deepseek/`, the operator-overridable arm; `z-ai/`, the default since
+iterate-2026-09-01-pr-review-glm-model) and, if so, must carry
+`shared/scripts/lib/external_review_routing`'s fail-closed ZDR provider-routing
+constraint — the same one already enforced for the review cascade's DeepSeek
+arm (`shared/config/external_review.json`).
 
 Deliberately NOT an allowlist: per ADR-167, this gate's model is meant to stay
 freely operator-overridable ("allows a model switch via
-SHIPWRIGHT_PR_REVIEW_MODEL"). A non-DeepSeek override — a Sonnet rollback, a
-one-off experiment — must resolve to `{}` WITHOUT ever importing or loading
-`external_review.json`, so a broken/absent review config cannot break PR
-review for a model that never needed it (iterate-2026-08-31-pr-review-deepseek-model,
-independently found by both the internal and the external plan review).
+SHIPWRIGHT_PR_REVIEW_MODEL"). An override outside both gated namespaces — a
+Sonnet rollback, a one-off experiment — must resolve to `{}` WITHOUT ever
+importing or loading `external_review.json`, so a broken/absent review config
+cannot break PR review for a model that never needed it
+(iterate-2026-08-31-pr-review-deepseek-model, independently found by both the
+internal and the external plan review).
 
 Kept out of `pr_review_openrouter.py`, which is documented as the pure HTTP
 boundary ("stdlib urllib only") — this module is the one place in this tool
@@ -35,10 +38,18 @@ if str(_SHARED_LIB) not in sys.path:
 from external_review_config import load_review_config  # noqa: E402
 from external_review_routing import (  # noqa: E402
     DeepSeekRoutingPolicyError,
+    GlmRoutingPolicyError,
     deepseek_openrouter_extra_body,
+    glm_openrouter_extra_body,
 )
 
-__all__ = ["DeepSeekRoutingPolicyError", "is_deepseek_model", "resolve_extra_body"]
+__all__ = [
+    "DeepSeekRoutingPolicyError",
+    "GlmRoutingPolicyError",
+    "is_deepseek_model",
+    "is_glm_model",
+    "resolve_extra_body",
+]
 
 
 def is_deepseek_model(model: str) -> bool:
@@ -53,20 +64,31 @@ def is_deepseek_model(model: str) -> bool:
     return model.strip().casefold().startswith("deepseek/")
 
 
+def is_glm_model(model: str) -> bool:
+    """True if `model` names an OpenRouter model in the `z-ai/` namespace.
+
+    Same normalization/namespace-matching rationale as `is_deepseek_model`.
+    """
+    return model.strip().casefold().startswith("z-ai/")
+
+
 def resolve_extra_body(model: str) -> dict:
     """Return the OpenRouter `extra_body` for `model`, or `{}`.
 
-    For any model outside the `deepseek/` namespace, returns `{}` WITHOUT
-    loading `shared/config/external_review.json` at all — the short-circuit
-    that keeps a non-DeepSeek override immune to that config's health.
+    For any model outside the `deepseek/` or `z-ai/` namespaces, returns `{}`
+    WITHOUT loading `shared/config/external_review.json` at all — the
+    short-circuit that keeps a non-gated override immune to that config's
+    health.
 
-    For a DeepSeek model, loads the config and returns
-    `deepseek_openrouter_extra_body(config)`. Raises `DeepSeekRoutingPolicyError`
-    (routing policy invalid) or the config loader's own exceptions (missing
-    file, malformed JSON) uncaught — `pr_review.py` is the single place that
-    maps any of these to the gate's fail-closed `EXIT_ERROR`, before any
-    network call.
+    For a recognized namespace, loads the config and returns the matching
+    provider's `*_openrouter_extra_body(config)`. Raises
+    `DeepSeekRoutingPolicyError`/`GlmRoutingPolicyError` (routing policy
+    invalid) or the config loader's own exceptions (missing file, malformed
+    JSON) uncaught — `pr_review.py` is the single place that maps any of
+    these to the gate's fail-closed `EXIT_ERROR`, before any network call.
     """
-    if not is_deepseek_model(model):
-        return {}
-    return deepseek_openrouter_extra_body(load_review_config())
+    if is_deepseek_model(model):
+        return deepseek_openrouter_extra_body(load_review_config())
+    if is_glm_model(model):
+        return glm_openrouter_extra_body(load_review_config())
+    return {}

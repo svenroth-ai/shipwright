@@ -28,6 +28,23 @@
     ],
     "_comment": "Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry. A future US/EU endpoint needs deliberate code, config, test, and review changes after its ZDR policy and processing region are verified."
   },
+  "glm_routing": {
+    "provider_allowlist": [
+      {
+        "provider": "novita",
+        "region": "US",
+        "zero_retention_verified": true,
+        "verified_on": "2026-09-01"
+      },
+      {
+        "provider": "together",
+        "region": "US",
+        "zero_retention_verified": true,
+        "verified_on": "2026-09-01"
+      }
+    ],
+    "_comment": "Same two providers already vetted for deepseek_routing above; verified separately for GLM 5.3 via OpenRouter's own data-policy API (2026-09-01) AND a live production-route completion probe (plugins/shipwright-security/scripts/tools/probe_glm_zdr.py) that landed on novita. Unlike DeepSeek, together DOES serve this model, though at lower measured uptime than novita. Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry."
+  },
   "llm_client": {
     "timeout_seconds": 240,
     "max_retries": 3,

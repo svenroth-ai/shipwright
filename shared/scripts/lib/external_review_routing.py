@@ -1,4 +1,5 @@
-"""Fail-closed OpenRouter routing for the DeepSeek external-review arm."""
+"""Fail-closed OpenRouter routing for ZDR-gated external-review model arms
+(DeepSeek, GLM)."""
 
 from __future__ import annotations
 
@@ -6,9 +7,12 @@ from typing import Any
 
 __all__ = [
     "APPROVED_DEEPSEEK_ENDPOINTS",
+    "APPROVED_GLM_ENDPOINTS",
     "DeepSeekRoutingPolicyError",
+    "GlmRoutingPolicyError",
     "ReviewModelPolicyError",
     "deepseek_openrouter_extra_body",
+    "glm_openrouter_extra_body",
     "openrouter_extra_body",
     "resolve_reviewer_model",
 ]
@@ -18,6 +22,15 @@ __all__ = [
 # labelling it safe. Adding a verified EU endpoint is deliberately a code +
 # config + test review, not an unreviewed project override.
 APPROVED_DEEPSEEK_ENDPOINTS: tuple[tuple[str, str], ...] = (
+    ("novita", "US"),
+    ("together", "US"),
+)
+# Same two vetted providers as DeepSeek's — both also serve GLM 5.3 on
+# OpenRouter with an identical zero-retention data policy (verified via
+# OpenRouter's own data-policy API, 2026-09-01) — but a SEPARATE code-owned
+# constant, not a shared alias: the two families' approved sets are free to
+# diverge later without one edit silently relaxing the other.
+APPROVED_GLM_ENDPOINTS: tuple[tuple[str, str], ...] = (
     ("novita", "US"),
     ("together", "US"),
 )
@@ -37,6 +50,10 @@ _REVIEW_MODEL_BINDINGS = {
 
 class DeepSeekRoutingPolicyError(ValueError):
     """The DeepSeek request cannot be routed under the verified ZDR policy."""
+
+
+class GlmRoutingPolicyError(ValueError):
+    """The GLM request cannot be routed under the verified ZDR policy."""
 
 
 class ReviewModelPolicyError(ValueError):
@@ -76,49 +93,53 @@ def resolve_reviewer_model(
     return expected
 
 
-def _configured_endpoints(config: dict[str, Any]) -> list[dict[str, Any]]:
-    routing = config.get("deepseek_routing")
+def _configured_endpoints(
+    config: dict[str, Any], *, routing_key: str, error_cls: type[ValueError]
+) -> list[dict[str, Any]]:
+    routing = config.get(routing_key)
     if not isinstance(routing, dict):
-        raise DeepSeekRoutingPolicyError("deepseek_routing is missing or not an object")
+        raise error_cls(f"{routing_key} is missing or not an object")
     endpoints = routing.get("provider_allowlist")
     if not isinstance(endpoints, list) or not endpoints:
-        raise DeepSeekRoutingPolicyError(
-            "deepseek_routing.provider_allowlist must be a non-empty list"
-        )
+        raise error_cls(f"{routing_key}.provider_allowlist must be a non-empty list")
     if not all(isinstance(item, dict) for item in endpoints):
-        raise DeepSeekRoutingPolicyError("every DeepSeek provider entry must be an object")
+        raise error_cls(f"every {routing_key} provider entry must be an object")
     return endpoints
 
 
-def deepseek_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
+def _provider_openrouter_extra_body(
+    config: dict[str, Any],
+    *,
+    routing_key: str,
+    error_cls: type[ValueError],
+    approved_endpoints: tuple[tuple[str, str], ...],
+) -> dict[str, Any]:
     """Return the complete provider policy, or raise before network I/O.
 
     The shipping configuration must match the code-owned approval registry
     exactly, including order. This makes today's outbound body deterministic
     while keeping the declaration intentionally configurable for a future,
-    reviewed US/EU ZDR endpoint addition.
+    reviewed US/EU ZDR endpoint addition. Shared by every model family gated
+    behind a ZDR provider allowlist — the validation rules are identical,
+    only the config section and approval registry differ.
     """
-    endpoints = _configured_endpoints(config)
+    endpoints = _configured_endpoints(config, routing_key=routing_key, error_cls=error_cls)
     configured: list[tuple[str, str]] = []
     for index, endpoint in enumerate(endpoints):
         slug = endpoint.get("provider")
         region = endpoint.get("region")
         verified = endpoint.get("zero_retention_verified")
         if not isinstance(slug, str) or not slug.strip():
-            raise DeepSeekRoutingPolicyError(f"provider entry {index} has no valid slug")
+            raise error_cls(f"provider entry {index} has no valid slug")
         if region not in _ALLOWED_REGIONS:
-            raise DeepSeekRoutingPolicyError(
-                f"provider {slug!r} region must be explicitly US or EU"
-            )
+            raise error_cls(f"provider {slug!r} region must be explicitly US or EU")
         if verified is not True:
-            raise DeepSeekRoutingPolicyError(
-                f"provider {slug!r} lacks explicit zero-retention verification"
-            )
+            raise error_cls(f"provider {slug!r} lacks explicit zero-retention verification")
         configured.append((slug, region))
 
-    if tuple(configured) != APPROVED_DEEPSEEK_ENDPOINTS:
-        raise DeepSeekRoutingPolicyError(
-            "configured DeepSeek providers do not exactly match the approved "
+    if tuple(configured) != approved_endpoints:
+        raise error_cls(
+            f"configured {routing_key} providers do not exactly match the approved "
             "ordered ZDR endpoint registry"
         )
 
@@ -132,6 +153,24 @@ def deepseek_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
             "zdr": True,
         }
     }
+
+
+def deepseek_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
+    return _provider_openrouter_extra_body(
+        config,
+        routing_key="deepseek_routing",
+        error_cls=DeepSeekRoutingPolicyError,
+        approved_endpoints=APPROVED_DEEPSEEK_ENDPOINTS,
+    )
+
+
+def glm_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
+    return _provider_openrouter_extra_body(
+        config,
+        routing_key="glm_routing",
+        error_cls=GlmRoutingPolicyError,
+        approved_endpoints=APPROVED_GLM_ENDPOINTS,
+    )
 
 
 def openrouter_extra_body(model_key: str, config: dict[str, Any]) -> dict[str, Any]:

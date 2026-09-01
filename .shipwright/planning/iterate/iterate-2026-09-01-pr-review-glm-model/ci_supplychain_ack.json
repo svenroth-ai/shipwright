@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-01-pr-review-glm-model",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-01-pr-review-glm-model",
+    "paths_fingerprint": "2e66bbcde171e81b9d7721dc19bb3638dadfdc975f46b9e1028e7c4a69cff043",
+    "consistent_with": "iterate-2026-08-31-pr-review-deepseek-model",
+    "statement": "Repoints SHIPWRIGHT_PR_REVIEW_MODEL from deepseek/deepseek-v4-pro to z-ai/glm-5.3 as the gate default, after DeepSeek repeatedly produced confident false-positive BLOCK verdicts (PR #668); DeepSeek stays available as an operator override on the same env var, and the same two ZDR-vetted providers (novita, together) are reused, separately re-verified for GLM 5.3 against OpenRouter data-policy API AND a live production-route completion probe on 2026-09-01, per the prior iterate decision to keep this a live-tested swap rather than add canary/rollback machinery.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml"
+    ]
+  }
+}

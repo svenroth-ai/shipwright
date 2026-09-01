@@ -15,13 +15,23 @@ import json
 import urllib.error
 import urllib.request
 
-__all__ = ["DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL", "call_openrouter"]
+__all__ = [
+    "DEEPSEEK_MODEL",
+    "DEFAULT_MODEL",
+    "DEFAULT_TIMEOUT",
+    "GLM_MODEL",
+    "OPENROUTER_URL",
+    "call_openrouter",
+]
 
 # One named constant — DEFAULT_MODEL, the ZDR-routing model match, and every
 # test/workflow assertion all read this, so they cannot drift into three
-# copies of the same literal.
+# copies of the same literal. DeepSeek stays available as an operator
+# override (SHIPWRIGHT_PR_REVIEW_MODEL) after repeated confident false-positive
+# BLOCK verdicts on this gate motivated the GLM 5.3 default switch.
 DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
-DEFAULT_MODEL = DEEPSEEK_MODEL
+GLM_MODEL = "z-ai/glm-5.3"
+DEFAULT_MODEL = GLM_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ONE default for the whole tool — the CLI flag and the direct call share it.

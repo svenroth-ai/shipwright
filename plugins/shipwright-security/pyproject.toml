@@ -9,6 +9,12 @@ authors = [{name = "Sven Roth"}]
 keywords = ["claude-code", "plugin", "security", "aikido", "sast", "sca"]
 dependencies = [
     "requests>=2.31.0",
+    # Only for scripts/tools/probe_glm_zdr.py (an ops verification tool, not the
+    # production PR-review path — pr_review_openrouter.py stays stdlib-urllib-only
+    # on purpose) and its test. Main dependency, not a dev extra: CI's per-plugin
+    # test step (`uv run --with pytest ...` from inside the plugin dir) installs
+    # this project's own `dependencies` implicitly but never passes `--extra dev`.
+    "openai>=2.30.0",
 ]
 
 [project.optional-dependencies]
