@@ -55,7 +55,7 @@ class TestFileContract:
         # a module split is exactly what silently breaks it.
         for name in pr_review.__all__:
             assert hasattr(pr_review, name), f"__all__ names {name}, which does not resolve"
-        assert pr_review.DEFAULT_MODEL == pr_review.DEEPSEEK_MODEL
+        assert pr_review.DEFAULT_MODEL == pr_review.GLM_MODEL
 
 
 # --- main() orchestration — boundaries monkeypatched ---

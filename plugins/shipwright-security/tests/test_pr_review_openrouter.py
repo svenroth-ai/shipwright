@@ -30,8 +30,11 @@ FAKE_KEY = "ORTESTKEY-not-a-real-credential-0123456789"
 
 class TestDefaults:
 
-    def test_default_model_is_deepseek(self):
-        assert O.DEFAULT_MODEL == O.DEEPSEEK_MODEL == "deepseek/deepseek-v4-pro"
+    def test_default_model_is_glm(self):
+        assert O.DEFAULT_MODEL == O.GLM_MODEL == "z-ai/glm-5.3"
+
+    def test_deepseek_model_constant_still_exists_for_the_operator_override(self):
+        assert O.DEEPSEEK_MODEL == "deepseek/deepseek-v4-pro"
 
     def test_the_timeout_default_is_shared_with_the_cli(self):
         # Two defaults for one knob is how a raise gets half-applied. The CLI

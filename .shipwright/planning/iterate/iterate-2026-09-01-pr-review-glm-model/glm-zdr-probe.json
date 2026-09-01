@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "model": "z-ai/glm-5.3",
+  "provider_policy": {
+    "only": [
+      "novita",
+      "together"
+    ],
+    "order": [
+      "novita",
+      "together"
+    ],
+    "allow_fallbacks": false,
+    "data_collection": "deny",
+    "zdr": true
+  },
+  "status": "success",
+  "reason": null,
+  "live_request_sent": true,
+  "live_request_attempted": true,
+  "selected_provider": "novita",
+  "response_valid": true
+}

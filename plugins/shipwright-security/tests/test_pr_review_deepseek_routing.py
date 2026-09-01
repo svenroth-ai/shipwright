@@ -1,10 +1,12 @@
-"""Tests for pr_review.py's DeepSeek ZDR routing gate in main() — split out of
+"""Tests for pr_review.py's ZDR routing gate in main() — split out of
 test_pr_review_script.py to keep that module inside the file-size guideline
-(iterate-2026-08-31-pr-review-deepseek-model).
+(iterate-2026-08-31-pr-review-deepseek-model). Filename kept for history;
+covers both the default GLM arm (iterate-2026-09-01-pr-review-glm-model)
+and the DeepSeek operator-override arm.
 
 Covers the fail-closed contract at the resolve_extra_body() call site: a
 broken routing policy or a malformed shared config must exit before any
-OpenRouter call, and a non-DeepSeek model override must never touch that
+OpenRouter call, and a non-gated model override must never touch that
 config at all. All network and `gh` boundaries are monkeypatched offline.
 """
 
@@ -60,28 +62,41 @@ def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n"):
     return posted
 
 
-class TestDeepSeekRoutingGate:
+class TestZdrRoutingGate:
 
-    def test_the_default_deepseek_model_actually_delivers_the_zdr_body(self, monkeypatch):
+    def test_the_default_glm_model_actually_delivers_the_zdr_body(self, monkeypatch):
         # The positive case that carries the whole guarantee: with no override,
         # main() must thread the REAL ZDR provider body through to the call —
         # not just resolve it in isolation (that's TestResolveExtraBody's job)
-        # and not just skip it for a non-DeepSeek override (the test below).
+        # and not just skip it for a non-gated override (the test below).
+        # DEFAULT_MODEL is GLM 5.3 (iterate-2026-09-01-pr-review-glm-model,
+        # after DeepSeek's repeated confident false-positive BLOCK verdicts).
         posted = _wire(monkeypatch, review_json=json.dumps(
             {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))
         assert pr_review.main(ARGV) == 0
         assert posted["extra_body"]["provider"]["zdr"] is True
         assert posted["extra_body"]["provider"]["only"] == ["novita", "together"]
 
-    def test_fails_closed_before_any_network_call_on_broken_deepseek_routing(self, monkeypatch):
-        # DEFAULT_MODEL is the DeepSeek identity; a broken deepseek_routing
-        # block must exit 2 WITHOUT ever reaching call_openrouter OR fetching
-        # the diff/head — the AC is "no OpenRouter call made, before the diff
-        # is even fetched", not just the exit code.
+    def test_the_deepseek_override_still_delivers_the_zdr_body(self, monkeypatch):
+        # DeepSeek stays available as an operator override on the same env var
+        # after the default swap — its ZDR routing must still actually work,
+        # not just still exist as dead code.
+        monkeypatch.setenv("SHIPWRIGHT_PR_REVIEW_MODEL", pr_review.DEEPSEEK_MODEL)
+        posted = _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))
+        assert pr_review.main(ARGV) == 0
+        assert posted["extra_body"]["provider"]["zdr"] is True
+        assert posted["extra_body"]["provider"]["only"] == ["novita", "together"]
+
+    def test_fails_closed_before_any_network_call_on_broken_routing(self, monkeypatch):
+        # DEFAULT_MODEL is a ZDR-gated identity; a broken routing block must
+        # exit 2 WITHOUT ever reaching call_openrouter OR fetching the diff/
+        # head — the AC is "no OpenRouter call made, before the diff is even
+        # fetched", not just the exit code.
         calls = _wire(monkeypatch)
 
         def boom(model):
-            raise pr_review.DeepSeekRoutingPolicyError("deepseek_routing is missing or not an object")
+            raise pr_review.GlmRoutingPolicyError("glm_routing is missing or not an object")
         monkeypatch.setattr(pr_review, "resolve_extra_body", boom)
         assert pr_review.main(ARGV) == 2
         assert calls["call_openrouter_n"] == 0
@@ -99,8 +114,8 @@ class TestDeepSeekRoutingGate:
         assert calls["fetch_pr_diff_n"] == 0
         assert calls["read_reviewed_head_n"] == 0
 
-    def test_non_deepseek_override_never_touches_the_review_config(self, monkeypatch):
-        # An operator override to a non-DeepSeek model (e.g. a Sonnet rollback)
+    def test_non_gated_override_never_touches_the_review_config(self, monkeypatch):
+        # An operator override to a non-gated model (e.g. a Sonnet rollback)
         # must proceed exactly as it always has — no config load, no ZDR body.
         # Uses the REAL resolve_extra_body (its short-circuit is the thing
         # under test); only its config loader is stubbed to prove it's unreached.
@@ -109,7 +124,7 @@ class TestDeepSeekRoutingGate:
         monkeypatch.setenv("SHIPWRIGHT_PR_REVIEW_MODEL", "anthropic/claude-sonnet-4.6")
 
         def boom():
-            raise AssertionError("must not load the review config for a non-DeepSeek model")
+            raise AssertionError("must not load the review config for a non-gated model")
         monkeypatch.setattr(_policy, "load_review_config", boom)
         posted = _wire(monkeypatch, review_json=json.dumps(
             {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))

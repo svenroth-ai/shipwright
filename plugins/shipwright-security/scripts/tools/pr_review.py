@@ -75,17 +75,13 @@ from pr_review_gh import (  # noqa: E402
     post_pr_review_state,
 )
 from pr_review_openrouter import (  # noqa: E402
-    DEEPSEEK_MODEL,
-    DEFAULT_MODEL,
-    DEFAULT_TIMEOUT,
-    OPENROUTER_URL,
+    DEEPSEEK_MODEL, DEFAULT_MODEL, DEFAULT_TIMEOUT, GLM_MODEL, OPENROUTER_URL,
     call_openrouter,
 )
 # The one place this tool reaches into shared/scripts/lib — see the module
 # docstring for why it isn't wired inside pr_review_openrouter.py instead.
 from pr_review_model_policy import (  # noqa: E402
-    DeepSeekRoutingPolicyError,
-    resolve_extra_body,
+    DeepSeekRoutingPolicyError, GlmRoutingPolicyError, resolve_extra_body,
 )
 from pr_review_verdict import post_verdict  # noqa: E402
 
@@ -99,8 +95,9 @@ __all__ = [
     "load_prompts", "new_nonce", "nothing_reviewed_summary",
     "parse_review_response", "post_pr_comment", "post_pr_review_state",
     "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body", "truncate_diff",
-    "call_openrouter", "DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "OPENROUTER_URL",
-    "DeepSeekRoutingPolicyError", "resolve_extra_body", "post_verdict"]
+    "call_openrouter", "DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "GLM_MODEL",
+    "OPENROUTER_URL", "DeepSeekRoutingPolicyError", "GlmRoutingPolicyError",
+    "resolve_extra_body", "post_verdict"]
 
 
 def _fix_windows_encoding() -> None:
@@ -138,20 +135,21 @@ def main(argv: list[str] | None = None) -> int:
         print("[pr_review] OPENROUTER_API_KEY is not set — cannot review.", file=sys.stderr)
         return EXIT_ERROR
     model = os.environ.get("SHIPWRIGHT_PR_REVIEW_MODEL", DEFAULT_MODEL)
-    # Resolved BEFORE anything else network-bound: for a non-DeepSeek model this
-    # never touches shared/config/external_review.json at all (see
-    # pr_review_model_policy). For a DeepSeek model, a missing/malformed config
-    # or invalid ZDR-routing policy must fail this REQUIRED gate closed, before
-    # the diff is even fetched — the same routing guarantee already enforced
-    # for the plan/code review cascade's DeepSeek arm.
+    # Resolved BEFORE anything else network-bound: for a model outside the deepseek/ or
+    # z-ai/ namespaces this never touches shared/config/external_review.json (see
+    # pr_review_model_policy). DEFAULT_MODEL is GLM (z-ai/), so this config IS on the
+    # everyday path, not just the DeepSeek-override one — a missing/malformed routing
+    # block must fail this REQUIRED gate closed, before the diff is even fetched.
     try:
         extra_body = resolve_extra_body(model)
     except Exception as e:  # noqa: BLE001 — broad ON PURPOSE (ADR-045: shared/scripts/lib
         # loads both top-level and as a package, so a narrower except naming
-        # DeepSeekRoutingPolicyError could miss an `is`-distinct instance of that
-        # same class and escape unredacted); type name keeps a code bug diagnosable.
+        # DeepSeekRoutingPolicyError/GlmRoutingPolicyError could miss an
+        # `is`-distinct instance of one of those classes and escape unredacted);
+        # type name keeps a code bug diagnosable without naming a specific vendor
+        # that may not be the one actually misconfigured.
         print(_redact(
-            f"[pr_review] reviewer misconfigured (DeepSeek ZDR routing policy) — "
+            f"[pr_review] reviewer misconfigured (ZDR routing policy) — "
             f"not your change: {type(e).__name__}: {e}", api_key), file=sys.stderr)
         return EXIT_ERROR
     # Minted before the first post, because EVERY posting path stamps it.
