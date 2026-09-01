@@ -1,0 +1,37 @@
+{
+  "run_id": "iterate-2026-09-01-external-review-retry-degradation",
+  "date": "2026-09-01T21:52:38.714297Z",
+  "event_at": "2026-09-01T21:51:58.004163+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/external-review-retry-degradation",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-01-external-review-retry-degradation",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 18,
+      "tested": 18,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure internal CLI/lib tooling for the external-review call path \u2014 no runnable web/dev-server surface"
+  },
+  "declared_removals": [
+    {
+      "path": "shared/config/external_review.json (llm_client.retry_codes key)",
+      "reason": "dead/unwireable: OpenAI SDK's retry-eligible status set is hardcoded in a private method with no public customization API (openai==2.44.0)"
+    }
+  ]
+}

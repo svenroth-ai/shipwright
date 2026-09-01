@@ -85,3 +85,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [S2b pass C — explicit finding, include_iterate convergence, posix separators](iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md)
 - [Tier-3 PR-review gate: DeepSeek model swap with reused ZDR routing](iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md)
 - [ADR: dogfood release-manifest sync + marketplace_json format](iterate-2026-09-01-changelog-config-marketplace-sync-marketplace-json-format.md)
+- [External-review retry budget & partial degradation](iterate-2026-09-01-external-review-retry-degradation-retry-budget.md)

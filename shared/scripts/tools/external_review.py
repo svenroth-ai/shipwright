@@ -70,12 +70,12 @@ load_shipwright_env()
 
 from external_review_config import load_review_config  # noqa: E402
 from external_review_degraded import (  # noqa: E402
-    DEFAULT_TIMEOUT_SECONDS,
     MAX_OUTPUT_TOKENS,
     REVIEW_ENVELOPE_SCHEMA,
-    classify_reply,
+    file_partial_degradation_triage,
     finalize_review_output,
-    openai_finish_reason,
+    llm_client_settings,
+    retrying_completion,
 )
 from external_review_modes import (  # noqa: E402
     MODE_INPUT,
@@ -119,18 +119,16 @@ def review_with_openrouter(
 
         model_name = resolve_reviewer_model(config, model_key, "openrouter")
         extra_body = openrouter_extra_body(model_key, config)
-
-        timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
+        timeout, max_retries = llm_client_settings(config)
 
         client = OpenAI(
-            api_key=api_key,
-            base_url=OPENROUTER_BASE_URL,
-            timeout=timeout,
+            api_key=api_key, base_url=OPENROUTER_BASE_URL,
+            timeout=timeout, max_retries=max_retries,
         )
-
         prompt = _render_user_prompt(user_prompt, plan, spec)
 
-        response = client.chat.completions.create(
+        return retrying_completion(
+            client, via="openrouter", max_retries=max_retries,
             model=model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -139,8 +137,6 @@ def review_with_openrouter(
             max_tokens=MAX_OUTPUT_TOKENS,
             extra_body=extra_body,
         )
-
-        return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="openrouter")
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -159,13 +155,13 @@ def review_with_openai(
         from openai import OpenAI
 
         model_name = resolve_reviewer_model(config, "openai", "direct")
-        timeout = config.get("llm_client", {}).get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)
+        timeout, max_retries = llm_client_settings(config)
 
-        client = OpenAI(api_key=api_key, timeout=timeout)
-
+        client = OpenAI(api_key=api_key, timeout=timeout, max_retries=max_retries)
         prompt = _render_user_prompt(user_prompt, plan, spec)
 
-        response = client.chat.completions.create(
+        return retrying_completion(
+            client, via="direct", max_retries=max_retries,
             model=model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -174,8 +170,6 @@ def review_with_openai(
             # gpt-5.x rejects `max_tokens`; `max_completion_tokens` is required.
             max_completion_tokens=MAX_OUTPUT_TOKENS,
         )
-
-        return classify_reply(response.choices[0].message.content, openai_finish_reason(response), via="direct")
 
     except ImportError:
         return {"status": "error", "reason": "openai package not installed"}
@@ -406,6 +400,11 @@ def main() -> int:
     # the derived contradiction alongside the full texts rather than letting a
     # downstream finding count average them away.
     output.update(summarize_reviews(reviews))
+    if output.get("partially_degraded"):
+        file_partial_degradation_triage(
+            Path(args.project_root).resolve(), args.run_id, args.mode, provider,
+            output["partially_degraded_legs"],
+        )
     print(json.dumps(output, indent=2))
     return exit_code
 

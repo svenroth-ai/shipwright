@@ -48,8 +48,8 @@
   "llm_client": {
     "timeout_seconds": 240,
     "max_retries": 3,
-    "retry_codes": [429, 500, 503],
     "_comment": "Timeout and retry settings for external LLM calls",
-    "_comment_timeout": "Kept at 240 seconds for the shared 16000-token review budget. Keep both review clients and this shipping value in lockstep."
+    "_comment_timeout": "Kept at 240 seconds for the shared 16000-token review budget. Keep both review clients and this shipping value in lockstep.",
+    "_comment_max_retries": "Passed straight into the OpenAI() client constructor (shared/scripts/lib/external_review_degraded.py::llm_client_settings) and reused as the budget for the app-level retry-on-degraded-reply loop (retrying_completion). A former sibling field, retry_codes, was removed here (iterate-2026-09-01-external-review-retry-degradation): the OpenAI SDK's transport-level retry decides retryable status codes via a private, non-configurable _should_retry (408/409/429/>=500, which already covers this field's old [429, 500, 503] value) — there was no public API to wire a custom status-code set into, so the field only misled editors into thinking it was load-bearing."
   }
 }
