@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.1] - 2026-09-01
+
+### Changed
+
+- Tier-3 CI PR-review gate now calls deepseek/deepseek-v4-pro instead of anthropic/claude-sonnet-4.6, reusing the review cascade's fail-closed ZDR (zero-data-retention) provider-routing policy
+
+### Fixed
+
+- shared release-notes tooling (extract_changelog_section.py, create_github_release.py, repo_identity.py) no longer silently fails on Windows when a tagged CHANGELOG.md, a `gh` release title, or a git remote URL contains a byte that isn't valid in the process's locale encoding (e.g. cp1252) — subprocess output is now decoded as UTF-8 with replacement instead of crashing the reader thread
+- compliance evidence regen (finalize_iterate, security, and run orchestrator finalization) now launches update_compliance.py inside the shipwright-compliance plugin's own environment instead of the calling plugin's, fixing a ModuleNotFoundError: jsonschema failure when the caller's venv lacked the compliance plugin's dependencies
+- update_compliance.py's generator-error diagnostic (written to stdout, with empty stderr) is now surfaced by all three callers instead of being silently discarded
+
 ## [0.33.0] - 2026-08-27
 
 ### Added

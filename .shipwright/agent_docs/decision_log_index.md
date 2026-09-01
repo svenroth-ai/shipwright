@@ -394,3 +394,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_decision_log_index.py 
 - [ADR-391 — Advisory CI drift check for test-traceability.json](decision_log.md#adr-391-advisory-ci-drift-check-for-test-traceabilityjson)
 - [ADR-392 — title_cell() tries genuine title columns before the Name fallback](decision_log.md#adr-392-title_cell-tries-genuine-title-columns-before-the-name-fallback)
 - [ADR-393 — Explicit finding, include_iterate convergence, posix separators](decision_log.md#adr-393-explicit-finding-include_iterate-convergence-posix-separators)
+- [ADR-394 — Decode captured subprocess stdout as UTF-8 with replacement in the release-notes chain](decision_log.md#adr-394-decode-captured-subprocess-stdout-as-utf-8-with-replacement-in-the-release-notes-chain)
+- [ADR-395 — Compliance-update subprocess calls launch via the compliance plugin's own uv venv](decision_log.md#adr-395-compliance-update-subprocess-calls-launch-via-the-compliance-plugins-own-uv-venv)
+- [ADR-396 — Surface update_compliance.py's stdout diagnostic on caller failure](decision_log.md#adr-396-surface-update_compliancepys-stdout-diagnostic-on-caller-failure)
+- [ADR-397 — Tier-3 PR-review gate: DeepSeek model swap with reused ZDR routing](decision_log.md#adr-397-tier-3-pr-review-gate-deepseek-model-swap-with-reused-zdr-routing)

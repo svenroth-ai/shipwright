@@ -5247,3 +5247,54 @@ shipwright/
 - **Consequences:** 4 real nested iterate/spec.md files stop being offered as adoption/FR/design-session candidates at 4 recursive sites; a broken planning path surfaces as one finding instead of crashing 2 collectors; find_specs sort order is now platform-invariant.
 - **Rejected:** Converting rtm.collect_requirements (#7) alongside #8 -- rejected per the operator's risk-first instruction, since #7's contract-widening could not be ruled safe without auditing every consumer.
 - **Details:** [iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md](../planning/adr/iterate-2026-08-27-s2b-discovery-c-guard-and-flags.md)
+
+---
+
+### ADR-394: Decode captured subprocess stdout as UTF-8 with replacement in the release-notes chain
+- **Date:** 2026-08-28
+- **Section:** Iterate — bug: fix Windows subprocess text-decoding in changelog release-notes tooling
+- **Run-ID:** iterate-2026-08-28-changelog-encoding-cp1252
+- **Context:** extract_changelog_section._git() called subprocess.run(text=True) with no encoding=. On Windows this decodes via the locale codec (cp1252); a byte the tagged CHANGELOG.md genuinely contains (e.g. a mis-encoded em-dash) crashes subprocess's reader thread, leaving stdout None and the caller's .splitlines() raising AttributeError. Both webui v0.25.0 and monorepo v0.33.0 had to hand-write release notes over this — v0.33.0's own 'hardened subprocess text readers' fix (ce65a88f) missed this call site.
+- **Decision:** Add encoding="utf-8", errors="replace" to the three subprocess.run(text=True) call sites in publish_release_notes.py's own call chain: extract_changelog_section._git(), create_github_release._run() (gh CLI output, e.g. a non-ASCII release title, has the identical exposure), and repo_identity.resolve_repo_identity() (defense-in-depth on the remaining call site in the chain). This mirrors the established pattern from ce65a88f.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reproduced empirically: a child process writing byte 0x8f crashes subprocess's reader thread under text=True with no encoding on Windows (UnicodeDecodeError in cp1252), confirming the exact reported failure mode. The fix was verified red (git stash) before green (fix restored) for all three new regression tests.
+- **Consequences:** publish_release_notes.py now degrades to the Unicode replacement character instead of crashing when a subprocess emits a byte undecodable in the process locale, so a release with non-ASCII CHANGELOG.md content or a non-ASCII gh release title publishes correctly on Windows instead of requiring a hand-written GitHub Release.
+- **Rejected:** Catching UnicodeDecodeError around each call site was rejected — it cannot help, because the decode happens inside subprocess's own background reader thread, not in the caller's stack; encoding= must be passed into subprocess.run itself.
+
+---
+
+### ADR-395: Compliance-update subprocess calls launch via the compliance plugin's own uv venv
+- **Date:** 2026-08-29
+- **Section:** shared/scripts/tools/finalize_iterate.py
+- **Run-ID:** iterate-2026-08-29-compliance-interpreter-fix
+- **Context:** Three cross-plugin call sites launched update_compliance.py via sys.executable (the CALLING plugin's own interpreter). jsonschema/pyyaml are runtime deps declared only in shipwright-compliance's pyproject.toml, so any caller running under a different plugin's venv hit ModuleNotFoundError (reported live on macOS).
+- **Decision:** Launch via ["uv", "run", "--project", compliance_plugin_dir, "python", script, ...] at all three sites (finalize_iterate.py, finalize_security_compliance.py, compliance_runner.py), matching prior art in ci_manifest_drift_check.py. Added encoding="utf-8"/errors="replace" and exception handling for the new external-binary failure modes, and raised the inner timeout 30s->60s (with the paired Stop-fallback outer timeout 60s->90s) for a cold venv sync.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Compliance regen now works regardless of which plugin's venv is running the caller. New risk class: uv absent/cold-sync/lock-contention, mitigated by wider timeouts and try/except at all 3 sites. Discarded stdout JSON diagnostics on generator failure is a pre-existing, now more reachable gap - tracked as triage trg-106aef51, not fixed here.
+
+---
+
+### ADR-396: Surface update_compliance.py's stdout diagnostic on caller failure
+- **Date:** 2026-08-31
+- **Section:** Iterate — bug: compliance error-surfacing
+- **Run-ID:** iterate-2026-08-31-compliance-error-surfacing
+- **Context:** update_compliance.py writes generator_errors JSON to stdout with EMPTY stderr on a generator-error exit; all 3 callers logged only stderr, discarding the diagnostic.
+- **Decision:** Each caller parses generator_errors from stdout JSON first (validating entries are dicts), falling back to stderr for any other failure class (missing script, uv error, timeout, non-JSON stdout).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Surfaced during doubt-review of iterate-2026-08-29-compliance-interpreter-fix; now more reachable since the interpreter-mismatch bug that used to mask most real failures is fixed.
+- **Consequences:** Operators/logs see the real diagnostic instead of an empty message. finalize_iterate.py's bloat exception (ADR-096) bumped 575->588; the 2 other callers stayed under their caps.
+- **Rejected:** Extracting a shared lib helper: adds an import line with no net bloat savings and would diverge from the 2 under-cap callers' own local copies.
+
+---
+
+### ADR-397: Tier-3 PR-review gate: DeepSeek model swap with reused ZDR routing
+- **Date:** 2026-08-31
+- **Section:** Iterate — change: PR-review DeepSeek model swap
+- **Run-ID:** iterate-2026-08-31-pr-review-deepseek-model
+- **Context:** The Tier-3 CI PR-review gate called anthropic/claude-sonnet-4.6; DeepSeek v4 Pro is cheaper/faster and the review cascade already has a fail-closed ZDR routing policy for it.
+- **Decision:** Swap DEFAULT_MODEL to deepseek/deepseek-v4-pro; add pr_review_model_policy.py to reuse the cascade's ZDR extra_body for deepseek/ models and return {} without loading config for any other model.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reuse over reimplementation avoids a second place for the ZDR allowlist to drift; the non-DeepSeek short-circuit runs before any config load, per two independent plan-review findings.
+- **Consequences:** Cheaper gate; new dependency on shared/config/external_review.json's health for DeepSeek calls (added to SENSITIVE_PATH_RE); single-live-provider rollback risk documented, not engineered around.
+- **Rejected:** GLM 5.3/Flash (not live-tested this iterate); adding a second live ZDR provider (out of scope, touches deepseek_routing's own values).
+- **Details:** [iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md](../planning/adr/iterate-2026-08-31-pr-review-deepseek-model-deepseek-model-swap.md)
