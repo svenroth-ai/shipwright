@@ -27,6 +27,7 @@ for _path in (_SHARED / "scripts" / "tools", _SHARED / "scripts" / "lib"):
 from external_review_config import load_review_config  # noqa: E402
 from external_review_routing import (  # noqa: E402
     APPROVED_GLM_ENDPOINTS,
+    DeepSeekRoutingPolicyError,
     GlmRoutingPolicyError,
     ReviewModelPolicyError,
     glm_openrouter_extra_body,
@@ -68,6 +69,16 @@ def test_reasoning_effort_is_capped_low_for_the_cascade_dispatcher():
 def test_glm_reviewer_binding_resolves_to_glm_5_3():
     config = load_review_config()
     assert resolve_reviewer_model(config, "glm", "openrouter") == "z-ai/glm-5.3"
+
+
+def test_glm_and_deepseek_routing_errors_are_distinct_types():
+    # DeepSeekRoutingPolicyError stays alive for plugins/shipwright-security's
+    # ADR-167 PR-review-gate operator override, which imports it directly from
+    # this module. A future refactor collapsing one except-clause into the
+    # other would silently widen (or narrow) which errors that gate catches.
+    assert GlmRoutingPolicyError is not DeepSeekRoutingPolicyError
+    assert not issubclass(GlmRoutingPolicyError, DeepSeekRoutingPolicyError)
+    assert not issubclass(DeepSeekRoutingPolicyError, GlmRoutingPolicyError)
 
 
 @pytest.mark.parametrize(
