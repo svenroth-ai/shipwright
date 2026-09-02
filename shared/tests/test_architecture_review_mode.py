@@ -248,6 +248,6 @@ def test_architecture_mode_emits_the_standard_envelope(
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["provider"] == "none"
-    assert set(payload["reviews"]) == {"deepseek", "openai"}
+    assert set(payload["reviews"]) == {"glm", "openai"}
     for key in ("verdicts", "statuses", "contradiction", "review_schema"):
         assert key in payload, f"envelope is missing {key}"

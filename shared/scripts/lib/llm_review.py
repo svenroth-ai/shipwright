@@ -1,4 +1,4 @@
-"""External LLM review client — DeepSeek + OpenAI, plus an operator-owned gateway.
+"""External LLM review client — GLM + OpenAI, plus an operator-owned gateway.
 
 Shared by plan and build plugins for external code/plan review.
 
@@ -8,7 +8,7 @@ Supports four routes:
    SHIPWRIGHT_REVIEW_GATEWAY_* env vars. No identity lock, no ZDR check.
 2. OpenRouter / 3. Direct OpenAI (identity-locked — see
    external_review_default_legs.py): single OPENROUTER_API_KEY covers both
-   models; OPENAI_API_KEY alone runs the GPT arm only (DeepSeek always
+   models; OPENAI_API_KEY alone runs the GPT arm only (GLM always
    requires the approved OpenRouter ZDR route).
 4. Skip: no keys → review skipped gracefully
 
@@ -81,7 +81,7 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
 
 # Identity-locked model bindings. The shipping config must match exactly.
 DEFAULT_MODELS = {
-    "openrouter_deepseek": "deepseek/deepseek-v4-pro",
+    "openrouter_glm": "z-ai/glm-5.3",
     "openrouter_chatgpt": "openai/gpt-5.6-terra",
     "chatgpt": "gpt-5.6-terra",
 }
@@ -110,7 +110,7 @@ def run_review(
     models: dict | None = None,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict:
-    """Run external LLM review with DeepSeek + OpenAI in parallel.
+    """Run external LLM review with GLM + OpenAI in parallel.
 
     Args:
         content: The code diff, plan, or text to review.
@@ -166,8 +166,8 @@ def run_review(
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {
                 executor.submit(
-                    _review_openrouter, content, context, system_prompt, user_prompt, config, "deepseek", timeout
-                ): "deepseek",
+                    _review_openrouter, content, context, system_prompt, user_prompt, config, "glm", timeout
+                ): "glm",
                 executor.submit(
                     _review_openrouter, content, context, system_prompt, user_prompt, config, "openai", timeout
                 ): "openai",
@@ -181,9 +181,9 @@ def run_review(
 
     elif provider == "direct":
         reviews = {
-            "deepseek": {
+            "glm": {
                 "status": "skipped",
-                "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
+                "reason": "GLM requires an approved OpenRouter ZDR endpoint",
             },
             "openai": _review_openai(
                 content, context, system_prompt, user_prompt,
@@ -193,7 +193,7 @@ def run_review(
 
     else:
         reviews = {
-            "deepseek": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
+            "glm": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
             "openai": {"status": "skipped", "reason": "No API keys configured"},
         }
 

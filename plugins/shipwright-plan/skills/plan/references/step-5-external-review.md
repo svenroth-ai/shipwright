@@ -119,8 +119,8 @@ uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py 
 (`{shared_root}` is typically `{plugin_root}/../../shared`; plan-mode prompts
 load from `{plugin_root}/prompts/plan_reviewer/`.)
 
-This runs DeepSeek and OpenAI reviews **in parallel** (both via OpenRouter when
-set; direct OpenAI otherwise leaves DeepSeek unavailable). DeepSeek uses the
+This runs GLM and OpenAI reviews **in parallel** (both via OpenRouter when
+set; direct OpenAI otherwise leaves GLM unavailable). GLM uses the
 configured, code-approved ZDR endpoint allowlist with provider fallback
 disabled — a missing allowed endpoint degrades only that arm.
 
@@ -133,9 +133,9 @@ Each reviewer ends with `SHIPWRIGHT_VERDICT: approve|revise|reject`. The CLI
 reads both and reports them:
 
 ```json
-"verdicts": { "deepseek": "approve", "openai": "reject" },
+"verdicts": { "glm": "approve", "openai": "reject" },
 "contradiction": { "detected": true, "requires_resolution": true,
-                   "reason": "reviewers contradict each other: deepseek=approve, openai=reject" }
+                   "reason": "reviewers contradict each other: glm=approve, openai=reject" }
 ```
 
 **`requires_resolution: true` is its own outcome, not a finding count.** It
@@ -154,7 +154,7 @@ above already covers it.)
 
 Put it to the user, in these terms:
 
-> The two reviewers disagree about this plan. {deepseek} says **{verdict}**;
+> The two reviewers disagree about this plan. {glm} says **{verdict}**;
 > {openai} says **{verdict}**. Their reasons are above. How should I proceed —
 > take one side, rework the plan, or record why the disagreement does not
 > block?
@@ -225,7 +225,7 @@ from either reviewer → STOP and ask the user**, before Step 6, because the who
 value is that this is seen while nothing is built yet:
 
 > The architecture review says this should not be built this way.
-> {deepseek} says **{verdict}**, {openai} says **{verdict}**. They recommend:
+> {glm} says **{verdict}**, {openai} says **{verdict}**. They recommend:
 > **{the alternative, one line}**. The plan had considered that and rejected it
 > because: **{the reason, from plan.md}**.
 >
@@ -241,7 +241,7 @@ way the user decides:
 
 ```markdown
 ## Architecture Review
-- **Verdicts:** deepseek={approve|revise|reject} · openai={…}
+- **Verdicts:** glm={approve|revise|reject} · openai={…}
 - **Smallest thing that would do (per reviewers):** {one line, or `as proposed`}
 - **Reconciliation:** {what the plan had rejected, why, and the user's decision}
 - **Status:** {proceeding as planned | reworked | alternative adopted}
@@ -353,7 +353,7 @@ uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py
   --provider "{openrouter | openai | null}" \
   --findings-count {N} \
   --reason "{optional reason for skip}" \
-  --verdict deepseek={approve|revise|reject|unknown|unavailable} \
+  --verdict glm={approve|revise|reject|unknown|unavailable} \
   --verdict openai={approve|revise|reject|unknown|unavailable} \
   --contradiction-resolution "{only when the reviewers disagreed}" \
   [--self-review-fallback-ran]
@@ -382,10 +382,10 @@ why, why the unreadable verdict does not block, or why proceeding on a single
 review is acceptable. Without it Step 6 refuses to
 begin.
 
-Reviewer names must be `deepseek` and `openai` (the two current arms), each given once.
+Reviewer names must be `glm` and `openai` (the two current arms), each given once.
 Branch A degraded, Branch B and Branch C all record **no verdicts** — a skipped marker
 carrying reviewer evidence is refused even when the degraded CLI reported
-`deepseek`/`openai: unavailable`; that is correct, a skipped review has no reviewers.
+`glm`/`openai: unavailable`; that is correct, a skipped review has no reviewers.
 But a **`completed`** review with no verdicts is treated as not-yet-recorded and blocks
 Step 6: omitting the flags must not be a way to opt out of the disagreement check.
 

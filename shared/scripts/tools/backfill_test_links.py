@@ -246,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--use-llm",
         action="store_true",
-        help="Adjudicate the residue with GPT + ZDR-routed DeepSeek (opt-in)",
+        help="Adjudicate the residue with GPT + ZDR-routed GLM (opt-in)",
     )
     parser.add_argument("--dry-run", action="store_true", help="Do not write tags; only produce the report")
     parser.add_argument(

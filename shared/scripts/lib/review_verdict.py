@@ -48,13 +48,17 @@ __all__ = [
 
 SENTINEL = "SHIPWRIGHT_VERDICT"
 
-#: The pair new writers emit. Historical Gemini/OpenAI markers remain a
-#: supported read shape, but Gemini is never aliased into a new DeepSeek row.
-REVIEWERS: tuple[str, ...] = ("deepseek", "openai")
-HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (("gemini", "openai"),)
+#: The pair new writers emit. Historical Gemini/OpenAI and DeepSeek/OpenAI
+#: markers remain a supported read shape, but neither is ever aliased into a
+#: new GLM row.
+REVIEWERS: tuple[str, ...] = ("glm", "openai")
+HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (
+    ("gemini", "openai"),
+    ("deepseek", "openai"),
+)
 #: Generic role pair for the operator-owned gateway route (llm_review.py's
 #: "gateway" provider). The gateway carries no model-identity lock, so the
-#: two legs are named by role — never aliased onto "deepseek"/"openai",
+#: two legs are named by role — never aliased onto "glm"/"openai",
 #: which would misrepresent which route actually answered.
 GATEWAY_REVIEWERS: tuple[str, ...] = ("model-1", "model-2")
 _SUPPORTED_REVIEWER_SETS = frozenset(
@@ -208,9 +212,9 @@ def contradiction_block(verdicts: dict[str, str]) -> dict[str, Any]:
         return {
             "detected": False, "comparable": False, "requires_resolution": True,
             "reason": (
-                "unexpected reviewer set; expected current deepseek/openai, "
-                "gateway model-1/model-2, or historical gemini/openai, "
-                f"got {len(names)}: {pairs or 'none'}"
+                "unexpected reviewer set; expected current glm/openai, "
+                "gateway model-1/model-2, or historical gemini/openai or "
+                f"deepseek/openai, got {len(names)}: {pairs or 'none'}"
             ),
         }
 

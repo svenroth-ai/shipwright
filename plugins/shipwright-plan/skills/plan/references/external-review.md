@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Get the plan reviewed by external LLMs (DeepSeek + OpenAI) to catch blind spots.
+Get the plan reviewed by external LLMs (GLM + OpenAI) to catch blind spots.
 Claude reviewing its own plan misses systematic biases — external models help.
 
 External review is the **default** for /shipwright-plan, layered on top of an
@@ -15,7 +15,7 @@ carries the gate. Silent-skip is not an option.
 
 - **Recommended:** `OPENROUTER_API_KEY` (single key for both models) in the
   project's `.env.local` at the repo root.
-- **Alternative:** `OPENAI_API_KEY` runs the GPT arm directly. DeepSeek has no
+- **Alternative:** `OPENAI_API_KEY` runs the GPT arm directly. GLM has no
   direct-provider fallback and remains unavailable without OpenRouter.
 - `external_review.feedback_iterations > 0` in
   `shared/config/external_review.json` (default: `1`). Set to `0` only for
@@ -41,8 +41,8 @@ serve plan, iterate, and any future SDLC plugin uniformly.
 
 1. Loads system + user prompts from `{plugin_root}/prompts/plan_reviewer/`
    (plan-mode prompts stay plugin-local — they're plan-specific)
-2. Sends plan + spec to DeepSeek and OpenAI **in parallel** (ThreadPoolExecutor);
-   every DeepSeek request carries the fail-closed ZDR provider policy
+2. Sends plan + spec to GLM and OpenAI **in parallel** (ThreadPoolExecutor);
+   every GLM request carries the fail-closed ZDR provider policy
 3. Collects feedback from both
 4. Returns structured JSON with findings
 

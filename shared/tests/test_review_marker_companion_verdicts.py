@@ -25,7 +25,7 @@ from tools import record_review_pass
 
 
 def _external_payload(
-    tmp_path: Path, *, schema: int | None = 2, first: str = "deepseek",
+    tmp_path: Path, *, schema: int | None = 2, first: str = "glm",
     second_verdict: str = "revise",
 ) -> Path:
     payload = {
@@ -56,7 +56,7 @@ def test_current_and_historical_payloads_derive_their_real_verdict_pairs(tmp_pat
         "external-review-json",
         str(_external_payload(tmp_path, schema=None, first="gemini")),
     )
-    assert current == {"deepseek": "approve", "openai": "revise"}
+    assert current == {"glm": "approve", "openai": "revise"}
     assert historical == {"gemini": "approve", "openai": "revise"}
 
 
@@ -68,7 +68,7 @@ def test_combined_evidence_reads_the_payload_once(monkeypatch):
     payload = json.dumps({
         "review_schema": 2,
         "reviews": {
-            "deepseek": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
+            "glm": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
             "openai": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: reject"},
         },
     })
@@ -76,7 +76,7 @@ def test_combined_evidence_reads_the_payload_once(monkeypatch):
     monkeypatch.setattr(review_payloads, "_read", lambda path: reads.append(path) or payload)
     *_, verdicts = build_review_evidence("external-review-json", "review.json")
     assert reads == ["review.json"]
-    assert verdicts == {"deepseek": "approve", "openai": "reject"}
+    assert verdicts == {"glm": "approve", "openai": "reject"}
 
 
 @pytest.mark.parametrize(
@@ -105,7 +105,7 @@ def test_missing_external_payload_fails_closed():
     [
         ("approve", "must be an object"),
         ({"foo": "approve", "openai": "approve"}, "unsupported reviewer set"),
-        ({"deepseek": "maybe", "openai": "approve"}, "unknown verdict"),
+        ({"glm": "maybe", "openai": "approve"}, "unknown verdict"),
     ],
 )
 def test_review_record_rejects_malformed_verdict_evidence(verdicts, error):
@@ -115,13 +115,13 @@ def test_review_record_rejects_malformed_verdict_evidence(verdicts, error):
 
 
 def test_companion_writes_and_repairs_from_the_recorded_verdicts(tmp_path):
-    current = {"deepseek": "approve", "openai": "revise"}
+    current = {"glm": "approve", "openai": "revise"}
     paths = write_markers(
         tmp_path, "run-1", "plan", marker_status="completed",
         record_status="completed", findings_count=0, verdicts=current,
     )
     marker = json.loads(Path(paths[0]).read_text(encoding="utf-8"))
-    assert marker["marker_schema"] == 3
+    assert marker["marker_schema"] == 4
     assert marker["verdicts"] == current
 
     record = upsert_review(
@@ -137,7 +137,7 @@ def test_companion_writes_and_repairs_from_the_recorded_verdicts(tmp_path):
 
 
 def test_companion_repairs_the_recorded_operator_resolution(tmp_path):
-    verdicts = {"deepseek": "approve", "openai": "reject"}
+    verdicts = {"glm": "approve", "openai": "reject"}
     resolution = "Operator accepted OpenAI rejection and corrected the implementation."
     paths = write_markers(
         tmp_path, "run-1", "plan", marker_status="completed", findings_count=1,
@@ -169,15 +169,15 @@ def test_companion_rejects_record_marker_status_mismatch(tmp_path):
             tmp_path, "run-1", "plan", marker_status="skipped_config_disabled",
             record_status="completed", findings_count=0,
             reason="config disabled by operator",
-            verdicts={"deepseek": "approve", "openai": "reject"},
+            verdicts={"glm": "approve", "openai": "reject"},
         )
 
 
 def test_skip_with_reviewer_evidence_blocks():
     marker = {
         "status": "skipped_config_disabled", "reason": "config disabled by operator",
-        "marker_schema": 3,
-        "verdicts": {"deepseek": "approve", "openai": "reject"},
+        "marker_schema": 4,
+        "verdicts": {"glm": "approve", "openai": "reject"},
     }
     state, reason = evaluate_review_state(marker)
     assert state == STATE_BLOCK
@@ -202,7 +202,7 @@ def test_record_cli_main_dual_writes_verdicts_in_process(tmp_path, capsys):
         (tmp_path / ".shipwright" / "planning" / "iterate" / "run-1"
          / "external_review_state.json").read_text(encoding="utf-8")
     )
-    assert marker["verdicts"] == {"deepseek": "approve", "openai": "reject"}
+    assert marker["verdicts"] == {"glm": "approve", "openai": "reject"}
     assert marker["contradiction_resolution"] == resolution
     record = json.loads(
         (tmp_path / ".shipwright" / "planning" / "iterate" / "run-1"

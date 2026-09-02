@@ -53,7 +53,7 @@ SELF_REVIEW_REPLY = json.dumps({"items": [
 EXTERNAL_REVIEW_OUTPUT = json.dumps({
     "review_schema": 2, "success": True, "provider": "openrouter",
     "reviews": {
-        "deepseek": {"status": "success", "feedback":
+        "glm": {"status": "success", "feedback":
                    "- **Category:** Risk\n- **Severity:** Medium\n"
                    "- **Finding:** The gate blocks in-flight runs.\n\n"
                    "SHIPWRIGHT_VERDICT: approve\n"},

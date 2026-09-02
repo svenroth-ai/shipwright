@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-02-glm-plan-code-review-swap",
+  "date": "2026-09-02",
+  "section": "Iterate — change: DeepSeek to GLM 5.3 reviewer swap",
+  "title": "Replace DeepSeek with GLM 5.3 as the plan/code-review cascade's second reviewer",
+  "context": "DeepSeek degrades on large diffs (reasoning-budget exhaustion) plus a distinct unrelated client bug; user wants a reliable, cheap complement to Opus+GPT-5.6-terra.",
+  "decision": "Swap DeepSeek for GLM 5.3 (OpenRouter, reasoning.effort=low) as the cascade's second identity; keep DeepSeek's ZDR primitives unbound but intact for the separate Tier-3 PR-review gate.",
+  "consequences": "Cost/reliability improves with no user-visible capability change; legacy DeepSeek env override for this cascade is now a silent no-op (accepted).",
+  "rationale": "GLM 5.3 shares DeepSeek's reasoning-budget failure but it is reliably fixed by the effort cap; no surveyed US/EU/ZDR alternative beats its general-reasoning benchmark at comparable price.",
+  "rejected": "Devstral (no reasoning-index data), Kimi K2 Thinking (weak reasoning index), Grok 4.6 (no cost win), Qwen3-max (no US/EU hosting).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-02-glm-plan-code-review-swap-deepseek-to-glm.md"
+}

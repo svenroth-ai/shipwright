@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """Send a fixed, non-sensitive GLM 5.3 request through the production ZDR route.
 
-Mirrors shared/scripts/tools/probe_deepseek_zdr.py's verification discipline
-for the PR-review gate's GLM arm. Lives in this plugin's own scripts/tools/
-rather than shared/, because GLM routing (unlike DeepSeek's) is used ONLY by
-pr_review.py — the external-review cascade's
-external_review_routing.resolve_reviewer_model has no GLM reviewer-identity
-binding to resolve against, so this probe reads the model string straight
-from pr_review_openrouter.GLM_MODEL instead.
+Mirrored the verification discipline of the now-removed
+shared/scripts/tools/probe_deepseek_zdr.py (deleted in
+iterate-2026-09-02-glm-plan-code-review-swap, once GLM 5.3 replaced DeepSeek as
+the plan/code-review cascade's own second reviewer identity) for the PR-review
+gate's GLM arm. Lives in this plugin's own scripts/tools/ rather than shared/
+because this probe reads the model string straight from
+pr_review_openrouter.GLM_MODEL — the PR-review gate's own operator-overridable
+model, resolved independently of the cascade's `external_review_routing`
+bindings even though both now define a "glm" reviewer identity.
 
 Data-policy verification (OpenRouter's all-providers API, 2026-09-01) confirms
 novita/together are zero-retention for GLM 5.3 in general; it does not confirm
 either actually SERVES this specific model at request time. This probe closes
-that gap the same way the DeepSeek probe does: a real completion through the
-production `extra_body` route, asserting the provider OpenRouter actually
-selected is one of the two approved ones (iterate-2026-09-01-pr-review-glm-model,
-Stage-3 doubt review).
+that gap: a real completion through the production `extra_body` route,
+asserting the provider OpenRouter actually selected is one of the two approved
+ones (iterate-2026-09-01-pr-review-glm-model, Stage-3 doubt review).
 """
 
 from __future__ import annotations

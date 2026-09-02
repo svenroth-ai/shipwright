@@ -106,7 +106,7 @@ SHIPWRIGHT-PLAN COMPLETE
 ================================================================================
 Plan:         {planning_dir}/plan.md
 Sections:     {N} sections generated
-Review:       internal ({ran | not run}) + {external via OpenRouter DeepSeek/OpenAI | direct OpenAI only | none, user opt-out | none, config opt-out}{ + self-review fallback (if the Pre-5b Checkpoint ran it)}
+Review:       internal ({ran | not run}) + {external via OpenRouter GLM/OpenAI | direct OpenAI only | none, user opt-out | none, config opt-out}{ + self-review fallback (if the Pre-5b Checkpoint ran it)}
 E2E Plan:     {generated | skipped}
 
 Section files:

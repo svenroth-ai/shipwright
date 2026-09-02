@@ -165,7 +165,7 @@ def test_external_review_calls_pass_project_flag():
     assert not defects, (
         "The following `uv run .../external_review.py` invocations don't "
         "correctly pass --project <plan_plugin_root>. Without it (or with "
-        "it misplaced/wrong-valued), uv resolves the openai/deepseek "
+        "it misplaced/wrong-valued), uv resolves the openai/glm "
         "dependency from whatever pyproject.toml is nearest cwd, not from "
         "shipwright-plan (which declares it) -- silently degrading external "
         "review to the internal-only reviewer cascade in any consumer "

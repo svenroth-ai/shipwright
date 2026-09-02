@@ -7,26 +7,9 @@
   },
   "models": {
     "chatgpt": "gpt-5.6-terra",
-    "openrouter_deepseek": "deepseek/deepseek-v4-pro",
+    "openrouter_glm": "z-ai/glm-5.3",
     "openrouter_chatgpt": "openai/gpt-5.6-terra",
-    "_comment": "Identity-locked review models: DeepSeek always uses its OpenRouter model; GPT uses its OpenRouter or direct model. Runtime rejects config or environment overrides that differ from these exact identifiers."
-  },
-  "deepseek_routing": {
-    "provider_allowlist": [
-      {
-        "provider": "novita",
-        "region": "US",
-        "zero_retention_verified": true,
-        "verified_on": "2026-08-04"
-      },
-      {
-        "provider": "together",
-        "region": "US",
-        "zero_retention_verified": true,
-        "verified_on": "2026-08-04"
-      }
-    ],
-    "_comment": "Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry. A future US/EU endpoint needs deliberate code, config, test, and review changes after its ZDR policy and processing region are verified."
+    "_comment": "Identity-locked review models: GLM always uses its OpenRouter model; GPT uses its OpenRouter or direct model. Runtime rejects config or environment overrides that differ from these exact identifiers."
   },
   "glm_routing": {
     "provider_allowlist": [
@@ -43,7 +26,24 @@
         "verified_on": "2026-09-01"
       }
     ],
-    "_comment": "Same two providers already vetted for deepseek_routing above; verified separately for GLM 5.3 via OpenRouter's own data-policy API (2026-09-01) AND a live production-route completion probe (plugins/shipwright-security/scripts/tools/probe_glm_zdr.py) that landed on novita. Unlike DeepSeek, together DOES serve this model, though at lower measured uptime than novita. Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry."
+    "_comment": "Verified for GLM 5.3 via OpenRouter's own data-policy API (2026-09-01) AND a live production-route completion probe (plugins/shipwright-security/scripts/tools/probe_glm_zdr.py) that landed on novita. together also serves this model, though at lower measured uptime than novita. Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry."
+  },
+  "deepseek_routing": {
+    "provider_allowlist": [
+      {
+        "provider": "novita",
+        "region": "US",
+        "zero_retention_verified": true,
+        "verified_on": "2026-08-04"
+      },
+      {
+        "provider": "together",
+        "region": "US",
+        "zero_retention_verified": true,
+        "verified_on": "2026-08-04"
+      }
+    ],
+    "_comment": "No longer used by the plan/code-review cascade (GLM replaced DeepSeek there, iterate-2026-09-02-glm-plan-code-review-swap) — kept for the Tier-3 PR-review gate's operator-overridable SHIPWRIGHT_PR_REVIEW_MODEL=deepseek/... path (ADR-167), which calls deepseek_openrouter_extra_body directly. Fail closed: runtime requires this ordered declaration to match the code-owned approved endpoint registry."
   },
   "llm_client": {
     "timeout_seconds": 240,

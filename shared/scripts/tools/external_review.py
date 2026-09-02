@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""External LLM review CLI — DeepSeek + OpenAI in parallel.
+"""External LLM review CLI — GLM + OpenAI in parallel.
 
 Provider chain (:func:`detect_provider`): OpenRouter (one OPENROUTER_API_KEY for
-both models) → direct OpenAI (GPT only; DeepSeek has no direct route) → skip.
-DeepSeek never falls back to Gemini or a direct provider.
+both models) → direct OpenAI (GPT only; GLM has no direct route) → skip.
+GLM never falls back to Gemini or a direct provider.
 
 Usage — every mode takes ``--spec-file``, ``--plugin-root``, exactly ONE input
 flag below, and uv's own ``--project <plan plugin root>`` (else ``openai``
@@ -33,13 +33,13 @@ Output (JSON):
         "provider": "openrouter" | "direct" | "none",
         "skipped": "empty_diff",  // optional, code-mode only
         "reviews": {
-            "deepseek": { "status": "success|error|skipped", "feedback": "..." },
+            "glm": { "status": "success|error|skipped", "feedback": "..." },
             "openai": { "status": "success|error|skipped", "feedback": "..." }
         },
         // Both reviewers' verdicts, read from the SHIPWRIGHT_VERDICT sentinel,
         // plus the deterministic comparison. Present on every exit path.
-        "verdicts":  { "deepseek": "approve", "openai": "reject" },
-        "statuses":  { "deepseek": "success", "openai": "success" },
+        "verdicts":  { "glm": "approve", "openai": "reject" },
+        "statuses":  { "glm": "success", "openai": "success" },
         "contradiction": {
             "detected": true, "comparable": true,
             "requires_resolution": true, "reason": "..."
@@ -313,7 +313,7 @@ def main() -> int:
     # review what isn't there, and many providers reject empty inputs.
     if args.mode == "code" and not primary_text.strip():
         empty_reviews = {
-            "deepseek": {"status": "skipped", "reason": "empty diff"},
+            "glm": {"status": "skipped", "reason": "empty diff"},
             "openai": {"status": "skipped", "reason": "empty diff"},
         }
         print(json.dumps({
@@ -363,7 +363,7 @@ def main() -> int:
             # Both reviews via OpenRouter (one API key)
             with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = {
-                    executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "deepseek"): "deepseek",
+                    executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "glm"): "glm",
                     executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai"): "openai",
                 }
                 for future in as_completed(futures):
@@ -374,11 +374,11 @@ def main() -> int:
                         reviews[name] = {"status": "error", "reason": str(e)}
 
         elif provider == "direct":
-            # DeepSeek has no direct route. Preserve GPT's existing direct path.
+            # GLM has no direct route. Preserve GPT's existing direct path.
             reviews = {
-                "deepseek": {
+                "glm": {
                     "status": "skipped",
-                    "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
+                    "reason": "GLM requires an approved OpenRouter ZDR endpoint",
                 },
                 "openai": review_with_openai(
                     primary_text, spec, system_prompt, user_prompt, config
@@ -388,7 +388,7 @@ def main() -> int:
         else:
             # No keys — both reviews skipped
             reviews = {
-                "deepseek": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
+                "glm": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
                 "openai": {"status": "skipped", "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"},
             }
         if timing_extra is not None:

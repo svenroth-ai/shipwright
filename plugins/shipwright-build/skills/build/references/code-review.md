@@ -208,7 +208,7 @@ reason, never parsed as a completed review.)
 (`--plugin-root` is unused in code-mode prompt loading but the argument
 remains required for CLI shape parity with plan/iterate modes.)
 
-3. Parse JSON output (`reviews.deepseek.feedback` + `reviews.openai.feedback`).
+3. Parse JSON output (`reviews.glm.feedback` + `reviews.openai.feedback`).
    Merge any high/medium severity findings into the in-flight findings list
    from Step 6b. Treat them with the same autonomous/guided handling rule
    as the internal subagent findings.

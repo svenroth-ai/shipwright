@@ -43,7 +43,7 @@ from external_review_config import load_review_config  # noqa: E402
 def _config(**llm_client_overrides):
     """The real shipping config (routing/model bindings must validate) with
     just `llm_client` overridden — hand-rolling a minimal dict would skip
-    past `deepseek_routing`/model-identity validation instead of exercising it."""
+    past `glm_routing`/model-identity validation instead of exercising it."""
     config = copy.deepcopy(load_review_config())
     config["llm_client"].update(llm_client_overrides)
     return config
@@ -101,7 +101,7 @@ def test_empty_reply_is_retried_and_a_later_success_wins(monkeypatch):
 
     config = _config(max_retries=3)
     result = external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     assert result["status"] == "success"
@@ -120,7 +120,7 @@ def test_retries_exhaust_and_report_degraded(monkeypatch):
 
     config = _config(max_retries=2)
     result = external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     assert result["status"] == "degraded"
@@ -141,7 +141,7 @@ def test_degraded_reply_retry_count_is_budgeted_by_llm_client_max_retries(monkey
 
     config = _config(max_retries=4)
     external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     assert calls["count"] == 4 + 1
@@ -160,7 +160,7 @@ def test_max_retries_is_wired_into_the_openrouter_client_constructor(monkeypatch
 
     config = _config(max_retries=5)
     external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     assert ctor_kwargs.get("max_retries") == 5
@@ -180,7 +180,7 @@ def test_negative_max_retries_is_clamped_to_zero(monkeypatch):
 
     config = _config(max_retries=-1)
     external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     assert ctor_kwargs.get("max_retries") == 0
@@ -198,7 +198,7 @@ def test_max_retries_defaults_when_config_omits_it(monkeypatch):
     config = copy.deepcopy(load_review_config())
     config["llm_client"].pop("max_retries", None)
     external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     from external_review_degraded import DEFAULT_MAX_RETRIES
@@ -244,7 +244,7 @@ def test_a_finish_reason_degradation_is_also_retried(monkeypatch):
 
     config = _config(max_retries=3)
     result = external_review.review_with_openrouter(
-        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "deepseek",
+        "PLAN", "SPEC", "system", "user {SPEC} {PLAN}", config, "glm",
     )
 
     assert result["status"] == "success"

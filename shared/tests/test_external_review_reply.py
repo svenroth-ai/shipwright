@@ -109,22 +109,22 @@ def test_finish_reason_reader_never_raises_on_an_unexpected_shape():
 
 def test_one_degraded_leg_does_not_count_as_a_succeeded_review():
     reviews = {
-        "deepseek": classify_reply("cut off", "MAX_TOKENS", via="openrouter"),
+        "glm": classify_reply("cut off", "MAX_TOKENS", via="openrouter"),
         "openai": classify_reply("a real review", "stop", via="direct"),
     }
     output, code = finalize_review_output("direct", reviews)
     assert output["reviews_succeeded"] == 1     # not 2
     assert output["degraded"] is False          # one real review DID land
     assert code == 0
-    assert output["reviews"]["deepseek"]["status"] == "degraded"
+    assert output["reviews"]["glm"]["status"] == "degraded"
     # The gate passing must not stay silent about the failed leg.
     assert output["partially_degraded"] is True
-    assert output["partially_degraded_legs"] == ["deepseek"]
+    assert output["partially_degraded_legs"] == ["glm"]
 
 
 def test_partial_degradation_prints_a_loud_warning(capsys):
     reviews = {
-        "deepseek": classify_reply("", "stop", via="openrouter"),
+        "glm": classify_reply("", "stop", via="openrouter"),
         "openai": classify_reply("a real review", "stop", via="direct"),
     }
     output, code = finalize_review_output("direct", reviews)
@@ -132,7 +132,7 @@ def test_partial_degradation_prints_a_loud_warning(capsys):
     assert output["success"] is True
     err = capsys.readouterr().err
     assert "PARTIALLY degraded" in err
-    assert "deepseek" in err
+    assert "glm" in err
 
 
 def test_full_degradation_does_not_also_report_partial():
@@ -140,7 +140,7 @@ def test_full_degradation_does_not_also_report_partial():
     already has its own loud banner and exit code; the partial flag would be
     redundant and confusing on top of it."""
     reviews = {
-        "deepseek": classify_reply("", "stop", via="openrouter"),
+        "glm": classify_reply("", "stop", via="openrouter"),
         "openai": classify_reply("also cut", "length", via="direct"),
     }
     output, _ = finalize_review_output("direct", reviews)
@@ -149,10 +149,10 @@ def test_full_degradation_does_not_also_report_partial():
 
 
 def test_no_partial_flag_when_a_leg_is_merely_skipped():
-    """A skip (e.g. DeepSeek has no direct route) is intentional, not a
+    """A skip (e.g. GLM has no direct route) is intentional, not a
     failure — it must not be reported as a degraded leg."""
     reviews = {
-        "deepseek": {"status": "skipped", "reason": "no direct route"},
+        "glm": {"status": "skipped", "reason": "no direct route"},
         "openai": classify_reply("a real review", "stop", via="direct"),
     }
     output, code = finalize_review_output("direct", reviews)
@@ -164,7 +164,7 @@ def test_every_leg_degraded_fails_the_gate_loudly():
     """The case the old code reported as a clean pass: both providers answered,
     neither delivered a review."""
     reviews = {
-        "deepseek": classify_reply("", "stop", via="openrouter"),
+        "glm": classify_reply("", "stop", via="openrouter"),
         "openai": classify_reply("also cut", "length", via="direct"),
     }
     output, code = finalize_review_output("direct", reviews)
@@ -175,6 +175,6 @@ def test_every_leg_degraded_fails_the_gate_loudly():
 
 
 def test_the_reason_survives_into_the_degraded_summary():
-    reviews = {"deepseek": classify_reply("", "stop", via="openrouter")}
+    reviews = {"glm": classify_reply("", "stop", via="openrouter")}
     output, _ = finalize_review_output("direct", reviews)
     assert "empty" in output["degraded_reason"].lower()

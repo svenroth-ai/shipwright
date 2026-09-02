@@ -85,7 +85,7 @@ def is_degraded(provider: str, reviews: dict) -> bool:
 def partially_degraded_legs(reviews: dict) -> list[str]:
     """Names of reviewer legs that were attempted and failed (``degraded`` or
     ``error``) — sorted for deterministic output. Excludes ``skipped`` legs:
-    an intentionally-not-attempted reviewer (e.g. DeepSeek with no direct
+    an intentionally-not-attempted reviewer (e.g. GLM with no direct
     route) is not a failure."""
     return sorted(
         name for name, review in reviews.items()
@@ -231,7 +231,9 @@ def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
     degraded = is_degraded(provider, reviews)
     output: dict = {
         # Version 1 was implicit and used the historical gemini/openai roster.
-        # Version 2 makes the deepseek/openai breaking roster change explicit.
+        # Version 2 makes the non-gemini roster change explicit — originally
+        # deepseek/openai, now glm/openai (lib.review_payloads accepts both
+        # under schema 2, since the envelope SHAPE didn't change either time).
         "review_schema": REVIEW_ENVELOPE_SCHEMA,
         "success": not degraded,
         "provider": provider,

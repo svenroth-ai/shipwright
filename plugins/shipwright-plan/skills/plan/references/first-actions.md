@@ -27,7 +27,7 @@ Output:
 
 Requirements:
   - Spec file from /shipwright-project
-  - Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review;
+  - Recommended: OPENROUTER_API_KEY for GLM + OpenAI review;
     OPENAI_API_KEY can run the GPT arm only. An internal review always
     runs first; if keys are missing, the skill will ask whether to skip
     external review and rely on that internal review instead.

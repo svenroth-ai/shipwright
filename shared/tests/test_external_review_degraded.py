@@ -39,7 +39,7 @@ def clean_env(monkeypatch, tmp_path):
         "GOOGLE_API_KEY",
         "OPENAI_API_KEY",
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -92,7 +92,7 @@ def _run_main_direct(monkeypatch, fake_plan_plugin, openai_result):
 def test_gate_degraded_when_keys_present_but_no_review_succeeds(
     monkeypatch, clean_env, capsys, fake_plan_plugin
 ):
-    """DeepSeek is unavailable on direct routing and OpenAI errors.
+    """GLM is unavailable on direct routing and OpenAI errors.
 
     provider='direct', 0/2 reviews succeed → must fail loud, NOT success:true.
     """
@@ -204,7 +204,7 @@ def test_finalize_review_output_helper_contract():
     # Attempted + no success → degraded, exit 1.
     out, code = finalize_review_output(
         "direct",
-        {"deepseek": {"status": "skipped", "reason": "no key"},
+        {"glm": {"status": "skipped", "reason": "no key"},
          "openai": {"status": "error", "reason": "boom"}},
     )
     assert out["review_schema"] == 2
@@ -215,7 +215,7 @@ def test_finalize_review_output_helper_contract():
     # Attempted + one success → healthy, exit 0.
     out, code = finalize_review_output(
         "openrouter",
-        {"deepseek": {"status": "success", "feedback": "ok"},
+        {"glm": {"status": "success", "feedback": "ok"},
          "openai": {"status": "error", "reason": "boom"}},
     )
     assert code == 0
@@ -225,7 +225,7 @@ def test_finalize_review_output_helper_contract():
     # No provider attempted → never degraded.
     out, code = finalize_review_output(
         "none",
-        {"deepseek": {"status": "skipped"}, "openai": {"status": "skipped"}},
+        {"glm": {"status": "skipped"}, "openai": {"status": "skipped"}},
     )
     assert code == 0
     assert out["degraded"] is False

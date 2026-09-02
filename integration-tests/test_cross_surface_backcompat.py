@@ -181,7 +181,7 @@ class TestExternalReviewGateCannotSilentlyNoop:
 
         # Keys present (provider attempted) but every leg failed -> degraded, exit 1.
         out, code = finalize_review_output("direct", {
-            "deepseek": {"status": "skipped", "reason": "approved OpenRouter ZDR route unavailable"},
+            "glm": {"status": "skipped", "reason": "approved OpenRouter ZDR route unavailable"},
             "openai": {"status": "error", "reason": "max_tokens unsupported"},
         })
         assert code == 1, "a degraded gate MUST exit non-zero (no silent no-op)"
@@ -191,7 +191,7 @@ class TestExternalReviewGateCannotSilentlyNoop:
 
         # Contrast: one leg succeeding is NOT degraded (exit 0) — the gate isn't trigger-happy.
         healthy, hcode = finalize_review_output("direct", {
-            "deepseek": {"status": "success"},
+            "glm": {"status": "success"},
             "openai": {"status": "error", "reason": "max_tokens unsupported"},
         })
         assert hcode == 0 and healthy["success"] is True and healthy["degraded"] is False

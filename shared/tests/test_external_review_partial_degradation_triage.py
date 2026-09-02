@@ -36,17 +36,17 @@ def test_one_legs_filing_failure_does_not_suppress_the_others(monkeypatch, tmp_p
 
     def _flaky_append(project_root, **kwargs):
         calls.append(kwargs["dedup_key"])
-        if kwargs["dedup_key"].endswith("deepseek"):
-            raise RuntimeError("simulated failure filing deepseek")
+        if kwargs["dedup_key"].endswith("glm"):
+            raise RuntimeError("simulated failure filing glm")
         return real_append(project_root, **kwargs)
 
     monkeypatch.setattr(triage, "append_triage_item_idempotent", _flaky_append)
 
     file_partial_degradation_triage(
-        tmp_path, "run-1", "iterate", "openrouter", ["deepseek", "openai"],
+        tmp_path, "run-1", "iterate", "openrouter", ["glm", "openai"],
     )
 
-    assert calls == ["openrouter:deepseek", "openrouter:openai"]
+    assert calls == ["openrouter:glm", "openrouter:openai"]
     items = list(read_all_items(tmp_path))
     assert len(items) == 1
     assert items[0]["dedupKey"] == "openrouter:openai"
@@ -58,7 +58,7 @@ def clean_env(monkeypatch, tmp_path):
     for key in (
         "OPENROUTER_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "OPENAI_API_KEY",
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -93,7 +93,7 @@ def _run_main_openrouter(monkeypatch, project, run_id=None):
         external_review, "review_with_openrouter",
         lambda *a, **k: (
             {"status": "degraded", "reason": "provider returned an empty reply", "via": "openrouter"}
-            if a[-1] == "deepseek"
+            if a[-1] == "glm"
             else {"status": "success", "feedback": "looks fine", "via": "openrouter"}
         ),
     )
@@ -120,7 +120,7 @@ def test_a_degraded_leg_files_a_triage_card(monkeypatch, clean_env, capsys, fake
     assert len(items) == 1
     item = items[0]
     assert item["source"] == "external_review_degradation"
-    assert "deepseek" in item["title"]
+    assert "glm" in item["title"]
     assert item["runId"] == "iterate-test-run"
     # SENSITIVITY (triage.py CONSTITUTION rule): neutral, no file:line/secrets.
     assert ".py:" not in item["title"] and ".py:" not in item["detail"]

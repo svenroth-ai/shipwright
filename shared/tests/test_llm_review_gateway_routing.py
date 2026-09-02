@@ -113,7 +113,7 @@ def test_run_review_gateway_failure_never_falls_back_to_openrouter_or_direct(mon
 
 
 # ---------------------------------------------------------------------------
-# review_verdict — the new pair is registered, not aliased onto deepseek/openai
+# review_verdict — the new pair is registered, not aliased onto glm/openai
 # ---------------------------------------------------------------------------
 
 
@@ -131,18 +131,24 @@ def test_gateway_reviewer_pair_is_registered_in_review_verdict():
     assert out["contradiction"]["comparable"] is True
 
 
-def test_deepseek_openai_and_gemini_openai_pairs_still_supported():
+def test_glm_openai_and_historical_pairs_still_supported():
     """Additive registration must not disturb the existing pairs."""
     from lib.review_verdict import summarize_reviews
 
     current = summarize_reviews({
-        "deepseek": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
+        "glm": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
         "openai": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
     })
     assert current["contradiction"]["reason"].startswith("verdicts agree")
 
-    historical = summarize_reviews({
+    historical_deepseek = summarize_reviews({
+        "deepseek": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
+        "openai": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
+    })
+    assert historical_deepseek["contradiction"]["reason"].startswith("verdicts agree")
+
+    historical_gemini = summarize_reviews({
         "gemini": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
         "openai": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
     })
-    assert historical["contradiction"]["reason"].startswith("verdicts agree")
+    assert historical_gemini["contradiction"]["reason"].startswith("verdicts agree")

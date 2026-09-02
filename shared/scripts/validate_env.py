@@ -120,7 +120,7 @@ _SHIPWRIGHT_FRAMEWORK_VARS: list[dict] = [
     {
         "name": "OPENROUTER_API_KEY",
         "description": "OpenRouter API key for external plan/iterate/code reviews "
-                       "(required for the ZDR-routed DeepSeek arm)",
+                       "(required for the ZDR-routed GLM arm)",
         "optional": True,
     },
     {
