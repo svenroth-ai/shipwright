@@ -83,7 +83,7 @@ def test_run_review_success_is_false_when_no_leg_succeeds(monkeypatch):
     assert result["warnings"] == []
 
 
-def test_run_review_direct_openai_marks_deepseek_unavailable(monkeypatch):
+def test_run_review_direct_openai_marks_glm_unavailable(monkeypatch):
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test")
     import llm_review
@@ -96,12 +96,12 @@ def test_run_review_direct_openai_marks_deepseek_unavailable(monkeypatch):
     assert result["provider"] == "direct"
     assert result["success"] is True
     assert result["partial"] is True
-    assert result["reviews"]["deepseek"] == {
+    assert result["reviews"]["glm"] == {
         "status": "skipped",
-        "reason": "DeepSeek requires an approved OpenRouter ZDR endpoint",
+        "reason": "GLM requires an approved OpenRouter ZDR endpoint",
     }
     assert result["reviews"]["openai"] == expected
-    assert result["warnings"] == ["deepseek: reviewer arm skipped"]
+    assert result["warnings"] == ["glm: reviewer arm skipped"]
 
 
 def test_one_usable_leg_keeps_success_but_marks_the_result_partial(monkeypatch):
@@ -110,7 +110,7 @@ def test_one_usable_leg_keeps_success_but_marks_the_result_partial(monkeypatch):
 
     def _leg(*_args):
         model_key = _args[-2]
-        if model_key == "deepseek":
+        if model_key == "glm":
             return {"status": "success", "feedback": "review"}
         return {"status": "degraded", "feedback": "partial", "reason": "cut off"}
 
@@ -128,7 +128,7 @@ def test_one_error_leg_is_partial_and_names_the_unavailable_arm(monkeypatch):
 
     def _leg(*_args):
         model_key = _args[-2]
-        if model_key == "deepseek":
+        if model_key == "glm":
             return {"status": "error", "reason": "routing unavailable"}
         return {"status": "success", "feedback": "review"}
 
@@ -137,7 +137,7 @@ def test_one_error_leg_is_partial_and_names_the_unavailable_arm(monkeypatch):
 
     assert result["success"] is True
     assert result["partial"] is True
-    assert result["warnings"] == ["deepseek: reviewer arm error"]
+    assert result["warnings"] == ["glm: reviewer arm error"]
 
 
 def test_default_models_match_shipping_config():

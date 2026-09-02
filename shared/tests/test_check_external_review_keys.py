@@ -45,7 +45,7 @@ def test_check_reports_missing_when_no_keys(tmp_path):
     assert out["available"] is False
     assert out["status"] == "missing_keys"
     assert out["providers"]["openrouter"] is False
-    assert out["providers"]["deepseek"] is False
+    assert out["providers"]["glm"] is False
     assert out["providers"]["openai"] is False
 
 
@@ -60,7 +60,7 @@ def test_check_ignores_historical_gemini_direct_key(tmp_path):
     out = run_check({**_CLEAN, "GEMINI_API_KEY": "AI-test-123"}, cwd=str(tmp_path))
     assert out["available"] is False
     assert out["status"] == "missing_keys"
-    assert out["providers"]["deepseek"] is False
+    assert out["providers"]["glm"] is False
 
 
 def test_check_reports_available_with_openai_direct(tmp_path):

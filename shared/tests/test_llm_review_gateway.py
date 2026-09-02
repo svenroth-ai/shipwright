@@ -4,7 +4,7 @@ A 4th, operator-owned route alongside openrouter/direct/none: any
 OpenAI-compatible gateway (Portkey, Helicone, LiteLLM proxy, Azure AI
 Foundry, ...) reached via ``SHIPWRIGHT_REVIEW_GATEWAY_*`` env vars. Unlike
 openrouter/direct it carries NEITHER the model-identity lock
-(``external_review_routing.resolve_reviewer_model``) NOR the DeepSeek ZDR
+(``external_review_routing.resolve_reviewer_model``) NOR the GLM ZDR
 allowlist check — the operator's gateway/virtual key decides which model
 answers, by design.
 

@@ -51,11 +51,12 @@ REVIEW_STATE_FILE = "external_review_state.json"
 CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
 
 #: Schema 2 introduced per-reviewer ``verdicts`` with the historical
-#: ``gemini``/``openai`` roster. Schema 3 changes the writer contract to the
-#: ``deepseek``/``openai`` roster. Readers bind each known schema to its exact
-#: roster; older markers without this field remain readable only through the
-#: historical Gemini/OpenAI contract (see :func:`evaluate_review_state`).
-MARKER_SCHEMA = 3
+#: ``gemini``/``openai`` roster. Schema 3 changed the writer contract to the
+#: historical ``deepseek``/``openai`` roster. Schema 4 changes it again to the
+#: current ``glm``/``openai`` roster. Readers bind each known schema to its
+#: exact roster; older markers without this field remain readable only through
+#: the historical Gemini/OpenAI contract (see :func:`evaluate_review_state`).
+MARKER_SCHEMA = 4
 
 ALLOWED_STATUSES = frozenset({
     "completed",
@@ -157,7 +158,7 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     has_schema = "marker_schema" in marker
     marker_schema = marker.get("marker_schema")
     if has_schema and (
-        type(marker_schema) is not int or marker_schema not in {2, MARKER_SCHEMA}
+        type(marker_schema) is not int or marker_schema not in {2, 3, MARKER_SCHEMA}
     ):
         return STATE_BLOCK, f"unknown review marker schema {marker_schema!r}"
 
@@ -185,18 +186,17 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
             "disagreement between the two could not have been noticed"
         )
 
-    expected_reviewers = (
-        frozenset({"deepseek", "openai"})
-        if marker_schema == MARKER_SCHEMA
-        else frozenset({"gemini", "openai"})
-    )
+    if marker_schema == MARKER_SCHEMA:
+        expected_reviewers = frozenset({"glm", "openai"})
+        contract = f"schema {MARKER_SCHEMA} glm/openai"
+    elif marker_schema == 3:
+        expected_reviewers = frozenset({"deepseek", "openai"})
+        contract = "historical schema 3 deepseek/openai"
+    else:
+        expected_reviewers = frozenset({"gemini", "openai"})
+        contract = "historical gemini/openai"
     actual_reviewers = frozenset(verdicts)
     if actual_reviewers != expected_reviewers:
-        contract = (
-            f"schema {MARKER_SCHEMA} deepseek/openai"
-            if marker_schema == MARKER_SCHEMA
-            else "historical gemini/openai"
-        )
         return STATE_BLOCK, (
             f"reviewer set does not match the {contract} marker contract: "
             f"got {sorted(map(str, actual_reviewers))!r}"
@@ -205,7 +205,7 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     # A `completed` marker where NO leg answered is not a review. It needs no
     # operator resolution — the degraded-review gate owns that condition and
     # fails loudly — but it must not read as reviewed either, or
-    # `--verdict deepseek=unavailable --verdict openai=unavailable` would clear
+    # `--verdict glm=unavailable --verdict openai=unavailable` would clear
     # every gate with nobody having reviewed anything.
     if all(str(v) == "unavailable" for v in verdicts.values()):
         return STATE_BLOCK, (

@@ -56,24 +56,24 @@ def _check(proj: Path):
 
 def test_a_completed_run_scoped_marker_passes(proj):
     _run_scoped(proj, {
-        "status": "completed", "provider": "openrouter", "marker_schema": 3,
-        "verdicts": {"deepseek": "approve", "openai": "approve"},
+        "status": "completed", "provider": "openrouter", "marker_schema": 4,
+        "verdicts": {"glm": "approve", "openai": "approve"},
     })
     assert _check(proj)["status"] == "PASS"
 
 
 def test_an_unresolved_run_scoped_contradiction_fails(proj):
     _run_scoped(proj, {
-        "status": "completed", "marker_schema": 3,
-        "verdicts": {"deepseek": "approve", "openai": "reject"},
+        "status": "completed", "marker_schema": 4,
+        "verdicts": {"glm": "approve", "openai": "reject"},
     })
     assert _check(proj)["status"] == "FAIL"
 
 
 def test_a_resolved_run_scoped_contradiction_passes(proj):
     _run_scoped(proj, {
-        "status": "completed", "marker_schema": 3,
-        "verdicts": {"deepseek": "approve", "openai": "reject"},
+        "status": "completed", "marker_schema": 4,
+        "verdicts": {"glm": "approve", "openai": "reject"},
         "contradiction_resolution": "Operator accepted rejection and fixed it.",
     })
     assert _check(proj)["status"] == "PASS"

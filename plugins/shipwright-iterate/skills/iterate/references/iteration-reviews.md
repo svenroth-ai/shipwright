@@ -337,7 +337,7 @@ Internal Plan Review degraded handling — the pass did NOT run; record it
 (`--run-id` additively records this call as an `external_review` timing span,
 parent `review` — see [iterate-timings](iterate-timings.md).)
 
-Parse `reviews.deepseek.feedback` + `reviews.openai.feedback`. Merge any
+Parse `reviews.glm.feedback` + `reviews.openai.feedback`. Merge any
 high/medium-severity findings into the iterate ADR's
 `External-Code-Review-Findings` table. Address before commit (apply fix,
 rerun tests) — same disposition pattern as the mini-plan-review block:
@@ -528,8 +528,9 @@ both findings and each reviewer verdict from that in-memory snapshot. It stores
 the validated pair on the authoritative review row and writes the companion
 marker from that same pair. An operator's `--contradiction-resolution` is stored
 beside the verdicts, so `repair-markers` cannot lose the decision. A current envelope
-must be `deepseek`/`openai`; an implicit historical envelope remains readable
-as `gemini`/`openai`. A completed current marker without both verdicts blocks.
+must be `glm`/`openai` or the now-historical `deepseek`/`openai`; an implicit
+historical envelope remains readable as `gemini`/`openai`. A completed current
+marker without both verdicts blocks.
 Record and marker status are bound: a completed record can only write or repair
 a completed marker, while a skipped marker cannot carry reviewer evidence.
 

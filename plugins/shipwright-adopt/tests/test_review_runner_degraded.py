@@ -41,7 +41,7 @@ def _degraded_result() -> dict:
         "success": False,
         "provider": "openrouter",
         "reviews": {
-            "deepseek": {
+            "glm": {
                 "status": "degraded",
                 "feedback": "1. Findi",
                 "via": "openrouter",
@@ -80,7 +80,7 @@ def test_degraded_status_is_visible_in_the_written_review(tmp_path, monkeypatch)
     # Assert on the rendered per-leg HEADING, not a whole-document substring:
     # the feedback text itself could contain either word, which would make a
     # bare `"success" not in body` pass or fail for the wrong reason.
-    assert "## deepseek — degraded" in body
+    assert "## glm — degraded" in body
     assert "## openai — degraded" in body
     assert "— success" not in body
 
@@ -94,7 +94,7 @@ def test_a_real_review_still_completes(tmp_path, monkeypatch):
             "success": True,
             "provider": "openrouter",
             "reviews": {
-                "deepseek": {
+                "glm": {
                     "status": "success",
                     "feedback": "1. Finding: real",
                     "via": "openrouter",
@@ -103,7 +103,7 @@ def test_a_real_review_still_completes(tmp_path, monkeypatch):
                 "openai": {"status": "degraded", "feedback": "", "via": "openrouter"},
             },
             "partial": True,
-            "warnings": ["deepseek: provider route degraded"],
+            "warnings": ["glm: provider route degraded"],
         },
     )
 

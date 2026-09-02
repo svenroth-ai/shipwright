@@ -76,10 +76,10 @@ def test_openrouter_parse(raw, expected):
 def _routing_config():
     return {
         "models": {
-            "openrouter_deepseek": "deepseek/deepseek-v4-pro",
+            "openrouter_glm": "z-ai/glm-5.3",
             "openrouter_chatgpt": "openai/gpt-5.6-terra",
         },
-        "deepseek_routing": {
+        "glm_routing": {
             "provider_allowlist": [
                 {"provider": "novita", "region": "US", "zero_retention_verified": True},
                 {"provider": "together", "region": "US", "zero_retention_verified": True},
@@ -119,7 +119,7 @@ def test_openrouter_adjudicate_consensus_via_fake_openai(monkeypatch):
     payload = {"test_path": "t.ts", "test_title": "x", "candidate_frs": ["FR-01.02", "FR-01.03"]}
     resp = adj.adjudicate(payload)     # both models agree on FR-01.02 (in the candidate set)
     assert resp == {"proposed_fr": "FR-01.02", "confidence": 0.7, "auto_write": False}
-    assert calls[0]["model"] == "deepseek/deepseek-v4-pro"
+    assert calls[0]["model"] == "z-ai/glm-5.3"
     assert calls[0]["extra_body"] == {
         "provider": {
             "only": ["novita", "together"],
@@ -128,6 +128,7 @@ def test_openrouter_adjudicate_consensus_via_fake_openai(monkeypatch):
             "data_collection": "deny",
             "zdr": True,
         },
+        "reasoning": {"effort": "low"},
     }
     assert calls[1]["model"] == "openai/gpt-5.6-terra"
     assert calls[1]["extra_body"] == {}

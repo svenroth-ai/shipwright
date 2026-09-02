@@ -2,7 +2,7 @@
 name: shipwright-plan
 description: "Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build.\nTRIGGER when: user wants to plan implementation, create an implementation plan, break down a spec into sections, plan how to build something, create a technical design, generate build sections, or plan test strategy for a spec.\nDO NOT TRIGGER when: user asks to implement or write code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), define requirements (/shipwright-project), or design UI mockups (/shipwright-design)."
 license: MIT
-compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for DeepSeek + OpenAI review; OPENAI_API_KEY can run the GPT arm only. An internal review (model resolved via the `plan_review` role — inherit unless a project configures it) always runs first; if external keys are missing, the skill asks whether to skip and rely on that internal review.
+compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY for GLM + OpenAI review; OPENAI_API_KEY can run the GPT arm only. An internal review (model resolved via the `plan_review` role — inherit unless a project configures it) always runs first; if external keys are missing, the skill asks whether to skip and rely on that internal review.
 ---
 # Shipwright Plan Skill
 Creates detailed, section-based implementation plans from spec files.
@@ -151,7 +151,7 @@ runs. Then read `external_review_status` from the session report (First
 Actions > F) and branch on its value:
 
 - **Branch A — `available`:** run `external_review.py --mode plan ...`
-  (DeepSeek + OpenAI in parallel), integrate findings, log each to
+  (GLM + OpenAI in parallel), integrate findings, log each to
   `decision_log.md`. Read `contradiction.requires_resolution` first — put any
   disagreement to the user, never proceed on the approving review alone. Then
   **Step 5a**: a second call, `--mode architecture` over a short brief
@@ -168,7 +168,7 @@ Self-Review Fallback if neither Step 5-int nor Branch A produced a completed
 independent review, then **Step 5b** writes the marker with
 `{shared_root}/scripts/checks/mark-review-state.py` — `--status`,
 `--provider`, `--findings-count`, `--reason`, one
-`--verdict {deepseek|openai}={verdict}` per reviewer,
+`--verdict {glm|openai}={verdict}` per reviewer,
 `--contradiction-resolution` when they disagreed, and
 `--self-review-fallback-ran` when the checkpoint ran it. Exact invocation:
 [step-5-external-review.md](references/step-5-external-review.md).

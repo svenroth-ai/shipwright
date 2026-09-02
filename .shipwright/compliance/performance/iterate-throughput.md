@@ -6,22 +6,22 @@
 
 > **Coverage boundary:** F5b folds this report's durable data BEFORE F6 commits and F11 delivers — `discovery_diagnosis` through `review` can close by then, but `finalization`'s own duration and the entire `delivery` group (incl. `ci_wait`/`delivery_wait`/`post_ci_remediation`) structurally cannot, in every run. Coverage below is measured against the four applicable groups when one entry path is recorded; a run that explicitly records both `discovery_diagnosis` and `planning` is measured against all five — see `iterate-timings.md` for why.
 
-## Latest run: `iterate-2026-08-26-campaign-worktree-guard-followups`
+## Latest run: `iterate-2026-09-02-glm-plan-code-review-swap`
 
-- **Timing source:** producer + agent spans (mixed) · **coverage:** 1/4 applicable fold-time groups (+2 derived), 28 spans total — **DEGRADED** (a fold-time-capturable phase is missing)
-- **Wall clock (scope through F5b):** 130.2 min (measured)
-- **Instrumented:** 114.9 min of wall clock (88.3%)
-- **Unattributed:** 15.2 min (11.7%)
+- **Timing source:** producer + agent spans (mixed) · **coverage:** 1/5 applicable fold-time groups (+1 derived), 28 spans total — **DEGRADED** (a fold-time-capturable phase is missing)
+- **Wall clock (scope through F5b):** 147.5 min (measured)
+- **Instrumented:** 58.4 min of wall clock (39.6%)
+- **Unattributed:** 89.1 min (60.4%)
 - **Invalidation-driven restarts:** 0
 
 ### Top-level phases (inclusive / exclusive / % of timing envelope)
 
 | Phase | Inclusive | Exclusive | % of timing envelope |
 |---|---:|---:|---:|
-| discovery_diagnosis | *not applicable — planning is the recorded entry path* | — | — |
-| planning | 3.1 min *(derived — reconstructed from child spans)* | 0.0 s | 0.0% |
-| implementation | 109.9 min | 109.9 min | 90.0% |
-| verification | 5.0 min *(derived — reconstructed from child spans)* | 6.0 s | 0.1% |
+| discovery_diagnosis | *unattributed — no agent start/end marks recorded* | — | — |
+| planning | *unattributed — no agent start/end marks recorded* | — | — |
+| implementation | 52.1 min | 52.1 min | 57.7% |
+| verification | 4.9 min *(derived — reconstructed from child spans)* | 8.6 s | 0.2% |
 | review | *incomplete* (started, not closed) | — | — |
 | finalization | *not reached before F5b fold (structural)* | — | — |
 | delivery | *not reached before F5b fold (structural)* | — | — |
@@ -33,19 +33,20 @@
 | pre_f0_validation | verification | 0.0 s | completed | stage=f0 |
 | f0_queue | verification | 0.0 s | completed | capacity=1, stage=warmup, weight=1 |
 | f0_queue | verification | 0.0 s | completed | capacity=22, stage=cpu, weight=11 |
-| canonical_f0_active | verification | 4.9 min | completed | capacity=22, weight=11 |
+| canonical_f0_active | verification | 4.7 min | completed | capacity=22, weight=11 |
 | self_review | review | — | incomplete | — |
-| external_review | planning | 3.1 min | completed | provider=openrouter |
+| external_review | review | 39.6 s | completed | provider=openrouter |
+| external_review | review | 41.2 s | completed | provider=openrouter |
 
 ## Rolling comparison (last 10 instrumented runs)
 
 | Phase | Median exclusive | P90 exclusive | Samples |
 |---|---:|---:|---:|
 | discovery_diagnosis | — | — | 0 |
-| planning | 0.0 s | 3.0 min | 5 |
-| implementation | 45.2 min | 109.9 min | 6 |
-| verification | 28.2 s | 45.9 min | 8 |
-| review | 0.0 s | — | 1 |
+| planning | 24.6 s | 49.3 s | 2 |
+| implementation | 17.6 min | 109.9 min | 9 |
+| verification | 7.3 s | 19.4 s | 10 |
+| review | — | — | 0 |
 | finalization | — | — | 0 |
 | delivery | — | — | 0 |
 
@@ -53,13 +54,13 @@
 
 | Run | Wall | Instrumented | Group coverage | Restarts | Status |
 |---|---:|---:|---:|---:|---|
-| `iterate-2026-08-25-R0-spec-reader-shipped-shape` | 71.4 min | 0.0% | 0/5 | 0 | degraded |
-| `iterate-2026-08-25-r0-spec-reader-shipped-shape` | 77.6 min | 0.0% | 0/5 | 0 | degraded |
-| `iterate-2026-08-25-r1a-evidence-staging-multiroot` | 108.2 min | 3.4% | 0/4 | 0 | degraded |
-| `iterate-2026-08-25-fr-criteria-parser-pin` | 43.8 min | 88.3% | 1/5 | 0 | degraded |
-| `iterate-2026-08-25-campaign-run-id-lowercase-mint` | 45.0 min | 62.0% | 1/5 | 0 | degraded |
-| `iterate-2026-08-25-a-widen-the-net` | — | unavailable | 0/4 | 0 | degraded |
-| `iterate-2026-08-26-campaign-worktree-guard` | 85.6 min | 86.5% | 1/5 | 0 | degraded |
-| `iterate-2026-08-26-r1b-ci-manifest-regen-gate` | 375.3 min | 33.5% | 1/4 | 0 | degraded |
-| `iterate-2026-08-26-b-pure-hardening` | — | — | — | — | pre-instrumentation |
 | `iterate-2026-08-26-campaign-worktree-guard-followups` | 130.2 min | 88.3% | 1/4 | 0 | degraded |
+| `iterate-2026-08-27-fr-table-titlecols-split` | 25.9 min | 18.6% | 1/5 | 0 | degraded |
+| `iterate-2026-08-27-s2b-discovery-c` | 87.5 min | 57.6% | 1/5 | 0 | degraded |
+| `iterate-2026-08-28-changelog-encoding-cp1252` | 20.0 min | 48.8% | 1/5 | 0 | degraded |
+| `iterate-2026-08-29-compliance-interpreter-fix` | 49.4 min | 0.0% | 0/5 | 0 | degraded |
+| `iterate-2026-08-31-compliance-error-surfacing` | 55.0 min | 41.2% | 1/5 | 0 | degraded |
+| `iterate-2026-08-31-pr-review-deepseek-model` | 86.6 min | 29.8% | 1/4 | 0 | degraded |
+| `iterate-2026-09-01-changelog-config-marketplace-sync` | 60.9 min | 12.2% | 1/5 | 0 | degraded |
+| `iterate-2026-09-01-external-review-retry-degradation` | 80.3 min | 44.8% | 1/5 | 0 | degraded |
+| `iterate-2026-09-02-glm-plan-code-review-swap` | 147.5 min | 39.6% | 1/5 | 0 | degraded |

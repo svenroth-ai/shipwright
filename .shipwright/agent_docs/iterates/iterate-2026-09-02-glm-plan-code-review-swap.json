@@ -1,0 +1,84 @@
+{
+  "run_id": "iterate-2026-09-02-glm-plan-code-review-swap",
+  "date": "2026-09-02T15:43:04.532684Z",
+  "event_at": "2026-09-02T15:38:16.784033+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/glm-plan-code-review-swap",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-02-glm-plan-code-review-swap",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "GLM reviewer-identity binding resolves to z-ai/glm-5.3 and rejects any other configured value",
+        "disposition": "tested",
+        "evidence": "test_glm_review_routing.py::test_glm_reviewer_binding_resolves_to_glm_5_3 PASSED, test_configured_model_cannot_cross_reviewer_identity PASSED"
+      },
+      {
+        "behavior": "reasoning.effort=low is present only on the cascade's dispatcher path and absent from the shared glm_openrouter_extra_body primitive used by the untouched security-plugin gate",
+        "disposition": "tested",
+        "evidence": "test_glm_review_routing.py::test_reasoning_effort_is_capped_low_for_the_cascade_dispatcher PASSED"
+      },
+      {
+        "behavior": "the exact outbound OpenRouter request body (model, provider policy, reasoning cap) round-trips correctly from the on-disk config through both consumer code paths",
+        "disposition": "tested",
+        "evidence": "test_glm_review_routing.py::test_both_clients_serialize_the_exact_glm_request_body PASSED (mocked HTTP transport, both external_review.py and llm_review.py call sites)"
+      },
+      {
+        "behavior": "a mutated/unverified glm_routing config (wrong region, reordered/missing/extra provider, unverified flag) fails closed before any network client is created",
+        "disposition": "tested",
+        "evidence": "test_glm_review_routing.py::test_changed_or_unverified_provider_config_fails_closed[...] (10 cases) PASSED, test_forbidden_provider_config_stops_before_client_creation PASSED"
+      },
+      {
+        "behavior": "a historical deepseek/openai marker (schema 3) is still readable, and a repair pass writes it back as schema 3, not the current schema 4",
+        "disposition": "tested",
+        "evidence": "test_review_marker_companion_verdicts.py::test_companion_writes_and_repairs_a_historical_deepseek_envelope_as_schema_3 PASSED, test_review_verdict_reviewer_migration.py::test_schema_3_historical_deepseek_marker_remains_readable PASSED"
+      },
+      {
+        "behavior": "a historical gemini/openai marker (schema 2) is still readable and writable as schema 2",
+        "disposition": "tested",
+        "evidence": "test_review_marker_companion_verdicts.py::test_companion_writes_a_historical_gemini_envelope_as_schema_2 PASSED"
+      },
+      {
+        "behavior": "an unrecognized verdict roster (e.g. the operator-owned gateway route's model-1/model-2 pair) is rejected by write_markers rather than silently mis-stamped as the current schema",
+        "disposition": "tested",
+        "evidence": "test_review_marker_companion_verdicts.py::test_write_markers_rejects_an_unrecognized_verdict_roster PASSED"
+      },
+      {
+        "behavior": "the TT6 backfill adjudicator resolves the GLM identity correctly after the DeepSeek model key left the config whitelist",
+        "disposition": "tested",
+        "evidence": "test_backfill_engine_units.py (updated fixture asserting model == z-ai/glm-5.3) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "ledger_path": ".shipwright/planning/adr/iterate-2026-09-02-glm-plan-code-review-swap-deepseek-to-glm.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "internal LLM-reviewer routing/config swap (DeepSeek->GLM 5.3) with no runnable web/dev-server surface; this run's unit + real-HTTP-mocked round-trip tests are the verification"
+  },
+  "declared_removals": [
+    {
+      "path": "shared/scripts/tools/probe_deepseek_zdr.py",
+      "reason": "obsolete DeepSeek-only ZDR probe; DeepSeek is no longer the cascade's reviewer identity"
+    },
+    {
+      "path": "shared/tests/test_deepseek_zdr_probe.py",
+      "reason": "tested the deleted probe_deepseek_zdr.py"
+    },
+    {
+      "path": "shared/tests/test_deepseek_review_routing.py",
+      "reason": "DeepSeek routing coverage; superseded 1:1 by test_glm_review_routing.py"
+    }
+  ]
+}

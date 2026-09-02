@@ -20,7 +20,7 @@ loader) get the unchanged shared default.
 Env-var override pattern: ``SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER>`` overrides
 ``config['models'][key]``. Empty/whitespace-only values fall back to the config
 default. The set of valid keys matches the keys in the shipped config:
-``chatgpt, openrouter_deepseek, openrouter_chatgpt``.
+``chatgpt, openrouter_glm, openrouter_chatgpt``.
 Active review producers pass this result through
 ``external_review_routing.resolve_reviewer_model``, which rejects any value
 that would change the operator-approved reviewer identity.
@@ -50,7 +50,7 @@ _DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "externa
 # shared/config/external_review.json.
 _VALID_MODEL_KEYS: set[str] = {
     "chatgpt",
-    "openrouter_deepseek",
+    "openrouter_glm",
     "openrouter_chatgpt",
 }
 
@@ -132,7 +132,7 @@ def load_review_config(
 def is_external_review_enabled(config: dict[str, Any]) -> bool:
     """Check if external review is enabled and at least one API key is available.
 
-    Considers OPENROUTER_API_KEY and OPENAI_API_KEY. DeepSeek has no direct
+    Considers OPENROUTER_API_KEY and OPENAI_API_KEY. GLM has no direct
     fallback; Gemini credentials are historical and deliberately ignored.
     """
     from env import load_shipwright_env  # type: ignore[import-not-found]

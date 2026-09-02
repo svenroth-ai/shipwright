@@ -155,17 +155,20 @@ def _verdicts_from_text(adapter: str, text: str) -> dict[str, str] | None:
     if not isinstance(payload, dict) or not isinstance(payload.get("reviews"), dict):
         raise ReviewFindingsError("external review output has no 'reviews' object")
     review_schema = payload.get("review_schema")
-    expected = (
-        frozenset(REVIEWERS)
+    # Schema 2's envelope SHAPE never bumped across the DeepSeek->GLM reviewer
+    # swap, so it covers both the current roster and DeepSeek's now-historical
+    # one — a schema-2 payload written before this swap must stay readable.
+    expected_candidates = (
+        (frozenset(REVIEWERS), frozenset(HISTORICAL_REVIEWER_PAIRS[1]))
         if review_schema == 2
-        else frozenset(HISTORICAL_REVIEWER_PAIRS[0])
+        else (frozenset(HISTORICAL_REVIEWER_PAIRS[0]),)
         if review_schema in (None, 1)
         else None
     )
-    if expected is None:
+    if expected_candidates is None:
         raise ReviewFindingsError(f"unsupported external review schema {review_schema!r}")
     verdicts = summarize_reviews(payload["reviews"])["verdicts"]
-    if frozenset(verdicts) != expected:
+    if frozenset(verdicts) not in expected_candidates:
         raise ReviewFindingsError(
             f"external review schema {review_schema!r} does not match reviewer roster"
         )

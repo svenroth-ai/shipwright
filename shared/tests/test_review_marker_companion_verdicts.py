@@ -25,7 +25,7 @@ from tools import record_review_pass
 
 
 def _external_payload(
-    tmp_path: Path, *, schema: int | None = 2, first: str = "deepseek",
+    tmp_path: Path, *, schema: int | None = 2, first: str = "glm",
     second_verdict: str = "revise",
 ) -> Path:
     payload = {
@@ -56,7 +56,7 @@ def test_current_and_historical_payloads_derive_their_real_verdict_pairs(tmp_pat
         "external-review-json",
         str(_external_payload(tmp_path, schema=None, first="gemini")),
     )
-    assert current == {"deepseek": "approve", "openai": "revise"}
+    assert current == {"glm": "approve", "openai": "revise"}
     assert historical == {"gemini": "approve", "openai": "revise"}
 
 
@@ -68,7 +68,7 @@ def test_combined_evidence_reads_the_payload_once(monkeypatch):
     payload = json.dumps({
         "review_schema": 2,
         "reviews": {
-            "deepseek": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
+            "glm": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"},
             "openai": {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: reject"},
         },
     })
@@ -76,7 +76,7 @@ def test_combined_evidence_reads_the_payload_once(monkeypatch):
     monkeypatch.setattr(review_payloads, "_read", lambda path: reads.append(path) or payload)
     *_, verdicts = build_review_evidence("external-review-json", "review.json")
     assert reads == ["review.json"]
-    assert verdicts == {"deepseek": "approve", "openai": "reject"}
+    assert verdicts == {"glm": "approve", "openai": "reject"}
 
 
 @pytest.mark.parametrize(
@@ -105,7 +105,7 @@ def test_missing_external_payload_fails_closed():
     [
         ("approve", "must be an object"),
         ({"foo": "approve", "openai": "approve"}, "unsupported reviewer set"),
-        ({"deepseek": "maybe", "openai": "approve"}, "unknown verdict"),
+        ({"glm": "maybe", "openai": "approve"}, "unknown verdict"),
     ],
 )
 def test_review_record_rejects_malformed_verdict_evidence(verdicts, error):
@@ -115,13 +115,13 @@ def test_review_record_rejects_malformed_verdict_evidence(verdicts, error):
 
 
 def test_companion_writes_and_repairs_from_the_recorded_verdicts(tmp_path):
-    current = {"deepseek": "approve", "openai": "revise"}
+    current = {"glm": "approve", "openai": "revise"}
     paths = write_markers(
         tmp_path, "run-1", "plan", marker_status="completed",
         record_status="completed", findings_count=0, verdicts=current,
     )
     marker = json.loads(Path(paths[0]).read_text(encoding="utf-8"))
-    assert marker["marker_schema"] == 3
+    assert marker["marker_schema"] == 4
     assert marker["verdicts"] == current
 
     record = upsert_review(
@@ -136,8 +136,39 @@ def test_companion_writes_and_repairs_from_the_recorded_verdicts(tmp_path):
     assert json.loads(Path(repaired[0]).read_text(encoding="utf-8"))["verdicts"] == current
 
 
+def test_companion_writes_and_repairs_a_historical_deepseek_envelope_as_schema_3(tmp_path):
+    # Regression: write_markers used to fall back to MARKER_SCHEMA (4) for any
+    # non-gemini roster, so repairing a pre-swap deepseek/openai record wrote
+    # a schema-4 marker carrying a deepseek roster - which evaluate_review_state
+    # then blocks, since schema 4 requires glm/openai. A historical record must
+    # stay both readable AND writable/repairable as schema 3.
+    historical = {"deepseek": "approve", "openai": "revise"}
+    paths = write_markers(
+        tmp_path, "run-1", "plan", marker_status="completed",
+        record_status="completed", findings_count=0, verdicts=historical,
+    )
+    marker = json.loads(Path(paths[0]).read_text(encoding="utf-8"))
+    assert marker["marker_schema"] == 3
+    assert marker["verdicts"] == historical
+    state, _ = evaluate_review_state(marker)
+    assert state != STATE_BLOCK
+
+    record = upsert_review(
+        new_record("run-1"),
+        make_entry("plan", STATUS_COMPLETED, verdicts=historical),
+    )
+    write_record(tmp_path, "run-1", record)
+    Path(paths[0]).unlink()
+    repaired = repair_markers(
+        tmp_path, "run-1", "plan", marker_status="completed"
+    )
+    repaired_marker = json.loads(Path(repaired[0]).read_text(encoding="utf-8"))
+    assert repaired_marker["marker_schema"] == 3
+    assert repaired_marker["verdicts"] == historical
+
+
 def test_companion_repairs_the_recorded_operator_resolution(tmp_path):
-    verdicts = {"deepseek": "approve", "openai": "reject"}
+    verdicts = {"glm": "approve", "openai": "reject"}
     resolution = "Operator accepted OpenAI rejection and corrected the implementation."
     paths = write_markers(
         tmp_path, "run-1", "plan", marker_status="completed", findings_count=1,
@@ -155,6 +186,32 @@ def test_companion_repairs_the_recorded_operator_resolution(tmp_path):
     assert marker["contradiction_resolution"] == resolution
 
 
+def test_companion_writes_a_historical_gemini_envelope_as_schema_2(tmp_path):
+    historical = {"gemini": "approve", "openai": "revise"}
+    paths = write_markers(
+        tmp_path, "run-1", "plan", marker_status="completed",
+        record_status="completed", findings_count=0, verdicts=historical,
+    )
+    marker = json.loads(Path(paths[0]).read_text(encoding="utf-8"))
+    assert marker["marker_schema"] == 2
+    assert marker["verdicts"] == historical
+    state, _ = evaluate_review_state(marker)
+    assert state != STATE_BLOCK
+
+
+def test_write_markers_rejects_an_unrecognized_verdict_roster(tmp_path):
+    # A gateway-route pair (GATEWAY_REVIEWERS = "model-1"/"model-2") or any
+    # other unrecognized reviewer set must fail loudly here rather than fall
+    # through to MARKER_SCHEMA silently, mirroring the fix that now applies
+    # to the historical deepseek/openai roster.
+    with pytest.raises(ReviewRecordError, match="unrecognized reviewer set"):
+        write_markers(
+            tmp_path, "run-1", "plan", marker_status="completed",
+            record_status="completed", findings_count=0,
+            verdicts={"model-1": "approve", "model-2": "approve"},
+        )
+
+
 def test_completed_companion_without_verdicts_is_refused(tmp_path):
     with pytest.raises(ReviewRecordError, match="requires reviewer verdicts"):
         write_markers(
@@ -169,15 +226,15 @@ def test_companion_rejects_record_marker_status_mismatch(tmp_path):
             tmp_path, "run-1", "plan", marker_status="skipped_config_disabled",
             record_status="completed", findings_count=0,
             reason="config disabled by operator",
-            verdicts={"deepseek": "approve", "openai": "reject"},
+            verdicts={"glm": "approve", "openai": "reject"},
         )
 
 
 def test_skip_with_reviewer_evidence_blocks():
     marker = {
         "status": "skipped_config_disabled", "reason": "config disabled by operator",
-        "marker_schema": 3,
-        "verdicts": {"deepseek": "approve", "openai": "reject"},
+        "marker_schema": 4,
+        "verdicts": {"glm": "approve", "openai": "reject"},
     }
     state, reason = evaluate_review_state(marker)
     assert state == STATE_BLOCK
@@ -202,7 +259,7 @@ def test_record_cli_main_dual_writes_verdicts_in_process(tmp_path, capsys):
         (tmp_path / ".shipwright" / "planning" / "iterate" / "run-1"
          / "external_review_state.json").read_text(encoding="utf-8")
     )
-    assert marker["verdicts"] == {"deepseek": "approve", "openai": "reject"}
+    assert marker["verdicts"] == {"glm": "approve", "openai": "reject"}
     assert marker["contradiction_resolution"] == resolution
     record = json.loads(
         (tmp_path / ".shipwright" / "planning" / "iterate" / "run-1"

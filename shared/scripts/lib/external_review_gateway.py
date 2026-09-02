@@ -2,7 +2,7 @@
 
 Split out of ``llm_review.py`` to mirror this package's existing separation
 of concerns: ``external_review_routing.py`` holds the locked-down
-DeepSeek/OpenAI policy (model-identity lock + ZDR allowlist);  this module
+GLM/OpenAI policy (model-identity lock + ZDR allowlist);  this module
 holds the opposite. The gateway route carries NEITHER — the operator's
 gateway/virtual key decides which model actually answers, by design. It
 fits any OpenAI-compatible gateway (Portkey, Helicone, LiteLLM proxy, Azure

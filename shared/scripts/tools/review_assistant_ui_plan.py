@@ -118,7 +118,7 @@ def main() -> int:
     md_lines.append(f"# External LLM Review — {plan_path.name}")
     md_lines.append("")
     md_lines.append(f"- Provider: `{result.get('provider')}`")
-    md_lines.append("- Reviewer models: deepseek/deepseek-v4-pro, openai/gpt-5.6-terra")
+    md_lines.append("- Reviewer models: z-ai/glm-5.3, openai/gpt-5.6-terra")
     md_lines.append("")
     for name, review in result.get("reviews", {}).items():
         md_lines.append(f"## Reviewer: {name}")

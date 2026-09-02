@@ -15,9 +15,9 @@ R4 data controls (Spec §11-R4) enforced by :func:`validate_payload`:
 * the LLM verdict is **advisory**: ``auto_write`` is always ``False`` (only
   deterministic corroboration may auto-write — the engine enforces this too).
 
-The production adjudicator sets the model **explicitly** (GPT + DeepSeek via
+The production adjudicator sets the model **explicitly** (GPT + GLM via
 OpenRouter, per the external-review convention) — never the silent default, which
-would fall back to a costly wrong model. Every DeepSeek request carries the same
+would fall back to a costly wrong model. Every GLM request carries the same
 fail-closed ZDR routing policy as the review clients. It proposes an FR only on cross-model
 **consensus**; disagreement returns ``proposed_fr = None``.
 """
@@ -99,7 +99,7 @@ _SYSTEM_PROMPT = (
 
 
 class OpenRouterAdjudicator:
-    """Production adjudicator — GPT + DeepSeek via OpenRouter, consensus-only.
+    """Production adjudicator — GPT + GLM via OpenRouter, consensus-only.
 
     Constructed only when ``--use-llm`` is passed AND ``OPENROUTER_API_KEY`` is
     set. Never imported/instantiated in CI (the stub adapter is injected instead).
@@ -115,7 +115,7 @@ class OpenRouterAdjudicator:
     def _ask(self, model_key: str, payload: dict) -> str | None:
         from openai import OpenAI  # lazy: never a CI import
 
-        reviewer = "deepseek" if model_key == "openrouter_deepseek" else "openai"
+        reviewer = "glm" if model_key == "openrouter_glm" else "openai"
         model = resolve_reviewer_model(
             self._config,
             reviewer,
@@ -165,7 +165,7 @@ class OpenRouterAdjudicator:
         validate_payload(payload)
         allowed = set(payload["candidate_frs"])
         results = []
-        for key in ("openrouter_deepseek", "openrouter_chatgpt"):
+        for key in ("openrouter_glm", "openrouter_chatgpt"):
             try:
                 fr, conf = self._parse(self._ask(key, payload))
             except Exception:

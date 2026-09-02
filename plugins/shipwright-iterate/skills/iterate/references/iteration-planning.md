@@ -400,7 +400,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    code does not yet exist:
 
    > The architecture review says this should not be built this way.
-   > {deepseek} says **{verdict}**, {openai} says **{verdict}**. They recommend:
+   > {glm} says **{verdict}**, {openai} says **{verdict}**. They recommend:
    > **{the alternative, in one line}**. The mini-plan had considered that and
    > rejected it because: **{the reason, from mini-plan item 6}**.
    >
@@ -420,7 +420,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    ```markdown
    ## Architecture Review
    - **Brief:** `.shipwright/planning/iterate/{run_id}/architecture_brief.md`
-   - **Verdicts:** deepseek={approve|revise|reject} · openai={…}
+   - **Verdicts:** glm={approve|revise|reject} · openai={…}
    - **Smallest thing that would do (per reviewers):** {one line, or `as proposed`}
    - **Findings:** {each, with accepted-and-fixed | rejected-with-reason}
    - **Reconciliation:** {what the plan had rejected, why, and the decision}
@@ -467,7 +467,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    "Recording each review pass" in [iteration-reviews.md](iteration-reviews.md).
 
 ### Handling results (Branch A)
-- Parse JSON output: `reviews.deepseek.feedback` + `reviews.openai.feedback`
+- Parse JSON output: `reviews.glm.feedback` + `reviews.openai.feedback`
 - Print findings summary to user
 - For high-severity findings: discuss with user before proceeding to build
 - For low/medium: note in ADR, proceed

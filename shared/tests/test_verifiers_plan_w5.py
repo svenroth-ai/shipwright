@@ -15,8 +15,8 @@ from lib.phase_quality import STATUS_FAIL, STATUS_PASS, STATUS_WARN
 from lib.review_marker import build_marker, write_marker
 from tools.verifiers.plan_compliance import check_w5_external_review_marker
 
-AGREEING = {"deepseek": "approve", "openai": "revise"}
-CONTRADICTING = {"deepseek": "approve", "openai": "reject"}
+AGREEING = {"glm": "approve", "openai": "revise"}
+CONTRADICTING = {"glm": "approve", "openai": "reject"}
 
 
 def _project_with_marker(tmp_path: Path, **marker_kwargs) -> Path:
@@ -86,11 +86,11 @@ def test_a_marker_predating_verdicts_warns_rather_than_failing(tmp_path):
     assert "--verdict" in finding["remediation"]
 
 
-def test_a_schema_3_marker_without_verdicts_fails_closed(tmp_path):
+def test_a_current_schema_marker_without_verdicts_fails_closed(tmp_path):
     root = _project_with_marker(tmp_path, status="completed", provider="openrouter")
     finding = check_w5_external_review_marker(root)
     assert finding["status"] == STATUS_FAIL
-    assert "schema 3" in finding["evidence"]
+    assert "schema 4" in finding["evidence"]
 
 
 def test_a_malformed_marker_fails(tmp_path):

@@ -28,7 +28,7 @@ def sample_config_dict():
         "external_review": {"alert_if_missing": True, "feedback_iterations": 1},
         "models": {
             "chatgpt": "gpt-test-default",
-            "openrouter_deepseek": "deepseek/deepseek-test-default",
+            "openrouter_glm": "glm/glm-test-default",
             "openrouter_chatgpt": "openai/gpt-test-default",
         },
         "llm_client": {"timeout_seconds": 120, "max_retries": 3},
@@ -52,7 +52,7 @@ def clean_review_env(monkeypatch, tmp_path):
         "GOOGLE_API_KEY",
         "OPENAI_API_KEY",
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -281,9 +281,9 @@ def test_resolve_model_default_chatgpt(clean_review_env):
     assert resolve_model(config, "chatgpt") == "gpt-5.4"
 
 
-def test_resolve_model_default_openrouter_deepseek(clean_review_env):
-    config = {"models": {"openrouter_deepseek": "deepseek/deepseek-v4-pro"}}
-    assert resolve_model(config, "openrouter_deepseek") == "deepseek/deepseek-v4-pro"
+def test_resolve_model_default_openrouter_glm(clean_review_env):
+    config = {"models": {"openrouter_glm": "z-ai/glm-5.3"}}
+    assert resolve_model(config, "openrouter_glm") == "z-ai/glm-5.3"
 
 
 def test_resolve_model_default_openrouter_chatgpt(clean_review_env):
@@ -299,13 +299,13 @@ def test_resolve_model_env_override_chatgpt(monkeypatch, clean_review_env):
     assert resolve_model(config, "chatgpt") == "custom-chatgpt-2"
 
 
-def test_resolve_model_env_override_openrouter_deepseek(monkeypatch, clean_review_env):
+def test_resolve_model_env_override_openrouter_glm(monkeypatch, clean_review_env):
     monkeypatch.setenv(
-        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK",
-        "deepseek/custom-reviewed-model",
+        "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM",
+        "glm/custom-reviewed-model",
     )
-    config = {"models": {"openrouter_deepseek": "config-default"}}
-    assert resolve_model(config, "openrouter_deepseek") == "deepseek/custom-reviewed-model"
+    config = {"models": {"openrouter_glm": "config-default"}}
+    assert resolve_model(config, "openrouter_glm") == "glm/custom-reviewed-model"
 
 
 def test_resolve_model_env_override_openrouter_chatgpt(monkeypatch, clean_review_env):
@@ -320,21 +320,21 @@ def test_resolve_model_env_override_openrouter_chatgpt(monkeypatch, clean_review
 # ---- resolve_model — defensive (whitespace, empty, invalid) ----
 
 def test_resolve_model_empty_string_falls_back(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK", "")
-    config = {"models": {"openrouter_deepseek": "config-default"}}
-    assert resolve_model(config, "openrouter_deepseek") == "config-default"
+    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM", "")
+    config = {"models": {"openrouter_glm": "config-default"}}
+    assert resolve_model(config, "openrouter_glm") == "config-default"
 
 
 def test_resolve_model_whitespace_only_falls_back(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK", "   \t  \n")
-    config = {"models": {"openrouter_deepseek": "config-default"}}
-    assert resolve_model(config, "openrouter_deepseek") == "config-default"
+    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM", "   \t  \n")
+    config = {"models": {"openrouter_glm": "config-default"}}
+    assert resolve_model(config, "openrouter_glm") == "config-default"
 
 
 def test_resolve_model_env_value_is_stripped(monkeypatch, clean_review_env):
-    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_DEEPSEEK", "  trimmed-model  ")
-    config = {"models": {"openrouter_deepseek": "config-default"}}
-    assert resolve_model(config, "openrouter_deepseek") == "trimmed-model"
+    monkeypatch.setenv("SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM", "  trimmed-model  ")
+    config = {"models": {"openrouter_glm": "config-default"}}
+    assert resolve_model(config, "openrouter_glm") == "trimmed-model"
 
 
 def test_resolve_model_invalid_key_raises(clean_review_env):
@@ -345,4 +345,4 @@ def test_resolve_model_invalid_key_raises(clean_review_env):
 
 def test_resolve_model_returns_empty_when_not_in_config(clean_review_env):
     config = {}  # no models block
-    assert resolve_model(config, "openrouter_deepseek") == ""
+    assert resolve_model(config, "openrouter_glm") == ""

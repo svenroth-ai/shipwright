@@ -3,7 +3,7 @@
 Split out of ``llm_review.py`` (keeping it under the 300-line guideline)
 alongside the sibling ``external_review_gateway.py`` split. Both legs here
 are identity-locked — ``resolve_reviewer_model``/``openrouter_extra_body``
-enforce the fixed DeepSeek/OpenAI bindings and the DeepSeek ZDR allowlist —
+enforce the fixed GLM/OpenAI bindings and the GLM ZDR allowlist —
 in deliberate contrast to the gateway leg, which carries neither.
 """
 

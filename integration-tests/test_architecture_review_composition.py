@@ -139,7 +139,7 @@ def test_the_brief_is_what_reaches_the_model(project, stub_provider, capsys, mon
         assert "Ship a thing" in call["rendered"], "{SPEC} must render too"
         # The system prompt must be the architecture one, not iterate's.
         assert "standing mechanism" in call["system"].lower()
-    assert {c["model_key"] for c in stub_provider} == {"deepseek", "openai"}
+    assert {c["model_key"] for c in stub_provider} == {"glm", "openai"}
 
 
 def test_the_envelope_is_itemizable_into_findings(project, stub_provider, capsys, monkeypatch):
@@ -162,7 +162,7 @@ def test_the_envelope_is_itemizable_into_findings(project, stub_provider, capsys
                                       "--brief-file", str(brief), "--plugin-root", str(proj),
                                       "--project-root", str(proj)], capsys)
 
-    assert envelope["verdicts"] == {"deepseek": "reject", "openai": "reject"}
+    assert envelope["verdicts"] == {"glm": "reject", "openai": "reject"}
     assert envelope["contradiction"]["detected"] is False
 
     payload = proj / "envelope.json"
@@ -178,7 +178,7 @@ def test_the_envelope_is_itemizable_into_findings(project, stub_provider, capsys
     assert len(findings) == 2, "one finding per reviewer leg"
     assert {f["severity"] for f in findings} == {"high"}
     assert all("queue" in f["finding"] for f in findings)
-    assert verdicts == {"deepseek": "reject", "openai": "reject"}
+    assert verdicts == {"glm": "reject", "openai": "reject"}
     assert raw
 
 

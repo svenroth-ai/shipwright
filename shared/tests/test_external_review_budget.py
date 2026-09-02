@@ -59,7 +59,7 @@ def _call_both_openrouter(monkeypatch, content, finish_reason):
     ))
     first = llm_review._review_openrouter(
         "content", "context", "system", "{CONTENT} {CONTEXT}",
-        config, "deepseek", 5,
+        config, "glm", 5,
     )
     second_capture: dict = {}
     monkeypatch.setattr(openai, "OpenAI", _fake_openai(
@@ -67,7 +67,7 @@ def _call_both_openrouter(monkeypatch, content, finish_reason):
     ))
     second = external_review.review_with_openrouter(
         "plan", "spec", "system", "{PLAN} {SPEC}",
-        config, "deepseek",
+        config, "glm",
     )
     return (first, first_capture), (second, second_capture)
 

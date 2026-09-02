@@ -1,5 +1,5 @@
 """Fail-closed OpenRouter routing for ZDR-gated external-review model arms
-(DeepSeek, GLM)."""
+(GLM, DeepSeek)."""
 
 from __future__ import annotations
 
@@ -21,24 +21,28 @@ __all__ = [
 # allowlist and its verification metadata, but cannot bless an arbitrary slug by
 # labelling it safe. Adding a verified EU endpoint is deliberately a code +
 # config + test review, not an unreviewed project override.
-APPROVED_DEEPSEEK_ENDPOINTS: tuple[tuple[str, str], ...] = (
+# Two vetted US ZDR-verified OpenRouter providers for GLM 5.3 (verified via
+# OpenRouter's own data-policy API, 2026-09-01).
+APPROVED_GLM_ENDPOINTS: tuple[tuple[str, str], ...] = (
     ("novita", "US"),
     ("together", "US"),
 )
-# Same two vetted providers as DeepSeek's — both also serve GLM 5.3 on
-# OpenRouter with an identical zero-retention data policy (verified via
-# OpenRouter's own data-policy API, 2026-09-01) — but a SEPARATE code-owned
-# constant, not a shared alias: the two families' approved sets are free to
-# diverge later without one edit silently relaxing the other.
-APPROVED_GLM_ENDPOINTS: tuple[tuple[str, str], ...] = (
+# DeepSeek is no longer bound as a plan/code-review cascade identity (see
+# `_REVIEW_MODEL_BINDINGS` below — GLM replaced it there,
+# iterate-2026-09-02-glm-plan-code-review-swap), but this ZDR policy stays: the
+# Tier-3 PR-review gate (plugins/shipwright-security/scripts/lib/
+# pr_review_model_policy.py) keeps DeepSeek as an operator-overridable
+# SHIPWRIGHT_PR_REVIEW_MODEL choice per ADR-167, and calls
+# `deepseek_openrouter_extra_body` directly for it.
+APPROVED_DEEPSEEK_ENDPOINTS: tuple[tuple[str, str], ...] = (
     ("novita", "US"),
     ("together", "US"),
 )
 _ALLOWED_REGIONS = frozenset({"US", "EU"})
 _REVIEW_MODEL_BINDINGS = {
-    ("deepseek", "openrouter"): (
-        "openrouter_deepseek",
-        "deepseek/deepseek-v4-pro",
+    ("glm", "openrouter"): (
+        "openrouter_glm",
+        "z-ai/glm-5.3",
     ),
     ("openai", "openrouter"): (
         "openrouter_chatgpt",
@@ -155,16 +159,17 @@ def _provider_openrouter_extra_body(
     }
 
 
-def deepseek_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
-    return _provider_openrouter_extra_body(
-        config,
-        routing_key="deepseek_routing",
-        error_cls=DeepSeekRoutingPolicyError,
-        approved_endpoints=APPROVED_DEEPSEEK_ENDPOINTS,
-    )
-
-
 def glm_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
+    """GLM's ZDR provider policy — no reasoning-effort cap here.
+
+    Shared verbatim with the Tier-3 PR-review gate
+    (plugins/shipwright-security/scripts/lib/pr_review_model_policy.py), which
+    calls this directly rather than through ``openrouter_extra_body`` below.
+    The plan/code-review cascade's own reasoning-effort cap (see
+    ``openrouter_extra_body``'s "glm" branch) must not silently change that
+    gate's request shape too — it is a separate, already-shipped consumer
+    this iterate does not touch.
+    """
     return _provider_openrouter_extra_body(
         config,
         routing_key="glm_routing",
@@ -173,10 +178,31 @@ def glm_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def deepseek_openrouter_extra_body(config: dict[str, Any]) -> dict[str, Any]:
+    """DeepSeek's provider policy, for the Tier-3 PR-review gate's operator
+    override (`SHIPWRIGHT_PR_REVIEW_MODEL=deepseek/...`) — not called by the
+    plan/code-review cascade, which no longer offers DeepSeek as a reviewer
+    identity."""
+    return _provider_openrouter_extra_body(
+        config,
+        routing_key="deepseek_routing",
+        error_cls=DeepSeekRoutingPolicyError,
+        approved_endpoints=APPROVED_DEEPSEEK_ENDPOINTS,
+    )
+
+
 def openrouter_extra_body(model_key: str, config: dict[str, Any]) -> dict[str, Any]:
-    """Policy for one reviewer identity; never infer an unknown identity."""
-    if model_key == "deepseek":
-        return deepseek_openrouter_extra_body(config)
+    """Policy for one reviewer identity; never infer an unknown identity.
+
+    The plan/code-review cascade's sole entry point for GLM's extra_body — it
+    additionally caps reasoning effort to "low", empirically the fix for GLM
+    5.3 exhausting its entire output-token budget on invisible reasoning
+    tokens on large diffs (``finish_reason: length``, near-empty visible
+    reply). The Tier-3 PR-review gate calls ``glm_openrouter_extra_body``
+    directly and never reaches this cap (see that function's docstring).
+    """
+    if model_key == "glm":
+        return {**glm_openrouter_extra_body(config), "reasoning": {"effort": "low"}}
     if model_key == "openai":
         return {}
     raise ValueError(f"unknown external reviewer identity: {model_key!r}")

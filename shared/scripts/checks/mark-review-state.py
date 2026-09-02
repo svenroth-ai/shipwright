@@ -87,7 +87,7 @@ _ALLOWED_VERDICT_VALUES = frozenset(VERDICTS) | {UNKNOWN, "unavailable"}
 
 
 def parse_verdict_args(pairs: list[str] | None) -> tuple[dict[str, str], str | None]:
-    """Turn ``["deepseek=approve", "openai=reject"]`` into a verdict mapping.
+    """Turn ``["glm=approve", "openai=reject"]`` into a verdict mapping.
 
     Returns ``(verdicts, error)``. An unrecognised verdict word is an error
     rather than a silent ``unknown``: the caller mistyped, and coercing it
@@ -145,7 +145,7 @@ def main() -> int:
         action="append",
         metavar="REVIEWER=VALUE",
         help=(
-            "One reviewer's overall verdict, e.g. --verdict deepseek=approve "
+            "One reviewer's overall verdict, e.g. --verdict glm=approve "
             "--verdict openai=reject. Read from each reply's SHIPWRIGHT_VERDICT "
             "line (external_review.py reports them under 'verdicts'). The "
             "contradiction is DERIVED from the pair, never passed in."

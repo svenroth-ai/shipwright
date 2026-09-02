@@ -1,27 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-08-26T14:26:44.593029Z. Items waiting for triage decision.
+> Auto-generated 2026-09-01T21:51:58.004163Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 877
-- Triage: 16 | Promoted: 4 | Dismissed: 855 | Snoozed: 2
+- Total: 882
+- Triage: 12 | Promoted: 4 | Dismissed: 864 | Snoozed: 2
 
-## Top 16 items (severity-sorted)
-
-### Source: board-merge (1 item)
-
-<a id="trg-f8ae782f"></a>
-- **Kampagnen-Worktree-Guard: die zwei Known-limitations aus PR #653 schliessen - Session-Lock und Branch-Identitaet** `id=trg-f8ae782f | severity=medium | kind=improvement → P2/engineering`
-  - ZUSAMMENGELEGT 2026-08-26 aus trg-16bec646 \(P2\) und trg-50bd22a1 \(P3\). Beide sind die ZWEI BULLETS DESSELBEN ABSCHN…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate
-    
-    Work item: Kampagnen-Worktree-Guard: die zwei Known-limitations aus PR #653 schliessen - Session-Lock und Branch-Identitaet
-    ```
-  - Promote: `triage_promote.py --id trg-f8ae782f --task-ref EXT:<ref>`
+## Top 12 items (severity-sorted)
 
 ### Source: board-split (2 items)
 
@@ -47,16 +34,12 @@
     ```
   - Promote: `triage_promote.py --id trg-d76ab0d9 --task-ref EXT:<ref>`
 
-### Source: code-review (1 item)
+### Source: external\_review\_degradation (1 item)
 
-<a id="trg-16075b99"></a>
-- **FR-table description exemption uses a value-comparison, not structural, gap check** `id=trg-16075b99 | severity=low | kind=improvement → P3/engineering`
-  - compute\_fr\_coherence's Name-only fallback fix \(iterate-2026-08-25-fr-criteria-parser-pin\) compares the picked descr…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-16075b99 --task-ref EXT:<ref>`
+<a id="trg-d920e1ab"></a>
+- **External review: deepseek reviewer degraded during code review** `id=trg-d920e1ab | severity=medium | kind=maintenance → P2/engineering`
+  - The deepseek reviewer arm did not return a usable reply during an external code review \(provider=openrouter\), while a…
+  - Promote: `triage_promote.py --id trg-d920e1ab --task-ref EXT:<ref>`
 
 ### Source: iterate-2026-08-01-drop-write-once-step-fields (1 item)
 
@@ -83,33 +66,6 @@
     Work item: P4.02: grade_snapshot dirty: the orchestrator's sibling-process residual
     ```
   - Promote: `triage_promote.py --id trg-9fe7c8b1 --task-ref EXT:<ref>`
-
-### Source: iterate-2026-08-26-b-pure-hardening (2 items)
-
-<a id="trg-12f6ab89"></a>
-- **S2b pass B follow-up: stale test/probe naming and doc nits from code-review** `id=trg-12f6ab89 | severity=low | kind=improvement → P3/engineering`
-  - Code-review of S2b pass B \(pure hardening, PR #655\) found 5 cosmetic/documentation issues, none correctness bugs: \(1…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-12f6ab89 --task-ref EXT:<ref>`
-
-<a id="trg-a95e6fdf"></a>
-- **Direct spec.md bypass reads \(top-level agent\_docs + repo-root\) still use exists\(\) not is\_file\(\)** `id=trg-a95e6fdf | severity=low | kind=improvement → P3/engineering`
-  - External code review of S2b pass B \(pure hardening\) found that the top-level agent\_docs/spec.md check in \_test\_lin…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-a95e6fdf --task-ref EXT:<ref>`
-
-### Source: manual (1 item)
-
-<a id="trg-b17e5878"></a>
-- **S2b-C \[ITERATE GEFUEHRT\] Discovery-Konvergenz: guard-Befund und include\_iterate** `id=trg-b17e5878 | severity=medium | kind=improvement → P2/engineering`
-  - DER GEFUEHRTE TEIL VON S2b. Bewusst NICHT autonom: dieser Iterate beginnt mit einer Entscheidung, die der Operator tref…
-  - Promote: `triage_promote.py --id trg-b17e5878 --task-ref EXT:<ref>`
 
 ### Source: operator-request (1 item)
 
