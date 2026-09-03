@@ -1,6 +1,9 @@
 {
   "external_review": {
-    "feedback_iterations": 1
+    "feedback_iterations": 1,
+    "gpt_leg": {
+      "provider": "codex"
+    }
   },
   "external_code_review": {
     "enabled": true
