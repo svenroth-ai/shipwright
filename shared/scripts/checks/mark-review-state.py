@@ -43,7 +43,7 @@ Usage:
         --planning-dir <path> \\
         --status {completed|skipped_user_opt_out|skipped_config_disabled} \\
         [--review-type plan|iterate|code] \\
-        [--provider openrouter|openai] \\
+        [--provider openrouter|openai|codex] \\
         [--reason "user opted out: offline demo"] \\
         [--findings-count 5] \\
         [--self-review-fallback-ran]

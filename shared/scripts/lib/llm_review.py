@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 # This module is imported under TWO names and both are live:
 #   * bare ``import llm_review``      — shipwright-adopt's Layer-3 review_runner,
@@ -55,6 +56,8 @@ try:  # bare: this directory is on sys.path
     from external_review_degraded import DEFAULT_TIMEOUT_SECONDS
     from external_review_config import load_review_config
     from external_review_default_legs import (
+        resolve_openai_route,
+        review_codex as _review_codex,
         review_openai as _review_openai,
         review_openrouter as _review_openrouter,
     )
@@ -69,6 +72,8 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
     from lib.external_review_degraded import DEFAULT_TIMEOUT_SECONDS  # type: ignore[no-redef]
     from lib.external_review_config import load_review_config  # type: ignore[no-redef]
     from lib.external_review_default_legs import (  # type: ignore[no-redef]
+        resolve_openai_route,
+        review_codex as _review_codex,
         review_openai as _review_openai,
         review_openrouter as _review_openrouter,
     )
@@ -84,6 +89,7 @@ DEFAULT_MODELS = {
     "openrouter_glm": "z-ai/glm-5.3",
     "openrouter_chatgpt": "openai/gpt-5.6-terra",
     "chatgpt": "gpt-5.6-terra",
+    "codex": "gpt-5.6-terra",
 }
 
 
@@ -109,6 +115,7 @@ def run_review(
     user_prompt: str | None = None,
     models: dict | None = None,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    project_root: Path | str | None = None,
 ) -> dict:
     """Run external LLM review with GLM + OpenAI in parallel.
 
@@ -121,6 +128,15 @@ def run_review(
             identity-locked bindings; differing values fail before client
             construction.
         timeout: API timeout in seconds.
+        project_root: When given, deep-merges that project's
+            ``shipwright_iterate_config.json`` over the shared config — the
+            same per-project override ``external_review.py`` already
+            applies, so a caller with a natural project root can opt that
+            project into the Codex route. Omitted by callers with none;
+            adopt's Layer-3 review is one such caller today, and stays
+            out of scope for this change — it pre-gates on its own
+            ``_has_any_api_key()`` check, so wiring it through is a
+            separate change.
 
     Returns usable ``success`` plus ``partial`` / ``warnings``: one complete
     leg remains usable without representing a degraded peer as a clean pass.
@@ -134,7 +150,7 @@ def run_review(
             "Identify: security issues, bugs, performance concerns, and missed edge cases."
         )
 
-    config = load_review_config()
+    config = load_review_config(project_root=project_root)
     if models is not None:
         config = {
             **config,
@@ -162,40 +178,49 @@ def run_review(
                     # review_gateway() redacts internally; this is defense in depth only.
                     reviews[name] = {"status": "error", "reason": redact_all_configured_secrets(str(e))}
 
-    elif provider == "openrouter":
+    else:
+        has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
+        has_openai = bool(os.environ.get("OPENAI_API_KEY"))
+        openai_route, openai_route_note = resolve_openai_route(
+            config, has_openrouter_key=has_openrouter, has_openai_key=has_openai,
+        )
+        if openai_route == "codex":
+            # `detect_provider()` above predates the codex route and cannot
+            # name it; the envelope must name the route that actually
+            # answered, not the stale pre-codex chain result — a stale
+            # value would misreport a codex pass as "none"/"openrouter".
+            provider = "codex"
         with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(
+            futures = {}
+            if has_openrouter:
+                futures[executor.submit(
                     _review_openrouter, content, context, system_prompt, user_prompt, config, "glm", timeout
-                ): "glm",
-                executor.submit(
+                )] = "glm"
+            else:
+                reason = "No OPENROUTER_API_KEY set" if not has_openai else "GLM requires an approved OpenRouter ZDR endpoint"
+                reviews["glm"] = {"status": "skipped", "reason": reason}
+
+            if openai_route == "codex":
+                rendered = user_prompt.replace("{CONTENT}", content).replace("{CONTEXT}", context)
+                futures[executor.submit(_review_codex, rendered, system_prompt, config)] = "openai"
+            elif openai_route == "openrouter":
+                futures[executor.submit(
                     _review_openrouter, content, context, system_prompt, user_prompt, config, "openai", timeout
-                ): "openai",
-            }
+                )] = "openai"
+            elif openai_route == "direct":
+                futures[executor.submit(_review_openai, content, context, system_prompt, user_prompt, config, timeout)] = "openai"
+            else:
+                default_reason = "No API keys configured" if not has_openai and not has_openrouter else "No OPENAI_API_KEY set"
+                reviews["openai"] = {"status": "skipped", "reason": openai_route_note or default_reason}
+
             for future in as_completed(futures):
                 name = futures[future]
                 try:
                     reviews[name] = future.result()
                 except Exception as e:
                     reviews[name] = {"status": "error", "reason": str(e)}
-
-    elif provider == "direct":
-        reviews = {
-            "glm": {
-                "status": "skipped",
-                "reason": "GLM requires an approved OpenRouter ZDR endpoint",
-            },
-            "openai": _review_openai(
-                content, context, system_prompt, user_prompt,
-                config, timeout,
-            ),
-        }
-
-    else:
-        reviews = {
-            "glm": {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"},
-            "openai": {"status": "skipped", "reason": "No API keys configured"},
-        }
+            if openai_route_note and "openai" in reviews and openai_route != "none":
+                reviews["openai"]["fallback_reason"] = openai_route_note  # WHY even on success, not only on skip
 
     success = any(r.get("status") == "success" for r in reviews.values())
     warnings = [

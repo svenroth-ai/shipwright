@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-03-codex-cli-review-leg",
+  "date": "2026-09-03",
+  "section": "Iterate — feature: Codex CLI as a second GPT review leg",
+  "title": "Codex CLI as a second GPT review leg",
+  "context": "Both consumers of the GPT reviewer identity call OpenAI's Chat Completions API, metered per token; operator has a flat-cost Codex subscription and wants an optional zero-marginal-cost route.",
+  "decision": "Add review_codex() alongside the OpenRouter/direct legs, config-driven route selection (external_review.gpt_leg.provider), identity-locked model binding, never-raising availability check with graceful fallback.",
+  "consequences": "Codex-subscription operators zero out GPT-leg API cost; non-opted-in operators see byte-identical routing (AC7). New subprocess dependency with its own (larger) timeout/retry budget.",
+  "rationale": "Codex CLI is agentic free-form text, not a JSON API response, so it needs its own leg reusing the existing prose+sentinel contract rather than a new output schema.",
+  "rejected": "Env-var route override — rejected because the task requires config-driven, non-silent provider selection, and an env var choosing transport has no identity-lock backstop.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-03-codex-cli-review-leg-adr.md"
+}

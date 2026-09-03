@@ -20,7 +20,7 @@ loader) get the unchanged shared default.
 Env-var override pattern: ``SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER>`` overrides
 ``config['models'][key]``. Empty/whitespace-only values fall back to the config
 default. The set of valid keys matches the keys in the shipped config:
-``chatgpt, openrouter_glm, openrouter_chatgpt``.
+``chatgpt, openrouter_glm, openrouter_chatgpt, codex``.
 Active review producers pass this result through
 ``external_review_routing.resolve_reviewer_model``, which rejects any value
 that would change the operator-approved reviewer identity.
@@ -52,7 +52,12 @@ _VALID_MODEL_KEYS: set[str] = {
     "chatgpt",
     "openrouter_glm",
     "openrouter_chatgpt",
+    "codex",
 }
+
+#: Valid values for external_review.gpt_leg.provider — which transport
+#: answers the "openai" reviewer identity.
+_GPT_LEG_PROVIDERS: set[str] = {"api", "codex"}
 
 # Env-var prefix for SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER> overrides.
 _ENV_OVERRIDE_PREFIX = "SHIPWRIGHT_REVIEW_MODEL_"
@@ -129,11 +134,32 @@ def load_review_config(
     return _deep_merge(base, overrides)
 
 
-def is_external_review_enabled(config: dict[str, Any]) -> bool:
-    """Check if external review is enabled and at least one API key is available.
+def _codex_route_reachable(config: dict[str, Any]) -> bool:
+    """True iff the project opted the GPT leg into codex AND codex answers.
 
-    Considers OPENROUTER_API_KEY and OPENAI_API_KEY. GLM has no direct
-    fallback; Gemini credentials are historical and deliberately ignored.
+    A Codex-only operator (no OPENROUTER_API_KEY/OPENAI_API_KEY) must not
+    be told 'missing_keys' by the two gates below — that STOPs the calling
+    skill before ``external_review.py``/``run_review`` ever run, which
+    would make the whole codex route unreachable for exactly the operator
+    it exists for. Deferred import: ``external_review_default_legs``
+    imports THIS module at its own top level, so importing it back at
+    THIS module's top level would cycle; deferred avoids that (same
+    reasoning as the existing deferred ``env`` import below).
+    """
+    if gpt_leg_provider(config) != "codex":
+        return False
+    from external_review_default_legs import is_codex_available  # type: ignore[import-not-found]
+
+    available, _reason = is_codex_available()
+    return available
+
+
+def is_external_review_enabled(config: dict[str, Any]) -> bool:
+    """Check if external review is enabled and at least one route is available.
+
+    Considers OPENROUTER_API_KEY and OPENAI_API_KEY, or a reachable codex
+    route. GLM has no direct fallback; Gemini credentials are historical
+    and deliberately ignored.
     """
     from env import load_shipwright_env  # type: ignore[import-not-found]
 
@@ -146,7 +172,7 @@ def is_external_review_enabled(config: dict[str, Any]) -> bool:
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    return has_openrouter or has_openai
+    return has_openrouter or has_openai or _codex_route_reachable(config)
 
 
 def is_external_code_review_enabled(config: dict[str, Any]) -> bool:
@@ -165,8 +191,9 @@ def get_external_review_status(config: dict[str, Any]) -> str:
     """Return the three-way review status for the planning/iterate session.
 
     - ``user_disabled``: feedback_iterations == 0 (explicit opt-out in config).
-    - ``available``:    keys present AND feedback_iterations > 0 — review will run.
-    - ``missing_keys``: feedback_iterations > 0 but no API key in env.
+    - ``available``:    a key is present, or the codex route is configured
+      and reachable, AND feedback_iterations > 0 — review will run.
+    - ``missing_keys``: feedback_iterations > 0 but no route is available.
 
     Skills branch on this in their Step 5 / equivalent: run review / prompt user / self-review.
     """
@@ -181,7 +208,7 @@ def get_external_review_status(config: dict[str, Any]) -> str:
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    if has_openrouter or has_openai:
+    if has_openrouter or has_openai or _codex_route_reachable(config):
         return "available"
     return "missing_keys"
 
@@ -207,3 +234,24 @@ def resolve_model(config: dict[str, Any], model_key: str) -> str:
         return env_value
 
     return config.get("models", {}).get(model_key, "")
+
+
+def gpt_leg_provider(config: dict[str, Any]) -> str:
+    """Which transport answers the 'openai' reviewer leg: 'api' (default —
+    OpenRouter/direct OpenAI, unchanged existing behavior) or 'codex' (the
+    Codex CLI, flat-cost under a ChatGPT/Codex subscription instead of
+    metered).
+
+    Project-level override: ``external_review.gpt_leg.provider`` in
+    ``shipwright_iterate_config.json`` (deep-merged over the shared default
+    by ``load_review_config``). An unrecognized value falls back to 'api'
+    rather than erroring — this selects which transport ANSWERS the leg, not
+    the reviewer's identity, so a typo here should degrade to the safe
+    default instead of disabling review outright.
+    """
+    gpt_leg = config.get("external_review", {}).get("gpt_leg")
+    value = gpt_leg.get("provider", "api") if isinstance(gpt_leg, dict) else "api"
+    # isinstance guard BEFORE the `in` membership test: a JSON list/dict value (malformed
+    # override, e.g. "provider": []) is unhashable and `value in _GPT_LEG_PROVIDERS` raises
+    # TypeError rather than degrading — this leg selector must never crash the caller.
+    return value if isinstance(value, str) and value in _GPT_LEG_PROVIDERS else "api"

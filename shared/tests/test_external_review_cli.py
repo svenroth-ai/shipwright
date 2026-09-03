@@ -347,7 +347,7 @@ def test_external_review_module_imports_cleanly():
 # ---- Provider call-path coverage (mocked) ----
 #
 # These tests prove the CLI dispatches the right review functions for each
-# detect_provider() outcome and that the JSON output has the right shape per
+# resolve_openai_route() outcome and that the JSON output has the right shape per
 # scenario. The provider helpers themselves get monkey-patched with sentinels
 # that record their calls and return a known-shape success blob.
 

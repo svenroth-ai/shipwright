@@ -68,3 +68,16 @@ def test_check_reports_available_with_openai_direct(tmp_path):
     assert out["available"] is True
     assert out["status"] == "available"
     assert out["providers"]["openai"] is True
+
+
+def test_check_reports_codex_configured_from_project_gpt_leg(tmp_path):
+    (tmp_path / "shipwright_iterate_config.json").write_text(
+        json.dumps({"external_review": {"gpt_leg": {"provider": "codex"}}}), encoding="utf-8",
+    )
+    out = run_check(_CLEAN, cwd=str(tmp_path))
+    assert out["providers"]["codex_configured"] is True
+
+
+def test_check_reports_codex_not_configured_by_default(tmp_path):
+    out = run_check(_CLEAN, cwd=str(tmp_path))
+    assert out["providers"]["codex_configured"] is False

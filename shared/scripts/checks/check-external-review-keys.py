@@ -23,6 +23,7 @@ if str(_SHARED_LIB) not in sys.path:
 
 from external_review_config import (  # noqa: E402
     get_external_review_status,
+    gpt_leg_provider,
     is_external_code_review_enabled,
     load_review_config,
 )
@@ -49,6 +50,7 @@ def main() -> int:
         "openrouter": bool(os.environ.get("OPENROUTER_API_KEY")),
         "glm": bool(os.environ.get("OPENROUTER_API_KEY")),
         "openai": bool(os.environ.get("OPENAI_API_KEY")),
+        "codex_configured": gpt_leg_provider(config) == "codex",
     }
 
     print(json.dumps({

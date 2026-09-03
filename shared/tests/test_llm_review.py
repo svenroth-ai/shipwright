@@ -140,6 +140,81 @@ def test_one_error_leg_is_partial_and_names_the_unavailable_arm(monkeypatch):
     assert result["warnings"] == ["glm: reviewer arm error"]
 
 
+def test_run_review_routes_openai_leg_through_codex_when_configured(monkeypatch, tmp_path):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    (tmp_path / "shipwright_iterate_config.json").write_text(
+        '{"external_review": {"gpt_leg": {"provider": "codex"}}}', encoding="utf-8"
+    )
+    import external_review_default_legs as legs
+    import llm_review
+
+    # resolve_openai_route itself is NOT stubbed — only is_codex_available (transport-level) — so
+    # the on-disk config genuinely drives the route, not a mocked route decision.
+    monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
+    expected = {"status": "success", "feedback": "codex review", "via": "codex"}
+    captured = {}
+
+    def _fake_review_codex(prompt, system_prompt, config):
+        captured["prompt"] = prompt
+        captured["system_prompt"] = system_prompt
+        return expected
+
+    monkeypatch.setattr(llm_review, "_review_codex", _fake_review_codex)
+
+    result = llm_review.run_review(
+        "content", "context", system_prompt="sys", user_prompt="u {CONTENT} {CONTEXT}", project_root=tmp_path,
+    )
+
+    assert result["reviews"]["openai"] == expected
+    assert result["reviews"]["glm"] == {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"}
+    assert result["success"] is True
+    assert result["provider"] == "codex"  # not "none" — detect_provider() predates the codex route
+    assert captured["system_prompt"] == "sys"
+    assert captured["prompt"] == "u content context"
+
+
+def test_run_review_records_fallback_reason_on_a_successful_fallback_leg(monkeypatch):
+    """AC4/AC8 regression: a codex-configured-but-unavailable operator must
+    see WHY the leg fell back even when the fallback itself succeeds — the
+    note was previously discarded outside the skip branch."""
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    import llm_review
+
+    monkeypatch.setattr(
+        llm_review, "resolve_openai_route",
+        lambda *_a, **_k: ("openrouter", "codex unavailable (codex CLI not found on PATH); falling back to openrouter"),
+    )
+    monkeypatch.setattr(
+        llm_review, "_review_openrouter",
+        lambda *_a, **_k: {"status": "success", "feedback": "ok"},
+    )
+
+    result = llm_review.run_review("content", "context")
+
+    assert result["reviews"]["openai"]["status"] == "success"
+    assert "codex unavailable" in result["reviews"]["openai"]["fallback_reason"]
+    assert "fallback_reason" not in result["reviews"]["glm"]
+
+
+def test_run_review_passes_project_root_through_to_config_loading(monkeypatch, tmp_path):
+    (tmp_path / "shipwright_iterate_config.json").write_text(
+        '{"external_review": {"gpt_leg": {"provider": "codex"}}}', encoding="utf-8"
+    )
+    import llm_review
+
+    captured = {}
+
+    def _fake_load(*, project_root=None, config_path=None):
+        captured["project_root"] = project_root
+        return {}
+
+    monkeypatch.setattr(llm_review, "load_review_config", _fake_load)
+    llm_review.run_review("content", "context", project_root=tmp_path)
+    assert captured["project_root"] == tmp_path
+
+
 def test_default_models_match_shipping_config():
     """DEFAULT_MODELS must not drift from shared/config/external_review.json.
 

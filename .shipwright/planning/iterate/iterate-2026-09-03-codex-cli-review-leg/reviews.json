@@ -1,0 +1,393 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-03-codex-cli-review-leg",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T07:32:01.805441+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case / risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes `codex exec` (a) reads the full prompt from stdin, (b) supports `--ephemeral`, `-o <tmpfile>` writing plain text of the final message, and (c) that `classify_reply()` can consume that output directly. Codex CLI flags and output formats change across versions (some versions emit JSON or session logs to `-o`, and some builds expect the prompt as an argv positional, not stdin). If any assumption is wrong, the leg fails on first real use despite passing mocked unit tests.",
+          "suggestion": "Add an empirical probe step before Build: run the exact planned invocation locally with a trivial prompt and confirm stdin-prompt ingestion and the output-file format. Parse defensively (if the `-o` file is JSON, extract the final-message field) and assert the minimum codex version, or at least document the tested version in the miniplan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security / risk",
+          "file": null,
+          "line": null,
+          "finding": "The review payload (diffs, code under review) is attacker-influenceable text fed to an agentic CLI. The API legs are stateless completions; `codex exec` is an agent that can take actions even under `--sandbox read-only` (read-only restricts writes, but network access policy depends on the operator's local codex config and can be more permissive than intended). A prompt injection in reviewed code could cause the codex process to do something beyond producing a verdict.",
+          "suggestion": "Explicitly pass a network-off sandbox setting (e.g. `--sandbox read-only` confirmed to disable network, or `--config sandbox_workspace_write.network_access=false` equivalent), and state in the plan that the sandbox mode is chosen to deny both writes and network, not just writes. Also confirm `--cd` scratch dir is empty so the agent can't read repo files the other legs can't see (the plan already does this — good).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "is_codex_available()` \"never raises\" but codex auth state detection is tricky: an unauthenticated `codex exec` may not exit with a distinguishable code — it may block on an interactive login prompt, hanging until the review's overall timeout. A hang is worse than a raise.",
+          "suggestion": "Implement the check with its own short subprocess timeout (a few seconds), a non-interactive flag (e.g. Codex's equivalent of `--no-tty` / headless mode), and treat timeout as \"unavailable.\" Cover this in unit tests with a mocked hanging subprocess.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "codex` availability is checked per invocation; `codex exec` calls are slow (agentic startup, potentially tens of seconds). No mention of how `codex.timeout_seconds` interacts with retries, or with any caller-level review deadline — two retries × 120s could stall a review pass well beyond what the HTTP legs ever did.",
+          "suggestion": "Define the total time budget (timeout × max_retries) explicitly, cap it in config validation, and make sure a codex timeout counts as `degraded` (not `error`) so the pass degrades to the API route per AC4 rather than failing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The dispatch restructure (from a single `provider` string driving both legs to independent per-leg routing) plus the `is_degraded()` generalization are the two changes that can silently alter existing behavior. The plan claims equivalence \"verified against the existing test suite,\" which is the right gate — but the degraded-generalization in particular changes semantics from an allowlist to status-derived, and any test whose expected values were accidentally allowlist-shaped would pass both ways.",
+          "suggestion": "For the degraded change, add one explicit regression test per previously-allowlisted provider combination (attempted-openrouter-only, attempted-both, skipped-all) asserting identical old-vs-new results, not just suite-green.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC4's fallback (codex configured but unavailable → metered API) can surprise an operator who chose codex specifically to avoid per-token cost; a silent fallback could rack up API charges.",
+          "suggestion": "Ensure the fallback is loudly logged/stated in the review output reason (the plan says \"stated reason\" — make sure it's surfaced to the operator, not just an internal log line).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Scratch-dir lifecycle is unspecified: creation, permissions, and cleanup of the `--cd` dir and `-o` tmpfile. The reviewed code may be proprietary; leftover scratch dirs holding prompts in `/tmp` is a minor data-exposure issue.",
+          "suggestion": "Create with `tempfile.mkdtemp()`, remove in a `finally`, and consider restrictive permissions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes that the Codex CLI can execute the locked API model identifier, `gpt-5.6-terra`, under a ChatGPT/Codex subscription and that the stated invocation (`codex exec -m … --sandbox read-only --ephemeral --cd … -o …`, prompt from stdin) is supported by the target Codex CLI version. This is a critical unverified compatibility point: Codex CLI model aliases, subscription entitlements, stdin behavior, output-file semantics, and authentication/status commands may differ from the API transport.",
+          "suggestion": "Make an empirical compatibility probe a prerequisite to implementation, against the minimum supported Codex CLI version. Verify model selection, noninteractive stdin input, final-output capture, exit codes for unauthenticated users, timeout behavior, and read-only sandbox semantics. If the subscription CLI requires a distinct supported model alias, bind `(\"openai\", \"codex\")` to that code-owned alias rather than assuming the OpenRouter/direct model string is valid.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "is_codex_available()` is required to detect both installation and authentication “without ever raising,” but the plan does not define a reliable, bounded, noninteractive authentication test. Checking only `PATH` produces false positives for expired credentials; running a real review to test authentication can be slow, consume quota, or return ambiguous failures.",
+          "suggestion": "Use a documented, noninteractive Codex status/auth command if one exists, with a short timeout and all subprocess exceptions caught. Return structured availability information (for example, executable missing, authentication unavailable, status timed out) rather than just a boolean so skip/fallback reporting is useful. If no stable status command exists, treat executable presence as provisional and classify authentication failures from `review_codex()` as unavailable, then apply the same API fallback path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The fallback design covers Codex being unavailable before dispatch, but it is unclear what happens when Codex is initially available and then fails at execution time (expired login, unsupported model, service failure, timeout, or malformed/empty output). Reporting that as a degraded Codex leg when API credentials are available would unnecessarily lose the GPT review; automatically retrying through API without clear rules could also double execution or obscure the actual route used.",
+          "suggestion": "Define failure classes and route behavior explicitly. For deterministic setup failures (missing executable, auth failure, unsupported model), fall back once to the legacy API route when configured. For transient execution failures, honor Codex retry settings and then either fall back once or report degraded according to a documented policy. Record both the configured route and the effective route/fallback reason in the leg result so degradation and operator output remain accurate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "An isolated empty working directory and `--sandbox read-only` do not by themselves make Codex equivalent to a text-only API reviewer. Codex is an agentic local CLI: untrusted review input such as PR content can contain prompt-injection instructions, and the CLI may load user-level configuration, MCP servers, skills, or execute read-only commands that can inspect accessible local files or make network calls. This is a materially new exposure compared with sending prompt text to OpenRouter/OpenAI.",
+          "suggestion": "Verify the CLI’s controls and run it in the most restricted noninteractive mode available: disable MCP/plugins/skills and project instructions where supported, prohibit or minimize tool execution, and ensure no interactive approval path is possible. If Codex must retain filesystem/tool access, document that security boundary prominently and consider an isolated environment/home directory that exposes only the authentication material needed by Codex, not the operator’s normal home/configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The subprocess lifecycle details are underspecified. A timeout must terminate the full process tree, retries must not reuse stale output, and output handling must correctly distinguish a missing output file, empty final response, partial response, nonzero exit with usable output, and a malformed verdict sentinel. Temporary files may also expose review content if created with permissive permissions or retained after failures.",
+          "suggestion": "Invoke the process with an argument list rather than a shell, use a fresh mode-`0700` temporary directory and mode-`0600` output file per attempt, enforce a process-group timeout/cleanup, and clean up in `finally`. Preserve the existing verdict parsing behavior after `classify_reply()`, while producing a clear degraded/skip reason for each subprocess failure mode. Add focused tests for timeout, executable-not-found, nonzero exit, absent/empty output, malformed sentinel, and stale-output prevention.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Generalizing degradation solely from each leg’s `status` may change meaning if `skipped` can represent both an intentionally unconfigured leg and a leg that was expected but could not run. The current provider allowlist is flawed for mixed/Codex routes, but replacing it without preserving the “expected/enabled versus attempted” distinction risks changing existing reporting despite the claim of identical legacy behavior.",
+          "suggestion": "Make degradation derive from explicit per-leg execution metadata: whether the leg was enabled/expected, selected route, effective route, and terminal status. Keep intentionally absent legs out of degradation, while counting enabled legs that end in `degraded` or `error`. Add regression cases for no API keys, direct-only, OpenRouter-only, both API routes, Codex-only with/without availability, and mixed GLM/OpenRouter plus GPT/Codex execution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The two consumers will share route resolution, but the plan does not state how the resolver receives the same merged project configuration and environment context in both the CLI and library paths. A resolver that silently reloads configuration or reads the current working directory internally can yield different results for `external_review.py` and `llm_review.py`, particularly when invoked outside the project root.",
+          "suggestion": "Make route resolution accept the already-loaded merged configuration plus an explicit environment/capability abstraction, or ensure both callers use one shared configuration-loading entry point before invoking it. Validate `gpt_leg.provider` strictly (`api` or `codex`) with a useful configuration error rather than silently treating unknown values as `api` or `none`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The addition of `models.codex` and `DEFAULT_MODELS[\"codex\"]` may introduce duplicated model defaults across shipped config, routing bindings, and library defaults. Since the requirement is identity locking, divergence between these locations is a practical maintenance risk.",
+          "suggestion": "Retain the config key because the acceptance criteria require it, but make one existing identity-locking resolver authoritative for the effective model and test that the shipped `models.codex` value matches its code-owned binding. Avoid allowing `llm_review.DEFAULT_MODELS` to become an independently selectable Codex model source.  Overall, the architecture—shared route resolution, independent GLM/GPT dispatch, and reuse of the existing prose/verdict contract—is sound. The change should proceed after validating the actual Codex CLI contract and tightening runtime fallback, subprocess isolation, and degradation semantics. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-03T05:51:56.863910+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case / risk — Severity: medium**\n  **Finding**: The plan assumes `codex exec` (a) reads the full prompt from stdin, (b) supports `--ephemeral`, `-o <tmpfile>` writing *plain text* of the final message, and (c) that `classify_reply()` can consume that output directly. Codex CLI flags and output formats change across versions (some versions emit JSON or session logs to `-o`, and some builds expect the prompt as an argv positional, not stdin). If any assumption is wrong, the leg fails on first real use despite passing mocked unit tests.\n  **Suggestion**: Add an empirical probe step before Build: run the exact planned invocation locally with a trivial prompt and confirm stdin-prompt ingestion and the output-file format. Parse defensively (if the `-o` file is JSON, extract the final-message field) and assert the minimum codex version, or at least document the tested version in the miniplan.\n\n- **Category: security / risk — Severity: medium**\n  **Finding**: The review payload (diffs, code under review) is attacker-influenceable text fed to an *agentic* CLI. The API legs are stateless completions; `codex exec` is an agent that can take actions even under `--sandbox read-only` (read-only restricts writes, but network access policy depends on the operator's local codex config and can be more permissive than intended). A prompt injection in reviewed code could cause the codex process to do something beyond producing a verdict.\n  **Suggestion**: Explicitly pass a network-off sandbox setting (e.g. `--sandbox read-only` confirmed to disable network, or `--config sandbox_workspace_write.network_access=false` equivalent), and state in the plan that the sandbox mode is chosen to deny both writes and network, not just writes. Also confirm `--cd` scratch dir is empty so the agent can't read repo files the other legs can't see (the plan already does this — good).\n\n- **Category: edge-case — Severity: medium**\n  **Finding**: `is_codex_availab […truncated]\n\n[openai] 1. **Category: dependency**  \n   **Severity: high**  \n   **Finding:** The plan assumes that the Codex CLI can execute the locked API model identifier, `gpt-5.6-terra`, under a ChatGPT/Codex subscription and that the stated invocation (`codex exec -m … --sandbox read-only --ephemeral --cd … -o …`, prompt from stdin) is supported by the target Codex CLI version. This is a critical unverified compatibility point: Codex CLI model aliases, subscription entitlements, stdin behavior, output-file semantics, and authentication/status commands may differ from the API transport.  \n   **Suggestion:** Make an empirical compatibility probe a prerequisite to implementation, against the minimum supported Codex CLI version. Verify model selection, noninteractive stdin input, final-output capture, exit codes for unauthenticated users, timeout behavior, and read-only sandbox semantics. If the subscription CLI requires a distinct supported model alias, bind `(\"openai\", \"codex\")` to that code-owned alias rather than assuming the OpenRouter/direct model string is valid.\n\n2. **Category: edge-case**  \n   **Severity: high**  \n   **Finding:** `is_codex_available()` is required to detect both installation and authentication “without ever raising,” but the plan does not define a reliable, bounded, noninteractive authentication test. Checking only `PATH` produces false positives for expired credentials; running a real review to test authentication can be slow, consume quota, or return ambiguous failures.  \n   **Suggestion:** Use a documented, noninteractive Codex status/auth command if one exists, with a short timeout and all subprocess exceptions caught. Return structured availability information (for example, executable missing, authentication unavailable, status timed out) rather than just a boolean so skip/fallback reporting is useful. If no stable status command exists, treat executable presence as provisional and classify authentication failures from `review_codex()` as unava […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/llm_review.py",
+          "line": 188,
+          "finding": "Comment cited an example (review_assistant_ui_plan.py) that does not actually gate on this field.",
+          "suggestion": "Reword to state the real reason without the false citation.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/llm_review.py",
+          "line": 137,
+          "finding": "Dangling cross-reference \"see its own docstring\" led nowhere.",
+          "suggestion": "Name the concrete reason inline (_has_any_api_key() pre-gate).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_external_review_cli.py",
+          "line": 350,
+          "finding": "Obsolete comment referencing detect_provider() as the active dispatch mechanism.",
+          "suggestion": "Reword to resolve_openai_route().",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_external_review_degraded.py",
+          "line": 207,
+          "finding": "test_gpt_leg_routes_through_codex_when_project_configures_it writes a config file but then stubs resolve_openai_route, making the config write decorative.",
+          "suggestion": "Either drop the config write or drop the stub so the config genuinely drives the route.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-03T06:52:58.119413+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 96,
+          "finding": "Claim under doubt: shutil.which(\"codex\") on Windows safely resolves the real installed binary. — Windows implicitly searches the current working directory before PATH (the BatBadBut class). Since this process's cwd is typically the project under review, a reviewed repo could plant its own codex.exe/.cmd/.bat at its root and shutil.which would prefer it over the real PATH install, letting reviewed code execute inside the review pipeline itself.",
+          "suggestion": "Added _resolve_codex_binary() which rejects a shutil.which() hit whose resolved parent directory equals the resolved cwd, and wired it into both is_codex_available() and review_codex()'s own binary resolution (previously only the former). Covered by test_resolve_codex_binary_cwd_hijack_guard (parametrized) in test_external_review_codex_availability.py.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 214,
+          "finding": "Claim under doubt: review_codex()'s TOCTOU re-check of is_codex_available() should return status=\"skipped\" on failure, matching the pre-dispatch skip semantics. — resolve_openai_route() already committed to codex before review_codex() was ever called, so a failure at this re-check is an attempted-and-failed leg, not a not-attempted one. _attempted() in external_review_degraded.py explicitly filters out status==\"skipped\" — recording \"skipped\" here would silently drop the failure from partial-degradation reporting, hiding a real loss behind a status that means \"nothing to attempt\".",
+          "suggestion": "Changed the TOCTOU failure return from status=\"skipped\" to status=\"error\". Covered by test_review_codex_errors_when_unavailable_at_toctou_recheck in test_external_review_codex_leg.py, which asserts the exact result shape.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 252,
+          "finding": "Claim under doubt: subprocess.run(..., text=True) is sufficient for capturing codex's stdout/stderr safely. — text=True without an explicit encoding defaults to locale.getpreferredencoding(False), which is cp1252 on default Windows installs. Non-ASCII content in a codex reply or in the login-status probe's stderr can raise UnicodeDecodeError, an exception type not caught by the existing TimeoutExpired/OSError handlers — crashing the leg instead of returning a stated error.",
+          "suggestion": "Added encoding=\"utf-8\", errors=\"replace\" to both the login-status probe call in is_codex_available() and the main codex exec call in review_codex(). Test fakes widened from pinned (cmd, input, capture_output, text, timeout) kwargs to **kwargs so they don't over-specify the real call shape.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_config.py",
+          "line": 157,
+          "finding": "Claim under doubt: is_external_review_enabled()/get_external_review_status() correctly report codex-only operators as having review available. — Both functions only checked OPENROUTER_API_KEY/OPENAI_API_KEY before this fix. An operator with ONLY a Codex subscription (no API keys, gpt_leg.provider==\"codex\") would be told \"missing_keys\" by these pre-flight gates, which STOP the calling skill (plan/iterate Step 5/B1b) before external_review.py or run_review() ever run — making the whole codex route structurally unreachable for exactly the operator it exists to serve.",
+          "suggestion": "Added _codex_route_reachable(config) (deferred-import to avoid a cycle with external_review_default_legs, which imports this module at its own top level) and OR'd it into both is_external_review_enabled() and get_external_review_status()'s key-presence checks. Covered by test_codex_route_reachability_with_no_api_keys (parametrized, both outcomes) in test_external_review_config.py, plus check-external-review-keys.py's new codex_configured field with its own tests.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 154,
+          "finding": "Claim under doubt: codex_settings()'s clamping is complete — a hand-edited config can't reach subprocess.run with an unsafe timeout. — Only max_retries was clamped originally. subprocess.run(timeout=None) means \"wait forever\", not \"use a default\" — a config value for timeout_seconds that resolves to None, 0, a negative number, or a non-numeric type would reach subprocess.run raw and hang the worker thread indefinitely, with no timeout to recover from.",
+          "suggestion": "codex_settings() now clamps timeout_seconds the same way: coerced to float, must be > 0, else falls back to CODEX_DEFAULT_TIMEOUT_SECONDS — symmetric with the existing max_retries clamp. Also hardened against config[\"codex\"] itself being a non-mapping (list/string) after the external code-review pass flagged the same class of gap for gpt_leg_provider(). Covered by test_codex_settings_clamps_a_negative_max_retries, test_codex_settings_defaults_when_unconfigured, and the new test_codex_settings_falls_back_to_defaults_on_a_non_mapping_codex_config.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 188,
+          "finding": "Claim under doubt: The docstring's claim that a prompt-injected diff \"has nothing beyond a read-only, unconfigured sandbox to act on\" accurately describes the security boundary. — --sandbox read-only restricts writes to the scratch directory, not reads or outbound network. It is not a network sandbox. A prompt-injected review artifact still runs against whatever network access and filesystem-read visibility the operator's own environment grants the codex process — the original wording overstated the isolation and could lead an operator to believe this route is safer than it actually is.",
+          "suggestion": "Corrected the docstring to state plainly that --sandbox read-only blocks writes only, not reads or network, and that this leg trusts the same review content the other two legs already send an external LLM API. Independently re-raised by the external code-review cascade (both GLM and OpenAI, HIGH/MEDIUM) as a still-real, only-documented (not mitigated) exposure — accepted as a stated risk rather than further restricted, since Shipwright does not control the Codex CLI's own sandbox internals beyond the flags it exposes, and the content sent is no more sensitive than what the OpenRouter/direct-OpenAI legs already transmit to a third-party LLM.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 140,
+          "finding": "Claim under doubt: The login-status probe (is_codex_available) validates authentication under the same conditions review_codex() will actually run under. — The probe originally ran `codex login status` with no isolation flags, while the real `codex exec` call passes --ignore-user-config --ignore-rules. A config-dependent auth path (e.g. an MCP-server-mediated credential, or a rule that alters auth behavior) could pass the probe and then fail at exec time, or vice versa, because the two calls checked auth under different configuration.",
+          "suggestion": "Added --ignore-user-config --ignore-rules to the login-status probe so it checks auth under the identical config isolation the real leg runs with. No version floor or real-binary integration test exists beyond the one-off empirical probe already recorded in the iterate spec's Confidence Calibration section — accepted as a known, stated gap rather than built out further in this change.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency-and-ordering",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 188,
+          "finding": "Claim under doubt: The worst-case wall-clock budget for the codex route is implicitly bounded and safe for callers to invoke synchronously. — review_codex()'s retry loop can run (max_retries + 1) attempts, each up to timeout_seconds, with no cap tying that product to anything the caller expects — a default config of max_retries=1, timeout_seconds=600 already reaches 1200s (20 minutes) for this one leg alone, versus ~240s for the API route. A caller with its own shorter timeout would see this leg simply never return within its budget.",
+          "suggestion": "Documented the exact worst-case formula and its default value (1200s) directly in review_codex()'s docstring, with an explicit note that invoking skills' own timeouts must budget above it.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 266,
+          "finding": "Claim under doubt: out_path.read_text(...) in review_codex() cannot fail in a way that crashes the leg instead of returning a stated error. — A transient filesystem error (permissions, disk full, antivirus lock on Windows) reading the scratch-dir output file after a successful codex exec would raise OSError uncaught, propagating out of review_codex() as an unhandled exception rather than the stated {\"status\": \"error\", ...} shape every other failure path in this function returns.",
+          "suggestion": "Wrapped the read_text() call in try/except OSError, returning the standard via=\"codex\"-carrying error shape. TemporaryDirectory's ignore_cleanup_errors=True Windows-antivirus-lock leak case remains unlogged (silently ignored, as before) — accepted as a pre-existing, low-severity, cosmetic gap rather than added scope.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/external_review_degraded.py",
+          "line": 87,
+          "finding": "Claim under doubt: is_degraded(reviews)/is_partially_degraded(reviews)'s signature change (dropping the leading provider argument) has no out-of-diff caller that breaks. — A public helper's parameter removal breaks any caller using the old two-argument form with a TypeError at call time, not import time — silent until actually exercised. Attempted to disprove the \"no breakage\" claim by grepping the entire monorepo for every call site of is_degraded( and is_partially_degraded(.",
+          "suggestion": "Grep of the full monorepo (plugins/, shared/, integration-tests/) found exactly one call site of each function, both inside external_review_degraded.py's own finalize_review_output — already updated in this diff. No other caller exists in this repository. Independently re-raised by the external code-review cascade (GLM, twice, MEDIUM) with the same conclusion after the same check. The one residual unknown is whether a separate repository (shipwright-webui) vendors a copy of this file with the old two-argument call — unverifiable from this repo and out of scope for this change; noted as a known follow-up rather than fixed here.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-03T07:29:59.560710+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 215,
+          "finding": "review_codex()` invokes an agentic local CLI with the full inherited environment and only `--sandbox read-only`. In particular, API keys and any other process secrets remain available to Codex/tool subprocesses, while the code explicitly acknowledges that outbound network access is not restricted. Attacker-controlled reviewed content can prompt the agent to read inherited secrets or accessible local files and exfiltrate them over the network, a capability not introduced by the stateless API legs.",
+          "suggestion": "Run Codex with a minimal, explicitly constructed environment (preserving only what is required for authentication), isolate its accessible home/configuration, and use Codex controls that disable tool/plugin/MCP execution and outbound network access where supported. If this cannot be enforced, this route needs an explicit security boundary rather than claiming comparability with API review.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 190,
+          "finding": "The unavailable-Codex fallback only occurs during `resolve_openai_route()`. After that check succeeds, `review_codex()` independently rechecks availability and returns an `error` on a TOCTOU auth/binary failure; a nonzero `codex exec` failure (including expired authentication or unsupported model) also returns an error directly. Neither consumer retries the established OpenRouter/direct route even when API credentials are available, so a Codex-configured operator can lose the GPT leg or receive a fully degraded hard failure instead of AC4’s required graceful fallback when Codex is unavailable at execution time.",
+          "suggestion": "Have dispatch handle Codex setup/auth failures by falling back once to the resolved API route when credentials exist, preserving the Codex failure as `fallback_reason`. Cover the successful-status-then-auth-failure and nonzero-auth-exit cases; the current test at `test_external_review_codex_leg.py:112` instead codifies the non-fallback behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/external_review_default_legs.py",
+          "line": 215,
+          "finding": "subprocess.run(..., timeout=...)` terminates the direct Codex process but does not create or terminate a process group. Codex can execute tool subprocesses; on timeout those descendants can survive after the review returns, retaining inherited credentials and potentially continuing reads/network activity in the background.",
+          "suggestion": "Launch Codex in a separate process session/group and explicitly terminate/kill the whole group on timeout, then wait for cleanup before returning the error result.  Overall assessment: ship-with-fixes. The core routing, identity locking, and independent-leg dispatch are implemented, but the agentic subprocess security boundary and execution-time fallback behavior need correction before release. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-03T07:45:55.378536+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] <no review returned: provider returned an empty reply>\n\n[openai] - Category: security  \n  Severity: high  \n  File: shared/scripts/lib/external_review_default_legs.py:215  \n  Finding: `review_codex()` invokes an agentic local CLI with the full inherited environment and only `--sandbox read-only`. In particular, API keys and any other process secrets remain available to Codex/tool subprocesses, while the code explicitly acknowledges that outbound network access is not restricted. Attacker-controlled reviewed content can prompt the agent to read inherited secrets or accessible local files and exfiltrate them over the network, a capability not introduced by the stateless API legs.  \n  Suggestion: Run Codex with a minimal, explicitly constructed environment (preserving only what is required for authentication), isolate its accessible home/configuration, and use Codex controls that disable tool/plugin/MCP execution and outbound network access where supported. If this cannot be enforced, this route needs an explicit security boundary rather than claiming comparability with API review.\n\n- Category: bug  \n  Severity: medium  \n  File: shared/scripts/lib/external_review_default_legs.py:190  \n  Finding: The unavailable-Codex fallback only occurs during `resolve_openai_route()`. After that check succeeds, `review_codex()` independently rechecks availability and returns an `error` on a TOCTOU auth/binary failure; a nonzero `codex exec` failure (including expired authentication or unsupported model) also returns an error directly. Neither consumer retries the established OpenRouter/direct route even when API credentials are available, so a Codex-configured operator can lose the GPT leg or receive a fully degraded hard failure instead of AC4’s required graceful fallback when Codex is unavailable at execution time.  \n  Suggestion: Have dispatch handle Codex setup/auth failures by falling back once to the resolved API route when credentials exist, preserving the Codex failure as `fallback_reason`. Cover the successful-status-then-auth […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "unavailable"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T06:51:59.919255+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T07:30:59.619146+00:00",
+      "disposition": "opus-plan-reviewer sub-step (medium+ mandatory, always before Branch A/B/C) was not spawned at its normal point in this run; disclosed post-hoc per iteration-planning.md rather than run retroactively after build (retroactive plan review defeats ask-before-building) — see iterate spec's Internal Plan Review section for the full disclosure",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

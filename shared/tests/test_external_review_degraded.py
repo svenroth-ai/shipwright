@@ -41,6 +41,7 @@ def clean_env(monkeypatch, tmp_path):
         "SHIPWRIGHT_REVIEW_MODEL_CHATGPT",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_GLM",
         "SHIPWRIGHT_REVIEW_MODEL_OPENROUTER_CHATGPT",
+        "SHIPWRIGHT_REVIEW_MODEL_CODEX",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -195,6 +196,45 @@ def test_empty_diff_short_circuit_is_not_degraded(
     assert rc == 0
     assert payload.get("skipped") == "empty_diff"
     assert payload["degraded"] is False
+
+
+def test_gpt_leg_routes_through_codex_when_project_configures_it(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, tmp_path
+):
+    """AC3/AC6: a project opting into the codex route gets it, with GLM's
+    dispatch staying independent (still skipped — no OPENROUTER_API_KEY).
+
+    ``resolve_openai_route`` itself is NOT stubbed — only ``is_codex_available``
+    (transport-level) and ``review_codex`` (subprocess dispatch) are — so the
+    on-disk config genuinely drives the route, not a mocked route decision."""
+    plugin_root, spec, plan = fake_plan_plugin
+    (tmp_path / "shipwright_iterate_config.json").write_text(
+        '{"external_review": {"gpt_leg": {"provider": "codex"}}}', encoding="utf-8"
+    )
+    import external_review
+    import external_review_default_legs as legs
+
+    monkeypatch.setattr(
+        external_review, "load_iterate_review_prompts",
+        lambda prompts_root=None: ("sys", "u {SPEC} {PLAN}"),
+    )
+    monkeypatch.setattr(legs, "is_codex_available", lambda: (True, ""))
+    monkeypatch.setattr(
+        external_review, "review_codex",
+        lambda *_a, **_k: {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve", "via": "codex"},
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py", "--mode", "iterate", "--spec-file", str(spec),
+         "--plan-file", str(plan), "--plugin-root", str(plugin_root)],
+    )
+    rc = external_review.main()
+    payload = json.loads(capsys.readouterr().out)
+
+    assert rc == 0
+    assert payload["provider"] == "codex"
+    assert payload["reviews"]["openai"]["via"] == "codex"
+    assert payload["reviews"]["glm"] == {"status": "skipped", "reason": "No OPENROUTER_API_KEY set"}
 
 
 def test_finalize_review_output_helper_contract():
