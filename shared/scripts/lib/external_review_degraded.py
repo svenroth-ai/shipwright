@@ -7,7 +7,6 @@ from pathlib import Path
 
 REVIEW_ENVELOPE_SCHEMA = 2
 
-_ATTEMPTED_PROVIDERS = ("openrouter", "direct")
 _NON_SUCCESS_ATTEMPTED_STATUSES = frozenset({"degraded", "error"})
 _BANNER = (
     "error: external review gate DEGRADED — API keys are present but no review "
@@ -78,8 +77,24 @@ def count_succeeded(reviews: dict) -> int:
     return sum(1 for review in reviews.values() if review.get("status") == "success")
 
 
-def is_degraded(provider: str, reviews: dict) -> bool:
-    return provider in _ATTEMPTED_PROVIDERS and count_succeeded(reviews) == 0
+def _attempted(reviews: dict) -> dict:
+    """The subset of legs that were actually dispatched — everything except
+    ``skipped``, which already means "nothing to attempt" (no key, codex
+    unavailable with no fallback route, etc.)."""
+    return {name: r for name, r in reviews.items() if r.get("status") != "skipped"}
+
+
+def is_degraded(reviews: dict) -> bool:
+    """True iff at least one leg was attempted and none succeeded.
+
+    Derived from each leg's own ``status`` rather than a provider-name
+    allowlist (the previous shape): a hardcoded provider allowlist can't
+    describe a mixed-route pass — GLM via OpenRouter while the GPT leg
+    answers via the Codex CLI, one leg skipped while the other runs — but a
+    leg's status already distinguishes ``skipped`` from
+    ``degraded``/``error``, which is all this needs.
+    """
+    return bool(_attempted(reviews)) and count_succeeded(reviews) == 0
 
 
 def partially_degraded_legs(reviews: dict) -> list[str]:
@@ -93,7 +108,7 @@ def partially_degraded_legs(reviews: dict) -> list[str]:
     )
 
 
-def is_partially_degraded(provider: str, reviews: dict) -> bool:
+def is_partially_degraded(reviews: dict) -> bool:
     """True when SOME but not ALL attempted legs failed.
 
     ``is_degraded`` only fires when EVERY leg fails — a mixed result (one
@@ -102,7 +117,7 @@ def is_partially_degraded(provider: str, reviews: dict) -> bool:
     is the gap that let a reviewer arm fail unnoticed for weeks while its
     sibling quietly carried the whole cascade.
     """
-    if provider not in _ATTEMPTED_PROVIDERS:
+    if not _attempted(reviews):
         return False
     return bool(partially_degraded_legs(reviews)) and count_succeeded(reviews) > 0
 
@@ -228,7 +243,7 @@ def file_partial_degradation_triage(
 def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
     """Build the stable CLI payload and fail loudly on total provider failure."""
     succeeded = count_succeeded(reviews)
-    degraded = is_degraded(provider, reviews)
+    degraded = is_degraded(reviews)
     output: dict = {
         # Version 1 was implicit and used the historical gemini/openai roster.
         # Version 2 makes the non-gemini roster change explicit — originally
@@ -245,7 +260,7 @@ def finalize_review_output(provider: str, reviews: dict) -> tuple[dict, int]:
         reason = degraded_reason(provider, reviews)
         output["degraded_reason"] = reason
         print(_BANNER.format(reason=reason), file=sys.stderr)
-    elif is_partially_degraded(provider, reviews):
+    elif is_partially_degraded(reviews):
         legs = partially_degraded_legs(reviews)
         output["partially_degraded"] = True
         output["partially_degraded_legs"] = legs

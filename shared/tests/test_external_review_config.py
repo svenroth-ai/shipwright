@@ -274,6 +274,19 @@ def test_get_external_review_status_default_iterations_is_1(clean_review_env):
     assert get_external_review_status(config) == "missing_keys"
 
 
+# ---- codex route reachability (no API keys, gpt_leg.provider == "codex") ----
+
+_CODEX_CONFIG = {"external_review": {"feedback_iterations": 1, "gpt_leg": {"provider": "codex"}}}
+
+
+@pytest.mark.parametrize("codex_ok,enabled,status", [(True, True, "available"), (False, False, "missing_keys")])
+def test_codex_route_reachability_with_no_api_keys(monkeypatch, clean_review_env, codex_ok, enabled, status):
+    import external_review_default_legs as legs  # noqa: PLC0415
+    monkeypatch.setattr(legs, "is_codex_available", lambda: (codex_ok, "" if codex_ok else "not found"))
+    assert is_external_review_enabled(_CODEX_CONFIG) is enabled
+    assert get_external_review_status(_CODEX_CONFIG) == status
+
+
 # ---- resolve_model — defaults ----
 
 def test_resolve_model_default_chatgpt(clean_review_env):

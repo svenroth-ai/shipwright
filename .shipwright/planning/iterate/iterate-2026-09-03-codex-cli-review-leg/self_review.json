@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "spec-reviewer round-4 PASS confirms all 8 ACs met, citing exact file:line for each; no extra scope added beyond the mini-plan."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Every subprocess.run call has TimeoutExpired/OSError handlers; read_text wrapped in try/except OSError; gpt_leg_provider/codex_settings now guard non-str/non-mapping config values (found by external review, fixed) rather than raising."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No hardcoded secrets; identity-locked model bindings via resolve_reviewer_model; cwd-hijack guard on binary resolution. The Codex sandbox's write-only (not read/network) restriction is documented as an accepted, stated risk rather than silently claimed as full isolation — Shipwright does not control codex CLI internals beyond its own flags, and the content sent is the same content already trusted to OpenRouter/OpenAI in the sibling legs."},
+    {"name": "Test Quality", "verdict": "pass", "note": "210 tests across the touched suites assert on outcomes (route selection, leg status, error reasons), not internals; happy-path and error-path (timeout, nonzero exit, TOCTOU, malformed config, symlink loop, cwd-hijack) both covered per new behavior."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "No DB/pagination surface. One accepted trade-off: _codex_route_reachable can spawn a bounded (15s) subprocess per status-check call when codex is configured with no API keys — a narrow, non-default path; caching was considered and deliberately not added to avoid staleness risk for a low-severity, low-frequency cost."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "All touched files at or under their bloat-baseline ceiling / the 300-line guideline; new test file split out (test_external_review_codex_availability.py) rather than exceeding the guideline."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "shipwright_iterate_config.json's gpt_leg.provider field: producer (config_writer / hand-written project config) -> file -> consumer (load_review_config/gpt_leg_provider) round-trip covered by test_load_review_config_round_trip_per_project_overrides plus the CLI-level test that writes the real file and drives the real loader end to end."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
+  ]
+}

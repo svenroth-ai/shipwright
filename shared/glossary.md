@@ -491,9 +491,9 @@
   compliance audits (Group F), and the on-demand
   `/shipwright-compliance` skill.
 - **External-Review** — `shared/scripts/tools/external_review.py` —
-  reviews plans / iterate mini-plans / code diffs against the spec
-  via an OpenRouter-routed LLM. Mandatory at medium-iterate plan
-  stage and at code-review cascade for risk-flag iterates.
+  reviews plans / iterate mini-plans / code diffs against the spec via
+  OpenRouter (GPT leg: or the Codex CLI, `gpt_leg.provider`). Mandatory at
+  medium-iterate plan stage and at code-review cascade for risk-flag iterates.
 - **Surface-Verification** — `shared/scripts/surface_verification.py`,
   the F0.5 end-to-end gate. Empirically drives the user-erlebbare
   surface (web / cli / api / none) and writes the

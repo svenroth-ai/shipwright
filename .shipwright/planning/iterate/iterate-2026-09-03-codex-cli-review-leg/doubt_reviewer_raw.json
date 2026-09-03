@@ -1,0 +1,96 @@
+{
+  "stage": "doubt",
+  "doubts": [
+    {
+      "claim_under_doubt": "shutil.which(\"codex\") on Windows safely resolves the real installed binary.",
+      "disproof_attempt": "Windows implicitly searches the current working directory before PATH (the BatBadBut class). Since this process's cwd is typically the project under review, a reviewed repo could plant its own codex.exe/.cmd/.bat at its root and shutil.which would prefer it over the real PATH install, letting reviewed code execute inside the review pipeline itself.",
+      "severity": "high",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 96,
+      "what_would_resolve_it": "Added _resolve_codex_binary() which rejects a shutil.which() hit whose resolved parent directory equals the resolved cwd, and wired it into both is_codex_available() and review_codex()'s own binary resolution (previously only the former). Covered by test_resolve_codex_binary_cwd_hijack_guard (parametrized) in test_external_review_codex_availability.py."
+    },
+    {
+      "claim_under_doubt": "review_codex()'s TOCTOU re-check of is_codex_available() should return status=\"skipped\" on failure, matching the pre-dispatch skip semantics.",
+      "disproof_attempt": "resolve_openai_route() already committed to codex before review_codex() was ever called, so a failure at this re-check is an attempted-and-failed leg, not a not-attempted one. _attempted() in external_review_degraded.py explicitly filters out status==\"skipped\" — recording \"skipped\" here would silently drop the failure from partial-degradation reporting, hiding a real loss behind a status that means \"nothing to attempt\".",
+      "severity": "medium",
+      "lens": "hidden-coupling",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 214,
+      "what_would_resolve_it": "Changed the TOCTOU failure return from status=\"skipped\" to status=\"error\". Covered by test_review_codex_errors_when_unavailable_at_toctou_recheck in test_external_review_codex_leg.py, which asserts the exact result shape."
+    },
+    {
+      "claim_under_doubt": "subprocess.run(..., text=True) is sufficient for capturing codex's stdout/stderr safely.",
+      "disproof_attempt": "text=True without an explicit encoding defaults to locale.getpreferredencoding(False), which is cp1252 on default Windows installs. Non-ASCII content in a codex reply or in the login-status probe's stderr can raise UnicodeDecodeError, an exception type not caught by the existing TimeoutExpired/OSError handlers — crashing the leg instead of returning a stated error.",
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 252,
+      "what_would_resolve_it": "Added encoding=\"utf-8\", errors=\"replace\" to both the login-status probe call in is_codex_available() and the main codex exec call in review_codex(). Test fakes widened from pinned (cmd, input, capture_output, text, timeout) kwargs to **kwargs so they don't over-specify the real call shape."
+    },
+    {
+      "claim_under_doubt": "is_external_review_enabled()/get_external_review_status() correctly report codex-only operators as having review available.",
+      "disproof_attempt": "Both functions only checked OPENROUTER_API_KEY/OPENAI_API_KEY before this fix. An operator with ONLY a Codex subscription (no API keys, gpt_leg.provider==\"codex\") would be told \"missing_keys\" by these pre-flight gates, which STOP the calling skill (plan/iterate Step 5/B1b) before external_review.py or run_review() ever run — making the whole codex route structurally unreachable for exactly the operator it exists to serve.",
+      "severity": "high",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_config.py",
+      "line": 157,
+      "what_would_resolve_it": "Added _codex_route_reachable(config) (deferred-import to avoid a cycle with external_review_default_legs, which imports this module at its own top level) and OR'd it into both is_external_review_enabled() and get_external_review_status()'s key-presence checks. Covered by test_codex_route_reachability_with_no_api_keys (parametrized, both outcomes) in test_external_review_config.py, plus check-external-review-keys.py's new codex_configured field with its own tests."
+    },
+    {
+      "claim_under_doubt": "codex_settings()'s clamping is complete — a hand-edited config can't reach subprocess.run with an unsafe timeout.",
+      "disproof_attempt": "Only max_retries was clamped originally. subprocess.run(timeout=None) means \"wait forever\", not \"use a default\" — a config value for timeout_seconds that resolves to None, 0, a negative number, or a non-numeric type would reach subprocess.run raw and hang the worker thread indefinitely, with no timeout to recover from.",
+      "severity": "high",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 154,
+      "what_would_resolve_it": "codex_settings() now clamps timeout_seconds the same way: coerced to float, must be > 0, else falls back to CODEX_DEFAULT_TIMEOUT_SECONDS — symmetric with the existing max_retries clamp. Also hardened against config[\"codex\"] itself being a non-mapping (list/string) after the external code-review pass flagged the same class of gap for gpt_leg_provider(). Covered by test_codex_settings_clamps_a_negative_max_retries, test_codex_settings_defaults_when_unconfigured, and the new test_codex_settings_falls_back_to_defaults_on_a_non_mapping_codex_config."
+    },
+    {
+      "claim_under_doubt": "The docstring's claim that a prompt-injected diff \"has nothing beyond a read-only, unconfigured sandbox to act on\" accurately describes the security boundary.",
+      "disproof_attempt": "--sandbox read-only restricts writes to the scratch directory, not reads or outbound network. It is not a network sandbox. A prompt-injected review artifact still runs against whatever network access and filesystem-read visibility the operator's own environment grants the codex process — the original wording overstated the isolation and could lead an operator to believe this route is safer than it actually is.",
+      "severity": "high",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 188,
+      "what_would_resolve_it": "Corrected the docstring to state plainly that --sandbox read-only blocks writes only, not reads or network, and that this leg trusts the same review content the other two legs already send an external LLM API. Independently re-raised by the external code-review cascade (both GLM and OpenAI, HIGH/MEDIUM) as a still-real, only-documented (not mitigated) exposure — accepted as a stated risk rather than further restricted, since Shipwright does not control the Codex CLI's own sandbox internals beyond the flags it exposes, and the content sent is no more sensitive than what the OpenRouter/direct-OpenAI legs already transmit to a third-party LLM."
+    },
+    {
+      "claim_under_doubt": "The login-status probe (is_codex_available) validates authentication under the same conditions review_codex() will actually run under.",
+      "disproof_attempt": "The probe originally ran `codex login status` with no isolation flags, while the real `codex exec` call passes --ignore-user-config --ignore-rules. A config-dependent auth path (e.g. an MCP-server-mediated credential, or a rule that alters auth behavior) could pass the probe and then fail at exec time, or vice versa, because the two calls checked auth under different configuration.",
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 140,
+      "what_would_resolve_it": "Added --ignore-user-config --ignore-rules to the login-status probe so it checks auth under the identical config isolation the real leg runs with. No version floor or real-binary integration test exists beyond the one-off empirical probe already recorded in the iterate spec's Confidence Calibration section — accepted as a known, stated gap rather than built out further in this change."
+    },
+    {
+      "claim_under_doubt": "The worst-case wall-clock budget for the codex route is implicitly bounded and safe for callers to invoke synchronously.",
+      "disproof_attempt": "review_codex()'s retry loop can run (max_retries + 1) attempts, each up to timeout_seconds, with no cap tying that product to anything the caller expects — a default config of max_retries=1, timeout_seconds=600 already reaches 1200s (20 minutes) for this one leg alone, versus ~240s for the API route. A caller with its own shorter timeout would see this leg simply never return within its budget.",
+      "severity": "medium",
+      "lens": "concurrency-and-ordering",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 188,
+      "what_would_resolve_it": "Documented the exact worst-case formula and its default value (1200s) directly in review_codex()'s docstring, with an explicit note that invoking skills' own timeouts must budget above it."
+    },
+    {
+      "claim_under_doubt": "out_path.read_text(...) in review_codex() cannot fail in a way that crashes the leg instead of returning a stated error.",
+      "disproof_attempt": "A transient filesystem error (permissions, disk full, antivirus lock on Windows) reading the scratch-dir output file after a successful codex exec would raise OSError uncaught, propagating out of review_codex() as an unhandled exception rather than the stated {\"status\": \"error\", ...} shape every other failure path in this function returns.",
+      "severity": "low",
+      "lens": "boundary-and-contract",
+      "file": "shared/scripts/lib/external_review_default_legs.py",
+      "line": 266,
+      "what_would_resolve_it": "Wrapped the read_text() call in try/except OSError, returning the standard via=\"codex\"-carrying error shape. TemporaryDirectory's ignore_cleanup_errors=True Windows-antivirus-lock leak case remains unlogged (silently ignored, as before) — accepted as a pre-existing, low-severity, cosmetic gap rather than added scope."
+    },
+    {
+      "claim_under_doubt": "is_degraded(reviews)/is_partially_degraded(reviews)'s signature change (dropping the leading provider argument) has no out-of-diff caller that breaks.",
+      "disproof_attempt": "A public helper's parameter removal breaks any caller using the old two-argument form with a TypeError at call time, not import time — silent until actually exercised. Attempted to disprove the \"no breakage\" claim by grepping the entire monorepo for every call site of is_degraded( and is_partially_degraded(.",
+      "severity": "low",
+      "lens": "hidden-coupling",
+      "file": "shared/scripts/lib/external_review_degraded.py",
+      "line": 87,
+      "what_would_resolve_it": "Grep of the full monorepo (plugins/, shared/, integration-tests/) found exactly one call site of each function, both inside external_review_degraded.py's own finalize_review_output — already updated in this diff. No other caller exists in this repository. Independently re-raised by the external code-review cascade (GLM, twice, MEDIUM) with the same conclusion after the same check. The one residual unknown is whether a separate repository (shipwright-webui) vendors a copy of this file with the old two-argument call — unverifiable from this repo and out of scope for this change; noted as a known follow-up rather than fixed here."
+    }
+  ],
+  "summary": "Fresh-context adversarial pass over the Codex CLI review-leg diff, attacking via boundary-and-contract, concurrency-and-ordering, and hidden-coupling lenses. 9 of 10 doubts were fixed directly (binary-resolution cwd-hijack guard, TOCTOU status semantics, subprocess encoding, codex-only-operator reachability, timeout/config clamping, sandbox-claim accuracy, probe/exec flag parity, wall-clock budget documentation, read_text exception safety); the 10th (is_degraded signature-change blast radius) was verified safe within this monorepo by exhaustive grep and left as a documented external-repo unknown rather than a defect. Two subsequent independent external LLM code-review passes (GLM 5.3 + GPT-5.6 via OpenRouter) re-raised a subset of these same concerns from a different vantage point, confirming rather than contradicting this pass's findings, and surfaced two additional real bugs (gpt_leg_provider/codex_settings TypeError on unhashable/non-mapping config values, and is_codex_available not catching RuntimeError from a symlink-loop Path.resolve()) which were also fixed."
+}

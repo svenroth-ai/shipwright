@@ -1,0 +1,126 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-03-codex-cli-review-leg",
+    "date": "2026-09-03",
+    "unit": {
+      "status": "passed",
+      "passed": 16661,
+      "total": 16717,
+      "note": "Green and complete across all 18 discovered F0 units (14 plugins + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests, integration counted separately below): 17245 tests total, 0 failed, 0 errors, 56 skipped. Full evidence retained at .shipwright/runs/f0-evidence/published/f0-be9161aca89b-1a452401/ under the main repo root."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 528,
+      "total": 528
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "no browser surface; this change is internal external-review-leg subprocess/routing/config"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/tests/test_external_review_codex_leg.py shared/tests/test_external_review_codex_availability.py shared/tests/test_external_review_config.py shared/tests/test_llm_review.py -v",
+      "exit_code": 0,
+      "tests_run": 66,
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: review_codex answers via codex exec, reuses SHIPWRIGHT_VERDICT contract",
+          "disposition": "tested",
+          "evidence": "test_review_codex_sends_the_rendered_prompt_with_no_residual_placeholder PASSED, test_cli_codex_route_actually_sends_the_spec_and_plan_not_the_raw_template PASSED"
+        },
+        {
+          "behavior": "AC2: is_codex_available never raises (missing binary / not authenticated / timeout / OSError / symlink-loop RuntimeError)",
+          "disposition": "tested",
+          "evidence": "test_unavailable_when_binary_not_on_path PASSED, test_unavailable_when_not_authenticated PASSED, test_unavailable_on_login_status_timeout PASSED, test_unavailable_on_oserror_never_raises PASSED, test_resolve_codex_binary_never_raises_on_a_symlink_loop PASSED"
+        },
+        {
+          "behavior": "AC3: gpt_leg.provider config-driven, deep-merged per-project",
+          "disposition": "tested",
+          "evidence": "test_gpt_leg_provider_reads_the_configured_value PASSED, test_load_review_config_round_trip_per_project_overrides PASSED, test_cli_codex_route_actually_sends_the_spec_and_plan_not_the_raw_template PASSED (writes real file, drives real loader)"
+        },
+        {
+          "behavior": "AC4: graceful fallback to API route or skip when codex unavailable",
+          "disposition": "tested",
+          "evidence": "test_resolve_openai_route_falls_back_to_api_when_codex_unavailable PASSED, test_resolve_openai_route_falls_back_to_skip_when_neither_is_usable PASSED, test_run_review_records_fallback_reason_on_a_successful_fallback_leg PASSED"
+        },
+        {
+          "behavior": "AC5: codex model identity locked, rejects mismatched config",
+          "disposition": "tested",
+          "evidence": "test_codex_binding_accepts_the_locked_model PASSED, test_codex_binding_rejects_a_different_configured_model PASSED, test_review_codex_rejects_a_model_identity_mismatch PASSED"
+        },
+        {
+          "behavior": "AC6: both consumers share route resolution; GLM dispatch independent of GPT route",
+          "disposition": "tested",
+          "evidence": "test_gpt_leg_routes_through_codex_when_project_configures_it PASSED (CLI), test_run_review_routes_openai_leg_through_codex_when_configured PASSED (library) \u2014 both assert glm stays skipped/independent"
+        },
+        {
+          "behavior": "AC7: existing (non-codex) behavior provably unchanged",
+          "disposition": "tested",
+          "evidence": "full pre-existing external_review/llm_review suite (210 tests) passes unmodified; test_resolve_openai_route_default_config_matches_legacy_api_chain PASSED pins the legacy chain bit-for-bit; degraded-generalization regression pins is_degraded/is_partially_degraded old-vs-new equivalence"
+        },
+        {
+          "behavior": "AC8: documented in guide.md + hooks-and-pipeline.md",
+          "disposition": "tested",
+          "evidence": "spec-reviewer round-4 PASS explicitly verified both doc citations (guide.md:1514, hooks-and-pipeline.md:2950)"
+        },
+        {
+          "behavior": "shutil.which cwd-hijack guard (BatBadBut)",
+          "disposition": "tested",
+          "evidence": "test_resolve_codex_binary_cwd_hijack_guard[True-None] PASSED, test_resolve_codex_binary_cwd_hijack_guard[False-/usr/bin/codex] PASSED"
+        },
+        {
+          "behavior": "codex_settings / gpt_leg_provider defensive parsing of malformed config",
+          "disposition": "tested",
+          "evidence": "test_codex_settings_clamps_a_negative_max_retries PASSED, test_codex_settings_defaults_when_unconfigured PASSED, test_codex_settings_falls_back_to_defaults_on_a_non_mapping_codex_config PASSED, test_gpt_leg_provider_falls_back_to_api_on_an_unhashable_value PASSED"
+        },
+        {
+          "behavior": "Real codex exec invocation accepts the exact argv this leg builds",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "reason": "The authenticated real binary is this operator's local Codex CLI session (v0.147.0); CI has no Codex subscription to authenticate with. Mitigated by a manual empirical probe (real binary, real argv, real output \u2014 exit 0, -o file contained exactly `SHIPWRIGHT_VERDICT: approve`) run and recorded in the iterate spec's Confidence Calibration section, not by an automated test."
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 9,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 8,
+        "covered_acs": 8
+      },
+      "ledger_path": ".shipwright/planning/iterate/iterate-2026-09-03-codex-cli-review-leg.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.3,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-03T07:51:29Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-03-codex-cli-review-leg",
+    "commit": "753aa219159633640493646f171ec959a327538b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

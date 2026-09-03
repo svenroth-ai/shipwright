@@ -1,0 +1,43 @@
+{
+  "section": "iterate-2026-09-03-codex-cli-review-leg",
+  "verdict": "APPROVE",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/llm_review.py",
+      "line": 188,
+      "finding": "Comment cited an example (review_assistant_ui_plan.py) that does not actually gate on this field.",
+      "suggestion": "Reword to state the real reason without the false citation.",
+      "outcome": "fixed"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/llm_review.py",
+      "line": 137,
+      "finding": "Dangling cross-reference \"see its own docstring\" led nowhere.",
+      "suggestion": "Name the concrete reason inline (_has_any_api_key() pre-gate).",
+      "outcome": "fixed"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_external_review_cli.py",
+      "line": 350,
+      "finding": "Obsolete comment referencing detect_provider() as the active dispatch mechanism.",
+      "suggestion": "Reword to resolve_openai_route().",
+      "outcome": "fixed"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_external_review_degraded.py",
+      "line": 207,
+      "finding": "test_gpt_leg_routes_through_codex_when_project_configures_it writes a config file but then stubs resolve_openai_route, making the config write decorative.",
+      "suggestion": "Either drop the config write or drop the stub so the config genuinely drives the route.",
+      "outcome": "skipped"
+    }
+  ],
+  "summary": "Third pass, fresh eyes: the three MEDIUM findings from pass 2 (provider staleness for the codex route in llm_review.py, a docstring overselling adopt's Layer-3 wiring, and the unverified real-binary codex exec contract) are all genuinely fixed with no new bug introduced. Gateway dispatch cannot be overridden by the provider='codex' reassignment (structurally unreachable — the reassignment lives in the non-gateway else branch). All LOW _api_route rename / isinstance guard / errors=replace / TOCTOU comment / SHIPWRIGHT_REVIEW_MODEL_CODEX test-env fixes verified consistent, zero leftover _api_route references. Anti-ratchet holds (413 vs grandfathered ceiling 414). Verdict: APPROVE."
+}

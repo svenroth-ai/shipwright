@@ -49,6 +49,10 @@ _REVIEW_MODEL_BINDINGS = {
         "openai/gpt-5.6-terra",
     ),
     ("openai", "direct"): ("chatgpt", "gpt-5.6-terra"),
+    # Same "openai" reviewer identity, same model, routed through the Codex
+    # CLI instead of the OpenRouter/direct API (external_review_default_legs
+    # .review_codex — flat-cost under a ChatGPT/Codex subscription).
+    ("openai", "codex"): ("codex", "gpt-5.6-terra"),
 }
 
 

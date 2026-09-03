@@ -2,6 +2,7 @@
 
 - `iterate-2026-08-09-review-evidence-tier`: PR-review waiver data flow now combines exact-head GitHub approval, delivered review-record evidence, and one-shot label consumption before it can bypass Tier-3.
 - `iterate-2026-09-02-glm-plan-code-review-swap`: the plan/code-review cascade's second external-reviewer identity moves from DeepSeek to GLM 5.3 (OpenRouter, `reasoning.effort=low`); DeepSeek's ZDR routing primitives remain in `external_review_routing.py`, now serving only the separate Tier-3 PR-review gate's operator override (ADR-167).
+- `iterate-2026-09-03-codex-cli-review-leg`: the "openai" reviewer identity gains a second, config-driven transport — `review_codex()` shells out to the `codex` CLI (`external_review_default_legs.py`) instead of OpenRouter/direct OpenAI, with `is_codex_available()` graceful fallback. → decision_log.md (ADR via Run-ID: iterate-2026-09-03-codex-cli-review-leg)
 
 # Architecture — shipwright
 <!-- shipwright:architecture v=2 last-sync=932e0d221ea1 -->
