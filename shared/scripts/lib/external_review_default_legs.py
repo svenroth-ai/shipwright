@@ -8,6 +8,7 @@ GLM ZDR allowlist — in deliberate contrast to the gateway leg, which carries n
 
 from __future__ import annotations
 
+import math
 import os
 import shutil
 import subprocess
@@ -15,18 +16,18 @@ import tempfile
 from pathlib import Path
 
 try:  # bare: this directory is on sys.path
-    from external_review_config import gpt_leg_provider
     from external_review_degraded import MAX_OUTPUT_TOKENS, classify_reply, openai_finish_reason
+    from external_review_config import gpt_leg_provider
     from external_review_routing import ReviewModelPolicyError, openrouter_extra_body, resolve_reviewer_model
 except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
     if exc.name != "external_review_degraded":
         raise
-    from lib.external_review_config import gpt_leg_provider  # type: ignore[no-redef]
     from lib.external_review_degraded import (  # type: ignore[no-redef]
         MAX_OUTPUT_TOKENS,
         classify_reply,
         openai_finish_reason,
     )
+    from lib.external_review_config import gpt_leg_provider  # type: ignore[no-redef]
     from lib.external_review_routing import (  # type: ignore[no-redef]
         ReviewModelPolicyError,
         openrouter_extra_body,
@@ -166,7 +167,8 @@ def codex_settings(config: dict) -> tuple[float, int]:
     timeout = codex_cfg.get("timeout_seconds", CODEX_DEFAULT_TIMEOUT_SECONDS)
     try:
         timeout = float(timeout)
-        if timeout <= 0:
+        # isfinite: NaN/+-inf both satisfy `timeout <= 0` as False and would reach subprocess.run raw.
+        if not math.isfinite(timeout) or timeout <= 0:
             raise ValueError
     except (TypeError, ValueError):
         timeout = CODEX_DEFAULT_TIMEOUT_SECONDS

@@ -139,6 +139,19 @@ def test_codex_settings_defaults_when_unconfigured():
     assert legs.codex_settings({}) == (legs.CODEX_DEFAULT_TIMEOUT_SECONDS, legs.CODEX_DEFAULT_MAX_RETRIES)
 
 
+def test_codex_settings_rejects_nan_and_infinite_timeout():
+    """NaN and +-inf both satisfy `timeout <= 0` as False, so a naive clamp lets
+    either reach `subprocess.run` raw and hang the worker thread forever."""
+    assert legs.codex_settings({"codex": {"timeout_seconds": float("nan")}}) == (
+        legs.CODEX_DEFAULT_TIMEOUT_SECONDS,
+        legs.CODEX_DEFAULT_MAX_RETRIES,
+    )
+    assert legs.codex_settings({"codex": {"timeout_seconds": float("inf")}}) == (
+        legs.CODEX_DEFAULT_TIMEOUT_SECONDS,
+        legs.CODEX_DEFAULT_MAX_RETRIES,
+    )
+
+
 class _DirCtx:
     """Fake TemporaryDirectory that reuses a pytest tmp_path (no real cleanup
     races) but still supports the `with ... as tmp:` protocol under test."""

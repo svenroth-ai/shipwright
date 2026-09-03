@@ -79,6 +79,34 @@ def test_the_two_modes_resolve_distinct_module_names():
     assert bare.stdout.strip() != qualified.stdout.strip()
 
 
+def test_external_review_default_legs_imports_qualified_as_the_first_touch():
+    """``lib.external_review_default_legs`` must import standalone, package-qualified,
+    even when nothing else in the ``external_review`` family has run yet in this process.
+
+    Every OTHER path that reaches this module first imports ``lib.external_review_config``
+    (whose own module-level code adds ``shared/scripts/lib`` to ``sys.path`` as a side
+    effect), which masks an import-order bug in this module's own try/except fallback: its
+    bare imports must list ``external_review_degraded`` FIRST, matching the ``except
+    ModuleNotFoundError as exc: if exc.name != "external_review_degraded"`` guard — a
+    reordered bare import list whose first entry fails under a DIFFERENT name makes the
+    guard re-raise instead of falling through to the ``lib.``-qualified imports below it.
+    Reproduced and pinned after PR #672's Tier-3 review caught it by static reading; the
+    two general-purpose probes above did not, because they route through
+    ``lib.external_review_config`` first.
+    """
+    code = (
+        f"import sys; sys.path.insert(0, {str(_SHARED / 'scripts')!r})\n"
+        "from lib.external_review_default_legs import review_codex\n"
+        "print('OK', review_codex.__module__)\n"
+    )
+    got = subprocess.run(
+        [sys.executable, "-I", "-c", code],
+        capture_output=True, text=True, timeout=60, cwd=str(_SHARED),
+    )
+    assert got.returncode == 0, got.stderr
+    assert got.stdout.startswith("OK lib.external_review_default_legs")
+
+
 def test_nested_module_not_found_is_not_mistaken_for_the_sibling(tmp_path):
     """A dependency missing inside the sibling must escape, not trigger fallback."""
     shutil.copy(_LIB_DIR / "llm_review.py", tmp_path)
