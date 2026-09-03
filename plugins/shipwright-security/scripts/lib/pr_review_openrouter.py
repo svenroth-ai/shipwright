@@ -25,28 +25,14 @@ __all__ = [
     "call_openrouter",
 ]
 
-# One named constant — DEFAULT_MODEL, the ZDR-routing model match, and every
-# test/workflow assertion all read this, so they cannot drift into three
-# copies of the same literal. DeepSeek and GLM stay available as operator
-# overrides (SHIPWRIGHT_PR_REVIEW_MODEL): DeepSeek after repeated confident
-# false-positive BLOCK verdicts motivated the GLM 5.3 default switch
-# (iterate-2026-09-01-pr-review-glm-model); GLM 5.3 itself was then found to
-# silently hang mid-review (no exception, no timeout — a bare stall on the
-# `novita` ZDR endpoint, ~90-170s then a bare process exit) on shipwright
-# webui PR #416, reproducible 4x on the same diff while sibling PRs on the
-# same model succeeded in the same window — an AVAILABILITY defect in the
-# `allow_fallbacks: false` ZDR provider pool (only novita+together, no
-# fallback), not a model-quality one. GPT-5.6 Luna needs no ZDR routing
-# constraint at all (outside the deepseek/z-ai namespaces,
-# `resolve_extra_body` short-circuits to `{}`), so it keeps OpenRouter's
-# normal multi-host failover (OpenAI, Azure EU, Amazon Bedrock US — 3
-# independent hosts, not 2 resellers with no fallback) instead of the ZDR
-# pool's single point of failure. Chosen over a same-family Sonnet-5 rollback
-# on cost: near-identical coding-review quality (SWE-bench Pro 62.7 vs 63.2,
-# AA Intelligence Index 51 vs 53) at roughly 1/15th the OpenRouter price
-# (iterate-2026-09-03-pr-review-sonnet-default — run-id kept for history, the
-# swap landed on Luna, not Sonnet, after an empirical benchmark/price check
-# mid-run).
+# One named constant — DEFAULT_MODEL. Its value and the ZDR-routing model
+# match both read this, and test_pr_review_workflow_shape.py::
+# test_model_env_matches_code_default pins the workflow's literal env value
+# equal to it, so the three copies cannot drift apart. DeepSeek and GLM stay
+# available as SHIPWRIGHT_PR_REVIEW_MODEL operator overrides. Full swap
+# history and rationale (DeepSeek -> GLM 5.3 -> GPT-5.6 Luna; the GLM
+# availability defect; the Luna-vs-Sonnet benchmark/price check):
+# .shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md
 DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
 GLM_MODEL = "z-ai/glm-5.3"
 LUNA_MODEL = "openai/gpt-5.6-luna"
