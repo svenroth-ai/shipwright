@@ -42,9 +42,9 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-03T21:47:38.725234+00:00",
+      "completed_at": "2026-09-03T21:52:39.493483+00:00",
       "disposition": null,
-      "recorded_by": "shipwright-build:code-reviewer",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
@@ -78,9 +78,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-03T21:51:12.140066+00:00",
+      "completed_at": "2026-09-03T21:52:39.369408+00:00",
       "disposition": null,
-      "recorded_by": "shipwright-build:spec-reviewer",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
