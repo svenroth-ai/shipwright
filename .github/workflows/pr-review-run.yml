@@ -227,26 +227,35 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Default swapped from DeepSeek to GLM 5.3 after DeepSeek repeatedly
-          # (3x, PR #668) produced a confident, wrong BLOCK verdict — a
-          # model-quality regression, not an infra defect. GLM 5.3 is ZDR-vetted
-          # on the SAME two allowlisted providers as DeepSeek (novita, together)
-          # via OpenRouter's data-policy API (2026-09-01) AND a live production-route
-          # completion probe (scripts/tools/probe_glm_zdr.py,
-          # .shipwright/planning/iterate/iterate-2026-09-01-pr-review-glm-model/
-          # glm-zdr-probe.json). Unlike DeepSeek — where `together` has no endpoint
-          # for that model at all — `together` DOES serve GLM 5.3, though at lower
-          # measured uptime than `novita` (checked via OpenRouter's endpoints API);
-          # `novita` is what the probe's live request actually landed on. DeepSeek
-          # stays available as an operator override on this same env var. A rollback
-          # PR editing this line is itself Tier-3 and reviewed by THIS file as
-          # committed on the default branch (workflow_run always runs the base
-          # branch's workflow, never the PR's) — so a maintainer's
-          # `gh pr merge --admin` is the recovery path if this model's own
-          # verdicts ever need bypassing, with the internal review passes
-          # (spec/code/doubt) still required as evidence
-          # (iterate-2026-09-01-pr-review-glm-model).
-          SHIPWRIGHT_PR_REVIEW_MODEL: z-ai/glm-5.3
+          # Default swapped DeepSeek -> GLM 5.3 -> GPT-5.6 Luna. DeepSeek
+          # repeatedly (3x, PR #668) produced a confident, wrong BLOCK verdict
+          # — a model-quality regression (iterate-2026-09-01-pr-review-glm-model).
+          # GLM 5.3 then turned out to silently HANG mid-review on the webui
+          # fork's PR #416: no exception, no timeout, no output at all between
+          # "reviewing PR..." and a bare process exit, ~90-170s later,
+          # reproducible 4x on the same diff while sibling PRs on the same
+          # model succeeded in the same window — an availability defect in the
+          # ZDR-gated provider pool (`allow_fallbacks: false`, only novita +
+          # together, no reroute if either has a bad moment), not a
+          # model-quality one this time (iterate-2026-09-03-pr-review-sonnet-
+          # default — run-id kept for history, landed on Luna after an
+          # empirical check mid-run). GPT-5.6 Luna needs no ZDR routing
+          # constraint at all — outside the deepseek/z-ai namespaces,
+          # `resolve_extra_body` short-circuits to `{}` — so it keeps
+          # OpenRouter's normal multi-host failover (OpenAI, Azure EU, Amazon
+          # Bedrock US — 3 independent hosts) instead of a 2-reseller pool
+          # with no fallback. Chosen over a same-family Sonnet-5 rollback on
+          # cost: near-identical coding-review quality (SWE-bench Pro 62.7 vs
+          # 63.2, AA Intelligence Index 51 vs 53) at roughly 1/15th the price.
+          # DeepSeek and GLM both stay available as operator overrides on this
+          # same env var. A rollback PR editing this line is itself Tier-3 and
+          # reviewed by THIS file as committed on the default branch
+          # (workflow_run always runs the base branch's workflow, never the
+          # PR's) — so a maintainer's `gh pr merge --admin` is the recovery
+          # path if this model's own verdicts ever need bypassing, with the
+          # internal review passes (spec/code/doubt) still required as
+          # evidence.
+          SHIPWRIGHT_PR_REVIEW_MODEL: openai/gpt-5.6-luna
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           REPO: ${{ github.repository }}
         run: |

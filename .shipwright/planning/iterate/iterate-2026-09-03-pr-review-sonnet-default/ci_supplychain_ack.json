@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+    "paths_fingerprint": "591cffa38082cdc34a93274677c9974af1c39e6671fdccd13efe1d05ba5efa51",
+    "consistent_with": "iterate-2026-09-01-pr-review-glm-model",
+    "statement": "Only the SHIPWRIGHT_PR_REVIEW_MODEL value in the existing Tier-3 PR-review job's env block changes (z-ai/glm-5.3 -> openai/gpt-5.6-luna), continuing the same operator-overridable model-swap pattern established by the DeepSeek->GLM swap (ADR-167). No change to job permissions, checkout ref, action pins, or the trust-boundary structure (workflow_run always runs the base branch's copy of this file).",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml"
+    ]
+  }
+}

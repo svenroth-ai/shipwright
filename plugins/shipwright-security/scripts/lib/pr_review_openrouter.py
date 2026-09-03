@@ -20,18 +20,37 @@ __all__ = [
     "DEFAULT_MODEL",
     "DEFAULT_TIMEOUT",
     "GLM_MODEL",
+    "LUNA_MODEL",
     "OPENROUTER_URL",
     "call_openrouter",
 ]
 
 # One named constant — DEFAULT_MODEL, the ZDR-routing model match, and every
 # test/workflow assertion all read this, so they cannot drift into three
-# copies of the same literal. DeepSeek stays available as an operator
-# override (SHIPWRIGHT_PR_REVIEW_MODEL) after repeated confident false-positive
-# BLOCK verdicts on this gate motivated the GLM 5.3 default switch.
+# copies of the same literal. DeepSeek and GLM stay available as operator
+# overrides (SHIPWRIGHT_PR_REVIEW_MODEL): DeepSeek after repeated confident
+# false-positive BLOCK verdicts motivated the GLM 5.3 default switch
+# (iterate-2026-09-01-pr-review-glm-model); GLM 5.3 itself was then found to
+# silently hang mid-review (no exception, no timeout — a bare stall on the
+# `novita` ZDR endpoint, ~90-170s then a bare process exit) on shipwright
+# webui PR #416, reproducible 4x on the same diff while sibling PRs on the
+# same model succeeded in the same window — an AVAILABILITY defect in the
+# `allow_fallbacks: false` ZDR provider pool (only novita+together, no
+# fallback), not a model-quality one. GPT-5.6 Luna needs no ZDR routing
+# constraint at all (outside the deepseek/z-ai namespaces,
+# `resolve_extra_body` short-circuits to `{}`), so it keeps OpenRouter's
+# normal multi-host failover (OpenAI, Azure EU, Amazon Bedrock US — 3
+# independent hosts, not 2 resellers with no fallback) instead of the ZDR
+# pool's single point of failure. Chosen over a same-family Sonnet-5 rollback
+# on cost: near-identical coding-review quality (SWE-bench Pro 62.7 vs 63.2,
+# AA Intelligence Index 51 vs 53) at roughly 1/15th the OpenRouter price
+# (iterate-2026-09-03-pr-review-sonnet-default — run-id kept for history, the
+# swap landed on Luna, not Sonnet, after an empirical benchmark/price check
+# mid-run).
 DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
 GLM_MODEL = "z-ai/glm-5.3"
-DEFAULT_MODEL = GLM_MODEL
+LUNA_MODEL = "openai/gpt-5.6-luna"
+DEFAULT_MODEL = LUNA_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ONE default for the whole tool — the CLI flag and the direct call share it.

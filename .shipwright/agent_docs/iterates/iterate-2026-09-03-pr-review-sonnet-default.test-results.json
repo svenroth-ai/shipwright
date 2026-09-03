@@ -1,0 +1,99 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+    "date": "2026-09-03",
+    "unit": {
+      "status": "pass",
+      "passed": 985,
+      "failed": 0,
+      "note": "Scoped to plugins/shipwright-security/tests (the only test root touched — pr_review_openrouter.py, pr_review.py's re-export wiring, and 3 test files; the sole workflow file touched is data-only, no plugin logic outside this root): 985 passed, 0 failed, 7 skipped. ruff clean on every touched file. Not a shared/-infra or cross-plugin change, so the full 18-root F0 sweep was not re-run."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no CRUD or service-boundary change; a CI gate's default model string"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this is a CI-config/env-var swap in a Tier-3 CLI review gate"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface touched"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "model-identity/routing swap with no runnable web/dev-server surface; the unit suite (mocked OpenRouter transport, real resolve_extra_body/ZDR-routing logic) is the verification"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the default model is GPT-5.6 Luna (openai/gpt-5.6-luna), not GLM 5.3",
+          "disposition": "tested",
+          "evidence": "test_pr_review_openrouter.py::TestDefaults::test_default_model_is_luna PASSED, test_pr_review_script.py::test_every_re_exported_name_resolves PASSED"
+        },
+        {
+          "behavior": "with no operator override, main() threads an EMPTY extra_body through — Luna never touches the ZDR routing config or its allow_fallbacks:false provider pin",
+          "disposition": "tested",
+          "evidence": "test_pr_review_deepseek_routing.py::TestZdrRoutingGate::test_the_default_luna_model_never_touches_zdr_routing PASSED"
+        },
+        {
+          "behavior": "the DeepSeek operator override (SHIPWRIGHT_PR_REVIEW_MODEL=deepseek/...) still delivers the real ZDR provider body",
+          "disposition": "tested",
+          "evidence": "test_pr_review_deepseek_routing.py::TestZdrRoutingGate::test_the_deepseek_override_still_delivers_the_zdr_body PASSED"
+        },
+        {
+          "behavior": "the GLM 5.3 operator override still delivers the real ZDR provider body, unaffected by it no longer being the default",
+          "disposition": "tested",
+          "evidence": "test_pr_review_deepseek_routing.py::TestZdrRoutingGate::test_the_glm_override_still_delivers_the_zdr_body PASSED (new test, added this run)"
+        },
+        {
+          "behavior": "a broken/malformed routing config still fails this gate closed BEFORE any network call, independent of which model is default",
+          "disposition": "tested",
+          "evidence": "test_pr_review_deepseek_routing.py::test_fails_closed_before_any_network_call_on_broken_routing PASSED, test_fails_closed_on_malformed_external_review_json PASSED"
+        },
+        {
+          "behavior": "the workflow file's SHIPWRIGHT_PR_REVIEW_MODEL literal matches pr_review_openrouter.DEFAULT_MODEL exactly — the two cannot silently drift apart",
+          "disposition": "tested",
+          "evidence": "test_pr_review_workflow_shape.py::test_model_env_matches_code_default PASSED"
+        },
+        {
+          "behavior": "every re-exported name on pr_review.<symbol> still resolves after adding LUNA_MODEL to the import/__all__ surface",
+          "disposition": "tested",
+          "evidence": "test_pr_review_script.py::test_every_re_exported_name_resolves PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration) — carried forward, unmeasured this run (scoped change, no full-repo suite run)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+    "commit": "0000000000000000000000000000000000000000",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
