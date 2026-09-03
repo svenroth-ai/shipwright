@@ -17,9 +17,9 @@ import sys
 from typing import Callable
 
 from pr_review_dismiss import stamp_review_body
-from pr_review_lib import _redact
+from pr_review_lib import EXIT_ERROR, EXIT_OK, _redact
 
-__all__ = ["post_verdict"]
+__all__ = ["finish_decision", "post_verdict"]
 
 
 def post_verdict(pr_number: int, repo: str, api_key: str, body: str, decision: str,
@@ -58,3 +58,38 @@ def post_verdict(pr_number: int, repo: str, api_key: str, body: str, decision: s
             if is_state:
                 state_posted = False
     return state_posted
+
+
+def finish_decision(pr_number: int, repo: str, api_key: str, decision: str, exit_code: int,
+                     review: dict, *, nonce: str, reviewed_sha: str, state_posted: bool,
+                     dismiss_fn: Callable[..., None]) -> int:
+    """Unconditional decision excerpt + decision-specific follow-up; returns
+    `exit_code` unchanged. Split out of `pr_review.main()` to keep that file
+    under the file-size guideline (iterate-2026-09-03-pr-review-block-visibility).
+
+    A correct block/approve/comment used to print nothing past `main()`'s
+    "reviewing PR..." line — indistinguishable from a CI hang (PR #672: 4 runs
+    misdiagnosed as an infra flake while the real findings sat unread in the PR
+    comment). This always logs decision + exit_code + a bounded summary excerpt.
+
+    `dismiss_fn` is taken as a parameter for the same reason `post_verdict`'s
+    posters are: callers/tests monkeypatch `pr_review.dismiss_own_stale_verdicts`
+    on the orchestrator module, which a local import here would not see.
+    """
+    summary_excerpt = str(review.get("summary", ""))[:300]
+    print(_redact(
+        f"[pr_review] decision={decision} exit={exit_code} — {summary_excerpt!r} "
+        "(full findings posted as PR comment)", api_key), file=sys.stderr)
+    if exit_code == EXIT_ERROR:
+        print(f"[pr_review] unknown decision '{decision}' — treating as error.", file=sys.stderr)
+    if exit_code == EXIT_OK and state_posted:
+        # This run said yes, so its own earlier NOs about commits that are gone
+        # must stop holding the PR. Only on a passing verdict, and never
+        # allowed to change what the review earned — hence the outer guard as
+        # well as the ones inside.
+        try:
+            dismiss_fn(pr_number, repo, nonce=nonce, reviewed_sha=reviewed_sha)
+        except Exception as e:  # noqa: BLE001 — housekeeping never flips the gate
+            print(_redact(f"[pr_review] stale-verdict cleanup failed: {e}", api_key),
+                  file=sys.stderr)
+    return exit_code
