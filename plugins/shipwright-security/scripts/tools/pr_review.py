@@ -83,7 +83,7 @@ from pr_review_openrouter import (  # noqa: E402
 from pr_review_model_policy import (  # noqa: E402
     DeepSeekRoutingPolicyError, GlmRoutingPolicyError, resolve_extra_body,
 )
-from pr_review_verdict import post_verdict  # noqa: E402
+from pr_review_verdict import finish_decision, post_verdict  # noqa: E402
 
 # The re-export surface: every name a caller or test is entitled to reach
 # through `pr_review.<symbol>`. Kept complete on purpose — a name that is
@@ -97,7 +97,7 @@ __all__ = [
     "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body", "truncate_diff",
     "call_openrouter", "DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "GLM_MODEL",
     "OPENROUTER_URL", "DeepSeekRoutingPolicyError", "GlmRoutingPolicyError",
-    "resolve_extra_body", "post_verdict"]
+    "resolve_extra_body", "post_verdict", "finish_decision"]
 
 
 def _fix_windows_encoding() -> None:
@@ -277,20 +277,9 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_BLOCK
 
     exit_code = decision_to_exit(decision)
-    if exit_code == EXIT_ERROR:
-        print(f"[pr_review] unknown decision '{decision}' — treating as error.", file=sys.stderr)
-    if exit_code == EXIT_OK and state_posted:
-        # This run said yes, so its own earlier NOs about commits that are gone
-        # must stop holding the PR. Only on a passing verdict, and never
-        # allowed to change what the review earned — hence the outer guard as
-        # well as the ones inside.
-        try:
-            dismiss_own_stale_verdicts(args.pr_number, args.repo, nonce=nonce,
-                                       reviewed_sha=reviewed_sha)
-        except Exception as e:  # noqa: BLE001 — housekeeping never flips the gate
-            print(_redact(f"[pr_review] stale-verdict cleanup failed: {e}", api_key),
-                  file=sys.stderr)
-    return exit_code
+    return finish_decision(args.pr_number, args.repo, api_key, decision, exit_code, review,
+                           nonce=nonce, reviewed_sha=reviewed_sha, state_posted=state_posted,
+                           dismiss_fn=dismiss_own_stale_verdicts)
 
 
 if __name__ == "__main__":

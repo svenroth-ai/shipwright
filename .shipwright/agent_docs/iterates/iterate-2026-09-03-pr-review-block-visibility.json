@@ -1,0 +1,59 @@
+{
+  "run_id": "iterate-2026-09-03-pr-review-block-visibility",
+  "date": "2026-09-03T19:47:33.496954Z",
+  "event_at": "2026-09-03T19:46:43.561046+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/pr-review-block-visibility",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-03-pr-review-block-visibility",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a `block` decision prints decision=block, exit=1, and a bounded summary excerpt to stderr, pointing at the PR comment for full findings",
+        "disposition": "tested",
+        "evidence": "test_pr_review_script.py::TestMainOrchestration::test_block_decision_logs_a_bounded_excerpt PASSED"
+      },
+      {
+        "behavior": "`approve` and `comment` decisions also log unconditionally, not just the error path",
+        "disposition": "tested",
+        "evidence": "test_pr_review_script.py::TestMainOrchestration::test_approve_and_comment_also_log_unconditionally PASSED"
+      },
+      {
+        "behavior": "the logged excerpt is bounded \u2014 an arbitrarily long model-authored summary does not become a second full copy of the PR comment in the CI log",
+        "disposition": "tested",
+        "evidence": "test_pr_review_script.py::TestMainOrchestration::test_decision_log_excerpt_is_bounded PASSED"
+      },
+      {
+        "behavior": "the new log line is redacted like every other stderr print \u2014 a summary that happens to echo the API key never leaks it",
+        "disposition": "tested",
+        "evidence": "test_pr_review_script.py::TestMainOrchestration::test_decision_log_excerpt_is_redacted PASSED"
+      },
+      {
+        "behavior": "exit codes and PR-comment/review-state posting are unchanged by this diff",
+        "disposition": "tested",
+        "evidence": "test_pr_review_script.py::TestMainOrchestration::test_block_exits_1, test_approve_exits_0, test_comment_exits_0, test_json_parse_fail_exits_2_and_dumps_raw, test_truncation_fails_closed_needs_human \u2014 all still PASSED unmodified"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "CI-log stdout/stderr excerpt for pr_review.py's decision outcome; no web/dev-server surface exists to verify \u2014 the orchestration unit tests (monkeypatched I/O boundaries) are the verification"
+  },
+  "declared_removals": []
+}

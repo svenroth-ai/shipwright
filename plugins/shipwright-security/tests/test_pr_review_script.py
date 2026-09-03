@@ -267,6 +267,11 @@ class TestMainOrchestration:
         assert FAKE_KEY not in captured.out
         assert FAKE_KEY not in captured.err
 
+    # Decision-log excerpt tests (block/approve/comment always logging to CI
+    # stderr) moved to test_pr_review_decision_log.py to keep this module
+    # inside the file-size guideline (iterate-2026-09-03-pr-review-block-
+    # visibility).
+
     def test_generated_files_excluded_lets_review_run(self, monkeypatch):
         # THE root-fix behavior (trg-e1c554d9): a diff that WOULD truncate
         # (dominated by a regenerated compliance artifact) fits once generated
