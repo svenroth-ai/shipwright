@@ -1,0 +1,1 @@
+pr_review.py now logs a bounded decision excerpt (decision, exit code, summary) to CI stderr on every outcome, not just unknown decisions — a legitimate block/approve/comment no longer looks like a silent hang in CI logs

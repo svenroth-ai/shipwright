@@ -267,6 +267,54 @@ class TestMainOrchestration:
         assert FAKE_KEY not in captured.out
         assert FAKE_KEY not in captured.err
 
+    def test_block_decision_logs_a_bounded_excerpt(self, monkeypatch, capsys):
+        # trg: PR #672 read as a silent CI hang across 4 runs because a
+        # legitimate `block` printed nothing past "reviewing PR...". The full
+        # findings were already posted as a PR comment (see
+        # test_the_fail_closed_comment_does_not_credit_a_model and friends) —
+        # this only makes the CI LOG say so too.
+        _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "block", "summary": "Two real defects found in the diff.",
+             "blocking": ["b"], "comments": []}))
+        assert pr_review.main(ARGV) == 1
+        err = capsys.readouterr().err
+        assert "decision=block" in err
+        assert "exit=1" in err
+        assert "Two real defects found in the diff." in err
+        assert "PR comment" in err
+
+    def test_approve_and_comment_also_log_unconditionally(self, monkeypatch, capsys):
+        # Not just the error path — every decision must be visible in the log,
+        # so a reader never has to guess whether the gate ran at all.
+        _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))
+        assert pr_review.main(ARGV) == 0
+        assert "decision=approve" in capsys.readouterr().err
+
+        _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "comment", "summary": "nit", "blocking": [], "comments": ["c"]}))
+        assert pr_review.main(ARGV) == 0
+        assert "decision=comment" in capsys.readouterr().err
+
+    def test_decision_log_excerpt_is_bounded(self, monkeypatch, capsys):
+        # A model-authored summary is untrusted-length input — the CI log line
+        # must not become a second copy of an arbitrarily long comment.
+        _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "comment", "summary": "x" * 5000, "blocking": [], "comments": []}))
+        pr_review.main(ARGV)
+        err = capsys.readouterr().err
+        assert len(err) < 1000
+
+    def test_decision_log_excerpt_is_redacted(self, monkeypatch, capsys):
+        # Every string reaching stderr goes through `_redact` (pr_review_lib
+        # docstring) — the new line is no exception, even though a model
+        # summary carrying the key is a synthetic/adversarial case.
+        _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "block", "summary": f"leaked {FAKE_KEY} in summary",
+             "blocking": [], "comments": []}))
+        pr_review.main(ARGV)
+        assert FAKE_KEY not in capsys.readouterr().err
+
     def test_generated_files_excluded_lets_review_run(self, monkeypatch):
         # THE root-fix behavior (trg-e1c554d9): a diff that WOULD truncate
         # (dominated by a regenerated compliance artifact) fits once generated

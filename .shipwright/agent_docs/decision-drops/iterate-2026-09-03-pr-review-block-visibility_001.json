@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-03-pr-review-block-visibility",
+  "date": "2026-09-03",
+  "section": "shipwright-security/pr_review",
+  "title": "Log every PR-review decision, not just unknown ones",
+  "context": "A legitimate block/approve/comment decision from pr_review.py printed nothing past the initial reviewing-PR line, making a correct gate outcome indistinguishable from a hang. This caused PR #672 to be misdiagnosed as a GLM-JSON-parse flake / OpenRouter network issue across 4 CI runs.",
+  "decision": "Print an unconditional, bounded (300-char) stderr excerpt of decision+exit_code+summary after every review, pointing readers at the full PR comment for details.",
+  "consequences": "CI logs now self-explain a block/approve/comment outcome; no exit-code or comment-posting behavior changed.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
