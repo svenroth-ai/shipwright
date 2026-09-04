@@ -142,6 +142,23 @@ def test_logs_failure_when_cleanup_subprocess_exits_nonzero(tmp_path, monkeypatc
     failed.assert_called_once()
     assert "cleanup command FAILED" in err
     assert "boom: permission denied" in err
+
+
+def test_never_blocks_when_cleanup_subprocess_output_is_not_decodable(tmp_path, monkeypatch):
+    # PR #676 round-7: `text=True` alone decodes with the process locale
+    # (cp1252 on many Windows hosts), which can raise UnicodeDecodeError on
+    # non-ASCII `uv` output — must not crash the hook.
+    transcript = _transcript(tmp_path, [
+        {"role": "assistant", "content": "I was unable to complete the review — tool error."},
+    ])
+    undecodable = MagicMock(
+        side_effect=UnicodeDecodeError("cp1252", b"\xff\xfe", 0, 1, "invalid byte")
+    )
+    monkeypatch.setattr(hook.subprocess, "run", undecodable)
+    rc, err = _run_hook(monkeypatch, {"transcript_path": transcript})
+    assert rc == 0
+    undecodable.assert_called_once()
+    assert "cleanup subprocess could not be started" in err
     assert "cleaned up scratch diff" not in err
 
 

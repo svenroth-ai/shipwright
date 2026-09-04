@@ -170,15 +170,22 @@ def main(argv: Optional[list[str]] = None) -> int:  # noqa: ARG001 — no CLI ar
 
     script = shared_root / "scripts" / "tools" / "review_scratch.py"
     try:
+        # encoding="utf-8", errors="replace": `text=True` alone decodes with
+        # the process locale (cp1252 on many Windows hosts), which can raise
+        # UnicodeDecodeError on non-ASCII `uv`/cleanup output and crash this
+        # hook before it ever reports the outcome — the exact never-block
+        # guarantee this hook exists to uphold (PR #676 round-7 finding).
         result = subprocess.run(
             ["uv", "run", str(script), "cleanup", "--run-id", session_id],
             cwd=str(resolve_project_root()),
             check=False,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except (OSError, subprocess.TimeoutExpired, UnicodeError) as exc:
         _diag("cleanup subprocess could not be started — hook must not block on it, "
               "but the scratch diff was NOT confirmed removed",
               run_id=session_id, exception=str(exc))
