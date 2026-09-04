@@ -123,8 +123,16 @@ def _is_review_shaped(value: Any) -> bool:
     salvage hook's `looks_like_review_payload`, which only needs "plausible
     enough to write to a file for a human to re-parse later". Here a false
     "this looks like a review" means cleanup is wrongly skipped, so `null`,
-    a bare string, `{}`, or an unrelated object must all read as failure."""
-    return isinstance(value, dict) and isinstance(value.get("review"), list)
+    a bare string, `{}`, `{"review": []}` missing its `section`, or an
+    unrelated object must all read as failure (PR #676 round-10 finding —
+    round-3's version required `review` alone, letting a degenerate
+    `{"review": []}` reply pass)."""
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("section"), str)
+        and value["section"].strip() != ""
+        and isinstance(value.get("review"), list)
+    )
 
 
 def looks_like_review_payload(text: str) -> bool:

@@ -115,6 +115,22 @@ def test_cleans_up_when_a_valid_review_is_followed_by_a_truncated_line(tmp_path,
     assert "cleaned up scratch diff" in err
 
 
+def test_cleans_up_when_review_field_present_but_section_is_missing(tmp_path, monkeypatch):
+    # PR #676 round-10: `{"review": []}` alone (no `section`) is NOT the
+    # documented reply shape and must not be accepted as a successful review
+    # — a degenerate/malformed reply that happens to carry a `review` list
+    # must still trigger cleanup.
+    transcript = _transcript(tmp_path, [
+        {"role": "assistant", "content": '```json\n{"review": []}\n```'},
+    ])
+    called = _ok_cleanup_mock()
+    monkeypatch.setattr(hook.subprocess, "run", called)
+    rc, err = _run_hook(monkeypatch, {"transcript_path": transcript})
+    assert rc == 0
+    called.assert_called_once()
+    assert "cleaned up scratch diff" in err
+
+
 def test_cleans_up_when_transcript_is_not_valid_utf8(tmp_path, monkeypatch):
     # PR #676 round-6: a malformed/non-UTF-8 transcript must not raise
     # UnicodeDecodeError and crash the hook before cleanup runs.
