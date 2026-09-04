@@ -70,3 +70,9 @@ step wrote. Cleaning it up here would delete it out from under 6c whenever
 the cascade is enabled. The scratch diff is removed exactly once, at 6c's
 own terminal step (`code-review.md` "Cascade flow" step 6), which runs
 unconditionally regardless of whether the cascade itself fires.
+
+If this step's code-reviewer subagent crashes or returns no parseable
+review, 6c is never reached the intended way — the `SubagentStop` hook
+`cleanup-review-scratch-on-code-reviewer-failure.py` is the failure-path
+backstop for exactly that case (`hooks.json`; only acts when the subagent's
+last reply is not a parseable review, a no-op on a normal completion).
