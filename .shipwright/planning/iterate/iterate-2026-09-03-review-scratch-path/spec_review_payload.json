@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 5 pre-merge acceptance criteria are present, faithful, and in-scope. AC-6 is explicitly post-merge. No scope creep found; the only shared-file touch (the _private_shipwright_base() extraction in host_resource_lease.py) is named by AC-1 itself. Code-reviewer (Stage 2) may run."
+}

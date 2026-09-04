@@ -302,16 +302,29 @@ to opt out at the project level (one-time switch — falls into Branch C
 
 ### Branch A — `available` (keys present, not user-disabled)
 
+The diff path is resolved via `review_scratch.py` — not a bare `/tmp/...`
+literal, which bash and native Python resolve to different files on
+Windows (root cause + design: `code-review.md` Step 6b in `shipwright-build`).
+This whole block is one shell invocation, so the local variable is safe to
+reuse within it:
+
 ```bash
-git diff HEAD > /tmp/shipwright-review-diff.txt
+DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{run_id}" --name shipwright-review-diff.txt)"
+git diff HEAD > "$DIFF_FILE"
 
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
-  --diff-file /tmp/shipwright-review-diff.txt \
+  --diff-file "$DIFF_FILE" \
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
   --project-root "{project_root}" --run-id "{run_id}"
+
+uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"
 ```
+
+Run the `cleanup` call above even when the review call itself fails or
+returns `skipped: "empty_diff"` — the diff file (which can contain source
+code) was still written to disk by the `git diff` step and must not linger.
 
 (`uv run --project` is uv's own flag, distinct from the script's
 `--project-root` a few lines below — `--project` points uv at

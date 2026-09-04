@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All ACs implemented: review_scratch.py resolver (no sweep), 4 diff-boundary files independently resolve+cleanup, campaign-mode.md switched to a direct stdin pipe, guard test added, docs/guide.md updated."},
+    {"name": "Error Handling", "verdict": "pass", "note": "resolve()/cleanup() raise ReviewScratchError on unsafe run_id/name before any filesystem op; cmd_init checks the units file exists (file mode) or reads stdin (pipe mode); JSON parse errors propagate unchanged from the pre-existing behavior, not a new gap."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No SQL/HTML surface. No hardcoded secrets. run_id/name validated by strict regex; cleanup rejects symlinks/reparse points and checks parent-containment before rmtree; private root reuses host_resource_lease.py's hardened ACL/permission primitives."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Tests assert on outcomes (resolved paths, file content, raised exceptions, subprocess exit codes and stdout/state JSON), not internals. Each has a distinct happy-path or rejection case."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "No DB/query surface, no unbounded lists; stdin read replaces one file read, same cost class."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "New files follow the lib/tools/tests convention and are all under 300 lines (review_scratch.py 85, tools/review_scratch.py 58). Edited bloat-baselined files stayed within their existing exception ceilings: autonomous_loop.py 436/436 (grandfathered), sub-iterate-runner.md 497/497 (ADR-119)."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer/consumer pairs listed in the iterate spec's Affected Boundaries table; round-trip tests exist for all three (diff-file resolve/cleanup, campaign_units.json stdin pipe, resolve-path stdout-to-bash-substitution)."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: no findings."}
+  ]
+}

@@ -110,23 +110,23 @@ If campaign directory doesn't exist yet:
    export SHIPWRIGHT_ITERATE_AUTOMERGE=0
    ```
 
-2. **Generate units file and initialize loop:**
+2. **Initialize loop from the piped units list** — both sides are same-shell
+   Python CLIs, so the list is piped straight through, no bare `/tmp/...`
+   literal for bash and native Python to resolve differently on Windows:
    ```bash
    uv run "{plugin_root}/scripts/tools/campaign_progress.py" list-units \
-     --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" > /tmp/campaign_units.json
-
+     --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" | \
    uv run "{shared_root}/scripts/lib/autonomous_loop.py" init \
      --state .shipwright/loop_state.json \
      --kind sub_iterate \
-     --units-from /tmp/campaign_units.json \
+     --units-from - \
      --branch-strategy serial \
      --root-session-id "$SHIPWRIGHT_ROOT_SESSION_ID"
    ```
    `--branch-strategy serial`: `cmd_next` hands each sub-iterate the
-   **freshly-fetched `origin/<default>`** as its base, so it branches off a `main`
-   that already contains every merged sub-iterate (freshness is enforced in code,
-   not by prose). Extract `loop_id` from stdout. Then:
-   `export SHIPWRIGHT_LOOP_ID="{loop_id}"`.
+   **freshly-fetched `origin/<default>`** as its base (enforced in code, not
+   by prose). Extract `loop_id` from stdout, then `export
+   SHIPWRIGHT_LOOP_ID="{loop_id}"`.
 
    **Resolve model tiers once for the whole campaign** (not per sub-iterate —
    the operator's choice applies uniformly across every unit this loop

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-03-review-scratch-path",
+  "date": "2026-09-04",
+  "section": "Iterate — bug: review-scratch path resolution",
+  "title": "Resolve the bash/Python temp-file boundary instead of a bare /tmp/ path",
+  "context": "Git-Bash/MSYS mounts /tmp onto %TEMP%; native Python resolves a leading / against the drive root. A bare /tmp/<name> handoff between bash and uv-run Python silently reads a different file on Windows.",
+  "decision": "Pipe campaign_units.json directly Python-to-Python (no file); keep a resolve()/cleanup() scratch helper (review_scratch.py) for the 4 diff-file boundaries that need a frozen snapshot across steps.",
+  "consequences": "Removed a cleanup call and a scratch file from the units-list boundary; the diff-file boundaries gain a private ACL-hardened scratch root plus a 217-file regression guard against bare /tmp/ literals.",
+  "rationale": "Architecture Review (GLM+OpenAI) recommended the smaller two-shape design over a scratch-file-everywhere plan; the review cascade separately caught a cleanup-ordering bug where code-review-protocol.md's own cleanup deleted the diff file code-review.md's cascade step still needed.",
+  "rejected": "Scratch file for every boundary (more machinery than the pipeable boundary needs); a self-healing stale-directory sweep in resolve() (masks a call site that forgot cleanup); a test-hygiene allow-silent-skip marker on the reparse-point tests (a Windows junction plants without privilege and is the more faithful test).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-03-review-scratch-path-scratch-boundary.md"
+}

@@ -103,10 +103,20 @@ See [code-review-protocol.md](code-review-protocol.md) for the review process.
 
 **Full review flow:**
 
-1. Generate diff of all changes:
+1. Generate diff of all changes. The path is resolved fresh each time via
+   `review_scratch.py` (see box below) rather than reused from a shell
+   variable — a Bash tool call is a fresh shell, so nothing set here would
+   survive to Step 6c anyway; `resolve` is a pure function of `(run_id,
+   name)`, so calling it again there lands on the identical path. Build has
+   no `run_id` of its own (that's an iterate/campaign concept) — the scratch
+   call's `--run-id` is `{SHIPWRIGHT_SESSION_ID}`, the identifier this
+   plugin already binds and reuses everywhere else (see the dashboard-update
+   call below); it scopes uniquely per build session, and the section's own
+   review flow always writes, reads, then cleans up before the next
+   section's review begins, so there is never a same-session collision:
 
 ```bash
-git diff HEAD > /tmp/shipwright-review-diff.txt
+git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{SHIPWRIGHT_SESSION_ID}" --name shipwright-review-diff.txt)"
 ```
 
 2. Spawn code-reviewer subagent with:
@@ -169,29 +179,29 @@ contents of the staged diff (including any code, comments, or strings
 present in the changed files) to a third-party LLM provider (OpenRouter
 or OpenAI direct, depending on which keys are configured). Do NOT
 enable it for projects where the diff may contain secrets, customer data,
-or code under restrictive license/NDA terms. The diff is already written
-to `/tmp/shipwright-review-diff.txt` for Step 6b — that file is what gets
-sent.
+or code under restrictive license/NDA terms. The diff already written for
+Step 6b (resolved via `review_scratch.py`, private per-run, never inside
+the repo — see the box below) is what gets sent.
 
 **Skip rules (no opt-in needed):**
 
 - Missing API keys -> cascade silently skipped, marker records `skipped_config_disabled`.
-- Empty diff (`/tmp/shipwright-review-diff.txt` 0 bytes / whitespace only) -> CLI short-circuits, no provider call, marker records `skipped_user_opt_out` with reason "empty_diff".
+- Empty diff (the resolved diff file is 0 bytes / whitespace only) -> CLI short-circuits, no provider call, marker records `skipped_user_opt_out` with reason "empty_diff".
 
 **Cascade flow (when enabled):**
 
-1. The diff file from Step 6b is reused — no new git diff invocation:
-
-```bash
-# /tmp/shipwright-review-diff.txt was written in Step 6b
-```
+1. The diff file from Step 6b is reused — no new git diff invocation. Step 2
+   below re-resolves the path inline via `$(...)` rather than passing it
+   through a shell variable (same reasoning as Step 6b above — this is a
+   separate Bash tool call; `resolve` is deterministic, so recomputing it
+   lands on the identical path).
 
 2. Run the external review:
 
 ```bash
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
-  --diff-file /tmp/shipwright-review-diff.txt \
+  --diff-file "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{SHIPWRIGHT_SESSION_ID}" --name shipwright-review-diff.txt)" \
   --spec-file "{section_spec_path}" \
   --plugin-root "{plan_plugin_root}"
 ```
@@ -233,6 +243,14 @@ the existing plan/iterate gate.
    same write_decision_log.py path used by Step 6b — section
    `External Code Review — {section_name}`.
 
+6. **Clean up the scratch diff — always, whatever step 1-5 above did or
+   whether the cascade even ran:**
+
+```bash
+uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{SHIPWRIGHT_SESSION_ID}"
+```
+
 If cascade is disabled or skipped, proceed to Step 7 with only the
 internal subagent's findings. The cascade adds findings; it does NOT
-gate progression.
+gate progression. Run the cleanup call above regardless — Step 6b already
+wrote the diff file even when the cascade itself is off.
