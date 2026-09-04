@@ -88,4 +88,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [External-review retry budget & partial degradation](iterate-2026-09-01-external-review-retry-degradation-retry-budget.md)
 - [Replace DeepSeek with GLM 5.3 as the plan/code-review cascade's second reviewer](iterate-2026-09-02-glm-plan-code-review-swap-deepseek-to-glm.md)
 - [Codex CLI as a second GPT review leg](iterate-2026-09-03-codex-cli-review-leg-adr.md)
-- [Resolve the bash/Python temp-file boundary instead of trusting a bare `/tmp/` path](iterate-2026-09-03-review-scratch-path-scratch-boundary.md)
+- [Swap PR-review gate default model from GLM 5.3 to GPT-5.6 Luna](iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md)

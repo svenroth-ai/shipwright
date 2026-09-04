@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:47:38.866582+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:47:44.932691+00:00",
+      "disposition": "small complexity, no risk flag requiring plan review beyond the completed code-reviewer pass",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+          "line": null,
+          "finding": "Stale comment claimed DEFAULT_MODEL is still GLM (z-ai/) and that the routing config IS on the everyday path -- factually wrong after the swap to Luna (openai/), which short-circuits resolve_extra_body() to {} on the default path. Fixed in this run.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-03T21:52:39.493483+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:47:45.056906+00:00",
+      "disposition": "small complexity, no risk flag requiring doubt review beyond the completed code-reviewer pass",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:47:45.210400+00:00",
+      "disposition": "small complexity, no risk flag requiring external_code review beyond the completed code-reviewer pass",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:52:39.369408+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:47:45.465630+00:00",
+      "disposition": "small complexity, no risk flag requiring plan_internal review beyond the completed code-reviewer pass",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

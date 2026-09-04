@@ -20,18 +20,23 @@ __all__ = [
     "DEFAULT_MODEL",
     "DEFAULT_TIMEOUT",
     "GLM_MODEL",
+    "LUNA_MODEL",
     "OPENROUTER_URL",
     "call_openrouter",
 ]
 
-# One named constant — DEFAULT_MODEL, the ZDR-routing model match, and every
-# test/workflow assertion all read this, so they cannot drift into three
-# copies of the same literal. DeepSeek stays available as an operator
-# override (SHIPWRIGHT_PR_REVIEW_MODEL) after repeated confident false-positive
-# BLOCK verdicts on this gate motivated the GLM 5.3 default switch.
+# One named constant — DEFAULT_MODEL. Its value and the ZDR-routing model
+# match both read this, and test_pr_review_workflow_shape.py::
+# test_model_env_matches_code_default pins the workflow's literal env value
+# equal to it, so the three copies cannot drift apart. DeepSeek and GLM stay
+# available as SHIPWRIGHT_PR_REVIEW_MODEL operator overrides. Full swap
+# history and rationale (DeepSeek -> GLM 5.3 -> GPT-5.6 Luna; the GLM
+# availability defect; the Luna-vs-Sonnet benchmark/price check):
+# .shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md
 DEEPSEEK_MODEL = "deepseek/deepseek-v4-pro"
 GLM_MODEL = "z-ai/glm-5.3"
-DEFAULT_MODEL = GLM_MODEL
+LUNA_MODEL = "openai/gpt-5.6-luna"
+DEFAULT_MODEL = LUNA_MODEL
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ONE default for the whole tool — the CLI flag and the direct call share it.

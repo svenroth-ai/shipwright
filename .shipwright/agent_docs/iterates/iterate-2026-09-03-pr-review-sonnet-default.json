@@ -1,0 +1,67 @@
+{
+  "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+  "date": "2026-09-03T21:48:47.580012Z",
+  "event_at": "2026-09-03T21:48:08.261095+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/pr-review-sonnet-default",
+  "spec": ".shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-03-pr-review-sonnet-default",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the default model is GPT-5.6 Luna (openai/gpt-5.6-luna), not GLM 5.3",
+        "disposition": "tested",
+        "evidence": "test_pr_review_openrouter.py::TestDefaults::test_default_model_is_luna PASSED"
+      },
+      {
+        "behavior": "with no operator override, main() threads an EMPTY extra_body through -- Luna never touches ZDR routing",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestZdrRoutingGate::test_the_default_luna_model_never_touches_zdr_routing PASSED"
+      },
+      {
+        "behavior": "the DeepSeek operator override still delivers the real ZDR provider body",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestZdrRoutingGate::test_the_deepseek_override_still_delivers_the_zdr_body PASSED"
+      },
+      {
+        "behavior": "the GLM 5.3 operator override still delivers the real ZDR provider body",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::TestZdrRoutingGate::test_the_glm_override_still_delivers_the_zdr_body PASSED"
+      },
+      {
+        "behavior": "a broken/malformed routing config still fails this gate closed before any network call",
+        "disposition": "tested",
+        "evidence": "test_pr_review_deepseek_routing.py::test_fails_closed_before_any_network_call_on_broken_routing PASSED"
+      },
+      {
+        "behavior": "the workflow file's SHIPWRIGHT_PR_REVIEW_MODEL literal matches DEFAULT_MODEL exactly",
+        "disposition": "tested",
+        "evidence": "test_pr_review_workflow_shape.py::test_model_env_matches_code_default PASSED"
+      },
+      {
+        "behavior": "every re-exported name on pr_review.<symbol> still resolves",
+        "disposition": "tested",
+        "evidence": "test_pr_review_script.py::test_every_re_exported_name_resolves PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "model-identity/routing swap with no runnable web/dev-server surface; the unit suite is the verification"
+  }
+}

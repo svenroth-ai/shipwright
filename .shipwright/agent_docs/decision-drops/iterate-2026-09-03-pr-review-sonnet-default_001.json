@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-03-pr-review-sonnet-default",
+  "date": "2026-09-03",
+  "section": "pr_review/model-default",
+  "title": "Swap PR-review gate default model from GLM 5.3 to GPT-5.6 Luna",
+  "context": "GLM 5.3 silently hangs mid-review (no error output, 90-170s then exit 1), reproduced 4x on webui PR #416 while sibling PRs succeeded -- traced to the ZDR routing pool's allow_fallbacks:false, 2-reseller-only constraint. Full detail: see spec-ref ADR.",
+  "decision": "Default swapped to openai/gpt-5.6-luna, not a Sonnet-5 rollback -- empirically near-identical coding-review benchmark scores at ~1/15th the price, plus 3-host provider diversity vs the 2-reseller ZDR pool. Full detail: see spec-ref ADR.",
+  "consequences": "The required PR-review gate (both repos) no longer depends on the narrow ZDR pool by default; cost per review drops ~15x vs Sonnet. DeepSeek/GLM stay as operator overrides. Full detail: see spec-ref ADR.",
+  "rationale": "Checked live benchmark + pricing data before committing to a same-family rollback, per the user's explicit ask -- changed the plan mid-run.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md"
+}

@@ -64,18 +64,18 @@ def _wire(monkeypatch, *, review_json=None, diff="diff --git a b\n+x\n"):
 
 class TestZdrRoutingGate:
 
-    def test_the_default_glm_model_actually_delivers_the_zdr_body(self, monkeypatch):
-        # The positive case that carries the whole guarantee: with no override,
-        # main() must thread the REAL ZDR provider body through to the call —
-        # not just resolve it in isolation (that's TestResolveExtraBody's job)
-        # and not just skip it for a non-gated override (the test below).
-        # DEFAULT_MODEL is GLM 5.3 (iterate-2026-09-01-pr-review-glm-model,
-        # after DeepSeek's repeated confident false-positive BLOCK verdicts).
+    def test_the_default_luna_model_never_touches_zdr_routing(self, monkeypatch):
+        # The positive case for the CURRENT default (GPT-5.6 Luna,
+        # iterate-2026-09-03-pr-review-sonnet-default, after GLM 5.3 was found
+        # to silently hang mid-review — see pr_review_openrouter.py's
+        # DEFAULT_MODEL comment): with no override, main() must thread an
+        # EMPTY extra_body through — Luna is outside the deepseek/z-ai
+        # namespaces, so resolve_extra_body's short-circuit applies and no ZDR
+        # provider pin (with its `allow_fallbacks: false`) is ever added.
         posted = _wire(monkeypatch, review_json=json.dumps(
             {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))
         assert pr_review.main(ARGV) == 0
-        assert posted["extra_body"]["provider"]["zdr"] is True
-        assert posted["extra_body"]["provider"]["only"] == ["novita", "together"]
+        assert posted["extra_body"] == {}
 
     def test_the_deepseek_override_still_delivers_the_zdr_body(self, monkeypatch):
         # DeepSeek stays available as an operator override on the same env var
@@ -88,11 +88,25 @@ class TestZdrRoutingGate:
         assert posted["extra_body"]["provider"]["zdr"] is True
         assert posted["extra_body"]["provider"]["only"] == ["novita", "together"]
 
+    def test_the_glm_override_still_delivers_the_zdr_body(self, monkeypatch):
+        # GLM 5.3 stays available as an operator override too (its hang was an
+        # availability problem with the shared ZDR provider pool, not a reason
+        # to remove the routing wiring) — its ZDR routing must still work.
+        monkeypatch.setenv("SHIPWRIGHT_PR_REVIEW_MODEL", pr_review.GLM_MODEL)
+        posted = _wire(monkeypatch, review_json=json.dumps(
+            {"decision": "approve", "summary": "lgtm", "blocking": [], "comments": []}))
+        assert pr_review.main(ARGV) == 0
+        assert posted["extra_body"]["provider"]["zdr"] is True
+        assert posted["extra_body"]["provider"]["only"] == ["novita", "together"]
+
     def test_fails_closed_before_any_network_call_on_broken_routing(self, monkeypatch):
-        # DEFAULT_MODEL is a ZDR-gated identity; a broken routing block must
-        # exit 2 WITHOUT ever reaching call_openrouter OR fetching the diff/
-        # head — the AC is "no OpenRouter call made, before the diff is even
-        # fetched", not just the exit code.
+        # resolve_extra_body() is called for EVERY model, gated or not (see
+        # DEFAULT_MODEL's own non-gated case above) — mock it directly so this
+        # covers the fail-closed contract regardless of which model is
+        # currently the default. A broken routing block must exit 2 WITHOUT
+        # ever reaching call_openrouter OR fetching the diff/head — the AC is
+        # "no OpenRouter call made, before the diff is even fetched", not just
+        # the exit code.
         calls = _wire(monkeypatch)
 
         def boom(model):
