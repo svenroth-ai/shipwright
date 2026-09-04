@@ -1,0 +1,1 @@
+Tier-3 PR-review CI gate's default model swapped from GLM 5.3 to GPT-5.6 Luna — GLM 5.3 was silently hanging mid-review (no error, ~90-170s then a bare process exit), traced to the shared ZDR provider pool having no automatic failover; Luna needs no such constraint, costs roughly 1/15th as much, and scores within a point of Sonnet 5 on coding benchmarks.
