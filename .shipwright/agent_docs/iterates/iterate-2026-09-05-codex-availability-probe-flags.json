@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-05-codex-availability-probe-flags",
+  "date": "2026-09-04T22:33:29.239097Z",
+  "event_at": "2026-09-03T21:48:08.261095+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/codex-availability-probe-flags",
+  "spec": "n/a",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-05-codex-availability-probe-flags"
+}

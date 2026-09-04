@@ -90,3 +90,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Codex CLI as a second GPT review leg](iterate-2026-09-03-codex-cli-review-leg-adr.md)
 - [Swap PR-review gate default model from GLM 5.3 to GPT-5.6 Luna](iterate-2026-09-03-pr-review-sonnet-default-luna-model-swap.md)
 - [Resolve the bash/Python temp-file boundary instead of trusting a bare `/tmp/` path](iterate-2026-09-03-review-scratch-path-scratch-boundary.md)
+- [ADR: Stop sending codex-exec-only flags to `codex login status`](iterate-2026-09-05-codex-availability-probe-flags-codex-login-status-flags.md)

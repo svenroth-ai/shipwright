@@ -99,6 +99,7 @@ def _load_units_from(units_path: Path | None, kind: str, *, text: str | None = N
     else:
         print(f"ERROR: Unknown kind: {kind}", file=sys.stderr)
         sys.exit(1)
+        return []  # unreachable: satisfies py/mixed-returns, sys.exit(1) always raises
 
 
 def _reconcile_in_progress(state: dict) -> list[str]:
