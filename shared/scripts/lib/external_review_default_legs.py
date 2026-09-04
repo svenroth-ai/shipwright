@@ -138,11 +138,10 @@ def is_codex_available() -> tuple[bool, str]:
     if not codex_bin:
         return False, "codex CLI not found on PATH"
     try:
-        # --ignore-user-config/--ignore-rules mirror the real `codex exec` call below — the probe checks auth
-        # under the same config isolation the real leg runs with, so a config-dependent auth path can't pass
-        # the probe and then fail (or vice versa) at exec time.
+        # `--ignore-user-config`/`--ignore-rules` are `codex exec`-only flags; `login status` rejects
+        # them (exit 2), which the check below would misread as "not authenticated".
         result = subprocess.run(
-            [codex_bin, "login", "status", "--ignore-user-config", "--ignore-rules"],
+            [codex_bin, "login", "status"],
             capture_output=True, encoding="utf-8", errors="replace",
             timeout=_CODEX_LOGIN_STATUS_TIMEOUT_SECONDS,
         )
