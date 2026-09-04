@@ -100,3 +100,32 @@ def test_trap_preserves_a_successful_review_commands_exit_status():
             cwd=_REPO_ROOT, capture_output=True, text=True, check=False, timeout=60,
         )
 
+
+def test_run_id_heredoc_assignment_neutralizes_shell_metacharacters(tmp_path):
+    # PR #676 round-9: `RUN_ID="{run_id}"` still parses its own right-hand
+    # side for shell syntax, so a run_id containing `'` or `$(...)` could
+    # break out or execute before review_scratch.py's own validation ever
+    # runs. `iteration-reviews.md` Branch A and `sub-iterate-runner.md` Step
+    # 2 instead read the value through a quoted heredoc (`<<'EOF'`), which
+    # disables ALL shell expansion inside it. This exercises that EXACT
+    # idiom with a deliberately malicious value and proves both that nothing
+    # it contains executes and that it survives into $RUN_ID byte-for-byte.
+    marker = tmp_path / "injected_marker"
+    malicious_run_id = f"x'; touch {marker}; echo '$(id)`id`"
+    script = (
+        "RUN_ID=\"$(cat <<'SHIPWRIGHT_RUN_ID_EOF'\n"
+        f"{malicious_run_id}\n"
+        "SHIPWRIGHT_RUN_ID_EOF\n"
+        ")\"\n"
+        'printf \'%s\' "$RUN_ID"\n'
+    )
+    result = subprocess.run(  # nosec B603 - fixed argv, shell=False
+        [_bash(), "-c", script],
+        cwd=_REPO_ROOT, capture_output=True, text=True, check=False, timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == malicious_run_id, (
+        "the heredoc must deliver the value verbatim, unexpanded"
+    )
+    assert not marker.exists(), "the embedded command must NEVER execute"
+

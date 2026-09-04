@@ -306,16 +306,21 @@ The diff path is resolved via `review_scratch.py` — not a bare `/tmp/...`
 literal, which bash and native Python resolve to different files on
 Windows (root cause + design: `code-review.md` Step 6b in `shipwright-build`).
 This whole block is one shell invocation, so the local variable is safe to
-reuse within it. `RUN_ID` is assigned ONCE at the top and every later use
-references it as `"$RUN_ID"` — a real shell variable expansion, not
-repeated textual interpolation of `{run_id}` — because a value containing
-shell metacharacters interpolated straight into the single-quoted `trap`
-could break its quoting and run arbitrary commands before
-`review_scratch.py`'s own charset validation ever sees it (PR #676
-round-8 finding):
+reuse within it. `RUN_ID` is read through a quoted heredoc (`<<'EOF'`), not
+a plain `RUN_ID="{run_id}"` assignment — a quoted heredoc terminator
+disables ALL shell expansion inside it (no `$()`, backticks, or `$VAR`), so
+`{run_id}` lands in `$RUN_ID` as pure literal data no matter what it
+contains; a plain quoted assignment still parses its own right-hand side
+for shell syntax and remains injectable at that one site (PR #676 round-9
+finding — round-8's `RUN_ID="{run_id}"` closed every *reuse* site but left
+this one open). Every later use references `"$RUN_ID"` — a variable
+expansion never re-executes the metacharacters inside its own value:
 
 ```bash
-RUN_ID="{run_id}"
+RUN_ID="$(cat <<'SHIPWRIGHT_RUN_ID_EOF'
+{run_id}
+SHIPWRIGHT_RUN_ID_EOF
+)"
 DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$RUN_ID" --name shipwright-review-diff.txt)"
 trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$RUN_ID"; exit "$ec"' EXIT
 git diff HEAD > "$DIFF_FILE"
