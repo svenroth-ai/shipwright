@@ -182,13 +182,10 @@ review for those.
    `not_run`**: true when you write them, and 3f-bis promotes them with
    `--force`.
 
-2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure — it saves `$?` first and re-exits with it, so a successful cleanup command can't mask a failed review as a pass. `RUN_ID` is read through a quoted heredoc (`<<'EOF'`, not `RUN_ID="{run_id}"`) so `{run_id}` lands as pure literal data — a quoted heredoc disables all shell expansion, unlike a plain assignment which still parses its own right-hand side (PR #676 round-9 finding):
+2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure — it saves `$?` first and re-exits with it, so a successful cleanup command can't mask a failed review as a pass. `RUN_ID='{run_id}'` — SINGLE quotes: they end only at a literal `'`, so unlike a heredoc's line-delimiter (breakable by an embedded newline + matching line, PR #676 round-11 finding) or double quotes (still expand `$()`), they safely contain anything — safe here because `run_id`'s `RUN_ID_STRICT` charset (`iterate_entry.py`) excludes `'` and newlines by construction:
 
    ```bash
-   RUN_ID="$(cat <<'SHIPWRIGHT_RUN_ID_EOF'
-   {run_id}
-   SHIPWRIGHT_RUN_ID_EOF
-   )"
+   RUN_ID='{run_id}'
    DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$RUN_ID" --name shipwright-review-diff.txt)"
    trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$RUN_ID"; exit "$ec"' EXIT
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"

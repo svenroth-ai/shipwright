@@ -101,31 +101,60 @@ def test_trap_preserves_a_successful_review_commands_exit_status():
         )
 
 
-def test_run_id_heredoc_assignment_neutralizes_shell_metacharacters(tmp_path):
-    # PR #676 round-9: `RUN_ID="{run_id}"` still parses its own right-hand
-    # side for shell syntax, so a run_id containing `'` or `$(...)` could
-    # break out or execute before review_scratch.py's own validation ever
-    # runs. `iteration-reviews.md` Branch A and `sub-iterate-runner.md` Step
-    # 2 instead read the value through a quoted heredoc (`<<'EOF'`), which
-    # disables ALL shell expansion inside it. This exercises that EXACT
-    # idiom with a deliberately malicious value and proves both that nothing
-    # it contains executes and that it survives into $RUN_ID byte-for-byte.
+def test_run_id_single_quote_assignment_neutralizes_dollar_and_backtick(tmp_path):
+    # PR #676 round-9/round-11: `RUN_ID="{run_id}"` (double quotes) still
+    # expands `$()`/backticks in its own right-hand side, and a quoted
+    # heredoc (round-9's fix) is line-delimited, so a value containing a
+    # newline followed by a line matching the heredoc's own delimiter
+    # terminates it early and lets injected text run as further shell
+    # commands (round-11 finding, reproduced in
+    # test_heredoc_delimiter_collision_lets_injected_commands_run below).
+    # `iteration-reviews.md` Branch A and `sub-iterate-runner.md` Step 2
+    # settled on `RUN_ID='{run_id}'` — SINGLE quotes end ONLY at a literal
+    # `'`, so unlike both prior mechanisms they safely contain `$()`,
+    # backticks, `"`, AND embedded newlines alike.
     marker = tmp_path / "injected_marker"
-    malicious_run_id = f"x'; touch {marker}; echo '$(id)`id`"
-    script = (
-        "RUN_ID=\"$(cat <<'SHIPWRIGHT_RUN_ID_EOF'\n"
-        f"{malicious_run_id}\n"
-        "SHIPWRIGHT_RUN_ID_EOF\n"
-        ")\"\n"
-        'printf \'%s\' "$RUN_ID"\n'
+    marker_posix = marker.as_posix()
+    malicious_run_id = (
+        f"x$(touch {marker_posix})`touch {marker_posix}`y\nSHIPWRIGHT_RUN_ID_EOF\nz"
     )
+    script = f"RUN_ID='{malicious_run_id}'\nprintf '%s' \"$RUN_ID\"\n"
     result = subprocess.run(  # nosec B603 - fixed argv, shell=False
         [_bash(), "-c", script],
         cwd=_REPO_ROOT, capture_output=True, text=True, check=False, timeout=60,
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout == malicious_run_id, (
-        "the heredoc must deliver the value verbatim, unexpanded"
+        "single quotes must deliver the value verbatim, unexpanded"
     )
-    assert not marker.exists(), "the embedded command must NEVER execute"
+    assert not marker.exists(), "the embedded commands must NEVER execute"
+
+
+def test_heredoc_delimiter_collision_lets_injected_commands_run(tmp_path):
+    # Reproduces the round-11 finding directly: a value containing a
+    # newline followed by a line matching the heredoc's own delimiter
+    # terminates the heredoc early, and the remaining "value" content is
+    # then executed as ordinary shell commands. This is why round-9's
+    # heredoc approach was reverted in favor of single-quoting above — kept
+    # as a regression pin proving the OLD mechanism really was unsafe, not
+    # just theoretically so.
+    marker = tmp_path / "heredoc_injected_marker"
+    marker_posix = marker.as_posix()
+    malicious_run_id = (
+        f"x\nSHIPWRIGHT_RUN_ID_EOF\ntouch {marker_posix}\nSHIPWRIGHT_RUN_ID_EOF2"
+    )
+    script = (
+        "RUN_ID=\"$(cat <<'SHIPWRIGHT_RUN_ID_EOF'\n"
+        f"{malicious_run_id}\n"
+        "SHIPWRIGHT_RUN_ID_EOF\n"
+        ")\"\n"
+    )
+    subprocess.run(  # nosec B603 - fixed argv, shell=False
+        [_bash(), "-c", script],
+        cwd=_REPO_ROOT, capture_output=True, text=True, check=False, timeout=60,
+    )
+    assert marker.exists(), (
+        "sanity check: the heredoc delimiter collision really does execute "
+        "injected commands — if this ever fails, the reproduction is stale"
+    )
 

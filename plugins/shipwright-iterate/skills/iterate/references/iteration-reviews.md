@@ -306,21 +306,26 @@ The diff path is resolved via `review_scratch.py` — not a bare `/tmp/...`
 literal, which bash and native Python resolve to different files on
 Windows (root cause + design: `code-review.md` Step 6b in `shipwright-build`).
 This whole block is one shell invocation, so the local variable is safe to
-reuse within it. `RUN_ID` is read through a quoted heredoc (`<<'EOF'`), not
-a plain `RUN_ID="{run_id}"` assignment — a quoted heredoc terminator
-disables ALL shell expansion inside it (no `$()`, backticks, or `$VAR`), so
-`{run_id}` lands in `$RUN_ID` as pure literal data no matter what it
-contains; a plain quoted assignment still parses its own right-hand side
-for shell syntax and remains injectable at that one site (PR #676 round-9
-finding — round-8's `RUN_ID="{run_id}"` closed every *reuse* site but left
-this one open). Every later use references `"$RUN_ID"` — a variable
-expansion never re-executes the metacharacters inside its own value:
+reuse within it. `RUN_ID` is assigned via `RUN_ID='{run_id}'` — SINGLE
+quotes, not double quotes and not a heredoc. A heredoc looked stronger
+(round-9 fix) but is actually WEAKER here: its quoted terminator only
+blocks `$()`/backtick expansion, not a line-based collision — a value
+containing a newline followed by a line matching the heredoc's own
+delimiter terminates it early and lets injected commands run (PR #676
+round-11 finding, confirmed by direct reproduction). A single-quoted string
+has no such per-line terminator; it ends ONLY at the next literal `'`
+character, so it safely contains embedded newlines, `$()`, backticks, and
+`"` alike. `run_id` is minted in `RUN_ID_STRICT` form
+(`shared/scripts/lib/iterate_entry.py`:
+`^iterate-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$`) and rejected before this
+step if malformed — that charset contains no `'` and no newline, so
+`RUN_ID='{run_id}'` is provably safe given that precondition, which is
+exactly the "validate before embedding" fix the round-11 review asked for.
+Every later use references `"$RUN_ID"` — a variable expansion never
+re-executes the metacharacters inside its own value:
 
 ```bash
-RUN_ID="$(cat <<'SHIPWRIGHT_RUN_ID_EOF'
-{run_id}
-SHIPWRIGHT_RUN_ID_EOF
-)"
+RUN_ID='{run_id}'
 DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$RUN_ID" --name shipwright-review-diff.txt)"
 trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$RUN_ID"; exit "$ec"' EXIT
 git diff HEAD > "$DIFF_FILE"
