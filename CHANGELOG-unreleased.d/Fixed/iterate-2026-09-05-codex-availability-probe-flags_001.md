@@ -1,0 +1,1 @@
+Codex CLI availability probe no longer sends `codex exec`-only flags to `codex login status`, which was making it permanently misreport a genuinely authenticated Codex CLI as unavailable and silently fall back to the OpenRouter GPT review leg

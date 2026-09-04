@@ -1,0 +1,74 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-05-codex-availability-probe-flags",
+    "date": "2026-09-05",
+    "unit": {
+      "status": "pass",
+      "passed": 9622,
+      "failed": 0,
+      "note": "shared/tests (the affected root): 9622 passed, 32 skipped, 20 deselected, 0 failed, 807.47s. verify_local.py's 3 mirrored CI merge-guards also green (CI-gate guard, contract surface, sweep delivery surface)."
+    },
+    "integration": {
+      "status": "n/a",
+      "reason": "no cross_component risk flag; this is a scoped subprocess-argv fix to one function, not framework cross-component machinery"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; this change is internal CLI-invocation logic in the Codex availability probe"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure Python subprocess-argv fix with no runnable web/dev-server surface; the affected test root plus a live empirical re-check against the real, authenticated Codex CLI binary are the verification"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "is_codex_available() probes `codex login status` without the exec-only `--ignore-user-config`/`--ignore-rules` flags, so it no longer misreports a genuinely authenticated operator as unavailable",
+          "disposition": "tested",
+          "evidence": "test_external_review_codex_availability.py::test_login_status_probe_does_not_pass_exec_only_flags PASSED (red on pre-fix argv, green after); live re-check against the real authenticated Codex CLI binary in this worktree: is_codex_available() -> (True, ''), and resolve_openai_route() with gpt_leg.provider=\"codex\" -> \"codex\""
+        },
+        {
+          "behavior": "the pre-existing classification branches (not-on-PATH, not-authenticated, login-status timeout, OSError, available) are unchanged and still pass",
+          "disposition": "tested",
+          "evidence": "test_external_review_codex_availability.py (5 pre-existing tests) + test_external_review_codex_leg.py + test_external_review_gpt_leg_provider.py \u2014 33 tests total, all PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/adr/iterate-2026-09-05-codex-availability-probe-flags-codex-login-status-flags.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration) \u2014 carried forward unchanged from the last repo-wide measurement; this run's scoped fix did not re-run the full combined-coverage pass",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-05-codex-availability-probe-flags",
+    "commit": "fb2528e0a2d005ca64fc36d9072697c11f57472e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

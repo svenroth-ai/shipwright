@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-05-codex-availability-probe-flags",
+  "date": "2026-09-05",
+  "section": "Iterate — bug: fix Codex login-status probe misreporting availability",
+  "title": "Stop sending codex-exec-only flags to `codex login status`",
+  "context": "is_codex_available() sent codex-exec-only flags (--ignore-user-config/--ignore-rules) to `codex login status`, which rejects them (exit 2). The blanket returncode!=0 check misread that as \"not authenticated\", so the function ALWAYS reported Codex unavailable, silently breaking the just-shipped Codex-CLI GPT-review-leg (PR #672) in every repo that opted in. See linked ADR for full detail.",
+  "decision": "Remove `--ignore-user-config`/`--ignore-rules` from the `codex login status` subprocess call. Leave the classification branches (TimeoutExpired/OSError/returncode!=0) untouched — they were already correct once the argv stopped producing a false non-zero exit.",
+  "consequences": "is_codex_available() now correctly detects a genuinely authenticated Codex CLI; live-verified in this worktree against the real, authenticated binary: is_codex_available() -> (True, ''), and resolve_openai_route() with gpt_leg.provider=\"codex\" -> \"codex\". The three repos that already opted into the codex provider will get a working Codex-CLI GPT-review-leg once this merges and the plugin cache is synced.",
+  "rationale": "Root-caused via live reproduction: `codex login status --ignore-user-config --ignore-rules` exits 2 (\"unexpected argument\") against the real CLI, while `codex exec` legitimately accepts and needs those flags (kept unchanged at that call site).",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-05-codex-availability-probe-flags-codex-login-status-flags.md"
+}

@@ -87,3 +87,22 @@ def test_available_when_installed_and_authenticated(monkeypatch):
     available, reason = legs.is_codex_available()
     assert available is True
     assert reason == ""
+
+
+def test_login_status_probe_does_not_pass_exec_only_flags(monkeypatch):
+    """`--ignore-user-config`/`--ignore-rules` are defined on `codex exec`, not on
+    `codex login status` — the real CLI rejects them there with exit 2 ("unexpected
+    argument"), which the probe's blanket `returncode != 0` check then misreports as
+    "not authenticated" regardless of the operator's real login state. Pins the argv
+    the probe actually sends `codex login status`."""
+    monkeypatch.setattr(legs.shutil, "which", lambda _name: "/usr/bin/codex")
+    captured_argv = {}
+
+    def _record(argv, **_k):
+        captured_argv["value"] = argv
+        return _FakeCompleted(returncode=0)
+
+    monkeypatch.setattr(legs.subprocess, "run", _record)
+    legs.is_codex_available()
+    assert "--ignore-user-config" not in captured_argv["value"]
+    assert "--ignore-rules" not in captured_argv["value"]
