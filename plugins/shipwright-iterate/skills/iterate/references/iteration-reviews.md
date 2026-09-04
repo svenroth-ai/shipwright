@@ -310,7 +310,7 @@ reuse within it:
 
 ```bash
 DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{run_id}" --name shipwright-review-diff.txt)"
-trap 'uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"' EXIT
+trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"; exit "$ec"' EXIT
 git diff HEAD > "$DIFF_FILE"
 
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
@@ -326,7 +326,11 @@ The `trap ... EXIT` above is what makes cleanup unconditional — a straight-lin
 succeeded, so a failed review command (or `set -e` in the caller's shell)
 would otherwise skip it and leave the diff file (which can contain source
 code) on disk. The trap fires on every exit path — success, failure, or
-`skipped: "empty_diff"` — exactly once.
+`skipped: "empty_diff"` — exactly once. It captures `$?` into `ec` BEFORE
+running `cleanup` and re-exits with `ec` at the end: without that, a
+successful cleanup command becomes the new last-command-run, and bash
+reports *its* exit status (0) for the whole block, silently turning a
+failed `external_review.py` into an apparent success.
 
 (`uv run --project` is uv's own flag, distinct from the script's
 `--project-root` a few lines below — `--project` points uv at

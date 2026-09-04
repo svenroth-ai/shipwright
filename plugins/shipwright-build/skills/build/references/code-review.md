@@ -201,10 +201,14 @@ the repo — see the box below) is what gets sent.
    Bash tool call for Step 6 only fires if the agent issues it, so a failed
    `external_review.py` here must not depend on that. The trap fires when
    THIS shell exits, success or failure, before the agent ever reaches
-   Step 6:
+   Step 6. The trap body captures `$?` FIRST and re-exits with it at the
+   end — without that, a trap whose own cleanup command succeeds becomes
+   the new "last command run", and bash reports ITS exit status (0) for
+   the whole shell, silently turning a failed `external_review.py` into an
+   apparent success (PR #676 round-4 external-review finding):
 
 ```bash
-trap 'uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{SHIPWRIGHT_SESSION_ID}"' EXIT
+trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{SHIPWRIGHT_SESSION_ID}"; exit "$ec"' EXIT
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{SHIPWRIGHT_SESSION_ID}" --name shipwright-review-diff.txt)" \

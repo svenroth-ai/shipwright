@@ -182,11 +182,11 @@ review for those.
    `not_run`**: true when you write them, and 3f-bis promotes them with
    `--force`.
 
-2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure:
+2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure — it saves `$?` first and re-exits with it, so a successful cleanup command can't mask a failed review as a pass:
 
    ```bash
    DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{run_id}" --name shipwright-review-diff.txt)"
-   trap 'uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"' EXIT
+   trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"; exit "$ec"' EXIT
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code --diff-file "$DIFF_FILE" \
