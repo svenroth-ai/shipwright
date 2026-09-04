@@ -306,11 +306,18 @@ The diff path is resolved via `review_scratch.py` — not a bare `/tmp/...`
 literal, which bash and native Python resolve to different files on
 Windows (root cause + design: `code-review.md` Step 6b in `shipwright-build`).
 This whole block is one shell invocation, so the local variable is safe to
-reuse within it:
+reuse within it. `RUN_ID` is assigned ONCE at the top and every later use
+references it as `"$RUN_ID"` — a real shell variable expansion, not
+repeated textual interpolation of `{run_id}` — because a value containing
+shell metacharacters interpolated straight into the single-quoted `trap`
+could break its quoting and run arbitrary commands before
+`review_scratch.py`'s own charset validation ever sees it (PR #676
+round-8 finding):
 
 ```bash
-DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{run_id}" --name shipwright-review-diff.txt)"
-trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"; exit "$ec"' EXIT
+RUN_ID="{run_id}"
+DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$RUN_ID" --name shipwright-review-diff.txt)"
+trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$RUN_ID"; exit "$ec"' EXIT
 git diff HEAD > "$DIFF_FILE"
 
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
@@ -318,7 +325,7 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   --diff-file "$DIFF_FILE" \
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
-  --project-root "{project_root}" --run-id "{run_id}"
+  --project-root "{project_root}" --run-id "$RUN_ID"
 ```
 
 The `trap ... EXIT` above is what makes cleanup unconditional — a straight-line

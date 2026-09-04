@@ -94,6 +94,27 @@ def test_cleans_up_when_reviewer_reply_is_not_parseable(tmp_path, monkeypatch):
     assert "cleaned up scratch diff" in err
 
 
+def test_cleans_up_when_a_valid_review_is_followed_by_a_truncated_line(tmp_path, monkeypatch):
+    # PR #676 round-8: a subagent crash can truncate the transcript mid-write
+    # AFTER an earlier, unrelated assistant turn that happens to parse as a
+    # review-shaped JSON blob. Silently discarding the malformed trailing
+    # line and falling back to that earlier entry would treat a crash as a
+    # success and skip cleanup — the trailing line must win as "failure".
+    transcript = tmp_path / "transcript.jsonl"
+    lines = [
+        json.dumps({"role": "assistant",
+                    "content": '```json\n{"section": "x", "review": []}\n```'}),
+        '{"role": "assistant", "content": "truncated mid-writ',  # deliberately malformed
+    ]
+    transcript.write_text("\n".join(lines), encoding="utf-8")
+    called = _ok_cleanup_mock()
+    monkeypatch.setattr(hook.subprocess, "run", called)
+    rc, err = _run_hook(monkeypatch, {"transcript_path": str(transcript)})
+    assert rc == 0
+    called.assert_called_once()
+    assert "cleaned up scratch diff" in err
+
+
 def test_cleans_up_when_transcript_is_not_valid_utf8(tmp_path, monkeypatch):
     # PR #676 round-6: a malformed/non-UTF-8 transcript must not raise
     # UnicodeDecodeError and crash the hook before cleanup runs.

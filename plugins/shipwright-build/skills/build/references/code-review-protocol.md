@@ -15,16 +15,17 @@ performance problems, and spec compliance.
    this call's stdout across a separate Bash tool call; step 2 (and, later,
    `code-review.md`'s 6c cascade) each re-invoke it independently and land
    on the identical path. Build has no `run_id` of its own; `--run-id` is
-   `{SHIPWRIGHT_SESSION_ID}` (see `code-review.md`'s "Full review flow"
-   step 1 for why that scopes safely):
+   `$SHIPWRIGHT_SESSION_ID` (see `code-review.md`'s "Full review flow"
+   step 1 for why that scopes safely, and why it's referenced as a real
+   shell env var rather than interpolated text):
 ```bash
-git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{SHIPWRIGHT_SESSION_ID}" --name shipwright-review-diff.txt)"
+git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)"
 ```
 
 2. Spawn `code-reviewer` subagent with:
    - Section spec file path
    - Diff file path — re-resolve independently:
-     `"$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{SHIPWRIGHT_SESSION_ID}" --name shipwright-review-diff.txt)"`
+     `"$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)"`
    - `model=<review tier resolved at SKILL.md §G>` (omit when `inherit`) —
      see `code-review.md`'s "Model tier" note; the same value applies at
      every stage of this cascade

@@ -46,15 +46,25 @@ def _diag(message: str, **detail: Any) -> None:
         )
 
 
-def read_transcript_with_retry(transcript_path: str, max_retries: int = 4) -> list[dict]:
+def read_transcript_with_retry(
+    transcript_path: str, max_retries: int = 4
+) -> tuple[list[dict], bool]:
+    """Returns (parsed entries, trailing_ok). `trailing_ok` is False when the
+    transcript's last non-blank raw line exists but fails to parse as JSON —
+    a subagent crash can truncate the file mid-write, and silently falling
+    back to an earlier, successfully-parsed entry would let a stale prior
+    reply masquerade as the subagent's actual (failed) outcome (PR #676
+    round-8 finding)."""
     delays = [0.05, 0.1, 0.2, 0.4]
+    last_entries: list[dict] = []
+    last_trailing_ok = True
     for attempt in range(max_retries):
         try:
             if not os.path.exists(transcript_path):
                 if attempt < max_retries - 1:
                     time.sleep(delays[attempt])
                     continue
-                return []
+                return [], True
             # errors="replace": a malformed/non-UTF-8 transcript must not raise
             # UnicodeDecodeError uncaught here — that would crash the hook
             # before cleanup ever runs, defeating this hook's own purpose
@@ -65,23 +75,26 @@ def read_transcript_with_retry(transcript_path: str, max_retries: int = 4) -> li
                 if attempt < max_retries - 1:
                     time.sleep(delays[attempt])
                     continue
-                return []
+                return [], True
+            lines = [line.strip() for line in content.splitlines() if line.strip()]
             entries = []
-            for line in content.splitlines():
-                line = line.strip()
-                if line:
-                    try:
-                        entries.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
-            if entries:
-                return entries
+            trailing_ok = True
+            for index, line in enumerate(lines):
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    if index == len(lines) - 1:
+                        trailing_ok = False
+                    continue
+            last_entries, last_trailing_ok = entries, trailing_ok
+            if entries and trailing_ok:
+                return entries, trailing_ok
             if attempt < max_retries - 1:
                 time.sleep(delays[attempt])
         except OSError:
             if attempt < max_retries - 1:
                 time.sleep(delays[attempt])
-    return []
+    return last_entries, last_trailing_ok
 
 
 def _entry_text(entry: dict) -> str:
@@ -157,8 +170,8 @@ def main(argv: Optional[list[str]] = None) -> int:  # noqa: ARG001 — no CLI ar
         _diag("no transcript_path in payload")
         return 0
 
-    entries = read_transcript_with_retry(transcript_path)
-    reply = last_assistant_reply(entries) if entries else None
+    entries, trailing_ok = read_transcript_with_retry(transcript_path)
+    reply = last_assistant_reply(entries) if (entries and trailing_ok) else None
     if reply and looks_like_review_payload(reply):
         _diag("code-reviewer returned a parseable review — 6c still owns cleanup, no-op")
         return 0
