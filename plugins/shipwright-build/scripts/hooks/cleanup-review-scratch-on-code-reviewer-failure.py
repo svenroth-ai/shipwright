@@ -55,7 +55,11 @@ def read_transcript_with_retry(transcript_path: str, max_retries: int = 4) -> li
                     time.sleep(delays[attempt])
                     continue
                 return []
-            with open(transcript_path, encoding="utf-8") as f:
+            # errors="replace": a malformed/non-UTF-8 transcript must not raise
+            # UnicodeDecodeError uncaught here — that would crash the hook
+            # before cleanup ever runs, defeating this hook's own purpose
+            # (PR #676 round-6 external-review finding).
+            with open(transcript_path, encoding="utf-8", errors="replace") as f:
                 content = f.read().strip()
             if not content:
                 if attempt < max_retries - 1:

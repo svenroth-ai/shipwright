@@ -94,6 +94,19 @@ def test_cleans_up_when_reviewer_reply_is_not_parseable(tmp_path, monkeypatch):
     assert "cleaned up scratch diff" in err
 
 
+def test_cleans_up_when_transcript_is_not_valid_utf8(tmp_path, monkeypatch):
+    # PR #676 round-6: a malformed/non-UTF-8 transcript must not raise
+    # UnicodeDecodeError and crash the hook before cleanup runs.
+    transcript = tmp_path / "transcript.jsonl"
+    transcript.write_bytes(b'{"role": "assistant", "content": "\xff\xfe not utf-8"}')
+    called = _ok_cleanup_mock()
+    monkeypatch.setattr(hook.subprocess, "run", called)
+    rc, err = _run_hook(monkeypatch, {"transcript_path": str(transcript)})
+    assert rc == 0
+    called.assert_called_once()
+    assert "cleaned up scratch diff" in err
+
+
 def test_cleans_up_when_transcript_is_missing_entirely(tmp_path, monkeypatch):
     called = _ok_cleanup_mock()
     monkeypatch.setattr(hook.subprocess, "run", called)
