@@ -310,6 +310,7 @@ reuse within it:
 
 ```bash
 DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{run_id}" --name shipwright-review-diff.txt)"
+trap 'uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"' EXIT
 git diff HEAD > "$DIFF_FILE"
 
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
@@ -318,13 +319,14 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
   --project-root "{project_root}" --run-id "{run_id}"
-
-uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"
 ```
 
-Run the `cleanup` call above even when the review call itself fails or
-returns `skipped: "empty_diff"` — the diff file (which can contain source
-code) was still written to disk by the `git diff` step and must not linger.
+The `trap ... EXIT` above is what makes cleanup unconditional — a straight-line
+`cleanup` call as the block's last line only runs if every prior line
+succeeded, so a failed review command (or `set -e` in the caller's shell)
+would otherwise skip it and leave the diff file (which can contain source
+code) on disk. The trap fires on every exit path — success, failure, or
+`skipped: "empty_diff"` — exactly once.
 
 (`uv run --project` is uv's own flag, distinct from the script's
 `--project-root` a few lines below — `--project` points uv at

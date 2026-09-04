@@ -84,7 +84,8 @@ def test_cleanup_on_missing_run_id_is_a_noop(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize(
     "bad", ["..", ".", "", "a/b", "a\\b", "/etc/passwd", "C:\\x", "a" * 101,
-            "con", "CON", "nul", "aux.txt", "com1", "COM9.log", "lpt5"])
+            "con", "CON", "nul", "aux.txt", "com1", "COM9.log", "lpt5",
+            "run1.", "RUN1.", "run1.."])
 def test_resolve_rejects_unsafe_run_id(monkeypatch, tmp_path, bad):
     _patch_base(monkeypatch, tmp_path)
     with pytest.raises(rs.ReviewScratchError):
@@ -92,11 +93,31 @@ def test_resolve_rejects_unsafe_run_id(monkeypatch, tmp_path, bad):
 
 
 @pytest.mark.parametrize(
-    "bad", ["..", ".", "", "a/b", "../../etc", "nul", "COM3", "prn.json"])
+    "bad", ["..", ".", "", "a/b", "../../etc", "nul", "COM3", "prn.json",
+            "diff.txt.", "diff."])
 def test_resolve_rejects_unsafe_name(monkeypatch, tmp_path, bad):
     _patch_base(monkeypatch, tmp_path)
     with pytest.raises(rs.ReviewScratchError):
         rs.resolve("iterate-x", bad)
+
+
+def test_resolve_rejects_trailing_dot_run_id_alias(monkeypatch, tmp_path):
+    """Windows silently strips a trailing dot when a path component is
+    created/opened, so "run1." and "run1" would resolve to the SAME
+    directory there even though both pass the charset check — a distinct
+    run_id must never be allowed to alias another run's scratch dir
+    (external-review finding, PR #676)."""
+    _patch_base(monkeypatch, tmp_path)
+    rs.resolve("run1", "diff.txt")
+    with pytest.raises(rs.ReviewScratchError):
+        rs.resolve("run1.", "diff.txt")
+
+
+def test_resolve_rejects_trailing_dot_name_alias(monkeypatch, tmp_path):
+    _patch_base(monkeypatch, tmp_path)
+    rs.resolve("iterate-x", "diff.txt")
+    with pytest.raises(rs.ReviewScratchError):
+        rs.resolve("iterate-x", "diff.txt.")
 
 
 def test_resolve_canonicalizes_case(monkeypatch, tmp_path):

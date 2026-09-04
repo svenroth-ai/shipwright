@@ -196,9 +196,15 @@ the repo — see the box below) is what gets sent.
    separate Bash tool call; `resolve` is deterministic, so recomputing it
    lands on the identical path).
 
-2. Run the external review:
+2. Run the external review. `trap ... EXIT` — not the "always run Step 6"
+   prose below — is what actually guarantees cleanup: a later, separate
+   Bash tool call for Step 6 only fires if the agent issues it, so a failed
+   `external_review.py` here must not depend on that. The trap fires when
+   THIS shell exits, success or failure, before the agent ever reaches
+   Step 6:
 
 ```bash
+trap 'uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{SHIPWRIGHT_SESSION_ID}"' EXIT
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{SHIPWRIGHT_SESSION_ID}" --name shipwright-review-diff.txt)" \
@@ -243,8 +249,12 @@ the existing plan/iterate gate.
    same write_decision_log.py path used by Step 6b — section
    `External Code Review — {section_name}`.
 
-6. **Clean up the scratch diff — always, whatever step 1-5 above did or
-   whether the cascade even ran:**
+6. **Clean up the scratch diff — a safety-net call, always, whatever step
+   1-5 above did or whether the cascade even ran.** Step 2's own `trap`
+   already ran cleanup once the external-review shell exited (success or
+   failure); `cleanup()` is a no-op on an already-removed directory, so
+   calling it again here is free and covers the cascade-skipped case, where
+   Step 2 never ran and no trap ever fired:
 
 ```bash
 uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{SHIPWRIGHT_SESSION_ID}"

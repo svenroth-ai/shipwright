@@ -182,16 +182,15 @@ review for those.
    `not_run`**: true when you write them, and 3f-bis promotes them with
    `--force`.
 
-2. External LLM code review. Diff path via `review_scratch.py resolve`, not
-   a bare `/tmp/...` (rationale: `code-review.md` Step 6b, `shipwright-build`):
+2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure:
 
    ```bash
    DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "{run_id}" --name shipwright-review-diff.txt)"
+   trap 'uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"' EXIT
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code --diff-file "$DIFF_FILE" \
      --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}"
-   uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "{run_id}"
    ```
 
    Parse feedback. Apply high/medium findings before commit, OR mark

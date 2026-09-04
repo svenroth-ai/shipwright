@@ -48,7 +48,13 @@ def _validate_component(value: str, *, label: str) -> str:
     collide only on a case-insensitive filesystem (Windows/macOS)."""
     lowered = value.lower()
     if (lowered in _RESERVED or not _COMPONENT_RE.fullmatch(lowered)
-            or _WIN_RESERVED_RE.fullmatch(lowered)):
+            or _WIN_RESERVED_RE.fullmatch(lowered)
+            or lowered.endswith(".")):
+        # Windows silently strips trailing dots (and spaces) when a path
+        # component is created/opened, so "run1." and "run1" resolve to the
+        # SAME directory there even though both pass the charset check above
+        # — exactly the cross-run collision this module exists to prevent.
+        # Trailing space is already excluded by _COMPONENT_RE's charset.
         raise ReviewScratchError(f"unsafe review-scratch {label}: {value!r}")
     return lowered
 
