@@ -40,6 +40,10 @@ def _transcript(tmp_path: Path, lines: list[dict]) -> str:
     return str(p)
 
 
+def _ok_cleanup_mock() -> MagicMock:
+    return MagicMock(return_value=MagicMock(returncode=0, stderr=""))
+
+
 def _run_hook(monkeypatch, payload, *, session_id=SESSION_ID, plugin_root=str(PLUGIN_ROOT)):
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
     err = io.StringIO()
@@ -77,7 +81,7 @@ def test_cleans_up_when_reviewer_reply_is_not_parseable(tmp_path, monkeypatch):
         {"role": "user", "content": "Review this diff."},
         {"role": "assistant", "content": "I was unable to complete the review — tool error."},
     ])
-    called = MagicMock()
+    called = _ok_cleanup_mock()
     monkeypatch.setattr(hook.subprocess, "run", called)
     rc, err = _run_hook(monkeypatch, {"transcript_path": transcript})
     assert rc == 0
@@ -91,11 +95,41 @@ def test_cleans_up_when_reviewer_reply_is_not_parseable(tmp_path, monkeypatch):
 
 
 def test_cleans_up_when_transcript_is_missing_entirely(tmp_path, monkeypatch):
-    called = MagicMock()
+    called = _ok_cleanup_mock()
     monkeypatch.setattr(hook.subprocess, "run", called)
     rc, _err = _run_hook(monkeypatch, {"transcript_path": str(tmp_path / "nope.jsonl")})
     assert rc == 0
     called.assert_called_once()
+
+
+def test_cleans_up_when_reply_is_valid_json_but_not_review_shaped(tmp_path, monkeypatch):
+    # A reply that parses as JSON but isn't {"section": ..., "review": [...]}
+    # (null, {}, a bare string, an unrelated object) must still be treated as
+    # a failed review, not silently accepted as success (PR #676 round-3).
+    for body in ["null", "{}", '"unable to review"', '{"error": "tool crashed"}']:
+        transcript = _transcript(tmp_path, [
+            {"role": "assistant", "content": f"```json\n{body}\n```"},
+        ])
+        called = _ok_cleanup_mock()
+        monkeypatch.setattr(hook.subprocess, "run", called)
+        rc, err = _run_hook(monkeypatch, {"transcript_path": transcript})
+        assert rc == 0
+        called.assert_called_once()
+        assert "cleaned up scratch diff" in err
+
+
+def test_logs_failure_when_cleanup_subprocess_exits_nonzero(tmp_path, monkeypatch):
+    transcript = _transcript(tmp_path, [
+        {"role": "assistant", "content": "I was unable to complete the review — tool error."},
+    ])
+    failed = MagicMock(return_value=MagicMock(returncode=1, stderr="boom: permission denied"))
+    monkeypatch.setattr(hook.subprocess, "run", failed)
+    rc, err = _run_hook(monkeypatch, {"transcript_path": transcript})
+    assert rc == 0
+    failed.assert_called_once()
+    assert "cleanup command FAILED" in err
+    assert "boom: permission denied" in err
+    assert "cleaned up scratch diff" not in err
 
 
 def test_noop_when_plugin_root_unresolvable(tmp_path, monkeypatch):

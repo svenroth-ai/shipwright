@@ -100,16 +100,25 @@ def last_assistant_reply(entries: list[dict]) -> Optional[str]:
     return None
 
 
+def _is_review_shaped(value: Any) -> bool:
+    """Matches `code-review-protocol.md`'s documented reply shape
+    (`{"section": ..., "review": [...]}`) — deliberately stricter than the
+    salvage hook's `looks_like_review_payload`, which only needs "plausible
+    enough to write to a file for a human to re-parse later". Here a false
+    "this looks like a review" means cleanup is wrongly skipped, so `null`,
+    a bare string, `{}`, or an unrelated object must all read as failure."""
+    return isinstance(value, dict) and isinstance(value.get("review"), list)
+
+
 def looks_like_review_payload(text: str) -> bool:
     for match in _FENCE_RE.finditer(text):
         try:
-            json.loads(match.group(1))
-            return True
+            if _is_review_shaped(json.loads(match.group(1))):
+                return True
         except json.JSONDecodeError:
             continue
     try:
-        json.loads(text)
-        return True
+        return _is_review_shaped(json.loads(text))
     except json.JSONDecodeError:
         return False
 
@@ -157,16 +166,23 @@ def main(argv: Optional[list[str]] = None) -> int:  # noqa: ARG001 — no CLI ar
 
     script = shared_root / "scripts" / "tools" / "review_scratch.py"
     try:
-        subprocess.run(
+        result = subprocess.run(
             ["uv", "run", str(script), "cleanup", "--run-id", session_id],
             cwd=str(resolve_project_root()),
             check=False,
             capture_output=True,
+            text=True,
             timeout=30,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
-        _diag("cleanup subprocess failed — hook must not block on it",
+        _diag("cleanup subprocess could not be started — hook must not block on it, "
+              "but the scratch diff was NOT confirmed removed",
               run_id=session_id, exception=str(exc))
+        return 0
+    if result.returncode != 0:
+        _diag("cleanup command FAILED — the scratch diff was NOT confirmed removed",
+              run_id=session_id, returncode=result.returncode,
+              stderr=(result.stderr or "").strip()[-2000:])
         return 0
     _diag("code-reviewer failed to return a parseable review — cleaned up scratch diff",
           run_id=session_id)
