@@ -110,12 +110,16 @@ def test_posix_byte_lock_blocks_an_independent_process(tmp_path):
 
 
 @pytest.mark.skipif(os.name == "nt", reason="native POSIX permission proof")
-def test_posix_private_file_tightens_group_or_world_access(tmp_path):
-    # PR #676 round-13: a bash `>` redirect creates the file under the
-    # process umask (e.g. 644), not this module's own hardened mode — the
-    # real production write path, not just a test artifact. Ownership, not
-    # the mode bits, is the trust boundary, so _safe_file must tighten a
-    # loose-but-owned file rather than reject it outright.
+def test_posix_private_file_rejects_group_or_world_access(tmp_path):
+    # PR #676 round-13 repair: a bash `>` redirect creates the file under
+    # the process umask (e.g. 644), not this module's own hardened mode —
+    # the real production write path, not just a test artifact, and the
+    # original version of this test (asserting `_safe_file` raises here)
+    # is exactly what that regression exposed on Linux CI. Ownership, not
+    # the mode bits, is the trust boundary, so `_safe_file` now tightens a
+    # loose-but-owned file rather than reject it outright — this test's
+    # name is unchanged; only its assertion is, from "raises" to
+    # "tightens", to match.
     path = tmp_path / "state.json"
     path.write_text("{}", encoding="utf-8")
     path.chmod(0o644)
