@@ -110,14 +110,36 @@ def test_posix_byte_lock_blocks_an_independent_process(tmp_path):
 
 
 @pytest.mark.skipif(os.name == "nt", reason="native POSIX permission proof")
-def test_posix_private_file_rejects_group_or_world_access(tmp_path):
+def test_posix_private_file_tightens_group_or_world_access(tmp_path):
+    # PR #676 round-13: a bash `>` redirect creates the file under the
+    # process umask (e.g. 644), not this module's own hardened mode — the
+    # real production write path, not just a test artifact. Ownership, not
+    # the mode bits, is the trust boundary, so _safe_file must tighten a
+    # loose-but-owned file rather than reject it outright.
     path = tmp_path / "state.json"
     path.write_text("{}", encoding="utf-8")
     path.chmod(0o644)
-    with pytest.raises(lease.HostLeaseError, match="file is not private"):
-        locking._safe_file(path)
-    path.chmod(0o600)
     locking._safe_file(path)
+    assert path.stat().st_mode & 0o077 == 0
+
+
+@pytest.mark.skipif(os.name == "nt", reason="native POSIX permission proof")
+def test_posix_private_dir_tightens_group_or_world_access(tmp_path):
+    trusted_parent = tmp_path
+    loose = tmp_path / "loose"
+    loose.mkdir(mode=0o755)
+    locking._safe_dir(loose, trusted_parent=trusted_parent)
+    assert loose.stat().st_mode & 0o077 == 0
+
+
+@pytest.mark.skipif(os.name == "nt", reason="native POSIX ownership proof")
+def test_posix_private_file_owned_by_another_user_still_rejects(tmp_path, monkeypatch):
+    path = tmp_path / "state.json"
+    path.write_text("{}", encoding="utf-8")
+    path.chmod(0o600)
+    monkeypatch.setattr(os, "getuid", lambda: os.getuid() + 1, raising=False)
+    with pytest.raises(lease.HostLeaseError, match="owned by another user"):
+        locking._safe_file(path)
 
 
 def test_posix_fallback_uses_sticky_shared_root_and_private_child(tmp_path, monkeypatch):
