@@ -592,6 +592,13 @@
       "adr": "ADR-090"
     },
     {
+      "path": "shared/scripts/lib/_host_resource_locking.py",
+      "limit": 300,
+      "current": 308,
+      "state": "exception",
+      "adr": "ADR-129"
+    },
+    {
       "path": "shared/scripts/lib/artifact_migrations.py",
       "limit": 300,
       "current": 641,

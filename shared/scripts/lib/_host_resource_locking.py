@@ -77,6 +77,17 @@ def _windows_private(path: Path) -> tuple[bool, str]:
     return path_acl_is_private(path)
 
 
+def _tighten(path: Path, mode: int, *, kind: str) -> None:
+    """POSIX only: owned by us but loosened by something outside our control
+    (a bash `>` redirect honors the process umask) — tighten rather than
+    reject. Ownership, checked by the caller, is the trust boundary, not the
+    mode bits, once _is_reparse has ruled out a planted link."""
+    try:
+        path.chmod(mode)
+    except OSError as exc:
+        raise HostLeaseError(f"could not tighten host lease {kind} permissions {path}: {exc}") from exc
+
+
 def _reject_linked_components(path: Path) -> None:
     target = path.absolute()
     current = Path(target.anchor)
@@ -107,7 +118,7 @@ def _safe_file(path: Path, *, allow_missing: bool = False) -> None:
         if hasattr(os, "getuid") and stat.st_uid != os.getuid():
             raise HostLeaseError(f"host lease file is owned by another user: {path}")
         if stat.st_mode & 0o077:
-            raise HostLeaseError(f"host lease file is not private: {path}")
+            _tighten(path, 0o600, kind="file")
 
 
 def _safe_runtime_root(path: Path, *, allow_sticky_shared: bool) -> None:
@@ -189,8 +200,7 @@ def _safe_dir(path: Path, *, trusted_parent: Path) -> None:
                 raise HostLeaseError(
                     f"host lease directory is owned by another user: {current}")
             if stat.st_mode & 0o077:
-                raise HostLeaseError(
-                    f"host lease directory is not private: {current}")
+                _tighten(current, 0o700, kind="directory")
 
 
 def _lock_byte(handle, *, blocking: bool) -> bool:
