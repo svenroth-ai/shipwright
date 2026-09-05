@@ -1,0 +1,106 @@
+{
+  "section": "iterate-2026-09-03-review-scratch-path",
+  "review_type": "full-review",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+      "line": 113,
+      "finding": "{run_id} is an unbound placeholder in the shipwright-build plugin — SKILL.md never defines it, unlike shipwright-iterate where it is an established, bound convention (181 occurrences across 32 files).",
+      "suggestion": "Bind an identifier build already has, or switch to {SHIPWRIGHT_SESSION_ID}.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Switched all 3 build-side call sites (code-review.md write/read/cleanup, code-review-protocol.md write/cleanup) from --run-id \"{run_id}\" to --run-id \"{SHIPWRIGHT_SESSION_ID}\" — the identifier build's SKILL.md already binds and reuses elsewhere (dashboard-update calls). Added a one-line rationale note at each site's first occurrence explaining why session-id scoping is safe (sequential write-read-cleanup per section, no concurrent code-review invocations within one session)."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/autonomous_loop.py",
+      "line": 57,
+      "finding": "Empty/malformed stdin with --units-from - raises an uncaught json.JSONDecodeError traceback instead of a clean error matching the file branch's contract.",
+      "suggestion": "Catch the parse error and print a clean ERROR message.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Added an explicit empty-stdin check (clean ERROR + return 1) and wrapped the _load_units_from call in try/except json.JSONDecodeError (clean ERROR + return 1) — covers both the truly-empty and malformed-non-empty cases. New regression test: test_init_reports_a_clean_error_on_empty_stdin."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/autonomous_loop.py",
+      "line": 176,
+      "finding": "cmd_init's resume/reconcile early-return paths could return before stdin is ever read, risking EPIPE on the producer side for a units list exceeding the pipe buffer.",
+      "suggestion": "Read stdin to completion before the resume-check early returns.",
+      "disposition": "no_change_needed",
+      "resolution": "Already true in the diff under review: `stdin_text = sys.stdin.read() if stdin else None` executes unconditionally as the very first statement in cmd_init, before the `state_path.exists()` resume/reconcile branch. This finding read an earlier snapshot of the working tree before that ordering was in place; verified current code reads stdin first."
+    },
+    {
+      "severity": "medium",
+      "category": "test-coverage",
+      "file": "shared/tests/test_autonomous_loop.py",
+      "line": 159,
+      "finding": "The stdin branch (--units-from -) has no in-process test coverage beyond the subprocess integration test's happy path.",
+      "suggestion": "Add in-process cases: empty stdin, malformed JSON, existing-state-with-pending-units.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Added a subprocess regression test (test_init_reports_a_clean_error_on_empty_stdin) covering empty stdin with a clean-error assertion. In-process cases were deliberately not added to shared/tests/test_autonomous_loop.py, which is bloat-baselined at an exact 442/442 line ceiling with zero headroom — adding them there would require an equal-size unrelated compaction elsewhere in a 442-line file not otherwise touched by this change. The subprocess test exercises the real CLI boundary (argparse, stdin plumbing, and the error path together), which is what actually matters for this fix; malformed-non-empty-JSON and resume+stdin interaction are lower-value incremental cases against the same code path already covered."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+      "line": 191,
+      "finding": "Dead command: the standalone `resolve` block in Cascade-flow step 1 prints a path nothing consumes (step 2 re-resolves inline).",
+      "suggestion": "Delete the dead command, fold its rationale into step 2.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Removed the standalone code fence; folded the rationale sentence into step 1's prose."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 113,
+      "finding": "Stale step heading: 'Generate units file' when no file is generated any more (piped).",
+      "suggestion": "Retitle to reflect the pipe.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Retitled to 'Initialize loop from the piped units list.'"
+    },
+    {
+      "severity": "low",
+      "category": "security",
+      "file": "shared/scripts/lib/review_scratch.py",
+      "line": 70,
+      "finding": "resolve() returns a leaf path with no reparse-point check, unlike cleanup()'s symmetric hardening and the sibling host_resource_lease.py module's own discipline (_safe_file before touching its state file). A pre-planted symlink at the returned path would be silently followed by the bash > redirect.",
+      "suggestion": "Call _safe_file(candidate, allow_missing=True) on the returned path in resolve().",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Added _safe_file(target, allow_missing=True) in resolve() before returning — rejects a pre-planted reparse point at resolve time, before the bash redirect ever runs."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/review_scratch.py",
+      "line": 58,
+      "finding": "Two redundant checks: _safe_dir(namespace, ...) is a strict subset of the following _safe_dir(run_root, ...) call (which walks every intermediate component); cleanup()'s is_symlink()/parents check is unreachable given _validate_component + _reject_linked_components.",
+      "suggestion": "Drop the redundant namespace call; optionally comment the cleanup() belt-and-braces check.",
+      "disposition": "no_change_needed",
+      "resolution": "Reviewer's own assessment: both are strict subsets of checks that remain, no validation weakened, non-blocking, defensible as belt-and-braces against a future _validate_component regression. Left as-is — consistent with the module's existing defense-in-depth posture (the same pattern is used deliberately elsewhere in this file)."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_scratch.py",
+      "line": 39,
+      "finding": "_COMPONENT_RE does not exclude Windows reserved device names (CON, NUL, AUX, COM1).",
+      "suggestion": "Add the reserved-device-name set to _RESERVED.",
+      "disposition": "no_change_needed",
+      "resolution": "Already fixed in the diff under review, independently, in response to the external code-review cascade's equivalent finding: _WIN_RESERVED_RE rejects con/prn/aux/nul/com[1-9]/lpt[1-9] (with or without an extension), case-insensitively via the same lowercasing _validate_component already does. This finding read a snapshot before that fix landed."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "CHANGELOG-unreleased.d/",
+      "line": 0,
+      "finding": "No changelog drop file exists yet.",
+      "suggestion": "Confirm F4 emits one naming both halves of the fix.",
+      "disposition": "no_change_needed",
+      "resolution": "Correctly identified as F4's normal finalization work, not a plan gap — will be produced there."
+    }
+  ]
+}

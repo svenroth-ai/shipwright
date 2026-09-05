@@ -56,11 +56,11 @@ def repository_identity(project_root: Path) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
 
 
-def _private_location() -> tuple[Path, Path, bool]:
+def _private_shipwright_base() -> tuple[Path, Path, bool]:
     allow_sticky_shared = False
     if os.name == "nt":
         if not os.environ.get("LOCALAPPDATA"):
-            raise HostLeaseError("LOCALAPPDATA is required for the Windows lease root")
+            raise HostLeaseError("LOCALAPPDATA is required for the private Shipwright root")
         anchor = Path(os.environ["LOCALAPPDATA"])
         base = anchor / "Shipwright"
     elif os.environ.get("XDG_RUNTIME_DIR"):
@@ -72,12 +72,14 @@ def _private_location() -> tuple[Path, Path, bool]:
         for name in ("TMPDIR", "TEMP", "TMP"):
             override = os.environ.get(name)
             if override and Path(override).resolve() != anchor:
-                raise HostLeaseError(
-                    f"untrusted {name} cannot select the host lease runtime root")
+                raise HostLeaseError(f"untrusted {name} cannot select the private Shipwright root")
         base = anchor / f"shipwright-{uid}"
         allow_sticky_shared = True
-    return base / "host-leases-v1", anchor, allow_sticky_shared
+    return base, anchor, allow_sticky_shared
 
+def _private_location() -> tuple[Path, Path, bool]:
+    base, anchor, allow_sticky_shared = _private_shipwright_base()
+    return base / "host-leases-v1", anchor, allow_sticky_shared
 
 def _private_root() -> Path:
     return _private_location()[0]

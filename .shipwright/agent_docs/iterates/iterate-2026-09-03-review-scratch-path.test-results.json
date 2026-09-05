@@ -1,0 +1,147 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-03-review-scratch-path",
+    "date": "2026-09-04",
+    "unit": {
+      "status": "pass",
+      "passed": 17235,
+      "failed": 0,
+      "note": "Green and complete across all 18 discovered F0 units (14 plugins + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests): 17291 tests total, 17235 passed, 0 failed, 0 errors, 56 skipped. Full evidence retained at .shipwright/runs/f0-evidence/published/f0-152a91015edc-360c2e09/ under the main repo root."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 528,
+      "failed": 0
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser surface; this change is a CLI/library fix to the bash/Python temp-file handoff used by the review pipeline and campaign loop"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 41,
+      "exit_code": 0,
+      "runner": "uv run pytest shared/scripts/tools/tests/test_review_scratch.py shared/scripts/tools/tests/test_review_scratch_guard.py -v (38 tests, one root) and uv run pytest shared/tests/test_campaign_units_stdin_pipe_integration.py shared/tests/test_campaign_serial_composition_integration.py -v (3 tests, separate root)"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "resolve(run_id, name) is deterministic (same input -> same path)",
+          "disposition": "tested",
+          "evidence": "test_resolve_is_deterministic PASSED"
+        },
+        {
+          "behavior": "resolve is disjoint across distinct run_ids",
+          "disposition": "tested",
+          "evidence": "test_resolve_disjoint_across_run_ids PASSED"
+        },
+        {
+          "behavior": "a file written at the resolved path is readable back at it",
+          "disposition": "tested",
+          "evidence": "test_resolve_round_trips_content PASSED"
+        },
+        {
+          "behavior": "cleanup(run_id) removes the run's scratch directory",
+          "disposition": "tested",
+          "evidence": "test_cleanup_removes_run_directory PASSED"
+        },
+        {
+          "behavior": "cleanup on a never-created run_id is a no-op",
+          "disposition": "tested",
+          "evidence": "test_cleanup_on_missing_run_id_is_a_noop PASSED"
+        },
+        {
+          "behavior": "unsafe run_id values are rejected (traversal, empty, separators, overlong)",
+          "disposition": "tested",
+          "evidence": "test_resolve_rejects_unsafe_run_id x8 PASSED"
+        },
+        {
+          "behavior": "unsafe name values are rejected",
+          "disposition": "tested",
+          "evidence": "test_resolve_rejects_unsafe_name x5 PASSED"
+        },
+        {
+          "behavior": "cleanup rejects an unsafe run_id before touching disk",
+          "disposition": "tested",
+          "evidence": "test_cleanup_rejects_unsafe_run_id PASSED"
+        },
+        {
+          "behavior": "a temp root containing a space in its path still works",
+          "disposition": "tested",
+          "evidence": "test_resolve_survives_a_space_in_the_temp_root PASSED"
+        },
+        {
+          "behavior": "two independent processes resolving the same (run_id, name) land on the identical path and see each other's writes (the actual regression pin)",
+          "disposition": "tested",
+          "evidence": "test_cli_resolve_is_stable_and_content_survives_across_two_processes PASSED"
+        },
+        {
+          "behavior": "no skill/agent doc contains a bare /tmp/ path literal",
+          "disposition": "tested",
+          "evidence": "test_no_bare_tmp_path_literal_in_review_pipeline_docs PASSED (was RED pre-fix)"
+        },
+        {
+          "behavior": "the guard's own glob scope is non-empty (doesn't silently pass on nothing)",
+          "disposition": "tested",
+          "evidence": "test_scanned_globs_actually_match_something PASSED"
+        },
+        {
+          "behavior": "_private_shipwright_base() extraction preserves host_resource_lease's existing behavior",
+          "disposition": "tested",
+          "evidence": "pre-existing host_resource_lease/_host_resource_locking/_windows_acl suite: 43 passed / 8 skipped (platform/privilege gated), unmodified assertions"
+        },
+        {
+          "behavior": "the Windows-specific bash-vs-Python /tmp divergence itself (Git-Bash /tmp -> %TEMP% vs. Python /tmp -> drive-root)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "CI runs Linux, where this specific divergence cannot occur; pinned instead via the platform-agnostic contract test (two-process resolve() pin) plus a live manual reproduction recorded in the iterate spec's Root Cause section"
+        },
+        {
+          "behavior": "campaign_progress.py list-units's JSON output, piped through stdin, composes correctly with autonomous_loop.py init --units-from - (the cross_component Integration Coverage for the post-Architecture-Review pipe)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_campaign_units_stdin_pipe_integration.py::test_list_units_piped_into_init_composes PASSED \u2014 real subprocess pipe, two units, asserts state[\"units\"] ids match"
+        },
+        {
+          "behavior": "the pre-existing serial-strategy cmd_next/cmd_record composition still passes after the _load_units_from/cmd_init stdin change",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_campaign_serial_composition_integration.py::test_serial_subiterate_composes_on_prior_merge PASSED (file-path --units-from path, unaffected by the additive stdin branch)"
+        }
+      ],
+      "counts": {
+        "testable": 16,
+        "tested": 15,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-09-03-review-scratch-path.md"
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 87.08,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-04T21:52:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-03-review-scratch-path",
+    "commit": "8b4246bd7c565ecb5be7bfe78b047e9863c40b0e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

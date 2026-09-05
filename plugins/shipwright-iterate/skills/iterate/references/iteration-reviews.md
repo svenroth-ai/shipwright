@@ -302,16 +302,52 @@ to opt out at the project level (one-time switch — falls into Branch C
 
 ### Branch A — `available` (keys present, not user-disabled)
 
+The diff path is resolved via `review_scratch.py` — not a bare `/tmp/...`
+literal, which bash and native Python resolve to different files on
+Windows (root cause + design: `code-review.md` Step 6b in `shipwright-build`).
+This whole block is one shell invocation, so the local variable is safe to
+reuse within it. `RUN_ID` is assigned via `RUN_ID='{run_id}'` — SINGLE
+quotes, not double quotes and not a heredoc. A heredoc looked stronger
+(round-9 fix) but is actually WEAKER here: its quoted terminator only
+blocks `$()`/backtick expansion, not a line-based collision — a value
+containing a newline followed by a line matching the heredoc's own
+delimiter terminates it early and lets injected commands run (PR #676
+round-11 finding, confirmed by direct reproduction). A single-quoted string
+has no such per-line terminator; it ends ONLY at the next literal `'`
+character, so it safely contains embedded newlines, `$()`, backticks, and
+`"` alike. `run_id` is minted in `RUN_ID_STRICT` form
+(`shared/scripts/lib/iterate_entry.py`:
+`^iterate-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$`) and rejected before this
+step if malformed — that charset contains no `'` and no newline, so
+`RUN_ID='{run_id}'` is provably safe given that precondition, which is
+exactly the "validate before embedding" fix the round-11 review asked for.
+Every later use references `"$RUN_ID"` — a variable expansion never
+re-executes the metacharacters inside its own value:
+
 ```bash
-git diff HEAD > /tmp/shipwright-review-diff.txt
+RUN_ID='{run_id}'
+DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$RUN_ID" --name shipwright-review-diff.txt)"
+trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$RUN_ID"; exit "$ec"' EXIT
+git diff HEAD > "$DIFF_FILE"
 
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
-  --diff-file /tmp/shipwright-review-diff.txt \
+  --diff-file "$DIFF_FILE" \
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
-  --project-root "{project_root}" --run-id "{run_id}"
+  --project-root "{project_root}" --run-id "$RUN_ID"
 ```
+
+The `trap ... EXIT` above is what makes cleanup unconditional — a straight-line
+`cleanup` call as the block's last line only runs if every prior line
+succeeded, so a failed review command (or `set -e` in the caller's shell)
+would otherwise skip it and leave the diff file (which can contain source
+code) on disk. The trap fires on every exit path — success, failure, or
+`skipped: "empty_diff"` — exactly once. It captures `$?` into `ec` BEFORE
+running `cleanup` and re-exits with `ec` at the end: without that, a
+successful cleanup command becomes the new last-command-run, and bash
+reports *its* exit status (0) for the whole block, silently turning a
+failed `external_review.py` into an apparent success.
 
 (`uv run --project` is uv's own flag, distinct from the script's
 `--project-root` a few lines below — `--project` points uv at

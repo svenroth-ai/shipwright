@@ -182,16 +182,16 @@ review for those.
    `not_run`**: true when you write them, and 3f-bis promotes them with
    `--force`.
 
-2. External LLM code review:
+2. External LLM code review (path via `review_scratch.py resolve`, not a bare `/tmp/...` — `code-review.md` Step 6b); `trap ... EXIT` guarantees cleanup on failure — it saves `$?` first and re-exits with it, so a successful cleanup command can't mask a failed review as a pass. `RUN_ID='{run_id}'` — SINGLE quotes: they end only at a literal `'`, so unlike a heredoc's line-delimiter (breakable by an embedded newline + matching line, PR #676 round-11 finding) or double quotes (still expand `$()`), they safely contain anything — safe here because `run_id`'s `RUN_ID_STRICT` charset (`iterate_entry.py`) excludes `'` and newlines by construction:
 
    ```bash
-   git -C "{project_root}" diff HEAD~1 > /tmp/shipwright-review-diff.txt
-
+   RUN_ID='{run_id}'
+   DIFF_FILE="$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$RUN_ID" --name shipwright-review-diff.txt)"
+   trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$RUN_ID"; exit "$ec"' EXIT
+   git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
-     --mode code \
-     --diff-file /tmp/shipwright-review-diff.txt \
-     --spec-file "{sub_iterate_spec}" \
-     --plugin-root "{plugin_root}"
+     --mode code --diff-file "$DIFF_FILE" \
+     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}"
    ```
 
    Parse feedback. Apply high/medium findings before commit, OR mark

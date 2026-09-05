@@ -52,9 +52,9 @@ def _save_state(state_path: Path, state: dict) -> None:
     tmp.replace(state_path)
 
 
-def _load_units_from(units_path: Path, kind: str) -> list[dict]:
-    """Load units from a plugin-specific source file."""
-    data = json.loads(units_path.read_text(encoding="utf-8"))
+def _load_units_from(units_path: Path | None, kind: str, *, text: str | None = None) -> list[dict]:
+    """Load units from a plugin-specific source file, or `text` (stdin) directly."""
+    data = json.loads(text) if text is not None else json.loads(units_path.read_text(encoding="utf-8"))
 
     if kind == "section":
         raw = data.get("sections", [])
@@ -99,6 +99,7 @@ def _load_units_from(units_path: Path, kind: str) -> list[dict]:
     else:
         print(f"ERROR: Unknown kind: {kind}", file=sys.stderr)
         sys.exit(1)
+        return []  # unreachable: satisfies py/mixed-returns, sys.exit(1) always raises
 
 
 def _reconcile_in_progress(state: dict) -> list[str]:
@@ -119,9 +120,7 @@ def _reconcile_in_progress(state: dict) -> list[str]:
                     unit["commit"] = result.get("commit")
                     unit["finished_at"] = _now_iso()
                     unit["result_path"] = str(result_path)
-                    warnings.append(
-                        f"Reconciled {unit['id']}: found result.json with status=complete"
-                    )
+                    warnings.append(f"Reconciled {unit['id']}: found result.json with status=complete")
                     continue
             except (json.JSONDecodeError, OSError):
                 pass
@@ -140,28 +139,28 @@ def _reconcile_in_progress(state: dict) -> list[str]:
                     if log_result.returncode == 0 and log_result.stdout.strip():
                         unit["status"] = "complete"
                         unit["finished_at"] = _now_iso()
-                        warnings.append(
-                            f"Reconciled {unit['id']}: branch has commits since head_sha"
-                        )
+                        warnings.append(f"Reconciled {unit['id']}: branch has commits since head_sha")
                         continue
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 pass
 
         unit["status"] = "pending"
         unit["attempt"] = unit.get("attempt", 0) + 1
-        warnings.append(
-            f"Reconciled {unit['id']}: reset to pending (attempt {unit['attempt']})"
-        )
+        warnings.append(f"Reconciled {unit['id']}: reset to pending (attempt {unit['attempt']})")
 
     return warnings
 
 
 def cmd_init(args: argparse.Namespace) -> int:
     state_path = Path(args.state)
-    units_path = Path(args.units_from)
-
-    if not units_path.exists():
+    stdin = args.units_from == "-"
+    units_path = None if stdin else Path(args.units_from)
+    stdin_text = (sys.stdin.read() if not sys.stdin.isatty() else "") if stdin else None
+    if not stdin and not units_path.exists():
         print(f"ERROR: Units file not found: {units_path}", file=sys.stderr)
+        return 1
+    if stdin and not stdin_text.strip():
+        print("ERROR: No units JSON received on stdin", file=sys.stderr)
         return 1
 
     if state_path.exists():
@@ -181,7 +180,11 @@ def cmd_init(args: argparse.Namespace) -> int:
             return 0
 
     loop_id = f"{args.kind}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
-    units = _load_units_from(units_path, args.kind)
+    try:
+        units = _load_units_from(units_path, args.kind, text=stdin_text)
+    except json.JSONDecodeError as exc:
+        print(f"ERROR: invalid units JSON{' on stdin' if stdin else ''}: {exc}", file=sys.stderr)
+        return 1
 
     if not units:
         print(json.dumps({"action": "empty", "reason": "No pending units found"}))
@@ -377,10 +380,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         header = f"# Loop Handoff — {state['loop_id']}\n\n"
         header += f"**Status:** {terminal_reason}\n"
         header += f"**Completed:** {len(completed)}/{len(state['units'])}\n\n"
-        campaign_handoff.write_text(
-            header + "\n---\n\n".join(aggregated_parts),
-            encoding="utf-8",
-        )
+        campaign_handoff.write_text(header + "\n---\n\n".join(aggregated_parts), encoding="utf-8")
 
     summary = {
         "loop_id": state["loop_id"],
@@ -405,7 +405,7 @@ def main() -> int:
 
     p_init = sub.add_parser("init", help="Initialize loop state")
     p_init.add_argument("--state", required=True, help="Path to loop_state.json")
-    p_init.add_argument("--units-from", required=True, help="Plugin-specific units source file")
+    p_init.add_argument("--units-from", required=True, help="Units source file, or - to read JSON from stdin")
     p_init.add_argument("--kind", required=True, choices=sorted(VALID_KINDS))
     p_init.add_argument("--branch-strategy", default="single-branch", choices=sorted(VALID_STRATEGIES))
     p_init.add_argument("--root-session-id", default="")

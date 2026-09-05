@@ -1,0 +1,475 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-03-review-scratch-path",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-04T05:43:33.585011+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Sync the mini-plan to the post-review design (or replace it with a pointer to the ACs + plan-review section as authoritative), so the document can't instruct both the broken and fixed mechanisms at once.  2. Category: verification — Severity: medium The Verification runner command (`uv run pytest shared/scripts/tests/test_review_scratch.py shared/tests/test_review_scratch_guard.py -v`) references the pre-fix two-root layout that the plan review says pytest refuses. The Confidence Calibration section reports the passing tests at the corrected path (`shared/scripts/tools/tests/test_review_scratch.py`), so the work was evidently run against the right files — but the recorded evidence command is not reproducible as written.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Update the runner command to the actual single-root invocation before merge so the verification evidence line is valid.  3. Category: risk — Severity: low Failure-mode shift for the review pipeline: previously a broken handoff failed silently (stale read); now any failure to invoke the helper (CWD/repo-root mismatch, uv environment, ACL/permission failure creating the hardened private root on a locked-down Windows host) fails loudly at the resolve step in all 5 flows. That's the correct direction, but the skill docs' prose should acknowledge the new hard-fail point so an agent hitting it diagnoses the helper invocation rather than retrying.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Confirm the skill-doc edits include the full invocation form (script path / working-directory assumption) consistent with how the docs already invoke `uv run external_review.py`, and note the fail-loud behavior.  4. Category: edge-case — Severity: low The spec never states how skill docs invoke `review_scratch.py` (the boundary table shows schematic `$(review_scratch.py resolve ...)`). The old `/tmp` literal was CWD-independent; the new pattern implicitly assumes the repo root as CWD. If any of the 5 flows runs a Bash call from a different working directory, the resolve step fails or — worse — an agent improvises a hardcoded fallback.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Pin the exact command line (e.g., `uv run shared/scripts/tools/review_scratch.py resolve ...` or repo-root-relative form) in the doc edits and verify it matches every flow's actual CWD convention. Determinism already makes agent-side variance (resolve-then-hardcode vs. inline substitution) safe, which is good.  5. Category: design — Severity: low `resolve()` silently performs a destructive stale-sweep (scans siblings, `rmtree`s >24h dirs) on every call. A function named \"resolve\" that deletes directories is surprising, and the sweep fires on every write and read site. The justification is real — the private hardened base is outside the OS temp root, so nothing else will ever clean it — but the side effect deserves to be explicit rather than implicit.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Acceptable as-is given the self-healing requirement, but either document the sweep prominently in the module docstring or gate it (e.g., sweep only on `cleanup`/first resolve per run). Don't remove it without replacing the leak-cleanup story.  6. Category: edge-case — Severity: low The guard test bans any bare `/tmp/` literal across all `plugins//skills+agents` and `shared/prompts` docs. On Linux hosts `/tmp` is the normal, correct temp location, so a future legitimately-Linux-only skill doc will trip the guard; the `/tmp/...` three-dots escape is narrow. This is an intentional anti-ratchet and the remediation (use the resolve helper, which is cross-platform) is the right answer — but future authors should know that's the expected path.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Fine to keep; consider one line in the guard test's failure message pointing authors at `review_scratch.py resolve` as the sanctioned alternative.  7. Category: dependency — Severity: low (informational) The deferred post-merge marketplace-sync AC is correctly disclosed and ordered (needs `main` fast-forwarded). Since `update-marketplace.sh` regenerates the cache from the already-fixed plugin sources, the synced copies will be clean; no gap, just don't let the post-merge AC get dropped.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Track it as a blocking post-merge checklist item rather than optional follow-through.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan still proposes “resolve path once, reuse for write+read” via a shell variable. This is the original flawed design: the affected skill instructions execute separate Bash-tool calls in fresh shells, so a variable set while writing is unavailable when reading. The file table/work breakdown also diverges from the accepted design that requires independent deterministic resolution at every producer and consumer site.",
+          "suggestion": "Update every affected instruction to inline a quoted command substitution at each use, for example `\"... $(uv run ... review_scratch.py resolve ...)\"`, using the same validated `(run_id, name)` at both write and read sites. Do not describe or implement a cross-tool-call shell variable as the handoff mechanism. The campaign flow may retain a variable only where producer and consumer are demonstrably in the same shell invocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan uses `tempfile.gettempdir()/shipwright-review`, which does not meet the requirement to keep potentially sensitive diffs outside a world-readable OS temp root. It also omits the specified hardened private-root behavior and handling of untrusted `TMPDIR`/`TEMP`/`TMP` overrides. This reintroduces the data-exposure concern that the chosen scratch design is intended to avoid.",
+          "suggestion": "Reuse the existing hardened private-root implementation from `host_resource_lease.py` (or extract its private-base primitive as specified). Do not add a separate `tempfile.gettempdir()`-based helper. Ensure the resulting directory is created with the existing platform-specific permissions/ACL protections and that unsafe environment-root overrides fail closed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "cleanup(run_id)` is described as directly joining `run_id` and calling `shutil.rmtree(..., ignore_errors=True)`, with no component validation, containment verification, or symlink/reparse-point protection. A malformed or unexpectedly sourced run ID could traverse outside the scratch tree; a symlink/junction placed under the root can make deletion behavior particularly hazardous on Windows. `ignore_errors=True` also hides a failed cleanup of a sensitive diff.",
+          "suggestion": "Strictly validate both `run_id` and `name` as single safe path components before any filesystem operation. Before deletion, resolve/check containment under the expected `review-scratch-v1` root and reject symlinks/reparse points for the target and relevant ancestors. Treat only a missing target as the documented no-op; surface other cleanup failures so retained sensitive files are not silently ignored.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan does not include the accepted stale-directory sweep, despite cleanup being inherently best-effort in markdown-driven flows. “Always run, even on failure” in prose cannot guarantee execution after a tool error or interrupted agent flow. Conversely, a naïve age-based sweep can delete another still-active run if it has been idle for more than 24 hours.",
+          "suggestion": "Implement the specified best-effort stale sibling sweep during `resolve`, excluding the current run and rejecting unsafe directory entries. Make the sweep conservative: use secure directory metadata, avoid following links/reparse points, and consider an activity marker or lock/lease if a run can realistically remain active beyond the expiration interval. Explicit cleanup should still be instructed on both normal completion and known failure branches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The submitted file locations, guard scope, and verification command are inconsistent with the change specification. The mini-plan places the guard under `shared/tests`, scans all `plugins//.md`, and verifies different paths than the specified tools-test convention and required scope (`plugins//skills+agents//.md` plus `shared/prompts//.md`). A broad plugin scan can block legitimate unrelated documentation, while omitting shared prompts leaves a regression route unguarded.",
+          "suggestion": "Align implementation and test placement with the repository’s established tools test root, and update the runner command to execute the actual new tests. Scope the guard to skills/agents and shared prompts as required, assert that each intended glob matches files, and avoid scanning unrelated plugin documentation unless that is an explicit policy change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed integration test uses `bash -c` with an interpolated path and falls back to an in-process write when Bash is unavailable. The fallback does not exercise the command-substitution/CLI boundary that caused the defect, and interpolation is avoidable even if test-generated paths are currently controlled.",
+          "suggestion": "Keep one thin subprocess contract test that invokes the CLI independently twice and uses list-form subprocess calls where possible. If a shell redirect is necessary, pass data/path through controlled environment variables or a fixed helper script rather than formatting them into shell source. Mark Bash-dependent coverage as skipped when unavailable rather than replacing it with a weaker test; retain the cross-process CLI assertion on all platforms.  Overall, the diagnosis and target architecture are sound, but the mini-plan still contains the pre-review unsafe temporary-root and shell-variable designs and does not implement several accepted security and lifecycle requirements. Revise the plan so it matches the stated acceptance criteria before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-03T21:43:43.050626+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: consistency — Severity: medium**\nThe Mini-Plan section is stale and contradicts the revised spec it sits inside. It still specifies the resolve-into-shell-var pattern (work-breakdown step 4), `tempfile.gettempdir()` + `shipwright-review/` as the base, the two-root test layout, and a `plugins/**/*.md` guard scope — all of which the internal plan review explicitly revised (independent per-site resolve, hardened private root via `host_resource_lease.py`, both tests under `shared/scripts/tools/tests/`, guard scoped to `skills+agents` + `shared/prompts`). Anyone implementing from the mini-plan reintroduces the exact high-severity findings the review fixed.\n**Suggestion:** Sync the mini-plan to the post-review design (or replace it with a pointer to the ACs + plan-review section as authoritative), so the document can't instruct both the broken and fixed mechanisms at once.\n\n**2. Category: verification — Severity: medium**\nThe Verification runner command (`uv run pytest shared/scripts/tests/test_review_scratch.py shared/tests/test_review_scratch_guard.py -v`) references the pre-fix two-root layout that the plan review says pytest refuses. The Confidence Calibration section reports the passing tests at the corrected path (`shared/scripts/tools/tests/test_review_scratch.py`), so the work was evidently run against the right files — but the recorded evidence command is not reproducible as written.\n**Suggestion:** Update the runner command to the actual single-root invocation before merge so the verification evidence line is valid.\n\n**3. Category: risk — Severity: low**\nFailure-mode shift for the review pipeline: previously a broken handoff failed *silently* (stale read); now any failure to invoke the helper (CWD/repo-root mismatch, uv environment, ACL/permission failure creating the hardened private root on a locked-down Windows host) fails *loudly* at the resolve step in all 5 flows. That's the correct direction, but the skill docs' pr […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The mini-plan still proposes “resolve path once, reuse for write+read” via a shell variable. This is the original flawed design: the affected skill instructions execute separate Bash-tool calls in fresh shells, so a variable set while writing is unavailable when reading. The file table/work breakdown also diverges from the accepted design that requires independent deterministic resolution at every producer and consumer site.  \n   **Suggestion:** Update every affected instruction to inline a quoted command substitution at each use, for example `\"... $(uv run ... review_scratch.py resolve ...)\"`, using the same validated `(run_id, name)` at both write and read sites. Do not describe or implement a cross-tool-call shell variable as the handoff mechanism. The campaign flow may retain a variable only where producer and consumer are demonstrably in the same shell invocation.\n\n2. **Category:** security  \n   **Severity:** high  \n   **Finding:** The mini-plan uses `tempfile.gettempdir()/shipwright-review`, which does not meet the requirement to keep potentially sensitive diffs outside a world-readable OS temp root. It also omits the specified hardened private-root behavior and handling of untrusted `TMPDIR`/`TEMP`/`TMP` overrides. This reintroduces the data-exposure concern that the chosen scratch design is intended to avoid.  \n   **Suggestion:** Reuse the existing hardened private-root implementation from `host_resource_lease.py` (or extract its private-base primitive as specified). Do not add a separate `tempfile.gettempdir()`-based helper. Ensure the resulting directory is created with the existing platform-specific permissions/ACL protections and that unsafe environment-root overrides fail closed.\n\n3. **Category:** security  \n   **Severity:** high  \n   **Finding:** `cleanup(run_id)` is described as directly joining `run_id` and calling `shutil.rmtree(..., ignore_errors=True)`, with no compon […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+          "line": 113,
+          "finding": "{run_id} is an unbound placeholder in the shipwright-build plugin — SKILL.md never defines it, unlike shipwright-iterate where it is an established, bound convention (181 occurrences across 32 files).",
+          "suggestion": "Bind an identifier build already has, or switch to {SHIPWRIGHT_SESSION_ID}.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/autonomous_loop.py",
+          "line": 57,
+          "finding": "Empty/malformed stdin with --units-from - raises an uncaught json.JSONDecodeError traceback instead of a clean error matching the file branch's contract.",
+          "suggestion": "Catch the parse error and print a clean ERROR message.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/autonomous_loop.py",
+          "line": 176,
+          "finding": "cmd_init's resume/reconcile early-return paths could return before stdin is ever read, risking EPIPE on the producer side for a units list exceeding the pipe buffer.",
+          "suggestion": "Read stdin to completion before the resume-check early returns.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/tests/test_autonomous_loop.py",
+          "line": 159,
+          "finding": "The stdin branch (--units-from -) has no in-process test coverage beyond the subprocess integration test's happy path.",
+          "suggestion": "Add in-process cases: empty stdin, malformed JSON, existing-state-with-pending-units.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-build/skills/build/references/code-review.md",
+          "line": 191,
+          "finding": "Dead command: the standalone `resolve` block in Cascade-flow step 1 prints a path nothing consumes (step 2 re-resolves inline).",
+          "suggestion": "Delete the dead command, fold its rationale into step 2.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 113,
+          "finding": "Stale step heading: 'Generate units file' when no file is generated any more (piped).",
+          "suggestion": "Retitle to reflect the pipe.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/review_scratch.py",
+          "line": 70,
+          "finding": "resolve() returns a leaf path with no reparse-point check, unlike cleanup()'s symmetric hardening and the sibling host_resource_lease.py module's own discipline (_safe_file before touching its state file). A pre-planted symlink at the returned path would be silently followed by the bash > redirect.",
+          "suggestion": "Call _safe_file(candidate, allow_missing=True) on the returned path in resolve().",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_scratch.py",
+          "line": 58,
+          "finding": "Two redundant checks: _safe_dir(namespace, ...) is a strict subset of the following _safe_dir(run_root, ...) call (which walks every intermediate component); cleanup()'s is_symlink()/parents check is unreachable given _validate_component + _reject_linked_components.",
+          "suggestion": "Drop the redundant namespace call; optionally comment the cleanup() belt-and-braces check.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_scratch.py",
+          "line": 39,
+          "finding": "_COMPONENT_RE does not exclude Windows reserved device names (CON, NUL, AUX, COM1).",
+          "suggestion": "Add the reserved-device-name set to _RESERVED.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "CHANGELOG-unreleased.d/",
+          "line": null,
+          "finding": "No changelog drop file exists yet.",
+          "suggestion": "Confirm F4 emits one naming both halves of the fix.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-04T05:59:20.381076+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-build/skills/build/references/code-review-protocol.md",
+          "line": null,
+          "finding": "Claim under doubt: code-review-protocol.md's own Cleanup section calls review_scratch.py cleanup on the diff file at the end of Step 6b (the code-reviewer subagent step) — but code-review.md's later Step 6c (external cascade) reuses the exact same diff file. If 6c is enabled, 6b's cleanup deletes the file out from under it before 6c can read it. — Confirmed real, not disproved. Verified via SKILL.md:208-211 (6b = code-review-protocol.md's flow, 6c = code-review.md's own later section reusing the same diff file) and confirmed code-review-protocol.md has no other invocation path. Fixed: removed code-review-protocol.md's Cleanup section entirely, replacing it with a note that cleanup happens once, at code-review.md 6c's terminal step, unconditionally regardless of whether the cascade fires. Most significant finding of the whole review cascade — would have silently broken the external cascade on every session that enabled it.",
+          "suggestion": "Remove 6b's own cleanup; make 6c's terminal cleanup call the sole, unconditional owner.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_scratch.py",
+          "line": 63,
+          "finding": "Claim under doubt: _safe_dir/_safe_file (from _host_resource_locking) enforce Windows ACLs meant to defend a private per-user root against another OS user. A file written by the bash tool (Git-Bash/MSYS) may end up with different effective ownership/ACL semantics than a file written by native Python, which could make resolve()'s post-write ACL check reject a legitimately bash-created file. — Disproved empirically, not just reasoned about. Ran the real-world sequence via the Bash tool on this Windows host: `resolve` (python, creates dir) -> `git diff HEAD > \"$FIRST\"` (bash-tool write to the resolved path) -> `resolve` again (python, re-validates the now-existing file) -> all three steps exited 0. The bash-tool process runs as the same Windows user as the Python process (both inherit the session's user token; Git-Bash/MSYS does not run under a different account or impersonation context), so the file it creates carries the same owning-SID the ACL check expects. No divergence exists.",
+          "suggestion": "Verify empirically on a real Windows host that a bash-written file at the resolved path passes the Python-side ACL check.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_scratch.py",
+          "line": 99,
+          "finding": "Claim under doubt: cleanup()'s reparse-point guard used Path.is_symlink() plus exists()-adjacent reasoning. On Windows, a directory JUNCTION (IO_REPARSE_TAG_MOUNT_POINT) is a reparse point but NOT a symlink (IO_REPARSE_TAG_SYMLINK) — is_symlink() never catches it, and junctions can be created without elevated privilege, making them the more realistic vector on this platform. — Confirmed real. _reject_linked_components (checks FILE_ATTRIBUTE_REPARSE_POINT, not the symlink-specific tag) was already the load-bearing junction guard and runs before rmtree, but the earlier existence check used Path.exists(), which follows reparse points and reads a dangling one as absent — silently no-op-ing past it. Fixed: switched cleanup()'s early-return to os.path.lexists(run_root), which never follows the final component regardless of reparse tag, so a dangling junction or symlink is still routed into the _reject_linked_components guard. Verified via PowerShell that mklink /J succeeds without elevated privilege on this host, confirming junctions are the realistic vector.",
+          "suggestion": "Detect junctions specifically, not just symlinks; verify a dangling junction is still caught.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/scripts/tools/tests/test_review_scratch.py",
+          "line": null,
+          "finding": "Claim under doubt: The case-canonicalization fix, the Windows-reserved-device-name rejection, and the junction-specific cleanup() hardening were all added to the source but had no dedicated regression test pinning the exact behavior being hardened. — Confirmed real. Added test_resolve_canonicalizes_case; extended the parametrized unsafe-run_id/unsafe-name lists with reserved device names (con, CON, nul, aux.txt, com1, COM9.log, lpt5, prn.json); added test_cleanup_rejects_a_reparse_point_planted_at_run_root and test_cleanup_rejects_a_dangling_reparse_point_at_run_root. The two reparse-point tests plant a real Windows directory junction via a new _plant_reparse_point helper (mklink /J, no elevated privilege required) instead of a symlink, avoiding a privilege-gated skip and more faithfully exercising the exact gap this doubt identified. All 38 tests in the module now pass with zero skips.",
+          "suggestion": "Add tests for case-insensitive collision, reserved device name rejection, and cleanup() rejecting both a live and a dangling reparse point at the run root.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_review_scratch_guard.py",
+          "line": 31,
+          "finding": "Claim under doubt: The iterate spec's Architecture Review reconciliation described the guard test's scope as '5 originally-affected docs,' but its actual globs (plugins/*/skills/**/*.md, plugins/*/agents/**/*.md, shared/prompts/**/*.md) match every skill and agent doc in the repo — a materially wider surface, which also means the guard's regex needs to be robust against false positives across far more paths than '5 docs' would suggest. — Confirmed real. Verified via find that the 3 globs match 217 files (203 skills + 11 agents + 3 prompts), not 5. The false-positive risk was also real: the original regex /tmp/(?!\\.\\.\\.) would match inside /var/tmp/cache or /private/tmp/x. Tightened the regex to (?<![\\w/])/tmp/(?!\\.\\.\\.) (root-of-absolute-path lookbehind), and added test_regex_does_not_false_positive_on_unrelated_paths_containing_tmp plus test_regex_still_catches_a_bare_root_tmp_literal to pin both directions. Corrected the iterate spec's prose to state the true 217-file scope and explain why narrowing the glob (rather than fixing the regex) would defeat the guard's future-proofing.",
+          "suggestion": "Verify the actual match count; check the regex for false positives against realistic unrelated paths; correct the spec's description.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "documentation",
+          "file": "shared/scripts/lib/review_scratch.py",
+          "line": 84,
+          "finding": "Claim under doubt: cleanup()'s docstring described the ACL threat model (defends against another OS user) but did not state what it explicitly does NOT defend against — a same-user TOCTOU race between the reparse-point checks and shutil.rmtree. — Confirmed real, documentation gap. Added one clarifying sentence to cleanup()'s docstring: the private ACL-hardened root defends against another OS user planting a reparse point, not against a same-user race between the checks and rmtree, which is out of scope because nothing untrusted runs as this user inside that window.",
+          "suggestion": "Document the race as an accepted, out-of-scope gap.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/autonomous_loop.py",
+          "line": 176,
+          "finding": "Claim under doubt: cmd_init reads stdin via sys.stdin.read() unconditionally as its first statement, even when --units-from is a file path and stdin is not a pipe (e.g. an interactive terminal) — this could hang waiting for EOF that never comes. — Confirmed real. Fixed with a net-zero-line change folding an isatty() guard into the existing stdin_text assignment: stdin_text = (sys.stdin.read() if not sys.stdin.isatty() else \"\") if stdin else None. A non-piped interactive invocation now reads as empty string instead of blocking, reusing the existing empty-stdin error path.",
+          "suggestion": "Only read stdin eagerly when --units-from - was actually passed, or guard with isatty().",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/scripts/lib/autonomous_loop.py",
+          "line": null,
+          "finding": "Claim under doubt: Formatting-only line collapses (multi-line warnings.append/write_text calls compacted to single lines, done to stay within the file's bloat-baseline ceiling) were not individually audited against the diff to confirm no validation or error-handling logic was silently dropped alongside the formatting change. — Disproved. Ran git diff HEAD -- shared/scripts/lib/autonomous_loop.py | grep \"^-\" and reviewed every deleted line: each is either identical content reformatted onto one line, or superseded by the new isatty-guarded stdin read / JSONDecodeError handling, which is strictly more capable than what it replaced. No guard, validation, or error path was lost. File sits at 435/436 lines against its bloat-baseline ceiling, confirmed via the bloat gate run this pass (exit 0).",
+          "suggestion": "Diff every deleted line against its replacement to confirm each deletion is either pure formatting or superseded by strictly-more-capable code.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: The switch from a scratch-file handoff to direct Python-to-Python piping for campaign_units.json removes review_scratch.py's cleanup call for that boundary entirely — worth confirming no other consumer still expects a units file to exist on disk at a known scratch path. — Disproved. This boundary's redesign was the explicit, user-approved outcome of the Architecture Review reconciliation earlier in this run — both external reviewers (GLM, OpenAI) independently recommended it as a smaller design. Grepped for campaign_units.json / the old scratch path across the plugin tree during that reconciliation; no other consumer referenced it. review_scratch.py is retained only for the 4 diff-file boundaries, which have a frozen-snapshot justification the units-list boundary never had.",
+          "suggestion": "Grep for any other reader of the old scratch-file path to confirm the pipe switch has no orphaned consumer.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-04T06:21:42.984775+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-build/skills/build/references/code-review-protocol.md:12-14 (diff hunk \"Keep this command's resolved stdout path in hand for step 2 and the cleanup below\")",
+          "line": null,
+          "finding": "The doc instructs the agent to hold the resolved stdout path from Step 1 and reuse it for Step 2 and cleanup. Step 2 (spawn subagent) and cleanup are separate Bash tool calls in fresh shells — this is exactly the \"shell variable across separate Bash tool calls\" pattern the spec's AC explicitly forbids (\"never a shell variable across separate Bash tool calls\"). The parenthetical about determinism softens it, but the imperative instruction is the broken pattern, and an agent following it literally may hardcode a stale/absent value or fail.",
+          "suggestion": "Reword to \"re-run the same `resolve` invocation at each subsequent site — it is deterministic and lands on the identical path; do not carry the value across Bash tool calls.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/autonomous_loop.py:161-171 (`cmd_init`, stdin branch)",
+          "line": null,
+          "finding": "With `--units-from -` and empty/closed stdin (e.g. an upstream `list-units` that produced no output or failed silently), `sys.stdin.read()` returns `\"\"` and `json.loads(\"\")` raises an unhandled `JSONDecodeError` with a traceback, whereas the file path gives a clean \"Units file not found\" message. The self-review marks JSON parse errors as \"pre-existing behavior\", but the empty-stdin case is new surface introduced by this change.",
+          "suggestion": "Catch the empty-stdin case explicitly (`if not text.strip(): print ERROR ...; return 1`), or wrap the `json.loads` in cmd_init to emit the same error format as the missing-file path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_review_scratch_guard.py:50 (`assert len(_scanned_files()) > 50`)",
+          "line": null,
+          "finding": "The non-empty-glob sentinel uses a hardcoded `> 50` threshold. If one of the three glob trees legitimately shrinks below that (or the check needs to detect a single broken glob while the other two still match 50+ files), the guard silently passes on an empty glob — the exact failure mode the test claims to prevent.",
+          "suggestion": "Assert per-glob: each of the three patterns individually matches at least one file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_review_scratch.py:17 (`sys.path.insert(0, ... parents[3])`) and test_campaign_units_stdin_pipe_integration.py",
+          "line": 14,
+          "finding": "The unit tests monkeypatch `rs._private_shipwright_base` for every in-process test, so the real hardened-root resolution (LOCALAPPDATA requirement, TMPDIR fail-closed, `_safe_runtime_root`/`_safe_dir` against the actual anchor) is never exercised in-process; only the single subprocess contract test touches it, and it monkeypatches nothing but also only proves the happy path. A regression in the ACL/symlink hardening inside `host_resource_lease.py` (beyond the re-run pre-existing suite) wouldn't fail these tests. This is acceptable given the 43-test pre-existing suite, but worth noting the new tests pin behavior only against a fake base.",
+          "suggestion": "Optionally add one subprocess test that verifies an untrusted `TMPDIR` override makes `resolve` exit non-zero (fail-closed contract), which is currently untested end-to-end.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-build/skills/build/references/code-review.md (cascade flow step 1)",
+          "line": null,
+          "finding": "The cascade step-1 bash block is now a bare `uv run ... resolve ...` invocation whose stdout goes nowhere — it neither writes nor is consumed (step 2 re-resolves inline). An agent may run it, see a path printed, and hand-type it into step 2, or skip it. It's inert prose rather than a functional step.",
+          "suggestion": "Drop the standalone command from step 1 (keep only the explanation that step 2 re-resolves inline), so the doc has no dead command.  Checked and clean: the `resolve()`/`cleanup()` validation and containment logic is sound (`_validate_component` before any FS op; `namespace not in run_root.parents` + `is_symlink` + `_reject_linked_components` before `rmtree`; no `ignore_errors`); the `_private_shipwright_base()` extraction preserves `_private_location()`'s behavior; `--units-from -` is additive and doesn't break the file-path mode or other `_load_units_from` callers; the subprocess tests use list-form `subprocess.run` with `shell=False`; the guard's glob scope matches the AC; the sub-iterate-runner and iteration-reviews edits correctly use same-shell `DIFF_FILE` variables and independent re-resolution respectively; the cross-process contract test cleans up after itself via `finally`.  Overall assessment: ship-with-fixes — the core mechanism, security posture, and regression tests are solid; the one real spec deviation (code-review-protocol.md's \"keep the resolved path in hand\" instruction) and the empty-stdin error path should be corrected first, the rest are refinements.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-build/skills/build/references/code-review-protocol.md:10-21",
+          "line": null,
+          "finding": "This flow resolves the path only for the write redirect, then instructs the caller to “keep” that path for the subagent. The command substitution’s output is consumed by the redirect and is not retained across Bash-tool calls, which is the precise fresh-shell limitation this change is meant to avoid. There is no independent resolver invocation at the consumer/subagent handoff site.",
+          "suggestion": "Specify the exact quoted `review_scratch.py resolve --run-id ... --name ...` invocation when constructing the diff-file argument for the `code-reviewer` consumer, rather than asking the caller to retain the write-site result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md:190-197",
+          "line": null,
+          "finding": "Cleanup is not guaranteed on the failure path. If `external_review.py` fails and the Bash-tool execution stops at the failed command—as these review flows commonly do—the subsequent cleanup command is never reached. The same straight-line pattern exists in `iteration-reviews.md:312-324`; prose saying cleanup must run on failure does not make it happen. This misses the explicit success-and-failure cleanup acceptance criterion and can leave sensitive diff snapshots behind.",
+          "suggestion": "Arrange cleanup in a guaranteed-finally mechanism for each single-shell block, e.g. install an `EXIT` trap immediately after resolving the path, preserving the review command’s exit status; for flows spanning separate tool calls, add explicit cleanup to each failure branch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/review_scratch.py:38-43",
+          "line": null,
+          "finding": "Component validation accepts Windows-path aliases such as `Foo`/`foo` and `run`/`run.`. On normal case-insensitive Windows filesystems, these resolve to the same physical directory despite being distinct `(run_id, name)` inputs. A cleanup for one run can therefore remove another run’s snapshot, violating run scoping and the stated concurrent-run disjointness guarantee. Windows reserved device names such as `CON` and `NUL` are accepted as well.",
+          "suggestion": "Canonicalize and validate components according to Windows filename rules before path construction—at minimum reject trailing dots and DOS device names, and use a canonical lower-case restricted identifier format for `run_id` (or otherwise prevent case-insensitive collisions).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/review_scratch.py:75-82",
+          "line": null,
+          "finding": "Path.exists()` returns `False` for a dangling symlink/reparse point. Consequently, `cleanup()` treats a dangling `namespace/run_id` link as a missing run and returns before performing its advertised link/reparse-point rejection. This is neither the documented “missing run” case nor a successful cleanup, and leaves an unsafe directory entry in the scratch namespace.",
+          "suggestion": "Use a non-following existence check (for example `os.path.lexists`) before the early return, then reject symlink/reparse-point targets before deciding whether the target is absent.  Overall assessment: ship-with-fixes. The core resolver and stdin-pipe change address the original divergence, but the incomplete protocol handoff, non-guaranteed failure cleanup, and Windows alias collisions leave explicit run-scoping and cleanup requirements unmet. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-04T05:59:32.762556+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec\n  Severity: medium\n  File: plugins/shipwright-build/skills/build/references/code-review-protocol.md:12-14 (diff hunk \"Keep this command's resolved stdout path in hand for step 2 and the cleanup below\")\n  Finding: The doc instructs the agent to *hold the resolved stdout path* from Step 1 and reuse it for Step 2 and cleanup. Step 2 (spawn subagent) and cleanup are separate Bash tool calls in fresh shells — this is exactly the \"shell variable across separate Bash tool calls\" pattern the spec's AC explicitly forbids (\"never a shell variable across separate Bash tool calls\"). The parenthetical about determinism softens it, but the imperative instruction is the broken pattern, and an agent following it literally may hardcode a stale/absent value or fail.\n  Suggestion: Reword to \"re-run the same `resolve` invocation at each subsequent site — it is deterministic and lands on the identical path; do not carry the value across Bash tool calls.\"\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/lib/autonomous_loop.py:161-171 (`cmd_init`, stdin branch)\n  Finding: With `--units-from -` and empty/closed stdin (e.g. an upstream `list-units` that produced no output or failed silently), `sys.stdin.read()` returns `\"\"` and `json.loads(\"\")` raises an unhandled `JSONDecodeError` with a traceback, whereas the file path gives a clean \"Units file not found\" message. The self-review marks JSON parse errors as \"pre-existing behavior\", but the empty-stdin case is new surface introduced by this change.\n  Suggestion: Catch the empty-stdin case explicitly (`if not text.strip(): print ERROR ...; return 1`), or wrap the `json.loads` in cmd_init to emit the same error format as the missing-file path.\n\n- Category: test\n  Severity: low\n  File: shared/scripts/tools/tests/test_review_scratch_guard.py:50 (`assert len(_scanned_files()) > 50`)\n  Finding: The non-empty-glob sentinel uses a hardcoded `> 50` threshold. If one of the three glob trees legitimately […truncated]\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: `plugins/shipwright-build/skills/build/references/code-review-protocol.md:10-21`  \n  Finding: This flow resolves the path only for the write redirect, then instructs the caller to “keep” that path for the subagent. The command substitution’s output is consumed by the redirect and is not retained across Bash-tool calls, which is the precise fresh-shell limitation this change is meant to avoid. There is no independent resolver invocation at the consumer/subagent handoff site.  \n  Suggestion: Specify the exact quoted `review_scratch.py resolve --run-id ... --name ...` invocation when constructing the diff-file argument for the `code-reviewer` consumer, rather than asking the caller to retain the write-site result.\n\n- Category: spec  \n  Severity: medium  \n  File: `plugins/shipwright-iterate/agents/sub-iterate-runner.md:190-197`  \n  Finding: Cleanup is not guaranteed on the failure path. If `external_review.py` fails and the Bash-tool execution stops at the failed command—as these review flows commonly do—the subsequent cleanup command is never reached. The same straight-line pattern exists in `iteration-reviews.md:312-324`; prose saying cleanup must run on failure does not make it happen. This misses the explicit success-and-failure cleanup acceptance criterion and can leave sensitive diff snapshots behind.  \n  Suggestion: Arrange cleanup in a guaranteed-finally mechanism for each single-shell block, e.g. install an `EXIT` trap immediately after resolving the path, preserving the review command’s exit status; for flows spanning separate tool calls, add explicit cleanup to each failure branch.\n\n- Category: edge-case  \n  Severity: medium  \n  File: `shared/scripts/lib/review_scratch.py:38-43`  \n  Finding: Component validation accepts Windows-path aliases such as `Foo`/`foo` and `run`/`run.`. On normal case-insensitive Windows filesystems, these resolve to the same physical directory despite being distinct `(run_i […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-04T05:47:36.153958+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-03T21:36:17.406244+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

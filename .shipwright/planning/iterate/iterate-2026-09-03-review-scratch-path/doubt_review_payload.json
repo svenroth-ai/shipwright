@@ -1,0 +1,95 @@
+{
+  "stage": "doubt",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "correctness",
+      "file": "plugins/shipwright-build/skills/build/references/code-review-protocol.md",
+      "line": 0,
+      "claim_under_doubt": "code-review-protocol.md's own Cleanup section calls review_scratch.py cleanup on the diff file at the end of Step 6b (the code-reviewer subagent step) — but code-review.md's later Step 6c (external cascade) reuses the exact same diff file. If 6c is enabled, 6b's cleanup deletes the file out from under it before 6c can read it.",
+      "disproof_attempt": "Confirmed real, not disproved. Verified via SKILL.md:208-211 (6b = code-review-protocol.md's flow, 6c = code-review.md's own later section reusing the same diff file) and confirmed code-review-protocol.md has no other invocation path. Fixed: removed code-review-protocol.md's Cleanup section entirely, replacing it with a note that cleanup happens once, at code-review.md 6c's terminal step, unconditionally regardless of whether the cascade fires. Most significant finding of the whole review cascade — would have silently broken the external cascade on every session that enabled it.",
+      "what_would_resolve_it": "Remove 6b's own cleanup; make 6c's terminal cleanup call the sole, unconditional owner.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "high",
+      "lens": "correctness",
+      "file": "shared/scripts/lib/review_scratch.py",
+      "line": 63,
+      "claim_under_doubt": "_safe_dir/_safe_file (from _host_resource_locking) enforce Windows ACLs meant to defend a private per-user root against another OS user. A file written by the bash tool (Git-Bash/MSYS) may end up with different effective ownership/ACL semantics than a file written by native Python, which could make resolve()'s post-write ACL check reject a legitimately bash-created file.",
+      "disproof_attempt": "Disproved empirically, not just reasoned about. Ran the real-world sequence via the Bash tool on this Windows host: `resolve` (python, creates dir) -> `git diff HEAD > \"$FIRST\"` (bash-tool write to the resolved path) -> `resolve` again (python, re-validates the now-existing file) -> all three steps exited 0. The bash-tool process runs as the same Windows user as the Python process (both inherit the session's user token; Git-Bash/MSYS does not run under a different account or impersonation context), so the file it creates carries the same owning-SID the ACL check expects. No divergence exists.",
+      "what_would_resolve_it": "Verify empirically on a real Windows host that a bash-written file at the resolved path passes the Python-side ACL check.",
+      "disposition": "rebutted-with-evidence"
+    },
+    {
+      "severity": "medium",
+      "lens": "correctness",
+      "file": "shared/scripts/lib/review_scratch.py",
+      "line": 99,
+      "claim_under_doubt": "cleanup()'s reparse-point guard used Path.is_symlink() plus exists()-adjacent reasoning. On Windows, a directory JUNCTION (IO_REPARSE_TAG_MOUNT_POINT) is a reparse point but NOT a symlink (IO_REPARSE_TAG_SYMLINK) — is_symlink() never catches it, and junctions can be created without elevated privilege, making them the more realistic vector on this platform.",
+      "disproof_attempt": "Confirmed real. _reject_linked_components (checks FILE_ATTRIBUTE_REPARSE_POINT, not the symlink-specific tag) was already the load-bearing junction guard and runs before rmtree, but the earlier existence check used Path.exists(), which follows reparse points and reads a dangling one as absent — silently no-op-ing past it. Fixed: switched cleanup()'s early-return to os.path.lexists(run_root), which never follows the final component regardless of reparse tag, so a dangling junction or symlink is still routed into the _reject_linked_components guard. Verified via PowerShell that mklink /J succeeds without elevated privilege on this host, confirming junctions are the realistic vector.",
+      "what_would_resolve_it": "Detect junctions specifically, not just symlinks; verify a dangling junction is still caught.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "medium",
+      "lens": "test-coverage",
+      "file": "shared/scripts/tools/tests/test_review_scratch.py",
+      "line": 0,
+      "claim_under_doubt": "The case-canonicalization fix, the Windows-reserved-device-name rejection, and the junction-specific cleanup() hardening were all added to the source but had no dedicated regression test pinning the exact behavior being hardened.",
+      "disproof_attempt": "Confirmed real. Added test_resolve_canonicalizes_case; extended the parametrized unsafe-run_id/unsafe-name lists with reserved device names (con, CON, nul, aux.txt, com1, COM9.log, lpt5, prn.json); added test_cleanup_rejects_a_reparse_point_planted_at_run_root and test_cleanup_rejects_a_dangling_reparse_point_at_run_root. The two reparse-point tests plant a real Windows directory junction via a new _plant_reparse_point helper (mklink /J, no elevated privilege required) instead of a symlink, avoiding a privilege-gated skip and more faithfully exercising the exact gap this doubt identified. All 38 tests in the module now pass with zero skips.",
+      "what_would_resolve_it": "Add tests for case-insensitive collision, reserved device name rejection, and cleanup() rejecting both a live and a dangling reparse point at the run root.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "medium",
+      "lens": "correctness",
+      "file": "shared/scripts/tools/tests/test_review_scratch_guard.py",
+      "line": 31,
+      "claim_under_doubt": "The iterate spec's Architecture Review reconciliation described the guard test's scope as '5 originally-affected docs,' but its actual globs (plugins/*/skills/**/*.md, plugins/*/agents/**/*.md, shared/prompts/**/*.md) match every skill and agent doc in the repo — a materially wider surface, which also means the guard's regex needs to be robust against false positives across far more paths than '5 docs' would suggest.",
+      "disproof_attempt": "Confirmed real. Verified via find that the 3 globs match 217 files (203 skills + 11 agents + 3 prompts), not 5. The false-positive risk was also real: the original regex /tmp/(?!\\.\\.\\.) would match inside /var/tmp/cache or /private/tmp/x. Tightened the regex to (?<![\\w/])/tmp/(?!\\.\\.\\.) (root-of-absolute-path lookbehind), and added test_regex_does_not_false_positive_on_unrelated_paths_containing_tmp plus test_regex_still_catches_a_bare_root_tmp_literal to pin both directions. Corrected the iterate spec's prose to state the true 217-file scope and explain why narrowing the glob (rather than fixing the regex) would defeat the guard's future-proofing.",
+      "what_would_resolve_it": "Verify the actual match count; check the regex for false positives against realistic unrelated paths; correct the spec's description.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "medium",
+      "lens": "documentation",
+      "file": "shared/scripts/lib/review_scratch.py",
+      "line": 84,
+      "claim_under_doubt": "cleanup()'s docstring described the ACL threat model (defends against another OS user) but did not state what it explicitly does NOT defend against — a same-user TOCTOU race between the reparse-point checks and shutil.rmtree.",
+      "disproof_attempt": "Confirmed real, documentation gap. Added one clarifying sentence to cleanup()'s docstring: the private ACL-hardened root defends against another OS user planting a reparse point, not against a same-user race between the checks and rmtree, which is out of scope because nothing untrusted runs as this user inside that window.",
+      "what_would_resolve_it": "Document the race as an accepted, out-of-scope gap.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "lens": "correctness",
+      "file": "shared/scripts/lib/autonomous_loop.py",
+      "line": 176,
+      "claim_under_doubt": "cmd_init reads stdin via sys.stdin.read() unconditionally as its first statement, even when --units-from is a file path and stdin is not a pipe (e.g. an interactive terminal) — this could hang waiting for EOF that never comes.",
+      "disproof_attempt": "Confirmed real. Fixed with a net-zero-line change folding an isatty() guard into the existing stdin_text assignment: stdin_text = (sys.stdin.read() if not sys.stdin.isatty() else \"\") if stdin else None. A non-piped interactive invocation now reads as empty string instead of blocking, reusing the existing empty-stdin error path.",
+      "what_would_resolve_it": "Only read stdin eagerly when --units-from - was actually passed, or guard with isatty().",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "lens": "test-coverage",
+      "file": "shared/scripts/lib/autonomous_loop.py",
+      "line": 0,
+      "claim_under_doubt": "Formatting-only line collapses (multi-line warnings.append/write_text calls compacted to single lines, done to stay within the file's bloat-baseline ceiling) were not individually audited against the diff to confirm no validation or error-handling logic was silently dropped alongside the formatting change.",
+      "disproof_attempt": "Disproved. Ran git diff HEAD -- shared/scripts/lib/autonomous_loop.py | grep \"^-\" and reviewed every deleted line: each is either identical content reformatted onto one line, or superseded by the new isatty-guarded stdin read / JSONDecodeError handling, which is strictly more capable than what it replaced. No guard, validation, or error path was lost. File sits at 435/436 lines against its bloat-baseline ceiling, confirmed via the bloat gate run this pass (exit 0).",
+      "what_would_resolve_it": "Diff every deleted line against its replacement to confirm each deletion is either pure formatting or superseded by strictly-more-capable code.",
+      "disposition": "rebutted-with-evidence"
+    },
+    {
+      "severity": "low",
+      "lens": "architecture",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 0,
+      "claim_under_doubt": "The switch from a scratch-file handoff to direct Python-to-Python piping for campaign_units.json removes review_scratch.py's cleanup call for that boundary entirely — worth confirming no other consumer still expects a units file to exist on disk at a known scratch path.",
+      "disproof_attempt": "Disproved. This boundary's redesign was the explicit, user-approved outcome of the Architecture Review reconciliation earlier in this run — both external reviewers (GLM, OpenAI) independently recommended it as a smaller design. Grepped for campaign_units.json / the old scratch path across the plugin tree during that reconciliation; no other consumer referenced it. review_scratch.py is retained only for the 4 diff-file boundaries, which have a frozen-snapshot justification the units-list boundary never had.",
+      "what_would_resolve_it": "Grep for any other reader of the old scratch-file path to confirm the pipe switch has no orphaned consumer.",
+      "disposition": "no_change_needed"
+    }
+  ]
+}

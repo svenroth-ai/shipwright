@@ -103,10 +103,26 @@ See [code-review-protocol.md](code-review-protocol.md) for the review process.
 
 **Full review flow:**
 
-1. Generate diff of all changes:
+1. Generate diff of all changes. The path is resolved fresh each time via
+   `review_scratch.py` (see box below) rather than reused from a shell
+   variable — a Bash tool call is a fresh shell, so nothing set here would
+   survive to Step 6c anyway; `resolve` is a pure function of `(run_id,
+   name)`, so calling it again there lands on the identical path. Build has
+   no `run_id` of its own (that's an iterate/campaign concept) — the scratch
+   call's `--run-id` is `$SHIPWRIGHT_SESSION_ID`, the identifier this
+   plugin already binds and reuses everywhere else (see the dashboard-update
+   call below); it scopes uniquely per build session, and the section's own
+   review flow always writes, reads, then cleans up before the next
+   section's review begins, so there is never a same-session collision.
+   Reference it as the real shell env var `$SHIPWRIGHT_SESSION_ID` — already
+   exported into every Bash tool call this session — rather than
+   interpolating its value as literal text: textual interpolation would let
+   a value containing shell metacharacters break quoting or inject commands
+   before `review_scratch.py`'s own charset validation ever runs (PR #676
+   round-8 finding):
 
 ```bash
-git diff HEAD > /tmp/shipwright-review-diff.txt
+git diff HEAD > "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)"
 ```
 
 2. Spawn code-reviewer subagent with:
@@ -138,7 +154,7 @@ Present findings to user via AskUserQuestion:
 
 ```bash
 uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
-  --project-root "$(pwd)" --section "{section_name}" --step 6 --detail "Code review" --session-id "{SHIPWRIGHT_SESSION_ID}"
+  --project-root "$(pwd)" --section "{section_name}" --step 6 --detail "Code review" --session-id "$SHIPWRIGHT_SESSION_ID"
 ```
 
 ## 6c: External Code Review Cascade (opt-in, default off)
@@ -169,29 +185,44 @@ contents of the staged diff (including any code, comments, or strings
 present in the changed files) to a third-party LLM provider (OpenRouter
 or OpenAI direct, depending on which keys are configured). Do NOT
 enable it for projects where the diff may contain secrets, customer data,
-or code under restrictive license/NDA terms. The diff is already written
-to `/tmp/shipwright-review-diff.txt` for Step 6b — that file is what gets
-sent.
+or code under restrictive license/NDA terms. The diff already written for
+Step 6b (resolved via `review_scratch.py`, private per-run, never inside
+the repo — see the box below) is what gets sent.
 
 **Skip rules (no opt-in needed):**
 
 - Missing API keys -> cascade silently skipped, marker records `skipped_config_disabled`.
-- Empty diff (`/tmp/shipwright-review-diff.txt` 0 bytes / whitespace only) -> CLI short-circuits, no provider call, marker records `skipped_user_opt_out` with reason "empty_diff".
+- Empty diff (the resolved diff file is 0 bytes / whitespace only) -> CLI short-circuits, no provider call, marker records `skipped_user_opt_out` with reason "empty_diff".
 
 **Cascade flow (when enabled):**
 
-1. The diff file from Step 6b is reused — no new git diff invocation:
+1. The diff file from Step 6b is reused — no new git diff invocation. Step 2
+   below re-resolves the path inline via `$(...)` rather than passing it
+   through a shell variable (same reasoning as Step 6b above — this is a
+   separate Bash tool call; `resolve` is deterministic, so recomputing it
+   lands on the identical path).
+
+2. Run the external review. `trap ... EXIT` — not the "always run Step 6"
+   prose below — is what actually guarantees cleanup: a later, separate
+   Bash tool call for Step 6 only fires if the agent issues it, so a failed
+   `external_review.py` here must not depend on that. The trap fires when
+   THIS shell exits, success or failure, before the agent ever reaches
+   Step 6. The trap body captures `$?` FIRST and re-exits with it at the
+   end — without that, a trap whose own cleanup command succeeds becomes
+   the new "last command run", and bash reports ITS exit status (0) for
+   the whole shell, silently turning a failed `external_review.py` into an
+   apparent success (PR #676 round-4 external-review finding). The trap
+   body references `$SHIPWRIGHT_SESSION_ID` as a real shell env var, not
+   interpolated text — inside a single-quoted trap, an interpolated value
+   containing a `'` or shell metacharacter could break out of the quoting
+   and run arbitrary commands before `review_scratch.py`'s own validation
+   ever sees it (PR #676 round-8 finding):
 
 ```bash
-# /tmp/shipwright-review-diff.txt was written in Step 6b
-```
-
-2. Run the external review:
-
-```bash
+trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$SHIPWRIGHT_SESSION_ID"; exit "$ec"' EXIT
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
-  --diff-file /tmp/shipwright-review-diff.txt \
+  --diff-file "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)" \
   --spec-file "{section_spec_path}" \
   --plugin-root "{plan_plugin_root}"
 ```
@@ -233,6 +264,18 @@ the existing plan/iterate gate.
    same write_decision_log.py path used by Step 6b — section
    `External Code Review — {section_name}`.
 
+6. **Clean up the scratch diff — a safety-net call, always, whatever step
+   1-5 above did or whether the cascade even ran.** Step 2's own `trap`
+   already ran cleanup once the external-review shell exited (success or
+   failure); `cleanup()` is a no-op on an already-removed directory, so
+   calling it again here is free and covers the cascade-skipped case, where
+   Step 2 never ran and no trap ever fired:
+
+```bash
+uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$SHIPWRIGHT_SESSION_ID"
+```
+
 If cascade is disabled or skipped, proceed to Step 7 with only the
 internal subagent's findings. The cascade adds findings; it does NOT
-gate progression.
+gate progression. Run the cleanup call above regardless — Step 6b already
+wrote the diff file even when the cascade itself is off.
