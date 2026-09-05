@@ -136,6 +136,20 @@ def test_posix_private_dir_tightens_group_or_world_access(tmp_path):
     assert loose.stat().st_mode & 0o077 == 0
 
 
+@pytest.mark.skipif(os.name == "nt", reason="native POSIX permission proof")
+def test_posix_tighten_wraps_a_chmod_failure_in_host_lease_error(tmp_path, monkeypatch):
+    path = tmp_path / "state.json"
+    path.write_text("{}", encoding="utf-8")
+    path.chmod(0o644)
+
+    def _boom(self, mode):
+        raise OSError("simulated chmod failure")
+
+    monkeypatch.setattr(Path, "chmod", _boom)
+    with pytest.raises(lease.HostLeaseError, match="could not tighten"):
+        locking._safe_file(path)
+
+
 @pytest.mark.skipif(os.name == "nt", reason="native POSIX ownership proof")
 def test_posix_private_file_owned_by_another_user_still_rejects(tmp_path, monkeypatch):
     path = tmp_path / "state.json"
