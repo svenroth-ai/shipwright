@@ -141,7 +141,8 @@ def test_posix_private_file_owned_by_another_user_still_rejects(tmp_path, monkey
     path = tmp_path / "state.json"
     path.write_text("{}", encoding="utf-8")
     path.chmod(0o600)
-    monkeypatch.setattr(os, "getuid", lambda: os.getuid() + 1, raising=False)
+    real_getuid = os.getuid
+    monkeypatch.setattr(os, "getuid", lambda: real_getuid() + 1, raising=False)
     with pytest.raises(lease.HostLeaseError, match="owned by another user"):
         locking._safe_file(path)
 
