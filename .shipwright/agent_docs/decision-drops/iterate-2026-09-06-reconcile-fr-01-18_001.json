@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-09-06-reconcile-fr-01-18",
   "date": "2026-09-06",
-  "section": "compliance",
+  "section": "compliance-reconciliation",
   "title": "Reconcile D1/D3 for FR-01.18 (/shipwright-grade)",
   "context": "FR-01.18 was minted by evt-ea7203ec (2026-07-26) alongside 17 other requirements in one bulk content round. That event recorded no tests block, and no event since named FR-01.18 in affected_frs — so D1 (spec FR coverage) and D3 (promised FRs delivered) both flagged it, even though the shipwright-grade plugin implementing it has been on disk and tested since.",
   "decision": "Record a new work_completed event naming FR-01.18 in affected_frs, carrying this run's real whole-suite test totals (17317/17376 passed, F0-verified). No source change: the plugin already exists; this closes a recording gap, not a functionality gap.",
