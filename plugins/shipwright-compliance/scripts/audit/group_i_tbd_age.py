@@ -89,10 +89,16 @@ def _blame_epoch(project_root: Path, spec_path: str, lineno: int) -> int | None:
     ``lineno`` from — pinning to ``HEAD`` would decouple the two, and a
     working tree with uncommitted edits above this line would then blame the
     wrong physical line. An uncommitted TBD line blames as "Not Committed
-    Yet" with `committer-time` set to the current wall-clock time (verified:
-    porcelain does not zero it), so it reads as age 0 — safe, since
-    understating age is the direction this module's docstring already
-    prefers."""
+    Yet"; ON THIS REPO'S git version, porcelain's `committer-time` for that
+    pseudo-commit is the current wall-clock time (empirically verified — see
+    the ADR), so it would read as age 0, the safe direction. Older git
+    releases are documented to report `0` (the Unix epoch) for the same
+    pseudo-commit instead — a version-dependent behavior this function must
+    not assume either way (Tier-3 PR review, `iterate-2026-09-06-fr-hygiene-
+    touched-rows`, PR #679): a non-positive value is treated the same as "no
+    answer" rather than trusted as a real 1970 commit date, so a CI runner on
+    an older git can never manufacture a ~20,000-day-stale finding out of an
+    uncommitted line."""
     try:
         result = subprocess.run(
             ["git", "-C", str(project_root), "blame", "-L", f"{lineno},{lineno}",
@@ -107,9 +113,10 @@ def _blame_epoch(project_root: Path, spec_path: str, lineno: int) -> int | None:
     for out_line in result.stdout.splitlines():
         if out_line.startswith("committer-time "):
             try:
-                return int(out_line.split(" ", 1)[1].strip())
+                epoch = int(out_line.split(" ", 1)[1].strip())
             except ValueError:
                 return None
+            return epoch if epoch > 0 else None
     return None
 
 

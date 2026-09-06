@@ -91,3 +91,27 @@ def test_row_with_real_criteria_never_flagged(tmp_path: Path):
 def test_i8_is_registered():
     ids = {cid for cid, _name, _sev in group_i._CHECKS}
     assert "I8" in ids
+
+
+def test_blame_epoch_treats_non_positive_committer_time_as_unavailable(monkeypatch, tmp_path):
+    """Some git releases report `committer-time 0` for the synthetic "Not
+    Committed Yet" pseudo-commit that blames an uncommitted line (Tier-3 PR
+    review, PR #679) — a non-positive epoch must never be trusted as a real
+    1970 commit date, or an uncommitted TBD line reads as ~20,000 days stale.
+    Not reproducible against this repo's own git (which reports the current
+    wall-clock time instead — see the module docstring), so the subprocess
+    call is faked to pin the defensive branch regardless of git version."""
+    from scripts.audit import group_i_tbd_age
+
+    class _FakeResult:
+        returncode = 0
+        stdout = (
+            "0000000000000000000000000000000000000000 1 1 1\n"
+            "author Not Committed Yet\n"
+            "author-time 0\n"
+            "committer Not Committed Yet\n"
+            "committer-time 0\n"
+        )
+
+    monkeypatch.setattr(group_i_tbd_age.subprocess, "run", lambda *a, **k: _FakeResult())
+    assert group_i_tbd_age._blame_epoch(tmp_path, "spec.md", 1) is None
