@@ -16,37 +16,18 @@ formats, their column orders are not stable, and ADR-048 records a brownfield RT
 reporting "Traceability coverage 0%" because the positional regex never matched
 the 6-column adopt shape. The prediction is falsified.
 
-The convergence rules, each of which used to have two or three answers:
-
-1. **Id strictness** — ``requirement_model.CANONICAL_FR_RE`` (``FR-XX.YY``), a
-   FULL match of the trimmed cell. Not a preference: manifest schema v3 derives
-   a requirement's namespace from the id's group digits, so only the two-digit
-   form makes that derivation total. ``FR-7`` / ``FR-1.1`` are legal spec
-   HEADING ids but never canonical row ids — and are RECORDED when rejected.
-2. **Column selection is by NAME**, never by position. A row carrying more cells
-   than its header declares can no longer shift the body column (FV-3 — live
-   wrong text in a shipped RTM).
-3. **The column map persists across headings.** Resetting at every heading
-   dropped every FR row under a later heading (FV-5). What ends a requirements
-   table is another TABLE, not a title — see rule 8.
-4. **An unrecognised priority is coerced, not fatal** (``Must``, the coercion
-   that makes an audit louder rather than blinder). Dropping a requirement over
-   a typo is the silent-loss class this campaign exists to remove.
-5. **An escaped pipe is content, not a cell boundary.** Splitting and
-   unescaping are one left-to-right pass in ``_fr_table_cells.split_cells``,
-   the exact inverse of the ``markdown_table.escape_cell`` producer — see that
-   module for the two defects a lookbehind-plus-replace version had, both found
-   by a round-trip probe rather than by reading.
-6. **A row is recognised by a leading pipe after stripping**, and a missing
-   closing pipe does not drop it. An anchored ``^\\|`` rejects a legitimately
-   indented GFM table.
-7. **``## FR-Fold-Map`` lines are always skipped.** Under rule 4 this is
-   load-bearing rather than cosmetic: without it, coercion would resurrect every
-   folded alias id as a live requirement demanding its own coverage.
-8. **A requirement row must be GOVERNED**: under a header naming a Priority
-   column, and wide enough to reach it. No headerless positional fallback. This
-   stops a coverage table keyed by FR id yielding requirements — rules 3, 4 and
-   the absence of a width floor composed to admit one. See ``read_fr_rows``.
+**The convergence rules (C1-C10) — full table and rationale in ADR-107**
+(``.shipwright/planning/adr/107-one-header-driven-fr-table-reader.md``), not
+restated here: id strictness, column selection by NAME, column-map lifetime
+across headings, priority coercion, escaped-pipe splitting, row recognition,
+fold-map skipping, minimum row width, removal-section handling, and table
+governance (a row must sit under a header naming a Priority column — no
+headerless positional fallback). ``read_fr_rows`` below is where C8/C10
+compose to matter most: a surviving column map, a coerced priority, and no
+width floor together let a SECOND, FR-id-keyed table under a later heading
+(e.g. a coverage summary) parse as requirements — see ADR-107's "composition
+route" for the full mechanism and why three independently-defensible rules
+had to be re-examined together, not the one that broke.
 
 **Nothing is dropped silently.** Every row the reader declines is recorded via
 the optional ``rejects`` accumulator, with the reason.
@@ -56,70 +37,38 @@ Pure: no I/O, no globals mutated, no exit-code semantics. Callers read files.
 
 from __future__ import annotations
 
-import importlib
+import hashlib
 import re
 import sys
 from pathlib import Path
 
-_SIBLINGS: dict[str, object] = {}
+# Reaching the loader itself needs the SAME three-load-style handling
+# `_sibling` below applies to every other sibling (ADR-045) — a bare
+# `import _fr_table_reader_loader` only resolves under the flat style, where
+# `shared/scripts/lib` is already on `sys.path` by that style's own
+# precondition. Under the package/sentinel styles this module's `__package__`
+# is a real package whose `__path__` is `shared/scripts/lib`
+# (`shared_lib_loader._private_package`), so a relative import resolves the
+# same way `_sibling`'s own `importlib.import_module(f".{name}", package)`
+# leg does.
+if __package__:
+    _loader_mod = __import__(f"{__package__}._fr_table_reader_loader", fromlist=["sibling"])
+else:
+    _lib_dir = str(Path(__file__).resolve().parent)
+    if _lib_dir not in sys.path:
+        sys.path.insert(0, _lib_dir)
+    import _fr_table_reader_loader as _loader_mod
 
-# The complete set of siblings this module may load. Every call below passes a
-# literal, so the dynamic import is safe by inspection today — but that is a
-# property of the CALL SITES, while the scanner suppressions sit on `_sibling`
-# itself, so a future caller threading in argv or config would inherit them
-# silently. Declaring the set makes the claim a precondition instead of a
-# comment. The reverse direction — no stale entry permitting more than the
-# module uses — is pinned in `test_fr_table_reader_load_styles.py`.
-_ALLOWED_SIBLINGS = frozenset({
-    "requirement_model", "fr_fold_map",
-    "_fr_table_cells", "_fr_table_row", "_fr_table_columns",
-})
+_sibling_loader = _loader_mod.sibling
 
 
 def _sibling(name: str):
-    """Import a ``shared/scripts/lib`` sibling however THIS module was loaded.
-
-    Three load styles reach this module in production (ADR-045): flat
-    (``import fr_table_reader`` with ``shared/scripts/lib`` on the path),
-    as a package member (``lib.fr_table_reader``, via the collectors'
-    ``_lib_loader``), and by file location under a sentinel name (via
-    ``audit_adapters.load_shared_lib``, which is how Group I reaches shared
-    code). A bare relative import works only in the second; a bare flat import
-    only in the first. Resolving per load style is what makes ONE reader usable
-    from all five call sites — the alternative is five copies, which is the
-    defect this module removes.
-
-    Resolved EAGERLY, at import time, and never at call time. Under the
-    collectors' ``_lib_loader`` this module is imported while ``sys.modules
-    ['lib']`` is temporarily bound to SHARED, and that binding is restored to
-    the caller's own ``lib`` on the way out — so a lazy ``import_module
-    (".requirement_model", "lib")`` would resolve against the compliance-local
-    package and raise. Same trap ADR-045 documents; the fix is the timing.
-    """
-    if (mod := _SIBLINGS.get(name)) is not None:
-        return mod
-    if name not in _ALLOWED_SIBLINGS:
-        raise ValueError(f"{name!r} is not in _ALLOWED_SIBLINGS")
-    package = __package__ or ""
-    if package:
-        # Name is constrained to _ALLOWED_SIBLINGS above — first-party module
-        # identifiers only, never untrusted input.
-        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
-        mod = importlib.import_module(f".{name}", package)
-    else:
-        lib_dir = str(Path(__file__).resolve().parent)
-        added = lib_dir not in sys.path
-        if added:
-            sys.path.insert(0, lib_dir)
-        try:
-            # First-party hardcoded module identifiers only; no untrusted input.
-            # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
-            mod = importlib.import_module(name)
-        finally:
-            if added:
-                sys.path.remove(lib_dir)
-    _SIBLINGS[name] = mod
-    return mod
+    """See ``_fr_table_reader_loader.sibling`` — extracted to its own module
+    when this file crossed the 300-line guideline (PR #679). Thin wrapper so
+    every call site below stays unchanged; passes THIS module's own
+    ``__package__`` (which the loader needs, but cannot read for itself, since
+    it is a different module loaded a different way)."""
+    return _sibling_loader(name, package=__package__ or "")
 
 
 CANONICAL_FR_RE = _sibling("requirement_model").CANONICAL_FR_RE
@@ -198,9 +147,20 @@ def read_fr_rows(content: str, *, rejects: list | None = None) -> list[FrTableRo
 
     def _reject(reason: str, cells: list[str], lineno: int) -> None:
         if rejects is not None:
+            full_raw = " | ".join(cells)
             rejects.append({
                 "id": cells[0], "reason": reason,
-                "lineno": lineno, "raw": " | ".join(cells)[:200],
+                "lineno": lineno, "raw": full_raw[:200],
+                # A digest of the FULL cell content, not the 200-char-truncated
+                # `raw` above (`fr_hygiene`'s `_new_reject_findings`, Tier-3 PR
+                # review, PR #679): a caller keying "is this reject new" on the
+                # truncated `raw` cannot tell an edit landing after character
+                # 200 from no edit at all — same id, same reason, same first
+                # 200 characters, different content beyond it. `raw` itself
+                # stays truncated (an existing display/preview contract other
+                # callers may depend on); this is an additive field for exact
+                # comparison.
+                "raw_digest": hashlib.sha256(full_raw.encode("utf-8")).hexdigest(),
                 # Whether a governing header had been recognised when this row
                 # was declined (campaign S5). Without it a caller cannot tell
                 # "no header names a Priority column" from "the header is fine,

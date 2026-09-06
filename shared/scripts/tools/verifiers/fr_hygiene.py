@@ -65,7 +65,6 @@ this run itself chose to write or edit.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from ._fr_hygiene_anomalies import (
@@ -73,6 +72,8 @@ from ._fr_hygiene_anomalies import (
     _new_reject_findings,
     _orphan_anchor_findings,
 )
+from ._fr_hygiene_catalog import catalog_spec_paths_at as _catalog_spec_paths_at
+from ._fr_hygiene_catalog import spec_paths_matching as _spec_paths_touched
 from ._fr_hygiene_touched import (
     _row_findings,
     _row_map,
@@ -87,25 +88,6 @@ from .git_helpers import (
 )
 
 _NAME = "FR-row hygiene on touched rows (fr-authoring.md I1/I2/I7)"
-
-#: A `spec.md` path under any split, expressed as a pattern so it can be
-#: matched against a git diff's path list instead of walking the disk.
-#: `group_i_rows.scan_specs` walks the same tree but explicitly excludes
-#: `iterate/` (S2b pass C2: that split holds per-run iterate specs, not the FR
-#: catalogue) — this pattern does not carry that exclusion, but it is a
-#: distinction without a difference here: files under `iterate/` are named
-#: `{date}-{slug}.md`, never literally `spec.md`, so the two walks agree on
-#: every real path in practice.
-_SPEC_PATH_RE = re.compile(r"^\.shipwright/planning/[^/]+/spec\.md$")
-
-
-def _spec_paths_touched(changed: list[str]) -> list[str]:
-    hits: set[str] = set()
-    for path in changed:
-        norm = path.replace("\\", "/").strip()
-        if _SPEC_PATH_RE.match(norm):
-            hits.add(norm)
-    return sorted(hits)
 
 
 def check_fr_hygiene_on_touched_rows(
@@ -205,15 +187,43 @@ def check_fr_hygiene_on_touched_rows(
     for base_text, _head_text in text_by_path.values():
         global_base_rows.update(_row_map(base_text))
     base_texts_list = [base_text for base_text, _ in text_by_path.values()]
-    head_texts_list = [head_text for _, head_text in text_by_path.values()]
+
+    # Duplicate-id detection pools EVERY catalogue spec.md, not just touched
+    # ones (Tier-3 PR review round 3, PR #679) — a new row colliding with an
+    # id in an untouched file elsewhere in the catalogue is exactly as real a
+    # defect as one split across two touched files. This is deliberately a
+    # WIDER scope than `base_texts_list`/`head_texts_list` above, which stay
+    # touched-only for `_row_findings`'s criteria pooling — that scoping is
+    # correct and unrelated; only identity uniqueness needs the full catalog.
+    base_catalog_paths = _catalog_spec_paths_at(project_root, base_sha)
+    head_catalog_paths = _catalog_spec_paths_at(project_root, commit)
+    if base_catalog_paths is None or head_catalog_paths is None:
+        return CheckResult(
+            _NAME, False,
+            "could not enumerate the FR spec catalogue at base or HEAD — "
+            "refusing to certify FR rows as untouched",
+        )
+    catalog_base_texts: list[str] = []
+    catalog_head_texts: list[str] = []
+    for path in sorted(set(base_catalog_paths) | set(head_catalog_paths)):
+        if path in text_by_path:
+            cat_base_text, cat_head_text = text_by_path[path]
+        else:
+            cat_base_text = spec_text_at(project_root, base_sha, path)
+            cat_head_text = spec_text_at(project_root, commit, path)
+            if cat_base_text is None or cat_head_text is None:
+                side = "base" if cat_base_text is None else "head"
+                return CheckResult(
+                    _NAME, False,
+                    f"could not read {path} at the {side} commit — refusing "
+                    "to certify FR rows as untouched",
+                )
+        catalog_base_texts.append(cat_base_text)
+        catalog_head_texts.append(cat_head_text)
 
     all_findings: list[str] = []
-    # Pooled across every touched path, not per file (Tier-3 PR review, PR
-    # #679): FR ids are catalog-wide, so a NEW duplicate split across two
-    # touched spec.md files — one occurrence added to each — has exactly one
-    # occurrence per file and is invisible to a per-file count.
-    for finding in _new_duplicate_id_findings(base_texts_list, head_texts_list):
-        all_findings.append(f"{', '.join(specs)}: {finding}")
+    for finding in _new_duplicate_id_findings(catalog_base_texts, catalog_head_texts):
+        all_findings.append(f"FR catalogue: {finding}")
     for path in specs:
         base_text, head_text = text_by_path[path]
         base_rejects: list = []

@@ -110,7 +110,7 @@ import json
 # into `_SIBLINGS`, so a guard that wrongly ALLOWS the undeclared name would
 # also insert it here -- and the allowlist-vs-loaded comparison would then agree
 # with itself and pass. Reading first is what keeps the two facts independent.
-loaded = sorted(reader._SIBLINGS)
+loaded = sorted(reader._loader_mod._SIBLINGS)
 try:
     reader._sibling("os")
 except ValueError as exc:
@@ -121,7 +121,7 @@ else:
     refused = False
 print(json.dumps({
     "loaded": loaded,
-    "declared": sorted(reader._ALLOWED_SIBLINGS),
+    "declared": sorted(reader._loader_mod._ALLOWED_SIBLINGS),
     "refused": refused,
 }))
 """

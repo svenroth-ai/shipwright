@@ -96,12 +96,20 @@ def _new_duplicate_id_findings(base_texts: list[str], head_texts: list[str]) -> 
     to make the id unique again, at which point there is exactly one row
     left for this gate to judge honestly.
 
-    **Pooled across every touched spec, not scanned per file** (Tier-3 PR
-    review, PR #679): FR ids are catalog-wide, not scoped to one file, so a
-    NEW duplicate split across two touched ``spec.md`` files — one occurrence
-    added to each — has exactly one occurrence per file and was invisible to
-    a per-file count. The caller now passes every touched path's base/head
-    text as a list, pooled together.
+    **Pooled across the WHOLE FR catalogue, not scanned per file, and not
+    scoped to touched files** (Tier-3 PR review, PR #679, rounds 2 and 3): FR
+    ids are catalog-wide identity, not scoped to one file or to this run's
+    diff. A NEW duplicate split across two touched ``spec.md`` files — one
+    occurrence added to each — has exactly one occurrence per file and was
+    invisible to a per-file count (round 2). A new row colliding with an id
+    that already lives in an UNCHANGED spec.md this run never touched is
+    exactly as real a defect, and was still invisible once the per-file fix
+    only pooled touched paths (round 3). The caller (`fr_hygiene.py`) now
+    passes every catalogue spec's base/head text — including files this run
+    never touched — as a list, pooled together. This is the one detector in
+    this module family that reaches outside the "touched only" boundary: an
+    id collision is a property of the WHOLE catalogue, not of what this run
+    happened to edit.
 
     **A duplication already present at base is reported too, when this run
     edited one of its occurrences** (Tier-3 PR review, PR #679, second
@@ -158,18 +166,29 @@ def _new_reject_findings(base_rejects: list, head_rejects: list) -> list[str]:
     masked the run's own new one. Only the SURPLUS beyond however many were
     already present at base is reported as new.
 
-    Keyed by ``(id, reason, raw)`` — the reject's own content fingerprint
-    (``raw``, the pipe-joined cell text the reader already captures), not
-    just ``(id, reason)`` (Tier-3 PR review, PR #679): a run that EDITS an
-    already-rejected row's content while its id and rejection reason stay the
-    same (e.g. still `non_canonical_id`, still that id) previously matched an
-    existing base key and was silently absorbed as "already there" — the
-    content changed, but nothing about the changed row was ever judged,
-    because a rejected row never produces an `FrTableRow` for `_row_findings`
-    to see either. Including `raw` makes an edited row's fingerprint NEW
-    even when `(id, reason)` alone stayed identical."""
+    Keyed by ``(id, reason, raw_digest)`` — a digest of the reject's own FULL
+    content fingerprint, not just ``(id, reason)`` (Tier-3 PR review, PR
+    #679): a run that EDITS an already-rejected row's content while its id
+    and rejection reason stay the same (e.g. still `non_canonical_id`, still
+    that id) previously matched an existing base key and was silently
+    absorbed as "already there" — the content changed, but nothing about the
+    changed row was ever judged, because a rejected row never produces an
+    `FrTableRow` for `_row_findings` to see either. Including a content
+    fingerprint makes an edited row's key NEW even when `(id, reason)` alone
+    stayed identical.
+
+    ``raw_digest`` (a sha256 of the FULL pipe-joined cells), not the
+    reader's own ``raw`` field, which is truncated to 200 characters for
+    display (Tier-3 PR review round 2, PR #679): keying on the truncated
+    field let an edit landing entirely after character 200 keep the same
+    ``(id, reason, raw[:200])`` triple as before, silently absorbed as
+    unchanged. Both ``base_rejects`` and ``head_rejects`` are always
+    produced by THIS SAME call, re-parsing base/head text with the current
+    reader (never a persisted record from an older run), so ``raw_digest``
+    is always present on both sides — ``.get`` is defensive, not a real
+    legacy-data path."""
     def _key(r: dict) -> tuple[str, str, str]:
-        return (r["id"], r["reason"], r.get("raw", ""))
+        return (r["id"], r["reason"], r.get("raw_digest", ""))
 
     base_counts = Counter(_key(r) for r in base_rejects)
     seen: Counter = Counter()
