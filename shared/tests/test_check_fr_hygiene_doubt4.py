@@ -108,6 +108,41 @@ def test_a_new_duplicate_id_against_an_untouched_catalog_file_is_flagged(
     assert "FR-01.01" in res.detail
 
 
+def test_an_existing_non_canonical_anchors_edited_criterion_is_flagged(
+    git_origin_repo, make_worktree,
+):
+    """An anchor id that was ALREADY non-canonical at base is not exempt from
+    reporting just because this run did not invent the malformed id (Tier-3
+    PR review round 6, PR #679): the round-2/round-5 version excluded any
+    ``fr_id`` present in ``base_ids`` outright, so editing or supplementing
+    the criterion text under an existing ``FR-1.02``-shaped anchor was
+    silently invisible — same blast radius as a brand-new malformed anchor,
+    since neither ever joins a canonical table row's pool."""
+    work, _o = git_origin_repo
+    base_extra = (
+        "\n### FR-1.02 — Password reset\n\n"
+        "#### Acceptance Criteria\n"
+        "- (E) Given a user with a forgotten password, when they request a "
+        "reset, then they receive an email.\n"
+    )
+    _seed_main(work, _clean_spec(extra_body=base_extra))
+    wt = make_worktree(work, "frh-existing-nonrecanonical-anchor-edited")
+    head_extra = (
+        "\n### FR-1.02 — Password reset\n\n"
+        "#### Acceptance Criteria\n"
+        "- (E) Given a user with a forgotten password, when they request a "
+        "reset, then they receive an email within five minutes.\n"
+    )
+    commit = _commit_on_worktree(
+        wt, _clean_spec(extra_body=head_extra),
+        "edit the criterion text under an already-existing non-canonical anchor",
+    )
+    res = fh.check_fr_hygiene_on_touched_rows(wt, _RUN, commit)
+    assert res.ok is False
+    assert "FR-1.02" in res.detail
+    assert "non-canonical id" in res.detail
+
+
 def test_editing_an_already_rejected_row_past_the_raw_truncation_boundary_is_flagged(
     git_origin_repo, make_worktree,
 ):

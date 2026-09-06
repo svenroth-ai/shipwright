@@ -22,8 +22,9 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib import fr_criteria  # noqa: E402
 from lib import fr_table_reader  # noqa: E402
+
+from ._fr_hygiene_touched import _whole_doc_criteria_texts  # noqa: E402
 
 
 def _orphan_anchor_findings(base_text: str, head_text: str) -> list[str]:
@@ -40,10 +41,9 @@ def _orphan_anchor_findings(base_text: str, head_text: str) -> list[str]:
     review, medium).
 
     This does not judge the criterion's own shape (that is `_row_findings`'s
-    job once it can find it) — it only surfaces a NEW anchor id, added by
-    this run, that carries a real criterion and does not match the canonical
-    row-id shape, so the mismatch is visible instead of silently dropping the
-    content it guards.
+    job once it can find it) — it only surfaces a non-canonical anchor id
+    whose pooled criteria CHANGED this run, so the mismatch is visible
+    instead of silently dropping the content it guards.
 
     ``fullmatch``, not ``match`` (Tier-3 PR review, PR #679, round 5): checked
     against ``CANONICAL_FR_RE`` (``^FR-\\d{2}\\.\\d{2}$``) empirically before
@@ -54,23 +54,41 @@ def _orphan_anchor_findings(base_text: str, head_text: str) -> list[str]:
     produces). ``fullmatch`` costs nothing here and removes even that
     theoretical gap and the ambiguity of pairing ``match`` with an
     end-anchored pattern, which is a real bug shape in general even where it
-    is not one here."""
-    base_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(base_text or "")}
+    is not one here.
+
+    **An EXISTING non-canonical anchor whose criteria changed is reported
+    too, not just a brand-new anchor id** (Tier-3 PR review, PR #679, round
+    6): the round-2/round-5 version excluded any ``fr_id`` already present
+    at base outright, on the theory that an existing non-canonical anchor is
+    legacy content this run did not create. That theory covers "the anchor
+    id already existed" but not "and this run edited or supplemented what is
+    written under it" — a criterion added or changed under an ALREADY-
+    malformed anchor is just as invisible to `_touched_ids`/`_row_findings`
+    as one under a brand-new malformed anchor, since neither ever joins a
+    canonical table row. Compared via ``_whole_doc_criteria_texts`` (pooled
+    criterion text per id, canonical or not — the same helper
+    `_fr_hygiene_touched._touched_ids` uses for its own digest half) rather
+    than the anchor id SET: an id whose pooled criteria are identical on
+    both sides is untouched legacy and stays excluded, same "touched only"
+    boundary as everywhere else; one whose pooled criteria differ — new id
+    or existing id, added block or edited block — is reported."""
+    base_texts = _whole_doc_criteria_texts(base_text)
+    head_texts = _whole_doc_criteria_texts(head_text)
     out: list[str] = []
-    seen: set[str] = set()
-    for fr_id, block in fr_criteria.iter_anchored_blocks(head_text or ""):
-        if fr_id in seen or fr_id in base_ids:
-            continue
+    for fr_id in sorted(head_texts):
         if fr_table_reader.CANONICAL_FR_RE.fullmatch(fr_id):
             continue
-        if not fr_criteria.block_criteria(block, strict=False):
+        head_criteria = head_texts[fr_id]
+        if not head_criteria:
             continue
-        seen.add(fr_id)
+        if sorted(head_criteria) == sorted(base_texts.get(fr_id, [])):
+            continue
         out.append(
-            f"{fr_id}: a new criterion is anchored under a non-canonical id "
-            "(not `FR-XX.YY` shape) — it will never join its intended row's "
-            "criteria pool and is invisible to every FR-catalogue check; fix "
-            "the heading/bold anchor id",
+            f"{fr_id}: a criterion is anchored under a non-canonical id "
+            "(not `FR-XX.YY` shape) and this run added or changed it — it "
+            "will never join its intended row's criteria pool and is "
+            "invisible to every FR-catalogue check; fix the heading/bold "
+            "anchor id",
         )
     return out
 

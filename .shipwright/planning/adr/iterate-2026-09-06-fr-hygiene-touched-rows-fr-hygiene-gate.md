@@ -462,6 +462,52 @@ isolation) — it already passed before this change (confirming the "not
 reproduced" finding) and continues to pass after, so the test also serves
 as a non-regression pin for the `.fullmatch` swap itself.
 
+### Tier-3 PR-review gate, round 6 (PR #679, `openai/gpt-5.6-luna`) — an
+existing non-canonical anchor's edited criterion was invisible
+
+**Reviewer finding:** `_orphan_anchor_findings` skips every head anchor
+whose id appears anywhere in `base_ids`, even when its criterion block was
+edited or a new block was added under that existing non-canonical id;
+`_touched_ids` then filters that id out because it has no canonical table
+row. Requested: compare base and head criterion blocks/digests for
+non-canonical anchors and report any newly added or changed block (or
+otherwise fail closed on a touched non-canonical anchor), plus a regression
+test covering an existing `FR-1.02` anchor whose criterion is edited or
+supplemented.
+
+**Confirmed genuine by direct code inspection** (unlike round 5): the prior
+body kept a `base_ids`/`seen` id-SET exclusion —
+`if fr_id in seen or fr_id in base_ids: continue` — which drops an id the
+moment it is found anywhere at base, with no look at whether the content
+under it changed. A criterion added or edited under an ALREADY-malformed
+anchor (`### FR-1.02` present at base, its acceptance criteria changed at
+head) is exactly as invisible to every downstream FR-catalogue check as one
+under a brand-new malformed anchor — neither ever joins a canonical table
+row's pool — but the old code only ever reported the "brand-new anchor id"
+half of that bug class.
+
+**Fixed** by switching the comparison from an id SET to pooled criterion
+CONTENT, reusing `_fr_hygiene_touched._whole_doc_criteria_texts` (already
+built for exactly this: FR id → every criterion text pooled for that id
+across the whole document, canonical or not, via the same
+`fr_criteria.iter_anchored_blocks`/`block_criteria(strict=False)` primitives
+`_orphan_anchor_findings` used directly before). For every non-canonical id
+present at head with a non-empty pooled criteria list: if its pooled
+criteria match base's pooled criteria for that id exactly (as a sorted
+comparison), it is untouched legacy and stays excluded — same "touched
+only" boundary as every other detector in this module; otherwise (new id at
+head, or an existing id whose pooled criteria differ) it is reported. This
+also let `_orphan_anchor_findings` drop its direct dependency on
+`fr_criteria` entirely (ruff flagged the now-unused import; removed).
+
+**New test**
+`test_an_existing_non_canonical_anchors_edited_criterion_is_flagged`
+(`shared/tests/test_check_fr_hygiene_doubt4.py`) seeds a base spec with an
+`FR-1.02` anchor carrying a criterion, then edits that criterion's text at
+head with no other change — pins exactly the case the review named. Full
+targeted suite (`test_check_fr_hygiene.py` + `_doubt3.py` + `_doubt4.py`,
+24 tests) and `uvx ruff@0.15.15 check .` both pass after the change.
+
 ## Rejected alternatives
 
 - Global promotion of I1/I2/I6 out of `_ADVISORY_CHECKS`.
