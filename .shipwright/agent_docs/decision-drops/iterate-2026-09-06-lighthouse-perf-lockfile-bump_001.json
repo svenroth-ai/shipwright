@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-lighthouse-perf-lockfile-bump",
+  "date": "2026-09-06",
+  "section": "Iterate — bug: bump vulnerable lighthouse perf-runner dependency",
+  "title": "Bump lighthouse in shipwright-test perf runner from 13.1.0 to 13.4.1",
+  "context": "The PR-review security scan repeatedly flagged plugins/shipwright-test/scripts/perf/package-lock.json for pinning a transitively vulnerable lighthouse@13.1.0 during iterate-2026-09-06-fr-hygiene-touched-rows. That was out of scope for that iterate (which merged clean on PR #679) and deferred here.",
+  "decision": "Bump the exact-pinned lighthouse dependency to 13.4.1 and regenerate the lockfile from scratch (rm -rf node_modules package-lock.json && npm install) rather than hand-patching, so the committed lockfile is internally consistent. Also raised engines.node from >=22 to >=22.19 to match what lighthouse 13.4.1 itself requires.",
+  "consequences": "npm audit goes from 20 vulnerabilities (16 moderate, 4 high: opentelemetry/core, extract-zip, puppeteer-core, sentry/node) to 0. extract-zip is dropped entirely from the dependency tree. No source code changes; lighthouse-runner.mjs's default-export call shape is unaffected across this minor-version range.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
