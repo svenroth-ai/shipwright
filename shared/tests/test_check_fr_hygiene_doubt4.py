@@ -35,6 +35,34 @@ from tools.verifiers import fr_hygiene as fh  # noqa: E402
 _SPEC_B = ".shipwright/planning/02-other/spec.md"
 
 
+def test_a_new_anchor_with_a_canonical_prefix_but_extra_suffix_is_flagged(
+    git_origin_repo, make_worktree,
+):
+    """`CANONICAL_FR_RE.fullmatch`, not `.match` (Tier-3 PR review round 5, PR
+    #679): a new criterion anchored under an id carrying a canonical PREFIX
+    but extra trailing characters (`FR-01.02.03`) must still be reported as
+    non-canonical — it is exactly the shape a prefix-only check would let
+    through. (`CANONICAL_FR_RE`'s own `$` anchor already rejects this under
+    `.match` too — empirically confirmed before this test was written — but
+    `fullmatch` removes the ambiguity and this test pins the behavior either
+    way.)"""
+    work, _o = git_origin_repo
+    _seed_main(work, _clean_spec())
+    wt = make_worktree(work, "frh-orphananchor-prefix-suffix")
+    mistyped = _clean_spec() + (
+        "\n### FR-01.02.03 — Password reset\n\n"
+        "- Scaffold-creation half - verified (auth.ts, test_auth.py): "
+        "confirmed by running the existing suite.\n"
+    )
+    commit = _commit_on_worktree(
+        wt, mistyped, "fold a criterion under a canonical-prefixed anchor id",
+    )
+    res = fh.check_fr_hygiene_on_touched_rows(wt, _RUN, commit)
+    assert res.ok is False
+    assert "FR-01.02.03" in res.detail
+    assert "non-canonical id" in res.detail
+
+
 def test_a_new_duplicate_id_against_an_untouched_catalog_file_is_flagged(
     git_origin_repo, make_worktree,
 ):

@@ -429,6 +429,39 @@ also passes unchanged. Final size: `fr_table_reader.py` 259 lines,
 `_fr_table_reader_loader.py` 84 lines — both under the 300-line guideline
 with margin, no baseline entry needed.
 
+### Tier-3 PR-review gate, round 5 (PR #679, `openai/gpt-5.6-luna`) — a
+reviewer claim checked and NOT reproduced, hardened anyway
+
+**Reviewer finding:** `_orphan_anchor_findings` calls
+`fr_table_reader.CANONICAL_FR_RE.match(fr_id)`, and the review's concern was
+that `.match` only anchors at the START of the string, so an id carrying a
+canonical PREFIX but extra trailing characters (`FR-01.02.03`,
+`FR-01.02suffix`) could slip past as if canonical.
+
+**Checked empirically before changing anything**, per this session's own
+standing practice of never trusting a review claim's specifics without
+verifying: `CANONICAL_FR_RE` (`requirement_model.py`) is
+`^FR-\d{2}\.\d{2}$` — already `$`-anchored. A direct interpreter probe
+confirmed `.match("FR-01.02.03")` and `.match("FR-01.02suffix")` both
+already return no match (the pattern's own end anchor rejects them); the
+ONE case where `.match` and `.fullmatch` genuinely differ is a literal
+trailing-newline string (`"FR-01.02\n"`, which `.match` accepts and
+`.fullmatch` does not) — a shape `fr_criteria`'s anchor-id extraction does
+not produce. **The two specific exploit shapes the review named do not
+reproduce.**
+
+**Fixed anyway.** Pairing `.match` with an end-anchored pattern is a real
+bug shape in general, even in the one place it happens not to bite today —
+a future edit to `CANONICAL_FR_RE` that dropped the trailing `$` would
+silently reopen exactly the hole the review described, with nothing here to
+stop it. Switched to `.fullmatch`, which is unconditionally correct and
+costs nothing (identical result for every real anchor-id input). New test
+`test_a_new_anchor_with_a_canonical_prefix_but_extra_suffix_is_flagged`
+pins the named `FR-01.02.03` case at the gate level (not just the regex in
+isolation) — it already passed before this change (confirming the "not
+reproduced" finding) and continues to pass after, so the test also serves
+as a non-regression pin for the `.fullmatch` swap itself.
+
 ## Rejected alternatives
 
 - Global promotion of I1/I2/I6 out of `_ADVISORY_CHECKS`.

@@ -43,14 +43,25 @@ def _orphan_anchor_findings(base_text: str, head_text: str) -> list[str]:
     job once it can find it) — it only surfaces a NEW anchor id, added by
     this run, that carries a real criterion and does not match the canonical
     row-id shape, so the mismatch is visible instead of silently dropping the
-    content it guards."""
+    content it guards.
+
+    ``fullmatch``, not ``match`` (Tier-3 PR review, PR #679, round 5): checked
+    against ``CANONICAL_FR_RE`` (``^FR-\\d{2}\\.\\d{2}$``) empirically before
+    changing anything — the pattern's own ``$`` anchor already rejects both
+    named exploit shapes (``FR-01.02.03``, ``FR-01.02suffix``; only a literal
+    trailing-newline string such as ``"FR-01.02\\n"`` slips past ``match`` and
+    not ``fullmatch``, a shape `fr_criteria`'s anchor extraction never
+    produces). ``fullmatch`` costs nothing here and removes even that
+    theoretical gap and the ambiguity of pairing ``match`` with an
+    end-anchored pattern, which is a real bug shape in general even where it
+    is not one here."""
     base_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(base_text or "")}
     out: list[str] = []
     seen: set[str] = set()
     for fr_id, block in fr_criteria.iter_anchored_blocks(head_text or ""):
         if fr_id in seen or fr_id in base_ids:
             continue
-        if fr_table_reader.CANONICAL_FR_RE.match(fr_id):
+        if fr_table_reader.CANONICAL_FR_RE.fullmatch(fr_id):
             continue
         if not fr_criteria.block_criteria(block, strict=False):
             continue
