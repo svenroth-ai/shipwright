@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-06-lighthouse-perf-lockfile-bump",
+  "date": "2026-09-06T12:56:59.510349Z",
+  "event_at": "2026-09-06T10:22:57.720561+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/lighthouse-perf-lockfile-bump",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-06-lighthouse-perf-lockfile-bump"
+}
