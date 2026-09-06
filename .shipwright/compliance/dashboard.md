@@ -1,8 +1,8 @@
 # Compliance Dashboard
 
-Generated: 2026-09-02T15:38:16.784033+00:00
-Source-State: run=iterate-2026-09-02-glm-plan-code-review-swap
-Consistency-audit: last run 2026-07-28 (36 days earlier) — FAIL
+Generated: 2026-09-06T10:22:57.720561+00:00
+Source-State: run=iterate-2026-09-06-fr-hygiene-touched-rows
+Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -14,23 +14,23 @@ Scope: library
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 18/20 FRs covered; 565/565 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 10650/10650 (2026-09-01) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 565/565 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Requirement traceability | 18/20 FRs covered; 571/571 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Test health | latest full suite 17189/17245 (2026-09-03) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Change traceability | 571/571 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ⚠️ | Change reconciliation | 3/20 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ⚠️ | Security | 1 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -336 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -323 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 12 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (565 events, 2026-05-02 → 2026-09-02)`
+Verified from: `shipwright_events.jsonl (571 events, 2026-05-02 → 2026-09-06)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-09-01** · source `security.yml#33564841943` · critical-gate **✅ PASS**
+Latest scan: **2026-09-05** · source `security.yml#33950453792` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -69,22 +69,22 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 565 changes | INFO |  |
-| Recent changes traced to an FR | 6/30 (20%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 10650/10650 | PASS | +2 change(s) since last full suite |
+| Work events (iterate) | 571 changes | INFO |  |
+| Recent changes traced to an FR | 5/30 (17%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| All unit tests passing | 17189/17245 | WARN | 56/17245 not green in last full suite — see test-evidence.md; +5 change(s) since last full suite |
 | Architecture decisions | 397 ADRs | INFO |  |
 | Iterate tests passing | 80/134 testable changes tested | WARN | 54 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 12 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 12 open | WARN | 12 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit (grandfathered) | 152 | INFO |  |
-| Bloat in allowlist | 202 entries | INFO |  |
-| Bloat ratchet delta | -336 lines | PASS |  |
+| Bloat in allowlist | 203 entries | INFO |  |
+| Bloat ratchet delta | -323 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 565 changes (2026-05-02 → 2026-09-02)
-- Last activity: 2026-09-02
+- Iterate: 571 changes (2026-05-02 → 2026-09-06)
+- Last activity: 2026-09-06
 
 ## External LLM Review Evidence
 
@@ -96,7 +96,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## 🔎 Consistency Audit
 
-**Last run 2026-07-28 (36 days earlier): FAIL** · 59 checks — 47 pass, 2 fail, 10 skip.
+**Last run 2026-07-28 (40 days earlier): FAIL** · 59 checks — 47 pass, 2 fail, 10 skip.
 
 _On demand by design: the audit has no schedule and no CI trigger, so it never runs on its own, so this date is how far back the last cross-check reaches — anything that drifted after it is unmeasured._
 

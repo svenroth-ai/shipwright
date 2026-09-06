@@ -181,6 +181,34 @@ detective-audit-only) were both independently rejected by the reviewers on
 the same grounds already reasoned through in the pre-build validation pass
 below.
 
+### Supplementary Stage-3 doubt review (second pass, fresh context)
+
+The Stage-3 doubt review above was found unrecorded in `reviews.json` when
+this run resumed (a lost write between the subagent returning and the record
+being made — the exact window `iteration-reviews.md`'s immediate-write
+mandate names as a known gap). Rather than reconstruct that record from ADR
+prose, a genuinely fresh doubt-reviewer pass was run against the diff as it
+stood after all of the above fixes; `reviews.json`'s own `doubt` row was
+found already durably recorded (salvaged) once this session looked, so this
+second pass is documentation of ADDITIONAL diligence, not the row-owning
+pass. Six doubts, two HIGH, three MEDIUM, one LOW:
+
+| # | Sev | Finding | Disposition |
+|---|---|---|---|
+| 1 | HIGH | Row identity was actually `(FR id, spec.md PATH)`, not the FR id alone the module docstring claimed: a row this run only RELOCATES between two touched `spec.md` files — `fr-authoring.md` §4's own prescribed remedy for "filed in the wrong split" — had no base-side counterpart at its NEW path and was judged in full on content it never touched | **accepted-and-fixed** — `fr_hygiene.py` now builds `global_base_rows`, pooling every touched path's base rows into one id-keyed map before judging any row, and `_row_findings` pools criteria from ALL touched paths' base text (`base_texts`), not just the row's own HEAD path. New tests: `test_a_row_moved_between_spec_files_is_not_reflagged_when_unchanged`, `test_a_row_moved_between_spec_files_is_flagged_for_a_violation_added_during_the_move` (the second pins that a genuine edit made DURING the move is still caught — the fix only exempts a byte-identical relocation). |
+| 2 | HIGH | The recorded rejection of the original doubt round's finding #5/#6 (no escape hatch for the `_PASCAL_RE`/code-symbol heuristic) argued a one-row blast radius reachable by "reword, or a one-line `_NOT_SYMBOLS` addition" — but `_NOT_SYMBOLS` ships inside the plugin cache; a consumer repo running the installed plugin cannot edit it, and a two-segment capitalised product name (`MediPlan`, `FinTrack`) now hard-blocks finalization on every touched row naming it, permanently, with zero recourse | **rejected-with-reason, escalated** — this is the THIRD independent review to raise this exact gap (Internal Plan Review "architecture/high"; the original Stage-3 pass's finding #5 with `LinkedIn`/`WhatsApp`/`PowerPoint`; now this pass with a sharper "no consumer recourse at all" framing). A rule three independent reviewers keep re-raising is evidence about the rule (`iteration-reviews.md`'s own stated principle, applied to itself). Demoting `code-symbol` to non-blocking inside this gate was considered and rejected here too — it would contradict this iterate's own approved AC1, which names "code symbol" as one of the four detection kinds F11 must STOP on, and weakening an approved acceptance criterion is not a call this session makes unilaterally. **Recommended, explicitly, as the very next follow-up iterate** — flagged in this run's F12 closing summary — rather than deferred a fourth time with the same reasoning. |
+| 3 | MEDIUM | `_row_map`'s dict comprehension lets a LATER duplicate id in the same `spec.md` silently overwrite an earlier one; a dirty new row this run adds ABOVE an existing clean legacy row sharing its id is shadowed by the clean one and never reaches `_row_findings` at all — I4 is the check that names a duplicate id a defect, but I4 is not wired into `run_all_checks`, so nothing at F11 ever sees it either | **accepted-and-fixed** — `_new_duplicate_id_findings` reports any id duplicated at HEAD but not already duplicated at base as an unconditional, unresolvable-by-this-gate finding (rather than trying to guess which occurrence is dirty, which a dict-based comparison cannot answer soundly) — the only way past it is making the id unique again, at which point exactly one row remains to judge honestly. New test: `test_a_new_duplicate_id_at_head_is_flagged`. |
+| 4 | MEDIUM | I8's one-`git-blame`-subprocess-per-TBD cost was deferred as a performance nit before this same diff's doubt-fix #5 (round 1) widened its own fan-out: a wholly-TBD adoption now renders a per-FR heading with `TBD_MARKER` for EVERY requirement, making the freshly-adopted repo the MAXIMUM-fan-out case instead of the minimum the original deferral assumed | **rejected-with-reason, deferred** — I8 is advisory-only dashboard content, never on the F11 blocking path; a slow compliance audit is a UX cost, not a correctness one. Still a real, now-sharper-priced follow-up (batch to one `git blame --porcelain` per spec file) — noted for the same next-iterate slot as finding #2 rather than fixed under this iterate's existing scope. |
+| 5 | MEDIUM | `fr_criteria`'s heading/bold anchor regex accepts `FR[-\s]?\d+(?:\.\d+)*` and does not zero-pad (`normalise_fr_id` only turns a space into a dash), while `fr_table_reader` enforces the canonical `FR-XX.YY` shape on TABLE row ids — a criterion folded in under a mistyped anchor (`### FR-1.02` for the canonical `FR-01.02`) pools under a key no table row or check will ever look up, invisible to `_touched_ids`/`_row_findings` on both sides of the join, with I6 seeing only "no criteria" rather than the real cause | **accepted-and-fixed** — `_orphan_anchor_findings` reports a NEW (not present at base), non-canonical-shaped anchor id that carries a real criterion, making the mismatch itself visible rather than silently dropping the content it guards (it does not attempt to judge the criterion's own shape — that stays `_row_findings`'s job once the id is fixed). New test: `test_orphan_criterion_anchor_with_non_canonical_id_is_flagged`. |
+| 6 | LOW | `_new_reject_findings` compared `(id, reason)` pairs as a SET, losing multiplicity: a legacy reject sharing the same pair as a NEW row this run adds with the identical id/reason masked the new one | **accepted-and-fixed** — rewritten with `collections.Counter`, reporting only the surplus beyond however many were already present at base. New test: `test_a_second_row_with_the_same_malformed_id_and_reason_is_flagged`. |
+
+All four accepted fixes are pinned by new real-git regression tests in a new
+file, `shared/tests/test_check_fr_hygiene_doubt3.py` (split out from the
+start rather than growing `test_check_fr_hygiene_delta_scope.py` past 300
+lines again). The two rejections are both escalations of previously-recorded
+decisions, not new unexamined risk — see the Test Completeness Ledger's
+updated rows in the iterate spec for the pass/fail evidence.
+
 ## Rejected alternatives
 
 - Global promotion of I1/I2/I6 out of `_ADVISORY_CHECKS`.

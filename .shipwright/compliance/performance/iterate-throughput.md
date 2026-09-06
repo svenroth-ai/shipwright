@@ -6,12 +6,12 @@
 
 > **Coverage boundary:** F5b folds this report's durable data BEFORE F6 commits and F11 delivers — `discovery_diagnosis` through `review` can close by then, but `finalization`'s own duration and the entire `delivery` group (incl. `ci_wait`/`delivery_wait`/`post_ci_remediation`) structurally cannot, in every run. Coverage below is measured against the four applicable groups when one entry path is recorded; a run that explicitly records both `discovery_diagnosis` and `planning` is measured against all five — see `iterate-timings.md` for why.
 
-## Latest run: `iterate-2026-09-02-glm-plan-code-review-swap`
+## Latest run: `iterate-2026-09-06-fr-hygiene-touched-rows`
 
-- **Timing source:** producer + agent spans (mixed) · **coverage:** 1/5 applicable fold-time groups (+1 derived), 28 spans total — **DEGRADED** (a fold-time-capturable phase is missing)
-- **Wall clock (scope through F5b):** 147.5 min (measured)
-- **Instrumented:** 58.4 min of wall clock (39.6%)
-- **Unattributed:** 89.1 min (60.4%)
+- **Timing source:** producer + agent spans (mixed) · **coverage:** 1/5 applicable fold-time groups (+1 derived), 29 spans total — **DEGRADED** (a fold-time-capturable phase is missing)
+- **Wall clock (scope through F5b):** 157.1 min (measured)
+- **Instrumented:** 45.4 min of wall clock (28.9%)
+- **Unattributed:** 111.8 min (71.1%)
 - **Invalidation-driven restarts:** 0
 
 ### Top-level phases (inclusive / exclusive / % of timing envelope)
@@ -20,8 +20,8 @@
 |---|---:|---:|---:|
 | discovery_diagnosis | *unattributed — no agent start/end marks recorded* | — | — |
 | planning | *unattributed — no agent start/end marks recorded* | — | — |
-| implementation | 52.1 min | 52.1 min | 57.7% |
-| verification | 4.9 min *(derived — reconstructed from child spans)* | 8.6 s | 0.2% |
+| implementation | 33.2 min | 33.2 min | 23.2% |
+| verification | 5.2 min *(derived — reconstructed from child spans)* | 17.0 s | 0.2% |
 | review | *incomplete* (started, not closed) | — | — |
 | finalization | *not reached before F5b fold (structural)* | — | — |
 | delivery | *not reached before F5b fold (structural)* | — | — |
@@ -33,19 +33,20 @@
 | pre_f0_validation | verification | 0.0 s | completed | stage=f0 |
 | f0_queue | verification | 0.0 s | completed | capacity=1, stage=warmup, weight=1 |
 | f0_queue | verification | 0.0 s | completed | capacity=22, stage=cpu, weight=11 |
-| canonical_f0_active | verification | 4.7 min | completed | capacity=22, weight=11 |
+| canonical_f0_active | verification | 4.9 min | completed | capacity=22, weight=11 |
 | self_review | review | — | incomplete | — |
-| external_review | review | 39.6 s | completed | provider=openrouter |
-| external_review | review | 41.2 s | completed | provider=openrouter |
+| external_review | review | 5.6 min | completed | provider=codex |
+| external_review | planning | 55.2 s | completed | provider=codex |
+| external_review | planning | 27.2 s | completed | provider=codex |
 
 ## Rolling comparison (last 10 instrumented runs)
 
 | Phase | Median exclusive | P90 exclusive | Samples |
 |---|---:|---:|---:|
 | discovery_diagnosis | — | — | 0 |
-| planning | 24.6 s | 49.3 s | 2 |
-| implementation | 17.6 min | 109.9 min | 9 |
-| verification | 7.3 s | 19.4 s | 10 |
+| planning | 49.3 s | 2.4 min | 3 |
+| implementation | 17.6 min | 102.4 min | 8 |
+| verification | 15.7 s | 911.1 min | 8 |
 | review | — | — | 0 |
 | finalization | — | — | 0 |
 | delivery | — | — | 0 |
@@ -54,13 +55,13 @@
 
 | Run | Wall | Instrumented | Group coverage | Restarts | Status |
 |---|---:|---:|---:|---:|---|
-| `iterate-2026-08-26-campaign-worktree-guard-followups` | 130.2 min | 88.3% | 1/4 | 0 | degraded |
-| `iterate-2026-08-27-fr-table-titlecols-split` | 25.9 min | 18.6% | 1/5 | 0 | degraded |
-| `iterate-2026-08-27-s2b-discovery-c` | 87.5 min | 57.6% | 1/5 | 0 | degraded |
-| `iterate-2026-08-28-changelog-encoding-cp1252` | 20.0 min | 48.8% | 1/5 | 0 | degraded |
-| `iterate-2026-08-29-compliance-interpreter-fix` | 49.4 min | 0.0% | 0/5 | 0 | degraded |
-| `iterate-2026-08-31-compliance-error-surfacing` | 55.0 min | 41.2% | 1/5 | 0 | degraded |
 | `iterate-2026-08-31-pr-review-deepseek-model` | 86.6 min | 29.8% | 1/4 | 0 | degraded |
 | `iterate-2026-09-01-changelog-config-marketplace-sync` | 60.9 min | 12.2% | 1/5 | 0 | degraded |
 | `iterate-2026-09-01-external-review-retry-degradation` | 80.3 min | 44.8% | 1/5 | 0 | degraded |
 | `iterate-2026-09-02-glm-plan-code-review-swap` | 147.5 min | 39.6% | 1/5 | 0 | degraded |
+| `iterate-2026-09-03-codex-cli-review-leg` | 145.2 min | 74.3% | 1/4 | 0 | degraded |
+| `iterate-2026-09-03-pr-review-block-visibility` | 7.0 min | 22.9% | 1/5 | 0 | degraded |
+| `iterate-2026-09-03-pr-review-sonnet-default` | 16.9 min | 0.0% | 0/5 | 0 | degraded |
+| `iterate-2026-09-03-review-scratch-path` | 1491.5 min | 63.1% | 0/4 | 0 | degraded |
+| `iterate-2026-09-05-codex-availability-probe-flags` | 25.2 min | 20.6% | 1/5 | 0 | degraded |
+| `iterate-2026-09-06-fr-hygiene-touched-rows` | 157.1 min | 28.9% | 1/5 | 0 | degraded |

@@ -1,10 +1,16 @@
 # Project Activity Dashboard
-> Updated: 2026-09-02 15:38 UTC | Session: 6ffac005-7cb2-4376-a9d9-7edc205c6023 | Run: iterate-2026-09-02-glm-plan-code-review-swap
+> Updated: 2026-09-06 10:22 UTC | Session: 28f49677-63d2-4c13-8b2f-23650c338a96 | Run: iterate-2026-09-06-fr-hygiene-touched-rows
 
-## Recent Changes (565 iterations)
+## Recent Changes (571 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | fr-hygiene-touched-rows: diff-scoped, non-dodgeable F11 gate for FR rows a run itself touches, plus I7 (criterion shape) and I8 (stale TBD age) Group I checks | 0/0 |  | compliance | 2026-09-06 |
+| change | iterate: fix Codex login-status probe misreporting availability | 0/0 |  | tooling | 2026-09-04 |
+| change | Swap the Tier-3 PR-review CI gate's default model from GLM 5.3 to GPT-5.6 Luna after GLM was found to silently hang (no error, no timeout) on the shared ZDR-gated 2-reseller OpenRouter provider pool; Luna is outside that namespace and routes across 3 independent hosts instead. DeepSeek and GLM remain available as operator overrides. | 0/0 |  | tooling | 2026-09-03 |
+| bug | Fix a Windows-only silent-corruption bug where bash and native Python resolve a bare /tmp/<path> to two different physical files across the code-review pipeline and campaign-loop diff/units-list handoff | 0/0 |  | tooling | 2026-09-04 |
+| change | pr_review.py now logs a bounded decision excerpt unconditionally, not just on unknown-decision, so a legitimate block/approve/comment is never mistaken for a CI hang | 983/983 |  | tooling | 2026-09-03 |
+| feature | Add Codex CLI as a second, configurable path for the GPT review leg in Shipwright's external-review system, alongside the existing OpenRouter/direct-OpenAI path | 17189/17245 |  | tooling | 2026-09-03 |
 | change | Replace DeepSeek with GLM 5.3 as the plan/code-review cascade's second external reviewer | 0/0 |  | tooling | 2026-09-02 |
 | bug | Fix dead external-review llm_client.max_retries/retry_codes config: retry a degraded (empty/truncated) reply budgeted by max_retries, report partial reviewer-leg degradation loudly, auto-file a deduped triage card | 0/0 |  | tooling | 2026-09-01 |
 | feature | Add shipwright_changelog_config.json declaring this monorepo's own 14 plugin.json manifests + marketplace.json, and extend sync_release_manifests.py with a marketplace_json format that bumps a manifest's root version and every nested plugins[].version entry together in one write pass. | 10650/10650 |  | FR-01.09 | 2026-09-01 |
@@ -572,7 +578,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-09-02 | Smoke: n/a | (iterate)
+Last run: 2026-09-06 | Smoke: n/a | (iterate)
 
 ## Pipeline
 

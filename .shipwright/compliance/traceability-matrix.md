@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-09-02T15:38:16.784033+00:00
-Source-State: run=iterate-2026-09-02-glm-plan-code-review-swap
-Consistency-audit: last run 2026-07-28 (36 days earlier) — FAIL
+Generated: 2026-09-06T10:22:57.720561+00:00
+Source-State: run=iterate-2026-09-06-fr-hygiene-touched-rows
+Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
 
 ## Requirements Coverage
 
@@ -35,6 +35,12 @@ Consistency-audit: last run 2026-07-28 (36 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-fe941a44"></a>Adds a check that blocks finishing a change if the requirement rows it just wrote or edited break the project writing rules, plus a new report that flags requirement criteria written in the wrong shape and old unfinished placeholders. | iterate | feature |  | — | — | 2026-09-06 |
+| <a id="evt-a96caec2"></a>fix Codex login-status probe misreporting availability | iterate | change |  | — | — | 2026-09-04 |
+| <a id="evt-7f745844"></a>On Windows, a hidden bug made the automated code review sometimes silently review a stale or missing file instead of the real change; this fixes it so review always sees the real diff. | iterate | bug |  | — | — | 2026-09-04 |
+| <a id="evt-0cc48f04"></a>Swap the Tier-3 PR-review CI gate's default model from GLM 5.3 to GPT-5.6 Luna after GLM was found to silently hang (no error, no timeout) on the shared ZDR-gated 2-reseller OpenRouter provider pool; Luna is outside that namespace and routes across 3 independent hosts instead. DeepSeek and GLM remain available as operator overrides. | iterate | change |  | — | — | 2026-09-03 |
+| <a id="evt-f3294af4"></a>pr_review.py now logs a bounded decision excerpt unconditionally, not just on unknown-decision, so a legitimate block/approve/comment is never mistaken for a CI hang | iterate | change |  | 983/983 | — | 2026-09-03 |
+| <a id="evt-cc0e5a40"></a>Operators with a ChatGPT/Codex subscription can now route the GPT half of AI code review through the Codex CLI instead of a metered API call, at zero extra cost per review; nothing changes for operators who don't opt in. | iterate | feature |  | 17189/17245 | — | 2026-09-03 |
 | <a id="evt-64135636"></a>Code review now uses GLM 5.3 instead of DeepSeek as the second AI reviewer, since DeepSeek kept failing to produce a useful review on large changes; DeepSeek stays available only for a separate, unrelated review gate that still needs it. | iterate | change |  | — | — | 2026-09-02 |
 | <a id="evt-9f553a68"></a>External code-review calls now actually retry a blank reply and warn loudly (plus file a follow-up ticket) when only one reviewer opinion came back, instead of silently accepting a missing reviewer opinion as agreement | iterate | bug |  | — | — | 2026-09-01 |
 | <a id="evt-14ab7b4d"></a>Add shipwright_changelog_config.json declaring this monorepo's own 14 plugin.json manifests + marketplace.json, and extend sync_release_manifests.py with a marketplace_json format that bumps a manifest's root version and every nested plugins[].version entry together in one write pass. | iterate | feature | [FR-01.09](#rtm-fr-0109) | 10650/10650 | — | 2026-09-01 |
@@ -607,7 +613,7 @@ Consistency-audit: last run 2026-07-28 (36 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 565 |
+| Iterate changes | 571 |
 | Requirements total | 20 |
 | Requirements verified | 18/20 |
 | Must-have verified | 14/14 |
