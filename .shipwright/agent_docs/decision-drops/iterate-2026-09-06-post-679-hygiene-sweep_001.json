@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-post-679-hygiene-sweep",
+  "date": "2026-09-06",
+  "section": "Iterate — change: post-679 hygiene sweep",
+  "title": "Bloat baseline sync, CLAUDE.md trim, FR-01.19 evidence recovery",
+  "context": "The post-PR-679 compliance audit flagged 3 pre-existing, unrelated gaps: H1/H2 bloat-baseline drift (~20 files), CLAUDE.md at 216 lines (cap 200), and D1/D3 coverage gaps on FR-01.18/FR-01.19.",
+  "decision": "Synced the baseline (24 H1 entries added, 21 H2 ceilings tightened to measured size, 0 dropped). Trimmed CLAUDE.md to 197 lines by pointing two blocks at their existing canonical homes (scripts/verify_local.py docstring, shared/prompts/writing-plugin.md). Recovered FR-01.19's real historical test totals (1488/1488) from the immutable main-self-heal test-results snapshot via an event_amended overlay.",
+  "consequences": "H1/H2/F6/F7/D1(FR-01.19)/D3(FR-01.19) now pass. FR-01.18 is deliberately left open: no event since its 2026-07-26 mint has ever touched shipwright-grade, so tagging one would forge the audit trail.",
+  "rationale": "Same honesty rule as the 2026-06-30 fr-retag-honesty and 2026-07-28 hygiene-sweep precedents: only amend with real, recoverable evidence; never fabricate coverage.",
+  "rejected": "Force-closing FR-01.18 by retagging an unrelated 2026-07-03/04 grade-build event (fails D3's ts>=mint-ts requirement) or by minting a fresh dated event (forges the audit trail).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
