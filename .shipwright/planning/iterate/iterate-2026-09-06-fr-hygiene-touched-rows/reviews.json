@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-06-fr-hygiene-touched-rows",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T08:25:23.993876+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "use `git blame -C -M` to track line movement/copies, and document the limitation; or fall back to `git log --follow -S \"TBD\"` (pickaxe) on the marker string to find the earliest introduction. Since I8 is advisory-only this is not blocking, but it should be a conscious, documented approximation rather than a silent one — the current test set (controlled fresh commits, no intervening edits) won't exercise it.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "state the matching key (FR id? name?) in the plan and add one test for a moved/renamed row.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "confirm behavior when the spec.md is new at base (should be empty base text → all rows judged as new, which is correct); add that case if not already covered by the \"new row\" tests.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A diff-based path selector will normally exclude untracked `spec.md` files. A newly created, untracked spec containing dirty FR rows can therefore produce “no spec touched” and bypass the claimed non-dodgeable F11 gate.",
+          "suggestion": "Explicitly include relevant untracked spec paths (for example, from `git ls-files --others --exclude-standard`) and evaluate them against an empty base. Add a real-git regression test for an untracked new spec with a violating FR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The I8 tests control `GIT_AUTHOR_DATE`, which strongly suggests age is derived from blame’s author timestamp. Author dates are user-controlled and may be backdated or future-dated, while the requirement says the marker has been committed for 90 days. This can create false stale or false fresh findings.",
+          "suggestion": "Define the policy as current-history commit age and use the blame porcelain `committer-time` (or document and deliberately accept author-time). Test diverging author and committer dates, plus the exact 90-day boundary.  Overall, the touched-row, delta-scoped design is sound and appropriately preserves legacy advisory behavior. Address the untracked-file bypass and timestamp semantics before relying on the gate as non-dodgeable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-06T09:04:53.893841+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review: fr-hygiene-touched-rows\n\nThe spec is unusually mature — the internal plan review already caught and fixed the three issues I would have raised first (whole-row vs. delta judgment, dual merge-base resolvers, TBD marker parity). My findings are refinements on the remaining seams:\n\n- **Category: edge-case / Severity: medium** — **I8's `git blame` age clock resets on unrelated edits to the same row.** Blame attributes the TBD line to the most recent commit that touched that *line* — but if a run edits the row's description (or the table is reformatted/re-wrapped so the TBD line shifts), blame reattributes the line to the new commit, and a 2-year-stale TBD reads as fresh. The 90-day threshold then silently fails on exactly the rows most likely to be actively edited.\n  **Suggestion:** use `git blame -C -M` to track line movement/copies, and document the limitation; or fall back to `git log --follow -S \"TBD\"` (pickaxe) on the marker string to find the earliest introduction. Since I8 is advisory-only this is not blocking, but it should be a conscious, documented approximation rather than a silent one — the current test set (controlled fresh commits, no intervening edits) won't exercise it.\n\n- **Category: edge-case / Severity: medium** — **Row identity matching between base and head is unspecified.** Delta judgment requires pairing a head row with its base counterpart. If a run renumbers FRs, moves a row between sections, or renames a row while editing its description, the pairing may miss (row treated as \"new\" → judged in full → possibly STOPs on legacy prose it merely moved) or mismatically. The two regression tests added in review cover cell-level edits, not row-level identity churn.\n  **Suggestion:** state the matching key (FR id? name?) in the plan and add one test for a moved/renamed row.\n\n- **Category: edge-case / Severity: low** — **Rebased/squash-merge history affects both the merge-base resolver and blame.** If a repo's trunk history was squ […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** A diff-based path selector will normally exclude untracked `spec.md` files. A newly created, untracked spec containing dirty FR rows can therefore produce “no spec touched” and bypass the claimed non-dodgeable F11 gate.  \n   **Suggestion:** Explicitly include relevant untracked spec paths (for example, from `git ls-files --others --exclude-standard`) and evaluate them against an empty base. Add a real-git regression test for an untracked new spec with a violating FR.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The I8 tests control `GIT_AUTHOR_DATE`, which strongly suggests age is derived from blame’s author timestamp. Author dates are user-controlled and may be backdated or future-dated, while the requirement says the marker has been *committed* for 90 days. This can create false stale or false fresh findings.  \n   **Suggestion:** Define the policy as current-history commit age and use the blame porcelain `committer-time` (or document and deliberately accept author-time). Test diverging author and committer dates, plus the exact 90-day boundary.\n\nOverall, the touched-row, delta-scoped design is sound and appropriately preserves legacy advisory behavior. Address the untracked-file bypass and timestamp semantics before relying on the gate as non-dodgeable.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/iterate_checks.py",
+          "line": 1086,
+          "finding": "Trailing blank lines left after the dead-comment removal (fixed in a follow-up edit: file trimmed to a single terminating newline, 1085 lines).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/fr_hygiene.py",
+          "line": 224,
+          "finding": "The on-trunk rule is re-derived locally rather than shared with git_helpers._iterate_changed_paths's identical derivation.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_i_criteria.py",
+          "line": 119,
+          "finding": "Comment for the redundant-conjunct fix was written in the register of the deletion rather than stating the invariant.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_i_criteria.py",
+          "line": 123,
+          "finding": "Still O(rows x document) parsing per spec file; pre-existing, advisory-path only.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-06T09:19:57.949342+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/tools/verifiers/fr_hygiene.py:214-231 (with shared/scripts/tools/verifiers/git_helpers.py:272-288)",
+          "line": null,
+          "finding": "Claim under doubt: the gate 'fails CLOSED on any git infrastructure gap' (fr_hygiene.py module docstring), so an unresolvable merge-base or a failed range diff can never green it — The fail-closed branches are downstream of an early return that cannot reach them. _iterate_changed_paths silently degrades to the single-commit view when the merge-base can't be resolved or the range diff fails, and the old 'not specs' early return fired before the merge-base fail-closed check ever ran.",
+          "suggestion": "Resolve base_sha BEFORE deciding 'no spec touched', or have the gate compute its own git diff base..commit rather than consuming a helper documented to degrade.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency-ordering",
+          "file": "shared/scripts/tools/verifiers/fr_hygiene.py:232-244",
+          "line": null,
+          "finding": "Claim under doubt: the new base_sha == head_sha branch only fires for a commit that is genuinely 'already contained in the trunk', so the SKIP is honest and the gate stays non-dodgeable — _branch_base_commit's candidates include local main/master; a commit made directly on the local trunk (not yet pushed) can make merge-base(main, commit) == commit, falsely reporting 'already on the trunk'.",
+          "suggestion": "Distinguish 'contained in origin's trunk' from 'base collapsed to HEAD because the local trunk branch points here'.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/tools/verifiers/fr_hygiene.py:100-108, 258-265",
+          "line": null,
+          "finding": "Claim under doubt: 'N spec(s) touched, all edited FR row(s) clean' is a true statement about every FR row the run added or edited — _row_map called read_fr_rows without a rejects accumulator, so a row with a non-canonical id (e.g. hand-typed FR-1.02) is silently invisible to the gate and never judged.",
+          "suggestion": "Pass a rejects list into read_fr_rows for the HEAD text and fail closed (or name them in the detail) when a touched spec.md yields rows the reader declined.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/verifiers/fr_hygiene.py:123 vs 172-175",
+          "line": null,
+          "finding": "Claim under doubt: 'this FR's acceptance criteria' means the same thing on both halves of the decision — selecting touched rows and judging them — _touched_ids selected via _layer_coverage_ac.criteria_digests (region-scoped to a recognised '## Acceptance Criteria' section) while _row_findings judged via fr_criteria.criteria_for (whole-document) — a scope mismatch that could hide a criterion anchored outside the recognised region.",
+          "suggestion": "Use one reader for both halves.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "plugins/shipwright-adopt/scripts/lib/spec_document.py:175-204, integration-tests/test_tbd_marker_parity.py:39-54",
+          "line": null,
+          "finding": "Claim under doubt: the new cross-plugin parity test makes I8's dependence on /shipwright-adopt's TBD literal safe, and spec_document.py 'emits a literal TBD line for any FR it could not derive acceptance criteria for' — spec_document.py's TBD emission is conditional on has_any_ac; when NO feature yielded criteria (the common freshly-adopted, wholly-TBD shape), a different branch renders prose with no per-FR heading and no marker at all, so I8 is structurally incapable of firing on exactly that shape. The parity test only pins the constant, not the contract.",
+          "suggestion": "Make the parity test behavioral: render a spec via spec_document with a mixed and an all-empty AC set, and assert the marker appears under an FR heading.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/lib/fr_hygiene_detectors.py:55,69-80 (blocking via shared/scripts/tools/verifiers/fr_hygiene.py:164-171)",
+          "line": null,
+          "finding": "Claim under doubt: promoting I1/I2 from advisory to blocking for touched rows only changes 'what happens on a hit', so the deferred allowlist follow-up carries no shipped exposure — fr_hygiene_detectors._PASCAL_RE matches ordinary product vocabulary not in _NOT_SYMBOLS (LinkedIn, WhatsApp, TikTok, PowerPoint, OneDrive, SharePoint, QuickBooks, MailChimp, MongoDB), so a genuinely clean row can STOP F11 with no allowlist, no ack path, and no way for a consumer repo to extend _NOT_SYMBOLS.",
+          "suggestion": "Ship a minimal escape hatch (per-project allowlist or an acknowledgement key), or narrow the blocking subset to unambiguous detectors and leave the Pascal/camel heuristic advisory.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_ac.py:159-168 (called from shared/scripts/tools/verifiers/fr_hygiene.py:248-249)",
+          "line": null,
+          "finding": "Claim under doubt: a wedged or stalled git degrades this gate to a reported failure rather than hanging F11 — spec_text_at's underlying _run_git calls carry no timeout (three per touched spec), and _branch_base_commit used to be resolved twice per invocation.",
+          "suggestion": "Pass an explicit timeout through spec_text_at's _run_git calls; avoid the duplicate merge-base resolution.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-06T10:08:54.545105+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py` (`_blame_epoch` / `frs_with_stale_tbd`, ~lines 60–125)",
+          "line": null,
+          "finding": "git blame` without a rev blames the working-tree file. An uncommitted (or just-modified) TBD line is attributed to the \"Not Committed Yet\" pseudo-commit, whose porcelain `committer-time` is `0` — so `age_days = (now - 0) // 86400` is ~20,000 days and a brand-new, never-committed TBD is reported as stale. The spec explicitly scopes I8 to a placeholder \"committed for at least 90 days\"; this path reports uncommitted ones.",
+          "suggestion": "either blame the pinned `HEAD` (`git blame HEAD -- path`) so uncommitted lines fail blame resolution and are skipped, or detect the all-zero commit sha in the porcelain header and return `None`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_check_fr_hygiene.py` (entire file)",
+          "line": null,
+          "finding": "The F11 gate suite never covers a spec.md that is newly added by the run (absent at the merge-base) nor a newly added criteria section under an existing row. The gate's behavior there depends entirely on whether `spec_text_at(base_sha, path)` returns `\"\"` or `None` for a file that doesn't exist at the base — if it returns `None`, every new spec file fails finalization with \"could not read … at the base commit\", which would be a false-block regression the tests would not catch.",
+          "suggestion": "Add a real-git test where the run creates a brand-new `.shipwright/planning/02-x/spec.md` (clean content) and asserts the gate passes; this pins the absent-at-base semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/fr_hygiene.py` (`_touched_ids`, ~lines 78–100)",
+          "line": null,
+          "finding": "\"Touched\" is defined by comparing `(row.name, row.text)`. If `FrTableRow.text` is the full physical row line (rather than just the Description cell), then any cell edit — Priority, Basis, Layers, or a column reorder — marks the row touched and subjects a legacy dirty row to blocking I1/I2/I7. The spec's definition of touched is \"Name/Description cells changed OR criteria digest changed\"; a Priority-only edit on a legacy dirty row would block, contradicting the diff's own design note that regeneration/reflow must not mark every row touched. The visible tests cannot distinguish the two semantics (their edits always change the description too).",
+          "suggestion": "Confirm `row.text` is exactly the Description cell (or switch to `row.description`), and add a test that edits only a non-Description cell (e.g., Priority) of a legacy dirty row and asserts the gate does not fire.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_audit_group_i.py` (~lines 137–143)",
+          "line": null,
+          "finding": "The greenfield test asserts I7/I8 `status == \"pass\"` and `\"no FR\" in findings[\"I7\"].detail`, but does not assert I8's detail content shape on a no-TBD spec (the analogous `\"no FR\"` check is made only against I7). A regression that silently empties I8's pass detail would pass this test.",
+          "suggestion": "Add `assert \"no FR\" in findings[\"I8\"].detail` (or the exact empty-message) to the clean-fixture assertion block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py` (`_tbd_lines_by_fr`)",
+          "line": null,
+          "finding": "A TBD marker line appearing inside the FR table (e.g., a description cell containing the literal marker text) is attributed to the FR heading above it — whichever requirement's criteria section was last — producing a wrong-FR stale report. Low impact given the marker is machine-emitted, but the mapping is by physical proximity, not section ownership.",
+          "suggestion": "Restrict TBD scanning to lines between an FR heading and its criteria bullets (or skip lines beginning with `|`), so table cells can't be mis-attributed.  No security issues: the `git blame` subprocess call is list-argv with the path placed after `--`, so option injection is blocked; no secrets or untrusted sinks introduced. The detector-vocabulary move is a faithful copy (regexes identical, ReDoS-safe forms preserved) and the delegator preserves the public API, so no caller regression is visible. Spec acceptance criteria 1–7 are all implemented and covered by real-git tests, which are behavioral (assert failure/pass and row IDs), not vacuous.  Overall: solid, well-tested implementation of the spec; ship after fixing the uncommitted-TBD blame-age false positive and pinning the absent-at-base / description-cell semantics with a test.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "line — `shared/scripts/tools/verifiers/fr_hygiene.py",
+          "line": 199,
+          "finding": "A newly added `spec.md` has no base-side file, so `spec_text_at(...base...)` returns `None` and the gate fails closed instead of comparing an empty catalogue to HEAD. A clean newly added spec is therefore rejected, while a dirty one is rejected without naming its FR or violation kind.",
+          "suggestion": "Treat a base-side missing path for an added spec as `\"\"`; keep HEAD-side read failures blocking.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "line — `plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py",
+          "line": 125,
+          "finding": "I8 flags any stale TBD marker without checking whether the FR also has real acceptance criteria. This contradicts the stated “I8 never fires on a row with real criteria” behavior; the existing test only tests a row with no TBD marker, so it misses the coexistence case.",
+          "suggestion": "Skip a TBD marker when that FR has one or more real criteria, and add a fixture containing both the marker and a valid criterion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "line — `plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py",
+          "line": 92,
+          "finding": "_blame_epoch` documents that subprocess failures return `None`, but it does not catch `subprocess.TimeoutExpired`. A slow or stalled `git blame` can crash the entire compliance audit rather than leaving I8 advisory.",
+          "suggestion": "Catch `subprocess.TimeoutExpired` alongside the existing exceptions and return `None`.  Overall assessment: ship-with-fixes. The added-spec gate path and I8’s real-criteria handling violate intended behavior; the blame timeout path also makes the audit unexpectedly fragile. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-06T09:01:49.547327+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  - Severity: medium\n  - File: `plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py` (`_blame_epoch` / `frs_with_stale_tbd`, ~lines 60–125)\n  - Finding: `git blame` without a rev blames the **working-tree file**. An uncommitted (or just-modified) TBD line is attributed to the \"Not Committed Yet\" pseudo-commit, whose porcelain `committer-time` is `0` — so `age_days = (now - 0) // 86400` is ~20,000 days and a brand-new, never-committed TBD is reported as stale. The spec explicitly scopes I8 to a placeholder \"committed for at least 90 days\"; this path reports uncommitted ones.\n  - Suggestion: either blame the pinned `HEAD` (`git blame HEAD -- path`) so uncommitted lines fail blame resolution and are skipped, or detect the all-zero commit sha in the porcelain header and return `None`.\n\n- Category: test\n  - Severity: medium\n  - File: `shared/tests/test_check_fr_hygiene.py` (entire file)\n  - Finding: The F11 gate suite never covers a spec.md that is **newly added by the run** (absent at the merge-base) nor a newly added criteria section under an existing row. The gate's behavior there depends entirely on whether `spec_text_at(base_sha, path)` returns `\"\"` or `None` for a file that doesn't exist at the base — if it returns `None`, every new spec file fails finalization with \"could not read … at the base commit\", which would be a false-block regression the tests would not catch.\n  - Suggestion: Add a real-git test where the run creates a brand-new `.shipwright/planning/02-x/spec.md` (clean content) and asserts the gate passes; this pins the absent-at-base semantics.\n\n- Category: edge-case\n  - Severity: low\n  - File: `shared/scripts/tools/verifiers/fr_hygiene.py` (`_touched_ids`, ~lines 78–100)\n  - Finding: \"Touched\" is defined by comparing `(row.name, row.text)`. If `FrTableRow.text` is the full physical row line (rather than just the Description cell), then any cell edit — Priority, Basis, Layers, or a column reord […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File:line — `shared/scripts/tools/verifiers/fr_hygiene.py:199`  \n  Finding: A newly added `spec.md` has no base-side file, so `spec_text_at(...base...)` returns `None` and the gate fails closed instead of comparing an empty catalogue to HEAD. A clean newly added spec is therefore rejected, while a dirty one is rejected without naming its FR or violation kind.  \n  Suggestion: Treat a base-side missing path for an added spec as `\"\"`; keep HEAD-side read failures blocking.\n\n- Category: bug  \n  Severity: medium  \n  File:line — `plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py:125`  \n  Finding: I8 flags any stale TBD marker without checking whether the FR also has real acceptance criteria. This contradicts the stated “I8 never fires on a row with real criteria” behavior; the existing test only tests a row with no TBD marker, so it misses the coexistence case.  \n  Suggestion: Skip a TBD marker when that FR has one or more real criteria, and add a fixture containing both the marker and a valid criterion.\n\n- Category: bug  \n  Severity: medium  \n  File:line — `plugins/shipwright-compliance/scripts/audit/group_i_tbd_age.py:92`  \n  Finding: `_blame_epoch` documents that subprocess failures return `None`, but it does not catch `subprocess.TimeoutExpired`. A slow or stalled `git blame` can crash the entire compliance audit rather than leaving I8 advisory.  \n  Suggestion: Catch `subprocess.TimeoutExpired` alongside the existing exceptions and return `None`.\n\nOverall assessment: ship-with-fixes. The added-spec gate path and I8’s real-criteria handling violate intended behavior; the blame timeout path also makes the audit unexpectedly fragile.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T08:46:14.304917+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T08:46:39.105160+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

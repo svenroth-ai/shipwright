@@ -67,6 +67,7 @@ from .ci_supplychain import (  # noqa: E402, F401 — re-exported surface
     _is_ci_supplychain,
     check_ci_supplychain_ack,
 )
+from .fr_hygiene import check_fr_hygiene_on_touched_rows  # noqa: E402, F401 — re-exported
 from .integration_coverage import (  # noqa: E402, F401 — re-exported surface
     _CROSS_COMPONENT_PATTERNS,
     _is_cross_component,
@@ -1044,10 +1045,6 @@ def check_architecture_documented(project_root: Path, run_id: str) -> CheckResul
     )
 
 
-# ``_is_decision_log_path`` + ``check_iterate_no_direct_decision_log`` moved to
-# ``verifiers/decision_log_gate.py`` (bloat extraction) and re-imported above.
-
-
 # Orchestrator (kept for backwards compat with verify_iterate_finalization.py).
 def run_all_checks(
     project_root: Path,
@@ -1074,6 +1071,7 @@ def run_all_checks(
         ),
         check_architecture_documented(project_root, run_id),
         check_integration_coverage(project_root, run_id, commit_hash),
+        check_fr_hygiene_on_touched_rows(project_root, run_id, commit_hash),
         check_risk_recheck_recorded(project_root, run_id),
         check_review_record(project_root, run_id, commit_hash),
         check_iterate_no_direct_decision_log(project_root, run_id, commit_hash),
@@ -1085,5 +1083,3 @@ def run_all_checks(
         check_agent_doc_shape(project_root, run_id, commit_hash),
         check_no_derived_snapshots_committed(project_root, run_id, commit_hash),
     ]
-
-

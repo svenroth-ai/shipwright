@@ -1,4 +1,4 @@
-"""Does a requirement carry acceptance criteria at all? (Group I — I6)
+"""Does a requirement carry acceptance criteria at all? (Group I — I6/I7)
 
 Pure reader behind I6. Given a spec's text and an FR id, answer whether that
 requirement has at least one real acceptance criterion.
@@ -53,6 +53,7 @@ from typing import Iterable
 from scripts.audit.audit_adapters import load_shared_lib
 
 fr_criteria = load_shared_lib("fr_criteria")
+fr_criterion_shape = load_shared_lib("fr_criterion_shape")
 
 
 def has_criteria(content: str, fr_id: str) -> bool:
@@ -76,6 +77,53 @@ def criteria_for(content: str, fr_id: str) -> list[str]:
     (doubt-review round 1, 2026-08-25, trg-467b7b2f).
     """
     return fr_criteria.criteria_for(content, fr_id, strict=False)
+
+
+def malformed_criteria_for(content: str, fr_id: str) -> list[str]:
+    """I7's OWN entry point: criteria anchored to ``fr_id`` that exist but are
+    not in the prescribed ``Given ... when ... then ...`` shape.
+
+    Reads the same criteria list ``criteria_for`` returns (the three-way
+    convergence this module already keeps with the other two readers) and
+    filters it through ``fr_criterion_shape.is_well_formed_criterion`` — a
+    narrower question than I6's presence check, deliberately answered by a
+    separate module (see ``fr_criterion_shape``'s docstring for why).
+    """
+    return [
+        c for c in criteria_for(content, fr_id)
+        if not fr_criterion_shape.is_well_formed_criterion(c)
+    ]
+
+
+def frs_with_malformed_criteria(project_root: Path, rows: Iterable) -> list[str]:
+    """Ids among ``rows`` that HAVE acceptance criteria but at least one is
+    not in the prescribed shape.
+
+    Judged per spec file, same reasoning as ``frs_without_criteria``: I4
+    already forbids one id claiming two files, but I7 must not depend on that
+    having already passed. An FR with NO criteria at all is I6's finding, not
+    this one — this function only flags a row that has criteria to judge.
+    """
+    by_file: dict[str, list] = defaultdict(list)
+    for row in rows:
+        by_file[row.spec_path].append(row)
+
+    hits: set[str] = set()
+    for spec_path, group in by_file.items():
+        try:
+            content = (project_root / spec_path).read_text(
+                encoding="utf-8", errors="ignore",
+            )
+        except OSError:
+            content = ""
+        # `malformed_criteria_for` filters `criteria_for`, so a non-empty
+        # result already implies the row HAS criteria — no separate presence
+        # check is needed here.
+        hits.update(
+            r.id for r in group
+            if malformed_criteria_for(content, r.id)
+        )
+    return sorted(hits)
 
 
 def frs_without_criteria(project_root: Path, rows: Iterable) -> list[str]:
@@ -105,4 +153,10 @@ def frs_without_criteria(project_root: Path, rows: Iterable) -> list[str]:
     return sorted(missing)
 
 
-__all__ = ["criteria_for", "frs_without_criteria", "has_criteria"]
+__all__ = [
+    "criteria_for",
+    "frs_with_malformed_criteria",
+    "frs_without_criteria",
+    "has_criteria",
+    "malformed_criteria_for",
+]

@@ -39,6 +39,26 @@ _SPEC_WITH_A_GAP = """\
 - (E) Given valid credentials, when submitted, then a session starts.
 """
 
+_SPEC_WITH_MALFORMED_CRITERION = """\
+## 2. Functional Requirements
+
+| ID | Area | Name | Priority | Description | Basis | Layers |
+|---|---|---|---|---|---|---|
+| FR-01.01 | Core | Login | Must | The system SHALL authenticate a user. | interview | unit |
+| FR-01.02 | Core | Signup | Must | The system SHALL register a user. | interview | unit |
+
+## Acceptance Criteria
+
+### FR-01.01 — Login
+
+- (E) Given valid credentials, when submitted, then a session starts.
+
+### FR-01.02 — Signup
+
+- Scaffold-creation half - verified (auth.ts, test_auth.py): confirmed by the
+  existing suite.
+"""
+
 _SPEC_WITH_RETIRED = """\
 ## 2. Functional Requirements
 
@@ -113,6 +133,38 @@ def test_i6_does_not_change_the_group_verdict(tmp_path: Path):
     """The gap must not make any other check fail, nor I6 itself."""
     findings = _findings(_spec(tmp_path, _SPEC_WITH_A_GAP))
     assert not any(f.status == "fail" for f in findings.values())
+
+
+def test_i7_is_registered():
+    ids = {cid for cid, _name, _sev in group_i._CHECKS}
+    assert "I7" in ids
+
+
+def test_i7_reports_the_requirement_with_a_malformed_criterion(tmp_path: Path):
+    f = _findings(_spec(tmp_path, _SPEC_WITH_MALFORMED_CRITERION))["I7"]
+    assert "FR-01.02" in f.detail
+    assert "FR-01.01" not in f.detail
+
+
+def test_i7_never_fails(tmp_path: Path):
+    """Load-bearing, same reason as I6: a failing finding would flip the
+    audit exit code for every legacy spec that predates the shape rule."""
+    f = _findings(_spec(tmp_path, _SPEC_WITH_MALFORMED_CRITERION))["I7"]
+    assert f.status == "pass"
+    assert f.detail.startswith("advisory")
+
+
+def test_i7_does_not_flag_a_row_with_no_criteria_at_all(tmp_path: Path):
+    """No criteria to judge is I6's finding, never I7's — I7 only fires on a
+    criterion that EXISTS but is not in shape."""
+    f = _findings(_spec(tmp_path, _SPEC_WITH_A_GAP))["I7"]
+    assert "FR-01.02" not in f.detail
+
+
+def test_i7_passes_cleanly_when_every_criterion_is_well_formed(tmp_path: Path):
+    f = _findings(_spec(tmp_path, _SPEC_WITH_A_GAP))["I7"]
+    assert f.status == "pass"
+    assert "no FR(s) with a criterion not in Given/when/then shape found" in f.detail
 
 
 def test_moved_row_scanner_still_reachable_from_group_i(tmp_path: Path):
