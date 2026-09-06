@@ -68,10 +68,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ._fr_hygiene_touched import (
+from ._fr_hygiene_anomalies import (
     _new_duplicate_id_findings,
     _new_reject_findings,
     _orphan_anchor_findings,
+)
+from ._fr_hygiene_touched import (
     _row_findings,
     _row_map,
     _touched_ids,

@@ -183,6 +183,80 @@ def test_a_new_duplicate_id_split_across_two_touched_files_is_flagged(
     assert "FR-01.01" in res.detail
 
 
+def test_editing_one_occurrence_of_a_pre_existing_duplicate_id_is_flagged(
+    git_origin_repo, make_worktree,
+):
+    """`_row_map` keeps whichever duplicate occurrence is LAST in document
+    order, so editing the OTHER (non-surviving) occurrence's content is
+    invisible to `_touched_ids` — the surviving occurrence never changed
+    (Tier-3 PR review, PR #679, first finding). A duplicate id already
+    present at base is normally out of this gate's "touched only" scope, but
+    an edit to what one of its occurrences SAYS must still surface — the old
+    "new duplicate ids only" comparison excluded it because the id was
+    already duplicated at base, count unchanged."""
+    work, _o = git_origin_repo
+    base_content = (
+        "## 2. Functional Requirements\n\n"
+        + _HEADER
+        + "| FR-01.01 | Core | Login | Must | Users can sign in. | interview | unit |\n"
+        "| FR-01.01 | Core | Login (dup) | Must | Users can sign in via SSO. | interview | unit |\n"
+        "\n### FR-01.01 — Login\n\n"
+        "#### Acceptance Criteria\n"
+        "- (E) Given a registered user, when they submit valid credentials, "
+        "then they are signed in.\n"
+    )
+    _seed_main(work, base_content)
+    wt = make_worktree(work, "frh-dupid-edit-nonsurviving")
+    edited_content = (
+        "## 2. Functional Requirements\n\n"
+        + _HEADER
+        + "| FR-01.01 | Core | Login | Must | "
+        "Calls auth.ts login_handler() per ADR-042. | interview | unit |\n"
+        "| FR-01.01 | Core | Login (dup) | Must | Users can sign in via SSO. | interview | unit |\n"
+        "\n### FR-01.01 — Login\n\n"
+        "#### Acceptance Criteria\n"
+        "- (E) Given a registered user, when they submit valid credentials, "
+        "then they are signed in.\n"
+    )
+    commit = _commit_on_worktree(
+        wt, edited_content, "edit the non-surviving occurrence of a pre-existing duplicate",
+    )
+    res = fh.check_fr_hygiene_on_touched_rows(wt, _RUN, commit)
+    assert res.ok is False
+    assert "duplicate id" in res.detail
+    assert "FR-01.01" in res.detail
+
+
+def test_editing_an_already_rejected_rows_content_is_flagged(
+    git_origin_repo, make_worktree,
+):
+    """`_new_reject_findings` used to key solely on `(id, reason)` — editing
+    an already-rejected row's CONTENT while its id and rejection reason stay
+    the same matched an existing base key and was silently absorbed as
+    "already there" (Tier-3 PR review, PR #679, second finding). The
+    rejected row never produces an `FrTableRow`, so nothing else in this gate
+    ever judges the changed content either — the `raw` fingerprint must catch
+    it."""
+    legacy_bad_id_row = (
+        "| FR-1.02 | Core | Password reset | Must | "
+        "Users who forget their password can reset it by email. | interview | unit |\n"
+    )
+    work, _o = git_origin_repo
+    _seed_main(work, _clean_spec(extra_row=legacy_bad_id_row))
+    wt = make_worktree(work, "frh-reject-content-edit")
+    edited_bad_id_row = (
+        "| FR-1.02 | Core | Password reset | Must | "
+        "Calls auth.ts resetPassword() per ADR-042. | interview | unit |\n"
+    )
+    commit = _commit_on_worktree(
+        wt, _clean_spec(extra_row=edited_bad_id_row),
+        "edit the content of an already-rejected malformed-id row",
+    )
+    res = fh.check_fr_hygiene_on_touched_rows(wt, _RUN, commit)
+    assert res.ok is False
+    assert "does not parse as a governed FR requirement" in res.detail
+
+
 def test_a_second_row_with_the_same_malformed_id_and_reason_is_flagged(
     git_origin_repo, make_worktree,
 ):

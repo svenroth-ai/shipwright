@@ -43,3 +43,21 @@ def test_whole_word_keywords_only():
 
 def test_empty_is_not_well_formed():
     assert not is_well_formed_criterion("")
+
+
+def test_vacuous_given_when_then_is_not_well_formed():
+    """Tier-3 PR review, PR #679: the three keywords in order, with nothing
+    between them, carry no actual clause and must not pass a blocking gate."""
+    assert not is_well_formed_criterion("Given when then")
+
+
+def test_vacuous_missing_when_clause_is_not_well_formed():
+    """Content after `given`, but nothing between `when` and `then` — still
+    no assertion of what happens, so still not well-formed."""
+    assert not is_well_formed_criterion("Given x when then")
+
+
+def test_vacuous_missing_then_clause_is_not_well_formed():
+    """Content after `given` and `when`, but nothing after `then` — the
+    outcome clause is empty, so still not well-formed."""
+    assert not is_well_formed_criterion("Given x when y then")

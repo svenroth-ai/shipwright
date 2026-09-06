@@ -5,15 +5,18 @@ Split out of ``fr_hygiene.py`` (which crossed the 300-line guideline): this
 half holds the row/criteria comparison logic — deciding WHICH FR ids a run
 touched and WHETHER what it touched is clean — while ``fr_hygiene.py`` keeps
 the git-facing orchestration (resolving the merge-base, reading either side,
-assembling the ``CheckResult``). No I/O here beyond the parsers it calls;
-every function takes already-read text.
+assembling the ``CheckResult``). The structural-anomaly detectors (orphan
+criteria anchors, duplicate ids, unparseable rows — defects that make a row
+INVISIBLE to the comparison below rather than judging what it says) live in
+the sibling ``_fr_hygiene_anomalies.py``, split out in turn once this module
+itself crossed 300 lines. No I/O here beyond the parsers it calls; every
+function takes already-read text.
 """
 
 from __future__ import annotations
 
 import hashlib
 import sys
-from collections import Counter
 from pathlib import Path
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
@@ -35,7 +38,8 @@ def _row_map(
 
     ``rejects``, when passed, collects every row the shared reader declined to
     parse as a governed requirement (bad id shape, no governing header, a row
-    narrower than its own header) — see :func:`_new_reject_findings`."""
+    narrower than its own header) — see
+    ``_fr_hygiene_anomalies._new_reject_findings``."""
     return {
         row.id: row
         for row in fr_table_reader.read_fr_rows(text, rejects=rejects)
@@ -47,9 +51,9 @@ def _whole_doc_criteria_texts(text: str) -> dict[str, list[str]]:
     """FR id → every criterion text pooled for that requirement, scanned over
     the WHOLE document — the same scope :func:`_row_findings` uses via
     ``fr_criteria.criteria_for``. Shared by :func:`_whole_doc_criteria_digests`
-    (hashes this for change-detection) and :func:`_orphan_anchor_findings`
-    (needs the raw texts, not a digest, to tell a real criterion from an empty
-    anchor)."""
+    (hashes this for change-detection) and
+    ``_fr_hygiene_anomalies._orphan_anchor_findings`` (needs the raw texts,
+    not a digest, to tell a real criterion from an empty anchor)."""
     texts_by_id: dict[str, list[str]] = {}
     for fr_id, block in fr_criteria.iter_anchored_blocks(text or ""):
         texts_by_id.setdefault(fr_id, []).extend(
@@ -83,88 +87,6 @@ def _whole_doc_criteria_digests(text: str) -> dict[str, str]:
     }
 
 
-def _orphan_anchor_findings(base_text: str, head_text: str) -> list[str]:
-    """A criterion anchored under an id that will never join any table row's
-    pool is silently invisible to `_row_findings` on BOTH sides of the id
-    join — `fr_table_reader` enforces the canonical `FR-XX.YY` shape on TABLE
-    row ids, but `fr_criteria`'s heading/bold anchor regex accepts any
-    `FR[-\\s]?\\d+(?:\\.\\d+)*` and does not zero-pad (`normalise_fr_id` only
-    turns a space into a dash). A criterion folded in under a mistyped anchor
-    (``### FR-1.02`` for the canonical ``FR-01.02``) pools under a key no
-    table row or check will ever look up — it does not classify as touched,
-    is never judged for shape, and is not even the "no criteria" case I6
-    reports, because from I6's point of view the row simply has none (doubt
-    review, medium).
-
-    This does not judge the criterion's own shape (that is `_row_findings`'s
-    job once it can find it) — it only surfaces a NEW anchor id, added by
-    this run, that carries a real criterion and does not match the canonical
-    row-id shape, so the mismatch is visible instead of silently dropping the
-    content it guards."""
-    base_ids = {fr_id for fr_id, _ in fr_criteria.iter_anchored_blocks(base_text or "")}
-    out: list[str] = []
-    seen: set[str] = set()
-    for fr_id, block in fr_criteria.iter_anchored_blocks(head_text or ""):
-        if fr_id in seen or fr_id in base_ids:
-            continue
-        if fr_table_reader.CANONICAL_FR_RE.match(fr_id):
-            continue
-        if not fr_criteria.block_criteria(block, strict=False):
-            continue
-        seen.add(fr_id)
-        out.append(
-            f"{fr_id}: a new criterion is anchored under a non-canonical id "
-            "(not `FR-XX.YY` shape) — it will never join its intended row's "
-            "criteria pool and is invisible to every FR-catalogue check; fix "
-            "the heading/bold anchor id",
-        )
-    return out
-
-
-def _new_duplicate_id_findings(base_texts: list[str], head_texts: list[str]) -> list[str]:
-    """An id with more than one ACTIVE row at HEAD is an ambiguous identity no
-    dict-based lookup can safely resolve: `_row_map` keeps whichever
-    occurrence is LAST in document order, so a dirty row this run adds ABOVE
-    an existing clean legacy row with the same id is silently shadowed by the
-    clean one — `_touched_ids`/`_row_findings` never see the dirty occurrence
-    at all (doubt review, high; `fr-authoring.md` names this an I4 defect, but
-    I4 is never wired into `run_all_checks`, so nothing at F11 sees it
-    either). Only a duplication NEW at HEAD is reported — an id already
-    duplicated at base is legacy content this run did not create, same
-    "touched only" boundary as everywhere else in this gate.
-
-    This does not try to judge which occurrence is the dirty one (an
-    unsound question — dict-based comparison cannot tell); it reports the
-    ambiguity itself as unconditionally blocking, so the only way past it is
-    to make the id unique again, at which point there is exactly one row
-    left for this gate to judge honestly.
-
-    **Pooled across every touched spec, not scanned per file** (Tier-3 PR
-    review, PR #679): FR ids are catalog-wide, not scoped to one file, so a
-    NEW duplicate split across two touched ``spec.md`` files — one occurrence
-    added to each — has exactly one occurrence per file and was invisible to
-    a per-file count. The caller now passes every touched path's base/head
-    text as a list, counted together; an id already duplicated within the
-    pooled BASE texts is legacy this run did not create and stays excluded,
-    same "touched only" boundary as the single-file case this replaces."""
-
-    def _dupes(texts: list[str]) -> set[str]:
-        counts: Counter = Counter()
-        for text in texts:
-            counts.update(row.id for row in fr_table_reader.read_fr_rows(text or "") if not row.removed)
-        return {fr_id for fr_id, n in counts.items() if n > 1}
-
-    new_dupes = _dupes(head_texts) - _dupes(base_texts)
-    return [
-        f"{fr_id}: duplicate id — more than one active row shares this id at "
-        "HEAD (possibly across separate touched spec files); this gate "
-        "cannot honestly tell which is which, and a dict-based lookup "
-        "elsewhere would silently pick one — rename one occurrence to a "
-        "distinct FR id before this row can be certified"
-        for fr_id in sorted(new_dupes)
-    ]
-
-
 def _touched_ids(base_text: str, head_text: str) -> set[str]:
     """FR ids whose Name/Description changed, or whose acceptance-criteria
     digest changed, between ``base_text`` and ``head_text``. Union of both —
@@ -188,43 +110,6 @@ def _touched_ids(base_text: str, head_text: str) -> set[str]:
     # turned out to be a REMOVAL (row moved to `## Removed Requirements`) is
     # not a hygiene target; `check_removal_coverage` owns that case.
     return {fr_id for fr_id in touched if fr_id in head_rows}
-
-
-def _new_reject_findings(base_rejects: list, head_rejects: list) -> list[str]:
-    """A row this run's edit made unparseable is invisible to `_row_map` and
-    therefore to `_touched_ids`/`_row_findings` — the shared reader never
-    returns a ``FrTableRow`` for it, so there is nothing to judge Name/
-    Description/criteria on (doubt review: a hand-typed id like `FR-1.02` for
-    the canonical `FR-01.02` silently drops the row, and everything after it
-    that reads by id, from this run's own edit).
-
-    Compared via the reader's own ``rejects`` accumulator rather than the row
-    text itself, because a row that fails to parse has no reliable cells to
-    diff. A reject already present at base is a legacy shape issue outside
-    this run's "touched" boundary, same as everywhere else in this module; one
-    that is new at head is this run's own edit.
-
-    Compared by MULTIPLICITY (``Counter``), not set membership (doubt review,
-    low): a set collapses two rejects sharing the same ``(id, reason)`` into
-    one, so a run duplicating or re-typing an already-malformed legacy row
-    under the same id/reason pair was invisible — the legacy occurrence
-    masked the run's own new one. Only the SURPLUS beyond however many were
-    already present at base is reported as new."""
-    base_counts = Counter((r["id"], r["reason"]) for r in base_rejects)
-    seen: Counter = Counter()
-    findings = []
-    for r in head_rejects:
-        key = (r["id"], r["reason"])
-        seen[key] += 1
-        if seen[key] <= base_counts[key]:
-            continue
-        findings.append(
-            f"{r['id'] or '(blank id)'}: row does not parse as a governed FR "
-            f"requirement ({r['reason']}) — an unparseable row is invisible "
-            "to every FR-catalogue check, not just this one; fix the id/"
-            "table shape"
-        )
-    return findings
 
 
 def _row_findings(
@@ -287,9 +172,6 @@ def _row_findings(
 
 
 __all__ = [
-    "_new_duplicate_id_findings",
-    "_new_reject_findings",
-    "_orphan_anchor_findings",
     "_row_findings",
     "_row_map",
     "_touched_ids",

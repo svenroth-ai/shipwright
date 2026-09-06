@@ -29,11 +29,18 @@ import re
 
 #: The prescribed shape: ``Given ... when ... then ...``, case-insensitive, the
 #: three keywords in order, each a whole word (so "whenever" / "thenceforth"
-#: never match). The leading ``(E)`` marker is ALREADY stripped by
-#: ``fr_criteria.criteria_texts`` before a caller ever sees the text — a
-#: well-formed criterion is judged on the sentence, not the marker.
+#: never match), and each REQUIRING at least one non-whitespace character
+#: after it before the next keyword (or, for ``then``, before the string
+#: ends) — a vacuous ``Given when then`` (or `Given x when then`, missing
+#: content between `when` and `then`, or `Given x when y then`, missing
+#: content after `then`) carries no actual clause and must not pass a
+#: BLOCKING gate just because the three keywords appear in order (Tier-3 PR
+#: review, PR #679: the prior version, `\bgiven\b.*?\bwhen\b.*?\bthen\b`,
+#: matched all three literally empty). The leading ``(E)`` marker is ALREADY
+#: stripped by ``fr_criteria.criteria_texts`` before a caller ever sees the
+#: text — a well-formed criterion is judged on the sentence, not the marker.
 _GIVEN_WHEN_THEN_RE = re.compile(
-    r"\bgiven\b.*?\bwhen\b.*?\bthen\b", re.IGNORECASE | re.DOTALL,
+    r"\bgiven\b\s+\S.*?\bwhen\b\s+\S.*?\bthen\b\s+\S", re.IGNORECASE | re.DOTALL,
 )
 
 

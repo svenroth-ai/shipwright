@@ -253,6 +253,79 @@ unchanged. The review's non-blocking comment (trim repeated review-process
 narrative from the ADR/spec) is deferred — noted, not actioned in this PR, to
 avoid re-editing settled sections mid-review-cascade.
 
+### Tier-3 PR-review gate, round 3 (PR #679, `openai/gpt-5.6-luna`) — three
+findings across two review passes, addressed together
+
+**BLOCK (vacuous criterion shape, flagged in the very first review pass on
+this PR, before the I8/round-2 fixes above — never actually addressed by an
+intervening commit, confirmed by reading `fr_criterion_shape.py`'s regex
+directly before this fix).** `_GIVEN_WHEN_THEN_RE` was
+`\bgiven\b.*?\bwhen\b.*?\bthen\b` — the three keywords in order, with `.*?`
+(possibly zero characters) between them, so a literal `Given when then`
+matched despite carrying no actual clause. A blocking gate accepting a
+vacuous criterion as "well-formed" defeats the whole point of I7.
+**Accepted-and-fixed**: the regex now requires `\s+\S` (at least one
+non-whitespace character) between `given`/`when`, between `when`/`then`, and
+after `then`, so each keyword must be followed by real content before the
+next keyword (or end of string) is reached. New tests
+`test_vacuous_given_when_then_is_not_well_formed`,
+`test_vacuous_missing_when_clause_is_not_well_formed`, and
+`test_vacuous_missing_then_clause_is_not_well_formed` pin exactly the three
+cases the review named (`Given when then`, `Given x when then`, `Given x when
+y then`); all six pre-existing tests in the same file still pass, including
+the well-formed and punctuated real-world example.
+
+**BLOCK (Finding A — pre-existing duplicate, edited non-surviving
+occurrence).** `_new_duplicate_id_findings` only ever compared duplicate-id
+SETS (`_dupes(head) - _dupes(base)`), so an id already duplicated at base
+stayed excluded even when this run edited one of its occurrences' actual
+content — `_row_map`'s last-wins collapse means the edit can land on the
+occurrence that does NOT survive the dict join, so `_touched_ids` sees no
+change at all for that id (the surviving occurrence's cells never moved).
+Reproduced first: a two-occurrence duplicate seeded at base, one occurrence's
+Description edited to leak an implementation detail at HEAD while the other
+stays byte-identical, failed to be flagged under the prior implementation.
+**Accepted-and-fixed**: replaced the count-only `_dupes` helper with
+`_pooled_occurrences` (pools every active row's `(name, description)` content
+by id, across every touched path) and compare the pooled OCCURRENCE
+MULTISET, not just the count — an unchanged duplicate (identical multiset on
+both sides) stays excluded, matching the existing "touched only" boundary,
+while any duplicate whose multiset differs is reported, whether the id is
+newly duplicated or pre-existing with an edited member. New test
+`test_editing_one_occurrence_of_a_pre_existing_duplicate_id_is_flagged` pins
+the reproduced case; the existing new-duplicate and cross-file tests still
+pass unchanged.
+
+**BLOCK (Finding B — content-only edit to an already-rejected row).**
+`_new_reject_findings` keyed multiplicity on `(id, reason)` alone — editing
+an already-rejected row's raw cell content while its id and rejection reason
+stayed the same (still `non_canonical_id`, still that id) matched an
+existing base-side key and was silently absorbed as "already there"; the
+content changed, but a rejected row never produces an `FrTableRow`, so
+nothing else in this gate judges the changed text either. **Accepted-and-
+fixed**: the comparison key is now `(id, reason, raw)`, where `raw` is the
+reader's own pipe-joined-cells fingerprint (`fr_table_reader._reject`
+already captures it, first 200 chars) — an edit to the row's content changes
+`raw` and therefore the key, so it is counted as new regardless of `(id,
+reason)` staying identical. New test
+`test_editing_an_already_rejected_rows_content_is_flagged` pins this; the
+existing same-`(id, reason)`-legacy-vs-new test (which never edits content,
+only adds a second row) still passes unchanged.
+
+**Incidental**: `_fr_hygiene_touched.py` crossed 300 lines while implementing
+the Finding-A fix (312 lines after the edit). Split the four structural-
+anomaly detectors (`_orphan_anchor_findings`, `_pooled_occurrences`,
+`_new_duplicate_id_findings`, `_new_reject_findings` — defects that make a
+row INVISIBLE to the touched/clean comparison, as opposed to judging what a
+visible row says) into a new sibling module, `_fr_hygiene_anomalies.py`,
+matching this iterate's own established precedent (`fr_hygiene.py` was
+itself split out of an earlier oversized file the same way). `fr_hygiene.py`
+now imports the anomaly detectors from `_fr_hygiene_anomalies` and the
+core comparison helpers from `_fr_hygiene_touched`; no test imports the
+internal functions directly (all go through the public
+`check_fr_hygiene_on_touched_rows` entry point), so the split needed no test
+changes.
+
 ## Rejected alternatives
 
 - Global promotion of I1/I2/I6 out of `_ADVISORY_CHECKS`.
