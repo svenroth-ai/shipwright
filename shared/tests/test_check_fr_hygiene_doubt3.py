@@ -150,6 +150,39 @@ def test_a_new_duplicate_id_at_head_is_flagged(git_origin_repo, make_worktree):
     assert "duplicate id" in res.detail
 
 
+def test_a_new_duplicate_id_split_across_two_touched_files_is_flagged(
+    git_origin_repo, make_worktree,
+):
+    """FR ids are catalog-wide, not scoped to one file (Tier-3 PR review, PR
+    #679): a NEW duplicate with exactly ONE occurrence in each of two touched
+    spec files was invisible to a per-file duplicate count — neither file
+    alone contains more than one occurrence of the id. Both files must be
+    touched by this same commit for the pooled comparison to see them
+    together; ``_SPEC`` picks up an unrelated clean row so it appears in the
+    diff alongside the newly added ``_SPEC_B``."""
+    work, _o = git_origin_repo
+    _seed_main(work, _clean_spec())
+    wt = make_worktree(work, "frh-dupid-crossfile")
+    unrelated_clean_row = (
+        "| FR-01.02 | Core | Password reset | Should | "
+        "Users who forget their password can reset it by email. | interview | unit |\n"
+    )
+    _write(wt, _SPEC, _clean_spec(extra_row=unrelated_clean_row))
+    _write(
+        wt, _SPEC_B,
+        "## 2. Functional Requirements\n\n"
+        + _HEADER
+        + "| FR-01.01 | Other | Sign in | Must | Users can sign in. | interview | unit |\n",
+    )
+    _git(wt, "add", "-A")
+    _git(wt, "commit", "-m", "introduce FR-01.01 again in a second split")
+    commit = _git(wt, "rev-parse", "HEAD").stdout.strip()
+    res = fh.check_fr_hygiene_on_touched_rows(wt, _RUN, commit)
+    assert res.ok is False
+    assert "duplicate id" in res.detail
+    assert "FR-01.01" in res.detail
+
+
 def test_a_second_row_with_the_same_malformed_id_and_reason_is_flagged(
     git_origin_repo, make_worktree,
 ):

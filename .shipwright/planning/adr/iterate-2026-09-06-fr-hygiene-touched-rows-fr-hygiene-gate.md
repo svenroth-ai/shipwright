@@ -230,6 +230,29 @@ defensive branch directly (via a faked subprocess result, since it is not
 reproducible against this machine's own git) rather than relying on a
 specific CI runner's git version to exercise it.
 
+### Tier-3 PR-review gate, round 2 (PR #679, `openai/gpt-5.6-luna`)
+
+**BLOCK.** `_new_duplicate_id_findings` (`_fr_hygiene_touched.py`) was called
+once per touched `spec.md` path, counting duplicate ids only WITHIN that one
+file's text — but FR ids are catalog-wide, and `fr_hygiene.py`'s own
+`global_base_rows` already pools rows across every touched path for exactly
+this reason. A new duplicate id with exactly one occurrence added to each of
+two touched spec files had one occurrence per file on either side of the
+per-file count, so neither file's local count ever exceeded one — invisible,
+confirmed by reproducing it: the existing single-file test still passed, and
+a new cross-file case failed under the old implementation.
+**Accepted-and-fixed**: `_new_duplicate_id_findings` now takes the list of
+every touched path's base/head text and pools counts across all of them
+before comparing, matching `global_base_rows`'s existing scope (touched paths
+only — this does not scan the whole catalogue, consistent with this gate's
+documented "touched only" boundary). `fr_hygiene.py` calls it once, outside
+the per-path loop. New test
+`test_a_new_duplicate_id_split_across_two_touched_files_is_flagged` pins the
+cross-file case; the existing single-file duplicate test still passes
+unchanged. The review's non-blocking comment (trim repeated review-process
+narrative from the ADR/spec) is deferred — noted, not actioned in this PR, to
+avoid re-editing settled sections mid-review-cascade.
+
 ## Rejected alternatives
 
 - Global promotion of I1/I2/I6 out of `_ADVISORY_CHECKS`.

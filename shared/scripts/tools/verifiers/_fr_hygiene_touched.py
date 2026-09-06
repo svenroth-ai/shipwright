@@ -121,7 +121,7 @@ def _orphan_anchor_findings(base_text: str, head_text: str) -> list[str]:
     return out
 
 
-def _new_duplicate_id_findings(base_text: str, head_text: str) -> list[str]:
+def _new_duplicate_id_findings(base_texts: list[str], head_texts: list[str]) -> list[str]:
     """An id with more than one ACTIVE row at HEAD is an ambiguous identity no
     dict-based lookup can safely resolve: `_row_map` keeps whichever
     occurrence is LAST in document order, so a dirty row this run adds ABOVE
@@ -137,18 +137,30 @@ def _new_duplicate_id_findings(base_text: str, head_text: str) -> list[str]:
     unsound question — dict-based comparison cannot tell); it reports the
     ambiguity itself as unconditionally blocking, so the only way past it is
     to make the id unique again, at which point there is exactly one row
-    left for this gate to judge honestly."""
+    left for this gate to judge honestly.
 
-    def _dupes(text: str) -> set[str]:
-        counts = Counter(row.id for row in fr_table_reader.read_fr_rows(text or "") if not row.removed)
+    **Pooled across every touched spec, not scanned per file** (Tier-3 PR
+    review, PR #679): FR ids are catalog-wide, not scoped to one file, so a
+    NEW duplicate split across two touched ``spec.md`` files — one occurrence
+    added to each — has exactly one occurrence per file and was invisible to
+    a per-file count. The caller now passes every touched path's base/head
+    text as a list, counted together; an id already duplicated within the
+    pooled BASE texts is legacy this run did not create and stays excluded,
+    same "touched only" boundary as the single-file case this replaces."""
+
+    def _dupes(texts: list[str]) -> set[str]:
+        counts: Counter = Counter()
+        for text in texts:
+            counts.update(row.id for row in fr_table_reader.read_fr_rows(text or "") if not row.removed)
         return {fr_id for fr_id, n in counts.items() if n > 1}
 
-    new_dupes = _dupes(head_text) - _dupes(base_text)
+    new_dupes = _dupes(head_texts) - _dupes(base_texts)
     return [
         f"{fr_id}: duplicate id — more than one active row shares this id at "
-        "HEAD; this gate cannot honestly tell which is which, and a dict-"
-        "based lookup elsewhere would silently pick one — rename one "
-        "occurrence to a distinct FR id before this row can be certified"
+        "HEAD (possibly across separate touched spec files); this gate "
+        "cannot honestly tell which is which, and a dict-based lookup "
+        "elsewhere would silently pick one — rename one occurrence to a "
+        "distinct FR id before this row can be certified"
         for fr_id in sorted(new_dupes)
     ]
 

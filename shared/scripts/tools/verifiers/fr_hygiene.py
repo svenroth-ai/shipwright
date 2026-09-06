@@ -203,8 +203,15 @@ def check_fr_hygiene_on_touched_rows(
     for base_text, _head_text in text_by_path.values():
         global_base_rows.update(_row_map(base_text))
     base_texts_list = [base_text for base_text, _ in text_by_path.values()]
+    head_texts_list = [head_text for _, head_text in text_by_path.values()]
 
     all_findings: list[str] = []
+    # Pooled across every touched path, not per file (Tier-3 PR review, PR
+    # #679): FR ids are catalog-wide, so a NEW duplicate split across two
+    # touched spec.md files — one occurrence added to each — has exactly one
+    # occurrence per file and is invisible to a per-file count.
+    for finding in _new_duplicate_id_findings(base_texts_list, head_texts_list):
+        all_findings.append(f"{', '.join(specs)}: {finding}")
     for path in specs:
         base_text, head_text = text_by_path[path]
         base_rejects: list = []
@@ -214,8 +221,6 @@ def check_fr_hygiene_on_touched_rows(
         for reject_finding in _new_reject_findings(base_rejects, head_rejects):
             all_findings.append(f"{path}: {reject_finding}")
         for finding in _orphan_anchor_findings(base_text, head_text):
-            all_findings.append(f"{path}: {finding}")
-        for finding in _new_duplicate_id_findings(base_text, head_text):
             all_findings.append(f"{path}: {finding}")
         for fr_id in sorted(_touched_ids(base_text, head_text)):
             row = head_rows.get(fr_id)
