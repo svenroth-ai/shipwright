@@ -172,20 +172,21 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-06T21:39:07.147618+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-06T23:00:28.165073+00:00",
+      "disposition": "Stage-2 code-reviewer REJECTED at 3f-bis: HIGH finding, shared/scripts/lib/ac_identity.py:170 -- the registry seed pass reuses iter_bullet_positions, which is gated to the block's contiguous LEADING bullet run (_ac_blocks.py:134-144), so a [ACnn] marker sitting outside that run is invisible to seeding AND duplicate detection. Repro: an FR block with a bullet, an intervening prose line, then a bullet already carrying [AC01] -- with a lost/empty registry, mint() reseeds {} and stamps [AC01] onto the FIRST bullet too, producing two criteria under one FR sharing AC01 (the exact 'never reused' violation the seed pass exists to prevent), and the document becomes permanently un-mintable once the prose line is removed. Delivery stopped; PR #683 left open for repair (fix: split discovery into a leading-run scan for minting and an ungated whole-block scan for seeding/dup-check).",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-06T21:39:07.257229+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "completed_at": "2026-09-06T23:00:28.275344+00:00",
+      "disposition": "Stage 3 (doubt-reviewer) is conditional on Stage 2 PASS; Stage 2 (code-reviewer) REJECTED at 3f-bis, so Stage 3 never ran.",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
@@ -281,15 +282,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-06T21:39:07.033751+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-06T22:52:29.829080+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
