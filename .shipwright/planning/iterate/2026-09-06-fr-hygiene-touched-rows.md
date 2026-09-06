@@ -133,6 +133,7 @@ No serialized config/JSON format changed — `touches_io_boundary` does not fire
   | 35 | A criterion anchored under a non-canonical heading id (e.g. missing zero-pad) that this run adds is flagged instead of silently invisible to every FR-catalogue check | tested | `test_orphan_criterion_anchor_with_non_canonical_id_is_flagged` PASSED — round-2 doubt-review finding (MEDIUM), fixed and pinned |
   | 36 | A duplicate FR id newly introduced at HEAD (a dirty row shadowed behind a clean same-id legacy row) is flagged rather than silently dropped by a dict-based lookup | tested | `test_a_new_duplicate_id_at_head_is_flagged` PASSED — round-2 doubt-review finding (HIGH), fixed and pinned |
   | 37 | A second row sharing an already-malformed legacy id/reason pair is still flagged as a new reject, not masked by set-based dedup | tested | `test_a_second_row_with_the_same_malformed_id_and_reason_is_flagged` PASSED — round-2 doubt-review finding (LOW), fixed and pinned |
+  | 38 | `_blame_epoch` never trusts a non-positive committer-time as a real commit date (a git-version-dependent zero for the "Not Committed Yet" pseudo-commit would otherwise manufacture a ~20,000-day-stale I8 finding out of an uncommitted TBD line) | tested | `test_blame_epoch_treats_non_positive_committer_time_as_unavailable` PASSED — Tier-3 PR-review finding (PR #679, `openai/gpt-5.6-luna`), fixed and pinned |
 
 - **Confidence-pattern check:** asymptote (depth) — this run's first "are you
   confident?" probe (the internal Opus plan-review) DID surface a

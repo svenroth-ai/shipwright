@@ -209,6 +209,27 @@ lines again). The two rejections are both escalations of previously-recorded
 decisions, not new unexamined risk — see the Test Completeness Ledger's
 updated rows in the iterate spec for the pass/fail evidence.
 
+### Tier-3 PR-review gate (PR #679, `openai/gpt-5.6-luna`)
+
+**BLOCK.** `_blame_epoch` (`group_i_tbd_age.py`) trusts `git blame --porcelain`'s
+`committer-time` for the synthetic "Not Committed Yet" pseudo-commit that
+blames an uncommitted line. The module docstring already claimed this reads
+as the current wall-clock time on this repo's own git (empirically probed
+during the original doubt round), but the reviewer's underlying concern —
+that some git releases instead report `0` for that same pseudo-commit,
+turning an uncommitted TBD into a manufactured ~20,000-day-stale finding — is
+a real, version-dependent behavior this function had no defence against
+either way. Re-verified the ORIGINAL claim first (this repo's git: still
+non-zero, confirmed by a fresh probe), then treated the reviewer's point as
+a portability gap rather than dismissing it on that single data point.
+**Accepted-and-fixed**: `_blame_epoch` now treats any non-positive parsed
+epoch as unavailable (`None`, the module's existing "skip it" convention),
+matching the reviewer's own suggested remedy exactly. New test
+`test_blame_epoch_treats_non_positive_committer_time_as_unavailable` pins the
+defensive branch directly (via a faked subprocess result, since it is not
+reproducible against this machine's own git) rather than relying on a
+specific CI runner's git version to exercise it.
+
 ## Rejected alternatives
 
 - Global promotion of I1/I2/I6 out of `_ADVISORY_CHECKS`.
