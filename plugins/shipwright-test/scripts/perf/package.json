@@ -5,10 +5,10 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "lighthouse": "13.1.0",
+    "lighthouse": "13.4.1",
     "ws": "^8.20.1"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.19"
   }
 }
