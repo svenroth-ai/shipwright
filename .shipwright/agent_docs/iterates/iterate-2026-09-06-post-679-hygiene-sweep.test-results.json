@@ -1,0 +1,86 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-06-post-679-hygiene-sweep",
+    "date": "2026-09-06",
+    "unit": {
+      "status": "passed",
+      "passed": 16787,
+      "total": 16846,
+      "note": "Green and complete across 17 of the 18 discovered F0 units (every unit except integration-tests). One unit (shared/tests) reported red-in-parallel/green-alone on the authoritative serial retry (trg-f64d1c27, filed by the runner itself); this figure is the authoritative retained report."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "no browser surface; this is framework machinery (JSON config data, CLAUDE.md prose, an append-only event-log correction)"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no startable server surface in this repo"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "justification": "hygiene-only change to JSON config data (shipwright_bloat_baseline.json), CLAUDE.md prose, and an append-only event-log correction (event_amended); no CLI/web surface introduced or modified."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "H1: every oversize file on disk has a baseline entry",
+          "disposition": "tested",
+          "evidence": "real group_h._check_h1 (plugins/shipwright-compliance/scripts/audit/group_h.py) returns pass against the rewritten baseline"
+        },
+        {
+          "behavior": "H2: no recorded ceiling exceeds the file's actual measured size",
+          "disposition": "tested",
+          "evidence": "real group_h._check_h2 returns pass against the rewritten baseline"
+        },
+        {
+          "behavior": "the baseline rewrite drops no entry and touches only `current` on the 21 H2 rows",
+          "disposition": "tested",
+          "evidence": "structured diff of the baseline before/after: 0 dropped, 24 added (H1), 21 entries with only `current` changed, no other field touched on any entry"
+        },
+        {
+          "behavior": "CLAUDE.md is <= 200 lines with no knowledge lost (both extraction targets already exist and carry the trimmed detail)",
+          "disposition": "tested",
+          "evidence": "real group_f F6/F7 (plugins/shipwright-compliance/scripts/audit/group_f.py) return pass (197 lines, 0 inline iterate-annotation leaks); scripts/verify_local.py and shared/prompts/writing-plugin.md confirmed to exist and to already carry the detail removed from CLAUDE.md"
+        },
+        {
+          "behavior": "FR-01.19's D1 coverage / D3 delivery gap closes once its real historical test totals are recovered (not fabricated)",
+          "disposition": "tested",
+          "evidence": "totals (1488 passed/total) recomputed directly from the immutable .shipwright/agent_docs/iterates/iterate-2026-07-28-main-self-heal.test-results.json snapshot (unit.passed=1066/failed=0 + integration.passed=422/failed=0); applied via the sanctioned event_amended overlay (record_event.py), keeping the target event's original ts; real group_d re-run (plugins/shipwright-compliance/scripts/audit/group_d.py) confirms FR-01.19 drops off both D1 and D3"
+        },
+        {
+          "behavior": "FR-01.18 is correctly NOT force-closed (no fabricated coverage)",
+          "disposition": "tested",
+          "evidence": "real group_d re-run still names only FR-01.18 in D1/D3 after the amendment \u2014 no event since its 2026-07-26 mint has ever touched shipwright-grade, so none was tagged"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    },
+    "degraded": []
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-06-post-679-hygiene-sweep",
+    "commit": "c861bd56f2b7e8d0f89aebc66bb15afcec365b4b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -50,20 +50,11 @@ uvx ruff@0.15.15 check .              # Bug-focused lint — GATING in CI (ci.ym
 uv run scripts/verify_local.py        # The CI merge guards that run nowhere else
 ```
 
-**Run `verify_local.py` before pushing.** `ci.yml`'s required job carries three
-bespoke guards — the CI-gate guard and the two surface verifiers — that no local
-step runs, so they are learned about from a red CI run *after* the iterate
-reports done. Measured at 4-6 s from a worktree (Windows); expect longer from a
-clone whose `.worktrees/` holds other checkouts, which `grade.py` also walks. It
-reports all three in one pass (never short-circuiting, so one push fixes
-everything CI would reject) and names what would block.
-
-It is a pre-flight, not a substitute: CI checks a clean checkout on a pinned
-interpreter, and its `Repair-PR safety (gate)` reads the PR's *base* revision so
-a branch cannot vouch for itself. Note also that it vets your **working tree**
-while CI vets the commit you **push** — it prints which, and warns when the tree
-is dirty. **F0 runs it for you** inside an iterate (after the leak-guard, before
-the suite, guarded on the file existing); typing it yourself is still how you
+**Run `verify_local.py` before pushing.** It mirrors the three bespoke CI merge
+guards that no other local step runs, so their failure is otherwise learned
+about from a red CI run after the iterate reports done. It is a pre-flight, not
+a substitute for CI — full rationale lives in the script's own docstring.
+**F0 and F11 run it for you** inside an iterate; typing it yourself is how you
 check a tree outside a run.
 
 **Lint is a hard CI gate.** `.github/workflows/ci.yml` runs `uvx ruff@0.15.15
@@ -102,22 +93,12 @@ update it in the same diff.
 
 ### When editing plugin-side files
 
-Changes under `plugins/*`, `shared/scripts/`, or any `SKILL.md` file do
-NOT auto-sync to the plugin cache at `~/.claude/plugins/cache/shipwright/`
-that Claude Code uses at runtime. After `git push`, run:
-
-```bash
-bash scripts/update-marketplace.sh
-```
-
-Then verify with `uv run scripts/check_plugin_cache_sync.py --strict`.
-Without the sync, plugin-side fixes land in the dev repo but never reach
-runtime — that silently cost iterates 7-11 their fixes.
-
-**Scope:** monorepo-only. End-users consuming the plugins on their own
-projects run the installed versions and never need this.
-
-**Full procedure + rationale:** `shared/prompts/writing-plugin.md`.
+Changes under `plugins/*`, `shared/scripts/`, or any `SKILL.md` file do NOT
+auto-sync to the plugin cache Claude Code uses at runtime — after `git push`,
+run `bash scripts/update-marketplace.sh` then `uv run
+scripts/check_plugin_cache_sync.py --strict`. Monorepo-only; end-users on the
+installed plugins never need this. **Full procedure + rationale:**
+`shared/prompts/writing-plugin.md`.
 
 ### Documentation Guide
 `docs/guide.md` is the primary user-facing documentation (README.md is a

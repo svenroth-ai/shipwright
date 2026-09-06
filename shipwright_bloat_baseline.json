@@ -2,9 +2,25 @@
   "version": 1,
   "entries": [
     {
+      "path": "integration-tests/requirements_corpus/registry.py",
+      "limit": 300,
+      "current": 308,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/s2b-discovery-convergence/sub-iterates/B-pure-hardening.md",
+      "note": "S2b pass A added a 17th DISCOVERY entry (299->316). Pass B4 removed the three order_sensitive flags (316->314). Pass C3 is expected to remove platform_sep/_posixify and reclaim the rest of the overage; not baselined as a permanent exception."
+    },
+    {
       "path": "integration-tests/test_core_trilogy_flow.py",
       "limit": 300,
       "current": 467,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "integration-tests/test_ensure_shared_cache_fanout.py",
+      "limit": 300,
+      "current": 775,
       "state": "grandfathered",
       "adr": null
     },
@@ -23,18 +39,30 @@
       "adr": null
     },
     {
-      "path": "integration-tests/requirements_corpus/registry.py",
+      "path": "plugins/shipwright-adopt/scripts/hooks/cache_repair_lock.py",
       "limit": 300,
-      "current": 314,
-      "state": "deferred-plan",
-      "adr": null,
-      "plan_ref": ".shipwright/planning/iterate/campaigns/s2b-discovery-convergence/sub-iterates/B-pure-hardening.md",
-      "note": "S2b pass A added a 17th DISCOVERY entry (299->316). Pass B4 removed the three order_sensitive flags (316->314). Pass C3 is expected to remove platform_sep/_posixify and reclaim the rest of the overage; not baselined as a permanent exception."
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
       "limit": 300,
       "current": 590,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-adopt/scripts/lib/config_writer.py",
+      "limit": 300,
+      "current": 305,
       "state": "grandfathered",
       "adr": null
     },
@@ -109,6 +137,27 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-build/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-changelog/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "plugins/shipwright-changelog/scripts/lib/changelog.py",
       "limit": 300,
       "current": 302,
@@ -118,7 +167,7 @@
     {
       "path": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
       "limit": 400,
-      "current": 425,
+      "current": 424,
       "state": "exception",
       "adr": "ADR-348"
     },
@@ -132,7 +181,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_detector.py",
       "limit": 300,
-      "current": 400,
+      "current": 353,
       "state": "grandfathered",
       "adr": null
     },
@@ -174,7 +223,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_f.py",
       "limit": 300,
-      "current": 395,
+      "current": 394,
       "state": "grandfathered",
       "adr": null
     },
@@ -182,6 +231,20 @@
       "path": "plugins/shipwright-compliance/scripts/audit/group_g.py",
       "limit": 300,
       "current": 373,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
       "state": "grandfathered",
       "adr": null
     },
@@ -219,6 +282,13 @@
       "current": 932,
       "state": "exception",
       "adr": "ADR-121"
+    },
+    {
+      "path": "plugins/shipwright-compliance/scripts/tools/update_compliance.py",
+      "limit": 300,
+      "current": 330,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_a5.py",
@@ -312,6 +382,20 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-deploy/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-deploy/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "plugins/shipwright-deploy/scripts/lib/migration_verifier.py",
       "limit": 300,
       "current": 308,
@@ -333,11 +417,39 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-design/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-design/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
       "limit": 400,
       "current": 497,
       "state": "exception",
       "adr": "ADR-119"
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
@@ -350,6 +462,13 @@
       "path": "plugins/shipwright-iterate/tests/test_classify_complexity.py",
       "limit": 300,
       "current": 317,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-iterate/tests/test_complexity_history.py",
+      "limit": 300,
+      "current": 315,
       "state": "grandfathered",
       "adr": null
     },
@@ -378,6 +497,48 @@
       "path": "plugins/shipwright-iterate/tests/test_sub_iterate_runner_contract.py",
       "limit": 300,
       "current": 421,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-plan/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-project/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-run/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
       "state": "grandfathered",
       "adr": null
     },
@@ -420,6 +581,20 @@
       "path": "plugins/shipwright-run/tests/test_single_session_loop.py",
       "limit": 300,
       "current": 349,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-security/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
       "state": "grandfathered",
       "adr": null
     },
@@ -468,7 +643,7 @@
     {
       "path": "plugins/shipwright-security/skills/security/SKILL.md",
       "limit": 400,
-      "current": 436,
+      "current": 434,
       "state": "grandfathered",
       "adr": null
     },
@@ -511,6 +686,20 @@
       "path": "plugins/shipwright-security/tests/test_scan_cli.py",
       "limit": 300,
       "current": 380,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-test/scripts/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
       "state": "grandfathered",
       "adr": null
     },
@@ -641,6 +830,20 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/lib/iterate_throughput_stats.py",
+      "limit": 300,
+      "current": 337,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/jsonl_records.py",
+      "limit": 300,
+      "current": 307,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/lib/review_record_schema.py",
       "limit": 300,
       "current": 313,
@@ -651,6 +854,13 @@
       "path": "shared/scripts/lib/spec_parser.py",
       "limit": 300,
       "current": 350,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/triage_cli_commands.py",
+      "limit": 300,
+      "current": 313,
       "state": "grandfathered",
       "adr": null
     },
@@ -692,7 +902,7 @@
     {
       "path": "shared/scripts/tests/test_validate_env.py",
       "limit": 300,
-      "current": 883,
+      "current": 867,
       "state": "grandfathered",
       "adr": null
     },
@@ -713,7 +923,7 @@
     {
       "path": "shared/scripts/tools/aggregate_triage.py",
       "limit": 300,
-      "current": 387,
+      "current": 385,
       "state": "exception",
       "adr": "ADR-090"
     },
@@ -725,9 +935,16 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/deliver_pr.py",
+      "limit": 300,
+      "current": 331,
+      "state": "exception",
+      "adr": "ADR-122"
+    },
+    {
       "path": "shared/scripts/tools/external_review.py",
       "limit": 300,
-      "current": 414,
+      "current": 413,
       "state": "grandfathered",
       "adr": null
     },
@@ -737,20 +954,6 @@
       "current": 588,
       "state": "exception",
       "adr": "ADR-096"
-    },
-    {
-      "path": "shared/scripts/tools/deliver_pr.py",
-      "limit": 300,
-      "current": 331,
-      "state": "exception",
-      "adr": "ADR-122"
-    },
-    {
-      "path": "shared/scripts/tools/run_test_suite.py",
-      "limit": 300,
-      "current": 529,
-      "state": "exception",
-      "adr": "ADR-123"
     },
     {
       "path": "shared/scripts/tools/generate_session_handoff.py",
@@ -769,7 +972,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 779,
+      "current": 767,
       "state": "exception",
       "adr": "ADR-111"
     },
@@ -795,11 +998,39 @@
       "adr": "ADR-099"
     },
     {
+      "path": "shared/scripts/tools/run_test_suite.py",
+      "limit": 300,
+      "current": 529,
+      "state": "exception",
+      "adr": "ADR-123"
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_host_resource_lease_process.py",
+      "limit": 300,
+      "current": 333,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/tests/test_record_event.py",
       "limit": 300,
       "current": 883,
       "state": "exception",
       "adr": "ADR-092"
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_suite_coverage_gate.py",
+      "limit": 300,
+      "current": 478,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_suite_race_triage.py",
+      "limit": 300,
+      "current": 305,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/scripts/tools/triage_promote.py",
@@ -832,14 +1063,14 @@
     {
       "path": "shared/scripts/tools/verifiers/infrastructure_checks.py",
       "limit": 300,
-      "current": 314,
+      "current": 298,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 1089,
+      "current": 1085,
       "state": "exception",
       "adr": "ADR-125"
     },
@@ -858,9 +1089,16 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/watch_pr_delivery.py",
+      "limit": 300,
+      "current": 302,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/write_decision_log.py",
       "limit": 300,
-      "current": 377,
+      "current": 376,
       "state": "grandfathered",
       "adr": null
     },
@@ -874,7 +1112,21 @@
     {
       "path": "shared/scripts/validate_env.py",
       "limit": 300,
-      "current": 610,
+      "current": 605,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/templates/hooks/cache_repair_lock.py",
+      "limit": 300,
+      "current": 457,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/templates/hooks/ensure_shared_cache.py",
+      "limit": 300,
+      "current": 322,
       "state": "grandfathered",
       "adr": null
     },
@@ -921,6 +1173,13 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_campaign_session_lock.py",
+      "limit": 300,
+      "current": 368,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_changelog_aggregation.py",
       "limit": 300,
       "current": 325,
@@ -937,7 +1196,14 @@
     {
       "path": "shared/tests/test_completion_writers.py",
       "limit": 300,
-      "current": 302,
+      "current": 301,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_compliance_refresh_real_producer.py",
+      "limit": 300,
+      "current": 314,
       "state": "grandfathered",
       "adr": null
     },
@@ -963,9 +1229,30 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_ensure_shared_cache_fanout.py",
+      "limit": 300,
+      "current": 624,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_ensure_shared_cache_main_inprocess.py",
+      "limit": 300,
+      "current": 313,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_ensure_shared_cache_vendored.py",
+      "limit": 300,
+      "current": 308,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_external_review_cli.py",
       "limit": 300,
-      "current": 882,
+      "current": 881,
       "state": "grandfathered",
       "adr": null
     },
@@ -994,6 +1281,13 @@
       "path": "shared/tests/test_generate_session_handoff.py",
       "limit": 300,
       "current": 511,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_gitattributes_union.py",
+      "limit": 300,
+      "current": 313,
       "state": "grandfathered",
       "adr": null
     },
@@ -1042,7 +1336,14 @@
     {
       "path": "shared/tests/test_hooks.py",
       "limit": 300,
-      "current": 482,
+      "current": 480,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_infrastructure_checks.py",
+      "limit": 300,
+      "current": 363,
       "state": "grandfathered",
       "adr": null
     },
@@ -1061,6 +1362,27 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_iterate_latest_attribution.py",
+      "limit": 300,
+      "current": 391,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_iterate_test_results_evidence.py",
+      "limit": 300,
+      "current": 329,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_iterate_throughput_stats.py",
+      "limit": 300,
+      "current": 364,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_list_iterate_branches.py",
       "limit": 300,
       "current": 757,
@@ -1071,6 +1393,13 @@
       "path": "shared/tests/test_phase_quality_rollout.py",
       "limit": 300,
       "current": 453,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "shared/tests/test_phase_quality_triage_emit.py",
+      "limit": 300,
+      "current": 310,
       "state": "grandfathered",
       "adr": null
     },
@@ -1098,7 +1427,7 @@
     {
       "path": "shared/tests/test_resolve_churn_conflicts.py",
       "limit": 300,
-      "current": 316,
+      "current": 140,
       "state": "grandfathered",
       "adr": null
     },
@@ -1110,9 +1439,16 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_review_record_campaign_shape.py",
+      "limit": 300,
+      "current": 346,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_review_state_gate.py",
       "limit": 300,
-      "current": 307,
+      "current": 306,
       "state": "grandfathered",
       "adr": null
     },
@@ -1159,6 +1495,13 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_test_results_backfill_check.py",
+      "limit": 300,
+      "current": 344,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/tests/test_triage_add_cli.py",
       "limit": 300,
       "current": 465,
@@ -1173,18 +1516,18 @@
       "adr": null
     },
     {
-      "path": "shared/tests/test_triage_outbox.py",
-      "limit": 300,
-      "current": 660,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/tests/test_triage_defer.py",
       "limit": 300,
       "current": 366,
       "state": "exception",
       "adr": "ADR-121"
+    },
+    {
+      "path": "shared/tests/test_triage_outbox.py",
+      "limit": 300,
+      "current": 660,
+      "state": "grandfathered",
+      "adr": null
     },
     {
       "path": "shared/tests/test_triage_precondition_registry.py",
@@ -1210,7 +1553,7 @@
     {
       "path": "shared/tests/test_triage_storage.py",
       "limit": 300,
-      "current": 600,
+      "current": 598,
       "state": "grandfathered",
       "adr": null
     },
@@ -1231,7 +1574,7 @@
     {
       "path": "shared/tests/test_verifiers_design.py",
       "limit": 300,
-      "current": 450,
+      "current": 405,
       "state": "grandfathered",
       "adr": null
     },
@@ -1252,7 +1595,7 @@
     {
       "path": "shared/tests/test_workflow_checks.py",
       "limit": 300,
-      "current": 569,
+      "current": 563,
       "state": "grandfathered",
       "adr": null
     },
@@ -1267,181 +1610,6 @@
       "path": "shared/tests/tools/test_validate_deploy_profile.py",
       "limit": 300,
       "current": 371,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "shared/templates/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-adopt/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-build/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-changelog/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-compliance/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-deploy/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-design/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-iterate/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-plan/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-project/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-run/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-security/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-test/scripts/hooks/ensure_shared_cache.py",
-      "limit": 300,
-      "current": 322,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-adopt/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-changelog/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-compliance/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-deploy/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-design/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-plan/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-project/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-run/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-security/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "plugins/shipwright-test/scripts/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
-      "path": "shared/templates/hooks/cache_repair_lock.py",
-      "limit": 300,
-      "current": 457,
       "state": "grandfathered",
       "adr": null
     }
