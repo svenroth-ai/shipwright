@@ -1,0 +1,220 @@
+"""Pins ``lib.ac_identity`` — the AC-id minter + reader for the shipped FR
+heading+bullet shape (campaign req3-04c-ac-identity-wave2, sub-iterate P3.1).
+
+Doubles as the golden corpus the sub-iterate's own acceptance criteria call
+for: each fixture below is a small, self-contained sample of the shipped
+shape, and every test asserts the exact minted output — a diff in any of
+these numbers is a behaviour change in the minter, not a cosmetic edit.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
+
+from lib import ac_identity  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# Golden corpus fixtures — the shipped shape and its edge cases.
+# ---------------------------------------------------------------------------
+
+FRESH_FR = (
+    "### FR-01.11 — /shipwright-iterate\n\n"
+    "- (E) Given a change described in ordinary words, when it is picked up,\n"
+    "  then its kind and size are detected.\n"
+    "- (E) Given a feature or a change, when it is classified, then it\n"
+    "  records whether it adds, modifies, removes or leaves the requirements\n"
+    "  untouched.\n"
+    "- (E) Given a change of medium size or larger, when it is finished, then\n"
+    "  a real surface is driven through a running system.\n"
+)
+
+TWO_FRS = (
+    "### FR-01.01 — /shipwright-run\n\n"
+    "- (E) Given a described change, when the pipeline is run, then the\n"
+    "  phases are carried out in order.\n\n"
+    "### FR-01.02 — /shipwright-project\n\n"
+    "- (E) Given a project description, when setup is declared finished,\n"
+    "  then a catalogue of requirements exists.\n"
+)
+
+WITH_CHECKBOX = "### FR-02.01 — Title\n\n- [ ] Given a thing, when it happens, then it holds.\n"
+
+WITH_FOOTNOTE = (
+    "### FR-03.01 — Title\n\n"
+    "- (E) Given a thing, when it happens, then it holds.\n"
+    "  (iterate-2026-01-01-example)\n"
+)
+
+WITH_PLACEHOLDER = (
+    "### FR-04.01 — Title\n\n"
+    "- TBD\n"
+    "- (E) Given a real thing, when it happens, then it holds.\n"
+)
+
+
+# ---------------------------------------------------------------------------
+# mint() — fresh assignment, in document order, zero-padded.
+# ---------------------------------------------------------------------------
+
+def test_fresh_fr_mints_three_ids_in_document_order():
+    result = ac_identity.mint(FRESH_FR)
+    assert result.assigned == (
+        ("FR-01.11", "AC01"),
+        ("FR-01.11", "AC02"),
+        ("FR-01.11", "AC03"),
+    )
+    assert result.registry == {"FR-01.11": 3}
+    assert "[AC01] Given a change described in ordinary words" in result.content
+    assert "[AC02] Given a feature or a change" in result.content
+    assert "[AC03] Given a change of medium size" in result.content
+
+
+def test_two_frs_number_independently():
+    result = ac_identity.mint(TWO_FRS)
+    assert result.assigned == (("FR-01.01", "AC01"), ("FR-01.02", "AC01"))
+    assert result.registry == {"FR-01.01": 1, "FR-01.02": 1}
+
+
+def test_marker_sits_after_checkbox_decoration():
+    """Round-tripped, not just minted (external code review, 2026-09-06
+    round 2, GLM low): read() relies entirely on fr_criteria.block_criteria
+    stripping the checkbox before parse_marker sees the text -- if that ever
+    changed, read() would silently stop pairing this shape with its id and
+    no test would fail."""
+    result = ac_identity.mint(WITH_CHECKBOX)
+    assert "- [ ] [AC01] Given a thing" in result.content
+    assert ac_identity.read(result.content, "FR-02.01") == [
+        ("AC01", "Given a thing, when it happens, then it holds.")
+    ]
+
+
+def test_marker_does_not_disturb_a_trailing_footnote():
+    result = ac_identity.mint(WITH_FOOTNOTE)
+    assert "[AC01] Given a thing, when it happens, then it holds." in result.content
+    assert "(iterate-2026-01-01-example)" in result.content
+    # the footnote is a continuation line of the SAME bullet, so it joins
+    # onto the criterion text exactly like any other wrapped second line.
+    assert ac_identity.read(result.content, "FR-03.01") == [
+        ("AC01", "Given a thing, when it happens, then it holds. (iterate-2026-01-01-example)")
+    ]
+
+
+def test_a_placeholder_bullet_is_still_minted_its_own_id():
+    """A `TBD` slot gets an identity immediately -- the id names the SLOT,
+    not the (not yet written) wording; `fr_criteria.criteria_for` drops it
+    from the criteria TEXT list regardless, so nothing downstream mistakes a
+    minted placeholder for a real criterion."""
+    result = ac_identity.mint(WITH_PLACEHOLDER)
+    assert result.assigned == (("FR-04.01", "AC01"), ("FR-04.01", "AC02"))
+    assert "[AC01] TBD" in result.content
+    assert "[AC02] Given a real thing" in result.content
+
+
+# ---------------------------------------------------------------------------
+# Idempotency + never-renumbered — the sub-iterate's hard acceptance criteria.
+# ---------------------------------------------------------------------------
+
+def test_rerunning_the_minter_on_its_own_output_is_a_no_op():
+    once = ac_identity.mint(FRESH_FR)
+    twice = ac_identity.mint(once.content, once.registry)
+    assert twice.content == once.content
+    assert twice.assigned == ()
+    assert twice.registry == once.registry
+
+
+def test_inserting_a_bullet_in_the_middle_never_renumbers_existing_ids():
+    once = ac_identity.mint(FRESH_FR)
+    lines = once.content.split("\n")
+    insert_at = next(i for i, line in enumerate(lines) if "[AC02]" in line)
+    lines.insert(insert_at, "- (E) A brand new criterion inserted in the middle.")
+    mutated = "\n".join(lines)
+
+    again = ac_identity.mint(mutated, once.registry)
+
+    assert "[AC01] Given a change described in ordinary words" in again.content
+    assert "[AC02] Given a feature or a change" in again.content
+    assert "[AC03] Given a change of medium size" in again.content
+    # the new bullet gets the NEXT free number, not squeezed between 01/02
+    assert again.assigned == (("FR-01.11", "AC04"),)
+    assert "[AC04] A brand new criterion inserted in the middle." in again.content
+
+
+def test_deleting_a_minted_bullet_never_frees_its_number():
+    once = ac_identity.mint(FRESH_FR)
+    # Delete the AC02 bullet's two lines (its wrapped continuation too).
+    lines = [
+        line for line in once.content.split("\n")
+        if "[AC02]" not in line and "records whether it adds" not in line
+    ]
+    mutated = "\n".join(lines)
+
+    again = ac_identity.mint(mutated, once.registry)  # registry remembers AC02 existed
+    assert again.assigned == ()  # nothing new to mint
+    assert again.registry == {"FR-01.11": 3}  # high-water mark unmoved
+
+    # A genuinely new criterion added afterwards must NOT reuse AC02.
+    lines.append("- (E) A fresh criterion added after the deletion.")
+    with_new = "\n".join(lines)
+    third = ac_identity.mint(with_new, again.registry)
+    assert third.assigned == (("FR-01.11", "AC04"),)
+
+
+def test_seeding_from_a_document_ahead_of_a_stale_registry():
+    """If the registry snapshot lagged behind hand-edited markers, mint()
+    seeds itself from the document rather than clashing."""
+    already_marked = (
+        "### FR-05.01 — Title\n\n"
+        "- (E) [AC05] Given a thing, when it happens, then it holds.\n"
+        "- (E) Given a second thing, when it happens, then it holds too.\n"
+    )
+    result = ac_identity.mint(already_marked, registry={})
+    assert result.assigned == (("FR-05.01", "AC06"),)
+    assert result.registry == {"FR-05.01": 6}
+
+
+# ---------------------------------------------------------------------------
+# read() — the reader half, built on lib.fr_criteria (R0).
+# ---------------------------------------------------------------------------
+
+def test_read_returns_minted_ids_paired_with_their_text():
+    minted = ac_identity.mint(FRESH_FR).content
+    criteria = ac_identity.read(minted, "FR-01.11")
+    assert [ac_id for ac_id, _ in criteria] == ["AC01", "AC02", "AC03"]
+    ac01_id, ac01_text = criteria[0]
+    assert ac01_id == "AC01"
+    assert ac01_text.startswith("Given a change described in ordinary words")
+
+
+def test_read_reports_none_for_a_not_yet_minted_criterion():
+    criteria = ac_identity.read(FRESH_FR, "FR-01.11")
+    assert [ac_id for ac_id, _ in criteria] == [None, None, None]
+
+
+def test_read_all_covers_every_fr_in_document_order():
+    minted = ac_identity.mint(TWO_FRS).content
+    by_fr = ac_identity.read_all(minted)
+    assert list(by_fr.keys()) == ["FR-01.01", "FR-01.02"]
+    assert by_fr["FR-01.01"][0][0] == "AC01"
+    assert by_fr["FR-01.02"][0][0] == "AC01"
+
+
+def test_read_agrees_with_fr_criteria_on_continuation_line_joining():
+    """The wrapped second line of a criterion joins onto the first -- proof
+    that read() actually delegates to fr_criteria rather than reimplementing
+    (and silently diverging from) its continuation-line rule."""
+    minted = ac_identity.mint(FRESH_FR).content
+    _, text = ac_identity.read(minted, "FR-01.11")[1]
+    assert text == (
+        "Given a feature or a change, when it is classified, then it records "
+        "whether it adds, modifies, removes or leaves the requirements untouched."
+    )
+
+
+# Marker-validation edge cases (malformed/duplicate markers, registry gaps)
+# and boundary shapes (blank lines, heading rank) live in
+# ``test_ac_identity_markers.py`` -- split there purely to keep both files
+# under the 300-LOC bloat-baseline threshold.
