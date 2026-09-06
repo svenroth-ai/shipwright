@@ -763,6 +763,71 @@ independently reproducible fingerprint or a re-run of the detectors at F11,
 consistent with every other runner-contract step being contract-enforced
 rather than independently gated.
 
+**A row THIS run touches is held to `fr-authoring.md` for real
+(iterate-2026-09-06-fr-hygiene-touched-rows).** Group I's substantive checks —
+I1 (name hygiene), I2 (description hygiene), I7 (criterion shape) — are
+deliberately advisory (`shared/fr-authoring.md` §7): an adopted repo's
+pre-existing spec must be able to clean up gradually without reddening CI. A
+brownfield project observed carrying ~50 iterates of implementation-prose FR
+descriptions and test-status-report "acceptance criteria" showed the real gap
+that leaves: nothing stopped a row THIS run itself writes or edits from
+violating the same rules. The new F11 verifier
+`check_fr_hygiene_on_touched_rows` (`shared/scripts/tools/verifiers/fr_hygiene.py`)
+closes it narrowly rather than by flipping Group I's advisory status globally
+(which would instantly redden every adopted repo's dashboard for content
+nobody in the current run touched): it RECOMPUTES, from the run's diff
+(merge-base..HEAD, resolved via `git_helpers._branch_base_commit` — the same
+hardened, corroborated resolver path-selection already uses, so a stale
+`origin/HEAD` symref or a rewound trunk cannot make a row look untouched),
+which FR ids had their Name/Description cells changed OR their
+acceptance-criteria digest changed (the FOLD pattern §3 recommends —
+appending a criterion to an existing, description-unchanged row — must not
+escape the gate just because the row text itself did not move). It then judges
+the DELTA, not the whole row: I1 (name) and I2 (description) run only against
+the CELL that actually changed vs base, and I7 runs only against criteria that
+are NEW at HEAD — a pre-existing violation elsewhere on the same touched row
+that this run did not write is left to Group I's advisory reporting, exactly
+like an untouched row, so the recommended FOLD pattern cannot make a run
+inherit a legacy violation it never wrote. A hit **STOPs finalization**, at
+EVERY complexity — modelled on `check_integration_coverage`, not on
+`check_cross_layer_coverage`'s deliberate medium+ cost floor, since this gate
+neither regenerates manifests nor carries that cost. Row/criteria comparison
+reuses existing per-FR digest machinery (`fr_table_reader.read_fr_rows`,
+`_layer_coverage_ac.criteria_digests`/`spec_text_at`) rather than diffing raw
+text hunks, because `/shipwright-adopt`'s `spec_document.py` renders the whole
+spec from one f-string — a hunk-diff would mark every row touched on any
+regeneration. Fails CLOSED on any git infrastructure gap; only a genuine
+non-git context stands it down, and a `commit` already contained in the trunk
+(no branch range to judge) reports an explicit skip rather than a false "clean".
+
+The name/description detector vocabulary moved to
+`shared/scripts/lib/fr_hygiene_detectors.py` (Group I's own
+`group_i_detectors.py` now delegates to it via `load_shared_lib`, the same
+move `fr_criteria.py` already made for the criteria reader) so this verifier —
+which must never cross-plugin-import the compliance plugin's own
+`scripts/audit` package — reads the identical vocabulary Group I's advisory
+checks use. The new criterion-shape rule itself lives in `fr-authoring.md` §3b
+(added in the same change, since I7 needed a written rule to enforce) and its
+checker in `shared/scripts/lib/fr_criterion_shape.py` — deliberately its own
+module rather than a growth of `fr_criteria.py`, so tightening the shape rule
+can never touch the criteria-FINDING logic three other gates (S5, the
+cross-layer hard gate, I6) depend on staying exactly as permissive as today.
+
+**A stale TBD is visibility, not a gate (same change).** `/shipwright-adopt`'s
+`"_TBD — refine via /shipwright-iterate._"` placeholder is a legitimate
+starting point, but nothing ever escalated it — the same observed project
+still carried TBD criteria for its earliest FRs after ~50 iterates. Group I's
+new I8 (`group_i_tbd_age.py`) reads how long a TBD has survived straight from
+git history (`git blame` on the marker's own line) rather than stamping any
+new state next to it — a second non-bullet line between an FR heading and its
+bullets would disqualify `fr_criteria`'s leading-bullet run entirely (the
+`_Source: ...._` attribution exception tolerates exactly one), zeroing out
+real criteria for any FR carrying both a TBD marker and actual bullets. I8 is
+advisory for a third reason distinct from I1-I3/I6/I7: it targets exactly the
+legacy content a run did NOT touch, so blocking on it would redden every
+dormant adopted repo's CI. It surfaces at MEDIUM severity in the compliance
+dashboard/triage once a TBD passes 90 days — visibility, never a gate.
+
 **Architecture brief (iterate + plan).** A third file joins that run-scoped
 directory: `.shipwright/planning/iterate/<run_id>/architecture_brief.md` (plan
 side: `{planning_dir}/architecture_brief.md`), written pre-build by Step 3.5's

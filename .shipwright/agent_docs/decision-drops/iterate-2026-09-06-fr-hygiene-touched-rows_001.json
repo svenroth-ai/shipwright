@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-fr-hygiene-touched-rows",
+  "date": "2026-09-06",
+  "section": "shipwright-iterate / shipwright-compliance",
+  "title": "Diff-scoped FR-hygiene gate for touched rows, plus I7/I8",
+  "context": "Group I's I1/I2/I6 are advisory-only by design so legacy specs clean up gradually; an adopted repo carried ~50 iterates of bad FR rows with every gate clean. No criterion-shape check existed; TBD placeholders never aged.",
+  "decision": "Added a non-dodgeable F11 gate enforcing I1/I2/I7 on FR rows a run's own diff touches, plus new I7 (criterion shape) and I8 (TBD age via git blame) Group I checks. See spec-ref for the full design.",
+  "consequences": "Bad new/edited FR rows now fail finalization; legacy rows unaffected. Dashboard gains I7/I8. Three test fixtures updated for the new check-id set.",
+  "rationale": "Independent Opus review rejected blanket-promoting I1/I2/I6 (breaks documented legacy-cleanup rationale, redden every adopted repo) and a producer-conditional split (unimplementable at the audit layer). See spec-ref.",
+  "rejected": "Global I1/I2/I6 promotion; producer-conditional split; a new TBD-since marker line (breaks existing criteria detection).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-06-fr-hygiene-touched-rows-fr-hygiene-gate.md"
+}

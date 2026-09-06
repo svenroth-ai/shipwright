@@ -1,12 +1,12 @@
 # Triage Inbox
 
-> Auto-generated 2026-09-01T21:51:58.004163Z. Items waiting for triage decision.
+> Auto-generated 2026-09-04T22:33:29.754787Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 882
-- Triage: 12 | Promoted: 4 | Dismissed: 864 | Snoozed: 2
+- Total: 886
+- Triage: 12 | Promoted: 4 | Dismissed: 868 | Snoozed: 2
 
 ## Top 12 items (severity-sorted)
 
@@ -34,13 +34,6 @@
     ```
   - Promote: `triage_promote.py --id trg-d76ab0d9 --task-ref EXT:<ref>`
 
-### Source: external\_review\_degradation (1 item)
-
-<a id="trg-d920e1ab"></a>
-- **External review: deepseek reviewer degraded during code review** `id=trg-d920e1ab | severity=medium | kind=maintenance → P2/engineering`
-  - The deepseek reviewer arm did not return a usable reply during an external code review \(provider=openrouter\), while a…
-  - Promote: `triage_promote.py --id trg-d920e1ab --task-ref EXT:<ref>`
-
 ### Source: iterate-2026-08-01-drop-write-once-step-fields (1 item)
 
 <a id="trg-61438a67"></a>
@@ -66,6 +59,17 @@
     Work item: P4.02: grade_snapshot dirty: the orchestrator's sibling-process residual
     ```
   - Promote: `triage_promote.py --id trg-9fe7c8b1 --task-ref EXT:<ref>`
+
+### Source: manual (1 item)
+
+<a id="trg-6558a81f"></a>
+- **Group I's business-language and acceptance-criteria checks are advisory-only, so fr-authoring.md is unenforced** `id=trg-6558a81f | severity=medium | kind=compliance → P2/engineering`
+  - Observed on leadwright \(adopted 2026-05-29, ~50 iterates since\). Its .shipwright/planning/01-adopted/spec.md violates…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate <id>
+    ```
+  - Promote: `triage_promote.py --id trg-6558a81f --task-ref EXT:<ref>`
 
 ### Source: operator-request (1 item)
 

@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-09-02T15:38:16.784033+00:00
-Source-State: run=iterate-2026-09-02-glm-plan-code-review-swap
-Consistency-audit: last run 2026-07-28 (36 days earlier) — FAIL
-Total commits: 1450
+Generated: 2026-09-06T10:22:57.720561+00:00
+Source-State: run=iterate-2026-09-06-fr-hygiene-touched-rows
+Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
+Total commits: 1459
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 492
-    "feat" : 384
-    "chore" : 264
+    "fix" : 498
+    "feat" : 385
+    "chore" : 266
     "docs" : 156
     "refactor" : 88
     "test" : 37
@@ -23,10 +23,16 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 492 commits
+### Fixes (fix) — 498 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-05 | main | tighten, don't reject, host-lease paths a caller creates (#678) | 9f7b1c168f92 |
+| 2026-09-05 | review | resolve bash/Python /tmp path divergence in the review-scratch handoff (#676) | 66c671d538f1 |
+| 2026-09-05 | external-review | stop sending codex-exec-only flags to `codex login status` (#677) | 9b4fb791210d |
+| 2026-09-04 | pr-review | swap PR-review gate default model from GLM 5.3 to GPT-5.6 Luna (#675) | fb2528e0a2d0 |
+| 2026-09-03 | pr-review | log every decision to CI stderr, not just unknown ones (#674) | 8b4246bd7c56 |
+| 2026-09-02 | review | swap DeepSeek for GLM 5.3 as the plan/code-review cascade's second external reviewer (#671) | 753aa2191596 |
 | 2026-09-02 | external-review | retry degraded reply budgeted by max_retries, report partial degradation loudly (#670) | 218dfb4687d0 |
 | 2026-09-01 | pr-review | swap PR-review gate default model from DeepSeek to GLM 5.3 (#669) | 8a15587787a4 |
 | 2026-09-01 | changelog | dogfood release-manifest sync + add marketplace_json format (#668) | 43e8969b252b |
@@ -520,10 +526,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 384 commits
+### Features (feat) — 385 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-03 | external-review | add Codex CLI as a second, config-driven GPT review-leg path (#672) | 07d42df65510 |
 | 2026-08-27 | changelog | publish a condensed GitHub Release page for each tagged release (#657) | 8255aca2f148 |
 | 2026-08-26 | compliance | add CI gate to regenerate and compare test-traceability.json (#654) | 3d5ae1c5ac9e |
 | 2026-08-12 | changelog | sync published-package manifest versions at release (#633) | a81cd8004a67 |
@@ -909,10 +916,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 264 commits
+### Chores (chore) — 266 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-06 | triage | sweep 2 outbox append(s) into branch | b3b80238cf47 |
+| 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
 | 2026-09-01 | release | v0.33.1 (#667) | 77d10de1c32a |
 | 2026-08-29 | docs | sync guide.md with grade plugin, compliance groups A-I, traceability tagging (#663) | 31517fe72604 |
 | 2026-08-27 | release | v0.33.0 (#661) | 8a3759f2f430 |
@@ -1527,7 +1536,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1450 |
+| Total commits | 1459 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1450 |
+| Human-authored commits | 1459 |
 

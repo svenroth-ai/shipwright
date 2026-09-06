@@ -40,6 +40,14 @@ from lib.fr_id_sequence import canonical_fr_id, sequence_of  # noqa: E402
 from lib.render_helpers import _utc_today  # noqa: E402
 from lib.spec_table import _load_shared, effective_features, render_fr_table  # noqa: E402
 
+#: Emitted for an FR this adoption pass could derive no acceptance criteria
+#: for. A named constant, not an inline literal, because
+#: `group_i_tbd_age.TBD_MARKER` (shipwright-compliance) matches this exact
+#: string verbatim to compute how long a TBD placeholder has survived — a
+#: reword here would silently stop that check from ever firing again.
+#: `test_tbd_marker_parity.py` (integration-tests/) pins the two in sync.
+TBD_MARKER = "_TBD — refine via /shipwright-iterate._"
+
 
 def fold_features(
     features: list[dict[str, Any]],
@@ -161,39 +169,41 @@ def _render_spec_md(
     if not constraint_block:
         constraint_block = "_No constraints inferred._\n"
 
-    # Acceptance Criteria block. When any FR carries non-empty
-    # `acceptance_criteria`, render a per-FR sub-list with origin marker
-    # (enrichment / tests). FRs without ACs keep today's "TBD" placeholder.
+    # Acceptance Criteria block — a per-FR entry for EVERY FR, always, even
+    # when none of them has a derived AC yet: a per-FR `### FR-xx.yy` heading
+    # plus `TBD_MARKER` is what makes a TBD placeholder ADDRESSABLE (I8,
+    # `group_i_tbd_age.py`, reads it by exact position via `git blame`). This
+    # used to branch into undifferentiated prose with no per-FR headings at
+    # all when NOT ANY feature had an AC — the common shape for a freshly
+    # adopted repo where nothing was detected — which made I8 permanently
+    # blind to precisely the specs most likely to carry a TBD for months
+    # (doubt review, medium: the module docstring claimed the marker is
+    # emitted "for any FR it could not derive acceptance criteria for", which
+    # was false exactly here).
     has_any_ac = any(f.get("acceptance_criteria") for f in all_features)
-    ac_block = ""
-    if has_any_ac:
-        for f in all_features:
-            fr_id = f.get("fr_id", "FR-01.?")
-            label = f.get("label", "")
-            acs = f.get("acceptance_criteria") or []
-            source = f.get("acceptance_source") or ""
-            if not acs:
-                ac_block += (
-                    f"### {fr_id} — {label}\n\n"
-                    "_TBD — refine via /shipwright-iterate._\n\n"
-                )
-                continue
-            origin_note = (
-                f"_Source: {source}._" if source else ""
+    ac_block = (
+        "The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` "
+        "(if Playwright crawl succeeded) covers mechanical rendering / "
+        "visibility checks, not semantic behavior.\n\n"
+    ) if not has_any_ac else ""
+    for f in all_features:
+        fr_id = f.get("fr_id", "FR-01.?")
+        label = f.get("label", "")
+        acs = f.get("acceptance_criteria") or []
+        source = f.get("acceptance_source") or ""
+        if not acs:
+            ac_block += (
+                f"### {fr_id} — {label}\n\n"
+                f"{TBD_MARKER}\n\n"
             )
-            ac_block += f"### {fr_id} — {label}\n\n{origin_note}\n\n"
-            for ac in acs:
-                ac_block += f"- {ac}\n"
-            ac_block += "\n"
-    else:
-        ac_block = (
-            "Acceptance criteria per FR are placeholders (`TBD`) — refine them "
-            "with explicit behavior expectations as features evolve via "
-            "`/shipwright-iterate`.\n\n"
-            "The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` "
-            "(if Playwright crawl succeeded) covers mechanical rendering / "
-            "visibility checks, not semantic behavior.\n"
+            continue
+        origin_note = (
+            f"_Source: {source}._" if source else ""
         )
+        ac_block += f"### {fr_id} — {label}\n\n{origin_note}\n\n"
+        for ac in acs:
+            ac_block += f"- {ac}\n"
+        ac_block += "\n"
 
     return f"""# Specification — {project_name} / {split_name}
 

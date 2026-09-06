@@ -10,6 +10,10 @@ own requirement, and duplicate FR IDs.
 - I4 — the same FR ID used twice anywhere in the catalog
 - I5 — a ``Basis`` value outside the closed vocabulary
 - I6 — an FR with no acceptance criteria at all (`fr-authoring.md` §3a)
+- I7 — an FR criterion that exists but is not `(E) Given ... when ... then ...`
+  shaped (`fr-authoring.md` §3b)
+- I8 — a `/shipwright-adopt` TBD acceptance-criteria placeholder that has
+  survived >= 90 days (git history, no stamped state)
 
 **Advisory by construction, not by luck.** The three prose checks (I1/I2/I3)
 never emit ``status="fail"``, because a failing finding feeds
@@ -41,7 +45,8 @@ from scripts.audit.audit_adapters import (
     Finding,
     load_shared_lib,
 )
-from scripts.audit.group_i_criteria import frs_without_criteria
+from scripts.audit.group_i_criteria import frs_with_malformed_criteria, frs_without_criteria
+from scripts.audit.group_i_tbd_age import DEFAULT_THRESHOLD_DAYS, frs_with_stale_tbd
 
 # Detectors live in the pure sibling module; re-exported here so callers and
 # tests keep a single entry point (`group_i.name_violations`, …).
@@ -70,13 +75,17 @@ _CHECKS: tuple[tuple[str, str, str], ...] = (
     ("I4", "Duplicate FR ID in the catalog", "MEDIUM"),
     ("I5", "Malformed Basis value", "MEDIUM"),
     ("I6", "FR without acceptance criteria", "LOW"),
+    ("I7", "FR criterion not in the prescribed Given/when/then shape", "LOW"),
+    ("I8", "Stale TBD acceptance-criteria placeholder", "MEDIUM"),
 )
 
-#: I5's and I6's display names, bound by NAME rather than by `_CHECKS[n][1]`.
-#: The positional form silently relabels the check if anyone reorders `_CHECKS`,
-#: and both are referenced away from their tuple.
+#: I5's, I6's, I7's and I8's display names, bound by NAME rather than by
+#: `_CHECKS[n][1]`. The positional form silently relabels the check if anyone
+#: reorders `_CHECKS`, and all four are referenced away from their tuple.
 _I5_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I5")
 _I6_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I6")
+_I7_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I7")
+_I8_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I8")
 
 #: I1/I2/I3 are prose heuristics over legacy specs, so they report WITHOUT
 #: ``status="fail"``: a failing finding feeds ``AuditReport.any_fail``, which
@@ -97,7 +106,19 @@ _I6_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I6")
 #: divided) is a judgement a human makes. Zero criteria is the observable
 #: SIGNAL that the judgement is owed, not the verdict itself, and a signal that
 #: reddens CI would be read as the verdict.
-_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6"})
+#: I7 is advisory for the same reason as I6: whether a criterion is well-shaped
+#: is objective (this is not a prose heuristic over legacy specs), but the rule
+#: it serves is new (`fr-authoring.md` §3b, added alongside this check) and a
+#: spec written before it existed must be able to clean up gradually, same as
+#: every other legacy-authoring gap Group I reports. The diff-scoped F11 gate
+#: (`shared/scripts/tools/verifiers/fr_hygiene.py`) enforces I1/I2/I7 for real
+#: on any row THIS run touches — that is where the teeth are, not here.
+#: I8 is advisory for a THIRD reason, distinct from I1-I3/I6/I7: it targets
+#: exactly the legacy content a run did NOT touch — a stale TBD is by
+#: definition something nobody has come back to — so it must never redden a
+#: dormant adopted repo's CI. It is a visibility signal (MEDIUM severity, so it
+#: sorts above the LOW prose checks in a dashboard) for triage, never a gate.
+_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6", "I7", "I8"})
 
 
 def _finding(check_id: str, name: str, severity: str, status: str, detail: str) -> Finding:
@@ -214,4 +235,10 @@ def run(
         _report("I6", _I6_NAME, "LOW",
                 frs_without_criteria(project_root, rows),
                 "FR(s) with no acceptance criteria"),
+        _report("I7", _I7_NAME, "LOW",
+                frs_with_malformed_criteria(project_root, rows),
+                "FR(s) with a criterion not in Given/when/then shape"),
+        _report("I8", _I8_NAME, "MEDIUM",
+                frs_with_stale_tbd(project_root, rows, threshold_days=DEFAULT_THRESHOLD_DAYS),
+                f"FR(s) with a TBD placeholder open >= {DEFAULT_THRESHOLD_DAYS} days"),
     ]

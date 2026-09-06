@@ -177,11 +177,12 @@ def test_fv2_group_i_skips_every_check_on_empty():
     not the skip; see test_audit_group_i_states.py for the six states.
 
     I5 (Basis vocabulary) joined the group in S5; I6 (an FR with no acceptance
-    criteria) in the REQ-3 granularity round. I6 skips here for the same reason
-    as its siblings and for one of its own: with no spec on disk there is no
-    requirement to judge, and reporting "no FR lacks criteria" over an empty
-    catalogue would be the positive-claim-over-the-empty-set shape this very
-    file exists to police.
+    criteria) in the REQ-3 granularity round; I7 (criterion shape) and I8
+    (stale TBD placeholder age) in iterate-2026-09-06-fr-hygiene-touched-rows.
+    Each new check skips here for the same reason as its siblings: with no
+    spec on disk there is no requirement to judge, and reporting a positive
+    absence-of-defect claim over an empty catalogue would be the exact
+    positive-claim-over-the-empty-set shape this file exists to police.
 
     **S6 DELIBERATELY DID NOT FLIP THIS.** It flipped the two sites that emitted
     a positive claim over the empty set (D-orphan / D-layer) and the one whose
@@ -191,7 +192,9 @@ def test_fv2_group_i_skips_every_check_on_empty():
     false red on a repo with no requirements yet, bought for no gain.
     """
     findings = _probe("group_i_empty", "absent")
-    assert {f["check_id"] for f in findings} == {"I1", "I2", "I3", "I4", "I5", "I6"}
+    assert {f["check_id"] for f in findings} == {
+        "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8",
+    }
     assert {f["status"] for f in findings} == {"skip"}  # FROZEN-BUG (FV-2)
     # The state is now named rather than generic -- S5's half of FV-2.
     assert all("no spec.md found" in f["detail"] for f in findings)

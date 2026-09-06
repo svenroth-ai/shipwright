@@ -1,98 +1,46 @@
-"""Pure detectors for Group I — Requirement Hygiene.
+"""Group I's own vocabulary for the I1/I2/I3 prose detectors.
 
-Split out of ``group_i.py`` to keep both modules under the 300-LOC source cap.
-Everything here is pure and total: string in, verdict out. No I/O, no imports
-from the audit package.
+**Delegates to ``lib.fr_hygiene_detectors``** (iterate-2026-09-06-fr-hygiene-touched-rows),
+the same move ``group_i_criteria.py`` already made for I6's criteria reader: a
+second consumer — the diff-scoped, non-dodgeable F11 gate
+(``shared/scripts/tools/verifiers/fr_hygiene.py``) — needs the identical
+name/description hygiene vocabulary Group I's advisory checks use, and an F11
+verifier must never cross-plugin-import this plugin's own ``scripts.audit``
+package. This module keeps its own name and signature —
+``violations``/``name_violations``/``description_violations``/``is_fold_candidate``
+are Group I's own vocabulary — but the regexes and detection logic now live in
+the shared module.
 
-The vocabularies below MUST stay in step with `shared/fr-authoring.md`:
-§1/§5 for the implementation-detail fences, §3 for the fold verbs.
+Loaded via ``load_shared_lib`` (ADR-045): a bare ``from lib import
+fr_hygiene_detectors`` would bind ``sys.modules['lib']`` to the SHARED package
+for the rest of the test session, shadowing this plugin's own ``lib`` package
+(``thresholds.py``).
 
-Deliberately NOT linted (the rulebook states them, no detector claims them):
-§5.3 "about six words" and §5.4 "one FR, one capability" — both need editorial
-judgement, and a wrong automated verdict on them would be worse than silence.
+Pure: no I/O.
 """
 
 from __future__ import annotations
 
-import re
+from scripts.audit.audit_adapters import load_shared_lib
 
-
-_HTTP_VERB_RE = re.compile(r"\b(?:GET|POST|PUT|PATCH|DELETE|HEAD)\b")
-_ADR_RE = re.compile(r"\bADR-\d+", re.IGNORECASE)
-_ITERATE_SLUG_RE = re.compile(r"\biterate-\d{4}-\d{2}-\d{2}")
-#: A filename extension preceded by a word character. Deliberately anchored on
-#: the extension rather than matching the whole path: a leading ``[\w./-]*\w``
-#: overlaps its own character class (``\w`` is a subset of ``[\w./-]``), which
-#: backtracks exponentially on a long word-char run that never reaches a dot —
-#: a real ReDoS over arbitrary requirement prose (CodeQL py/redos, PR #395).
-#: Presence is all this detector needs, so one literal dot suffices and the
-#: match is linear. Longest alternatives first so ``.tsx`` is not read as
-#: ``.ts`` + ``x``.
-_FILE_PATH_RE = re.compile(
-    r"\w\.(?:tsx|ts|jsx|js|mjs|cjs|py|json|ya?ml|toml|sh|md|css|html)\b"
-)
-_SNAKE_RE = re.compile(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b")
-_CAMEL_RE = re.compile(r"\b[a-z]+[A-Z][A-Za-z]*\b")
-#: PascalCase identifiers (``TaskService``, ``FrRow``). Requires an internal
-#: capital, so ordinary capitalised prose ("Command Center") never matches.
-#: Each repetition must start with an uppercase letter and the tail is
-#: lowercase-only, so a run like ``ABCD`` has exactly ONE parse — an inner
-#: ``[a-zA-Z]*`` would overlap the group's own ``[A-Z]`` start and reintroduce
-#: the same backtracking class as the file-path pattern above.
-_PASCAL_RE = re.compile(r"\b[A-Z][a-z]+(?:[A-Z][a-z]*)+\b")
-
-#: Fold signals (§3). The "Phase N of" form requires a nearby FR reference —
-#: without it, ordinary domain prose ("phase 2 of the application form") would
-#: be misread as a change-delta.
-_FOLD_RE = re.compile(
-    r"\b(?:completes|complete|fixes|fix|polishes|polish|modifies|replaces"
-    r"|extends|supersedes)\s+FR-\d"
-    r"|\bPhase\s+\d+\s+of\b(?=.{0,60}FR-\d)",
-    re.IGNORECASE,
-)
-
-#: Case-mixed words that are ordinary product vocabulary, not code symbols.
-#: Matched case-insensitively against both camelCase and PascalCase hits.
-_NOT_SYMBOLS = frozenset({
-    "ios", "ipados", "iphone", "ipad", "macos", "tvos", "watchos", "icloud",
-    "imessage", "ebay", "esim", "javascript", "typescript", "postgresql",
-    "graphql", "youtube", "github", "gitlab", "openai", "chatgpt", "paypal",
-})
-
-
-def _has_code_symbol(text: str) -> bool:
-    if _SNAKE_RE.search(text):
-        return True
-    candidates = _CAMEL_RE.findall(text) + _PASCAL_RE.findall(text)
-    return any(m.lower() not in _NOT_SYMBOLS for m in candidates)
+_detectors = load_shared_lib("fr_hygiene_detectors")
 
 
 def violations(text: str) -> list[str]:
     """Kinds of implementation detail present in ``text`` (empty = clean)."""
-    out: list[str] = []
-    if _HTTP_VERB_RE.search(text):
-        out.append("http-verb")
-    if _ADR_RE.search(text):
-        out.append("adr-number")
-    if _ITERATE_SLUG_RE.search(text):
-        out.append("iterate-slug")
-    if _FILE_PATH_RE.search(text):
-        out.append("file-path")
-    if _has_code_symbol(text):
-        out.append("code-symbol")
-    return out
+    return _detectors.violations(text)
 
 
 def name_violations(name: str) -> list[str]:
     """Implementation detail leaking into an FR *name* (§5)."""
-    return violations(name)
+    return _detectors.name_violations(name)
 
 
 def description_violations(description: str) -> list[str]:
     """Implementation detail leaking into an FR *description* (§1)."""
-    return violations(description)
+    return _detectors.description_violations(description)
 
 
 def is_fold_candidate(description: str) -> bool:
     """True when a row describes a change to another FR, not a capability (§3)."""
-    return bool(_FOLD_RE.search(description))
+    return _detectors.is_fold_candidate(description)

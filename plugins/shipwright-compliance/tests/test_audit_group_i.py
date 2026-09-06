@@ -122,8 +122,9 @@ def _by_id(findings):
 def test_clean_greenfield_spec_is_clean(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, _GREENFIELD)))
     # I5 (Basis vocabulary) joined the group in campaign S5; I6 (acceptance
-    # criteria) in the REQ-3 granularity round.
-    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6"}
+    # criteria) in the REQ-3 granularity round; I7 (criterion shape) in
+    # iterate-2026-09-06-fr-hygiene-touched-rows.
+    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8"}
     # Greenfield has no Name column, so the §5 fence is inapplicable, NOT passing.
     assert findings["I1"].status == "skip"
     assert "not applicable" in findings["I1"].detail
@@ -136,6 +137,11 @@ def test_clean_greenfield_spec_is_clean(tmp_path):
     # both rows — advisory, never a failure.
     assert findings["I6"].status == "pass"
     assert "FR-02.01" in findings["I6"].detail
+    # No criteria exist at all, so I7 (shape) has nothing to judge as malformed.
+    assert findings["I7"].status == "pass"
+    # No TBD placeholder text in this fixture at all.
+    assert findings["I8"].status == "pass"
+    assert "no FR" in findings["I7"].detail
 
 
 def test_clean_adopt_spec_passes_the_name_fence(tmp_path):

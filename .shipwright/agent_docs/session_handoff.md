@@ -1,41 +1,45 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-02-glm-plan-code-review-swap"
+run_id: "iterate-2026-09-06-fr-hygiene-touched-rows"
 phase: "iterate"
-reason: "iterate: replace DeepSeek with GLM 5.3 in the plan/code-review cascade"
-timestamp: "2026-09-02T15:38:16.784033+00:00"
+reason: "iterate: fr-hygiene-touched-rows"
+timestamp: "2026-09-06T10:22:57.720561+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-02 15:38:16 UTC
+> Auto-generated 2026-09-06 10:22:57 UTC
 
 ## Session Info
 
-- **Session ID**: 6ffac005-7cb2-4376-a9d9-7edc205c6023
-- **Timestamp**: 2026-09-02 15:38:16 UTC
-- **Reason**: iterate: replace DeepSeek with GLM 5.3 in the plan/code-review cascade
+- **Session ID**: 28f49677-63d2-4c13-8b2f-23650c338a96
+- **Timestamp**: 2026-09-06 10:22:57 UTC
+- **Reason**: iterate completion: iterate-2026-09-06-fr-hygiene-touched-rows
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-01-external-review-retry-degradation
-- **Date**: 2026-09-01T21:55:15.250453Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/external-review-retry-degradation
-- **ADR**: iterate-2026-09-01-external-review-retry-degradation
+- **Run ID**: iterate-2026-09-06-fr-hygiene-touched-rows
+- **Date**: 2026-09-06T10:25:13.027137Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/fr-hygiene-touched-rows
+- **ADR**: iterate-2026-09-06-fr-hygiene-touched-rows
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-09-06-fr-hygiene-touched-rows.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/glm-plan-code-review-swap
-- **Spec**: .shipwright/planning/iterate/iterate-2026-09-02-glm-plan-code-review-swap-spec-substitute.md
-- **External Review Marker**: missing
-- **Review Cascade**: no run_id resolved
+- **Branch**: iterate/fr-hygiene-touched-rows
+- **Run ID**: iterate-2026-09-06-fr-hygiene-touched-rows
+- **Spec**: .shipwright/planning/iterate/2026-09-06-fr-hygiene-touched-rows.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-09-06T09:04:53))
+- **Review Cascade**: complete
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -49,8 +53,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/glm-plan-code-review-swap
-- **Last Commit**: 218dfb46 fix(external-review): retry degraded reply budgeted by max_retries, report partial degradation loudly (#670)
+- **Branch**: iterate/fr-hygiene-touched-rows
+- **Last Commit**: 95e87264 feat(compliance): add diff-scoped FR-row hygiene gate + I7/I8 checks
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +70,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-64135636 | work_completed | iterate (Replace DeepSeek with GLM 5.3 as the plan/code-review cascade's second external reviewer) | 2026-09-02 |
-| evt-9f553a68 | work_completed | iterate (Fix dead external-review llm_client.max_retries/retry_codes config: retry a degraded (empty/truncated) reply budgeted by max_retries, report partial reviewer-leg degradation loudly, auto-file a deduped triage card) | 2026-09-01 |
-| evt-201586e6 | grade_snapshot | — | 2026-09-01 |
-| evt-14ab7b4d | work_completed | iterate (Add shipwright_changelog_config.json declaring this monorepo's own 14 plugin.json manifests + marketplace.json, and extend sync_release_manifests.py with a marketplace_json format that bumps a manifest's root version and every nested plugins[].version entry together in one write pass.) | 2026-09-01 |
-| evt-5ed8d982 | work_completed | iterate (Swap the Tier-3 CI PR-review gate's model from anthropic/claude-sonnet-4.6 to deepseek/deepseek-v4-pro, reusing the review cascade's fail-closed ZDR provider-routing policy.) | 2026-08-31 |
+| evt-fe941a44 | work_completed | iterate (fr-hygiene-touched-rows: diff-scoped, non-dodgeable F11 gate for FR rows a run itself touches, plus I7 (criterion shape) and I8 (stale TBD age) Group I checks) | 2026-09-06 |
+| evt-a96caec2 | work_completed | iterate (iterate: fix Codex login-status probe misreporting availability) | 2026-09-04 |
+| evt-0cc48f04 | work_completed | iterate (Swap the Tier-3 PR-review CI gate's default model from GLM 5.3 to GPT-5.6 Luna after GLM was found to silently hang (no error, no timeout) on the shared ZDR-gated 2-reseller OpenRouter provider pool; Luna is outside that namespace and routes across 3 independent hosts instead. DeepSeek and GLM remain available as operator overrides.) | 2026-09-03 |
+| evt-7f745844 | work_completed | iterate (Fix a Windows-only silent-corruption bug where bash and native Python resolve a bare /tmp/<path> to two different physical files across the code-review pipeline and campaign-loop diff/units-list handoff) | 2026-09-04 |
+| evt-f3294af4 | work_completed | iterate (pr_review.py now logs a bounded decision excerpt unconditionally, not just on unknown-decision, so a legitimate block/approve/comment is never mistaken for a CI hang) | 2026-09-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 565
-- **Last iterate**: change — Replace DeepSeek with GLM 5.3 as the plan/code-review cascade's second external reviewer (2026-09-02)
+- **Total work events**: 571
+- **Last iterate**: feature — fr-hygiene-touched-rows: diff-scoped, non-dodgeable F11 gate for FR rows a run itself touches, plus I7 (criterion shape) and I8 (stale TBD age) Group I checks (2026-09-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

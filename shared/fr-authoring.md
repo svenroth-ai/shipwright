@@ -145,6 +145,46 @@ like until someone tries to build against it.
 
 ---
 
+## 3b. The shape of one criterion
+
+§3a asks how big a requirement should be; this asks what one line of it should
+look like. An acceptance criterion is a single, testable assertion, written:
+
+```
+- (E) Given <the starting situation>, when <what happens>, then <the
+  guarantee that must hold>.
+```
+
+`shared/glossary.md` and `shared/requirement-elicitation.md` already state this
+form when they define *Acceptance Criterion* — this section is what makes it a
+rule of `fr-authoring.md` itself, the document Group I actually enforces,
+rather than something only quoted about it elsewhere.
+
+**Why the shape matters, not just the presence.** A row can carry text under
+"Acceptance Criteria" and still fail the reader test in §1: a status report
+about tests that already exist ("Scaffold-creation half — verified…") reads
+backwards — it describes what was *checked*, not what the product
+*guarantees*, and it cannot be written until after the test exists, inverting
+the intended order (criteria first, tests derived from them).
+
+| ❌ Not a criterion (a verification note) | ✅ A criterion |
+|---|---|
+| "Scaffold-creation half - verified (auth.ts, test_auth.py): confirmed by the existing suite." | "Given a valid request, when a scaffold is created, then the file exists on disk." |
+| "Write-denial half - not yet covered." | "Given a denied write, when it is attempted, then it is rejected and nothing is written." |
+
+**Both halves — context and outcome.** `Given` names the starting situation,
+`when` names what happens, `then` names the guarantee that must hold
+afterward, including what is prevented or rejected. Dropping the `then` clause
+leaves an action with no stated guarantee — not yet a criterion.
+
+`TBD` remains a legitimate placeholder for a criterion not yet written — this
+section governs the shape of a criterion once one is written, not whether one
+must exist yet. §7's `I8` is the visibility signal for a `TBD` that has sat
+unrefined for a long time; it is advisory and never blocks, since it targets
+exactly the legacy content a run did not touch.
+
+---
+
 ## 4. Numbering and grouping
 
 **ID scheme — `FR-{group}.{NN}`.** The group is the planning split; `NN` is the
@@ -335,6 +375,8 @@ document.
 | `I4` | the same FR ID used twice in one split, or reuse of a retired number | fails the audit |
 | `I5` | a `Basis` value outside the §4a vocabulary, or a blank cell in a table that declares the column | fails the audit |
 | `I6` | an FR with no acceptance criteria at all (§3a) | advisory |
+| `I7` | a criterion that exists but is not in the §3b `Given`/`when`/`then` shape | advisory |
+| `I8` | a `/shipwright-adopt` `TBD` acceptance-criteria placeholder that has survived 90+ days, read from `git blame` | advisory |
 
 **Advisory** means the finding is reported with its count and IDs but does not
 change the audit's verdict or exit code — an existing spec can carry historical
@@ -342,6 +384,29 @@ violations and clean up gradually without reddening CI. Fix them when you next
 touch the row. `I4` and `I5` are different: two rows claiming one FR ID breaks
 the identity that tests and the event log depend on, and a `Basis` value outside
 a closed vocabulary is a typo rather than a special case. Both fail for real.
+
+**What THIS iterate adds or edits is held to the letter, not just reported
+on.** `/shipwright-iterate`'s finalization gate `check_fr_hygiene_on_touched_rows`
+recomputes, from the run's own diff, which FR rows it added or changed (Name,
+Description, or acceptance criteria) and enforces `I1`/`I2`/`I7` — a hit
+**blocks** finalization. The gate judges the DELTA, not the whole row: a row
+can be touched by a Name/Description edit or by a criteria change (the FOLD
+pattern §3 recommends) without the other half moving, and only the CELLS that
+actually changed and the CRITERIA that are new at HEAD are held to the rules —
+a pre-existing violation elsewhere on the same row that this run did not
+write is left to the advisory reporting above, exactly like an untouched row.
+This is narrower than promoting `I1`/`I2`/`I7` to blocking everywhere: the
+advisory reporting above still covers the whole catalogue so a legacy spec can
+clean up gradually, while the gate holds only what a run itself chose to write
+or edit to the rules it was supposed to follow anyway. See
+`references/path-a-feature.md`'s Step 2 for the authoring side of this rule.
+
+`I8` is advisory for a different reason than the touched-row gate above: it
+targets exactly the LEGACY content a run did NOT touch (a stale `TBD` left
+over from `/shipwright-adopt`), so blocking on it would redden every dormant
+adopted repo's compliance dashboard for content nobody in the current run
+wrote. It is a dashboard/triage visibility signal, never a gate, and reads its
+age from `git blame` on the marker's own line rather than storing new state.
 
 `I5` reports `skip` on a spec with no `Basis` column at all — that is every spec
 written before the column existed, and scoring its absent values would make

@@ -1,0 +1,1 @@
+shipwright-iterate: a new finalization gate blocks a run that adds or edits a functional-requirement row violating fr-authoring.md's name/description/criterion-shape rules (touched rows only — legacy rows are unaffected); compliance Group I gains I7 (criterion shape) and I8 (stale /shipwright-adopt TBD placeholder, advisory)

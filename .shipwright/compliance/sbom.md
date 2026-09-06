@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-09-02T15:38:16.784033+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-09-02-glm-plan-code-review-swap
-Consistency-audit: last run 2026-07-28 (36 days earlier) — FAIL
+Generated: 2026-09-06T10:22:57.720561+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-09-06-fr-hygiene-touched-rows
+Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
 
 ## Summary
 
