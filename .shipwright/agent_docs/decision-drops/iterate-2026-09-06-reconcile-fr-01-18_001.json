@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-reconcile-fr-01-18",
+  "date": "2026-09-06",
+  "section": "compliance-reconciliation",
+  "title": "Reconcile D1/D3 for FR-01.18 (/shipwright-grade)",
+  "context": "FR-01.18 was minted by evt-ea7203ec (2026-07-26) alongside 17 other requirements in one bulk content round. That event recorded no tests block, and no event since named FR-01.18 in affected_frs — so D1 (spec FR coverage) and D3 (promised FRs delivered) both flagged it, even though the shipwright-grade plugin implementing it has been on disk and tested since.",
+  "decision": "Record a new work_completed event naming FR-01.18 in affected_frs, carrying this run's real whole-suite test totals (17317/17376 passed, F0-verified). No source change: the plugin already exists; this closes a recording gap, not a functionality gap.",
+  "consequences": "D1 and D3 both read the new event and report pass. No behavior changes; spec_impact is none.",
+  "rationale": "FR-01.18's traceability-manifest node carries required_layers_source=inferred_legacy, so D1's stricter manifest-link proof does not apply — the event-level tested-mint proof alone satisfies both checks, matching the framework's own recording-integrity design (see _group_d_promise.py docstring).",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
