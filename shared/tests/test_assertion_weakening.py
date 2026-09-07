@@ -809,6 +809,35 @@ def test_js_a_regex_literal_with_a_lone_bracket_fails_closed_not_silently():
                                    blocking=True)
 
 
+def test_js_string_literal_regex_does_not_exponentially_backtrack_on_a_run_of_backslashes():
+    """CodeQL (high severity, this run's own PR check): the original
+    `_JS_STRING_LIT` body was `(?:\\\\.|(?!\\1).)*` -- a backslash could be
+    consumed either as the start of `\\\\.` or as the plain char matched by
+    `(?!\\1).`, so a long unterminated run of backslashes had an exponential
+    number of ways to fail. Three explicit non-overlapping alternatives fixed
+    it; this pins that a large adversarial input still resolves near-instantly
+    rather than hanging."""
+    import time
+
+    evil = 'it("' + "\\a" * 20000
+    start = time.monotonic()
+    aw._JS_STRING_LIT.match(evil)
+    assert time.monotonic() - start < 2.0
+
+
+def test_js_string_literal_still_allows_a_different_quote_character_as_literal_content():
+    """The fix's per-alternative exclusion set only excludes the string's OWN
+    delimiter (plus backslash), not all three quote characters -- otherwise
+    `"it's a test"` would truncate at the apostrophe instead of reading the
+    whole literal."""
+    m = aw._JS_STRING_LIT.match("\"it's a test\"")
+    assert m is not None
+    body = m.group(1) if m.group(1) is not None else (
+        m.group(2) if m.group(2) is not None else m.group(3)
+    )
+    assert body == "it's a test"
+
+
 def test_a_python_test_renamed_to_a_js_test_path_is_not_flagged_as_removed():
     """Cross-language rename: both ends are still test-collected — this is a
     stated limit (content isn't re-diffed across languages), not a removal."""

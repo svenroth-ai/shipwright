@@ -381,7 +381,23 @@ _JS_ASSERT_HEAD = re.compile(r"\bassert\.\w+\s*\(|\b(?P<name>expect|assert)\s*\(
 #: `_JS_STRING_LIT`'s `.` cannot cross a raw newline in any quote type, so
 #: `_js_test_name` can never extract this exact text from a real call.
 _DYNAMIC_POOL_KEY = "<dynamically-named tests>\n"
-_JS_STRING_LIT = re.compile(r"""(['"`])((?:\\.|(?!\1).)*)\1""")
+#: Three explicit alternatives, not one pattern with a `\1` backreference to
+#: the opening quote (CodeQL, high severity: the backreference form's body
+#: was `(?:\\.|(?!\1).)*` — a backslash can be consumed either as the start
+#: of `\\.` or as the plain char matched by `(?!\1).` (it is never the quote
+#: itself), so a run of N backslashes has an exponential number of ways to
+#: split between the two alternatives, and an unterminated string forces the
+#: engine to try all of them before failing. Each alternative here excludes
+#: ONLY its own delimiter (plus backslash) from the plain-char class, so a
+#: quote character of a DIFFERENT kind still passes through as ordinary
+#: content (`"it's a test"` stays intact) while every character is
+#: classified by exactly one alternative — no ambiguity, no backtracking
+#: blowup. `_js_test_name` reads whichever of the three groups matched.
+_JS_STRING_LIT = re.compile(
+    r"""'((?:\\.|[^'\\])*)'"""
+    r'''|"((?:\\.|[^"\\])*)"'''
+    r"""|`((?:\\.|[^`\\])*)`"""
+)
 _JS_CHAIN = re.compile(r"\s*\.(\w+)")
 _JS_WORD = re.compile(r"\w+")
 
@@ -508,7 +524,9 @@ def _js_test_name(source: str, open_idx: int, close_idx: int) -> str | None:
     m = _JS_STRING_LIT.match(source, start)
     if not m or m.end() > close_idx:
         return None
-    return m.group(2)
+    return m.group(1) if m.group(1) is not None else (
+        m.group(2) if m.group(2) is not None else m.group(3)
+    )
 
 
 def _js_assertion_signatures(
