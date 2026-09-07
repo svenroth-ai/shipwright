@@ -78,6 +78,7 @@ from .derived_snapshot_gate import check_no_derived_snapshots_committed  # noqa:
 # re-exported from their historical home (`iterate_checks`).
 from ._migration_check import check_migration_quarantine_empty  # noqa: E402, F401
 from .layer_coverage import check_cross_layer_coverage, check_removal_coverage  # noqa: E402, F401
+from .layer_coverage_binding import check_binding_completeness  # noqa: E402, F401
 from .risk_recheck_recording import check_risk_recheck_recorded  # noqa: E402, F401
 
 
@@ -1078,6 +1079,7 @@ def run_all_checks(
         check_ci_supplychain_ack(project_root, run_id, commit_hash),
         check_removal_coverage(project_root, run_id, commit_hash),
         check_cross_layer_coverage(project_root, run_id, commit_hash),
+        check_binding_completeness(project_root, run_id, commit_hash),
         check_silent_revert_for_run(project_root, run_id=run_id),
         check_agent_doc_budget(project_root, run_id, commit_hash),
         check_agent_doc_shape(project_root, run_id, commit_hash),

@@ -44,7 +44,7 @@ def validator(schema) -> jsonschema.Draft202012Validator:
 
 def test_schema_is_valid_draft2020(schema):
     jsonschema.Draft202012Validator.check_schema(schema)
-    assert schema["properties"]["schema_version"]["const"] == 3
+    assert schema["properties"]["schema_version"]["const"] == 4
 
 
 def test_golden_example_validates(validator):

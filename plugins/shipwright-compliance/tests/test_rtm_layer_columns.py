@@ -20,7 +20,7 @@ def _write_manifest(tmp_path: Path, requirements: dict, **extra) -> None:
     path = tmp_path / ".shipwright" / "compliance" / "test-traceability.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
-        "schema_version": 3, "collector_version": "test", "generated_at": "t",
+        "schema_version": 4, "collector_version": "test", "generated_at": "t",
         "source_commit": "x", "spec_hash": "h", "requirements": requirements,
         "orphans": [], "invalid_tags": [], "invalid_layers": [], "untagged_tests": [],
         **extra,

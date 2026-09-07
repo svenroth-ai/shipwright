@@ -47,7 +47,7 @@ def _node(fr_id, *, source, coverage):
 
 def _manifest(nodes, **extra):
     # v3 keys derive the namespace from the id's group digits, not a split directory.
-    m = {"schema_version": 3, "collector_version": "t", "generated_at": "t",
+    m = {"schema_version": 4, "collector_version": "t", "generated_at": "t",
          "source_commit": "x", "spec_hash": "h",
          "requirements": {f"{n['id'][3:5]}::{n['id']}": n for n in nodes},
          "orphans": [], "invalid_tags": [], "invalid_layers": [], "untagged_tests": []}

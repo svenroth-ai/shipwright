@@ -1,0 +1,1 @@
+AC-scoped @covers tags (`FR-01.11/AC07`) bind a test to a specific acceptance criterion minted by `lib.ac_identity`; bare FR tags keep working. test-traceability.json bumps to schema v4 (additive per-requirement `acs` map + `testLink.ac_id`), with `MODEL_VERSION` in lockstep.

@@ -83,7 +83,7 @@ def _manifest(tmp_path: Path, *, source: str) -> None:
     _write(
         tmp_path / ".shipwright" / "compliance" / "test-traceability.json",
         json.dumps({
-            "schema_version": 3,
+            "schema_version": 4,
             "collector_version": "1",
             "generated_at": "2026-07-21T00:00:00+00:00",
             "source_commit": "0" * 40,

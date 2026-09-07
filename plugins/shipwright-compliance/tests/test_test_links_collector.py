@@ -75,10 +75,10 @@ def _strip_spec_path(reqs: dict) -> dict:
 
 # --- AC4: schema validity ------------------------------------------------
 
-def test_manifest_validates_against_v3_schema(app_manifest, validator):
+def test_manifest_validates_against_v4_schema(app_manifest, validator):
     errors = list(validator.iter_errors(app_manifest))
     assert not errors, errors
-    assert app_manifest["schema_version"] == 3
+    assert app_manifest["schema_version"] == 4
     assert app_manifest["collector_version"].startswith("test_links/")
     assert app_manifest["spec_hash"].startswith("sha256:")
 

@@ -30,7 +30,7 @@ import re
 from pathlib import Path
 
 _MANIFEST_REL = ".shipwright/compliance/test-traceability.json"
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _LAYERS = ("unit", "integration", "e2e")
 # Canonical id shape, used to slice the key namespace out of the id (v3).
 _CANONICAL_FR_RE = re.compile(r"^FR-\d{2}\.\d{2}$")
@@ -77,7 +77,7 @@ def _merge(into: dict, coverage: dict) -> None:
 
 
 def load_layer_index(project_root: Path) -> LayerIndex:
-    """Build the layer index from the committed v3 manifest (empty on absence)."""
+    """Build the layer index from the committed v4 manifest (empty on absence)."""
     by_key: dict[str, dict[str, str]] = {}
     by_id: dict[str, dict[str, str]] = {}
     seen: dict[str, int] = {}
@@ -88,9 +88,11 @@ def load_layer_index(project_root: Path) -> LayerIndex:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return LayerIndex(by_key, by_id, set())
-    # Exactly-v3, mirroring the previous exactly-v2 strictness: a stale v2 manifest
-    # renders "—" (absent) until the next regen rather than being read with v2 key
-    # semantics against v3 lookups, which would silently mismatch every row.
+    # Exactly-v4, mirroring the previous exactly-v3 strictness: a stale v3 manifest
+    # renders "—" (absent) until the next regen rather than being read with v3 key
+    # semantics against v4 lookups. v4's own key form is unchanged from v3 (only the
+    # `acs` addition this module never reads), so this guard is version-hygiene, not
+    # a real semantic mismatch risk today — kept exact anyway per the v2->v3 precedent.
     if not isinstance(data, dict) or data.get("schema_version") != _SCHEMA_VERSION:
         return LayerIndex(by_key, by_id, set())
     reqs = data.get("requirements")

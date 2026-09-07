@@ -193,7 +193,7 @@ def test_the_regenerated_documents_carry_real_derived_content(real_run):
     )
 
     manifest = json.loads((real_run.root / MANIFEST).read_text(encoding="utf-8"))
-    assert manifest["schema_version"] == 3
+    assert manifest["schema_version"] == 4
     # By ID, not by COUNT: two stale or unrelated nodes would satisfy a count
     # while the RTM independently listed the seeded FRs (external code review).
     assert {n["id"] for n in manifest["requirements"].values()} == set(FR_IDS)

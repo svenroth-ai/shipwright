@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-07-p3-3-producers-emit-and-require-binding",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T13:59:39.789178+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Wiring a new HARD-severity gate into `run_all_checks` with no dry-run of the existing corpus. The check fires on behavior-change iterates against FRs whose `required_layers` bindings were authored before this rule existed. If any active FR has integration/E2E passing evidence but a unit-only binding, the very next behavior-touching iterate goes HARD and blocks work — potentially across the whole campaign — until bindings are manually updated. The plan tests the mechanism but never measures its blast radius on the live corpus.",
+          "suggestion": "Before wiring F11, run `evaluate_binding_completeness` in a dry-run over the current campaign corpus, count would-be-HARD FRs, and either (a) fix those bindings in the same diff, or (b) explicitly grandfather pre-rule FRs (e.g., only apply HARD to bindings touched/created after a cutoff). Record the dry-run numbers in the diff so the rollout risk is visible.  2. Category: approach — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The sub-iterate's own title and S3 text say \"producers emit and require the binding,\" but this plan delivers only the require side (the enforcement check). The emit side — wiring into `/shipwright-project`, `/shipwright-adopt`, `/shipwright-iterate` — is deferred in the alternatives section, but the deferral has no tracked owner: no mention of updating the campaign card or SPEC to record which future sub-iterate picks it up. As written, P3.3 can close \"done\" while half its stated purpose silently falls through the cracks.",
+          "suggestion": "In the same diff, add one line to the campaign card (or SPEC Track V) noting that producer-side emission wiring is deferred to a named unit (P3.4/P3.6, whichever owns it), with the mini-plan's rationale.  3. Category: approach — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The plan says the new evaluator \"mirrors `evaluate_cross_layer`'s ... hard/advisory severity routing\" while sharing only the change-detection keys. A mirrored (copied) severity table in a separate module will drift from the original the first time someone adjusts severity rules in `_layer_coverage_core` — two gates that are supposed to make \"one judgment by construction\" will silently diverge.",
+          "suggestion": "Import or extract the severity routing into `_layer_coverage_core` (or a shared helper it already exposes) so both evaluators call the same code. If the mirror is truly copy-for-copy, the tests should at least assert parity on the shared cases.  4. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "A third independent \"expensive regen-with-evidence\" call per `run_all_checks` invocation, justified only by the precedent of the existing two. Precedent of duplicates isn't a cost argument — the new check is being added now and could share one regen snapshot with `check_cross_layer_coverage` within a single run.",
+          "suggestion": "At minimum, measure the added wall time before/after. Better: have `run_all_checks` produce the evidence snapshot once and pass it to both coverage checks in the same invocation. If the measurement shows negligible cost, the current approach is acceptable — but record that number.  5. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Layer rank ordering is tested for unit/integration/E2E, but there's no stated behavior for non-standard layer labels that may appear in coverage evidence (manual, static-analysis, perf, or any future label). Depending on implementation this either raises, silently skips, or mis-ranks.",
+          "suggestion": "Specify the behavior explicitly (ignore-with-advisory is probably right) and add a test for an unrecognized layer label in the evidence set.  6. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The ledger reconciliation method rests on the assumption \"every post-Phase-2 (E) bullet already carries a trailing `(iterate-YYYY-MM-DD-…)` citation,\" verified against exactly two rows. If any post-Phase-2 bullet lacks a citation, has a malformed date, carries multiple citations, or sits under an FR whose walk-date heading was itself revised after the bullet was added, the \"bullets the walk could not have seen\" set is silently incomplete — and the resulting prose is documentation drift presented as reconciliation.",
+          "suggestion": "Mechanically enumerate all (E) bullets (grep) and assert each either has a parseable citation or provably predates Phase 2, before writing the prose section. This is cheap and turns a spot-check into a guarantee.  7. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The second AC (\"ledger rows and (E) bullets are reconciled\") has no defined deliverable. The plan's method identifies un-walked bullets, but the AC could reasonably be read as requiring an explicit bullet→row mapping. If the reconciliation section ends up as narrative prose without a traceable mapping, the AC risks being judged unmet even though the work is sound.",
+          "suggestion": "Specify the section's contents in the plan: at minimum, a per-FR list of (E) bullets not covered by the walk, each with its citation date, plus a statement of the numbering-scheme relationship (per FR-01.18, not 1:1).  Security: No concerns — this is local compliance tooling reading repo files; no new inputs cross a trust boundary.  Over-production check: Passes. Two small focused modules, no new schema fields, no new dependencies, and the file split follows existing precedent rather than adding abstraction. The alternatives section correctly rejected a new JSON artifact and AC-level schema field.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan explicitly declines to wire producers, despite the change being titled and scoped as “Producers emit and require the binding.” A verifier that reads existing `required_layers` is only a consumer/enforcer; it does not ensure new or updated iterate/adopt/project outputs emit a complete binding.",
+          "suggestion": "Include the producer paths that create or update FR coverage/binding metadata, and make them populate or validate `required_layers` from the highest observable evidence layer. If that work truly belongs elsewhere, formally narrow and rename this sub-iterate before proceeding.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "No authoritative rule is identified for deriving the “highest observable layer.” Reusing `coverage` fields assumes their layer labels are complete, normalized, and tied to the same FR/change, but the plan does not establish that contract.",
+          "suggestion": "Define the exact evidence eligibility and ranking inputs: accepted layer vocabulary, treatment of multiple evidence records, and whether only current/passing/change-relevant evidence counts. Add tests for unknown, malformed, and mixed-layer coverage.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A new hard gate in `run_all_checks` can block existing work if legacy detection is based only on source age or a broad “behavior changed” signal. A previously valid FR with stale or partial metadata may be unexpectedly classified as a new hard failure.",
+          "suggestion": "Specify and test the migration boundary precisely: existing records remain advisory, while newly produced or materially updated bindings are hard-failed. Ensure the diagnostic tells users which binding field and evidence item must be changed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The planned tests omit the practical ambiguity cases: multiple higher layers, failed versus passing integration evidence, evidence for a different criterion, empty/unknown `required_layers`, and a declared layer higher than any observed evidence. These determine whether the check is trustworthy rather than noisy.",
+          "suggestion": "Add a compact parameterized test matrix covering those cases, including deterministic reporting of the expected highest required layer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The ledger reconciliation is described as an investigation method, not a concrete reconciliation deliverable. Appending prose based on iterate-date citations may identify bullets a walk could not have seen, but it does not necessarily reconcile each ledger row to its corresponding `(E)` bullet or record intentional split/merge relationships.",
+          "suggestion": "Add a concise mapping table or exception list in the campaign document: each unreconciled `(E)` item, relevant ledger row(s), status, and rationale. State the resulting reconciliation outcome explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan accepts a third independent expensive regeneration call solely because two already exist. That preserves precedent but unnecessarily increases `run_all_checks` latency and creates another opportunity for inconsistent regenerated state between checks.",
+          "suggestion": "Reuse a single regenerated evidence snapshot within `run_all_checks` if the existing interfaces can accept it without introducing broad abstraction; otherwise document that each check operates on an immutable, deterministic source.  Overall, the evaluator is a plausible enforcement component, but the plan omits the producer work central to this change and leaves the highest-layer derivation contract underspecified. It needs those changes before it can demonstrate the requested end-to-end behavior.  SHIPWRIGHT_VERDICT: reject",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T13:57:37.661200+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**1. Category: risk — Severity: high**\n**Finding:** Wiring a new HARD-severity gate into `run_all_checks` with no dry-run of the existing corpus. The check fires on behavior-change iterates against FRs whose `required_layers` bindings were authored before this rule existed. If any active FR has integration/E2E passing evidence but a unit-only binding, the very next behavior-touching iterate goes HARD and blocks work — potentially across the whole campaign — until bindings are manually updated. The plan tests the mechanism but never measures its blast radius on the live corpus.\n**Suggestion:** Before wiring F11, run `evaluate_binding_completeness` in a dry-run over the current campaign corpus, count would-be-HARD FRs, and either (a) fix those bindings in the same diff, or (b) explicitly grandfather pre-rule FRs (e.g., only apply HARD to bindings touched/created after a cutoff). Record the dry-run numbers in the diff so the rollout risk is visible.\n\n**2. Category: approach — Severity: medium**\n**Finding:** The sub-iterate's own title and S3 text say \"producers emit and require the binding,\" but this plan delivers only the *require* side (the enforcement check). The *emit* side — wiring into `/shipwright-project`, `/shipwright-adopt`, `/shipwright-iterate` — is deferred in the alternatives section, but the deferral has no tracked owner: no mention of updating the campaign card or SPEC to record which future sub-iterate picks it up. As written, P3.3 can close \"done\" while half its stated purpose silently falls through the cracks.\n**Suggestion:** In the same diff, add one line to the campaign card (or SPEC Track V) noting that producer-side emission wiring is deferred to a named unit (P3.4/P3.6, whichever owns it), with the mini-plan's rationale.\n\n**3. Category: approach — Severity: medium**\n**Finding:** The plan says the new evaluator \"mirrors `evaluate_cross_layer`'s ... hard/advisory severity routing\" while sharing only the change-dete […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The plan explicitly declines to wire producers, despite the change being titled and scoped as “Producers emit and require the binding.” A verifier that reads existing `required_layers` is only a consumer/enforcer; it does not ensure new or updated iterate/adopt/project outputs emit a complete binding.  \n   **Suggestion:** Include the producer paths that create or update FR coverage/binding metadata, and make them populate or validate `required_layers` from the highest observable evidence layer. If that work truly belongs elsewhere, formally narrow and rename this sub-iterate before proceeding.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** No authoritative rule is identified for deriving the “highest observable layer.” Reusing `coverage` fields assumes their layer labels are complete, normalized, and tied to the same FR/change, but the plan does not establish that contract.  \n   **Suggestion:** Define the exact evidence eligibility and ranking inputs: accepted layer vocabulary, treatment of multiple evidence records, and whether only current/passing/change-relevant evidence counts. Add tests for unknown, malformed, and mixed-layer coverage.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** A new hard gate in `run_all_checks` can block existing work if legacy detection is based only on source age or a broad “behavior changed” signal. A previously valid FR with stale or partial metadata may be unexpectedly classified as a new hard failure.  \n   **Suggestion:** Specify and test the migration boundary precisely: existing records remain advisory, while newly produced or materially updated bindings are hard-failed. Ensure the diagnostic tells users which binding field and evidence item must be changed.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The planned tests omit the practical ambiguity cases: multiple higher layers, fa […truncated]",
+      "verdicts": {
+        "openai": "reject",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/layer_coverage_binding.py",
+          "line": 56,
+          "finding": "_binding_result duplicates the four-branch CheckResult-shaping structure of the pre-existing _cross_layer_result in layer_coverage.py. This diff's (+N more) truncation fix was applied only to the new copy; the identical pre-existing bug still exists untouched in _cross_layer_result. Not a reason to reject this diff (sibling file untouched, out of surgical scope) but same duplication-drift risk one layer up in message formatting.",
+          "suggestion": "File a follow-up to extract a shared _format_gap_list helper (or backport the fix) next time either formatter is touched.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-07T15:37:15.349210+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling-blast-radius",
+          "file": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md",
+          "line": null,
+          "finding": "Claim under doubt: The empirical dry-run (0 hard / 1 advisory across 20 active FRs) proves the new HARD gate cannot immediately block real-world work when it rolls out. — The dry-run measures only this monorepo's own self-referential, adopt-bootstrapped corpus (100% inferred_legacy). A greenfield target project authored via the normal /shipwright-project path produces required_layers_source=explicit immediately, which gets no legacy-valve grace period. The blast radius on real, non-adopt Shipwright-managed target projects is unmeasured, not zero. Disposition: accepted-and-tracked -- ADR's blast-radius section amended with an explicit scope caveat; trg-aedcfe7b minted as the tracked owner.",
+          "suggestion": "Amend the ADR with an explicit scope caveat and mint a tracked follow-up card (done: trg-aedcfe7b).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md",
+          "line": null,
+          "finding": "Claim under doubt: Finding #5's disposition (legacy/defaulted sources route ADVISORY) means a previously-valid, older FR is safely grandfathered against this new gate. — The actual boundary is the provenance MARKER (inferred_legacy/defaulted_legacy), not FR age -- orthogonal properties that only coincide in this bootstrapped corpus. A genuinely old FR authored via the normal explicit path gets zero grace period on its next unrelated touch. Disposition: accepted-and-fixed -- Consequences section and finding #5's disposition row corrected in the ADR to state the marker-based boundary precisely.",
+          "suggestion": "Correct the ADR's Consequences section and finding #5's disposition wording (done).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-07T15:46:43.073562+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-...md` (Decision section) / diff as a whole",
+          "line": null,
+          "finding": "The sub-iterate's scope is \"Producers emit and require the binding.\" Only the require half (the F11 gate) is delivered; the emit half (wiring `/shipwright-project`, `/shipwright-adopt`, `/shipwright-iterate` to write complete bindings) is deferred to \"P3.5 or a named follow-up card\" — which is not guaranteed to exist. The deferral is documented and dispositioned, and the two literal acceptance criteria are arguably met, but the stated purpose of the unit is half-undelivered and the AC \"binding must include the highest observable layer\" is only enforced, never produced.",
+          "suggestion": "Either land a minimal producer change (even one of the three pipelines) in this unit, or get an explicit commitment recorded in campaign.md/SPEC naming the exact follow-up card id that owns emission — not \"P3.5 or a follow-up.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_binding.py` (`_highest_ok_layer`, unrecognised-label branch)",
+          "line": null,
+          "finding": "When the only executed-passing layer is a non-canonical label, `_highest_ok_layer` returns that label (pinned by the test `{\"manual\": \"ok\"} == \"manual\"`), and the caller then computes `_LAYER_RANK.get(highest_ok, -1) <= max_required_rank`, which is `-1 <= -1` for an empty binding → `continue`, i.e. a non-canonical ok layer never triggers a gap even when `required_layers` is empty. This is defensible (fail-open on unknown vocabulary) but contradicts the docstring's fail-closed framing (\"an unrecognised required layer must never be credited\") — the evidence-side counterpart silently credits nothing. Low impact since coverage keys are canonical by construction; the behavior should at least be stated rather than emerge incidentally.",
+          "suggestion": "Either document this asymmetry in the module docstring or route an unknown ok-layer to an advisory when `required_layers` is empty.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_layer_coverage_binding.py` — `test_registered_in_run_all_checks",
+          "line": null,
+          "finding": "This test only asserts the check's name appears in `run_all_checks` output on a bare tmp_path (skip path); it does not verify the check is actually wired into the enforcing list rather than e.g. filtered out, nor that a real gap would propagate to a failed `run_all_checks` result. A regression that removes the check from the list would fail it, but a regression that wires it with wrong arguments would not.",
+          "suggestion": "Add one end-to-end test where a behaviour-changed FR with unit-only binding and passing integration evidence causes `run_all_checks` to report a failure for this check name.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/layer_coverage_binding.py` — `_binding_result",
+          "line": null,
+          "finding": "Both gap lists are truncated at 6 (`[:6]`) with no \"+N more\" indicator, and the count in the message (`len(verdict.hard)`) can exceed the items shown, which may confuse triage. Cosmetic-but-real reporting gap.",
+          "suggestion": "Append a `(+N more)` suffix when truncated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[.shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-7mbxu50l\\.shipwright\\planning\\adr\\iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md:24)",
+          "line": null,
+          "finding": "The change explicitly defers the producer “emit” half, despite this sub-iterate being scoped as “Producers emit and require the binding.” The new gate only consumes existing `required_layers`; new or updated producer outputs can still omit or understate that binding until some later, unspecified implementation.",
+          "suggestion": "Wire the project/adopt/iterate producer paths to emit or update the binding based on qualifying evidence, or formally narrow the specification before accepting this change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/scripts/tools/verifiers/_layer_coverage_binding.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-7mbxu50l\\shared\\scripts\\tools\\verifiers\\_layer_coverage_binding.py:93)",
+          "line": null,
+          "finding": "The evaluator treats a binding that declares a higher layer as complete even when it does not name the highest observed layer. For example, `required_layers=[\"e2e\"]` with executed-passing `integration` evidence passes, although the binding does not include `integration`; a future integration regression is therefore not required by the binding. This contradicts “must include the highest observable layer.”",
+          "suggestion": "Require the actual highest passing canonical layer to be present in `required_layers`, rather than comparing only ranks. Update the test that currently asserts a higher declared layer is clean.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "[shared/tests/test_layer_coverage_binding.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-7mbxu50l\\shared\\tests\\test_layer_coverage_binding.py:286)",
+          "line": null,
+          "finding": "The wrapper’s full-path test only exercises a clean manifest. The primary rejection behavior is tested in the pure evaluator and result formatter separately, so a wrapper regression that supplies the wrong manifests or fails to propagate an evaluator gap would still pass the wrapper-path tests.",
+          "suggestion": "Add a full wrapper-path test with a behavior-changed unit-only binding and passing integration/e2e evidence, asserting a non-skipped hard-failure `CheckResult`.  Overall: ship-with-fixes. The gate largely implements the require-side acceptance criterion, but the stated producer work is absent and the rank-only comparison weakens the highest-layer requirement.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T14:50:39.171456+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: spec\n  Severity: medium\n  File: `.shipwright/planning/adr/iterate-2026-09-07-p3-3-...md` (Decision section) / diff as a whole\n  Finding: The sub-iterate's scope is \"Producers emit **and** require the binding.\" Only the require half (the F11 gate) is delivered; the emit half (wiring `/shipwright-project`, `/shipwright-adopt`, `/shipwright-iterate` to write complete bindings) is deferred to \"P3.5 or a named follow-up card\" — which is not guaranteed to exist. The deferral is documented and dispositioned, and the two literal acceptance criteria are arguably met, but the stated purpose of the unit is half-undelivered and the AC \"binding must include the highest observable layer\" is only enforced, never produced.\n  Suggestion: Either land a minimal producer change (even one of the three pipelines) in this unit, or get an explicit commitment recorded in campaign.md/SPEC naming the exact follow-up card id that owns emission — not \"P3.5 or a follow-up.\"\n\n- Category: bug\n  Severity: low\n  File: `shared/scripts/tools/verifiers/_layer_coverage_binding.py` (`_highest_ok_layer`, unrecognised-label branch)\n  Finding: When the only executed-passing layer is a non-canonical label, `_highest_ok_layer` returns that label (pinned by the test `{\"manual\": \"ok\"} == \"manual\"`), and the caller then computes `_LAYER_RANK.get(highest_ok, -1) <= max_required_rank`, which is `-1 <= -1` for an empty binding → `continue`, i.e. a non-canonical ok layer never triggers a gap even when `required_layers` is empty. This is defensible (fail-open on unknown vocabulary) but contradicts the docstring's fail-closed framing (\"an unrecognised required layer must never be credited\") — the evidence-side counterpart silently credits nothing. Low impact since coverage keys are canonical by construction; the behavior should at least be stated rather than emerge incidentally.\n  Suggestion: Either document this asymmetry in the module docstring or route an unknown ok-layer to a […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: [.shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-7mbxu50l\\.shipwright\\planning\\adr\\iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md:24)\n- Finding: The change explicitly defers the producer “emit” half, despite this sub-iterate being scoped as “Producers emit and require the binding.” The new gate only consumes existing `required_layers`; new or updated producer outputs can still omit or understate that binding until some later, unspecified implementation.\n- Suggestion: Wire the project/adopt/iterate producer paths to emit or update the binding based on qualifying evidence, or formally narrow the specification before accepting this change.\n\n- Category: spec\n- Severity: medium\n- File: [shared/scripts/tools/verifiers/_layer_coverage_binding.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-7mbxu50l\\shared\\scripts\\tools\\verifiers\\_layer_coverage_binding.py:93)\n- Finding: The evaluator treats a binding that declares a higher layer as complete even when it does not name the highest observed layer. For example, `required_layers=[\"e2e\"]` with executed-passing `integration` evidence passes, although the binding does not include `integration`; a future integration regression is therefore not required by the binding. This contradicts “must include the highest observable layer.”\n- Suggestion: Require the actual highest passing canonical layer to be present in `required_layers`, rather than comparing only ranks. Update the test that currently asserts a higher declared layer is clean.\n\n- Category: test\n- Severity: low\n- File: [shared/tests/test_layer_coverage_binding.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-7mbxu50l\\shared\\tests\\test_layer_coverage_binding.py:286)\n- Finding: The wrapper’s full-path test only exercises a clea […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T15:32:43.055743+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T13:57:47.280059+00:00",
+      "disposition": "runner has no Agent tool to spawn opus-plan-reviewer (sub-iterate-runner.md Step 3.7 table: plan_internal is runner-permanent not_run, documented gap, never promoted)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

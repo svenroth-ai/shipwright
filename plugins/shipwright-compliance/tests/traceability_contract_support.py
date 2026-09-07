@@ -36,8 +36,8 @@ _CONTRACTS = _HERE / "contracts"
 
 CONTRACTS_DIR = "plugins/shipwright-compliance/tests/contracts"
 STEM = "test-traceability"
-SCHEMA_VERSION = 3
-FIXTURE_VERSION = "3.0"
+SCHEMA_VERSION = 4
+FIXTURE_VERSION = "4.0"
 CONSUMER = "The Command Center WebUI (github.com/svenroth-ai/shipwright-webui)"
 ARTIFACT = "The test-traceability manifest (.shipwright/compliance/test-traceability.json)"
 
@@ -52,6 +52,10 @@ LOAD_BEARING = {
     "requirements.03::FR-03.01.tests.unit[].id",
     "requirements.03::FR-03.01.tests.unit[].layer",
     "requirements.03::FR-03.01.tests.unit[].resolved_from",
+    # v4, D9 (P3.2): the AC-scoped breakdown + its testLink marker.
+    "requirements.03::FR-03.01.acs",
+    "requirements.03::FR-03.01.acs.AC07.tests.unit[].id",
+    "requirements.03::FR-03.01.tests.unit[].ac_id",
 }
 
 
@@ -104,6 +108,8 @@ _TEST = (
     'import pytest\n\n'
     '@pytest.mark.covers("FR-03.01")\n'
     'def test_sign_in():\n    assert True\n\n'
+    '@pytest.mark.covers("FR-03.01/AC07")\n'     # v4, D9 → acs.AC07 + testLink.ac_id
+    'def test_sign_in_rejects_bad_password():\n    assert True\n\n'
     '@pytest.mark.covers("FR-03.44")\n'          # folded id → resolved_from
     'def test_sign_in_folded():\n    assert True\n\n'
     '@pytest.mark.covers("FR-77.77")\n'          # nothing declares it → orphan
@@ -127,8 +133,11 @@ def _manifest_for(root: Path) -> dict:
     """A deterministic manifest: fixed timestamp/commit so the pin is about SHAPE."""
     return build_manifest(
         root,
-        evidence={"tests/test_auth.py::test_sign_in":
-                  {"status": "enabled", "executed": "pass"}},
+        evidence={
+            "tests/test_auth.py::test_sign_in": {"status": "enabled", "executed": "pass"},
+            "tests/test_auth.py::test_sign_in_rejects_bad_password":
+                {"status": "enabled", "executed": "pass"},
+        },
         generated_at="2026-07-20T00:00:00+00:00",
         source_commit="1" * 40,
         collector_version="test_links/0.0.0-contract",

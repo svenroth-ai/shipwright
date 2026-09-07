@@ -29,7 +29,7 @@ _SCHEMA = (
 
 def test_model_version_tracks_manifest_schema_version():
     schema = json.loads(_SCHEMA.read_text(encoding="utf-8"))
-    assert schema["properties"]["schema_version"]["const"] == MODEL_VERSION == 3
+    assert schema["properties"]["schema_version"]["const"] == MODEL_VERSION == 4
 
 
 def test_layers_are_the_closed_vocabulary():

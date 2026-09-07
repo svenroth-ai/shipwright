@@ -95,3 +95,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR: Diff-scoped FR-hygiene gate for touched rows, plus I7/I8](iterate-2026-09-06-fr-hygiene-touched-rows-fr-hygiene-gate.md)
 - [Fold sibling-worktree triage decisions into a main tree's own read](iterate-2026-09-06-triage-cross-tree-pending-delivery-cross-tree-fold.md)
 - [JS/TS-aware test-weakening detector for the main-repair safety gate](iterate-2026-09-06-ts-repair-safety-unsupported-js-ts-detector.md)
+- [ADR: AC-scoped @covers tag grammar + test-traceability manifest v4](iterate-2026-09-07-p3-2-tag-grammar-manifest-v4-ac-binding.md)
+- [Binding-completeness F11 gate + ledger/(E)-bullet reconciliation (P3.3)](iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md)

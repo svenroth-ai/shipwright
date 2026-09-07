@@ -836,6 +836,28 @@ legacy content a run did NOT touch, so blocking on it would redden every
 dormant adopted repo's CI. It surfaces at MEDIUM severity in the compliance
 dashboard/triage once a TBD passes 90 days — visibility, never a gate.
 
+**A binding must name the highest layer the evidence proves (P3.3, campaign
+`req3-04c-ac-identity-wave2`, SPEC §5 Track V/S3).** The FR-level cross-layer
+gate (above) only asks whether every *declared* required layer has an
+executed-passing test — it never asks whether the declaration itself lags what
+the run's own evidence already shows. A third F11 verifier,
+`check_binding_completeness` (`shared/scripts/tools/verifiers/layer_coverage_binding.py`,
+pure evaluator in the sibling `_layer_coverage_binding.py`), closes that: for
+every behaviour-changed FR (the identical `evaluate_cross_layer` trigger — the
+two gates can never disagree about scope), if the regenerated head manifest
+shows an executed-passing test at a layer RANKED HIGHER than every layer the
+FR's `Layers` cell declares, the binding is incomplete — "a binding that names
+only unit tests is rejected when a higher layer exists". Severity routing
+mirrors the cross-layer gate exactly (explicit/unknown provenance → HARD, a
+known legacy source → ADVISORY — the pre-rollout valve, since today's entire
+manifest is `inferred_legacy` — and a collision display id → ADVISORY
+regardless), so this closes the gap for newly-authored bindings going forward
+without reddening the pre-rollout backlog. Same medium+ cost floor and same
+git/infra fail-closed posture as `check_cross_layer_coverage`, since it shares
+that gate's expensive base+head-with-evidence regeneration. Feeds P3.5's later
+promotion predicate ("the binding includes the highest observable layer") and
+P3.6's keystone gate, both of which this mechanism precedes.
+
 **Architecture brief (iterate + plan).** A third file joins that run-scoped
 directory: `.shipwright/planning/iterate/<run_id>/architecture_brief.md` (plan
 side: `{planning_dir}/architecture_brief.md`), written pre-build by Step 3.5's

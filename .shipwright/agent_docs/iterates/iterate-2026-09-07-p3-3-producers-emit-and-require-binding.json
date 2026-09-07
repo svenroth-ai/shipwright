@@ -1,0 +1,125 @@
+{
+  "run_id": "iterate-2026-09-07-p3-3-producers-emit-and-require-binding",
+  "date": "2026-09-07T15:18:16.702847Z",
+  "event_at": "2026-09-07T15:17:46.705624+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-p3.3-producers-emit-and-require-binding",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.3-producers-emit-and-require-binding.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-07-p3-3-producers-emit-and-require-binding",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A binding naming only unit tests is rejected (HARD) once integration/e2e executed-passing evidence exists for the same FR",
+        "disposition": "tested",
+        "evidence": "`test_binding_naming_only_unit_is_rejected_when_integration_passes` PASSED \u2014 the literal AC"
+      },
+      {
+        "behavior": "A binding already naming the highest executed-passing layer is clean",
+        "disposition": "tested",
+        "evidence": "`test_binding_naming_the_highest_layer_already_is_clean` PASSED"
+      },
+      {
+        "behavior": "A gap on a legacy/defaulted required_layers_source routes ADVISORY, not HARD (pre-rollout valve)",
+        "disposition": "tested",
+        "evidence": "`test_binding_gap_on_legacy_provenance_is_advisory_not_hard` PASSED"
+      },
+      {
+        "behavior": "A gap on a collision display id routes ADVISORY regardless of source",
+        "disposition": "tested",
+        "evidence": "`test_binding_gap_on_collision_id_is_advisory` PASSED"
+      },
+      {
+        "behavior": "No gap without a real behaviour change (row+AC delta), even if the binding/evidence gap exists",
+        "disposition": "tested",
+        "evidence": "`test_no_gap_without_a_behaviour_change` PASSED"
+      },
+      {
+        "behavior": "No gap when no layer has executed-passing evidence (nothing to judge yet)",
+        "disposition": "tested",
+        "evidence": "`test_no_gap_when_no_layer_has_executed_passing_evidence` PASSED"
+      },
+      {
+        "behavior": "Severity routing is the ONE shared function evaluate_cross_layer also uses, not a second mirrored copy",
+        "disposition": "tested",
+        "evidence": "`test_severity_routing_is_the_shared_function_not_a_mirror` PASSED \u2014 external plan-review finding, glm"
+      },
+      {
+        "behavior": "Multiple required_layers credits the highest named layer even when evidence sits between them",
+        "disposition": "tested",
+        "evidence": "`test_binding_multiple_required_layers_credits_the_highest_named` PASSED \u2014 external plan-review finding, openai"
+      },
+      {
+        "behavior": "A binding declaring a layer HIGHER than any evidence proves is clean (division of labor with evaluate_cross_layer)",
+        "disposition": "tested",
+        "evidence": "`test_binding_declared_higher_than_any_evidence_is_clean` PASSED \u2014 external plan-review finding, openai; re-affirmed at code-review (rejected-with-reason, see ADR)"
+      },
+      {
+        "behavior": "An unrecognised layer label never outranks a canonical one",
+        "disposition": "tested",
+        "evidence": "`test_highest_ok_layer_ranks_an_unrecognised_layer_label_below_every_canonical_one` PASSED \u2014 external plan-review finding, glm"
+      },
+      {
+        "behavior": "A changed key absent from head's active nodes is defensively skipped (mirrors evaluate_cross_layer's own unreachable-by-construction line)",
+        "disposition": "tested",
+        "evidence": "`test_defensive_guard_skips_a_changed_key_missing_from_head_active` PASSED"
+      },
+      {
+        "behavior": "check_binding_completeness is registered in run_all_checks",
+        "disposition": "tested",
+        "evidence": "`test_registered_in_run_all_checks` PASSED"
+      },
+      {
+        "behavior": "The wrapper skips below medium complexity",
+        "disposition": "tested",
+        "evidence": "`test_wrapper_skips_below_medium` PASSED"
+      },
+      {
+        "behavior": "_binding_result shapes the clean/hard/advisory CheckResult correctly, including truncated-gap-list (+N more) messaging",
+        "disposition": "tested",
+        "evidence": "`test_binding_result_no_changed_keys_is_clean_pass`, `test_binding_result_hard_fail_message`, `test_binding_result_advisory_message`, `test_binding_result_clean_pass_with_changed_keys`, `test_binding_result_hard_fail_truncates_with_more_count`, `test_binding_result_advisory_truncates_with_more_count` all PASSED \u2014 truncation tests added at external code-review, glm"
+      },
+      {
+        "behavior": "check_binding_completeness fail-closes on no --commit, a non-git precheck, a None regen, an ac_error, and a regen exception",
+        "disposition": "tested",
+        "evidence": "`test_wrapper_no_commit_is_infra_error`, `test_wrapper_non_git_precheck_short_circuits`, `test_wrapper_regen_none_is_infra_error`, `test_wrapper_ac_error_is_infra_error`, `test_wrapper_regen_exception_is_infra_error` all PASSED"
+      },
+      {
+        "behavior": "The wrapper propagates a real clean pass AND a real hard gap through the full evaluate_binding_completeness() call, not just via mocked verdicts",
+        "disposition": "tested",
+        "evidence": "`test_wrapper_full_success_path_clean`, `test_wrapper_full_path_hard_gap_propagates` PASSED \u2014 the second added at external code-review, openai"
+      },
+      {
+        "behavior": "A real binding gap propagates to a failure inside the full run_all_checks() list, not just in isolation",
+        "disposition": "tested",
+        "evidence": "`test_run_all_checks_binding_gap_propagates_to_failure` PASSED \u2014 external code-review finding, glm"
+      },
+      {
+        "behavior": "The ledger's row numbering and spec.md's (E) bullets are reconciled with an explicit, falsifiable statement (not 1:1, proven via FR-01.18)",
+        "disposition": "tested",
+        "evidence": "`.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` \u2014 \"Reconciliation with spec.md's (E) bullets\" section, citation-based per-FR table, cross-checked against a git-blame investigation whose confounded result is also disclosed"
+      }
+    ],
+    "counts": {
+      "testable": 18,
+      "tested": 18,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    },
+    "ledger_path": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Pure compliance-tooling change (a new F11 verifier + its tests + docs); no startable web/cli/api surface \u2014 check_binding_completeness is exercised entirely by the unit test suite (F0), not a running application surface."
+  },
+  "declared_removals": []
+}
