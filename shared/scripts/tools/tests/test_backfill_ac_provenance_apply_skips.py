@@ -133,6 +133,26 @@ def test_apply_upgrades_skips_ambiguous_when_two_tests_share_the_bare_fr_tag(tmp
     assert text == _TWO_TESTS_SAME_BARE_FR  # untouched — neither decorator was guessed at
 
 
+def test_enumerate_python_tests_qualifies_by_enclosing_class():
+    """External code review (P3.4 high): an unqualified ``name`` collides for
+    two same-named methods in different classes. ``_enumerate_python_tests``
+    must return an AST-qualified name (``ClassName.test_name``) instead."""
+    source = (
+        "class TestOne:\n"
+        "    def test_it(self):\n"
+        "        pass\n"
+        "\n"
+        "class TestTwo:\n"
+        "    def test_it(self):\n"
+        "        pass\n"
+        "\n"
+        "def test_module_level():\n"
+        "    pass\n"
+    )
+    names = [qualname for qualname, _decl_line, _indent in apply_mod._enumerate_python_tests(source)]
+    assert names == ["TestOne.test_it", "TestTwo.test_it", "test_module_level"]
+
+
 _TWO_CLASSES_SAME_METHOD_NAME = '''from __future__ import annotations
 
 
@@ -147,18 +167,44 @@ class TestTwo:
 '''
 
 
-def test_apply_upgrades_inserts_into_both_same_named_methods_in_different_classes(tmp_path):
-    """External code review (P3.4 high): an unqualified ``rel::name`` test_id
-    collides for two same-named methods in different classes, and the tool's
-    own dedup-by-test_id then silently drops one. AST-qualifying by enclosing
-    class must let both receive their own tag."""
+def test_apply_upgrades_skips_ambiguous_when_a_file_has_two_untagged_tests(tmp_path):
+    """Tier-3 CI-gate re-review (P3.4 high): file provenance ("this commit
+    added this file") establishes the FILE is relevant, never WHICH untagged
+    test inside it — tagging every untagged test identically is the same
+    file-level attribution the D1 mistagging incident's general shape
+    describes. Two untagged tests (even in different classes, so their
+    unqualified names collide too) must be reported as ambiguous, with
+    NEITHER tagged."""
     rel = "tests/test_two_classes.py"
     (tmp_path / "tests").mkdir()
     (tmp_path / rel).write_text(_TWO_CLASSES_SAME_METHOD_NAME, encoding="utf-8")
     report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
     result = apply_mod.apply_upgrades(tmp_path, report)
-    assert result["tags_inserted_total"] == 2
-    inserted_tests = {m["test"] for m in result["inserted_new_tags"]}
-    assert inserted_tests == {f"{rel}::TestOne.test_it", f"{rel}::TestTwo.test_it"}
+    assert result["tags_inserted_total"] == 0
+    assert result["skipped"] == [{**_candidate("FR-01.01", "AC01", [rel]),
+                                    "file": rel, "reason": "ambiguous_multiple_untagged_tests_in_file"}]
     text = (tmp_path / rel).read_text(encoding="utf-8")
-    assert text.count('@pytest.mark.covers("FR-01.01/AC01")') == 2
+    assert text == _TWO_CLASSES_SAME_METHOD_NAME  # untouched — neither test was guessed at
+
+
+_ONE_CLASS_ONE_UNTAGGED_METHOD = '''from __future__ import annotations
+
+
+class TestOne:
+    def test_it(self):
+        assert True
+'''
+
+
+def test_apply_upgrades_inserts_a_qualified_id_for_the_one_untagged_method(tmp_path):
+    """The single-untagged-test case still auto-tags, and does so with the
+    class-qualified test_id (external code review, P3.4 high)."""
+    rel = "tests/test_one_class.py"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / rel).write_text(_ONE_CLASS_ONE_UNTAGGED_METHOD, encoding="utf-8")
+    report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
+    result = apply_mod.apply_upgrades(tmp_path, report)
+    assert result["tags_inserted_total"] == 1
+    assert result["inserted_new_tags"][0]["test"] == f"{rel}::TestOne.test_it"
+    text = (tmp_path / rel).read_text(encoding="utf-8")
+    assert '@pytest.mark.covers("FR-01.01/AC01")' in text

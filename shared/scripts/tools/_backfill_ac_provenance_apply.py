@@ -205,10 +205,11 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
                     "slug": cand["slug"], "commit": cand["commit"], "tags_upgraded": count,
                 })
                 continue
-            # No bare tag to widen — offer every WHOLLY UNTAGGED test in the file
-            # as a new-tag insertion candidate (re-read: the upgrade pass above
-            # never touches this file, so `text` is still current).
+            # No bare tag to widen — offer the file's WHOLLY UNTAGGED tests as a
+            # new-tag insertion candidate (re-read: the upgrade pass above never
+            # touches this file, so `text` is still current).
             existing = {h.test for h in parse_source(rel, text).hits}
+            untagged = []
             for qualname, decl_line, indent in _enumerate_python_tests(text):
                 # `existing` is keyed by the frozen fr_tag_grammar's unqualified
                 # "rel::name" binding (ADR-frozen contract, out of scope to
@@ -219,6 +220,17 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
                 unqualified = f"{rel}::{qualname.rsplit('.', 1)[-1]}"
                 if unqualified in existing:
                     continue  # already tagged for something else — never guessed
+                untagged.append((qualname, decl_line, indent))
+            if len(untagged) > 1:
+                # File provenance ("this commit added this file") establishes
+                # the FILE is relevant, never WHICH of several untagged tests
+                # in it — the same ambiguity as the bare-tag-upgrade case
+                # above, and the file-level attribution the Tier-3 CI-gate
+                # re-review tied to the D1 incident's general shape. Report,
+                # never guess by tagging every untagged test identically.
+                skipped.append({**cand, "file": rel, "reason": "ambiguous_multiple_untagged_tests_in_file"})
+                continue
+            for qualname, decl_line, indent in untagged:
                 test_id = f"{rel}::{qualname}"
                 writes.append((_Record(test_id, rel, decl_line, indent), _Candidate(token)))
                 write_meta.append({

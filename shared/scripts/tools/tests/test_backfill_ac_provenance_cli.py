@@ -77,10 +77,6 @@ from __future__ import annotations
 
 def test_one():
     assert True
-
-
-def test_two():
-    assert True
 '''
 
 _BARE_TAGGED = '''"""A fixture test module with an existing bare tag."""
@@ -111,10 +107,10 @@ def test_apply_upgrades_inserts_a_new_ac_scoped_tag_on_an_untagged_test(tmp_path
     (tmp_path / rel).write_text(_UNTAGGED, encoding="utf-8")
     report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
     result = apply_mod.apply_upgrades(tmp_path, report)
-    assert result["tags_inserted_total"] == 2
+    assert result["tags_inserted_total"] == 1
     assert result["upgraded_bare_tags"] == []
     text = (tmp_path / rel).read_text(encoding="utf-8")
-    assert text.count('@pytest.mark.covers("FR-01.01/AC01")') == 2
+    assert text.count('@pytest.mark.covers("FR-01.01/AC01")') == 1
 
 
 def test_apply_upgrades_widens_an_existing_bare_tag(tmp_path):
@@ -160,12 +156,12 @@ def test_apply_upgrades_is_idempotent_on_rerun(tmp_path):
     (tmp_path / rel).write_text(_UNTAGGED, encoding="utf-8")
     report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
     first = apply_mod.apply_upgrades(tmp_path, report)
-    assert first["tags_inserted_total"] == 2
+    assert first["tags_inserted_total"] == 1
     second = apply_mod.apply_upgrades(tmp_path, report)
     assert second["tags_inserted_total"] == 0
     assert second["upgraded_bare_tags"] == []
     text = (tmp_path / rel).read_text(encoding="utf-8")
-    assert text.count('@pytest.mark.covers("FR-01.01/AC01")') == 2  # not 4
+    assert text.count('@pytest.mark.covers("FR-01.01/AC01")') == 1  # not 2
 
 
 # --------------------------------------------------------------------------- #
