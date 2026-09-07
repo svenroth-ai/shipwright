@@ -105,9 +105,13 @@ def test_marker_does_not_disturb_a_trailing_footnote():
 
 def test_a_placeholder_bullet_is_still_minted_its_own_id():
     """A `TBD` slot gets an identity immediately -- the id names the SLOT,
-    not the (not yet written) wording; `fr_criteria.criteria_for` drops it
-    from the criteria TEXT list regardless, so nothing downstream mistakes a
-    minted placeholder for a real criterion."""
+    not the (not yet written) wording. This is a deliberate, DEFERRED trade
+    (`ac_identity`'s "One known, deferred effect" docstring section): once
+    minted, `"[AC01] TBD"` no longer collapses to `fr_criteria`'s bare-
+    placeholder token set (see `test_mint_and_read_agree_on_a_duplicate_
+    split_across_a_placeholder` in test_ac_identity_markers.py), so a minted
+    placeholder becomes a real criterion to every OTHER `fr_criteria` caller
+    -- inert today since this run never mints a real, gate-read document."""
     result = ac_identity.mint(WITH_PLACEHOLDER)
     assert result.assigned == (("FR-04.01", "AC01"), ("FR-04.01", "AC02"))
     assert "[AC01] TBD" in result.content
@@ -174,6 +178,37 @@ def test_seeding_from_a_document_ahead_of_a_stale_registry():
     result = ac_identity.mint(already_marked, registry={})
     assert result.assigned == (("FR-05.01", "AC06"),)
     assert result.registry == {"FR-05.01": 6}
+
+
+def test_seeding_sees_a_marker_outside_the_leading_bullet_run():
+    """Code review round 3 (HIGH): the seed pass used to reuse
+    ``iter_bullet_positions``, gated to the block's contiguous LEADING
+    bullet run -- the same gate minting needs so it never stamps an id
+    ``read()`` can't see. But a prose line between two bullets ends that
+    leading run (`_ac_blocks._leading_bullet_run_indices`), so the second
+    bullet's existing ``[AC01]`` marker was invisible to seeding with a
+    lost/empty registry. mint() then re-minted the SAME number onto the
+    first, still-unmarked bullet -- the exact "never reused" violation the
+    seed pass exists to prevent, and the document became permanently
+    un-mintable (DuplicateAcIdError) as soon as the prose line was later
+    removed. Seeding must see every bullet in the block, not just the
+    leading run; minting stays gated to the leading run."""
+    prose_breaks_the_leading_run = (
+        "### FR-10.01 — Title\n\n"
+        "- (E) A first, not-yet-marked criterion.\n\n"
+        "Some prose note that ends the leading bullet run.\n\n"
+        "- (E) [AC01] A second criterion, already marked.\n"
+    )
+    result = ac_identity.mint(prose_breaks_the_leading_run, registry={})
+    assert result.assigned == (("FR-10.01", "AC02"),)
+    assert "[AC02] A first, not-yet-marked criterion." in result.content
+    assert "[AC01] A second criterion, already marked." in result.content
+    assert result.registry == {"FR-10.01": 2}
+
+    # Re-minting the result is a no-op: no duplicate, nothing reissued.
+    again = ac_identity.mint(result.content, result.registry)
+    assert again.assigned == ()
+    assert again.content == result.content
 
 
 # ---------------------------------------------------------------------------

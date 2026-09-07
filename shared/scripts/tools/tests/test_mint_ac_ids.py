@@ -1,16 +1,32 @@
 """CLI-level tests for ``mint_ac_ids.py`` -- invoked as a real subprocess
 (the way an operator or a later sub-iterate actually runs it), not imported,
 so the test also exercises argument parsing and the on-disk read/write path.
+
+Two tests below load the module in-process instead (``importlib``, since
+``shared/scripts/tools`` is not a package): the write-ORDER and file-lock
+invariants are internal to a single process and invisible to a subprocess's
+exit code + stdout/stderr alone (code review round 3) -- deleting the
+``with file_lock(...)`` block or swapping the two write calls back left every
+subprocess test above green.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 _TOOL = Path(__file__).resolve().parents[1] / "mint_ac_ids.py"
+
+
+def _load_mint_ac_ids():
+    spec = importlib.util.spec_from_file_location("mint_ac_ids", _TOOL)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 _SPEC = (
     "### FR-09.01 — Example\n\n"
@@ -147,3 +163,71 @@ def test_write_creates_the_registry_file_even_when_the_spec_has_no_bullets(tmp_p
     assert payload["assigned"] == []
     assert registry.exists()
     assert json.loads(registry.read_text(encoding="utf-8")) == {}
+
+
+def test_write_persists_the_registry_before_the_spec(tmp_path, monkeypatch):
+    """Code review round 3: nothing previously proved the write ORDER the
+    module docstring depends on -- a caller swapping the two
+    ``durable_atomic_write`` calls back would leave every other test in this
+    file green. Recorded via the write call order, not the filesystem: on a
+    real (non-crashing) run both files exist either way, so only order tells
+    the two sequences apart."""
+    mint_ac_ids = _load_mint_ac_ids()
+    spec = tmp_path / "spec.md"
+    spec.write_text(_SPEC, encoding="utf-8")
+    registry = tmp_path / "shipwright_ac_registry.json"
+
+    written_order: list[Path] = []
+    real_write = mint_ac_ids.durable_atomic_write
+
+    def _recording_write(path, data):
+        written_order.append(Path(path))
+        real_write(path, data)
+
+    monkeypatch.setattr(mint_ac_ids, "durable_atomic_write", _recording_write)
+
+    exit_code = mint_ac_ids.main(
+        ["--spec-file", str(spec), "--registry-file", str(registry), "--write"]
+    )
+
+    assert exit_code == 0
+    assert written_order == [registry, spec]
+
+
+def test_a_second_invocation_times_out_while_the_lock_is_held(tmp_path, monkeypatch):
+    """Code review round 3: nothing previously exercised ``file_lock`` at
+    all -- deleting the ``with file_lock(...):`` block around the mint in
+    ``main()`` left every other test in this file green. The timeout is
+    monkeypatched down from the real 30s so this test stays fast."""
+    mint_ac_ids = _load_mint_ac_ids()
+    monkeypatch.setattr(mint_ac_ids, "_LOCK_TIMEOUT_SECONDS", 0.2)
+    spec = tmp_path / "spec.md"
+    spec.write_text(_SPEC, encoding="utf-8")
+    registry = tmp_path / "shipwright_ac_registry.json"
+    lock_path = Path(str(registry) + ".lock")
+
+    holder_acquired = threading.Event()
+    release_holder = threading.Event()
+
+    def _hold_lock():
+        with mint_ac_ids.file_lock(lock_path, timeout_seconds=5.0):
+            holder_acquired.set()
+            release_holder.wait(timeout=5.0)
+
+    holder = threading.Thread(target=_hold_lock)
+    holder.start()
+    try:
+        assert holder_acquired.wait(timeout=5.0), "lock holder never acquired"
+
+        # Imported here, not at module level: `file_lock` only lands on
+        # sys.path as a side effect of `_load_mint_ac_ids()` above.
+        from file_lock import LockTimeout
+
+        try:
+            mint_ac_ids.main(["--spec-file", str(spec), "--registry-file", str(registry)])
+            raise AssertionError("expected LockTimeout while the lock was held")
+        except LockTimeout:
+            pass
+    finally:
+        release_holder.set()
+        holder.join(timeout=5.0)

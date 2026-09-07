@@ -49,6 +49,7 @@ if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
 import ac_identity  # noqa: E402
+from atomic_write import durable_atomic_write  # noqa: E402
 from file_lock import file_lock  # noqa: E402
 
 #: How long ``--write`` waits for another concurrent invocation on the same
@@ -92,12 +93,19 @@ def _mint_once(spec_path: Path, registry_path: Path, *, write: bool) -> dict:
         # genuinely "created on first --write if absent" as documented above,
         # even for a spec with no criterion bullets at all (external code
         # review, 2026-09-06, GLM low #5).
-        registry_path.write_text(
+        #
+        # durable_atomic_write, not write_text (code review round 3): the
+        # house pattern for a tracked artifact a crash mid-write must never
+        # leave truncated -- a plain write_text interrupted partway through
+        # would leave invalid JSON (registry) or a half-rewritten spec.md in
+        # place, exactly what "registry BEFORE spec" above is trying to make
+        # safe to interrupt.
+        durable_atomic_write(
+            registry_path,
             json.dumps(result.registry, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-            encoding="utf-8",
         )
         if result.content != content:
-            spec_path.write_text(result.content, encoding="utf-8")
+            durable_atomic_write(spec_path, result.content)
         payload["written"] = True
 
     return payload

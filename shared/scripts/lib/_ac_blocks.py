@@ -144,6 +144,24 @@ def iter_bullet_positions(lines: list[str]) -> Iterator[tuple[str, int]]:
             yield fr_id, idx
 
 
+def iter_all_bullet_positions(lines: list[str]) -> Iterator[tuple[str, int]]:
+    """``(fr_id, line_index)`` for EVERY criterion-bullet OPENING line
+    anywhere in a heading-anchored FR block, in document order — unlike
+    ``iter_bullet_positions``, NOT gated to the block's contiguous leading
+    run. Used for registry SEEDING and duplicate-marker detection
+    (``mint()`` pass 1), which must see every ``[ACnn]`` marker already in
+    the block, not just the ones ``read()`` can also see: minting (pass 2,
+    ``iter_bullet_positions``) must never stamp an id ``read()`` cannot see,
+    but seeding never writes anything, so the risk runs the other way —
+    missing an existing marker outside the leading run would let a
+    lost/stale registry re-assign its number to a different criterion
+    (external code review, 2026-09-06 round 3)."""
+    for fr_id, start, end in _iter_heading_blocks_by_index(lines):
+        for idx in range(start, end):
+            if BULLET_RE.match(lines[idx]):
+                yield fr_id, idx
+
+
 def iter_heading_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
     """``(fr_id, block_lines)`` for every HEADING-anchored FR block, in
     document order — ``read()``'s discovery. Termination mirrors
@@ -192,9 +210,9 @@ def insert_marker(line: str, ac_id: str) -> str:
 
 
 __all__ = [
-    "BULLET_RE",
     "embedded_ac_num",
     "insert_marker",
+    "iter_all_bullet_positions",
     "iter_bullet_positions",
     "iter_heading_anchored_blocks",
 ]

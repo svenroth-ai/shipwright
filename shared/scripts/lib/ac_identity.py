@@ -46,10 +46,12 @@ criteria still come from `fr_criteria.block_criteria(..., strict=True)`.
 **Never renumbered, never reused — how.** A ``registry`` (``fr_id -> highest
 number ever minted``) travels across runs. Re-running `mint()`:
 
-1. seeds the registry from any ``[ACnn]`` markers already embedded (so a
-   registry snapshot that lagged behind manual edits never causes a clash);
-2. mints exactly the bullets that carry no marker yet, in document order,
-   each getting ``registry[fr_id] + 1``.
+1. seeds the registry from any ``[ACnn]`` markers already embedded, scanning
+   EVERY bullet in each FR block (not just the leading run step 2 mints
+   into — a marker outside it is still a real, already-assigned id), so a
+   registry snapshot that lagged behind manual edits never causes a clash;
+2. mints exactly the leading-run bullets that carry no marker yet, in
+   document order, each getting ``registry[fr_id] + 1``.
 
 An already-marked bullet is *never* touched, regardless of where it sits —
 so inserting a new bullet in the middle of an already-minted list changes
@@ -78,14 +80,23 @@ both validate every marker they see and raise (never coerce or ignore) on:
   otherwise introduce that neither the marker syntax nor the registry alone
   would catch.
 
-**One known, deferred effect of minting a REAL document (external plan
-review).** `read()` strips `[ACnn]`, but `lib.fr_criteria.criteria_for`
-itself does not know the marker exists — so any OTHER `fr_criteria` caller
-reading an already-minted document (e.g. `_layer_coverage_ac`'s digest gate)
-would see `[ACnn] ` as literal text, changing that digest. Inert today, since
-this run never mints the real spec.md; whoever wires minting into a real,
-gate-read document (P3.2/P3.3) decides how to handle it — named here so it
-is not a surprise there.
+**Two known, deferred effects of minting a REAL document (external plan
+review; code review round 3).** `read()` strips `[ACnn]`, but
+`lib.fr_criteria.criteria_for` itself does not know the marker exists — so
+any OTHER `fr_criteria` caller reading an already-minted document sees
+`[ACnn] ` as literal text:
+
+1. a digest gate (e.g. `_layer_coverage_ac`) keyed to criterion text changes;
+2. a minted PLACEHOLDER bullet stops collapsing to `fr_criteria`'s bare-
+   placeholder token set — `"[AC01] TBD"` normalises to `ac01tbd`, which
+   is not in that set — so a placeholder-only FR flips from `has_criteria =
+   False` to `True` for every such caller (pinned today at
+   `test_mint_and_read_agree_on_a_duplicate_split_across_a_placeholder`,
+   which exercises the same collapse loss via the duplicate-detection path).
+
+Both are inert today, since this run never mints the real spec.md; whoever
+wires minting into a real, gate-read document (P3.2/P3.3) decides how to
+handle them — named here so neither is a surprise there.
 """
 
 from __future__ import annotations
@@ -102,6 +113,7 @@ from lib import fr_criteria  # noqa: E402
 from lib._ac_blocks import (  # noqa: E402
     embedded_ac_num,
     insert_marker,
+    iter_all_bullet_positions,
     iter_bullet_positions,
     iter_heading_anchored_blocks,
 )
@@ -164,10 +176,16 @@ def mint(content: str, registry: dict[str, int] | None = None) -> MintResult:
     # Pass 1: seed the registry from ids the document already carries (in
     # EITHER direction relative to what the caller passed in — see module
     # docstring), so a registry snapshot older OR newer than a manual edit
-    # can never cause a clash. Also the one place that can see two bullets
-    # under the same FR sharing a number, since it visits every bullet.
+    # can never cause a clash. Scans EVERY bullet in the block, not just the
+    # leading run iter_bullet_positions gates minting to (external code
+    # review, 2026-09-06 round 3): a marker sitting outside that run is
+    # still a real, already-assigned id, and missing it here would let a
+    # lost/stale registry re-mint that same number onto a different
+    # criterion — the "never reused" violation this pass exists to prevent.
+    # This is also the one place that can see two bullets under the same FR
+    # sharing a number, since it visits every bullet in the block.
     seen: dict[str, set[int]] = {}
-    for fr_id, idx in iter_bullet_positions(lines):
+    for fr_id, idx in iter_all_bullet_positions(lines):
         existing = embedded_ac_num(lines[idx], fr_id=fr_id)
         if existing is None:
             continue
