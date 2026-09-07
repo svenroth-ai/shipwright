@@ -268,14 +268,11 @@ def main(argv: list[str] | None = None) -> int:
         try:
             apply_result = apply_upgrades(project_root, report)
         except OSError as exc:
-            # Tier-3 CI-gate re-review (P3.4 high): apply_upgrades writes each
-            # bare-tag upgrade immediately as it iterates candidates, so an I/O
-            # failure partway through (disk full, permission error, file made
-            # read-only mid-run) previously propagated straight out of main()
-            # -- the orphan-rollback below runs only on a NORMAL return, so
-            # every file already written before the failure stayed modified.
-            # Restore the same snapshot the orphan path uses; there is no
-            # partial `apply_result` to report, only what failed.
+            # Tier-3 CI-gate re-review (P3.4 high): an I/O failure partway
+            # through apply_upgrades's per-file writes previously propagated
+            # straight out of main(), leaving every file written before the
+            # failure modified with no rollback. Restore the same snapshot
+            # the orphan path below uses; there is no partial `apply_result`.
             for abs_path, content in originals.items():
                 abs_path.write_bytes(content)
             out["apply"] = {"write_error": str(exc), "rolled_back": True}
@@ -283,11 +280,9 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         out["apply"] = apply_result
         orphans = validate_applied(project_root, apply_result, spec_path)
-        # Tier-3 CI-gate re-review (P3.4 high): a write ATTEMPTED for one
-        # candidate can fail (apply_result["write_failures_occurred"]) after a
-        # sibling candidate's bare-tag upgrade already landed on disk in the
-        # SAME batch -- that must not be reported as an unqualified success
-        # any more than an orphan tag would be. Same snapshot, same rollback.
+        # A write attempted for one candidate can fail after a SIBLING
+        # candidate's upgrade already landed on disk in the same batch (Tier-3
+        # CI-gate re-review, P3.4 high) -- roll back that too, same snapshot.
         if orphans or apply_result.get("write_failures_occurred"):
             for abs_path, content in originals.items():
                 abs_path.write_bytes(content)
