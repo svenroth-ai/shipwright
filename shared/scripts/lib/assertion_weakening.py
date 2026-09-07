@@ -485,12 +485,17 @@ def _js_name_is_standalone_call(source: str, start: int) -> bool:
     return source[j + 1:i + 1] not in _JS_DECLARATION_KEYWORDS
 
 
-#: `describe`/`it`/`test` and their `x`-disabled siblings — chain-scanning
-#: (whitespace/comment-tolerant, computed-access-aware) is `_js_scan_chain`'s
-#: job, not this regex's; folding it into the regex is what let a line-broken
-#: `test\n  .skip(...)` or a `test['skip'](...)` collapse to an empty chain
-#: unnoticed in an earlier revision of this file.
-_JS_NAME = re.compile(r"\b(?:describe|xdescribe|it|xit|test|xtest)\b")
+#: `describe`/`it`/`test` and their `x`-disabled siblings, plus Jasmine/Jest's
+#: `f`-focused siblings (`fit`, `fdescribe` — the direct opposite of `x`:
+#: Jest/Jasmine's own alias for `.only`, not chain-based, so it was silently
+#: invisible here entirely before external Tier-3 review, PR #685, sixth
+#: round, caught assertion weakening inside one passing the gate with no
+#: finding at all — a genuine false negative, not just an accepted one).
+#: Chain-scanning (whitespace/comment-tolerant, computed-access-aware) is
+#: `_js_scan_chain`'s job, not this regex's; folding it into the regex is
+#: what let a line-broken `test\n  .skip(...)` or a `test['skip'](...)`
+#: collapse to an empty chain unnoticed in an earlier revision of this file.
+_JS_NAME = re.compile(r"\b(?:describe|xdescribe|fdescribe|it|xit|fit|test|xtest)\b")
 #: Every chain `_js_resolve_test_call` actually knows how to follow. A single
 #: authoritative set: unlike an earlier revision of this file, there is no
 #: second regex re-deciding "supported" on its own that could quietly drift
@@ -752,9 +757,16 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
         if not recognized:
             return None
         mod = chain[1:].split(".", 1)[0] if chain and chain != ".each" else None
+        if m.group(0) in ("fit", "fdescribe") and mod is None:
+            #: `fit`/`fdescribe` ARE `.only` — Jest/Jasmine's own alias, not
+            #: a chained modifier — so a bare `fit(...)`/`fdescribe(...)`
+            #: (or the `.each` form, where the formula above also leaves
+            #: `mod` as `None`) gets exactly the same "only" treatment a
+            #: written-out `.only` chain would, below.
+            mod = "only"
         calls.append((m.group(0), mod, m.start(), *resolved))
 
-    describes = [c for c in calls if c[0] in ("describe", "xdescribe")]
+    describes = [c for c in calls if c[0] in ("describe", "xdescribe", "fdescribe")]
     #: A `.only` anywhere in the file — on a test OR a describe — makes Jest/
     #: Vitest run *only* that block and skip every sibling in the file at
     #: runtime, with no mark on the siblings themselves. An earlier revision
@@ -812,7 +824,7 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
     #: already given to assertions, so one more occurrence after than before
     #: still fires even though the mark type itself is not new.
     for name, mod, _head_start, open_idx, close_idx in calls:
-        if name not in ("it", "xit", "test", "xtest"):
+        if name not in ("it", "xit", "test", "xtest", "fit"):
             continue
         test_name = _js_test_name(source, open_idx, close_idx)
         marks: set[str] = set()

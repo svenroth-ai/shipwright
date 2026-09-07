@@ -572,6 +572,41 @@ def test_js_a_test_nested_under_describe_only_is_not_itself_shadowed():
     assert "skip_added" not in _kinds(findings, blocking=True)
 
 
+def test_js_removing_an_assertion_from_a_focused_fit_test_blocks():
+    """`fit(...)` is Jasmine/Jest's own alias for `it.only(...)`, not a chain
+    -- entirely invisible to `_JS_NAME` before this fix, so weakening inside
+    one passed the gate with no finding at all (external Tier-3 review, PR
+    #685, sixth round: a genuine false negative)."""
+    before = "fit('a', () => { expect(1).toBe(1); expect(2).toBe(2); });\n"
+    after = "fit('a', () => { expect(1).toBe(1); });\n"
+    assert "assertions_removed" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                          blocking=True)
+
+
+def test_js_removing_an_assertion_from_a_test_nested_under_fdescribe_blocks():
+    """`fdescribe(...)` is Jasmine/Jest's own alias for `describe.only(...)`;
+    same false-negative gap as `fit` above, for the nested-describe form."""
+    before = "fdescribe('A', () => {\n  it('a', () => { expect(1).toBe(1); expect(2).toBe(2); });\n});\n"
+    after = "fdescribe('A', () => {\n  it('a', () => { expect(1).toBe(1); });\n});\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+    assert "skip_added" not in _kinds(findings, blocking=True)
+
+
+def test_js_a_newly_focused_fit_shadows_its_siblings_like_only_does():
+    """`fit` carries the same "everything else in the file is silently
+    skipped at runtime" footgun as a written-out `.only` -- newly focusing
+    one test with `fit` must produce the same `skip_added` finding on its
+    un-focused sibling that `.only` does."""
+    before = ("it('a', () => { expect(1).toBe(1); });\n"
+              "it('b', () => { expect(2).toBe(2); });\n")
+    after = ("fit('a', () => { expect(1).toBe(1); });\n"
+             "it('b', () => { expect(2).toBe(2); });\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" in _kinds(findings, blocking=True)
+    assert any(f"{JS_TEST_PATH}::b" == f.subject for f in findings)
+
+
 def test_js_a_dynamic_test_names_assertion_loss_is_still_caught():
     """`it(caseName, fn)` — a common data-driven-test pattern — resolves to a
     real call but has no string-literal name; dropping it outright made it

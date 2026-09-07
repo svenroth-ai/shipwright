@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17375,
-      "total": 17434,
+      "passed": 17378,
+      "total": 17437,
       "skipped": 59,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, six external PR-check findings across five review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x5, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, and an unrecognized-chain false block on non-invoked property references) were fixed, adding 12 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 6 new across the regex-literal, fail-closed, and chain-invocation fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (81 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17375/17434) add those 12 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, seven external PR-check findings across six review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x6, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, and a false negative on fit/fdescribe) were fixed, adding 15 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 9 new across the regex-literal, fail-closed, chain-invocation, and fit/fdescribe fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (84 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17378/17437) add those 15 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
     },
     "integration": {
       "status": "pass",
@@ -155,11 +155,16 @@
           "behavior": "An unrecognized modifier chain (e.g. test.concurrent, a computed-access chain) that is never actually invoked here is treated as an ordinary non-test property reference, not a blocking unparseable finding; the same chain actually invoked still fails closed",
           "disposition": "tested",
           "evidence": "test_js_an_unrecognized_chain_never_invoked_is_not_a_false_block and test_js_an_unrecognized_chain_that_is_actually_invoked_still_fails_closed PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, fifth round: _js_collect now checks whether the chain resolves to an actual call BEFORE deciding whether an unrecognized chain shape should fail closed; a recognized-but-unresolved chain (test.each; with no table) keeps its pre-existing fail-closed behavior unchanged"
+        },
+        {
+          "behavior": "fit(...)/fdescribe(...) (Jasmine/Jest's own alias for .only, not a chain) are recognized as focused test/describe declarations, weakening inside one is caught, and they shadow their un-focused siblings exactly like a written-out .only does",
+          "disposition": "tested",
+          "evidence": "test_js_removing_an_assertion_from_a_focused_fit_test_blocks, test_js_removing_an_assertion_from_a_test_nested_under_fdescribe_blocks, and test_js_a_newly_focused_fit_shadows_its_siblings_like_only_does PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, sixth round: _JS_NAME now recognizes fit/fdescribe, and _js_collect implicitly treats a bare fit/fdescribe as mod=\"only\" (this was a genuine false negative, not an accepted trade-off \u2014 weakening inside fit/fdescribe previously produced no finding at all)"
         }
       ],
       "counts": {
-        "testable": 23,
-        "tested": 23,
+        "testable": 24,
+        "tested": 24,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -174,7 +179,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "433fb4c1a0038729212cd5d3c474a16f35a441e2",
+    "commit": "2104ff5e880707b05a47c2c4f322d6eaeffeb6ca",
     "dirty": true,
     "base": null,
     "release": null
