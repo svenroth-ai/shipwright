@@ -59,12 +59,20 @@ Design constraints
   changes mid-process. A non-absolute ``gitdir:`` target (relative worktree
   paths, git >= 2.48) is resolved against the worktree's own directory, not
   the process CWD, so that config can't silently disable every sibling at once.
-* **Cache on (path, mtime) — discovery AND parsing, both** (``_DISCOVERY_CACHE``,
-  ``_CACHE``). A board read must not become a directory walk + re-parse on
-  every one of the several ``read_all_items`` calls one CLI invocation makes.
-  Process-lifetime only, by design — a fresh process per invocation means
-  neither cache amortizes ACROSS invocations (a WebUI poll pays the full cost
-  every time); fixing that would need a persistent cache, out of scope here.
+* **Cache the PARSE, not the discovery walk** (``_CACHE``, keyed on
+  ``(path, mtime)``). An earlier version also cached
+  :func:`sibling_worktree_logs`'s directory walk on ``.worktrees``' own mtime,
+  which missed a sibling gaining a `triage.jsonl` after the first scan, or
+  switching its checked-out branch — neither changes `.worktrees`' own mtime
+  or listing (PR #684 review). The walk is now unconditional on every call;
+  it stays cheap (an ``iterdir`` plus a few small reads per sibling) precisely
+  because the one genuinely expensive part — parsing a sibling's full log,
+  some exceeding a thousand records with multi-kilobyte fields — is what
+  ``_CACHE`` amortizes across the several ``read_all_items`` calls one CLI
+  invocation makes. Process-lifetime only, by design — a fresh process per
+  invocation means it never amortizes ACROSS invocations (a WebUI poll pays
+  the full parse cost every time); fixing that would need a persistent cache,
+  out of scope here.
 * **Measured, not guessed, fan-out** (Stage-3 doubt review, finding 1). This
   repo carries 84 sibling worktrees, some logs exceeding a thousand records
   with multi-kilobyte fields — not the "~45 small files" first assumed. Only
@@ -103,11 +111,6 @@ _WORKTREES_DIRNAME = ".worktrees"
 #: docstring) — not a correctness risk: a stale hit only ever costs a re-read on
 #: the NEXT process, since nothing here is ever the writer.
 _CACHE: dict[Path, tuple[float, list[dict]]] = {}
-
-#: `.worktrees` dir path -> (its own mtime, the discovery result). Memoizes the
-#: directory walk itself, not just the per-file parse below — a sibling being
-#: added/removed changes `.worktrees`' own mtime, which is what invalidates this.
-_DISCOVERY_CACHE: dict[Path, tuple[float, list[tuple[str, Path]]]] = {}
 
 
 def _is_main_tree(root: Path) -> bool:
@@ -161,25 +164,24 @@ def sibling_worktree_logs(project_root: Path | str) -> list[tuple[str, Path]]:
     no tracked log, or whose branch cannot be named, is skipped rather than
     guessed at — reporting nothing beats reporting something unattributed.
 
-    The directory walk itself is memoized on ``(.worktrees path, its mtime)``
-    — not just the per-file parse in :func:`_cached_records` below — so
-    ``read_all_items``'s several calls per CLI invocation (mark_status /
-    amend_triage_item each re-read to build their return value) cost one
-    ``iterdir`` + one ``.git``/``HEAD`` read per sibling, not one per call.
+    **Not cached — walked fresh on every call, deliberately** (PR #684
+    review round). An earlier version memoized this walk on
+    ``(.worktrees path, its mtime)``, but a sibling *already* in `.worktrees`
+    gaining a `triage.jsonl` after the first scan, or switching its checked-out
+    branch (`.git`/`HEAD` rewritten), changes neither `.worktrees`' own mtime
+    nor its listing — so that cache could report a sibling as absent, or under
+    its old branch, for the rest of the process. The walk itself is cheap
+    (one ``iterdir`` plus, per sibling, an ``is_file`` check and up to two
+    small text reads for branch identity) — nothing here is the "84 sibling
+    worktrees, thousand-record logs" cost :func:`_cached_records` exists to
+    amortize; that per-file PARSE is still cached below.
     """
     root = Path(project_root)
     if not _is_main_tree(root):
         return []
     base = root / _WORKTREES_DIRNAME
-    try:
-        mtime = base.stat().st_mtime
-    except OSError:
-        return []
     if not base.is_dir():
         return []
-    cached = _DISCOVERY_CACHE.get(base)
-    if cached is not None and cached[0] == mtime:
-        return cached[1]
     out: list[tuple[str, Path]] = []
     for wt_dir in sorted(p for p in base.iterdir() if p.is_dir()):
         log_path = wt_dir / _SHIPWRIGHT_DIR / _TRIAGE_FILE
@@ -189,7 +191,6 @@ def sibling_worktree_logs(project_root: Path | str) -> list[tuple[str, Path]]:
         if branch is None:
             continue
         out.append((branch, log_path))
-    _DISCOVERY_CACHE[base] = (mtime, out)
     return out
 
 

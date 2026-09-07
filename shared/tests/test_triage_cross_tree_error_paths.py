@@ -109,9 +109,9 @@ def test_sibling_worktree_logs_empty_when_worktrees_path_is_a_file(tmp_path: Pat
     assert triage_cross_tree.sibling_worktree_logs(main) == []
 
 
-def test_sibling_worktree_logs_second_call_hits_the_cache(tmp_path: Path) -> None:
+def test_sibling_worktree_logs_two_consecutive_calls_agree(tmp_path: Path) -> None:
     """Back-to-back calls with NO change to `.worktrees` between them must
-    take the cache-hit branch on the second call, not re-walk the directory."""
+    still agree — the walk is unconditional now, not memoized."""
     main = _make_main(tmp_path)
     wt = main / ".worktrees" / "camp-a"
     (wt / ".shipwright").mkdir(parents=True)
@@ -125,6 +125,57 @@ def test_sibling_worktree_logs_second_call_hits_the_cache(tmp_path: Path) -> Non
     second = triage_cross_tree.sibling_worktree_logs(main)
     assert first == second == [
         ("iterate/camp-a", wt / ".shipwright" / "triage.jsonl"),
+    ]
+
+
+def test_a_sibling_gaining_a_log_after_the_first_scan_is_picked_up(
+    tmp_path: Path,
+) -> None:
+    """PR #684 review: a worktree already present in `.worktrees` at the first
+    scan, but with no `triage.jsonl` yet, must not be permanently excluded once
+    one is created — creating a file inside an EXISTING subdirectory changes
+    that subdirectory's own mtime, never `.worktrees`' own mtime, so a
+    discovery cache keyed on the parent alone would miss this forever."""
+    main = _make_main(tmp_path)
+    wt = main / ".worktrees" / "camp-a"
+    admin = main / ".git" / "worktrees" / "camp-a"
+    (wt / ".shipwright").mkdir(parents=True)
+    admin.mkdir(parents=True)
+    (admin / "HEAD").write_text("ref: refs/heads/iterate/camp-a\n", encoding="utf-8")
+    (wt / ".git").write_text(f"gitdir: {admin}\n", encoding="utf-8")
+
+    assert triage_cross_tree.sibling_worktree_logs(main) == []
+
+    (wt / ".shipwright" / "triage.jsonl").write_text(_j({"v": 1}) + "\n", encoding="utf-8")
+
+    assert triage_cross_tree.sibling_worktree_logs(main) == [
+        ("iterate/camp-a", wt / ".shipwright" / "triage.jsonl"),
+    ]
+
+
+def test_a_sibling_switching_branch_is_picked_up_without_a_worktrees_change(
+    tmp_path: Path,
+) -> None:
+    """PR #684 review: rewriting an EXISTING sibling's admin `HEAD` (the real
+    shape of `git -C <worktree> switch <branch>`) changes neither `.worktrees`'
+    own mtime nor its listing, so a cached branch name must not stick."""
+    main = _make_main(tmp_path)
+    wt = main / ".worktrees" / "camp-a"
+    (wt / ".shipwright").mkdir(parents=True)
+    admin = main / ".git" / "worktrees" / "camp-a"
+    admin.mkdir(parents=True)
+    (admin / "HEAD").write_text("ref: refs/heads/iterate/camp-a\n", encoding="utf-8")
+    (wt / ".git").write_text(f"gitdir: {admin}\n", encoding="utf-8")
+    (wt / ".shipwright" / "triage.jsonl").write_text(_j({"v": 1}) + "\n", encoding="utf-8")
+
+    assert triage_cross_tree.sibling_worktree_logs(main) == [
+        ("iterate/camp-a", wt / ".shipwright" / "triage.jsonl"),
+    ]
+
+    (admin / "HEAD").write_text("ref: refs/heads/iterate/camp-a-v2\n", encoding="utf-8")
+
+    assert triage_cross_tree.sibling_worktree_logs(main) == [
+        ("iterate/camp-a-v2", wt / ".shipwright" / "triage.jsonl"),
     ]
 
 

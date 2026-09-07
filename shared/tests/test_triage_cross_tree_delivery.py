@@ -256,17 +256,17 @@ def test_build_listing_origin_branches_defaults_to_empty() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Discovery caching — must not go stale forever within one process
+# Discovery — the walk is unconditional, so it never goes stale (PR #684)
 # ---------------------------------------------------------------------------
 
-def test_sibling_discovery_cache_picks_up_a_worktree_added_later(
+def test_sibling_discovery_picks_up_a_worktree_added_later(
     tmp_path: Path,
 ) -> None:
-    """The FIRST call here actually populates `_DISCOVERY_CACHE` (there is
-    already one sibling, so `.worktrees` exists and the walk's result is
-    cached) — unlike calling on a not-yet-existing `.worktrees`, which returns
-    before ever touching the cache. The second call must see the newly added
-    sibling too, proving the cache invalidates rather than sticking forever."""
+    """The second call must see a sibling added after the first — the walk is
+    not memoized, so nothing here can stick stale (see also
+    `test_triage_cross_tree_error_paths.py` for the two narrower PR #684
+    regressions: a sibling gaining a log, and a sibling switching branch,
+    neither of which changes `.worktrees`' own mtime or listing)."""
     main = _make_main(tmp_path)
     wt_a = _make_worktree(main, "camp-a", "iterate/camp-a")
     (wt_a / ".shipwright" / "triage.jsonl").write_text(
