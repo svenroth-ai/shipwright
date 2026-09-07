@@ -3,7 +3,7 @@
 Generated: 2026-09-07T08:00:31.525660+00:00
 Source-State: run=iterate-2026-09-07-p3-2-tag-grammar-manifest-v4
 Consistency-audit: last run 2026-07-28 (41 days earlier) — FAIL
-Total commits: 1470
+Total commits: 1471
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ Total commits: 1470
 pie title Commit Types
     "fix" : 504
     "feat" : 388
-    "chore" : 266
+    "chore" : 267
     "docs" : 157
     "refactor" : 88
     "test" : 38
@@ -925,10 +925,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 266 commits
+### Chores (chore) — 267 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-07 | compliance | regenerate committed manifest to schema v4 | 8f80645de2f3 |
 | 2026-09-07 | review | record the Stage-1 REJECT for p3.2 | 702ba90cfd76 |
 | 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
 | 2026-09-01 | release | v0.33.1 (#667) | 77d10de1c32a |
@@ -1547,7 +1548,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1470 |
+| Total commits | 1471 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1470 |
+| Human-authored commits | 1471 |
 

@@ -2,7 +2,7 @@
   "schema_version": 4,
   "collector_version": "test_links/1.0.0",
   "generated_at": "2026-09-07T08:00:31.525660+00:00",
-  "source_commit": "8491f323729f3ce2af1e80e9f7c621d8904be0c4",
+  "source_commit": "8f80645de2f3bcab5c25beb9ec63a0c7929bc9b9",
   "spec_hash": "sha256:c60fbfc7d82ad665a09416ed1c34bb980b33038de197011d4ed9fb380ad044a4",
   "requirements": {
     "01::FR-01.01": {
@@ -6603,6 +6603,7 @@
     "plugins/shipwright-compliance/tests/test_test_evidence_synthesis.py::test_section_omitted_when_no_work_event_has_tests",
     "plugins/shipwright-compliance/tests/test_test_evidence_synthesis.py::test_synthesis_caps_at_30_after_filter",
     "plugins/shipwright-compliance/tests/test_test_evidence_synthesis.py::test_test_run_path_unchanged_when_test_runs_exist",
+    "plugins/shipwright-compliance/tests/test_test_links_ac_nodes.py::test_a_third_repeated_ac_tag_does_not_un_ambiguate_the_parent",
     "plugins/shipwright-compliance/tests/test_test_links_ac_nodes.py::test_ac_node_coverage_is_ok_only_when_a_link_passed",
     "plugins/shipwright-compliance/tests/test_test_links_ac_nodes.py::test_ac_scoped_tag_produces_an_acs_node",
     "plugins/shipwright-compliance/tests/test_test_links_ac_nodes.py::test_acs_are_sorted_by_ac_number_not_lexically",

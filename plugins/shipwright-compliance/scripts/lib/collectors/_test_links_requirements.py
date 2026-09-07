@@ -178,7 +178,14 @@ def file_hit(tests_by_key: dict, acs_by_key: dict, req_key: str, layer: str,
             # one rather than adding a second link for the same (test, source).
             dup.pop("resolved_from", None)
         if link.get("ac_id"):
-            if not dup.get("ac_id"):
+            if dup.get("_ac_ambiguous"):
+                # PR-review (openai/medium): a THIRD tag naming an AC already seen
+                # (e.g. AC07, AC99, AC07) must not un-ambiguate the parent link —
+                # the test still covers two DIFFERENT ACs regardless of which one
+                # repeats. Without this sentinel, popping "ac_id" below made the
+                # next matching backfill look like the FIRST-ever ac_id sighting.
+                pass
+            elif not dup.get("ac_id"):
                 # A second tag on the same test named the AC this bare tag left
                 # unspecified — backfill rather than lose it (rare: two @covers
                 # args for the same FR, one bare and one AC-scoped).
@@ -189,7 +196,11 @@ def file_hit(tests_by_key: dict, acs_by_key: dict, req_key: str, layer: str,
                 # ``ac_id`` field cannot represent both, so drop it rather than
                 # silently keep whichever AC was filed first. Each AC still gets
                 # its own correct, unambiguous link below in its own bucket.
+                # Marked permanently ambiguous (``_ac_ambiguous``, stripped before
+                # the manifest is shaped) so a later repeat of either AC cannot
+                # backfill "ac_id" back in.
                 dup.pop("ac_id", None)
+                dup["_ac_ambiguous"] = True
     if ac_id:
         ac_bucket = acs_by_key.setdefault(req_key, {}).setdefault(ac_id, {}).setdefault(layer, [])
         ac_dup = next((l for l in ac_bucket if l["id"] == link["id"]
@@ -226,7 +237,13 @@ def build_requirement_nodes(requirements: dict, tests_by_key: dict,
             layers = list(req.required_layers) + [l for l in filed if l not in req.required_layers]
             for layer in _LAYER_ORDER:
                 if layer in filed:
-                    tests_node[layer] = filed[layer]
+                    # Strip file_hit's internal "_ac_ambiguous" sentinel -- it must
+                    # never leak into the shipped manifest, only govern backfill
+                    # during collection.
+                    tests_node[layer] = [
+                        {k: v for k, v in item.items() if not k.startswith("_")}
+                        for item in filed[layer]
+                    ]
                 if layer in layers:
                     coverage[layer] = _cov_status(filed.get(layer, []))
             # v4, D9: AC-scoped breakdown, mirroring the shape just above but scoped to

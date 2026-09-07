@@ -163,6 +163,36 @@ def test_two_different_acs_on_the_same_test_do_not_pick_one_at_the_parent(tmp_pa
     assert fr["acs"]["AC99"]["tests"]["unit"][0]["ac_id"] == "AC99"
 
 
+def test_a_third_repeated_ac_tag_does_not_un_ambiguate_the_parent(tmp_path):
+    """PR-review (openai/medium): AC07, AC99, AC07 -- the repeat of AC07 must NOT
+    backfill ``ac_id`` back onto the parent link. The parent became ambiguous the
+    moment AC99 conflicted with AC07; a later tag repeating either AC does not
+    change that the test covers two different ACs. Guards the ``_ac_ambiguous``
+    sentinel (never un-set once tripped) and that it never leaks into the
+    shipped manifest."""
+    (tmp_path / "spec.md").write_text(_AC_SPEC, encoding="utf-8")
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_triple.py").write_text(
+        'import pytest\n\n'
+        '@pytest.mark.covers("FR-06.01/AC07")\n'
+        '@pytest.mark.covers("FR-06.01/AC99")\n'
+        '@pytest.mark.covers("FR-06.01/AC07")\n'
+        'def test_x():\n    assert True\n', encoding="utf-8",
+    )
+    manifest = build_manifest(
+        tmp_path, spec_files=[tmp_path / "spec.md"], test_roots=[tests_dir],
+        evidence={}, enumerate_untagged=True,
+    )
+    fr = _by_id(manifest, "FR-06.01")
+    unit_links = fr["tests"]["unit"]
+    assert len(unit_links) == 1, "one test, one link — not one per AC tag"
+    assert "ac_id" not in unit_links[0], "still ambiguous — the repeat must not restore it"
+    assert "_ac_ambiguous" not in unit_links[0], "internal sentinel must never ship"
+    assert fr["acs"]["AC07"]["tests"]["unit"][0]["ac_id"] == "AC07"
+    assert fr["acs"]["AC99"]["tests"]["unit"][0]["ac_id"] == "AC99"
+
+
 def test_malformed_ac_suffix_is_invalid_not_a_bare_fr_hit(tmp_path):
     (tmp_path / "spec.md").write_text(_AC_SPEC, encoding="utf-8")
     tests_dir = tmp_path / "tests"
