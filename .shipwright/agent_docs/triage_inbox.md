@@ -1,16 +1,16 @@
 # Triage Inbox
 
-> Auto-generated 2026-09-04T22:33:29.754787Z. Items waiting for triage decision.
+> Auto-generated 2026-09-07T17:43:26.986738Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 886
-- Triage: 12 | Promoted: 4 | Dismissed: 868 | Snoozed: 2
+- Total: 891
+- Triage: 11 | Promoted: 4 | Dismissed: 873 | Snoozed: 3
 
-## Top 12 items (severity-sorted)
+## Top 11 items (severity-sorted)
 
-### Source: board-split (2 items)
+### Source: board-split (1 item)
 
 <a id="trg-14392ba5"></a>
 - **P2.17a \[GUIDED after P2.17\] Campaign sub-iterates do not run the architecture review pass** `id=trg-14392ba5 | severity=medium | kind=improvement → P2/engineering`
@@ -23,16 +23,16 @@
     ```
   - Promote: `triage_promote.py --id trg-14392ba5 --task-ref EXT:<ref>`
 
-<a id="trg-d76ab0d9"></a>
-- **P2.18a \[GUIDED after P2.18\] Adopted repos render Source-State: run=\(unknown\)** `id=trg-d76ab0d9 | severity=medium | kind=improvement → P2/engineering`
-  - MEASURED 2026-08-06 while building iterate-2026-08-05-adopt-derived-evidence-rollout. An adopted repository's complianc…
+### Source: doubt-review (1 item)
+
+<a id="trg-aedcfe7b"></a>
+- **Binding-completeness F11 gate: blast radius unmeasured on non-adopt target projects** `id=trg-aedcfe7b | severity=high | kind=compliance → P1/engineering`
+  - The new check\_binding\_completeness HARD gate \(P3.3, iterate-2026-09-07-p3-3-producers-emit-and-require-binding\) was…
   - Launch payload (copy into a new Claude session):
     ```text
-    /shipwright-iterate
-    
-    Work item: P2.18a [GUIDED after P2.18] Adopted repos render Source-State: run=(unknown)
+    /shipwright-iterate <id>
     ```
-  - Promote: `triage_promote.py --id trg-d76ab0d9 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-aedcfe7b --task-ref EXT:<ref>`
 
 ### Source: iterate-2026-08-01-drop-write-once-step-fields (1 item)
 
@@ -47,29 +47,16 @@
     ```
   - Promote: `triage_promote.py --id trg-61438a67 --task-ref EXT:<ref>`
 
-### Source: iterate-2026-08-01-grade-snapshot-dirty-capture (1 item)
+### Source: iterate-2026-09-07-p3-3-producers-emit-and-require-binding (1 item)
 
-<a id="trg-9fe7c8b1"></a>
-- **P4.02 \[GUIDED\] grade\_snapshot dirty: the orchestrator's sibling-process residual** `id=trg-9fe7c8b1 | severity=low | kind=improvement → P3/engineering`
-  - Left open deliberately by iterate-2026-08-01-grade-snapshot-dirty-capture, which shipped grade\_snapshot.dirty captured…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate
-    
-    Work item: P4.02: grade_snapshot dirty: the orchestrator's sibling-process residual
-    ```
-  - Promote: `triage_promote.py --id trg-9fe7c8b1 --task-ref EXT:<ref>`
-
-### Source: manual (1 item)
-
-<a id="trg-6558a81f"></a>
-- **Group I's business-language and acceptance-criteria checks are advisory-only, so fr-authoring.md is unenforced** `id=trg-6558a81f | severity=medium | kind=compliance → P2/engineering`
-  - Observed on leadwright \(adopted 2026-05-29, ~50 iterates since\). Its .shipwright/planning/01-adopted/spec.md violates…
+<a id="trg-875104ac"></a>
+- **P3.3 emit-half: producers must write a complete binding at requirement create/update time** `id=trg-875104ac | severity=medium | kind=compliance → P2/engineering`
+  - P3.3 \(campaign req3-04c-ac-identity-wave2\) delivered only the require half \(F11 check\_binding\_completeness\). The…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate <id>
     ```
-  - Promote: `triage_promote.py --id trg-6558a81f --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-875104ac --task-ref EXT:<ref>`
 
 ### Source: operator-request (1 item)
 
@@ -144,22 +131,26 @@
     ```
   - Promote: `triage_promote.py --id trg-9c9c0792 --task-ref EXT:<ref>`
 
-### Source: triage-consolidation-2026-07-28 (1 item)
+### Source: session-observation (1 item)
 
-<a id="trg-84a84f4e"></a>
-- **P4.03 \[GUIDED\] IT-10 Plugin-Scope-Split: entry plugins global, 11 pipeline plugins project-scoped** `id=trg-84a84f4e | severity=medium | kind=improvement → P2/engineering`
-  - SUPERSEDES trg-57317128 - inhaltlich unveraendert, nur in das IT-Schema umbenannt, damit das Board einheitlich ist. Spe…
+<a id="trg-afd87424"></a>
+- **Triage board silently reverts a decision that was swept onto an iterate branch - pendingDelivery reads false because it…** `id=trg-afd87424 | severity=high | kind=bug → P1/engineering`
+  - MEASURED 2026-09-06, twice in one session, and it cost real operator trust before it was understood: an item the operat…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate
     
-    Work item: IT-10: Plugin-Scope-Split: Einstiegs-Plugins global, 11 Pipeline-Plugins projekt-scoped
+    Work item: Triage board silently reverts a decision that was swept onto an iterate branch - pendingDelivery reads false because it only compares the same tree
     ```
-  - Promote: `triage_promote.py --id trg-84a84f4e --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-afd87424 --task-ref EXT:<ref>`
 
-## Deferred — decided, revisit later (2)
+## Deferred — decided, revisit later (3)
 
 _Not gone: each of these was decided, with a date it comes back on._
+
+- **P4.03 \[GUIDED\] IT-10 Plugin-Scope-Split: entry plugins global, 11 pipeline plugins project-scoped** `id=trg-84a84f4e | severity=medium | revisit=2026-12-01`
+  - Reason: Parked 2026-09-06 by the operator, WITH a date: a snooze without revisitAt never returns. Every repo he works in IS a S…
+  - Un-park: `triage_cli.py unpark trg-84a84f4e --reason <why>`
 
 - **The delivery ladder's self-merge rung has never run against a real unprotected repository** `id=trg-5c62fa56 | severity=medium | revisit=(no revisit date recorded)`
   - Reason: Re-homed to trg-a678bd00 \(Adopt Automerge-Readiness\). Rung 3 is unreachable here: main is protected and self-merge on…

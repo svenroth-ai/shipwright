@@ -117,13 +117,25 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
                 skipped.append({**cand, "file": rel, "reason": "file_absent_at_head"})
                 continue
             try:
-                text = abs_path.read_text(encoding="utf-8")
+                # Read RAW bytes (not read_text): universal-newline mode would
+                # strip \r\n, so the CRLF detection below would be dead on
+                # every platform (doubt-review, P3.4 — same discipline as
+                # backfill_write.apply_writes).
+                raw = abs_path.read_bytes()
+                text = raw.decode("utf-8")
             except (OSError, UnicodeDecodeError):
                 skipped.append({**cand, "file": rel, "reason": "unreadable"})
                 continue
+            newline = "\r\n" if "\r\n" in text else "\n"
             new_text, count = _upgrade_bare_tags(text, cand["fr_id"], cand["ac_id"])
             if count:
-                abs_path.write_text(new_text, encoding="utf-8")
+                lines = new_text.split("\n")
+                # _upgrade_bare_tags split on bare "\n": a CRLF source leaves a
+                # trailing "\r" on every line, so re-join with the DETECTED
+                # newline only after stripping that artifact back out.
+                if newline == "\r\n":
+                    lines = [ln[:-1] if ln.endswith("\r") else ln for ln in lines]
+                abs_path.write_bytes(newline.join(lines).encode("utf-8"))
                 upgraded.append({
                     "file": rel, "fr_id": cand["fr_id"], "ac_id": cand["ac_id"],
                     "slug": cand["slug"], "commit": cand["commit"], "tags_upgraded": count,
@@ -142,6 +154,24 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
                     "test": test_id, "fr_id": cand["fr_id"], "ac_id": cand["ac_id"],
                     "slug": cand["slug"], "commit": cand["commit"],
                 })
+    # Dedupe by test_id (doubt-review, P3.4): two candidates naming the SAME
+    # (fr_id, ac_id) pair via different commits (e.g. a file removed and
+    # re-added) are not caught by the multiply-claimed-file check above, which
+    # keys on (fr_id, ac_id) collisions across DIFFERENT pairs — an identical
+    # pair from two commits would otherwise double-decorate every test in the
+    # file. First candidate wins; the rest are reported, never silently merged.
+    seen_ids: set[str] = set()
+    deduped_writes: list[tuple[_Record, _Candidate]] = []
+    deduped_meta: list[dict] = []
+    for (record, cand), meta in zip(writes, write_meta):
+        if record.test_id in seen_ids:
+            skipped.append({"file": record.rel_path, "fr_id": meta["fr_id"],
+                             "reason": "duplicate_candidate_same_test"})
+            continue
+        seen_ids.add(record.test_id)
+        deduped_writes.append((record, cand))
+        deduped_meta.append(meta)
+    writes, write_meta = deduped_writes, deduped_meta
     written, write_failures = apply_writes(project_root, writes) if writes else ([], [])
     written_ids = {r.test_id for r, _c in written}
     inserted = [m for m in write_meta if m["test"] in written_ids]

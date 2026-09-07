@@ -61,7 +61,7 @@ def _marker(root: Path) -> dict | None:
     )
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_a_mid_phase_handoff_keeps_the_marker_when_asked(tmp_path):
     root = _project(tmp_path)
 
@@ -74,7 +74,7 @@ def test_a_mid_phase_handoff_keeps_the_marker_when_asked(tmp_path):
     assert marker["timestamp"] == "2026-07-27T10:15:00+00:00"
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_the_body_is_still_regenerated(tmp_path):
     """Preserving the marker must not turn the write into a no-op — the point of
     a mid-build handoff is the fresh body underneath it."""
@@ -88,7 +88,7 @@ def test_the_body_is_still_regenerated(tmp_path):
     assert "mid-build handoff: section 3 in_progress" in text
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_without_the_flag_behaviour_is_unchanged(tmp_path):
     """The regression itself, pinned: the default still drops the marker, so the
     flag is what changed and nothing else."""
@@ -99,7 +99,7 @@ def test_without_the_flag_behaviour_is_unchanged(tmp_path):
     assert _marker(root) is None
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_the_flag_invents_nothing_when_there_is_no_marker(tmp_path):
     root = _project(tmp_path)
     (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text(
@@ -111,7 +111,7 @@ def test_the_flag_invents_nothing_when_there_is_no_marker(tmp_path):
     assert _marker(root) is None
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_the_flag_is_harmless_when_the_handoff_does_not_exist(tmp_path):
     root = _project(tmp_path)
     (root / ".shipwright" / "agent_docs" / "session_handoff.md").unlink()
@@ -122,7 +122,7 @@ def test_the_flag_is_harmless_when_the_handoff_does_not_exist(tmp_path):
     assert _marker(root) is None
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_a_degraded_canon_write_does_not_resurrect_the_old_marker(tmp_path, monkeypatch):
     """`--canon-marker` with no `SHIPWRIGHT_RUN_ID` degrades: it warns and writes
     the handoff WITHOUT frontmatter. If preservation also fired there, that write

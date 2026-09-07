@@ -8,9 +8,10 @@ The WRITE half (``apply_upgrades`` / ``validate_applied``) lives in
 
 Deterministic, auditable, and conservative by construction:
 
-* only a footnote slug naming EXACTLY ONE AC within its FR is used
-  (``lib.backfill_ac_provenance.unique_provenance_acs`` — never a guess between
-  two candidates);
+* only a footnote slug naming EXACTLY ONE ``(fr_id, ac_id)`` pair across the
+  WHOLE document is used (``lib.backfill_ac_provenance.unique_provenance_acs``
+  — never a guess between two candidates; the uniqueness check is document-wide,
+  not per-FR, because a single commit can deliver criteria spanning multiple FRs);
 * only a slug with EXACTLY ONE commit carrying ``Run-ID: <slug>`` is used —
   zero or more than one is reported, never guessed;
 * only a test file the commit **added** (git status ``A``, never ``M``) is a

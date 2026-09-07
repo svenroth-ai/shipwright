@@ -43,10 +43,12 @@ stated separately (never blended) — full numbers in
    already-additive `ac_id`/`acs` fields from P3.2 — no schema change here).
 
 Result: any-tag coverage 475/13728 (3.46%) → 612/13767 (4.45%); AC-scoped
-0/13728 (0.00%) → 157/13767 (1.14%) — 137 mechanically derived, 20
-hand-mapped, exactly reconciling the manifest's own `with_ac` count. Full
-breakdown, exclusions, and denominator-delta reconciliation:
-`coverage-report.md` (same directory as this file).
+0/13728 (0.00%) → 142/13767 (1.03%) — 122 mechanically derived, 20
+hand-mapped, exactly reconciling the manifest's own `with_ac` count (the
+mechanical yield was 137 before a Stage-3 doubt-review finding forced a
+15-tag revert — see "Stage-3 Doubt-Review Findings" below). Full breakdown,
+exclusions, and denominator-delta reconciliation: `coverage-report.md` (same
+directory as this file).
 
 ## What changed mid-review (the one real correctness bug this unit found in
 itself)
@@ -102,19 +104,36 @@ revise both — run over the merge-base diff)
 | 8 | GLM | low | `_enumerate_python_tests`/insertion path may mis-handle class-qualified or nested test ids | not-fixed, tracked — real edge case, no evidence it fired in this run (all mechanical candidates are module-level `test_*` functions); left as a known limitation of the insertion path, not blocking this backfill's own correctness |
 | 9 | GLM | low | Orphan-tag write left on disk after a non-zero exit | accepted-and-fixed — `main()` now snapshots every candidate file before writing and restores all of them byte-for-byte on an orphan |
 | 10 | GLM | low | `core.quotePath` could hide non-ASCII paths; `"/tests/" in rel` misses a top-level `tests/` layout | accepted-and-fixed — `-c core.quotePath=off` added; substring check replaced with a path-segment check (caught a REAL bug: the fix's own regression test failed against the pre-fix code) |
-| 11 | GLM | medium | `_upgrade_bare_tags` uses `write_text` with no atomic-write/failure handling | not-fixed, tracked — real hardening opportunity (route through the same atomic writer as `apply_writes`); did not fire in this run (0 upgrades applied — see #4); left for a future pass if this tool is reused |
+| 11 | GLM | medium | `_upgrade_bare_tags` uses `write_text` with no atomic-write/failure handling | accepted-and-fixed at Stage-3 doubt-review — see D4 below; `write_text`'s `os.linesep` re-expansion was also a latent CRLF-corruption bug on Windows, not just a non-atomicity gap; both closed together by routing through the same raw-bytes/detected-newline discipline as `apply_writes` |
 | 12 | GLM | medium | The now-fixed `derive()` status-accounting test didn't call `derive()` itself | accepted-and-fixed — see #7 above; the new git-fixture tests exercise `derive()`'s real git-join path end to end |
+
+## Stage-3 Doubt-Review Findings (PR #689, internal cascade)
+
+| # | Severity | Claim under doubt | Disposition |
+|---|---|---|---|
+| D1 | high | "Derived, not guessed" holds for every remaining mechanical group | accepted-and-fixed — disproved for FR-01.01/AC08: 15 of 76 tags (in `test_preserve_canon_marker.py` and `test_canon_marker_write_contract.py`) verify a preserve-canon-marker fix the same introducing commit also shipped, not AC08's stated currency-decision behavior. Downgraded to bare `FR-01.01`, manifest regenerated, `coverage-report.md` corrected (137→122 derived, 157→142 total). The other 3 mechanical groups were individually re-verified per-file after this finding and confirmed matching |
+| D2 | medium | Minting `[ACnn]` into the live spec.md is safe for every reader | accepted-and-tracked — `lib.ac_identity`'s own module docstring already named this exact risk as deferred to "whoever wires minting into a real, gate-read document (P3.2/P3.3)"; this unit is that wiring. Verified NOT currently active: no placeholder (`TBD`/etc.) bullet exists in the minted spec.md today, so the placeholder-collapse risk is latent, not live. The digest-gate risk (criterion-text hashing sees `[ACnn] ` as new content) is real but currently harmless by data shape (every minted criterion starts with `Given`); not a correctness bug this unit can responsibly fix by touching `fr_criteria.py`'s 9 downstream consumers inside a tagging-backfill unit — tracked as `trg-ce51177e` |
+| D3 | low | A file claimed by two candidates naming the SAME `(fr_id, ac_id)` pair (e.g. a removed-then-re-added file) is always deduped | accepted-and-fixed — `apply_upgrades` now dedupes by `test_id` before calling `apply_writes`; did not fire in this run's real data (added a case for it to be caught if it recurs) |
+| D4 | low | "0 tool-driven upgrades fired this run" (why the newline bug was left as tracked-not-fixed) is evidence, not just arithmetic | accepted-and-fixed regardless of which — fixed `_upgrade_bare_tags`'s write path to use the same raw-bytes/detected-newline discipline as `backfill_write.apply_writes`, closing both the non-atomicity gap (#11 above) and the CRLF-corruption risk in the same change |
+| D5 | low | The committed coverage-report matches the tree exactly | accepted-and-fixed — two rows corrected for the two post-tagging bloat-cap splits (`test_completion_writers.py`, `test_silent_revert.py`); see `coverage-report.md` |
 
 ## Consequences
 
 The monorepo's AC-scoped coverage is no longer zero, with an honest,
-conservative, and now bug-fixed derivation trail; two real correctness bugs
-(cross-FR slug reuse, whole-file regex over-substitution) were found and
-fixed by this unit's own review cascade before shipping, plus a metadata bug
-(epoch-zero timestamp) in this unit's own regen step. Two low/medium findings
-(class-qualified test ids, non-atomic upgrade writes) are tracked but not
-fixed — neither fired in this run's real data, and fixing them speculatively
-would be scope creep against a one-shot backfill unit.
+conservative, and now bug-fixed derivation trail; three real correctness bugs
+(cross-FR slug reuse, whole-file regex over-substitution, per-file
+mis-attribution inside a group-level-verified mechanical batch) were found
+and fixed — two by this unit's own review cascade before shipping, one (D1)
+by the orchestrator's Stage-3 doubt-review after merge-base review — plus a
+metadata bug (epoch-zero timestamp) in this unit's own regen step and a
+latent Windows newline-corruption bug (D4) in an unexercised code path. D2
+and the earlier-tracked class-qualified-test-ids finding (#8) both remain
+acknowledged, currently-latent risks left tracked rather than fixed — #8 in
+this unit's own insertion path (no evidence it fires against this run's real
+data), D2 in shared `fr_criteria.py` infrastructure this unit does not own
+(`trg-ce51177e`; fixing it means touching 9 downstream gate consumers, which
+is scope creep against a one-shot backfill unit and belongs to whichever unit
+next touches that module).
 
 ## Rejected alternatives
 

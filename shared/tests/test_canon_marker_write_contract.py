@@ -75,7 +75,7 @@ def _invocations() -> list[tuple[str, str]]:
     return found
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_the_scan_finds_exactly_the_call_sites_it_is_meant_to_guard():
     """A drift guard that silently matches nothing — or nine of ten — guards
     nothing. Both directions, so a new call site and a lost one both fail."""
@@ -87,7 +87,7 @@ def test_the_scan_finds_exactly_the_call_sites_it_is_meant_to_guard():
     )
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_every_handoff_write_either_marks_or_preserves():
     naked = [
         path for path, argv in _invocations()
@@ -100,7 +100,7 @@ def test_every_handoff_write_either_marks_or_preserves():
     )
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_every_canon_closure_names_its_phase():
     """`--canon-marker` without `--phase` writes a marker C3 cannot evaluate, and
     the writer degrades rather than stamping one — which would silently disarm
@@ -121,7 +121,7 @@ def test_every_canon_closure_names_its_phase():
     "x\nphase: build",
     "multi\nline\treason",
 ])
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_a_hostile_reason_cannot_forge_marker_fields(hostile):
     """`--reason` is free text interpolated from skill state, rendered as
     `key: "<value>"` with no escaping, and the parser assigns keys in file order.
@@ -143,7 +143,7 @@ def test_a_hostile_reason_cannot_forge_marker_fields(hostile):
     assert parsed["timestamp"] == "t-1"
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_marker_value_collapses_newlines_and_drops_quotes():
     assert marker_value('a\nb\tc  d') == "a b c d"
     assert '"' not in marker_value('say "hi"')
@@ -151,7 +151,7 @@ def test_marker_value_collapses_newlines_and_drops_quotes():
 
 # --- the two refusals ---------------------------------------------------------
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_a_canon_write_without_a_run_id_is_refused_not_stamped(tmp_path):
     marker, warning = resolve_marker_for_write(
         tmp_path / "session_handoff.md", canon_marker=True, preserve=False,
@@ -162,7 +162,7 @@ def test_a_canon_write_without_a_run_id_is_refused_not_stamped(tmp_path):
     assert "SHIPWRIGHT_RUN_ID is unset" in warning
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_a_canon_write_without_a_phase_is_refused_not_stamped(tmp_path):
     """An empty phase routes every phase's C3 to "(unnamed) wrote the note, so
     this phase left none of its own" — a misattributed WARN no remedy clears."""
@@ -175,7 +175,7 @@ def test_a_canon_write_without_a_phase_is_refused_not_stamped(tmp_path):
     assert "--phase is empty" in warning
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_the_timestamp_is_resolved_only_when_a_marker_is_actually_built(tmp_path):
     """It is a THUNK, and that is load-bearing, not style.
 
@@ -206,7 +206,7 @@ def test_the_timestamp_is_resolved_only_when_a_marker_is_actually_built(tmp_path
     assert calls == [1] and marker is not None and marker["timestamp"] == "t-1"
 
 
-@pytest.mark.covers("FR-01.01/AC08")
+@pytest.mark.covers("FR-01.01")
 def test_a_refused_canon_write_never_falls_through_to_preservation(tmp_path):
     """Both refusals must beat `--preserve-canon-marker` when it is also set:
     preservation is for a write that never ASKED for a marker, not for one that

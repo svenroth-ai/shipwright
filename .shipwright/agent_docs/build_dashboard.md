@@ -1,10 +1,19 @@
 # Project Activity Dashboard
-> Updated: 2026-09-06 10:22 UTC | Session: 28f49677-63d2-4c13-8b2f-23650c338a96 | Run: iterate-2026-09-06-fr-hygiene-touched-rows
+> Updated: 2026-09-07 19:24 UTC | Session: 15fd6d45-71fa-4173-b47c-feb187f3d914 | Run: iterate-2026-09-07-p3-4-tagging-backfill
 
-## Recent Changes (571 iterations)
+## Recent Changes (580 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Wire P3.1-P3.3's dormant AC-identity infrastructure into the real monorepo spec.md: mint [ACnn] ids on every existing criterion, then mechanically derive and hand-map @covers(FR/AC) test tags from provenance-footnote-to-commit joins (13 files, 137 mechanical + 20 hand-mapped tags), regenerating the v4 traceability manifest with real per-AC coverage data. WebUI repo's own backfill is a separate, sibling unit (w4) in a different repo -- untouched here. | 18099/18157 |  | FR-01.01, FR-01.07, FR-01.11 | 2026-09-07 |
+| feature | F11 binding-completeness gate (P3.3): reject a behaviour-changed FR's binding when it names a lower test layer than its own executed-passing evidence proves; reconcile the evidence ledger's row numbering against spec.md's (E) bullets | 0/0 |  | compliance | 2026-09-07 |
+| feature | AC-scoped @covers tag grammar + test-traceability manifest v4 | 0/0 |  | compliance | 2026-09-07 |
+| bug | Fold sibling-worktree triage decisions into a main tree's own read | 0/0 |  | tooling | 2026-09-07 |
+| bug | JS/TS-aware test-weakening detector for the main-repair safety gate | 17363/17422 (59 skipped) |  | FR-01.19 | 2026-09-07 |
+| feature | AC-id minting/reading tool for the shipped FR heading+bullet shape (dormant, not yet wired into any consumer) | 0/0 |  | tooling | 2026-09-06 |
+| change | iterate: reconcile D1/D3 compliance findings for FR-01.18 -- record real F0-verified test totals and affected_frs linkage that the 2026-07-26 minting event omitted | 17317/17376 (59 skipped) |  | FR-01.18 | 2026-09-06 |
+| change | iterate: bump vulnerable lighthouse dependency in shipwright-test perf runner | 535/535 |  | tooling | 2026-09-06 |
+| change | iterate: post-679 hygiene sweep (bloat baseline sync, CLAUDE.md trim, FR-01.19 evidence recovery) | 17317/17376 |  | compliance | 2026-09-06 |
 | feature | fr-hygiene-touched-rows: diff-scoped, non-dodgeable F11 gate for FR rows a run itself touches, plus I7 (criterion shape) and I8 (stale TBD age) Group I checks | 0/0 |  | compliance | 2026-09-06 |
 | change | iterate: fix Codex login-status probe misreporting availability | 0/0 |  | tooling | 2026-09-04 |
 | change | Swap the Tier-3 PR-review CI gate's default model from GLM 5.3 to GPT-5.6 Luna after GLM was found to silently hang (no error, no timeout) on the shared ZDR-gated 2-reseller OpenRouter provider pool; Luna is outside that namespace and routes across 3 independent hosts instead. DeepSeek and GLM remain available as operator overrides. | 0/0 |  | tooling | 2026-09-03 |
@@ -578,7 +587,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-09-06 | Smoke: n/a | (iterate)
+Last run: 2026-09-07 | Unit: 17569/17627 | Integration: 530/530 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

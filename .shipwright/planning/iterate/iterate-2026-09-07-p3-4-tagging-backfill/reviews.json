@@ -150,25 +150,108 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py",
+          "line": 120,
+          "finding": "The bare-tag upgrade path reads with read_text (CRLF collapsed to LF) and writes with write_text (LF re-expanded to os.linesep) -- on Windows a single upgraded tag rewrites the whole file's line endings LF->CRLF. Contradicts the raw-bytes/detected-newline discipline in backfill_write.apply_writes (lines 95-113) reused by the same module. Latent this run (0 tool-driven upgrades fired; the 20 hand-mapped upgrades were edited by hand).",
+          "suggestion": "Mirror apply_writes: read_bytes/decode, detect newline style, write_bytes with the detected style preserved. Fold into the tracked write-hardening follow-up; non-blocking for this merge.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/backfill_ac_provenance.py",
+          "line": 11,
+          "finding": "CLI docstring still states the per-FR uniqueness rule ('exactly one AC within its FR') when the lib now requires document-wide uniqueness across all FRs -- a reader of the CLI entry point is told the wrong invariant.",
+          "suggestion": "Update docstring wording to document-wide uniqueness.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-07-p3-4-tagging-backfill/coverage-report.md",
+          "line": 42,
+          "finding": "Same staleness class as spec-reviewer's L44 note: file-attribution counts are stale after the bloat-forced test-file splits (counts of tags themselves are correct).",
+          "suggestion": "Update file counts at L42/L44 to reflect the post-split file layout.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_silent_revert_check.py",
+          "line": 31,
+          "finding": "Small fixture duplication (~35 LOC) between the split sibling files, consistent with existing family pattern but repo has a shared-fixture precedent (_c3_fixtures.py) that could apply here too.",
+          "suggestion": "Advisory only, not required for this merge -- natural follow-up if the family is touched again.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-07T17:36:45.194815+00:00",
-      "disposition": "runner has no Agent tool; code-reviewer cascade runs at the orchestrator's 3f-bis before merge (campaign-mode.md), not inside the sub-iterate runner",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T19:46:11.784956+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/tests/test_preserve_canon_marker.py",
+          "line": null,
+          "finding": "Claim under doubt: \"Derived, not guessed\" holds for every remaining mechanical group in the FR-01.01/AC08 batch. — Confirmed real: 15 of 76 tags (test_preserve_canon_marker.py: 6, test_canon_marker_write_contract.py: 9) verify a preserve-canon-marker fix the same introducing commit also shipped, not AC08's stated phase-completion-based currency-decision behavior. Fixed: downgraded to bare FR-01.01, manifest regenerated via update_compliance.py, coverage-report.md and ADR corrected (137->122 derived, 157->142 total AC-scoped). Other 3 mechanical groups individually re-verified per-file post-finding and confirmed matching their claimed ACs.",
+          "suggestion": "Revert the 15 tags to bare FR-01.01 and correct the report (done).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling-blast-radius",
+          "file": "shared/scripts/lib/fr_criteria.py",
+          "line": null,
+          "finding": "Claim under doubt: Minting [ACnn] into the live spec.md is safe for every reader. — Real, but already named as a deferred risk in lib.ac_identity's own module docstring (this unit is the wiring that activates it). Verified NOT currently active: no placeholder bullet exists in the minted spec.md; digest-gate risk is currently harmless by data shape. Disposition: accepted-and-tracked -- trg-ce51177e minted for the fr_criteria.py consumer-side fix, which is out of surgical scope for a tagging-backfill unit.",
+          "suggestion": "Mint a tracked follow-up card for the module that owns the 9 downstream consumers (done: trg-ce51177e).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py",
+          "line": null,
+          "finding": "Claim under doubt: A file claimed by two candidates naming the SAME (fr_id, ac_id) pair via different commits is always deduped. — Not previously true -- the multiply-claimed-file check keys on (fr_id, ac_id) collisions across DIFFERENT pairs, not same-pair-different-commit. Fixed: apply_upgrades now dedupes by test_id before apply_writes. Did not fire in this run's real data.",
+          "suggestion": "Dedupe writes by test_id (done).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py",
+          "line": null,
+          "finding": "Claim under doubt: \"0 tool-driven upgrades fired this run\" is evidence the latent newline bug is safe to leave tracked-not-fixed. — The claim held on inspection (arithmetic reconciliation, no stacked decorators), but the bug itself is worse than described -- write_text's os.linesep re-expansion would rewrite an entire LF file to CRLF on Windows the moment one bare tag is upgraded, not just a non-atomicity gap. Fixed regardless: routed through the same raw-bytes/detected-newline discipline as backfill_write.apply_writes.",
+          "suggestion": "Fix the newline handling to match apply_writes (done).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling-blast-radius",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-07-p3-4-tagging-backfill/coverage-report.md",
+          "line": null,
+          "finding": "Claim under doubt: The committed coverage-report matches the tree exactly and every derived file is re-derivable from the tool at HEAD. — Two rows were stale after the post-tagging bloat-cap splits of test_completion_writers.py and test_silent_revert.py -- sums still reconciled, but per-row file attribution and file counts were wrong.",
+          "suggestion": "Correct the two rows to name both post-split files (done).",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-07T17:36:45.307041+00:00",
-      "disposition": "runner has no Agent tool; conditional doubt-reviewer runs at the orchestrator's 3f-bis before merge (campaign-mode.md), not inside the sub-iterate runner",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T20:04:01.124043+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },
@@ -326,13 +409,13 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-07T17:36:45.089935+00:00",
-      "disposition": "runner has no Agent tool; spec-reviewer HARD-GATE cascade runs at the orchestrator's 3f-bis before merge (campaign-mode.md), not inside the sub-iterate runner",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T19:40:50.574487+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },

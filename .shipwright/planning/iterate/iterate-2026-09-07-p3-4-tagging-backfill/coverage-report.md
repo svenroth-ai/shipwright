@@ -15,8 +15,8 @@ never as a committed artifact — this file is that artifact.
 | | any `@covers` tag (FR or FR/AC) | AC-scoped tag (`FR/ACnn`) |
 |---|---|---|
 | Before | 475 / 13728 (3.46%) | 0 / 13728 (0.00%) |
-| After  | 612 / 13767 (4.45%) | 157 / 13767 (1.14%) |
-| Delta  | +137 | +157 |
+| After  | 612 / 13767 (4.45%) | 142 / 13767 (1.03%) |
+| Delta  | +137 | +142 |
 
 Both snapshots read from `.shipwright/compliance/test-traceability.json`
 (schema v4) at the two commits named above, via the SAME collector
@@ -24,28 +24,34 @@ Both snapshots read from `.shipwright/compliance/test-traceability.json`
 `collectors.test_links` CLI, which stamps `generated_at` as epoch-zero when
 run standalone; see "Corrections made during review" below).
 
-**Why any-tag went up (+137) by less than AC-scoped went up (+157):** the 20
-hand-mapped tags (see below) all UPGRADED an existing bare `covers("FR-xx.yy")`
-to an AC-scoped `covers("FR-xx.yy/ACnn")` — the test was already tagged, so the
-any-tag count does not move for those. Only the 137 mechanically-derived tags
-are brand-new insertions onto previously-untagged tests. 137 (new) + 0 (net
-change from the 20 upgrades) = +137 any-tag; 137 + 20 = +157 AC-scoped.
+**Why any-tag went up (+137) by more than AC-scoped went up (+142 net, not
++157):** the 20 hand-mapped tags (see below) all UPGRADED an existing bare
+`covers("FR-xx.yy")` to an AC-scoped `covers("FR-xx.yy/ACnn")` — the test was
+already tagged, so the any-tag count does not move for those. The 137
+mechanically-derived tags are brand-new insertions onto previously-untagged
+tests, but 15 of them were downgraded back to bare `FR-01.01` post-merge (see
+"Doubt-review correction" below) — those 15 tests still carry `FR-01.01` (an
+any-tag), so any-tag stays +137, while AC-scoped nets to 137 − 15 + 20 = 142.
 
 ## Derived vs hand-mapped (stated separately, per the spec's AC#3 — never blended)
 
-**Mechanically derived: 137 tags across 13 test files**, via the provenance-
-footnote → `Run-ID:` commit → added-test-file join (`backfill_ac_provenance.py`
-+ `lib/backfill_ac_provenance.py`, new this unit):
+**Mechanically derived: 122 tags across 11 test files** (137 minted, 15
+downgraded post-merge — see "Doubt-review correction" below), via the
+provenance-footnote → `Run-ID:` commit → added-test-file join
+(`backfill_ac_provenance.py` + `lib/backfill_ac_provenance.py`, new this unit):
 
 | FR/AC | tags | files | introducing commit |
 |---|---|---|---|
-| FR-01.01/AC08 | 76 | 8 (`_c3_fixtures.py` has none — fixture module, no `test*` functions) | `d03c300c` (`iterate-2026-07-27-c3-phase-history-join`) |
+| FR-01.01/AC08 | 61 | 6 original files, 7 on disk (`test_completion_writers.py` split post-tagging into itself: 9 + `test_completion_writers_iterate_ledger.py`: 2; plus `test_c3_cross_phase_verdict.py`: 10, `test_c3_same_phase_window.py`: 10, `test_phase_history.py`: 18, `test_phase_history_records.py`: 12; `_c3_fixtures.py` has none — fixture module, no `test*` functions) | `d03c300c` (`iterate-2026-07-27-c3-phase-history-join`) |
 | FR-01.11/AC17 | 15 | 1 (`test_pr_blockers_merge_state.py`) | `159953ee` (`iterate-2026-07-27-merge-state-vocabulary`) |
-| FR-01.11/AC18 | 16 | 1 (`test_silent_revert.py`) | `5b351ed4` (`iterate-2026-07-27-no-silent-revert`) |
+| FR-01.11/AC18 | 16 | 2 on disk (`test_silent_revert.py` split post-tagging into itself: 8 + `test_silent_revert_check.py`: 8) | `5b351ed4` (`iterate-2026-07-27-no-silent-revert`) |
 | FR-01.11/AC18 | 30 | 3 (`test_silent_revert_false_positives.py`: 10, `_filters.py`: 16, `_not_weakened.py`: 4) | `e4db5154` (`iterate-2026-07-28-silent-revert-false-positives`) |
 
 (FR-01.11/AC18's row splits into two because two different commits, both
-naming AC18, contributed files; the table above sums to 76+15+16+30 = 137.)
+naming AC18, contributed files; the table above sums to 61+15+16+30 = 122.
+FR-01.01/AC08's original 76/8-files and FR-01.11/AC18's first row's original
+1-file count are corrected here for the post-tagging bloat-cap splits — see
+"Doubt-review correction" for AC08's count, which also changed.)
 
 **Hand-mapped: 20 tags across 4 test files** (read test name/docstring/
 assertions against the minted criterion; upgraded an existing bare FR tag):
@@ -61,9 +67,43 @@ Exact per-(FR,AC) hand-mapped breakdown, reconciled against the manifest:
 FR-01.07/AC04 ×1, FR-01.07/AC06 ×3, FR-01.07/AC08 ×1, FR-01.07/AC11 ×2,
 FR-01.13/AC05 ×7, FR-01.13/AC08 ×6 = 20.
 
-**Reconciliation: 137 + 20 = 157 = the manifest's own `with_ac` count.** Exact,
+**Reconciliation: 122 + 20 = 142 = the manifest's own `with_ac` count.** Exact,
 not approximate — computed by summing every `ac_id`-bearing `testLink` in the
 regenerated `test-traceability.json`.
+
+## Doubt-review correction (PR #689, internal cascade — 15 tags reverted)
+
+Stage-3 doubt-review disproved part of the "derived, not guessed" claim for
+the FR-01.01/AC08 group: the same introducing commit (`d03c300c`,
+`iterate-2026-07-27-c3-phase-history-join`) shipped TWO distinct behaviors —
+the phase-history join itself (what AC08 actually states: currency of a
+handover note is decided by the phase's own completion record, never by file
+mtime) and, separately, a preserve-canon-marker fix (no criterion was written
+for it). The commit-is-the-unit-of-attribution join could not tell those two
+apart, so it tagged both.
+
+`shared/tests/test_preserve_canon_marker.py` (6 tags) tests only that a
+mid-phase handoff does not erase an existing canon marker when asked — never
+AC08's stated currency-decision behavior. `shared/tests/
+test_canon_marker_write_contract.py` (9 tags) is a lint over plugin markdown
+asserting `generate_session_handoff.py` invocations pass the right
+`--canon-marker`/`--preserve-canon-marker` flag, plus marker-field guards —
+also not AC08's behavior. Both were confirmed by direct inspection of the
+files' docstrings and test bodies, not by re-trusting the tool.
+
+**Fix:** both files' 15 `@pytest.mark.covers("FR-01.01/AC08")` tags downgraded
+to bare `@pytest.mark.covers("FR-01.01")` — valid per the tag grammar (E1: "a
+bare FR-xx.yy remains valid, covers the requirement, AC unbestimmt"), and
+honest about what these tests actually verify. Manifest regenerated via
+`update_compliance.py --phase iterate` after the revert; all counts in this
+report reflect the corrected, post-revert state. The manual "content-coherence
+was spot-checked by hand for every remaining group" claim in the section below
+is corrected too: it was a group-level check, and this was a per-file miss
+within a group that passed at the group level — the same failure mode
+FR-01.03/AC19 caught earlier in this run (see "What was excluded, and why"),
+now confirmed to have surfaced twice, once caught by review before the
+external plan/code review passes and once by the internal doubt-reviewer
+after them.
 
 ## What was excluded, and why (never silently dropped)
 
@@ -93,10 +133,14 @@ The mechanical tool reports every non-candidate outcome by name
   ac_id)` pair is dropped from BOTH, never arbitrarily resolved
   (`_mark_multiply_claimed_files`) — none occurred in this run's real data.
 - Content-coherence was spot-checked by hand for every REMAINING mechanical
-  group (all 4 groups above) against the actual minted criterion text in
-  `spec.md` — all confirmed matching (e.g. FR-01.11/AC18's "brought up to
-  date... anything that arrived in that work... is reported and the
-  hand-over refused" against `test_silent_revert*.py`'s content).
+  GROUP (all 4 groups above) against the actual minted criterion text in
+  `spec.md` — a group-level check, not a per-file one, which is exactly what
+  let 15 of the FR-01.01/AC08 group's 76 tags through mistagged (see
+  "Doubt-review correction" above): the other 61 files in that group do match
+  (e.g. FR-01.11/AC18's "brought up to date... anything that arrived in that
+  work... is reported and the hand-over refused" against
+  `test_silent_revert*.py`'s content), and per-file re-verification after the
+  doubt-review finding confirms no other group has this defect.
 
 ## +39 denominator delta (13728 → 13767), fully reconciled
 
