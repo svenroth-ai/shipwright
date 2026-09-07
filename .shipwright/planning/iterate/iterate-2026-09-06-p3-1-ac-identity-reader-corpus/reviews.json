@@ -172,8 +172,8 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-07T05:15:43.911154+00:00",
-      "disposition": "Round 4 re-review after nested-heading regression fix (commit 0d04009a): PASS. Original round-3 HIGH (leading-run-gate seeding miss, fixed af19767d) and round-4 HIGH (nested-FR-heading false duplicate, fixed 0d04009a) both verified closed; no remaining findings.",
+      "completed_at": "2026-09-07T05:47:18.959314+00:00",
+      "disposition": "Round 5 (final) re-review after round-4b heading-scope fix (commit 2cc4e444): PASS. Formal proof that _HEADING_RE is a strict subset of _ANY_HEADING_RE closes the gap-analysis; rounds 3/4/4b fixes verified to compose correctly; 3-way test file split verified clean, no coverage lost.",
       "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
@@ -181,15 +181,26 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_applicable",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/_ac_blocks.py:172-178",
+          "line": null,
+          "finding": "Claim under doubt: mint()'s seed pass sees every already-assigned [ACnn] marker in an FR's block — iter_all_bullet_positions's own_end stopped at ANY heading, not just an FR-shaped one, so a non-FR heading interposed between two bullets of the same FR block truncated the seed scan before an already-marked bullet, silently reissuing its number.",
+          "suggestion": "scope the stop condition to FR-shaped headings only (_HEADING_RE).",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-06T23:00:28.275344+00:00",
-      "disposition": "Stage 3 (doubt-reviewer) is conditional on Stage 2 PASS; Stage 2 (code-reviewer) REJECTED at 3f-bis, so Stage 3 never ran.",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T05:42:41.189068+00:00",
+      "disposition": "1 HIGH doubt found (non-FR heading truncates seed scan, silent duplicate); addressed in commit 2cc4e444 by scoping own_end's stop condition to FR-shaped headings only.",
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
