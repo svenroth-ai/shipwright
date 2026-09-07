@@ -144,6 +144,7 @@ def test_apply_upgrades_reports_a_non_candidate_status_untouched(tmp_path):
     assert result == {
         "upgraded_bare_tags": [], "inserted_new_tags": [], "skipped": [],
         "tags_upgraded_total": 0, "tags_inserted_total": 0,
+        "write_failures_occurred": False,
     }
 
 
@@ -215,6 +216,44 @@ def test_main_rolls_back_every_touched_file_when_an_orphan_tag_is_written(tmp_pa
 
     assert rc == 1
     assert (tmp_path / rel).read_text(encoding="utf-8") == _UNTAGGED  # restored, not left half-written
+
+
+def test_main_rolls_back_a_successful_bare_tag_upgrade_when_a_sibling_insertion_write_fails(tmp_path, monkeypatch):
+    """Tier-3 CI-gate re-review (P3.4 high): ``apply_writes`` can report a
+    write failure for an insertion candidate AFTER a SIBLING candidate's
+    bare-tag upgrade has already been written directly to disk in the same
+    ``--write`` batch. ``main()`` must not report success -- the
+    already-applied upgrade must be rolled back too, exactly like an orphan
+    tag already triggers."""
+    rel = "tests/test_bare.py"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / rel).write_text(_BARE_TAGGED, encoding="utf-8")
+    spec = tmp_path / "spec.md"
+    spec.write_text(_MINTED_SPEC, encoding="utf-8")
+
+    fake_report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
+    monkeypatch.setattr(mod, "_is_shallow_clone", lambda *_: False)
+    monkeypatch.setattr(mod, "derive", lambda *_a, **_k: fake_report)
+
+    def fake_apply_upgrades(project_root, report):
+        # Simulate the real sequence: THIS candidate's bare-tag upgrade is
+        # written directly to disk, then a sibling insertion elsewhere in the
+        # same batch fails -- exactly the ordering apply_upgrades itself uses.
+        (project_root / rel).write_text(
+            _BARE_TAGGED.replace('covers("FR-01.01")', 'covers("FR-01.01/AC01")'), encoding="utf-8")
+        return {
+            "upgraded_bare_tags": [{"file": rel, "fr_id": "FR-01.01", "ac_id": "AC01",
+                                     "slug": "x", "commit": "deadbeef", "tags_upgraded": 1}],
+            "inserted_new_tags": [], "skipped": [],
+            "tags_upgraded_total": 1, "tags_inserted_total": 0,
+            "write_failures_occurred": True,
+        }
+    monkeypatch.setattr(mod, "apply_upgrades", fake_apply_upgrades)
+
+    rc = mod.main(["--project-root", str(tmp_path), "--spec-file", str(spec), "--write"])
+
+    assert rc == 1
+    assert (tmp_path / rel).read_text(encoding="utf-8") == _BARE_TAGGED  # rolled back, not left applied
 
 
 def test_main_rolls_back_every_touched_file_when_a_write_fails_mid_batch(tmp_path, monkeypatch):

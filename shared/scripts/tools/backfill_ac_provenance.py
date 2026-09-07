@@ -283,10 +283,16 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         out["apply"] = apply_result
         orphans = validate_applied(project_root, apply_result, spec_path)
-        if orphans:
+        # Tier-3 CI-gate re-review (P3.4 high): a write ATTEMPTED for one
+        # candidate can fail (apply_result["write_failures_occurred"]) after a
+        # sibling candidate's bare-tag upgrade already landed on disk in the
+        # SAME batch -- that must not be reported as an unqualified success
+        # any more than an orphan tag would be. Same snapshot, same rollback.
+        if orphans or apply_result.get("write_failures_occurred"):
             for abs_path, content in originals.items():
                 abs_path.write_bytes(content)
-            out["apply"]["orphan_tags_written"] = orphans
+            if orphans:
+                out["apply"]["orphan_tags_written"] = orphans
             out["apply"]["rolled_back"] = True
             print(json.dumps(out, indent=2, ensure_ascii=False))
             return 1

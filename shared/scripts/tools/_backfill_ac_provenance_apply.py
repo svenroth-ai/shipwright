@@ -274,6 +274,11 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
         "skipped": skipped,
         "tags_upgraded_total": sum(a["tags_upgraded"] for a in upgraded),
         "tags_inserted_total": len(inserted),
+        # Distinct from `skipped` (Tier-3 CI-gate re-review, P3.4 high): every
+        # OTHER skip reason is a decision NOT to write; this one means a write
+        # was ATTEMPTED and FAILED -- callers must not report unqualified
+        # success alongside an already-applied sibling upgrade.
+        "write_failures_occurred": bool(write_failures),
     }
 
 
