@@ -242,3 +242,11 @@ def test_a_second_fr_heading_starts_a_new_block_immediately():
     by_fr = ac_identity.read_all(result.content)
     assert by_fr["FR-07.04"][0][0] == "AC01"
     assert by_fr["FR-07.05"][0][0] == "AC01"
+
+
+# Registry-seeding regression coverage (code/doubt review rounds 3/4/4b: a
+# marker outside the leading bullet run, a nested FR's own bullets, a
+# non-FR heading interposed between two bullets) lives in
+# ``test_ac_identity_seeding.py`` -- split there purely to keep all three
+# files under the 300-LOC bloat-baseline threshold, same content that
+# would otherwise sit in one file, not a different subject.

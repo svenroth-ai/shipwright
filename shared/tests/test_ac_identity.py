@@ -180,67 +180,12 @@ def test_seeding_from_a_document_ahead_of_a_stale_registry():
     assert result.registry == {"FR-05.01": 6}
 
 
-def test_seeding_sees_a_marker_outside_the_leading_bullet_run():
-    """Code review round 3 (HIGH): the seed pass used to reuse
-    ``iter_bullet_positions``, gated to the block's contiguous LEADING
-    bullet run -- the same gate minting needs so it never stamps an id
-    ``read()`` can't see. But a prose line between two bullets ends that
-    leading run (`_ac_blocks._leading_bullet_run_indices`), so the second
-    bullet's existing ``[AC01]`` marker was invisible to seeding with a
-    lost/empty registry. mint() then re-minted the SAME number onto the
-    first, still-unmarked bullet -- the exact "never reused" violation the
-    seed pass exists to prevent, and the document became permanently
-    un-mintable (DuplicateAcIdError) as soon as the prose line was later
-    removed. Seeding must see every bullet in the block, not just the
-    leading run; minting stays gated to the leading run."""
-    prose_breaks_the_leading_run = (
-        "### FR-10.01 — Title\n\n"
-        "- (E) A first, not-yet-marked criterion.\n\n"
-        "Some prose note that ends the leading bullet run.\n\n"
-        "- (E) [AC01] A second criterion, already marked.\n"
-    )
-    result = ac_identity.mint(prose_breaks_the_leading_run, registry={})
-    assert result.assigned == (("FR-10.01", "AC02"),)
-    assert "[AC02] A first, not-yet-marked criterion." in result.content
-    assert "[AC01] A second criterion, already marked." in result.content
-    assert result.registry == {"FR-10.01": 2}
-
-    # Re-minting the result is a no-op: no duplicate, nothing reissued.
-    again = ac_identity.mint(result.content, result.registry)
-    assert again.assigned == ()
-    assert again.content == result.content
-
-
-def test_seeding_does_not_credit_a_nested_frs_own_bullets_to_the_parent():
-    """Code review round 4 (HIGH), regression from the round-3 fix above:
-    ``_iter_heading_blocks_by_index`` deliberately runs a parent FR's block
-    through a NESTED, deeper-rank FR heading (mirrors
-    ``fr_criteria.iter_anchored_blocks``'s own overlap, exercised on the same
-    fixture shape by
-    ``test_layer_coverage_criteria_anchoring.test_a_nested_fr_heading_still_
-    gets_its_own_digest_entry``) -- harmless for ``read()``, whose
-    ``block_criteria(strict=True)`` only ever reaches the LEADING run and so
-    never sees past the nested heading. But the ungated
-    ``iter_all_bullet_positions`` scanned the FULL block range, so a nested
-    FR's own already-minted bullet was credited to the PARENT's fr_id during
-    seeding. Each FR restarts its own AC numbering at 1, so the nested
-    block's first marker is almost always ``[AC01]`` too -- colliding with
-    the parent's own real ``[AC01]`` and raising a false
-    ``DuplicateAcIdError`` on every re-mint of an already-minted
-    nested-heading document, breaking the very idempotency guarantee the
-    round-3 fix exists to protect."""
-    already_minted_with_nesting = (
-        "### FR-01.01 — Parent\n\n"
-        "- (E) [AC01] Parent criterion one.\n\n"
-        "#### FR-01.02 — Nested\n\n"
-        "- (E) [AC01] Nested criterion one.\n"
-    )
-    result = ac_identity.mint(
-        already_minted_with_nesting, registry={"FR-01.01": 1, "FR-01.02": 1}
-    )
-    assert result.assigned == ()
-    assert result.content == already_minted_with_nesting
-    assert result.registry == {"FR-01.01": 1, "FR-01.02": 1}
+# Registry-seeding regression coverage (code/doubt review rounds 3/4/4b: a
+# marker outside the leading bullet run, a nested FR's own bullets, a
+# non-FR heading interposed between two bullets) lives in
+# ``test_ac_identity_seeding.py`` -- split there purely to keep all three
+# files under the 300-LOC bloat-baseline threshold, same content that
+# would otherwise sit in one file, not a different subject.
 
 
 # ---------------------------------------------------------------------------

@@ -157,7 +157,7 @@ def iter_all_bullet_positions(lines: list[str]) -> Iterator[tuple[str, int]]:
     lost/stale registry re-assign its number to a different criterion
     (external code review, 2026-09-06 round 3).
 
-    Stops at the next heading of ANY rank, not just same-or-higher
+    Stops at the next FR-SHAPED heading, not just same-or-higher rank
     (code review round 4) — ``_iter_heading_blocks_by_index``'s ``end``
     deliberately runs a parent block through a NESTED, deeper-rank FR
     heading (matching ``fr_criteria.iter_anchored_blocks``'s overlap;
@@ -168,10 +168,21 @@ def iter_all_bullet_positions(lines: list[str]) -> Iterator[tuple[str, int]]:
     FR restarts its own AC numbering at 1, so a nested block's first
     marked bullet is almost always ``[AC01]`` too, producing a false
     ``DuplicateAcIdError`` against the parent's own real ``AC01`` on
-    every re-mint of an already-minted nested-heading document."""
+    every re-mint of an already-minted nested-heading document.
+
+    The stop condition is ``_HEADING_RE`` (FR-shaped only), NOT
+    ``_ANY_HEADING_RE`` (doubt-review round 4b) — a non-FR heading (e.g.
+    ``#### Notes``) interposed between two bullets of the SAME FR block is
+    not a block boundary at all (``_iter_heading_blocks_by_index`` does not
+    treat it as one either), so stopping there would blind seeding to a
+    real marker sitting past it, exactly the round-3 failure mode this
+    function exists to close, just triggered by an interposed heading
+    instead of an interposed prose paragraph. Stopping only at an FR-shaped
+    heading still correctly excludes a nested FR's own bullets (round 4)
+    while no longer excluding a non-FR one (round 4b)."""
     for fr_id, start, end in _iter_heading_blocks_by_index(lines):
         own_end = start
-        while own_end < end and not _ANY_HEADING_RE.match(lines[own_end]):
+        while own_end < end and not _HEADING_RE.match(lines[own_end]):
             own_end += 1
         for idx in range(start, own_end):
             if BULLET_RE.match(lines[idx]):
