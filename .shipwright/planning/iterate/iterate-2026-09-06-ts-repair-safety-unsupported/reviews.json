@@ -78,11 +78,12 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-07T00:50:49.392953+00:00",
+      "completed_at": "2026-09-07T01:28:45.866412+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
     },
     "doubt": {
       "review_type": "doubt",
@@ -90,11 +91,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-07T00:50:55.501986+00:00",
+      "completed_at": "2026-09-07T01:28:46.143411+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
     },
     "external_code": {
       "review_type": "external_code",
