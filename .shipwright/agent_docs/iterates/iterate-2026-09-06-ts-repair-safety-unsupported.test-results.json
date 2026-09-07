@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17380,
-      "total": 17439,
+      "passed": 17383,
+      "total": 17442,
       "skipped": 59,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, eight external PR-check findings across seven review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x7, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, and a regex-after-control-flow-condition false block) were fixed, adding 17 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 11 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, and control-flow-regex fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (86 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17380/17439) add those 17 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, nine external PR-check findings across eight review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x8, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, and a false negative on optional-chaining test declarations) were fixed, adding 20 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 14 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, and optional-chaining fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (89 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17383/17442) add those 20 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
     },
     "integration": {
       "status": "pass",
@@ -165,11 +165,16 @@
           "behavior": "A regex literal beginning right after a control-flow condition's closing paren (if/while/for) is recognized as a regex, not misread as division, so brackets inside it (e.g. an escaped character class) do not desync the bracket scanner; plain division after an ordinary grouping paren is unaffected",
           "disposition": "tested",
           "evidence": "test_js_a_regex_literal_right_after_an_if_condition_is_not_a_false_block and test_js_division_right_after_a_grouping_paren_is_still_division PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, seventh round: _js_bracket_match now records which specific closing parens follow if/while/for (_JS_CONTROL_PAREN_KEYWORDS), and _js_slash_starts_regex treats a `/` right after one of those as an expression start rather than division"
+        },
+        {
+          "behavior": "An optional-chaining test declaration (test?.('a', fn), test?.skip('a', fn)) is recognized rather than silently dropped as an ordinary reference; an optional-chained property that is never actually invoked is still treated as ordinary code",
+          "disposition": "tested",
+          "evidence": "test_js_an_optional_call_test_declaration_fails_closed_rather_than_missing_it, test_js_an_optional_chained_modifier_fails_closed_rather_than_missing_it, and test_js_an_optional_chained_property_never_invoked_is_not_a_false_block PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, eighth round: _js_scan_chain now recognizes `?.` the same way it already recognized `.` and computed access, tainting the chain with a `.[optional]`/`.[optional-call]` sentinel that is never in _JS_ALLOWED_CHAINS, routing it through the same invoked-vs-not fail-closed logic the fifth round's fix already applies to every other unrecognized chain shape"
         }
       ],
       "counts": {
-        "testable": 25,
-        "tested": 25,
+        "testable": 26,
+        "tested": 26,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -184,7 +189,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "299ae6e91865fe4b9f283b3a3960cf695f5def1f",
+    "commit": "e9e564ceeb8178f9582f85276d5419670c342e4e",
     "dirty": true,
     "base": null,
     "release": null

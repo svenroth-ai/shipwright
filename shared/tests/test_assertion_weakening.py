@@ -524,6 +524,37 @@ def test_js_computed_member_access_fails_closed_rather_than_missing_it():
                                    blocking=True)
 
 
+def test_js_an_optional_call_test_declaration_fails_closed_rather_than_missing_it():
+    """`test?.('a', fn)` -- an optional-call invocation of `test` itself --
+    is a shape this scanner does not resolve, so it must fail closed rather
+    than silently read this as an ordinary, un-skipped `test` call (external
+    Tier-3 review, PR #685, eighth round: this was previously invisible
+    entirely, dropping the test rather than blocking)."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it?.('a', () => { expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_an_optional_chained_modifier_fails_closed_rather_than_missing_it():
+    """`test?.skip('a', fn)` -- an optional-chained `.skip` modifier -- same
+    fail-closed requirement as the bare optional call above."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it?.skip('a', () => { expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_an_optional_chained_property_never_invoked_is_not_a_false_block():
+    """The companion case: an optional-chained property reference that is
+    NEVER actually invoked here is ordinary code, not a test declaration --
+    same "invoked vs. not" distinction the fifth round's fix already applies
+    to every other unrecognized chain shape."""
+    before = "it('a', () => { expect(1).toBe(1); });\nconst helper = it?.customModifier;\n"
+    after = "it('a', () => { expect(1).toBe(1); });\nconst runner = test?.concurrent;\n"
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
 def test_js_a_comment_mentioning_a_test_api_call_is_not_mistaken_for_one():
     """`_JS_NAME`/`_JS_ASSERT_HEAD` scan raw text; without the non-code spans
     from `_js_bracket_match`, a TODO like this would itself have been misread

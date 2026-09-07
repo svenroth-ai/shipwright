@@ -615,14 +615,33 @@ def _js_scan_chain(
     """Everything chained onto a name occurrence, from `pos` (just after the
     name). Tolerant of whitespace/comments between segments. A computed-
     access segment (`test['skip'](...)`) is recorded as the literal sentinel
-    `.[computed]`, which is never in `_JS_ALLOWED_CHAINS` — that routes it
-    through the exact same fail-closed path as any other unrecognized named
-    segment, rather than silently ending the chain one segment early.
+    `.[computed]`, and an optional-chaining link (`test?.skip(...)`,
+    `test?.(...)`) as `.[optional]` (property) or `.[optional-call]` (the
+    invocation itself) — none of these three sentinels is ever in
+    `_JS_ALLOWED_CHAINS`, which routes them through the exact same
+    fail-closed-if-actually-invoked path as any other unrecognized named
+    segment (see `_js_collect`), rather than silently ending the chain one
+    segment early or dropping an invoked-but-unusual test declaration as if
+    it were an ordinary uncalled reference (external Tier-3 review, PR #685,
+    eighth round: `test?.('case', fn)`/`test?.skip('case', fn)` were
+    invisible here entirely, so weakening inside one produced no finding).
     """
     chain = ""
     n = len(source)
     while True:
         gap_end = _js_skip_gap(source, pos)
+        if gap_end < n and source[gap_end:gap_end + 2] == "?.":
+            after_opt = _js_skip_gap(source, gap_end + 2)
+            if after_opt < n and source[after_opt] == "(":
+                chain += ".[optional-call]"
+                pos = after_opt  # leave the `(` itself for the resolver to find
+                break
+            w = _JS_WORD.match(source, after_opt)
+            if not w:
+                break
+            chain += ".[optional]." + w.group(0)
+            pos = w.end()
+            continue
         if gap_end < n and source[gap_end] == ".":
             after_dot = _js_skip_gap(source, gap_end + 1)
             w = _JS_WORD.match(source, after_dot)
