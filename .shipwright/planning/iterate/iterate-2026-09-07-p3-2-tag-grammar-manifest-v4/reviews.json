@@ -223,9 +223,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-07T07:18:26.147066+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T08:10:23.867699+00:00",
+      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: AC-3 ('WebUI reader accepts v4') is not satisfied -- the reader routes v4 through its existing 'unsupported schema_version' fail-soft path (tolerates, does not accept), verified by two undocumented manual probes with no test lock, and the deferral was closed by rewording the AC rather than a human decision. Separately, the campaign SPEC self-contradicts on scope: L325's Track V table scopes P3.2 as 'beide' (both repos) including WebUI-Reader; L389 (S2's own AC line) says 'WebUI-Reader in S9 nachgezogen' (deferred to S9); L423 says 'S2 -> S9 im Gleichschritt -- Schemabump ist ein Cross-Repo-Kontrakt' (lockstep, not P3.2-alone). No triage card exists for the deferred WebUI-reader work. This is a spec-ownership/sequencing question for the operator, not a code defect the implementer can resolve unilaterally. Delivery stopped; PR #686 left open.",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
