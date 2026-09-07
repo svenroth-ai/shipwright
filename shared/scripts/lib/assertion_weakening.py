@@ -410,7 +410,19 @@ _JS_ALLOWED_CHAINS = frozenset({
 #: are arguments passed INTO a real `expect(...)` call, not independent
 #: assertions of their own — matching them here would count one real
 #: assertion as two and inflate the count against itself.
-_JS_ASSERT_HEAD = re.compile(r"\bassert\.\w+\s*\(|\b(?P<name>expect|assert)\s*\(")
+#: `(?<![\w.$])` anchors both alternatives so neither can match after `.`/`?.`
+#: or as a continuation of another identifier (external Tier-3 review, PR
+#: #685: `fixture.assert.ok(...)` and `helper.expect(...)` — ordinary helper
+#: methods that merely happen to share these names — were counted as real
+#: assertions, so removing one produced a blocking `assertions_removed`
+#: finding for a change that touched no real test). Named cost, accepted the
+#: same way as every other narrowing in this file: a namespaced
+#: `chai.expect(x)` (rather than the far more common destructured
+#: `const { expect } = require('chai')`) is no longer counted either — an
+#: undercount (false negative), not a false block.
+_JS_ASSERT_HEAD = re.compile(
+    r"(?<![\w.$])assert\.\w+\s*\(|(?<![\w.$])(?P<name>expect|assert)\s*\("
+)
 #: The pooled-dynamic-tests qualname (see `_js_collect`). A literal newline
 #: makes it a string no JS/TS source can ever produce as a test name:
 #: `_JS_STRING_LIT`'s `.` cannot cross a raw newline in any quote type, so

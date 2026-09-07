@@ -303,6 +303,25 @@ def test_js_a_member_style_assert_call_counts_as_an_assertion():
     assert "assertions_removed" in _kinds(findings, blocking=True)
 
 
+def test_js_a_member_style_helper_call_named_assert_is_not_counted_as_an_assertion():
+    """External Tier-3 review, PR #685 (blocking): `fixture.assert.ok(...)` is
+    an ordinary helper method call, not Node/Chai's `assert.ok(...)` --
+    `_JS_ASSERT_HEAD` used to match `assert.<method>(` regardless of what
+    preceded it, so removing this helper call read as removing a real
+    assertion."""
+    before = "it('a', () => { fixture.assert.ok(1); expect(2).toBe(2); });\n"
+    after = "it('a', () => { expect(2).toBe(2); });\n"
+    assert _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True) == []
+
+
+def test_js_a_member_style_helper_call_named_expect_is_not_counted_as_an_assertion():
+    """Same finding, `expect` half: `helper.expect(...)` is an ordinary
+    helper method call, not Jest/Vitest's top-level `expect(...)`."""
+    before = "it('a', () => { helper.expect(1); expect(2).toBe(2); });\n"
+    after = "it('a', () => { expect(2).toBe(2); });\n"
+    assert _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True) == []
+
+
 def test_js_an_expect_matcher_factory_is_not_double_counted_as_its_own_assertion():
     """`expect.stringContaining(...)`/`expect.any(...)` are matcher FACTORIES
     passed as an argument into a real `expect(...)` call, not independent
