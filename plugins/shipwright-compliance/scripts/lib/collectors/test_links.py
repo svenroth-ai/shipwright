@@ -3,7 +3,7 @@
 Traceability campaign TT1 (foundation, data-only). Reads ``@FR`` tags across pytest +
 Playwright + Vitest via the frozen ``fr_tag_grammar`` reference parser, joins them to the
 FR table (Layers column, active + removed) and per-test execution evidence, and emits
-``.shipwright/compliance/test-traceability.json`` (schema v3). This is the missing
+``.shipwright/compliance/test-traceability.json`` (schema v4). This is the missing
 *backward* link (test → FR) and the per-layer join the aggregate event count cannot
 express. No gates flip here — the committed artifact is derived / RTM-visibility only;
 enforcing gates (TT5) regenerate base+head themselves (R3).
@@ -91,7 +91,7 @@ def build_manifest(
     source_commit: str = io._ZERO_SHA,
     collector_version: str = COLLECTOR_VERSION,
 ) -> dict:
-    """Build the schema-v3 traceability manifest (pure; no writes)."""
+    """Build the schema-v4 traceability manifest (pure; no writes)."""
     grammar = _load_grammar()
     project_root = Path(project_root)
     evidence = evidence or {}
@@ -205,7 +205,7 @@ def build_manifest(
 
 
 def _validate_manifest(manifest: dict) -> None:
-    """Fail-closed write-time check: raise unless the manifest is v3-schema-valid AND
+    """Fail-closed write-time check: raise unless the manifest is v4-schema-valid AND
     every key agrees with its own node's id, so producer/schema drift blows up loud in
     regen instead of silently shipping a corrupt artifact.
 
@@ -219,7 +219,7 @@ def _validate_manifest(manifest: dict) -> None:
     errors = list(jsonschema.Draft202012Validator(schema).iter_errors(manifest))
     if errors:
         raise ValueError(
-            "test-traceability manifest failed v3-schema validation: " + errors[0].message
+            "test-traceability manifest failed v4-schema validation: " + errors[0].message
         )
     assert_keys_derive_from_ids(manifest)
 
