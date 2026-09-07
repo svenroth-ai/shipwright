@@ -292,6 +292,76 @@ _JS_STRING_STARTS = frozenset("'\"`")
 _JS_BRACKET_PAIRS = {"(": ")", "{": "}", "[": "]"}
 _JS_BRACKET_CLOSERS = {v: k for k, v in _JS_BRACKET_PAIRS.items()}
 
+#: Keywords after which a bare `/` is a regex literal, not division, even
+#: though the preceding token is word-shaped (`return /foo/.test(x)`,
+#: `typeof /x/`). Division never follows these; an expression always does.
+_JS_REGEX_CONTEXT_KEYWORDS = frozenset({
+    "return", "typeof", "instanceof", "in", "of", "new", "delete", "void",
+    "do", "else", "yield", "case", "throw", "await",
+})
+
+
+def _js_slash_starts_regex(source: str, i: int) -> bool:
+    """Whether the `/` at `source[i]` opens a regex literal rather than
+    being a division operator — the standard heuristic every hand-rolled JS
+    tokenizer uses: division follows a VALUE (an identifier, a number, a
+    closing `)`/`]`/`}`, or the end of a string/template); everywhere else
+    is a position where an expression is expected, and a `/` there can only
+    open a regex (external Tier-3 review, PR #685, third round: the
+    bracket scanner treated brackets inside a regex literal like `/\\(/` as
+    structural code, so a valid test using one — the file's own
+    `test_js_a_regex_literal_with_a_lone_bracket_fails_closed_not_silently`
+    demonstrates exactly this — read as unparseable and blocked every
+    repair touching it, not just the ambiguous case that test documents).
+    """
+    j = i - 1
+    while j >= 0 and source[j] in " \t\r\n":
+        j -= 1
+    if j < 0:
+        return True
+    prev = source[j]
+    if prev in ")]}" or prev in "'\"`":
+        return False
+    if prev.isalnum() or prev in "_$":
+        k = j
+        while k >= 0 and (source[k].isalnum() or source[k] in "_$"):
+            k -= 1
+        word = source[k + 1:j + 1]
+        if word[0].isdigit():
+            return False  # a number literal ends here — division
+        return word in _JS_REGEX_CONTEXT_KEYWORDS
+    return True
+
+
+def _js_regex_literal_end(source: str, i: int) -> int | None:
+    """End index (exclusive) of the regex literal starting at `source[i]`
+    (a `/` already confirmed by `_js_slash_starts_regex`), or `None` if it
+    never closes before a newline — that reads as "not actually a regex"
+    (a stray division, or malformed source), and the caller falls back to
+    treating `/` as an ordinary character rather than committing to a span
+    it cannot confirm."""
+    n = len(source)
+    j = i + 1
+    in_class = False
+    while j < n:
+        c = source[j]
+        if c == "\n":
+            return None
+        if c == "\\":
+            j += 2
+            continue
+        if c == "[":
+            in_class = True
+        elif c == "]":
+            in_class = False
+        elif c == "/" and not in_class:
+            j += 1
+            while j < n and source[j].isalpha():
+                j += 1
+            return j
+        j += 1
+    return None
+
 
 def _js_bracket_match(
     source: str,
@@ -335,6 +405,15 @@ def _js_bracket_match(
             i = n if j == -1 else j + 2
             non_code.append((start, i))
             continue
+        if c == "/" and _js_slash_starts_regex(source, i):
+            end = _js_regex_literal_end(source, i)
+            if end is not None:
+                non_code.append((i, end))
+                i = end
+                continue
+            # Doesn't actually close before a newline — not a regex after
+            # all; fall through and treat `/` as an ordinary, non-bracket
+            # character (matches nothing below either way).
         if c in _JS_BRACKET_PAIRS:
             stack.append((c, i))
         elif c in _JS_BRACKET_CLOSERS:

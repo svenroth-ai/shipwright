@@ -817,15 +817,44 @@ def test_js_two_identically_asserted_instances_swapping_skip_still_defeats_the_b
     assert aw.detect_weakening([_jschange(before, after)]) == []
 
 
-def test_js_a_regex_literal_with_a_lone_bracket_fails_closed_not_silently():
-    """The bracket scanner has no notion of a JS regex literal, so a lone
-    unmatched bracket character inside one desyncs it. Documented stated
-    limit: this fails in the safe direction (a spurious block), not by
-    silently missing a real change (doubt review)."""
+def test_js_a_regex_literal_with_a_lone_bracket_is_parsed_not_a_false_block():
+    """`_js_bracket_match` now lexes regex literals as non-code spans, so a
+    bracket character inside one (`/\\(/`) no longer desyncs the bracket
+    stack. Removing the real assertion alongside it is still caught
+    correctly -- this is a genuine fix, not a downgrade to `n/a` (external
+    Tier-3 review, PR #685, third round: this exact file previously
+    documented the false block as an accepted limit; the reviewer escalated
+    it to a hard BLOCK because it blocks every future repair to any test
+    file using a regex literal with a bracket in it, not just one edit)."""
     before = "it('a', () => { expect(x).toMatch(/\\(/); expect(1).toBe(1); });\n"
     after = "it('a', () => { expect(x).toMatch(/\\(/); });\n"
-    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
-                                   blocking=True)
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
+def test_js_a_character_class_containing_a_slash_does_not_end_the_regex_early():
+    """`/[a/b]/` must not be misread as ending at the `/` inside the
+    character class -- `_js_regex_literal_end` tracks `[`/`]` state so an
+    in-class `/` doesn't terminate the literal early and desync the scan
+    that follows."""
+    before = "it('a', () => { expect('a').toMatch(/[a/b]/); expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect('a').toMatch(/[a/b]/); });\n"
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
+def test_js_division_after_a_value_is_not_mistaken_for_a_regex_literal():
+    """`a / b` (division, following an identifier) must not be swallowed as
+    a regex-literal span -- `_js_slash_starts_regex` returns False right
+    after a value, so the brackets in the surrounding real code still
+    balance correctly."""
+    before = "it('a', () => { const r = a / b; expect(r).toBe(1); });\n"
+    after = "it('a', () => { const r = a / b; });\n"
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
 
 
 def test_js_string_literal_regex_does_not_exponentially_backtrack_on_a_run_of_backslashes():
