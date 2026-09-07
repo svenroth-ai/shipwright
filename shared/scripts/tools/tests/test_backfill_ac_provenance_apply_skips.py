@@ -12,6 +12,7 @@ write pass, upgrade pass, and idempotency tests already in the sibling file.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import os
 import sys
@@ -211,6 +212,38 @@ def test_apply_upgrades_inserts_a_qualified_id_for_the_one_untagged_method(tmp_p
     assert result["inserted_new_tags"][0]["test"] == f"{rel}::TestOne.test_it"
     text = (tmp_path / rel).read_text(encoding="utf-8")
     assert '@pytest.mark.covers("FR-01.01/AC01")' in text
+
+
+_SINGLE_QUOTED_BARE_TAG = """from __future__ import annotations
+
+import pytest
+
+
+@pytest.mark.covers('FR-01.01')
+def test_one():
+    assert True
+"""
+
+
+def test_apply_upgrades_widens_a_single_quoted_bare_tag_to_valid_double_quoted_syntax(tmp_path):
+    """Tier-3 CI-gate re-review (P3.4 high, disputed): the reviewer claimed
+    ``_upgrade_bare_tags`` replaces only the opening quote of a single-quoted
+    ``covers('FR-01.01')`` decorator, leaving the original closing quote
+    behind and producing invalid Python (``covers("FR-01.01/AC01')``). The
+    widen regex's backreference (``\\1``) actually matches the CLOSING quote
+    too, so the whole quoted literal -- both delimiters -- is replaced in one
+    span; this test proves the real output is valid, double-quoted syntax
+    (``ast.parse`` on the rewritten file must not raise) rather than taking
+    the claim on faith."""
+    rel = "tests/test_single_quoted.py"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / rel).write_text(_SINGLE_QUOTED_BARE_TAG, encoding="utf-8")
+    report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
+    result = apply_mod.apply_upgrades(tmp_path, report)
+    assert result["tags_upgraded_total"] == 1
+    text = (tmp_path / rel).read_text(encoding="utf-8")
+    assert '@pytest.mark.covers("FR-01.01/AC01")' in text
+    ast.parse(text)  # would raise SyntaxError if the quotes were mismatched
 
 
 def test_apply_upgrades_skips_a_candidate_file_that_is_really_a_symlink_escape(tmp_path):
