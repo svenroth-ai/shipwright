@@ -33,6 +33,7 @@ from ._test_links_requirements import (
     assert_keys_derive_from_ids,
     build_requirement_index,
     build_requirement_nodes,
+    file_hit,
 )
 
 COLLECTOR_VERSION = "test_links/1.0.0"
@@ -70,6 +71,11 @@ def _make_link(hit, layer: str, evidence: dict, *, resolved_from: str = "") -> d
     # carries. Omitted otherwise so a repo with no fold-map emits a byte-identical link.
     if resolved_from:
         link["resolved_from"] = resolved_from
+    # v4, D9: present only when the source tag named an AC alongside its FR (a bare FR
+    # tag stays valid with no AC, E1) — omitted otherwise so a repo with no AC tags yet
+    # emits a byte-identical v3-shaped link.
+    if hit.ac_id:
+        link["ac_id"] = hit.ac_id
     return link
 
 
@@ -127,6 +133,10 @@ def build_manifest(
 
     # 3. Bind each hit to its FR (coverage link) or record it as an orphan.
     tests_by_key: dict[str, dict[str, list]] = {}
+    # v4, D9: the SAME shape as tests_by_key, one extra level down (ac_id), filed only
+    # for hits that named an AC. A separate COPY per bucket, not an alias of the
+    # tests_by_key entry — same reasoning as the per-requirement copy just below.
+    acs_by_key: dict[str, dict[str, dict[str, list]]] = {}
     orphans: list = []
     tagged_ids: set[str] = set()
     for h in hits:
@@ -145,19 +155,8 @@ def build_manifest(
             layer = layer_by_test.get(h.test, io.detect_layer(h.test.split("::")[0]))
             link = _make_link(h, layer, evidence, resolved_from=resolved_from)
             for r in active:
-                bucket = tests_by_key.setdefault(r.key, {}).setdefault(layer, [])
-                dup = next((l for l in bucket if l["id"] == link["id"]
-                            and l["tag_source"] == link["tag_source"]), None)
-                if dup is None:
-                    # A COPY per bucket: a collision display id files one hit into several
-                    # requirement nodes, and sharing one dict would let the supersede
-                    # branch below mutate a sibling node's link by aliasing.
-                    bucket.append(dict(link))
-                elif not resolved_from:
-                    # The same test also carries a DIRECT tag for this FR. The direct
-                    # binding is the truer provenance, so it supersedes the fold-resolved
-                    # one rather than adding a second link for the same (test, source).
-                    dup.pop("resolved_from", None)
+                file_hit(tests_by_key, acs_by_key, r.key, layer, link, h.ac_id,
+                         resolved_from=resolved_from)
         else:
             # Classify by what the tag actually points AT. The tagged id itself is the
             # first answer; failing that, the id the fold walk stopped at — so a tag whose
@@ -173,10 +172,10 @@ def build_manifest(
         tagged_ids.add(iv.test)
 
     # 4. Assemble the requirement nodes (coverage per layer, removed => n/a).
-    req_nodes = build_requirement_nodes(requirements, tests_by_key)
+    req_nodes = build_requirement_nodes(requirements, tests_by_key, acs_by_key)
 
     return {
-        "schema_version": 3,
+        "schema_version": 4,
         "collector_version": collector_version,
         "generated_at": generated_at,
         "source_commit": source_commit,

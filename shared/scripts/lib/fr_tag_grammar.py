@@ -12,6 +12,7 @@ Accepted forms (see `references/traceability-tag-grammar.md`):
 
 * **pytest** — ``@pytest.mark.covers("FR-01.03", "FR-01.04")`` — read from the
   Python AST, bound to the decorated function. ``tag_source="pytest_marker"``.
+  Each arg may also name an AC: ``@pytest.mark.covers("FR-01.11/AC07")`` (P3.2).
 * **TS/JS ``@covers`` comment** — ``// @covers FR-01.03`` on the line *preceding* a
   test, bound to that test. ``tag_source="covers_comment"``.
 * **Playwright native tag** — ``test('…', { tag: ['@FR-01.03'] }, …)`` on the test
@@ -20,6 +21,19 @@ Accepted forms (see `references/traceability-tag-grammar.md`):
 
 A malformed token (``@FR-1.3`` — not two-digit.two-digit; ``@FR01.03`` — no dash)
 is recorded in :class:`InvalidTag`, never bound as coverage (R4).
+
+**AC scope (P3.2, campaign req3-04c-ac-identity-wave2, D9 — no content hash).**
+A ``pytest_marker`` value may additionally name an AC minted by ``lib.ac_identity``:
+``@pytest.mark.covers("FR-01.11/AC07")``. ``canonical_fr_ac`` resolves the pair; a
+bare ``FR-01.11`` stays valid (``ac_id=None`` — E1: "covers the requirement, AC
+unspecified"), so every tag written before this grammar version keeps resolving.
+Python-only for now: the TS/JS forms (``covers_comment``, ``native_tag``,
+``title_suffix``) still bind at FR-granularity only — a deliberate scope cut
+(only the pytest form was asked for), widened additively later since
+``TagHit.ac_id`` already exists and just stays ``None`` there. Their candidate
+regexes' ``[\\w.-]*`` silently absorb a ``/ACnn`` suffix (KNOWN LIMITATION, not a
+validated rejection) — don't rely on it being flagged. Suffix *syntax* only is
+checked here, not AC existence — deferred to P3.4/P3.6 (external review; decision log).
 """
 
 from __future__ import annotations
@@ -32,6 +46,11 @@ try:  # Package context — `from lib.fr_tag_grammar import …` (shared/tests).
     from .requirement_model import CANONICAL_FR_RE
 except ImportError:  # Loaded by file path (a future plugin collector): no parent package.
     from requirement_model import CANONICAL_FR_RE  # type: ignore
+
+try:  # Same dual-import pattern as CANONICAL_FR_RE above.
+    from ._fr_ac_token import canonical_fr_ac
+except ImportError:
+    from _fr_ac_token import canonical_fr_ac  # type: ignore
 
 # Closed vocabulary of where a tag was found (mirrors the manifest tag_source enum).
 TAG_SOURCES: tuple[str, ...] = (
@@ -74,6 +93,7 @@ class TagHit:
     test: str             # binding: "path::name"
     tag_source: str       # one of TAG_SOURCES
     raw: str              # the raw matched text
+    ac_id: str | None = None  # canonical "AC07", or None: FR-level only (E1). Python-only today.
 
 
 @dataclass(frozen=True)
@@ -114,7 +134,12 @@ def _is_covers_marker(dec: ast.expr) -> bool:
 
 
 def parse_python(source: str, path: str = "") -> ParseResult:
-    """Parse ``@pytest.mark.covers`` markers from Python source via the AST."""
+    """Parse ``@pytest.mark.covers`` markers from Python source via the AST.
+
+    Each string arg is ``FR-XX.YY`` or ``FR-XX.YY/ACnn`` (P3.2, D9) —
+    ``canonical_fr_ac`` resolves both; a malformed AC suffix invalidates the
+    WHOLE arg (``reason="non_canonical_ac_id"``), never falling back to a bare
+    FR hit."""
     try:
         tree = ast.parse(source)
     except SyntaxError:
@@ -133,11 +158,13 @@ def parse_python(source: str, path: str = "") -> ParseResult:
                 if not (isinstance(arg, ast.Constant) and isinstance(arg.value, str)):
                     invalid.append(InvalidTag(raw=ast.dump(arg), test=test, reason="non_string_arg"))
                     continue
-                canon = canonical_fr_id(arg.value)
-                if canon:
-                    hits.append(TagHit(canon, test, "pytest_marker", arg.value))
+                parsed = canonical_fr_ac(arg.value)
+                if parsed:
+                    fr_id, ac_id = parsed
+                    hits.append(TagHit(fr_id, test, "pytest_marker", arg.value, ac_id))
                 else:
-                    invalid.append(InvalidTag(raw=arg.value, test=test))
+                    reason = "non_canonical_ac_id" if "/" in arg.value else "non_canonical_fr_id"
+                    invalid.append(InvalidTag(raw=arg.value, test=test, reason=reason))
     return ParseResult(tuple(hits), tuple(invalid))
 
 
@@ -266,6 +293,7 @@ __all__ = [
     "InvalidTag",
     "ParseResult",
     "canonical_fr_id",
+    "canonical_fr_ac",
     "parse_python",
     "parse_ts_js",
     "parse_source",

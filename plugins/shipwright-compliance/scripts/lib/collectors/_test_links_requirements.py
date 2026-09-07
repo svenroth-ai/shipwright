@@ -143,7 +143,8 @@ def assert_keys_derive_from_ids(manifest: dict) -> None:
 
 
 __all__ = ["ManifestIntegrityError", "DuplicateRequirementId", "KeyNotDerivedFromId",
-           "RequirementIndex", "build_requirement_index", "assert_keys_derive_from_ids"]
+           "RequirementIndex", "build_requirement_index", "assert_keys_derive_from_ids",
+           "build_requirement_nodes", "file_hit"]
 
 
 _LAYER_ORDER = ("unit", "integration", "e2e")
@@ -155,7 +156,52 @@ def _cov_status(links: list[dict]) -> str:
     return "ok" if passing else "MISSING"
 
 
-def build_requirement_nodes(requirements: dict, tests_by_key: dict) -> dict:
+def file_hit(tests_by_key: dict, acs_by_key: dict, req_key: str, layer: str,
+             link: dict, ac_id: str | None, *, resolved_from: str) -> None:
+    """File one hit's ``link`` into ``tests_by_key[req_key][layer]`` and, when
+    ``ac_id`` is set (v4, D9), also into ``acs_by_key[req_key][ac_id][layer]``.
+
+    Split out of ``test_links.build_manifest``'s hit loop so that module stays
+    under its bloat-baseline cap. Each bucket gets its OWN ``dict(link)`` copy,
+    never a shared/aliased dict — sharing one would let the fold-supersede
+    branch below mutate a sibling bucket's link.
+    """
+    bucket = tests_by_key.setdefault(req_key, {}).setdefault(layer, [])
+    dup = next((l for l in bucket if l["id"] == link["id"]
+                and l["tag_source"] == link["tag_source"]), None)
+    if dup is None:
+        bucket.append(dict(link))
+    else:
+        if not resolved_from:
+            # The same test also carries a DIRECT tag for this FR. The direct
+            # binding is the truer provenance, so it supersedes the fold-resolved
+            # one rather than adding a second link for the same (test, source).
+            dup.pop("resolved_from", None)
+        if link.get("ac_id"):
+            if not dup.get("ac_id"):
+                # A second tag on the same test named the AC this bare tag left
+                # unspecified — backfill rather than lose it (rare: two @covers
+                # args for the same FR, one bare and one AC-scoped).
+                dup["ac_id"] = link["ac_id"]
+            elif dup["ac_id"] != link["ac_id"]:
+                # external code review (openai/medium): this ONE test covers TWO
+                # DIFFERENT ACs of the same FR — the parent link's singular
+                # ``ac_id`` field cannot represent both, so drop it rather than
+                # silently keep whichever AC was filed first. Each AC still gets
+                # its own correct, unambiguous link below in its own bucket.
+                dup.pop("ac_id", None)
+    if ac_id:
+        ac_bucket = acs_by_key.setdefault(req_key, {}).setdefault(ac_id, {}).setdefault(layer, [])
+        ac_dup = next((l for l in ac_bucket if l["id"] == link["id"]
+                       and l["tag_source"] == link["tag_source"]), None)
+        if ac_dup is None:
+            ac_bucket.append(dict(link))
+        elif not resolved_from:
+            ac_dup.pop("resolved_from", None)
+
+
+def build_requirement_nodes(requirements: dict, tests_by_key: dict,
+                             acs_by_key: dict | None = None) -> dict:
     """Shape each requirement into its manifest node (coverage per layer).
 
     Moved here from ``test_links.build_manifest`` when the ``invalid_ids``
@@ -169,10 +215,12 @@ def build_requirement_nodes(requirements: dict, tests_by_key: dict) -> dict:
     MISSING: a tombstone has no tests by definition, so scoring it as uncovered
     would manufacture a permanent false deficit.
     """
+    acs_by_key = acs_by_key or {}
     req_nodes: dict = {}
     for key, req in requirements.items():
         tests_node: dict = {}
         coverage: dict = {}
+        acs_node: dict = {}
         if req.is_active:
             filed = tests_by_key.get(key, {})
             layers = list(req.required_layers) + [l for l in filed if l not in req.required_layers]
@@ -181,6 +229,18 @@ def build_requirement_nodes(requirements: dict, tests_by_key: dict) -> dict:
                     tests_node[layer] = filed[layer]
                 if layer in layers:
                     coverage[layer] = _cov_status(filed.get(layer, []))
+            # v4, D9: AC-scoped breakdown, mirroring the shape just above but scoped to
+            # each AC's own directly-tagged links. Sorted by AC NUMBER (not lexically —
+            # "AC10" < "AC9" as strings) so the manifest is deterministic across runs.
+            for ac_id in sorted(acs_by_key.get(key, {}), key=lambda a: int(a[2:])):
+                filed_ac = acs_by_key[key][ac_id]
+                ac_tests: dict = {}
+                ac_coverage: dict = {}
+                for layer in _LAYER_ORDER:
+                    if layer in filed_ac:
+                        ac_tests[layer] = filed_ac[layer]
+                        ac_coverage[layer] = _cov_status(filed_ac[layer])
+                acs_node[ac_id] = {"tests": ac_tests, "coverage": ac_coverage}
         else:
             for layer in _LAYER_ORDER:
                 if layer in req.required_layers:
@@ -191,5 +251,8 @@ def build_requirement_nodes(requirements: dict, tests_by_key: dict) -> dict:
             "required_layers": list(req.required_layers),
             "required_layers_source": req.required_layers_source,
             "tests": tests_node, "coverage": coverage,
+            # OMITTED ENTIRELY when empty (no AC-scoped tag anywhere for this
+            # requirement) — same churn rule as fold_map/invalid_ids.
+            **({"acs": acs_node} if acs_node else {}),
         }
     return req_nodes

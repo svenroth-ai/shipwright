@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-07-p3-2-tag-grammar-manifest-v4",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T07:19:21.291140+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "when building the manifest, cross-check every tagged AC id against the current minted AC set from `ac_identity.py` and fail loudly (or at minimum emit a warning surfaced in CI) on unknown AC references. This is likely a few lines given the P3.1 machinery already exists.  2. The v4 frozen fixture may not actually exercise the new fields",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "confirm at least one real (or fixture-injected) AC-tagged test exists before generating the fixture, and assert in `traceability_contract_support.py` that the v4 fixture actually contains a non-empty `acs` map and an `ac_id` occurrence. Cheap assertion, closes the gap.  3. WebUI compatibility is verified manually, not regression-locked",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "at minimum, record the probe manifests and expected `status: \"ok\"` output in the sub-iterate notes / a tracked webui-repo issue; ideally add a replay-style test here that pins the probe fixtures so the empirical result survives as an artifact.  4. No sweep for existing slash-suffixed tags in the 1,243 existing tags",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "a one-time grep across both repos for `covers(\"FR-\\d+\\.\\d+/` before landing; takes a minute and makes AC#1 empirically true.  5. Per-AC coverage layer-shape semantics",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "state the roll-up rule explicitly in the manifest v4 doc/fixture diff — parent-inclusive or AC-only — and make sure the comparison treats both levels consistently.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan validates the `FR…/ACnn` syntax but does not state that the referenced AC must exist on—and belong to—the resolved active FR. A syntactically valid `FR-01.11/AC07` could otherwise produce orphan coverage or incorrectly claim coverage after AC ordinals are changed.",
+          "suggestion": "Resolve the FR first, then validate `AC07` against its minted AC IDs. Fail the tag with a clear diagnostic if either the FR or AC is unknown/inactive.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "A v4 WebUI manifest is only “accepted” through its unsupported-version fail-soft path, with `knownMax` remaining at 3. That proves it does not crash, but leaves every valid v4 manifest flagged as unknown and does not establish that `acs`/`ac_id` are safely represented by the reader’s schemas/types.",
+          "suggestion": "Update the WebUI contract pin and reader types/schema to v4 in its own PR, with a fixture-based reader test. If that repo must remain untouched, explicitly narrow AC#3 to “legacy reader degrades without failure,” rather than “accepts v4.”",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Because the contract is strict (`additionalProperties: false`), generating a v4 fixture is insufficient unless every authoritative JSON schema/model definition explicitly permits and validates `acs` and `testLink.ac_id`, including their nested shapes. The mini-plan does not name that required schema/model update.",
+          "suggestion": "Identify and update the authoritative manifest schema plus all typed validators/serializers, and add negative tests for unexpected AC fields and invalid `ac_id` values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The relationship between a tag and manifest links is not fully specified for tests that cover multiple ACs or both a bare FR and an AC beneath that FR. A singular `testLink.ac_id` is sound only if the collector emits one link per declared tag and deduplicates parent/AC aggregation predictably.",
+          "suggestion": "Define and test link cardinality and deduplication: multiple AC tags yield multiple links; parent FR coverage remains correctly aggregated; repeated identical tags do not inflate counts.  Overall, the suffix grammar and additive v4 manifest direction are sound, and the version-consumer sweep is appropriately thorough. The plan needs semantic AC validation and genuine WebUI v4 contract support (or a narrower compatibility claim) before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T07:18:01.515855+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Well-formed but nonexistent AC ids are not validated**\n- Category: edge-case\n- Severity: medium\n- The plan fails closed on a *malformed* suffix (`/AC7x`, `/ac07`), which is good. But a syntactically valid tag referencing an AC that doesn't exist — `FR-01.11/AC77` when the requirement has 5 ACs (typo, stale tag after an AC renumber, or a test author guessing at ordinals) — appears to produce an empty `acs` entry or a dangling `ac_id`, i.e. silently zero AC coverage. Since AC ids are tool-minted ordinals (D9), ordinal drift after requirement edits is a realistic failure mode, and silent-empty is exactly the failure class the fail-closed grammar decision was made to avoid.\n- Suggestion: when building the manifest, cross-check every tagged AC id against the current minted AC set from `ac_identity.py` and fail loudly (or at minimum emit a warning surfaced in CI) on unknown AC references. This is likely a few lines given the P3.1 machinery already exists.\n\n**2. The v4 frozen fixture may not actually exercise the new fields**\n- Category: risk\n- Severity: medium\n- `contracts/test-traceability-4.0.json` is generated by running `live_contract()`. If no test in the repo at generation time uses the new `/ACnn` tag form, the fixture will contain zero `acs` maps and zero `ac_id` fields — the frozen contract for v4 would then validate only the empty/omitted case, and a later regression in the new field serialization would pass the contract test unchanged.\n- Suggestion: confirm at least one real (or fixture-injected) AC-tagged test exists before generating the fixture, and assert in `traceability_contract_support.py` that the v4 fixture actually contains a non-empty `acs` map and an `ac_id` occurrence. Cheap assertion, closes the gap.\n\n**3. WebUI compatibility is verified manually, not regression-locked**\n- Category: dependency\n- Severity: low\n- The two round-trip probes against `readTraceabilityIndex` were one-time empirical checks. Since shipwright- […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The plan validates the `FR…/ACnn` syntax but does not state that the referenced AC must exist on—and belong to—the resolved active FR. A syntactically valid `FR-01.11/AC07` could otherwise produce orphan coverage or incorrectly claim coverage after AC ordinals are changed.  \n   **Suggestion:** Resolve the FR first, then validate `AC07` against its minted AC IDs. Fail the tag with a clear diagnostic if either the FR or AC is unknown/inactive.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** A v4 WebUI manifest is only “accepted” through its unsupported-version fail-soft path, with `knownMax` remaining at 3. That proves it does not crash, but leaves every valid v4 manifest flagged as unknown and does not establish that `acs`/`ac_id` are safely represented by the reader’s schemas/types.  \n   **Suggestion:** Update the WebUI contract pin and reader types/schema to v4 in its own PR, with a fixture-based reader test. If that repo must remain untouched, explicitly narrow AC#3 to “legacy reader degrades without failure,” rather than “accepts v4.”\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Because the contract is strict (`additionalProperties: false`), generating a v4 fixture is insufficient unless every authoritative JSON schema/model definition explicitly permits and validates `acs` and `testLink.ac_id`, including their nested shapes. The mini-plan does not name that required schema/model update.  \n   **Suggestion:** Identify and update the authoritative manifest schema plus all typed validators/serializers, and add negative tests for unexpected AC fields and invalid `ac_id` values.\n\n4. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The relationship between a tag and manifest links is not fully specified for tests that cover multiple ACs or both a bare FR and an AC beneath that FR. A singular `testLink.ac_id` is sound only […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      },
+      "model_tier": "sonnet"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T07:18:26.257985+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T07:18:26.371079+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "(entire diff — no WebUI changes present)",
+          "line": null,
+          "finding": "Acceptance criterion 3 (\"The WebUI reader accepts v4\") is not implemented or evidenced anywhere in this diff. The change bumps the manifest to schema_version 4 while the WebUI consumer (per the diff's own plan-review record, external finding 7) still pins `knownMax` at 3 — a v4 manifest reaches it only through the unsupported-version fail-soft path, which is \"degrades without crashing,\" not \"accepts.\" The new `test-traceability-4.0.json` contract fixture is the input for a WebUI pin, but no WebUI-side reader/schema/type update ships here.",
+          "suggestion": "Either land the WebUI reader update (contract pin to 4.0, `knownMax`/types accepting `acs` and `testLink.ac_id`) in the coordinated change set, or record explicit evidence that the WebUI PR exists and cites this fixture. Absent that, AC#3 cannot be marked done.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/test_links.py:155 (file_hit call site) and shared/scripts/lib/fr_tag_grammar.py:165 (`canonical_fr_ac` in parse_python)",
+          "line": null,
+          "finding": "AC existence is never validated anywhere in the pipeline. A syntactically valid tag like `covers(\"FR-06.01/AC99\")` on a requirement that has no AC99 (typo, or stale ordinal after an AC renumber — the exact drift failure mode the plan review flagged as high severity) is silently filed as an `acs.AC99` node, manufacturing coverage for a criterion that does not exist. Notably, the new test fixture's spec (`_AC_SPEC` in test_test_links_ac_nodes.py) declares zero ACs, so every AC in the test suite is an orphan and everything still passes — the tests cannot detect this class of bug. The diff claims deferral to P3.4/P3.6, but that deferral is not in this spec section's scope, and the deferral directly contradicts the fail-closed principle applied everywhere else in this grammar (a malformed `/AC7x` invalidates the whole tag; a nonexistent `/AC99` is accepted).",
+          "suggestion": "Cross-check each `hit.ac_id` against the minted AC set for the resolved FR (the P3.1 `ac_identity` machinery), and emit an invalid-tag record or orphan rather than an `acs` node for unknown AC ids. At minimum, gate it in the same P3.2 change rather than deferring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_test_links_ac_nodes.py:99-101 (`test_acs_are_sorted_by_ac_number_not_lexically`)",
+          "line": null,
+          "finding": "The test is vacuous for its stated purpose: `[\"AC07\", \"AC09\"]` sorts identically under lexical and numeric ordering. A regression that swaps the sort to plain `sorted()` (the exact bug the `int(a[2:])` key in `build_requirement_nodes` guards against — \"AC10\" < \"AC9\" as strings) still passes this test. The implementation comment even names AC10/AC9 as the motivating case, but no fixture exercises it.",
+          "suggestion": "Change one tag in the fixture to `AC10` (e.g., `FR-06.01/AC10` instead of `AC09`) and assert the order is `[\"AC07\", \"AC10\"]`, which lexical sort would reorder to `[\"AC07\", \"AC10\"]`… pick values that actually diverge, e.g. `AC09` and `AC10`, asserting `[\"AC09\", \"AC10\"]` fails under lexical sort.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "(not in diff) `.shipwright/compliance/test-traceability.json",
+          "line": null,
+          "finding": "The spec explicitly requires the committed frozen manifest to be regenerated (\"bump it versioned\"), but no updated `test-traceability.json` appears in this diff. Meanwhile `_group_d_manifest.py` (`MANIFEST_SCHEMA_VERSION = 4`) and `_rtm_layer_columns.py` (`_SCHEMA_VERSION = 4`) now reject the still-v3 committed manifest: audit group D degrades to SKIP and RTM layer columns render \"—\" on this very repo until a regen lands. The risk_recheck metadata (26 changed files) suggests the regen may be in the full change set, but it is not reviewable here.",
+          "suggestion": "Confirm the committed manifest regen (schema_version 4, with at least one real `acs` node) is part of this same merge; if it lands separately, the two must not be split across CI-gating commits, or this repo's own compliance gate goes red/SKIP in between.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/fr_tag_grammar.py:25-32 (docstring, TS/JS forms)",
+          "line": null,
+          "finding": "A TS/JS tag like `// @covers FR-01.11/AC07` binds at FR granularity with the AC silently dropped (ac_id stays None) — the same source tag produces different manifest semantics depending on language. This is documented as a known limitation, but it means the manifest can under-report AC coverage with no `invalid_tags`/`orphans` signal, which contradicts the \"never a silent partial match\" rule the Python path enforces for the same string.",
+          "suggestion": "If AC tags in TS/JS are out of scope, consider recording a TS/JS tag carrying a `/ACnn`-shaped suffix as an invalid tag (or an explicit known-limitation entry in the manifest) so the omission is visible rather than silent.  Positive notes: the bare-FR back-compat path is well tested (`test_pytest_marker_bare_fr_still_resolves_with_no_ac`, `test_bare_fr_tag_creates_no_ac_node_but_still_covers_the_fr`); MODEL_VERSION/schema_version/contract pins are bumped together with a lock-step test; the merged bare+AC same-test dedup case is covered with real assertions; and the v4 contract fixture demonstrably contains a non-empty `acs` map, closing the plan-review's \"fixture doesn't exercise new fields\" concern.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-compliance/scripts/lib/traceability_schema.json",
+          "line": 1,
+          "finding": "The diff bumps the producer contract to v4, but contains no Shipwright WebUI reader change or reader-level test. Acceptance criterion “The WebUI reader accepts v4” is therefore unimplemented; an existing v3-pinned reader will still treat valid v4 manifests as unsupported.",
+          "suggestion": "Update the WebUI’s supported manifest version and its manifest types/schema for `requirements..acs` and `testLink.ac_id`, with a v4 fixture-based reader test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-compliance/scripts/lib/collectors/_test_links_requirements.py",
+          "line": 166,
+          "finding": "Parent-level deduplication keys only on `(test id, tag_source)`, so a test tagged with two ACs for the same FR, e.g. `covers(\"FR-06.01/AC07\", \"FR-06.01/AC09\")`, collapses to one parent `testLink` and retains only whichever `ac_id` was encountered first. The per-AC buckets are both populated, but the top-level link inaccurately represents the source tags.",
+          "suggestion": "Include `ac_id` in the deduplication identity for AC-scoped links, or define and implement a representation that can preserve all AC bindings without discarding one.  Overall: ship-with-fixes. The core grammar and v4 producer are implemented and tested, but the required WebUI consumer update is absent and multi-AC tags lose parent-level provenance.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T07:31:00.903100+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: medium\n  File: (entire diff — no WebUI changes present)\n  Finding: Acceptance criterion 3 (\"The WebUI reader accepts v4\") is not implemented or evidenced anywhere in this diff. The change bumps the manifest to schema_version 4 while the WebUI consumer (per the diff's own plan-review record, external finding 7) still pins `knownMax` at 3 — a v4 manifest reaches it only through the unsupported-version fail-soft path, which is \"degrades without crashing,\" not \"accepts.\" The new `test-traceability-4.0.json` contract fixture is the *input* for a WebUI pin, but no WebUI-side reader/schema/type update ships here.\n  Suggestion: Either land the WebUI reader update (contract pin to 4.0, `knownMax`/types accepting `acs` and `testLink.ac_id`) in the coordinated change set, or record explicit evidence that the WebUI PR exists and cites this fixture. Absent that, AC#3 cannot be marked done.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-compliance/scripts/lib/collectors/test_links.py:155 (file_hit call site) and shared/scripts/lib/fr_tag_grammar.py:165 (`canonical_fr_ac` in parse_python)\n  Finding: AC *existence* is never validated anywhere in the pipeline. A syntactically valid tag like `covers(\"FR-06.01/AC99\")` on a requirement that has no AC99 (typo, or stale ordinal after an AC renumber — the exact drift failure mode the plan review flagged as high severity) is silently filed as an `acs.AC99` node, manufacturing coverage for a criterion that does not exist. Notably, the new test fixture's spec (`_AC_SPEC` in test_test_links_ac_nodes.py) declares zero ACs, so every AC in the test suite is an orphan and everything still passes — the tests cannot detect this class of bug. The diff claims deferral to P3.4/P3.6, but that deferral is not in this spec section's scope, and the deferral directly contradicts the fail-closed principle applied everywhere else in this grammar (a malformed `/AC7x` invalidates the  […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-compliance/scripts/lib/traceability_schema.json:1`\n- Finding: The diff bumps the producer contract to v4, but contains no Shipwright WebUI reader change or reader-level test. Acceptance criterion “The WebUI reader accepts v4” is therefore unimplemented; an existing v3-pinned reader will still treat valid v4 manifests as unsupported.\n- Suggestion: Update the WebUI’s supported manifest version and its manifest types/schema for `requirements.*.acs` and `testLink.ac_id`, with a v4 fixture-based reader test.\n\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-compliance/scripts/lib/collectors/_test_links_requirements.py:166`\n- Finding: Parent-level deduplication keys only on `(test id, tag_source)`, so a test tagged with two ACs for the same FR, e.g. `covers(\"FR-06.01/AC07\", \"FR-06.01/AC09\")`, collapses to one parent `testLink` and retains only whichever `ac_id` was encountered first. The per-AC buckets are both populated, but the top-level link inaccurately represents the source tags.\n- Suggestion: Include `ac_id` in the deduplication identity for AC-scoped links, or define and implement a representation that can preserve all AC bindings without discarding one.\n\nOverall: ship-with-fixes. The core grammar and v4 producer are implemented and tested, but the required WebUI consumer update is absent and multi-AC tags lose parent-level provenance.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T07:18:26.147066+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T07:18:26.482897+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -51,7 +51,7 @@ def _manifest(reqs, *, orphans=None, invalid_layers=None):
         key = f"{node['id'][3:5]}::{node['id']}"
         keyed[key if key not in keyed else f"{ns}::{node['id']}"] = node
     return {
-        "schema_version": 3, "collector_version": "test", "generated_at": "t",
+        "schema_version": 4, "collector_version": "test", "generated_at": "t",
         "source_commit": "x", "spec_hash": "h", "requirements": keyed,
         "orphans": orphans or [], "invalid_tags": [],
         "invalid_layers": invalid_layers or [], "untagged_tests": [],

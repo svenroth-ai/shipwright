@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-07-p3-2-tag-grammar-manifest-v4",
+  "date": "2026-09-07",
+  "section": "P3.2 tag-grammar-manifest-v4",
+  "title": "AC-scoped @covers tag grammar + test-traceability manifest v4",
+  "context": "P3.1 minted tool-assigned [ACnn] markers for FR criteria but left the library dormant. P3.2 spec: (1) covers(\"FR-01.11/AC07\") with bare FR still valid; (2) schema_version + MODEL_VERSION bump together (frozen, additionalProperties:false, churn-allowlisted); (3) WebUI reader accepts v4.",
+  "decision": "Extend fr_tag_grammar's pytest_marker form to accept an optional /ACnn suffix (fail-closed on malformed suffix). Manifest gains additive per-requirement acs map + testLink.ac_id (D9: no content hash, omitted-when-empty). schema_version+MODEL_VERSION 3->4 in lockstep; swept 2 more in-repo consumers that would silently SKIP on v4; bumped the frozen contract fixture. AC#3 verified empirically via 2 real round-trip probes against the webui reader, not by editing that separate repo.",
+  "consequences": "Every future @covers tag may name an AC without breaking any of the ~1,243 existing bare-FR tags (empirically confirmed zero collisions). Manifest grows additively; F5b's update_compliance --phase iterate regenerates the real committed manifest to v4 as part of this run. AC-existence validation is explicitly deferred to P3.4/P3.6, not silently skipped.",
+  "rationale": "D9 carries forward from P3.1: AC ids are tool-minted ordinals, never a content hash. Additive omitted-when-empty shape avoids re-litigating the frozen contract's additionalProperties:false posture. Fail-closed suffix validation matches the grammar's existing bare-FR token rule.",
+  "rejected": "New @covers_ac marker form (doubles tag-migration surface); content-hash-keyed AC binding (violates D9); AC-existence validation inside this grammar (deferred to P3.4/P3.6, both external reviews pushed for it twice, see ADR spec-ref for full disposition table); editing the separate shipwright-webui repo (out of scope; verified empirically instead).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-07-p3-2-tag-grammar-manifest-v4-ac-binding.md"
+}

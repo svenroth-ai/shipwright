@@ -44,7 +44,11 @@ EXIT_STRUCTURAL_DRIFT = 1
 EXIT_ERROR = 2
 
 _TOP_LEVEL_EXECUTION_KEYS = {"generated_at", "source_commit"}
-_REQUIREMENT_EXECUTION_KEYS = {"tests", "coverage"}
+# v4 (P3.2, D9): `acs` carries the SAME per-AC tests/coverage shape, execution-derived
+# for the identical reason -- which tests get collected + their pass/fail status depends
+# on OS/marker selection. Omitting it here would report a false structural drift on every
+# regen where the underlying platform selection (not the manifest's SHAPE) differs.
+_REQUIREMENT_EXECUTION_KEYS = {"tests", "coverage", "acs"}
 
 _REQUIRED_TOP_KEYS = {
     "schema_version",

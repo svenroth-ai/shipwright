@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "collector_version": "test_links/0.0.0-contract",
   "generated_at": "2026-07-15T00:00:00+00:00",
   "source_commit": "0000000000000000000000000000000000000000",
@@ -21,7 +21,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC07"
           }
         ],
         "e2e": [
@@ -38,6 +39,26 @@
       "coverage": {
         "unit": "ok",
         "e2e": "MISSING"
+      },
+      "acs": {
+        "AC07": {
+          "tests": {
+            "unit": [
+              {
+                "id": "unit/auth::test_sign_in_rejects_bad_password",
+                "path": "tests/test_auth.py::test_sign_in_rejects_bad_password",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC07"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        }
       }
     },
     "02::FR-02.01": {

@@ -11,8 +11,18 @@ manifest schema pins (layers, statuses, provenance), and the two pure helpers th
 build and split the manifest's namespaced requirement key. No spec files are read
 here — collectors construct :class:`Requirement` instances from their own parse.
 
-``MODEL_VERSION`` tracks the manifest ``schema_version`` (both are ``3``): a change
+``MODEL_VERSION`` tracks the manifest ``schema_version`` (both are ``4``): a change
 to this model's shape is a manifest schema bump.
+
+**v4 — AC-scoped test binding, additive (campaign req3-04c-ac-identity-wave2 P3.2;
+D9: no content hash).** A ``@covers`` tag may now name an AC minted by
+``lib.ac_identity`` alongside its FR (``FR-01.11/AC07``); ``lib.fr_tag_grammar``
+resolves it and the manifest collector files it under a NEW ``acs`` breakdown on
+the owning requirement, mirroring that requirement's own ``tests``/``coverage``
+shape. This ``Requirement`` dataclass's fields are UNCHANGED by v4 — the bump is
+entirely in the manifest node the collector builds around it (traceability_schema.json
+``$defs.acNode``), not in this model. A bare ``FR-01.11`` tag stays valid (E1:
+"covers the requirement, AC unspecified") so every pre-v4 tag keeps resolving.
 
 **v3 — the namespace derives from the requirement id, not from the file path.**
 ``namespace`` used to be whatever the caller passed (in practice the spec's parent
@@ -35,7 +45,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 # The model version travels with the manifest schema_version — bump together.
-MODEL_VERSION = 3
+MODEL_VERSION = 4
 
 # ---------------------------------------------------------------------------
 # Closed vocabularies (mirrored by traceability_schema.json — keep in sync)
