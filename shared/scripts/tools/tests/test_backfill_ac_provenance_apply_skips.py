@@ -14,11 +14,8 @@ from __future__ import annotations
 
 import ast
 import importlib.util
-import os
 import sys
 from pathlib import Path
-
-import pytest
 
 _TOOLS = Path(__file__).resolve().parents[1]
 if str(_TOOLS) not in sys.path:
@@ -246,21 +243,37 @@ def test_apply_upgrades_widens_a_single_quoted_bare_tag_to_valid_double_quoted_s
     ast.parse(text)  # would raise SyntaxError if the quotes were mismatched
 
 
+def _plant_reparse_point(path: Path, target: Path) -> None:
+    """Create a real symlink (POSIX) or directory junction (Windows) at
+    `path` pointing at `target`. Junctions need no elevated privilege on
+    Windows, unlike symlinks (SeCreateSymbolicLinkPrivilege) -- this is what
+    lets the reparse-point test below run unconditionally on every host
+    instead of skipping (Tier-3 CI-gate re-review, P3.4 high, round 10 --
+    same helper as ``test_review_scratch.py``'s own precedent)."""
+    target.mkdir(exist_ok=True)
+    if sys.platform == "win32":
+        import subprocess  # nosec B404 - fixed argv, shell=False
+        subprocess.run(  # nosec B603 B607 - fixed argv, shell=False
+            ["cmd", "/c", "mklink", "/J", str(path), str(target)],
+            capture_output=True, text=True, check=True, timeout=30,
+        )
+    else:
+        path.symlink_to(target, target_is_directory=True)
+
+
 def test_apply_upgrades_skips_a_candidate_file_that_is_really_a_symlink_escape(tmp_path):
-    """Tier-3 CI-gate re-review (P3.4 high): a committed symlink under a test
-    directory would let ``--write`` follow it and modify a file OUTSIDE the
-    repository -- ``Path.is_file()`` alone FOLLOWS the final symlink. The real
-    target here sits outside ``tmp_path`` (the project root) entirely; the
-    fix must refuse the write and must never touch that external target."""
-    outside_root = tmp_path.parent / "outside_project_root_target.py"
-    outside_root.write_text(_ONE_CLASS_ONE_UNTAGGED_METHOD, encoding="utf-8")
+    """Tier-3 CI-gate re-review (P3.4 high): a committed symlink (or, on
+    Windows, an unprivileged directory junction -- ``IO_REPARSE_TAG_MOUNT_POINT``,
+    which ``Path.is_file()`` also follows) somewhere in a test file's ANCESTOR
+    chain would let ``--write`` follow it and modify a file OUTSIDE the
+    repository. The real target directory here sits outside ``tmp_path`` (the
+    project root) entirely; the fix must refuse the write and must never
+    touch that external target."""
+    outside_dir = tmp_path.parent / "outside_project_root_dir"
+    outside_target = outside_dir / "test_escaping_link.py"
+    _plant_reparse_point(tmp_path / "tests", outside_dir)
+    outside_target.write_text(_ONE_CLASS_ONE_UNTAGGED_METHOD, encoding="utf-8")
     rel = "tests/test_escaping_link.py"
-    (tmp_path / "tests").mkdir()
-    link = tmp_path / rel
-    try:
-        os.symlink(outside_root, link)
-    except (OSError, NotImplementedError) as exc:
-        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
 
     report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
     result = apply_mod.apply_upgrades(tmp_path, report)
@@ -268,4 +281,4 @@ def test_apply_upgrades_skips_a_candidate_file_that_is_really_a_symlink_escape(t
     assert result["tags_inserted_total"] == 0
     assert result["skipped"] == [{**_candidate("FR-01.01", "AC01", [rel]),
                                     "file": rel, "reason": "path_escapes_project_root"}]
-    assert outside_root.read_text(encoding="utf-8") == _ONE_CLASS_ONE_UNTAGGED_METHOD
+    assert outside_target.read_text(encoding="utf-8") == _ONE_CLASS_ONE_UNTAGGED_METHOD

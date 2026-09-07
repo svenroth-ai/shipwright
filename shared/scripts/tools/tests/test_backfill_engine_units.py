@@ -8,7 +8,6 @@ without a live network call (a fake ``openai`` module drives ``_ask``).
 
 from __future__ import annotations
 
-import os
 import sys
 import types
 from pathlib import Path
@@ -246,24 +245,37 @@ def test_main_cli_dry_run_writes_report(tmp_path):
 # backfill_write.apply_writes / is_contained -- symlink-escape guard          #
 # --------------------------------------------------------------------------- #
 
+def _plant_reparse_point(path: Path, target: Path) -> None:
+    """Create a real symlink (POSIX) or directory junction (Windows) at
+    `path` pointing at `target`. Junctions need no elevated privilege on
+    Windows, unlike symlinks (SeCreateSymbolicLinkPrivilege) -- this is what
+    lets the reparse-point test below run unconditionally on every host
+    instead of skipping (Tier-3 CI-gate re-review, P3.4 high, round 10 --
+    same helper as ``test_review_scratch.py``'s own precedent)."""
+    target.mkdir(exist_ok=True)
+    if sys.platform == "win32":
+        import subprocess  # nosec B404 - fixed argv, shell=False
+        subprocess.run(  # nosec B603 B607 - fixed argv, shell=False
+            ["cmd", "/c", "mklink", "/J", str(path), str(target)],
+            capture_output=True, text=True, check=True, timeout=30,
+        )
+    else:
+        path.symlink_to(target, target_is_directory=True)
+
+
 def test_apply_writes_refuses_a_symlinked_test_file_outside_the_project_root(tmp_path):
     """Tier-3 CI-gate re-review (P3.4 high): ``backfill_test_links.py`` calls
     ``apply_writes`` with no containment check of its own, so this guard is
-    the ONLY thing standing between a committed symlink and a write outside
-    the repo. Confirms the real external target is never modified."""
+    the ONLY thing standing between a committed symlink (or, on Windows, an
+    unprivileged directory junction in the ANCESTOR chain) and a write
+    outside the repo. Confirms the real external target is never modified."""
     project_root = tmp_path / "project"
     project_root.mkdir()
-    outside_target = tmp_path / "outside_project_root_target.py"
+    outside_dir = tmp_path / "outside_project_root_dir"
+    outside_target = outside_dir / "test_link.py"
+    _plant_reparse_point(project_root / "tests", outside_dir)
     outside_target.write_text("def test_it():\n    assert True\n", encoding="utf-8")
-
-    tests_dir = project_root / "tests"
-    tests_dir.mkdir()
     rel = "tests/test_link.py"
-    link = project_root / rel
-    try:
-        os.symlink(outside_target, link)
-    except (OSError, NotImplementedError) as exc:
-        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
 
     record = _TestRecord(test_id=f"{rel}::test_it", rel_path=rel, name="test_it",
                           layer="unit", decl_line=0, indent=0)

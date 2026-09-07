@@ -10,11 +10,8 @@ split from ``test_backfill_ac_provenance_cli.py``).
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 from pathlib import Path
-
-import pytest
 
 _TOOLS = Path(__file__).resolve().parents[1]
 if str(_TOOLS) not in sys.path:
@@ -180,24 +177,40 @@ def test_apply_with_rollback_restore_is_best_effort_across_multiple_files(tmp_pa
     assert (tmp_path / rel_b).read_text(encoding="utf-8") == _BARE_TAGGED.replace("test_one", "test_two")  # still restored
 
 
+def _plant_reparse_point(path: Path, target: Path) -> None:
+    """Create a real symlink (POSIX) or directory junction (Windows) at
+    `path` pointing at `target`. Junctions need no elevated privilege on
+    Windows, unlike symlinks (SeCreateSymbolicLinkPrivilege) -- this is what
+    lets the reparse-point test below run unconditionally on every host
+    instead of skipping (Tier-3 CI-gate re-review, P3.4 high, round 10 --
+    same helper as ``test_review_scratch.py``'s own precedent)."""
+    target.mkdir(exist_ok=True)
+    if sys.platform == "win32":
+        import subprocess  # nosec B404 - fixed argv, shell=False
+        subprocess.run(  # nosec B603 B607 - fixed argv, shell=False
+            ["cmd", "/c", "mklink", "/J", str(path), str(target)],
+            capture_output=True, text=True, check=True, timeout=30,
+        )
+    else:
+        path.symlink_to(target, target_is_directory=True)
+
+
 def test_apply_with_rollback_never_reads_or_writes_through_an_escaping_symlink(tmp_path, monkeypatch):
     """Tier-3 CI-gate re-review (P3.4 high): the snapshot/restore pair
     previously bypassed the T4 containment guard entirely -- ``write_bytes``
     on restore FOLLOWS a symlink, so an escaping candidate's external target
-    could be rewritten purely by an UNRELATED sibling's rollback. A symlinked
-    candidate alongside a sibling whose upgrade gets rolled back must leave
-    the symlink's real external target byte-for-byte untouched."""
-    outside_target = tmp_path.parent / "outside_project_root_target.py"
+    could be rewritten purely by an UNRELATED sibling's rollback. A candidate
+    reached through a symlinked (or, on Windows, an unprivileged junctioned)
+    ANCESTOR directory, alongside a sibling whose upgrade gets rolled back,
+    must leave the real external target byte-for-byte untouched."""
+    outside_dir = tmp_path.parent / "outside_project_root_dir"
+    outside_target = outside_dir / "test_link.py"
     outside_content = "def test_it():\n    assert True\n"
-    outside_target.write_text(outside_content, encoding="utf-8")
 
-    rel_link, rel_b = "tests/test_link.py", "tests/test_bare.py"
+    rel_link, rel_b = "tests/escaped/test_link.py", "tests/test_bare.py"
     (tmp_path / "tests").mkdir()
-    link = tmp_path / rel_link
-    try:
-        os.symlink(outside_target, link)
-    except (OSError, NotImplementedError) as exc:
-        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+    _plant_reparse_point(tmp_path / "tests" / "escaped", outside_dir)
+    outside_target.write_text(outside_content, encoding="utf-8")
     (tmp_path / rel_b).write_text(_BARE_TAGGED, encoding="utf-8")
     spec = tmp_path / "spec.md"
     spec.write_text(_MINTED_SPEC, encoding="utf-8")
