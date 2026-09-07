@@ -153,6 +153,7 @@ import ast
 import bisect
 import re
 from collections import Counter
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
 
 #: Names that switch a test off wherever they are applied.
@@ -300,8 +301,32 @@ _JS_REGEX_CONTEXT_KEYWORDS = frozenset({
     "do", "else", "yield", "case", "throw", "await",
 })
 
+#: Keywords whose `(...)` is a control-flow CONDITION, not a value-producing
+#: grouping expression — `if (enabled) /\[/.test(value);` is valid JS with a
+#: regex literal right after the `)`, indistinguishable by character alone
+#: from `(a + b) / c` (division). `_js_bracket_match` records which specific
+#: closing parens follow one of these (external Tier-3 review, PR #685,
+#: seventh round: `_js_slash_starts_regex` treated every `)` as division
+#: unconditionally, so this exact valid-JS shape produced a false blocking
+#: `unparseable`, the very failure mode this fix exists to remove).
+_JS_CONTROL_PAREN_KEYWORDS = frozenset({"if", "while", "for"})
 
-def _js_slash_starts_regex(source: str, i: int) -> bool:
+
+def _js_word_before(source: str, idx: int) -> str:
+    """The word-shaped token immediately before `idx`, skipping whitespace.
+    Empty if there is none (start of file, or a non-word character there)."""
+    j = idx - 1
+    while j >= 0 and source[j] in " \t\r\n":
+        j -= 1
+    k = j
+    while k >= 0 and (source[k].isalnum() or source[k] in "_$"):
+        k -= 1
+    return source[k + 1:j + 1]
+
+
+def _js_slash_starts_regex(
+    source: str, i: int, control_closes: AbstractSet[int] = frozenset(),
+) -> bool:
     """Whether the `/` at `source[i]` opens a regex literal rather than
     being a division operator — the standard heuristic every hand-rolled JS
     tokenizer uses: division follows a VALUE (an identifier, a number, a
@@ -313,6 +338,10 @@ def _js_slash_starts_regex(source: str, i: int) -> bool:
     `test_js_a_regex_literal_with_a_lone_bracket_fails_closed_not_silently`
     demonstrates exactly this — read as unparseable and blocked every
     repair touching it, not just the ambiguous case that test documents).
+
+    `control_closes` names the index of every `)` (in `_JS_CONTROL_PAREN_KEYWORDS`'s
+    closing position) so far — see that constant's docstring — carving out the
+    one shape where a `)` does NOT mean "division follows".
     """
     j = i - 1
     while j >= 0 and source[j] in " \t\r\n":
@@ -320,6 +349,8 @@ def _js_slash_starts_regex(source: str, i: int) -> bool:
     if j < 0:
         return True
     prev = source[j]
+    if prev == ")" and j in control_closes:
+        return True
     if prev in ")]}" or prev in "'\"`":
         return False
     if prev.isalnum() or prev in "_$":
@@ -387,9 +418,10 @@ def _js_bracket_match(
     desync the OUTER bracket count either way, since the whole template is
     one atomic span regardless of what's inside it.
     """
-    stack: list[tuple[str, int]] = []
+    stack: list[tuple[str, int, bool]] = []
     match: dict[int, int] = {}
     non_code: list[tuple[int, int]] = []
+    control_closes: set[int] = set()
     i, n = 0, len(source)
     while i < n:
         c = source[i]
@@ -425,7 +457,7 @@ def _js_bracket_match(
             i = j + 2
             non_code.append((start, i))
             continue
-        if c == "/" and _js_slash_starts_regex(source, i):
+        if c == "/" and _js_slash_starts_regex(source, i, control_closes):
             end = _js_regex_literal_end(source, i)
             if end is not None:
                 non_code.append((i, end))
@@ -435,12 +467,15 @@ def _js_bracket_match(
             # all; fall through and treat `/` as an ordinary, non-bracket
             # character (matches nothing below either way).
         if c in _JS_BRACKET_PAIRS:
-            stack.append((c, i))
+            is_control = c == "(" and _js_word_before(source, i) in _JS_CONTROL_PAREN_KEYWORDS
+            stack.append((c, i, is_control))
         elif c in _JS_BRACKET_CLOSERS:
             if not stack or stack[-1][0] != _JS_BRACKET_CLOSERS[c]:
                 return None
-            _, open_idx = stack.pop()
+            _, open_idx, is_control = stack.pop()
             match[open_idx] = i
+            if is_control:
+                control_closes.add(i)
         i += 1
     return None if stack else (match, non_code)
 

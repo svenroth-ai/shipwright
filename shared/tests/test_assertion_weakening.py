@@ -868,6 +868,36 @@ def test_js_a_regex_literal_with_a_lone_bracket_is_parsed_not_a_false_block():
     assert "assertions_removed" in kinds
 
 
+def test_js_a_regex_literal_right_after_an_if_condition_is_not_a_false_block():
+    """`if (enabled) /\\[/.test(value);` is valid JS -- a regex literal can
+    open right after a control-flow condition's closing `)`, not just after
+    an operator/keyword. `_js_slash_starts_regex` treated every `)` as
+    division unconditionally, so the escaped `[` inside the regex read as an
+    unmatched structural bracket and blocked the repair (external Tier-3
+    review, PR #685, seventh round)."""
+    before = ("it('a', () => {\n"
+              "  if (enabled) /\\[/.test(value);\n"
+              "  expect(1).toBe(1);\n"
+              "});\n")
+    after = ("it('a', () => {\n"
+             "  if (enabled) /\\[/.test(value);\n"
+             "});\n")
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
+def test_js_division_right_after_a_grouping_paren_is_still_division():
+    """`(a + b) / c` -- a plain grouping expression, not a control-flow
+    condition -- must still read as division after the `)`, the companion
+    case to the if-condition test above."""
+    before = "it('a', () => { const r = (a + b) / c; expect(r).toBe(1); });\n"
+    after = "it('a', () => { const r = (a + b) / c; });\n"
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
 def test_js_a_character_class_containing_a_slash_does_not_end_the_regex_early():
     """`/[a/b]/` must not be misread as ending at the `/` inside the
     character class -- `_js_regex_literal_end` tracks `[`/`]` state so an

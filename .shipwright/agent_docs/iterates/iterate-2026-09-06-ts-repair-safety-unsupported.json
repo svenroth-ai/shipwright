@@ -131,11 +131,16 @@
         "behavior": "fit(...)/fdescribe(...) (Jasmine/Jest's own alias for .only, not a chain) are recognized as focused test/describe declarations, weakening inside one is caught, and they shadow their un-focused siblings exactly like a written-out .only does",
         "disposition": "tested",
         "evidence": "test_js_removing_an_assertion_from_a_focused_fit_test_blocks, test_js_removing_an_assertion_from_a_test_nested_under_fdescribe_blocks, and test_js_a_newly_focused_fit_shadows_its_siblings_like_only_does PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, sixth round: _JS_NAME now recognizes fit/fdescribe, and _js_collect implicitly treats a bare fit/fdescribe as mod=\"only\" (this was a genuine false negative, not an accepted trade-off — weakening inside fit/fdescribe previously produced no finding at all)"
+      },
+      {
+        "behavior": "A regex literal beginning right after a control-flow condition's closing paren (if/while/for) is recognized as a regex, not misread as division, so brackets inside it (e.g. an escaped character class) do not desync the bracket scanner; plain division after an ordinary grouping paren is unaffected",
+        "disposition": "tested",
+        "evidence": "test_js_a_regex_literal_right_after_an_if_condition_is_not_a_false_block and test_js_division_right_after_a_grouping_paren_is_still_division PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, seventh round: _js_bracket_match now records which specific closing parens follow if/while/for (_JS_CONTROL_PAREN_KEYWORDS), and _js_slash_starts_regex treats a `/` right after one of those as an expression start rather than division"
       }
     ],
     "counts": {
-      "testable": 24,
-      "tested": 24,
+      "testable": 25,
+      "tested": 25,
       "untestable": 0,
       "untested_testable": 0
     }
