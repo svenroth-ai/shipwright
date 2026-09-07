@@ -351,6 +351,41 @@ def _js_in_non_code(non_code: list[tuple[int, int]], pos: int) -> bool:
     return i >= 0 and non_code[i][0] <= pos < non_code[i][1]
 
 
+#: A word immediately before a matched name that means the name is a
+#: declaration site, not a call (`function test(name, fn) { ... }` — a
+#: parameter list is textually indistinguishable from a call's argument
+#: list). Deliberately small: this is the one keyword the grammar actually
+#: allows there in a test file's normal vocabulary.
+_JS_DECLARATION_KEYWORDS = frozenset({"function"})
+
+
+def _js_name_is_standalone_call(source: str, start: int) -> bool:
+    """False when the `_JS_NAME` match at `start` is reached via member
+    access (`fixture.test(...)`, `namespace.it(...)`) or is a `function
+    test(...)`-shaped declaration head — neither is a describe/it/test call
+    (external Tier-3 review, PR #685: an ordinary helper method or function
+    named `test`/`it` produced a blocking `assertions_removed` finding for
+    an unrelated change, because the scanner never inspected what preceded
+    the matched name).
+
+    Only the immediately preceding non-whitespace token is inspected —
+    `.`/`?.` both end in `.`, so checking that one character catches both
+    forms of member access without needing to special-case `?.` — which
+    keeps this a narrow, targeted guard rather than a second parser.
+    """
+    i = start - 1
+    while i >= 0 and source[i] in " \t\r\n":
+        i -= 1
+    if i < 0:
+        return True
+    if source[i] == ".":
+        return False
+    j = i
+    while j >= 0 and (source[j].isalnum() or source[j] in "_$"):
+        j -= 1
+    return source[j + 1:i + 1] not in _JS_DECLARATION_KEYWORDS
+
+
 #: `describe`/`it`/`test` and their `x`-disabled siblings — chain-scanning
 #: (whitespace/comment-tolerant, computed-access-aware) is `_js_scan_chain`'s
 #: job, not this regex's; folding it into the regex is what let a line-broken
@@ -582,6 +617,8 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
     for m in _JS_NAME.finditer(source):
         if _js_in_non_code(non_code, m.start()):
             continue  # e.g. a comment that merely mentions `it.skip(...)`
+        if not _js_name_is_standalone_call(source, m.start()):
+            continue  # `fixture.test(...)` / `function test(...)` — not a describe/it/test call
         chain, chain_end = _js_scan_chain(source, match, m.end())
         if chain not in _JS_ALLOWED_CHAINS:
             return None

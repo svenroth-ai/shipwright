@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17365,
-      "total": 17424,
+      "passed": 17367,
+      "total": 17426,
       "skipped": 59,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, a CodeQL required-check finding (ReDoS, high severity) was fixed with 2 additional regression tests in shared/tests/test_assertion_weakening.py, verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (71 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate this follow-up commit; the counts here (17365/17424) add those 2 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-ReDoS-fix commit)."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, two external PR-check findings (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review, member-access misclassification) were fixed, adding 4 regression tests to shared/tests/test_assertion_weakening.py, verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (73 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17367/17426) add those 4 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
     },
     "integration": {
       "status": "pass",
@@ -130,11 +130,16 @@
           "behavior": "The JS/TS string-literal scanner does not exponentially backtrack on an adversarial run of backslashes, and still reads a different quote character as literal content inside a string",
           "disposition": "tested",
           "evidence": "test_js_string_literal_regex_does_not_exponentially_backtrack_on_a_run_of_backslashes and test_js_string_literal_still_allows_a_different_quote_character_as_literal_content PASSED \u2014 CodeQL (high severity, this PR's own required check) caught the original backreference-based pattern; fixed with three non-overlapping alternatives"
+        },
+        {
+          "behavior": "A member-style helper call named test/it/describe (fixture.test(...)) or a function-declaration head shaped like one (function test(...)) is not misread as a real describe/it/test call",
+          "disposition": "tested",
+          "evidence": "test_js_a_member_style_helper_call_named_test_is_not_treated_as_a_declaration and test_js_a_function_declaration_named_test_is_not_treated_as_a_call PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685: blocking + non-blocking findings, both fixed by checking the token immediately preceding the matched name"
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
+        "testable": 19,
+        "tested": 19,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -149,7 +154,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "0fa35fdc1f5964533f46e0fe60f8b989d30207c8",
+    "commit": "657db868eb2e5a65084989c872b0b8f6c9760b81",
     "dirty": true,
     "base": null,
     "release": null

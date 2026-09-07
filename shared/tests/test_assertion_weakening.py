@@ -838,6 +838,39 @@ def test_js_string_literal_still_allows_a_different_quote_character_as_literal_c
     assert body == "it's a test"
 
 
+def test_js_a_member_style_helper_call_named_test_is_not_treated_as_a_declaration():
+    """External Tier-3 review, PR #685 (blocking): `fixture.test('case', fn)`
+    is an ordinary helper method call, not a Jest/Vitest `test(...)` — the
+    scanner used to match the bare word `test` regardless of what preceded
+    it, so removing an assertion from inside that helper produced a
+    blocking finding for a change that touched no real test."""
+    before = (
+        "it('real', () => { expect(1).toBe(1); });\n"
+        "fixture.test('case', () => { helper(); expect(2).toBe(2); });\n"
+    )
+    after = (
+        "it('real', () => { expect(1).toBe(1); });\n"
+        "fixture.test('case', () => { helper(); });\n"
+    )
+    assert _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True) == []
+
+
+def test_js_a_function_declaration_named_test_is_not_treated_as_a_call():
+    """A `function test(name, fn) { ... }` declaration's parameter list reads
+    identically to a call's argument list at the token level. Editing its
+    body must not be read as editing a real `test(...)` call (external
+    Tier-3 review, PR #685, non-blocking comment)."""
+    before = (
+        "function test(name, fn) { expect(name).toBeTruthy(); helper(); }\n"
+        "it('real', () => { expect(1).toBe(1); });\n"
+    )
+    after = (
+        "function test(name, fn) { helper(); }\n"
+        "it('real', () => { expect(1).toBe(1); });\n"
+    )
+    assert _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True) == []
+
+
 def test_a_python_test_renamed_to_a_js_test_path_is_not_flagged_as_removed():
     """Cross-language rename: both ends are still test-collected — this is a
     stated limit (content isn't re-diffed across languages), not a removal."""
