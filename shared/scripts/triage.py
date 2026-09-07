@@ -223,17 +223,28 @@ def _append_ids_at(path: Path) -> set[str]:
     }
 
 def _iter_raw_lines(project_root: Path | str) -> list[dict]:
-    """Tolerant union reader — tracked lines THEN outbox lines, file order.
+    """Tolerant union reader — tracked, THEN outbox, THEN foreign, file order.
 
-    The union (campaign 2026-06-08-triage-outbox-delivery / D1) makes
-    background producer appends + status-flips that land in the outbox visible
-    to every Python consumer immediately, without a sweep. Resolution is by id
-    in :func:`read_all_items`, so a line present in both (post-sweep, pre-GC)
-    collapses to one item.
+    The tracked/outbox union (campaign 2026-06-08-triage-outbox-delivery / D1)
+    makes background producer appends + status-flips that land in the outbox
+    visible to every Python consumer immediately, without a sweep. Resolution
+    is by id in :func:`read_all_items`, so a line present in both (post-sweep,
+    pre-GC) collapses to one item.
+
+    The foreign tail (measured 2026-09-06, trg-5e0b9b16 / trg-e85c5c8e) adds
+    status/amend events from a SIBLING worktree's tracked log — never an
+    append, never a worktree's own outbox (see :mod:`lib.triage_cross_tree`'s
+    boundary note). Appended last, so on a timestamp tie the FOREIGN event
+    wins pass 2's ``(ts, file-order)`` sort — same pure-chronological,
+    no-origin-privilege rule as the tracked-then-outbox tie-break above. Safe
+    regardless: `pendingDelivery` (:mod:`lib.triage_delivery`) answers
+    "delivered" via canonical-content comparison against `tracked`, not via
+    which physical copy this tie-break picks. Empty unless main tree.
     """
     out: list[dict] = []
     for path in (_triage_path(project_root), _outbox_path(project_root)):
         out.extend(_iter_raw_lines_at(path))
+    out.extend(load_shared_lib("triage_cross_tree").foreign_status_and_amend_records(project_root))
     return out
 
 # ---------------------------------------------------------------------------

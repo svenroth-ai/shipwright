@@ -82,7 +82,8 @@ def test_buffered_decision_round_trips_to_the_json_contract(tmp_path: Path, monk
     assert payload["undeliveredDecisions"]["count"] == 1
     assert payload["undeliveredDecisions"]["ids"] == [item_id]
     assert payload["undeliveredDecisions"]["truncated"] is False
-    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
 
 
 def test_open_item_with_a_buffered_flip_carries_the_field(tmp_path: Path, monkeypatch) -> None:
@@ -101,7 +102,8 @@ def test_open_item_with_a_buffered_flip_carries_the_field(tmp_path: Path, monkey
     assert rows[parked]["pendingAmendDelivery"] is False
     assert rows[clean]["pendingStatusDelivery"] is False
     assert rows[clean]["pendingAmendDelivery"] is False
-    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
     # The pre-existing field keeps its own, different meaning.
     assert rows[clean]["pendingDelivery"] is False
 
@@ -118,8 +120,10 @@ def test_buffered_amend_round_trips_as_its_own_delivery_signal(tmp_path: Path, m
     assert row["pendingDelivery"] is False
     assert row["pendingStatusDelivery"] is False
     assert row["pendingAmendDelivery"] is True
-    assert payload["undeliveredAmends"] == {"count": 1, "truncated": False, "ids": [item_id]}
-    assert payload["undeliveredDecisions"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {
+        "count": 1, "truncated": False, "ids": [item_id], "originBranches": {}}
+    assert payload["undeliveredDecisions"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
 
 
 def test_contentless_amend_and_corrupt_fragment_do_not_signal_delivery(tmp_path: Path) -> None:
@@ -139,7 +143,8 @@ def test_contentless_amend_and_corrupt_fragment_do_not_signal_delivery(tmp_path:
     row = next(row for row in payload["open"] if row["id"] == item_id)
     assert payload["corruption"]["count"] == 1
     assert row["pendingAmendDelivery"] is False
-    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
 
 
 def test_buffered_status_and_amend_remain_independent(tmp_path: Path, monkeypatch) -> None:
@@ -169,7 +174,8 @@ def test_swept_equivalent_amend_is_no_longer_pending(tmp_path: Path, monkeypatch
     payload = json.loads(_run_cli(project, "--json").stdout)
     row = next(row for row in payload["open"] if row["id"] == item_id)
     assert row["pendingAmendDelivery"] is False
-    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
 
 
 def test_human_listing_names_the_uncommitted_decisions(tmp_path: Path, monkeypatch) -> None:
@@ -261,4 +267,4 @@ def test_a_clean_store_reports_no_undelivered_decisions(tmp_path: Path, monkeypa
 
     payload = json.loads(_run_cli(project, "--json").stdout)
     assert payload["undeliveredDecisions"] == {
-        "count": 0, "truncated": False, "ids": []}
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}

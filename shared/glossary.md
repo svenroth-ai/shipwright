@@ -165,14 +165,14 @@
   GitHub-findings importer. **Always both words:** the Command Center has a
   separate **Inbox** (agent questions), and bare "Triage" names the *activity*.
   Never "buffer" — the operator did not recognise that word.
-- **Triage status is per-tree** — a worktree's `triage.jsonl` carries only the
-  status events made **on that branch**. An item dismissed on `main` after the
-  branch point still reads `triage` inside the worktree, so a listing taken
-  there shows closed items as open. Resolve status against the **main repo
-  root** (or merge `origin/main` in first). The mirror of this is the
-  **outbox**: items filed *in* a worktree are invisible in the Command Center
-  until the PR merges. Two different directions, same cause — the log is
-  per-tree, the view is not.
+- **Triage status is per-tree** — a worktree's `triage.jsonl` holds only
+  status events on **that branch**; a `main` dismiss after the branch point
+  still reads `triage` there (resolve against **main's root**, or merge in
+  `origin/main` — unaddressed by design). The reverse, recorded **in** a
+  worktree and invisible from `main`, is now fixed: `main` folds a KNOWN
+  id's status/amend events from every sibling worktree, naming the branch
+  (`originBranch`). **Reported, never delivered** — nothing written; a
+  foreign *append* never seeds an unknown id. See `lib.triage_cross_tree`.
 
 - **Outbox** — The per-tree, **gitignored** background-triage buffer
   `.shipwright/triage.outbox.jsonl` (campaign

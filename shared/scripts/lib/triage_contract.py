@@ -87,6 +87,8 @@ def build_listing(
     undelivered_status_ids: set,
     undelivered_amend_ids: set,
     corruption: list,
+    status_origin_branches: dict[str, str] | None = None,
+    amend_origin_branches: dict[str, str] | None = None,
 ) -> dict:
     """The full `list --json` payload.
 
@@ -111,6 +113,32 @@ def build_listing(
       tracked append is still outbox-only. Amends accumulate, so a later amend
       never decides away an earlier one; only a canonically equivalent tracked
       amend delivers that correction.
+
+    **`originBranch` / `originBranches` (2026-09-06, additive — CONTRACT_VERSION
+    stays 2 by the same rule as above)**: the branch a sibling worktree's
+    tracked log holds an undelivered decision on. Named in TWO places for the
+    same reason `undeliveredDecisions`/`undeliveredAmends` exist at all (see
+    the per-row-flag paragraph above): a cross-tree dismiss/promote resolves
+    to a TERMINAL status, so the item is in neither `open` nor `deferred` and
+    a row-only `originBranch` would repeat the exact "terminal item invisible"
+    defect this envelope was built to close. So the per-row `originBranch`
+    (`None` when this item has no cross-tree decision — a plain
+    outbox-buffered item, or a fully delivered one, both read `None` alike)
+    is joined by `originBranches` INSIDE each of those two envelope blocks —
+    `{id: branch}` for exactly the ids that block already lists, capped
+    identically. See :mod:`lib.triage_cross_tree`.
+
+    **`status_origin_branches` and `amend_origin_branches` are two SEPARATE
+    maps, not one** (Stage-3 doubt review, finding 2): an id can carry a
+    foreign STATUS on one branch and a foreign AMEND on another at once, so a
+    single merged map would name the wrong branch for whichever envelope
+    block it was not built from. `undeliveredDecisions.originBranches` is
+    built only from `status_origin_branches`, `undeliveredAmends.originBranches`
+    only from `amend_origin_branches`. The per-row `originBranch` merges them
+    with STATUS taking precedence when an id somehow carries both — the more
+    specific fact for a single flag that can only name one branch. A consumer
+    that needs to know WHICH fact a branch belongs to reads the two envelope
+    maps, never the row flag.
 
     **A per-row flag alone would leave a terminal item invisible.** A status or
     amend may be buffered after the item has left both rendered sections, so the
@@ -144,12 +172,17 @@ def build_listing(
     it closes. Version 2 deliberately retains compatibility while recording this
     additive envelope block for consumers that choose to read it.
     """
+    status_branches = status_origin_branches or {}
+    amend_branches = amend_origin_branches or {}
+    row_branches = {**amend_branches, **status_branches}
+
     def enrich(seq: list[dict]) -> list[dict]:
         return [
             {**it,
              "pendingDelivery": _pending_delivery(it, tracked_ids, outbox_ids),
              "pendingStatusDelivery": it.get("id") in undelivered_status_ids,
-             "pendingAmendDelivery": it.get("id") in undelivered_amend_ids}
+             "pendingAmendDelivery": it.get("id") in undelivered_amend_ids,
+             "originBranch": row_branches.get(it.get("id"))}
             for it in seq
         ]
 
@@ -172,10 +205,12 @@ def build_listing(
             "count": len(undelivered_status_ids),
             "truncated": len(undelivered_status_ids) > len(pending_ids),
             "ids": pending_ids,
+            "originBranches": {i: status_branches[i] for i in pending_ids if i in status_branches},
         },
         "undeliveredAmends": {
             "count": len(undelivered_amend_ids),
             "truncated": len(undelivered_amend_ids) > len(pending_amend_ids),
             "ids": pending_amend_ids,
+            "originBranches": {i: amend_branches[i] for i in pending_amend_ids if i in amend_branches},
         },
     }

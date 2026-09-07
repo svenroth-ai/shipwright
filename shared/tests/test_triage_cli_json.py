@@ -81,7 +81,8 @@ def test_list_json_emits_the_open_section(tmp_path: Path, tracked_item: str) -> 
     assert item["launchPayload"].startswith("/shipwright-security")
     assert item["pendingDelivery"] is False  # lives in the tracked log
     assert item["pendingAmendDelivery"] is False
-    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredAmends"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
 
 
 def test_list_json_empty_is_two_empty_sections(tmp_path: Path) -> None:
@@ -109,8 +110,10 @@ def test_list_json_empty_is_two_empty_sections(tmp_path: Path) -> None:
     assert payload["open"] == []
     assert payload["deferred"] == []
     assert payload["corruption"] == {"count": 0, "truncated": False, "spans": []}
-    assert payload["undeliveredDecisions"] == {"count": 0, "truncated": False, "ids": []}
-    assert payload["undeliveredAmends"] == {"count": 0, "truncated": False, "ids": []}
+    assert payload["undeliveredDecisions"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
+    assert payload["undeliveredAmends"] == {
+        "count": 0, "truncated": False, "ids": [], "originBranches": {}}
 
 
 def test_list_json_excludes_dismissed(tmp_path: Path, tracked_item: str) -> None:

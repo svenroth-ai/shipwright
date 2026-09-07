@@ -25,6 +25,8 @@ from __future__ import annotations
 import json
 
 __all__ = [
+    "foreign_undelivered_amends_from_records",
+    "foreign_undelivered_from_records",
     "format_pending_delivery_notice",
     "undelivered_amends_from_records",
     "undelivered_from_records",
@@ -122,6 +124,103 @@ def undelivered_from_records(
     }
 
 
+def foreign_undelivered_from_records(
+    tracked: list[dict], outbox: list[dict], foreign: list[tuple[str, list[dict]]],
+    *, applied_statuses,
+) -> dict[str, str]:
+    """Ids whose TRUE deciding status event — across tracked, outbox AND every
+    sibling worktree's tracked log — resides ONLY in one of those siblings.
+    Maps each such id to the branch that holds it.
+
+    ``foreign`` is ``(branch, records)`` pairs, e.g. from
+    :func:`lib.triage_cross_tree.foreign_records_by_branch`. Cross-tree
+    counterpart of :func:`undelivered_from_records` (kept separate so that
+    function's own tests/callers stay untouched) — same canonical-delivered
+    check, extended with a third source ordered exactly as
+    :func:`triage.read_all_items` orders it: tracked, outbox, then foreign
+    (``triage._iter_raw_lines``), by ``(ts, position)``. An id whose deciding
+    event is already canonically present in ``tracked`` (e.g. after that
+    branch merged) is absent here even if a stale copy lingers in a foreign
+    log and technically wins a timestamp tie by position — see the canonical
+    check below, mirroring :func:`undelivered_from_records`'s own.
+    """
+    if not applied_statuses:
+        raise ValueError(
+            "applied_statuses must be the reader's status vocabulary "
+            "(triage.STATUSES); an empty one would report nothing as pending"
+        )
+    appended = {
+        r["id"] for r in tracked + outbox
+        if r.get("event") == "append" and isinstance(r.get("id"), str)
+    }
+
+    def _statuses(rows: list[dict]) -> list[dict]:
+        return [
+            r for r in rows
+            if r.get("event") == "status"
+            and isinstance(r.get("id"), str)
+            and r["id"] in appended
+            and r.get("newStatus") in applied_statuses
+        ]
+
+    local = [(None, r) for r in _statuses(tracked) + _statuses(outbox)]
+    foreign_events = [
+        (branch, r) for branch, records in foreign for r in _statuses(records)
+    ]
+    ordered = list(enumerate(local + foreign_events))
+    ordered.sort(key=lambda pair: (_ts_key(pair[1][1]), pair[0]))
+
+    deciding: dict[str, tuple[str | None, dict]] = {}
+    for _idx, (branch, event) in ordered:
+        deciding[event["id"]] = (branch, event)
+
+    # A tied timestamp is resolved by POSITION, same as read_all_items (foreign
+    # sorts after local) — so a tracked copy can still lose the tie to its own
+    # foreign twin. The canonical check answers "delivered" regardless of which
+    # physical copy the tiebreak picked.
+    delivered = {_canonical(r) for r in _statuses(tracked)}
+    return {
+        item_id: branch for item_id, (branch, event) in deciding.items()
+        if branch is not None and _canonical(event) not in delivered
+    }
+
+
+def foreign_undelivered_amends_from_records(
+    tracked: list[dict], foreign: list[tuple[str, list[dict]]], *, is_valid_amend,
+) -> dict[str, str]:
+    """Ids with a valid amend present ONLY in a sibling worktree's tracked log
+    (never delivered to THIS tree's own tracked store), mapped to the branch
+    that holds it. Cross-tree counterpart of
+    :func:`undelivered_amends_from_records` — amends accumulate, so this
+    checks canonical presence in ``tracked``, not "most recent wins".
+
+    First sibling wins an id already claimed by an earlier one in ``foreign``
+    (an id amended on two branches at once is a pre-existing conflict this
+    function reports, not resolves).
+    """
+    tracked_append_ids = {
+        r["id"] for r in tracked
+        if r.get("event") == "append" and isinstance(r.get("id"), str)
+    }
+
+    def _amends(rows: list[dict]) -> list[dict]:
+        return [
+            r for r in rows
+            if r.get("event") == "amend"
+            and isinstance(r.get("id"), str)
+            and r["id"] in tracked_append_ids
+            and is_valid_amend(r)
+        ]
+
+    delivered = {_canonical(r) for r in _amends(tracked)}
+    out: dict[str, str] = {}
+    for branch, records in foreign:
+        for r in _amends(records):
+            if _canonical(r) not in delivered:
+                out.setdefault(r["id"], branch)
+    return out
+
+
 def undelivered_amends_from_records(
     tracked: list[dict], outbox: list[dict], *, is_valid_amend,
 ) -> set[str]:
@@ -153,33 +252,48 @@ def undelivered_amends_from_records(
         if _canonical(event) not in delivered
     }
 
-def format_pending_delivery_notice(item_ids: set[str]) -> str | None:
-    """The human listing's one line about decisions not yet committed to a branch.
+def format_pending_delivery_notice(
+    item_ids: set[str], *, origin_branches: dict[str, str] | None = None,
+) -> str | None:
+    """The human listing's one line about decisions not yet committed here.
 
     A **summary**, not a per-row marker, because the case that matters most is not
     on the list at all: an item dismissed or promoted while its status event stayed
-    in the outbox resolves to a terminal status, so it drops out of both sections
+    buffered resolves to a terminal status, so it drops out of both sections
     and reads as decided-and-done. A marker can only annotate rows that are still
     rendered; a count can report the ones that vanished. The text therefore says
     "in this store", never "shown here".
 
-    The wording says "not committed to any branch", not "not on origin": all this
-    can prove is absence from the git-tracked store.
+    The wording says "not committed to any branch" / "not yet merged here", never
+    "not on origin" or "reached origin": all this can prove is what this reading
+    tree's own tracked store, and its known siblings, currently hold.
 
-    Every character is ASCII — ids via ``ascii()`` because they come from a file any
-    producer may append to, and the surrounding literal by hand — so the line is
-    safe on a Windows cp1252 console without depending on the caller having
-    reconfigured the stream. The id list is capped so a deliberately large outbox
-    cannot flood the terminal.
+    ``origin_branches`` (optional) names, for an id whose decision this reader
+    found on a SIBLING worktree rather than in its own gitignored outbox, which
+    branch holds it (see :mod:`lib.triage_cross_tree`). An id absent from it is
+    the original, plainer case — still only in this clone's outbox.
+
+    Every character is ASCII — ids and branch names via ``ascii()`` because they
+    come from a file any producer may append to, and the surrounding literal by
+    hand — so the line is safe on a Windows cp1252 console without depending on
+    the caller having reconfigured the stream. The id list is capped so a
+    deliberately large outbox cannot flood the terminal.
     """
     if not item_ids:
         return None
+    origin_branches = origin_branches or {}
     shown = sorted(item_ids)[:_NOTICE_ID_CAP]
-    listed = ", ".join(ascii(i) for i in shown)
+
+    def _label(item_id: str) -> str:
+        branch = origin_branches.get(item_id)
+        if branch is None:
+            return ascii(item_id)
+        return f"{ascii(item_id)} (on {ascii(branch)}, not yet merged here)"
+
+    listed = ", ".join(_label(i) for i in shown)
     more = f" (+{len(item_ids) - len(shown)} more)" if len(item_ids) > len(shown) else ""
     return (
         f"NOTE: {len(item_ids)} decision(s) in this store are not committed to any "
-        f"branch yet - they live only in this clone's gitignored outbox and ship "
-        f"with the next iterate PR (some may not appear in the lists above): "
-        f"{listed}{more}"
+        f"branch yet, or sit on a branch this project has not merged (some may not "
+        f"appear in the lists above): {listed}{more}"
     )

@@ -1,0 +1,111 @@
+{
+  "run_id": "iterate-2026-09-06-triage-cross-tree-pending-delivery",
+  "date": "2026-09-07T00:09:31.708106Z",
+  "event_at": "2026-09-07T00:05:10.125582+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/triage-cross-tree-pending-delivery",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-06-triage-cross-tree-pending-delivery",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A dismiss recorded only in a worktree's tracked log resolves as dismissed on main, not still-open triage",
+        "disposition": "tested",
+        "evidence": "test_a_dismiss_recorded_only_in_a_worktree_resolves_as_dismissed_on_main PASSED; test_cli_list_json_marks_the_item_pending_and_names_the_branch PASSED (real CLI subprocess)"
+      },
+      {
+        "behavior": "Once the deciding event reaches main's own tracked log, the item reads plain dismissed with no pending marker",
+        "disposition": "tested",
+        "evidence": "test_foreign_undelivered_from_records_empty_once_tracked_has_the_deciding_event PASSED; test_cli_list_json_says_plain_dismissed_once_delivered_to_main PASSED (real CLI subprocess)"
+      },
+      {
+        "behavior": "The pending-delivery envelope names the branch holding an undelivered decision",
+        "disposition": "tested",
+        "evidence": "test_build_listing_names_the_branch_in_the_terminal_envelope_blocks PASSED; test_foreign_undelivered_from_records_names_the_branch PASSED"
+      },
+      {
+        "behavior": "A status decision and an amend for the same id on two DIFFERENT branches are attributed to their own branch, never collapsed into one",
+        "disposition": "tested",
+        "evidence": "test_build_listing_keeps_status_and_amend_branches_separate PASSED (Stage-3 doubt review finding 2, empirically reconstructed)"
+      },
+      {
+        "behavior": "A foreign append never seeds an item this tree never created itself (only KNOWN ids fold in)",
+        "disposition": "tested",
+        "evidence": "test_a_foreign_append_never_seeds_an_item_this_tree_never_created PASSED"
+      },
+      {
+        "behavior": "A tie between a foreign and a local event of identical timestamp is broken by file-order, not physical origin",
+        "disposition": "tested",
+        "evidence": "test_a_foreign_tie_is_broken_by_file_order_not_origin PASSED"
+      },
+      {
+        "behavior": "Sibling-worktree discovery finds a branch and its tracked log; is empty from inside a worktree, with no .worktrees dir, or for a detached HEAD",
+        "disposition": "tested",
+        "evidence": "test_sibling_worktree_logs_finds_a_branch_and_its_tracked_log, test_sibling_worktree_logs_is_empty_from_inside_a_worktree, test_sibling_worktree_logs_empty_with_no_worktrees_dir, test_a_detached_head_worktree_is_skipped_not_guessed_at \u2014 all PASSED"
+      },
+      {
+        "behavior": "A relative gitdir: target (git >= 2.48) resolves against the worktree's own directory, not the process CWD",
+        "disposition": "tested",
+        "evidence": "test_a_relative_gitdir_resolves_against_the_worktree_not_cwd PASSED (Stage-3 doubt review finding 7)"
+      },
+      {
+        "behavior": "Only status/amend events ever reach a caller from a foreign log; a foreign append's body is filtered out before caching",
+        "disposition": "tested",
+        "evidence": "test_foreign_records_by_branch_drops_append_events PASSED (Stage-3 doubt review finding 1)"
+      },
+      {
+        "behavior": "The (path, mtime) discovery and per-file caches take their cache-hit branch on a second call with no filesystem change, and invalidate when a sibling is added",
+        "disposition": "tested",
+        "evidence": "test_sibling_worktree_logs_second_call_hits_the_cache PASSED; test_sibling_discovery_cache_picks_up_a_worktree_added_later PASSED"
+      },
+      {
+        "behavior": "Every unreadable/malformed worktree shape (a directory where .git should be a file, a gitdir: line missing, an admin dir with no HEAD, .worktrees existing as a file) is skipped, never crashes",
+        "disposition": "tested",
+        "evidence": "test_branch_name_skips_a_worktree_whose_git_file_is_actually_a_directory, test_branch_name_skips_a_git_file_with_no_gitdir_line, test_branch_name_skips_an_admin_dir_with_no_head_file, test_sibling_worktree_logs_empty_when_worktrees_path_is_a_file \u2014 all PASSED"
+      },
+      {
+        "behavior": "cross_tree_delivery_facts returns two separate branch maps end-to-end (status, amend), and returns empty at no cost on a tree with no siblings",
+        "disposition": "tested",
+        "evidence": "test_cross_tree_delivery_facts_names_status_and_amend_branches PASSED; test_cross_tree_delivery_facts_empty_with_no_siblings PASSED"
+      },
+      {
+        "behavior": "foreign_undelivered_from_records rejects an empty applied_statuses vocabulary rather than silently reporting nothing as pending",
+        "disposition": "tested",
+        "evidence": "test_foreign_undelivered_from_records_rejects_an_empty_status_vocabulary PASSED"
+      },
+      {
+        "behavior": "The human pending-delivery notice labels an id with a known origin branch differently from one without",
+        "disposition": "tested",
+        "evidence": "test_format_pending_delivery_notice_labels_known_and_unknown_branches PASSED"
+      },
+      {
+        "behavior": "build_listing's new origin_branches parameters are optional \u2014 every existing call site keeps working unchanged",
+        "disposition": "tested",
+        "evidence": "test_build_listing_origin_branches_defaults_to_empty PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_triage_cross_tree_cli_roundtrip.py -v",
+    "exit_code": 0,
+    "tests_run": 2,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-06-triage-cross-tree-pending-delivery/surface_verification.json",
+    "timestamp": "2026-09-06T23:59:00Z"
+  },
+  "declared_removals": []
+}
