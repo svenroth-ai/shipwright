@@ -1,9 +1,9 @@
 {
   "schema_version": 4,
   "collector_version": "test_links/1.0.0",
-  "generated_at": "2026-09-07T08:00:31.525660+00:00",
-  "source_commit": "8f80645de2f3bcab5c25beb9ec63a0c7929bc9b9",
-  "spec_hash": "sha256:c60fbfc7d82ad665a09416ed1c34bb980b33038de197011d4ed9fb380ad044a4",
+  "generated_at": "2026-09-07T19:24:15.713726+00:00",
+  "source_commit": "7063f7b794d7e7321191cc79eb7665bcfe5e4b66",
+  "spec_hash": "sha256:01d4a24f8e0da99dab28f95b4b941089a6ad1e178234ed96ed6b1e66f342e743",
   "requirements": {
     "01::FR-01.01": {
       "id": "FR-01.01",
@@ -15,9 +15,1241 @@
         "unit"
       ],
       "required_layers_source": "inferred_legacy",
-      "tests": {},
+      "tests": {
+        "unit": [
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_phase_that_skipped_its_step_is_caught",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_phase_that_skipped_its_step_is_caught",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_day_precision_completion_never_silently_supersedes",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_day_precision_completion_never_silently_supersedes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_the_owner_completing_again_after_the_note_hides_nothing",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_the_owner_completing_again_after_the_note_hides_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_under_the_notes_run_is_stated",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_under_the_notes_run_is_stated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_later_phases_note_supersedes_and_is_a_named_skip",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_later_phases_note_supersedes_and_is_a_named_skip",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_stale_later_phase_note_does_not_excuse_a_rerun",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_stale_later_phase_note_does_not_excuse_a_rerun",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_marker_without_a_phase_cannot_be_ordered_against",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_marker_without_a_phase_cannot_be_ordered_against",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_record_is_stated",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_record_is_stated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_cross_phase_verdict.py::test_an_unusable_completion_timestamp_is_stated_not_guessed",
+            "path": "shared/tests/test_c3_cross_phase_verdict.py::test_an_unusable_completion_timestamp_is_stated_not_guessed",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_a_later_split_that_skipped_the_marker_write_is_caught",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_a_later_split_that_skipped_the_marker_write_is_caught",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_the_split_that_did_re_write_the_marker_passes",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_the_split_that_did_re_write_the_marker_passes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_a_single_stale_completion_is_caught_too",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_a_single_stale_completion_is_caught_too",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_a_completion_with_no_anchor_never_consults_the_clock",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_a_completion_with_no_anchor_never_consults_the_clock",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_a_rerun_under_a_sticky_id_with_no_new_event_passes",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_a_rerun_under_a_sticky_id_with_no_new_event_passes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_the_wall_clock_at_is_never_what_gets_compared",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_the_wall_clock_at_is_never_what_gets_compared",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_a_day_precision_legacy_entry_is_not_compared_to_the_marker",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_a_day_precision_legacy_entry_is_not_compared_to_the_marker",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_an_anchor_that_is_present_but_unreadable_is_stated",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_an_anchor_that_is_present_but_unreadable_is_stated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_a_marker_pinning_only_a_day_cannot_settle_it_either",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_a_marker_pinning_only_a_day_cannot_settle_it_either",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_c3_same_phase_window.py::test_an_unusable_marker_timestamp_is_stated_when_the_completion_is_anchored",
+            "path": "shared/tests/test_c3_same_phase_window.py::test_an_unusable_marker_timestamp_is_stated_when_the_completion_is_anchored",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_the_scan_finds_exactly_the_call_sites_it_is_meant_to_guard",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_the_scan_finds_exactly_the_call_sites_it_is_meant_to_guard",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_every_handoff_write_either_marks_or_preserves",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_every_handoff_write_either_marks_or_preserves",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_every_canon_closure_names_its_phase",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_every_canon_closure_names_its_phase",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_a_hostile_reason_cannot_forge_marker_fields",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_a_hostile_reason_cannot_forge_marker_fields",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_marker_value_collapses_newlines_and_drops_quotes",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_marker_value_collapses_newlines_and_drops_quotes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_a_canon_write_without_a_run_id_is_refused_not_stamped",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_a_canon_write_without_a_run_id_is_refused_not_stamped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_a_canon_write_without_a_phase_is_refused_not_stamped",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_a_canon_write_without_a_phase_is_refused_not_stamped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_the_timestamp_is_resolved_only_when_a_marker_is_actually_built",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_the_timestamp_is_resolved_only_when_a_marker_is_actually_built",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_canon_marker_write_contract.py::test_a_refused_canon_write_never_falls_through_to_preservation",
+            "path": "shared/tests/test_canon_marker_write_contract.py::test_a_refused_canon_write_never_falls_through_to_preservation",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_the_writer_stamps_a_full_instant",
+            "path": "shared/tests/test_completion_writers.py::test_the_writer_stamps_a_full_instant",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant",
+            "path": "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_a_completion_recorded_with_no_events_yet_carries_no_anchor",
+            "path": "shared/tests/test_completion_writers.py::test_a_completion_recorded_with_no_events_yet_carries_no_anchor",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer",
+            "path": "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_the_writer_refuses_to_let_a_caller_overwrite_the_timestamp",
+            "path": "shared/tests/test_completion_writers.py::test_the_writer_refuses_to_let_a_caller_overwrite_the_timestamp",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock",
+            "path": "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes",
+            "path": "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught",
+            "path": "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers.py::test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one",
+            "path": "shared/tests/test_completion_writers.py::test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers_iterate_ledger.py::test_the_iterate_ledger_writer_produces_a_readable_completion",
+            "path": "shared/tests/test_completion_writers_iterate_ledger.py::test_the_iterate_ledger_writer_produces_a_readable_completion",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_completion_writers_iterate_ledger.py::test_an_iterate_that_wrote_its_note_passes_end_to_end",
+            "path": "shared/tests/test_completion_writers_iterate_ledger.py::test_an_iterate_that_wrote_its_note_passes_end_to_end",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_the_at_shape_pins_an_instant",
+            "path": "shared/tests/test_phase_history.py::test_the_at_shape_pins_an_instant",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_bare_date_pins_a_day_not_midnight",
+            "path": "shared/tests/test_phase_history.py::test_a_bare_date_pins_a_day_not_midnight",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_full_timestamp_in_the_date_key_is_still_an_instant",
+            "path": "shared/tests/test_phase_history.py::test_a_full_timestamp_in_the_date_key_is_still_an_instant",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_naive_timestamp_is_read_as_utc",
+            "path": "shared/tests/test_phase_history.py::test_a_naive_timestamp_is_read_as_utc",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_at_wins_over_date_when_both_are_present",
+            "path": "shared/tests/test_phase_history.py::test_at_wins_over_date_when_both_are_present",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_event_at_wins_over_every_other_key",
+            "path": "shared/tests/test_phase_history.py::test_event_at_wins_over_every_other_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_the_anchor_never_falls_back_to_a_wall_clock_key",
+            "path": "shared/tests/test_phase_history.py::test_the_anchor_never_falls_back_to_a_wall_clock_key",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock",
+            "path": "shared/tests/test_phase_history.py::test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_the_wall_clock_reader_takes_the_first_key_that_PARSES",
+            "path": "shared/tests/test_phase_history.py::test_the_wall_clock_reader_takes_the_first_key_that_PARSES",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_an_instant_before_the_question_is_not_after",
+            "path": "shared/tests/test_phase_history.py::test_an_instant_before_the_question_is_not_after",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_an_instant_after_the_question_is_after",
+            "path": "shared/tests/test_phase_history.py::test_an_instant_after_the_question_is_after",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_an_exact_tie_is_not_after",
+            "path": "shared/tests/test_phase_history.py::test_an_exact_tie_is_not_after",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_day_that_ends_before_the_question_answers_false",
+            "path": "shared/tests/test_phase_history.py::test_a_day_that_ends_before_the_question_answers_false",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_day_that_starts_after_the_question_answers_true",
+            "path": "shared/tests/test_phase_history.py::test_a_day_that_starts_after_the_question_answers_true",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_question_inside_the_recorded_day_is_unanswerable",
+            "path": "shared/tests/test_phase_history.py::test_a_question_inside_the_recorded_day_is_unanswerable",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_an_unparseable_timestamp_is_none",
+            "path": "shared/tests/test_phase_history.py::test_an_unparseable_timestamp_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_missing_timestamp_is_none",
+            "path": "shared/tests/test_phase_history.py::test_a_missing_timestamp_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history.py::test_a_non_string_timestamp_is_none",
+            "path": "shared/tests/test_phase_history.py::test_a_non_string_timestamp_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_the_last_appended_entry_wins",
+            "path": "shared/tests/test_phase_history_records.py::test_the_last_appended_entry_wins",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_repeated_run_ids_are_kept_not_deduped",
+            "path": "shared/tests/test_phase_history_records.py::test_repeated_run_ids_are_kept_not_deduped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_entries_without_a_run_id_are_skipped",
+            "path": "shared/tests/test_phase_history_records.py::test_entries_without_a_run_id_are_skipped",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_a_phase_with_no_entries_is_none",
+            "path": "shared/tests/test_phase_history_records.py::test_a_phase_with_no_entries_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_an_absent_phase_is_none",
+            "path": "shared/tests/test_phase_history_records.py::test_an_absent_phase_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_a_run_config_saved_with_a_bom_is_still_read",
+            "path": "shared/tests/test_phase_history_records.py::test_a_run_config_saved_with_a_bom_is_still_read",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_a_completion_can_be_narrowed_to_one_run",
+            "path": "shared/tests/test_phase_history_records.py::test_a_completion_can_be_narrowed_to_one_run",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_a_malformed_run_config_is_none",
+            "path": "shared/tests/test_phase_history_records.py::test_a_malformed_run_config_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_a_missing_run_config_is_none",
+            "path": "shared/tests/test_phase_history_records.py::test_a_missing_run_config_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_a_non_list_bucket_is_none",
+            "path": "shared/tests/test_phase_history_records.py::test_a_non_list_bucket_is_none",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_an_entry_with_an_unusable_time_still_yields_the_run_id",
+            "path": "shared/tests/test_phase_history_records.py::test_an_entry_with_an_unusable_time_still_yields_the_run_id",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_phase_history_records.py::test_it_reads_the_shapes_the_live_repo_actually_carries",
+            "path": "shared/tests/test_phase_history_records.py::test_it_reads_the_shapes_the_live_repo_actually_carries",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
+          },
+          {
+            "id": "shared/tests/test_preserve_canon_marker.py::test_a_mid_phase_handoff_keeps_the_marker_when_asked",
+            "path": "shared/tests/test_preserve_canon_marker.py::test_a_mid_phase_handoff_keeps_the_marker_when_asked",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_preserve_canon_marker.py::test_the_body_is_still_regenerated",
+            "path": "shared/tests/test_preserve_canon_marker.py::test_the_body_is_still_regenerated",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_preserve_canon_marker.py::test_without_the_flag_behaviour_is_unchanged",
+            "path": "shared/tests/test_preserve_canon_marker.py::test_without_the_flag_behaviour_is_unchanged",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_preserve_canon_marker.py::test_the_flag_invents_nothing_when_there_is_no_marker",
+            "path": "shared/tests/test_preserve_canon_marker.py::test_the_flag_invents_nothing_when_there_is_no_marker",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_preserve_canon_marker.py::test_the_flag_is_harmless_when_the_handoff_does_not_exist",
+            "path": "shared/tests/test_preserve_canon_marker.py::test_the_flag_is_harmless_when_the_handoff_does_not_exist",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_preserve_canon_marker.py::test_a_degraded_canon_write_does_not_resurrect_the_old_marker",
+            "path": "shared/tests/test_preserve_canon_marker.py::test_a_degraded_canon_write_does_not_resurrect_the_old_marker",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker"
+          }
+        ]
+      },
       "coverage": {
-        "unit": "MISSING"
+        "unit": "ok"
+      },
+      "acs": {
+        "AC08": {
+          "tests": {
+            "unit": [
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_phase_that_skipped_its_step_is_caught",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_phase_that_skipped_its_step_is_caught",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_day_precision_completion_never_silently_supersedes",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_day_precision_completion_never_silently_supersedes",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_the_owner_completing_again_after_the_note_hides_nothing",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_the_owner_completing_again_after_the_note_hides_nothing",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_under_the_notes_run_is_stated",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_under_the_notes_run_is_stated",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_later_phases_note_supersedes_and_is_a_named_skip",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_later_phases_note_supersedes_and_is_a_named_skip",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_stale_later_phase_note_does_not_excuse_a_rerun",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_stale_later_phase_note_does_not_excuse_a_rerun",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_a_marker_without_a_phase_cannot_be_ordered_against",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_a_marker_without_a_phase_cannot_be_ordered_against",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_record_is_stated",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_record_is_stated",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_cross_phase_verdict.py::test_an_unusable_completion_timestamp_is_stated_not_guessed",
+                "path": "shared/tests/test_c3_cross_phase_verdict.py::test_an_unusable_completion_timestamp_is_stated_not_guessed",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_a_later_split_that_skipped_the_marker_write_is_caught",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_a_later_split_that_skipped_the_marker_write_is_caught",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_the_split_that_did_re_write_the_marker_passes",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_the_split_that_did_re_write_the_marker_passes",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_a_single_stale_completion_is_caught_too",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_a_single_stale_completion_is_caught_too",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_a_completion_with_no_anchor_never_consults_the_clock",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_a_completion_with_no_anchor_never_consults_the_clock",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_a_rerun_under_a_sticky_id_with_no_new_event_passes",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_a_rerun_under_a_sticky_id_with_no_new_event_passes",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_the_wall_clock_at_is_never_what_gets_compared",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_the_wall_clock_at_is_never_what_gets_compared",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_a_day_precision_legacy_entry_is_not_compared_to_the_marker",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_a_day_precision_legacy_entry_is_not_compared_to_the_marker",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_an_anchor_that_is_present_but_unreadable_is_stated",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_an_anchor_that_is_present_but_unreadable_is_stated",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_a_marker_pinning_only_a_day_cannot_settle_it_either",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_a_marker_pinning_only_a_day_cannot_settle_it_either",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_c3_same_phase_window.py::test_an_unusable_marker_timestamp_is_stated_when_the_completion_is_anchored",
+                "path": "shared/tests/test_c3_same_phase_window.py::test_an_unusable_marker_timestamp_is_stated_when_the_completion_is_anchored",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_the_writer_stamps_a_full_instant",
+                "path": "shared/tests/test_completion_writers.py::test_the_writer_stamps_a_full_instant",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant",
+                "path": "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_a_completion_recorded_with_no_events_yet_carries_no_anchor",
+                "path": "shared/tests/test_completion_writers.py::test_a_completion_recorded_with_no_events_yet_carries_no_anchor",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer",
+                "path": "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_the_writer_refuses_to_let_a_caller_overwrite_the_timestamp",
+                "path": "shared/tests/test_completion_writers.py::test_the_writer_refuses_to_let_a_caller_overwrite_the_timestamp",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock",
+                "path": "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes",
+                "path": "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught",
+                "path": "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers.py::test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one",
+                "path": "shared/tests/test_completion_writers.py::test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers_iterate_ledger.py::test_the_iterate_ledger_writer_produces_a_readable_completion",
+                "path": "shared/tests/test_completion_writers_iterate_ledger.py::test_the_iterate_ledger_writer_produces_a_readable_completion",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_completion_writers_iterate_ledger.py::test_an_iterate_that_wrote_its_note_passes_end_to_end",
+                "path": "shared/tests/test_completion_writers_iterate_ledger.py::test_an_iterate_that_wrote_its_note_passes_end_to_end",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_the_at_shape_pins_an_instant",
+                "path": "shared/tests/test_phase_history.py::test_the_at_shape_pins_an_instant",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_bare_date_pins_a_day_not_midnight",
+                "path": "shared/tests/test_phase_history.py::test_a_bare_date_pins_a_day_not_midnight",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_full_timestamp_in_the_date_key_is_still_an_instant",
+                "path": "shared/tests/test_phase_history.py::test_a_full_timestamp_in_the_date_key_is_still_an_instant",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_naive_timestamp_is_read_as_utc",
+                "path": "shared/tests/test_phase_history.py::test_a_naive_timestamp_is_read_as_utc",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_at_wins_over_date_when_both_are_present",
+                "path": "shared/tests/test_phase_history.py::test_at_wins_over_date_when_both_are_present",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_event_at_wins_over_every_other_key",
+                "path": "shared/tests/test_phase_history.py::test_event_at_wins_over_every_other_key",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_the_anchor_never_falls_back_to_a_wall_clock_key",
+                "path": "shared/tests/test_phase_history.py::test_the_anchor_never_falls_back_to_a_wall_clock_key",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock",
+                "path": "shared/tests/test_phase_history.py::test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_the_wall_clock_reader_takes_the_first_key_that_PARSES",
+                "path": "shared/tests/test_phase_history.py::test_the_wall_clock_reader_takes_the_first_key_that_PARSES",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_an_instant_before_the_question_is_not_after",
+                "path": "shared/tests/test_phase_history.py::test_an_instant_before_the_question_is_not_after",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_an_instant_after_the_question_is_after",
+                "path": "shared/tests/test_phase_history.py::test_an_instant_after_the_question_is_after",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_an_exact_tie_is_not_after",
+                "path": "shared/tests/test_phase_history.py::test_an_exact_tie_is_not_after",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_day_that_ends_before_the_question_answers_false",
+                "path": "shared/tests/test_phase_history.py::test_a_day_that_ends_before_the_question_answers_false",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_day_that_starts_after_the_question_answers_true",
+                "path": "shared/tests/test_phase_history.py::test_a_day_that_starts_after_the_question_answers_true",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_question_inside_the_recorded_day_is_unanswerable",
+                "path": "shared/tests/test_phase_history.py::test_a_question_inside_the_recorded_day_is_unanswerable",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_an_unparseable_timestamp_is_none",
+                "path": "shared/tests/test_phase_history.py::test_an_unparseable_timestamp_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_missing_timestamp_is_none",
+                "path": "shared/tests/test_phase_history.py::test_a_missing_timestamp_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history.py::test_a_non_string_timestamp_is_none",
+                "path": "shared/tests/test_phase_history.py::test_a_non_string_timestamp_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_the_last_appended_entry_wins",
+                "path": "shared/tests/test_phase_history_records.py::test_the_last_appended_entry_wins",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_repeated_run_ids_are_kept_not_deduped",
+                "path": "shared/tests/test_phase_history_records.py::test_repeated_run_ids_are_kept_not_deduped",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_entries_without_a_run_id_are_skipped",
+                "path": "shared/tests/test_phase_history_records.py::test_entries_without_a_run_id_are_skipped",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_a_phase_with_no_entries_is_none",
+                "path": "shared/tests/test_phase_history_records.py::test_a_phase_with_no_entries_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_an_absent_phase_is_none",
+                "path": "shared/tests/test_phase_history_records.py::test_an_absent_phase_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_a_run_config_saved_with_a_bom_is_still_read",
+                "path": "shared/tests/test_phase_history_records.py::test_a_run_config_saved_with_a_bom_is_still_read",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_a_completion_can_be_narrowed_to_one_run",
+                "path": "shared/tests/test_phase_history_records.py::test_a_completion_can_be_narrowed_to_one_run",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_a_malformed_run_config_is_none",
+                "path": "shared/tests/test_phase_history_records.py::test_a_malformed_run_config_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_a_missing_run_config_is_none",
+                "path": "shared/tests/test_phase_history_records.py::test_a_missing_run_config_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_a_non_list_bucket_is_none",
+                "path": "shared/tests/test_phase_history_records.py::test_a_non_list_bucket_is_none",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_an_entry_with_an_unusable_time_still_yields_the_run_id",
+                "path": "shared/tests/test_phase_history_records.py::test_an_entry_with_an_unusable_time_still_yields_the_run_id",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "shared/tests/test_phase_history_records.py::test_it_reads_the_shapes_the_live_repo_actually_carries",
+                "path": "shared/tests/test_phase_history_records.py::test_it_reads_the_shapes_the_live_repo_actually_carries",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        }
       }
     },
     "01::FR-01.02": {
@@ -1308,7 +2540,8 @@
             "layer": "unit",
             "status": "skipped",
             "executed": "not_run",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC06"
           },
           {
             "id": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_a_project_config_that_is_already_a_chain_keeps_parity",
@@ -1316,7 +2549,8 @@
             "layer": "unit",
             "status": "skipped",
             "executed": "not_run",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC06"
           },
           {
             "id": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_generated_config_is_accepted_by_the_real_binary",
@@ -1324,7 +2558,8 @@
             "layer": "unit",
             "status": "skipped",
             "executed": "not_run",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC06"
           },
           {
             "id": "shared/tests/test_security_scan_card.py::test_scan_emits_exactly_one_card",
@@ -1340,7 +2575,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC11"
           },
           {
             "id": "shared/tests/test_security_scan_card.py::test_card_asks_how_far_to_go",
@@ -1348,7 +2584,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC11"
           },
           {
             "id": "shared/tests/test_security_scan_card.py::test_card_names_what_was_not_checked",
@@ -1356,7 +2593,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC04"
           },
           {
             "id": "shared/tests/test_security_scan_card.py::test_card_report_path_uses_posix_separators",
@@ -1396,12 +2634,114 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           }
         ]
       },
       "coverage": {
         "unit": "ok"
+      },
+      "acs": {
+        "AC04": {
+          "tests": {
+            "unit": [
+              {
+                "id": "shared/tests/test_security_scan_card.py::test_card_names_what_was_not_checked",
+                "path": "shared/tests/test_security_scan_card.py::test_card_names_what_was_not_checked",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC04"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        },
+        "AC06": {
+          "tests": {
+            "unit": [
+              {
+                "id": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_extend_keeps_default_rules_and_both_allowlists",
+                "path": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_extend_keeps_default_rules_and_both_allowlists",
+                "layer": "unit",
+                "status": "skipped",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC06"
+              },
+              {
+                "id": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_a_project_config_that_is_already_a_chain_keeps_parity",
+                "path": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_a_project_config_that_is_already_a_chain_keeps_parity",
+                "layer": "unit",
+                "status": "skipped",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC06"
+              },
+              {
+                "id": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_generated_config_is_accepted_by_the_real_binary",
+                "path": "plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py::test_generated_config_is_accepted_by_the_real_binary",
+                "layer": "unit",
+                "status": "skipped",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC06"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "MISSING"
+          }
+        },
+        "AC08": {
+          "tests": {
+            "unit": [
+              {
+                "id": "shared/tests/test_security_scan_card.py::test_the_wrapper_mirrors_the_redacted_findings",
+                "path": "shared/tests/test_security_scan_card.py::test_the_wrapper_mirrors_the_redacted_findings",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        },
+        "AC11": {
+          "tests": {
+            "unit": [
+              {
+                "id": "shared/tests/test_security_scan_card.py::test_card_states_the_counts_per_severity",
+                "path": "shared/tests/test_security_scan_card.py::test_card_states_the_counts_per_severity",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC11"
+              },
+              {
+                "id": "shared/tests/test_security_scan_card.py::test_card_asks_how_far_to_go",
+                "path": "shared/tests/test_security_scan_card.py::test_card_asks_how_far_to_go",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC11"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        }
       }
     },
     "01::FR-01.08": {
@@ -3039,6 +4379,555 @@
             "status": "enabled",
             "executed": "pass",
             "tag_source": "pytest_marker"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_review_threads_builds_a_complete_query",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_review_threads_builds_a_complete_query",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_branch_rules_url_encodes_the_branch",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_branch_rules_url_encodes_the_branch",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line",
+            "path": "shared/tests/test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC17"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_the_463_shape_is_caught",
+            "path": "shared/tests/test_silent_revert.py::test_the_463_shape_is_caught",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_a_clean_integration_drops_nothing",
+            "path": "shared/tests/test_silent_revert.py::test_a_clean_integration_drops_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused",
+            "path": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop",
+            "path": "shared/tests/test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported",
+            "path": "shared/tests/test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported",
+            "path": "shared/tests/test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business",
+            "path": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored",
+            "path": "shared/tests/test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_the_check_blocks_and_names_the_file",
+            "path": "shared/tests/test_silent_revert_check.py::test_the_check_blocks_and_names_the_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_a_declared_removal_passes",
+            "path": "shared/tests/test_silent_revert_check.py::test_a_declared_removal_passes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_a_declaration_without_a_reason_does_not_count",
+            "path": "shared/tests/test_silent_revert_check.py::test_a_declaration_without_a_reason_does_not_count",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_a_declaration_for_another_file_does_not_cover_this_one",
+            "path": "shared/tests/test_silent_revert_check.py::test_a_declaration_for_another_file_does_not_cover_this_one",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_a_clean_branch_passes",
+            "path": "shared/tests/test_silent_revert_check.py::test_a_clean_branch_passes",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_no_default_branch_is_a_visible_skip_not_a_pass",
+            "path": "shared/tests/test_silent_revert_check.py::test_no_default_branch_is_a_visible_skip_not_a_pass",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_a_non_git_tree_skips",
+            "path": "shared/tests/test_silent_revert_check.py::test_a_non_git_tree_skips",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_check.py::test_derived_churn_artifacts_are_excluded",
+            "path": "shared/tests/test_silent_revert_check.py::test_derived_churn_artifacts_are_excluded",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "not_run",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_a_line_main_itself_deleted_later_is_not_a_drop",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_a_line_main_itself_deleted_later_is_not_a_drop",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_a_file_main_itself_deleted_later_is_not_a_drop",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_a_file_main_itself_deleted_later_is_not_a_drop",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_extending_a_line_main_added_is_not_a_drop",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_extending_a_line_main_added_is_not_a_drop",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_restoring_the_pre_merge_version_is_still_reported",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_restoring_the_pre_merge_version_is_still_reported",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_a_match_in_a_different_hunk_does_not_carry_the_line_forward",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_a_match_in_a_different_hunk_does_not_carry_the_line_forward",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_deleting_a_file_main_still_has_is_reported",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_deleting_a_file_main_still_has_is_reported",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_prefers_origin_when_the_local_ref_is_behind",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_prefers_origin_when_the_local_ref_is_behind",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_falls_back_when_there_is_no_remote",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_falls_back_when_there_is_no_remote",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_a_diverged_origin_keeps_the_local_ref",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_a_diverged_origin_keeps_the_local_ref",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_false_positives.py::test_the_check_passes_once_the_false_positives_are_gone",
+            "path": "shared/tests/test_silent_revert_false_positives.py::test_the_check_passes_once_the_false_positives_are_gone",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_an_empty_needle_never_counts_as_carried_forward",
+            "path": "shared/tests/test_silent_revert_filters.py::test_an_empty_needle_never_counts_as_carried_forward",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_a_longer_needle_cannot_hide_in_a_shorter_line",
+            "path": "shared/tests/test_silent_revert_filters.py::test_a_longer_needle_cannot_hide_in_a_shorter_line",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_order_is_required",
+            "path": "shared/tests/test_silent_revert_filters.py::test_order_is_required",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_tokens_match_whole_not_as_substrings",
+            "path": "shared/tests/test_silent_revert_filters.py::test_tokens_match_whole_not_as_substrings",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_a_repeated_token_is_consumed_once_per_occurrence",
+            "path": "shared/tests/test_silent_revert_filters.py::test_a_repeated_token_is_consumed_once_per_occurrence",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_the_accepted_blind_spot_is_pinned_not_implied",
+            "path": "shared/tests/test_silent_revert_filters.py::test_the_accepted_blind_spot_is_pinned_not_implied",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_a_deleted_horizontal_rule_is_not_read_as_the_diff_header",
+            "path": "shared/tests/test_silent_revert_filters.py::test_a_deleted_horizontal_rule_is_not_read_as_the_diff_header",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_a_file_with_no_diff_yields_no_hunks_and_so_suppresses_nothing",
+            "path": "shared/tests/test_silent_revert_filters.py::test_a_file_with_no_diff_yields_no_hunks_and_so_suppresses_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_yields_no_hunks",
+            "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_yields_no_hunks",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_a_binary_file_yields_no_hunks",
+            "path": "shared/tests/test_silent_revert_filters.py::test_a_binary_file_yields_no_hunks",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_an_absent_path_and_an_unreadable_one_are_told_apart",
+            "path": "shared/tests/test_silent_revert_filters.py::test_an_absent_path_and_an_unreadable_one_are_told_apart",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_a_side_that_cannot_be_read_suppresses_nothing",
+            "path": "shared/tests/test_silent_revert_filters.py::test_a_side_that_cannot_be_read_suppresses_nothing",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_does_not_swallow_a_real_finding",
+            "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_does_not_swallow_a_real_finding",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_the_message_names_the_ref_that_was_actually_compared",
+            "path": "shared/tests/test_silent_revert_filters.py::test_the_message_names_the_ref_that_was_actually_compared",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_delivered_side_is_disclosed_not_inferred",
+            "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_delivered_side_is_disclosed_not_inferred",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_with_no_findings_is_a_visible_skip",
+            "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_with_no_findings_is_a_visible_skip",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_not_weakened.py::test_a_branch_line_that_merely_mentions_what_it_discards",
+            "path": "shared/tests/test_silent_revert_not_weakened.py::test_a_branch_line_that_merely_mentions_what_it_discards",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_not_weakened.py::test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones",
+            "path": "shared/tests/test_silent_revert_not_weakened.py::test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_not_weakened.py::test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file",
+            "path": "shared/tests/test_silent_revert_not_weakened.py::test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
+          },
+          {
+            "id": "shared/tests/test_silent_revert_not_weakened.py::test_a_typo_fix_on_the_default_branch_cannot_erase_a_finding",
+            "path": "shared/tests/test_silent_revert_not_weakened.py::test_a_typo_fix_on_the_default_branch_cannot_erase_a_finding",
+            "layer": "unit",
+            "status": "enabled",
+            "executed": "pass",
+            "tag_source": "pytest_marker",
+            "ac_id": "AC18"
           }
         ],
         "integration": [
@@ -3191,6 +5080,575 @@
       "coverage": {
         "unit": "ok",
         "integration": "ok"
+      },
+      "acs": {
+        "AC17": {
+          "tests": {
+            "unit": [
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_review_threads_builds_a_complete_query",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_review_threads_builds_a_complete_query",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_branch_rules_url_encodes_the_branch",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_fetch_branch_rules_url_encodes_the_branch",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              },
+              {
+                "id": "shared/tests/test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line",
+                "path": "shared/tests/test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC17"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        },
+        "AC18": {
+          "tests": {
+            "unit": [
+              {
+                "id": "shared/tests/test_silent_revert.py::test_the_463_shape_is_caught",
+                "path": "shared/tests/test_silent_revert.py::test_the_463_shape_is_caught",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_a_clean_integration_drops_nothing",
+                "path": "shared/tests/test_silent_revert.py::test_a_clean_integration_drops_nothing",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused",
+                "path": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop",
+                "path": "shared/tests/test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported",
+                "path": "shared/tests/test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported",
+                "path": "shared/tests/test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business",
+                "path": "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored",
+                "path": "shared/tests/test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_the_check_blocks_and_names_the_file",
+                "path": "shared/tests/test_silent_revert_check.py::test_the_check_blocks_and_names_the_file",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_a_declared_removal_passes",
+                "path": "shared/tests/test_silent_revert_check.py::test_a_declared_removal_passes",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_a_declaration_without_a_reason_does_not_count",
+                "path": "shared/tests/test_silent_revert_check.py::test_a_declaration_without_a_reason_does_not_count",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_a_declaration_for_another_file_does_not_cover_this_one",
+                "path": "shared/tests/test_silent_revert_check.py::test_a_declaration_for_another_file_does_not_cover_this_one",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_a_clean_branch_passes",
+                "path": "shared/tests/test_silent_revert_check.py::test_a_clean_branch_passes",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_no_default_branch_is_a_visible_skip_not_a_pass",
+                "path": "shared/tests/test_silent_revert_check.py::test_no_default_branch_is_a_visible_skip_not_a_pass",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_a_non_git_tree_skips",
+                "path": "shared/tests/test_silent_revert_check.py::test_a_non_git_tree_skips",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_check.py::test_derived_churn_artifacts_are_excluded",
+                "path": "shared/tests/test_silent_revert_check.py::test_derived_churn_artifacts_are_excluded",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "not_run",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_a_line_main_itself_deleted_later_is_not_a_drop",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_a_line_main_itself_deleted_later_is_not_a_drop",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_a_file_main_itself_deleted_later_is_not_a_drop",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_a_file_main_itself_deleted_later_is_not_a_drop",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_extending_a_line_main_added_is_not_a_drop",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_extending_a_line_main_added_is_not_a_drop",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_restoring_the_pre_merge_version_is_still_reported",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_restoring_the_pre_merge_version_is_still_reported",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_a_match_in_a_different_hunk_does_not_carry_the_line_forward",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_a_match_in_a_different_hunk_does_not_carry_the_line_forward",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_deleting_a_file_main_still_has_is_reported",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_deleting_a_file_main_still_has_is_reported",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_prefers_origin_when_the_local_ref_is_behind",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_prefers_origin_when_the_local_ref_is_behind",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_falls_back_when_there_is_no_remote",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_default_ref_falls_back_when_there_is_no_remote",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_a_diverged_origin_keeps_the_local_ref",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_a_diverged_origin_keeps_the_local_ref",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_false_positives.py::test_the_check_passes_once_the_false_positives_are_gone",
+                "path": "shared/tests/test_silent_revert_false_positives.py::test_the_check_passes_once_the_false_positives_are_gone",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_an_empty_needle_never_counts_as_carried_forward",
+                "path": "shared/tests/test_silent_revert_filters.py::test_an_empty_needle_never_counts_as_carried_forward",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_a_longer_needle_cannot_hide_in_a_shorter_line",
+                "path": "shared/tests/test_silent_revert_filters.py::test_a_longer_needle_cannot_hide_in_a_shorter_line",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_order_is_required",
+                "path": "shared/tests/test_silent_revert_filters.py::test_order_is_required",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_tokens_match_whole_not_as_substrings",
+                "path": "shared/tests/test_silent_revert_filters.py::test_tokens_match_whole_not_as_substrings",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_a_repeated_token_is_consumed_once_per_occurrence",
+                "path": "shared/tests/test_silent_revert_filters.py::test_a_repeated_token_is_consumed_once_per_occurrence",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_the_accepted_blind_spot_is_pinned_not_implied",
+                "path": "shared/tests/test_silent_revert_filters.py::test_the_accepted_blind_spot_is_pinned_not_implied",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_a_deleted_horizontal_rule_is_not_read_as_the_diff_header",
+                "path": "shared/tests/test_silent_revert_filters.py::test_a_deleted_horizontal_rule_is_not_read_as_the_diff_header",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_a_file_with_no_diff_yields_no_hunks_and_so_suppresses_nothing",
+                "path": "shared/tests/test_silent_revert_filters.py::test_a_file_with_no_diff_yields_no_hunks_and_so_suppresses_nothing",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_yields_no_hunks",
+                "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_yields_no_hunks",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_a_binary_file_yields_no_hunks",
+                "path": "shared/tests/test_silent_revert_filters.py::test_a_binary_file_yields_no_hunks",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_an_absent_path_and_an_unreadable_one_are_told_apart",
+                "path": "shared/tests/test_silent_revert_filters.py::test_an_absent_path_and_an_unreadable_one_are_told_apart",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_a_side_that_cannot_be_read_suppresses_nothing",
+                "path": "shared/tests/test_silent_revert_filters.py::test_a_side_that_cannot_be_read_suppresses_nothing",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_does_not_swallow_a_real_finding",
+                "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_does_not_swallow_a_real_finding",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_the_message_names_the_ref_that_was_actually_compared",
+                "path": "shared/tests/test_silent_revert_filters.py::test_the_message_names_the_ref_that_was_actually_compared",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_delivered_side_is_disclosed_not_inferred",
+                "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_delivered_side_is_disclosed_not_inferred",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_with_no_findings_is_a_visible_skip",
+                "path": "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_with_no_findings_is_a_visible_skip",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_not_weakened.py::test_a_branch_line_that_merely_mentions_what_it_discards",
+                "path": "shared/tests/test_silent_revert_not_weakened.py::test_a_branch_line_that_merely_mentions_what_it_discards",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_not_weakened.py::test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones",
+                "path": "shared/tests/test_silent_revert_not_weakened.py::test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_not_weakened.py::test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file",
+                "path": "shared/tests/test_silent_revert_not_weakened.py::test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              },
+              {
+                "id": "shared/tests/test_silent_revert_not_weakened.py::test_a_typo_fix_on_the_default_branch_cannot_erase_a_finding",
+                "path": "shared/tests/test_silent_revert_not_weakened.py::test_a_typo_fix_on_the_default_branch_cannot_erase_a_finding",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC18"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        }
       }
     },
     "01::FR-01.12": {
@@ -3226,7 +5684,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_handoff_says_the_evidence_does_not_stay_current",
@@ -3234,7 +5693,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_stamps_before_committing_and_verifies_after",
@@ -3242,7 +5702,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_stages_after_stamping",
@@ -3250,7 +5711,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_distinguishes_no_base_from_partial",
@@ -3258,7 +5720,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_generated_claude_md_carries_the_same_statement",
@@ -3266,7 +5729,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC08"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_compliance_bridge_fallback.py::test_run_lib_fallback_no_scripts_module_error",
@@ -3338,7 +5802,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_heading_present",
@@ -3346,7 +5811,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_mentions_env_local",
@@ -3354,7 +5820,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_calls_validate_env_init",
@@ -3362,7 +5829,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_documents_gitignore_handling",
@@ -3370,7 +5838,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_mentions_edit_env_local",
@@ -3378,7 +5847,8 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           },
           {
             "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_documents_required_keys_dynamically",
@@ -3386,12 +5856,150 @@
             "layer": "unit",
             "status": "enabled",
             "executed": "pass",
-            "tag_source": "pytest_marker"
+            "tag_source": "pytest_marker",
+            "ac_id": "AC05"
           }
         ]
       },
       "coverage": {
         "unit": "ok"
+      },
+      "acs": {
+        "AC05": {
+          "tests": {
+            "unit": [
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_skill_md_exists",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_skill_md_exists",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_heading_present",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_heading_present",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_mentions_env_local",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_mentions_env_local",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_calls_validate_env_init",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_calls_validate_env_init",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_documents_gitignore_handling",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_e5_documents_gitignore_handling",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_mentions_edit_env_local",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_mentions_edit_env_local",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_documents_required_keys_dynamically",
+                "path": "plugins/shipwright-adopt/tests/test_skill_md_env_scaffold.py::test_step_h_documents_required_keys_dynamically",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC05"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        },
+        "AC08": {
+          "tests": {
+            "unit": [
+              {
+                "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_handoff_names_both_ways_to_refresh_the_evidence",
+                "path": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_handoff_names_both_ways_to_refresh_the_evidence",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_handoff_says_the_evidence_does_not_stay_current",
+                "path": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_handoff_says_the_evidence_does_not_stay_current",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_stamps_before_committing_and_verifies_after",
+                "path": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_stamps_before_committing_and_verifies_after",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_stages_after_stamping",
+                "path": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_stages_after_stamping",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_distinguishes_no_base_from_partial",
+                "path": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_step_h_distinguishes_no_base_from_partial",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              },
+              {
+                "id": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_generated_claude_md_carries_the_same_statement",
+                "path": "plugins/shipwright-adopt/tests/test_adopt_evidence_disclosure.py::test_generated_claude_md_carries_the_same_statement",
+                "layer": "unit",
+                "status": "enabled",
+                "executed": "pass",
+                "tag_source": "pytest_marker",
+                "ac_id": "AC08"
+              }
+            ]
+          },
+          "coverage": {
+            "unit": "ok"
+          }
+        }
       }
     },
     "01::FR-01.14": {
@@ -10085,6 +12693,17 @@
     "shared/tests/test_autonomous_loop_escalation.py::test_ci_escalation_preserves_reason_and_strict_stops",
     "shared/tests/test_autonomous_loop_escalation.py::test_complete_result_never_gains_a_failure_reason",
     "shared/tests/test_autonomous_loop_escalation.py::test_failed_result_still_prefers_error_over_reason",
+    "shared/tests/test_backfill_ac_provenance.py::test_a_footnote_that_is_not_at_the_very_end_is_not_matched",
+    "shared/tests/test_backfill_ac_provenance.py::test_a_single_footnote_slug_is_extracted",
+    "shared/tests/test_backfill_ac_provenance.py::test_an_adr_footnote_is_also_recognised",
+    "shared/tests/test_backfill_ac_provenance.py::test_multiple_comma_separated_slugs_are_extracted_in_order",
+    "shared/tests/test_backfill_ac_provenance.py::test_no_footnote_yields_no_slugs",
+    "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_drops_a_slug_shared_by_two_criteria_in_the_same_fr",
+    "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_drops_a_slug_unique_per_fr_but_reused_across_frs",
+    "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_ignores_a_bullet_with_no_minted_ac_id",
+    "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_keeps_a_slug_naming_exactly_one_ac",
+    "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_keeps_a_slug_unique_within_a_single_fr_and_absent_elsewhere",
+    "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_skips_a_fr_with_no_footnotes_at_all",
     "shared/tests/test_banner_plain_language_parity.py::test_index_parses_and_has_core_terms",
     "shared/tests/test_banner_plain_language_parity.py::test_iterate_banner_has_glosses",
     "shared/tests/test_banner_plain_language_parity.py::test_iterate_banner_matches_index",
@@ -10252,16 +12871,6 @@
     "shared/tests/test_c3_applicability.py::test_every_canon_phase_that_wrote_its_own_note_passes",
     "shared/tests/test_c3_applicability.py::test_every_named_producer_actually_runs",
     "shared/tests/test_c3_applicability.py::test_the_iterate_phase_is_checked_against_its_own_ledger",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_a_day_precision_completion_never_silently_supersedes",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_a_later_phases_note_supersedes_and_is_a_named_skip",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_a_marker_without_a_phase_cannot_be_ordered_against",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_a_phase_that_skipped_its_step_is_caught",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_a_stale_later_phase_note_does_not_excuse_a_rerun",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_record_is_stated",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_an_owner_with_no_completion_under_the_notes_run_is_stated",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_an_unusable_completion_timestamp_is_stated_not_guessed",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict",
-    "shared/tests/test_c3_cross_phase_verdict.py::test_the_owner_completing_again_after_the_note_hides_nothing",
     "shared/tests/test_c3_handoff_freshness.py::test_a_handoff_without_a_canon_marker_is_not_a_pass",
     "shared/tests/test_c3_handoff_freshness.py::test_a_marker_without_a_run_id_is_not_a_pass",
     "shared/tests/test_c3_handoff_freshness.py::test_a_missing_handoff_is_not_a_pass",
@@ -10274,16 +12883,6 @@
     "shared/tests/test_c3_handoff_freshness.py::test_the_check_never_consults_mtime",
     "shared/tests/test_c3_handoff_freshness.py::test_the_check_takes_no_run_id",
     "shared/tests/test_c3_handoff_freshness.py::test_the_phase_that_wrote_the_note_passes",
-    "shared/tests/test_c3_same_phase_window.py::test_a_completion_with_no_anchor_never_consults_the_clock",
-    "shared/tests/test_c3_same_phase_window.py::test_a_day_precision_legacy_entry_is_not_compared_to_the_marker",
-    "shared/tests/test_c3_same_phase_window.py::test_a_later_split_that_skipped_the_marker_write_is_caught",
-    "shared/tests/test_c3_same_phase_window.py::test_a_marker_pinning_only_a_day_cannot_settle_it_either",
-    "shared/tests/test_c3_same_phase_window.py::test_a_rerun_under_a_sticky_id_with_no_new_event_passes",
-    "shared/tests/test_c3_same_phase_window.py::test_a_single_stale_completion_is_caught_too",
-    "shared/tests/test_c3_same_phase_window.py::test_an_anchor_that_is_present_but_unreadable_is_stated",
-    "shared/tests/test_c3_same_phase_window.py::test_an_unusable_marker_timestamp_is_stated_when_the_completion_is_anchored",
-    "shared/tests/test_c3_same_phase_window.py::test_the_split_that_did_re_write_the_marker_passes",
-    "shared/tests/test_c3_same_phase_window.py::test_the_wall_clock_at_is_never_what_gets_compared",
     "shared/tests/test_cache_mirror_compare.py::test_a_mirror_only_file_is_cache_only_not_drift",
     "shared/tests/test_cache_mirror_compare.py::test_absent_mirror_dir_is_not_mirrored",
     "shared/tests/test_cache_mirror_compare.py::test_absent_source_dir_is_no_source",
@@ -10410,15 +13009,6 @@
     "shared/tests/test_canon_frontmatter.py::test_parses_a_well_formed_canon_block",
     "shared/tests/test_canon_frontmatter.py::test_unparsable_lines_are_skipped_not_fatal",
     "shared/tests/test_canon_frontmatter.py::test_unquoted_values_parse",
-    "shared/tests/test_canon_marker_write_contract.py::test_a_canon_write_without_a_phase_is_refused_not_stamped",
-    "shared/tests/test_canon_marker_write_contract.py::test_a_canon_write_without_a_run_id_is_refused_not_stamped",
-    "shared/tests/test_canon_marker_write_contract.py::test_a_hostile_reason_cannot_forge_marker_fields",
-    "shared/tests/test_canon_marker_write_contract.py::test_a_refused_canon_write_never_falls_through_to_preservation",
-    "shared/tests/test_canon_marker_write_contract.py::test_every_canon_closure_names_its_phase",
-    "shared/tests/test_canon_marker_write_contract.py::test_every_handoff_write_either_marks_or_preserves",
-    "shared/tests/test_canon_marker_write_contract.py::test_marker_value_collapses_newlines_and_drops_quotes",
-    "shared/tests/test_canon_marker_write_contract.py::test_the_scan_finds_exactly_the_call_sites_it_is_meant_to_guard",
-    "shared/tests/test_canon_marker_write_contract.py::test_the_timestamp_is_resolved_only_when_a_marker_is_actually_built",
     "shared/tests/test_canonical_project_predicate.py::test_all_predicates_agree",
     "shared/tests/test_canonical_project_predicate.py::test_canonical_detects_agent_docs_dir",
     "shared/tests/test_canonical_project_predicate.py::test_canonical_fail_closed_agent_docs_is_a_file",
@@ -10895,17 +13485,6 @@
     "shared/tests/test_compaction_state_audit_acceptance.py::test_ac3a_and_ac3b_agree_on_which_types_are_pending",
     "shared/tests/test_compaction_state_audit_acceptance.py::test_ac3a_record_review_pass_show_reports_interrupted_cascade",
     "shared/tests/test_compaction_state_audit_acceptance.py::test_ac3b_stop_hook_handoff_surfaces_interrupted_cascade",
-    "shared/tests/test_completion_writers.py::test_a_completion_recorded_with_no_events_yet_carries_no_anchor",
-    "shared/tests/test_completion_writers.py::test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one",
-    "shared/tests/test_completion_writers.py::test_a_phase_rerun_that_records_no_new_event_still_passes",
-    "shared/tests/test_completion_writers.py::test_a_split_that_skips_the_marker_write_is_still_caught",
-    "shared/tests/test_completion_writers.py::test_an_iterate_that_wrote_its_note_passes_end_to_end",
-    "shared/tests/test_completion_writers.py::test_the_hand_built_shape_matches_the_writer",
-    "shared/tests/test_completion_writers.py::test_the_iterate_ledger_writer_produces_a_readable_completion",
-    "shared/tests/test_completion_writers.py::test_the_marker_and_the_completion_land_on_one_clock",
-    "shared/tests/test_completion_writers.py::test_the_writer_refuses_to_let_a_caller_overwrite_the_timestamp",
-    "shared/tests/test_completion_writers.py::test_the_writer_stamps_a_full_instant",
-    "shared/tests/test_completion_writers.py::test_the_written_entry_reads_back_as_an_instant",
     "shared/tests/test_compliance_audit_spawn.py::test_failure_to_start_reports_ran_false",
     "shared/tests/test_compliance_audit_spawn.py::test_nonzero_exit_reports_ran_false",
     "shared/tests/test_compliance_audit_spawn.py::test_success_captures_output_and_reports_ran_true",
@@ -13353,6 +15932,34 @@
     "shared/tests/test_layer_coverage.py::test_removal_retarget_but_keeps_dead_tag_fails",
     "shared/tests/test_layer_coverage.py::test_removal_retarget_passes",
     "shared/tests/test_layer_coverage.py::test_removal_still_tagged_fails",
+    "shared/tests/test_layer_coverage_binding.py::test_binding_declared_higher_than_any_evidence_is_clean",
+    "shared/tests/test_layer_coverage_binding.py::test_binding_gap_on_collision_id_is_advisory",
+    "shared/tests/test_layer_coverage_binding.py::test_binding_gap_on_legacy_provenance_is_advisory_not_hard",
+    "shared/tests/test_layer_coverage_binding.py::test_binding_multiple_required_layers_credits_the_highest_named",
+    "shared/tests/test_layer_coverage_binding.py::test_binding_naming_only_unit_is_rejected_when_integration_passes",
+    "shared/tests/test_layer_coverage_binding.py::test_binding_naming_the_highest_layer_already_is_clean",
+    "shared/tests/test_layer_coverage_binding.py::test_defensive_guard_skips_a_changed_key_missing_from_head_active",
+    "shared/tests/test_layer_coverage_binding.py::test_highest_ok_layer_ranks_an_unrecognised_layer_label_below_every_canonical_one",
+    "shared/tests/test_layer_coverage_binding.py::test_highest_ok_layer_ranks_e2e_over_integration_over_unit",
+    "shared/tests/test_layer_coverage_binding.py::test_no_gap_when_no_layer_has_executed_passing_evidence",
+    "shared/tests/test_layer_coverage_binding.py::test_no_gap_without_a_behaviour_change",
+    "shared/tests/test_layer_coverage_binding.py::test_severity_routing_is_the_shared_function_not_a_mirror",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_binding_result_advisory_message",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_binding_result_advisory_truncates_with_more_count",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_binding_result_clean_pass_with_changed_keys",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_binding_result_hard_fail_message",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_binding_result_hard_fail_truncates_with_more_count",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_binding_result_no_changed_keys_is_clean_pass",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_registered_in_run_all_checks",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_run_all_checks_binding_gap_propagates_to_failure",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_ac_error_is_infra_error",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_full_path_hard_gap_propagates",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_full_success_path_clean",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_no_commit_is_infra_error",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_non_git_precheck_short_circuits",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_regen_exception_is_infra_error",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_regen_none_is_infra_error",
+    "shared/tests/test_layer_coverage_binding_wrapper.py::test_wrapper_skips_below_medium",
     "shared/tests/test_layer_coverage_config_scope.py::test_gate_excludes_fixture_path_so_a_fixture_cannot_fake_a_layer",
     "shared/tests/test_layer_coverage_config_scope.py::test_gate_misses_plugin_dir_coverage_without_config_load_bearing",
     "shared/tests/test_layer_coverage_config_scope.py::test_gate_sees_plugin_dir_coverage_when_head_opts_it_in",
@@ -13743,36 +16350,6 @@
     "shared/tests/test_phase_from_plugin_root_versioned.py::test_versioned_install_resolves_to_phase",
     "shared/tests/test_phase_gate_discipline_present.py::test_phase_skill_has_discipline_block",
     "shared/tests/test_phase_gate_discipline_present.py::test_shared_contract_exists",
-    "shared/tests/test_phase_history.py::test_a_bare_date_pins_a_day_not_midnight",
-    "shared/tests/test_phase_history.py::test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock",
-    "shared/tests/test_phase_history.py::test_a_day_that_ends_before_the_question_answers_false",
-    "shared/tests/test_phase_history.py::test_a_day_that_starts_after_the_question_answers_true",
-    "shared/tests/test_phase_history.py::test_a_full_timestamp_in_the_date_key_is_still_an_instant",
-    "shared/tests/test_phase_history.py::test_a_missing_timestamp_is_none",
-    "shared/tests/test_phase_history.py::test_a_naive_timestamp_is_read_as_utc",
-    "shared/tests/test_phase_history.py::test_a_non_string_timestamp_is_none",
-    "shared/tests/test_phase_history.py::test_a_question_inside_the_recorded_day_is_unanswerable",
-    "shared/tests/test_phase_history.py::test_an_exact_tie_is_not_after",
-    "shared/tests/test_phase_history.py::test_an_instant_after_the_question_is_after",
-    "shared/tests/test_phase_history.py::test_an_instant_before_the_question_is_not_after",
-    "shared/tests/test_phase_history.py::test_an_unparseable_timestamp_is_none",
-    "shared/tests/test_phase_history.py::test_at_wins_over_date_when_both_are_present",
-    "shared/tests/test_phase_history.py::test_event_at_wins_over_every_other_key",
-    "shared/tests/test_phase_history.py::test_the_anchor_never_falls_back_to_a_wall_clock_key",
-    "shared/tests/test_phase_history.py::test_the_at_shape_pins_an_instant",
-    "shared/tests/test_phase_history.py::test_the_wall_clock_reader_takes_the_first_key_that_PARSES",
-    "shared/tests/test_phase_history_records.py::test_a_completion_can_be_narrowed_to_one_run",
-    "shared/tests/test_phase_history_records.py::test_a_malformed_run_config_is_none",
-    "shared/tests/test_phase_history_records.py::test_a_missing_run_config_is_none",
-    "shared/tests/test_phase_history_records.py::test_a_non_list_bucket_is_none",
-    "shared/tests/test_phase_history_records.py::test_a_phase_with_no_entries_is_none",
-    "shared/tests/test_phase_history_records.py::test_a_run_config_saved_with_a_bom_is_still_read",
-    "shared/tests/test_phase_history_records.py::test_an_absent_phase_is_none",
-    "shared/tests/test_phase_history_records.py::test_an_entry_with_an_unusable_time_still_yields_the_run_id",
-    "shared/tests/test_phase_history_records.py::test_entries_without_a_run_id_are_skipped",
-    "shared/tests/test_phase_history_records.py::test_it_reads_the_shapes_the_live_repo_actually_carries",
-    "shared/tests/test_phase_history_records.py::test_repeated_run_ids_are_kept_not_deduped",
-    "shared/tests/test_phase_history_records.py::test_the_last_appended_entry_wins",
     "shared/tests/test_phase_invocation_mode_edges.py::test_a_real_token_is_not_mistaken_for_a_placeholder",
     "shared/tests/test_phase_invocation_mode_edges.py::test_corrupt_phase_tasks_on_the_tokenless_path_reports_not_live",
     "shared/tests/test_phase_invocation_mode_edges.py::test_empty_or_blank_token_is_error_not_standalone",
@@ -14119,21 +16696,6 @@
     "shared/tests/test_pr_blockers.py::test_rules_without_a_required_status_check_rule_is_not_unknown",
     "shared/tests/test_pr_blockers.py::test_summarize_carries_every_unknown_source_through",
     "shared/tests/test_pr_blockers.py::test_unreadable_rules_is_unknown_never_no_missing_checks",
-    "shared/tests/test_pr_blockers_merge_state.py::test_a_conflicted_branch_is_named",
-    "shared/tests/test_pr_blockers_merge_state.py::test_a_draft_is_named_and_blocking",
-    "shared/tests/test_pr_blockers_merge_state.py::test_a_mergeable_state_names_nothing",
-    "shared/tests/test_pr_blockers_merge_state.py::test_a_real_thread_cause_still_renders_as_a_count",
-    "shared/tests/test_pr_blockers_merge_state.py::test_an_out_of_date_branch_is_named_but_not_asserted_blocking",
-    "shared/tests/test_pr_blockers_merge_state.py::test_an_unrecognised_state_is_unknown_not_clean",
-    "shared/tests/test_pr_blockers_merge_state.py::test_blocked_keeps_naming_itself_and_blocking",
-    "shared/tests/test_pr_blockers_merge_state.py::test_control_characters_from_the_host_never_reach_the_line",
-    "shared/tests/test_pr_blockers_merge_state.py::test_fetch_branch_rules_url_encodes_the_branch",
-    "shared/tests/test_pr_blockers_merge_state.py::test_fetch_review_threads_builds_a_complete_query",
-    "shared/tests/test_pr_blockers_merge_state.py::test_the_merge_state_cause_composes_with_the_others",
-    "shared/tests/test_pr_blockers_merge_state.py::test_the_observed_state_is_rendered_not_a_fixed_phrase",
-    "shared/tests/test_pr_blockers_merge_state.py::test_the_rendered_line_names_a_conflict_instead_of_a_queue",
-    "shared/tests/test_pr_blockers_merge_state.py::test_unknown_and_absent_states_stay_unknown",
-    "shared/tests/test_pr_blockers_merge_state.py::test_unstable_is_named_without_claiming_it_blocks",
     "shared/tests/test_pr_delivery.py::test_a_campaign_never_self_merges",
     "shared/tests/test_pr_delivery.py::test_a_draft_pr_arm_failure_is_transient_not_structural",
     "shared/tests/test_pr_delivery.py::test_a_permissive_picture_with_an_unknown_error_stays_blocked",
@@ -14223,12 +16785,6 @@
     "shared/tests/test_pr_review_fork_trust.py::test_stage2_resolves_a_fork_pr_not_just_a_same_repo_one",
     "shared/tests/test_pr_review_fork_trust.py::test_stage2_silences_cancelled_superseded_runs",
     "shared/tests/test_pr_review_fork_trust.py::test_stage2_takes_identity_from_the_trusted_event",
-    "shared/tests/test_preserve_canon_marker.py::test_a_degraded_canon_write_does_not_resurrect_the_old_marker",
-    "shared/tests/test_preserve_canon_marker.py::test_a_mid_phase_handoff_keeps_the_marker_when_asked",
-    "shared/tests/test_preserve_canon_marker.py::test_the_body_is_still_regenerated",
-    "shared/tests/test_preserve_canon_marker.py::test_the_flag_invents_nothing_when_there_is_no_marker",
-    "shared/tests/test_preserve_canon_marker.py::test_the_flag_is_harmless_when_the_handoff_does_not_exist",
-    "shared/tests/test_preserve_canon_marker.py::test_without_the_flag_behaviour_is_unchanged",
     "shared/tests/test_profile_dependency_floors.py::test_hono_floor_meets_the_cve_fix_line",
     "shared/tests/test_project_root.py::test_cwd_is_project",
     "shared/tests/test_project_root.py::test_env_var_disabled",
@@ -15163,48 +17719,6 @@
     "shared/tests/test_setup_writes_canonical.py::test_no_legacy_designs_path_construction_in_plugin_source",
     "shared/tests/test_setup_writes_canonical.py::test_no_legacy_path_construction_in_plugin_source",
     "shared/tests/test_setup_writes_canonical.py::test_run_phase_validator_looks_under_canonical",
-    "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_accused",
-    "shared/tests/test_silent_revert.py::test_a_branch_that_never_integrated_is_not_this_checks_business",
-    "shared/tests/test_silent_revert.py::test_a_clean_branch_passes",
-    "shared/tests/test_silent_revert.py::test_a_clean_integration_drops_nothing",
-    "shared/tests/test_silent_revert.py::test_a_declaration_for_another_file_does_not_cover_this_one",
-    "shared/tests/test_silent_revert.py::test_a_declaration_without_a_reason_does_not_count",
-    "shared/tests/test_silent_revert.py::test_a_declared_removal_passes",
-    "shared/tests/test_silent_revert.py::test_a_non_git_tree_skips",
-    "shared/tests/test_silent_revert.py::test_blank_and_whitespace_lines_are_ignored",
-    "shared/tests/test_silent_revert.py::test_deleting_a_file_after_taking_their_work_is_reported",
-    "shared/tests/test_silent_revert.py::test_derived_churn_artifacts_are_excluded",
-    "shared/tests/test_silent_revert.py::test_editing_a_line_that_existed_before_is_not_a_drop",
-    "shared/tests/test_silent_revert.py::test_no_default_branch_is_a_visible_skip_not_a_pass",
-    "shared/tests/test_silent_revert.py::test_overwriting_a_line_main_itself_changed_IS_reported",
-    "shared/tests/test_silent_revert.py::test_the_463_shape_is_caught",
-    "shared/tests/test_silent_revert.py::test_the_check_blocks_and_names_the_file",
-    "shared/tests/test_silent_revert_false_positives.py::test_a_diverged_origin_keeps_the_local_ref",
-    "shared/tests/test_silent_revert_false_positives.py::test_a_file_main_itself_deleted_later_is_not_a_drop",
-    "shared/tests/test_silent_revert_false_positives.py::test_a_line_main_itself_deleted_later_is_not_a_drop",
-    "shared/tests/test_silent_revert_false_positives.py::test_a_match_in_a_different_hunk_does_not_carry_the_line_forward",
-    "shared/tests/test_silent_revert_false_positives.py::test_default_ref_falls_back_when_there_is_no_remote",
-    "shared/tests/test_silent_revert_false_positives.py::test_default_ref_prefers_origin_when_the_local_ref_is_behind",
-    "shared/tests/test_silent_revert_false_positives.py::test_deleting_a_file_main_still_has_is_reported",
-    "shared/tests/test_silent_revert_false_positives.py::test_extending_a_line_main_added_is_not_a_drop",
-    "shared/tests/test_silent_revert_false_positives.py::test_restoring_the_pre_merge_version_is_still_reported",
-    "shared/tests/test_silent_revert_false_positives.py::test_the_check_passes_once_the_false_positives_are_gone",
-    "shared/tests/test_silent_revert_filters.py::test_a_binary_file_yields_no_hunks",
-    "shared/tests/test_silent_revert_filters.py::test_a_deleted_horizontal_rule_is_not_read_as_the_diff_header",
-    "shared/tests/test_silent_revert_filters.py::test_a_file_with_no_diff_yields_no_hunks_and_so_suppresses_nothing",
-    "shared/tests/test_silent_revert_filters.py::test_a_longer_needle_cannot_hide_in_a_shorter_line",
-    "shared/tests/test_silent_revert_filters.py::test_a_repeated_token_is_consumed_once_per_occurrence",
-    "shared/tests/test_silent_revert_filters.py::test_a_side_that_cannot_be_read_suppresses_nothing",
-    "shared/tests/test_silent_revert_filters.py::test_an_absent_path_and_an_unreadable_one_are_told_apart",
-    "shared/tests/test_silent_revert_filters.py::test_an_empty_needle_never_counts_as_carried_forward",
-    "shared/tests/test_silent_revert_filters.py::test_an_unreadable_delivered_side_is_disclosed_not_inferred",
-    "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_does_not_swallow_a_real_finding",
-    "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_with_no_findings_is_a_visible_skip",
-    "shared/tests/test_silent_revert_filters.py::test_an_unreadable_path_yields_no_hunks",
-    "shared/tests/test_silent_revert_filters.py::test_order_is_required",
-    "shared/tests/test_silent_revert_filters.py::test_the_accepted_blind_spot_is_pinned_not_implied",
-    "shared/tests/test_silent_revert_filters.py::test_the_message_names_the_ref_that_was_actually_compared",
-    "shared/tests/test_silent_revert_filters.py::test_tokens_match_whole_not_as_substrings",
     "shared/tests/test_silent_revert_narrowings.py::test_a_de_indent_between_two_regions_cannot_vouch_across_them",
     "shared/tests/test_silent_revert_narrowings.py::test_a_genuine_in_place_rewrite_is_still_explained",
     "shared/tests/test_silent_revert_narrowings.py::test_a_real_token_change_is_still_a_change",
@@ -15218,10 +17732,6 @@
     "shared/tests/test_silent_revert_narrowings.py::test_the_predicate_normalises_windows_separators",
     "shared/tests/test_silent_revert_narrowings.py::test_the_remote_is_used_when_the_local_ref_does_not_resolve",
     "shared/tests/test_silent_revert_narrowings.py::test_the_resolver_and_the_verifier_share_one_predicate",
-    "shared/tests/test_silent_revert_not_weakened.py::test_a_branch_line_that_merely_mentions_what_it_discards",
-    "shared/tests/test_silent_revert_not_weakened.py::test_a_typo_fix_on_the_default_branch_cannot_erase_a_finding",
-    "shared/tests/test_silent_revert_not_weakened.py::test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file",
-    "shared/tests/test_silent_revert_not_weakened.py::test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones",
     "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_does_not_redefine_lib_helpers",
     "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_does_not_use_brittle_exact_match",
     "shared/tests/test_silent_skip_ci_discipline.py::test_affected_file_imports_from_lib_test_hygiene",

@@ -21,6 +21,7 @@ untouched — that they keep passing is this change's real acceptance criterion.
 """
 
 from __future__ import annotations
+import pytest
 
 import subprocess
 import sys
@@ -86,6 +87,7 @@ def _fork(root: Path, name: str = "work") -> None:
 
 # --- (A) the default branch removed it itself -------------------------------
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_line_main_itself_deleted_later_is_not_a_drop(tmp_path):
     """AC1. Merge 1 delivers a line; a later main commit replaces it. The branch
     integrates again and correctly no longer carries it. Scoring merge 1 against
@@ -111,6 +113,7 @@ def test_a_line_main_itself_deleted_later_is_not_a_drop(tmp_path):
     assert dropped_lines(root, "main", "HEAD") == {}
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_file_main_itself_deleted_later_is_not_a_drop(tmp_path):
     """AC1b. The whole path is gone from main's tip, so main carries none of it.
     Reading 'file absent at the tip' as 'keep every candidate' would have left
@@ -133,6 +136,7 @@ def test_a_file_main_itself_deleted_later_is_not_a_drop(tmp_path):
 
 # --- (B) the branch edited the line ------------------------------------------
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_extending_a_line_main_added_is_not_a_drop(tmp_path):
     """AC2. The real fourth finding: one table row in `docs/hooks-and-pipeline.md`
     gained a sentence *in the middle*, so main's row was not even a substring of
@@ -148,6 +152,7 @@ def test_extending_a_line_main_added_is_not_a_drop(tmp_path):
     assert dropped_lines(root, "main", "HEAD") == {}
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_restoring_the_pre_merge_version_is_still_reported(tmp_path):
     """AC3. The loophole the (b) guard closes. Main NARROWS a line
     (`do X and Y` -> `do X`); the branch puts the wide version back. That sits in
@@ -167,6 +172,7 @@ def test_restoring_the_pre_merge_version_is_still_reported(tmp_path):
     assert "do X" in dropped[DOC]
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_match_in_a_different_hunk_does_not_carry_the_line_forward(tmp_path):
     """AC4. Raised by the external plan review (Gemini): a short line main added
     (`break`) would be silenced by any newly authored line containing that token
@@ -189,6 +195,7 @@ def test_a_match_in_a_different_hunk_does_not_carry_the_line_forward(tmp_path):
     assert "break" in dropped[DOC]
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_deleting_a_file_main_still_has_is_reported(tmp_path):
     """AC4b. Losing a whole file that main still carries stays a finding — neither
     filter may explain it away. (The `ours is not None` guard at the call site
@@ -211,6 +218,7 @@ def test_deleting_a_file_main_still_has_is_reported(tmp_path):
 
 # --- the ref the comparison is anchored to -----------------------------------
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_default_ref_prefers_origin_when_the_local_ref_is_behind(tmp_path):
     """AC5. Branches are integrated from `origin/<default>` (`ensure_current`
     merges that ref), but the check took the LOCAL branch. When it lags, every
@@ -234,6 +242,7 @@ def test_default_ref_prefers_origin_when_the_local_ref_is_behind(tmp_path):
     assert _resolve_default_ref(root, "main") == "origin/main"
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_default_ref_falls_back_when_there_is_no_remote(tmp_path):
     """AC5. Every repo in this suite is remote-less; the fallback is what keeps
     the sixteen true-positive tests meaning exactly what they meant before."""
@@ -243,6 +252,7 @@ def test_default_ref_falls_back_when_there_is_no_remote(tmp_path):
     assert _resolve_default_ref(root, "no-such-branch") == "no-such-branch"
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_diverged_origin_keeps_the_local_ref(tmp_path):
     """AC5. Neither ref contains the other, so there is no 'more current' one to
     prefer. Guessing would move the comparison target on a repository whose state
@@ -261,6 +271,7 @@ def test_a_diverged_origin_keeps_the_local_ref(tmp_path):
 
 # --- the check as F11 calls it -----------------------------------------------
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_the_check_passes_once_the_false_positives_are_gone(tmp_path):
     """The end-to-end shape of the four real findings: a rewritten line and an
     edited one, on a branch that integrated twice. Before this change the run

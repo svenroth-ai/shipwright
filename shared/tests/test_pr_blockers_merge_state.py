@@ -14,6 +14,7 @@ constant while the whole suite stayed green.
 """
 
 from __future__ import annotations
+import pytest
 
 import json
 import sys
@@ -43,6 +44,7 @@ def _state(value):
     )
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_a_conflicted_branch_is_named():
     """The exact payload from PR #462."""
     report = _state("DIRTY")
@@ -52,6 +54,7 @@ def test_a_conflicted_branch_is_named():
     assert report["blocking"] is True          # GitHub cannot create the merge commit
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_an_out_of_date_branch_is_named_but_not_asserted_blocking():
     """BEHIND only blocks where the repo requires branches to be up to date, so
     name it and let the operator judge — same posture as review threads."""
@@ -61,18 +64,21 @@ def test_an_out_of_date_branch_is_named_but_not_asserted_blocking():
     assert report["blocking"] is False
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_a_draft_is_named_and_blocking():
     report = _state("DRAFT")
     assert _kinds(report) == ["merge_state"]
     assert report["blocking"] is True
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_blocked_keeps_naming_itself_and_blocking():
     report = _state("BLOCKED")
     assert _kinds(report) == ["merge_state"]
     assert report["blocking"] is True
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_unstable_is_named_without_claiming_it_blocks():
     """UNSTABLE means a NON-required check is red — mergeable, but worth saying."""
     report = _state("UNSTABLE")
@@ -80,6 +86,7 @@ def test_unstable_is_named_without_claiming_it_blocks():
     assert report["blocking"] is False
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_a_mergeable_state_names_nothing():
     for value in ("CLEAN", "HAS_HOOKS"):
         report = _state(value)
@@ -88,6 +95,7 @@ def test_a_mergeable_state_names_nothing():
         assert report["blocking"] is False, value
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_an_unrecognised_state_is_unknown_not_clean():
     """The guard that stops this recurring. GitHub may add a value; an enum we
     do not recognise must degrade to 'we could not tell', never to 'fine'."""
@@ -97,6 +105,7 @@ def test_an_unrecognised_state_is_unknown_not_clean():
     assert "SOME_FUTURE_STATE" in report["unknown"][0]["reason"]
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_unknown_and_absent_states_stay_unknown():
     for value in ("UNKNOWN", "", None):
         report = _state(value)
@@ -104,6 +113,7 @@ def test_unknown_and_absent_states_stay_unknown():
         assert report["causes"] == [], value
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_the_merge_state_cause_composes_with_the_others():
     report = pb.summarize(
         merge_state="DIRTY", threads=_threads(unresolved=1),
@@ -114,6 +124,7 @@ def test_the_merge_state_cause_composes_with_the_others():
     ]
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_the_rendered_line_names_a_conflict_instead_of_a_queue():
     """End of the chain: what the operator actually reads must no longer say
     'most likely still queued' for a conflicted PR."""
@@ -134,6 +145,7 @@ def test_the_rendered_line_names_a_conflict_instead_of_a_queue():
 # refactor dropped the GraphQL query constant, every test still passed and
 # `fetch_review_threads` would have raised NameError on the first real call.
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_fetch_review_threads_builds_a_complete_query(monkeypatch):
     seen = {}
 
@@ -149,6 +161,7 @@ def test_fetch_review_threads_builds_a_complete_query(monkeypatch):
     assert "reviewThreads" in query and "hasNextPage" in query and "isResolved" in query
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_fetch_branch_rules_url_encodes_the_branch(monkeypatch):
     seen = {}
     monkeypatch.setattr(pb, "_gh_json", lambda args: seen.setdefault("args", args) and [])
@@ -171,6 +184,7 @@ def _render(report):
     return wpd._render_pending({"status": "pending", "timed_out": False, "blockers": report})
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_a_real_thread_cause_still_renders_as_a_count():
     report = pb.summarize(
         merge_state="CLEAN", threads=_threads(unresolved=2),
@@ -182,6 +196,7 @@ def test_a_real_thread_cause_still_renders_as_a_count():
     assert "'path'" not in line      # and never untrusted paths in the operator line
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_the_observed_state_is_rendered_not_a_fixed_phrase():
     """AC (D). A renderer that emitted a hard-coded 'BLOCKED' plus the conflict
     detail would satisfy the conflict assertion alone, so pin the state too."""
@@ -190,6 +205,7 @@ def test_the_observed_state_is_rendered_not_a_fixed_phrase():
     assert "BLOCKED" not in line
 
 
+@pytest.mark.covers("FR-01.11/AC17")
 def test_control_characters_from_the_host_never_reach_the_line():
     """A branch or path may legally carry an escape sequence."""
     evil = {"nodes": [{"isResolved": False, "path": "a\x1b[31mb.py", "line": 1}],

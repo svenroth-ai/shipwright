@@ -159,7 +159,7 @@ def _paths(findings: list[dict]) -> list[str]:
 
 @pytest.mark.smoke
 @pytest.mark.slow
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC06")
 def test_extend_keeps_default_rules_and_both_allowlists(
     repo: Path, monkeypatch
 ) -> None:
@@ -203,7 +203,7 @@ def test_extend_keeps_default_rules_and_both_allowlists(
 
 @pytest.mark.smoke
 @pytest.mark.slow
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC06")
 def test_a_project_config_that_is_already_a_chain_keeps_parity(
     chained_repo: Path, monkeypatch
 ) -> None:
@@ -270,7 +270,7 @@ def test_a_project_config_that_is_already_a_chain_keeps_parity(
 
 @pytest.mark.smoke
 @pytest.mark.slow
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC06")
 def test_generated_config_is_accepted_by_the_real_binary(
     tmp_path: Path, monkeypatch
 ) -> None:

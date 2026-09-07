@@ -20,6 +20,7 @@ comparable; a completion and a marker are not.
 """
 
 from __future__ import annotations
+import pytest
 
 import json
 import sys
@@ -57,6 +58,7 @@ def _project(root: Path, *, marker_phase: str, marker_run: str, marker_ts: str,
 
 # --- the regression this iterate exists for ----------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_phase_that_skipped_its_step_is_caught(tmp_path):
     """DEFECT 1 from #467, and the reason this iterate exists.
 
@@ -74,6 +76,7 @@ def test_a_phase_that_skipped_its_step_is_caught(tmp_path):
     assert "build" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict(tmp_path):
     """The round-2 defect, pinned. Both phases carry the SAME event anchor —
     which is what `record_event`'s permanent dedup produces — and only their
@@ -91,6 +94,7 @@ def test_the_marker_timestamp_does_not_decide_a_cross_phase_verdict(tmp_path):
     assert "left no note of its own" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_day_precision_completion_never_silently_supersedes(tmp_path):
     """The shape the producer wrote until this iterate: `date` alone. Read as
     midnight UTC it lost every same-day comparison, so the phase that skipped its
@@ -107,6 +111,7 @@ def test_a_day_precision_completion_never_silently_supersedes(tmp_path):
     assert "cannot tell" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_owner_completing_again_after_the_note_hides_nothing(tmp_path):
     """The round-3 defect, pinned. `deploy` wrote the note at DAWN and completed
     again at LATE without re-writing it; `build` completed at MID and skipped its
@@ -128,6 +133,7 @@ def test_the_owner_completing_again_after_the_note_hides_nothing(tmp_path):
     assert "left no note of its own" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_owner_with_no_completion_under_the_notes_run_is_stated(tmp_path):
     """The note names a run the owner's record does not hold, so the two cannot
     be ordered. Stated — never resolved by falling back to the owner's latest,
@@ -144,6 +150,7 @@ def test_an_owner_with_no_completion_under_the_notes_run_is_stated(tmp_path):
 
 # --- supersession is decided by time, not by pipeline order -------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_later_phases_note_supersedes_and_is_a_named_skip(tmp_path):
     """Auditing a finished pipeline: deploy wrote the note AFTER build finished,
     so build's own note is legitimately gone. Undeterminable, not a verdict."""
@@ -157,6 +164,7 @@ def test_a_later_phases_note_supersedes_and_is_a_named_skip(tmp_path):
     assert "superseded" in result.detail and "deploy" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_stale_later_phase_note_does_not_excuse_a_rerun(tmp_path):
     """The hole a PIPELINE_PHASES ordering would have left (external plan
     review, openai R1): deploy's note is OLD, build was re-run afterwards and
@@ -173,6 +181,7 @@ def test_a_stale_later_phase_note_does_not_excuse_a_rerun(tmp_path):
 
 # --- what it cannot settle, it says -------------------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_marker_without_a_phase_cannot_be_ordered_against(tmp_path):
     """A marker that names no phase names no completion record either, so there
     is nothing to order this phase against. It must WARN, not skip: an
@@ -186,6 +195,7 @@ def test_a_marker_without_a_phase_cannot_be_ordered_against(tmp_path):
     assert "(unnamed)" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_owner_with_no_completion_record_is_stated(tmp_path):
     """The note names deploy, but deploy has no recorded completion — so which
     of the two acted last is unknowable. Stated, never assumed either way."""
@@ -198,6 +208,7 @@ def test_an_owner_with_no_completion_record_is_stated(tmp_path):
     assert "cannot tell" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_unusable_completion_timestamp_is_stated_not_guessed(tmp_path):
     root = _project(tmp_path, marker_phase="deploy", marker_run=RUN, marker_ts=LATE,
                     history={})

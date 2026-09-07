@@ -17,6 +17,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _backfill_support import backfill_llm, bf, copy_repo  # noqa: E402
+from backfill_scan import TestRecord as _TestRecord  # noqa: E402
+from backfill_signals import Candidate  # noqa: E402
+from backfill_write import apply_writes, is_contained  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
@@ -236,3 +239,57 @@ def test_main_cli_dry_run_writes_report(tmp_path):
     # dry-run wrote no tag into a file
     dash = repo / "e2e/flows/FR-05.02-dashboard.spec.ts"
     assert "// @covers" not in dash.read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- #
+# backfill_write.apply_writes / is_contained -- symlink-escape guard          #
+# --------------------------------------------------------------------------- #
+
+def _plant_reparse_point(path: Path, target: Path) -> None:
+    """Create a real symlink (POSIX) or directory junction (Windows) at
+    `path` pointing at `target`. Junctions need no elevated privilege on
+    Windows, unlike symlinks (SeCreateSymbolicLinkPrivilege) -- this is what
+    lets the reparse-point test below run unconditionally on every host
+    instead of skipping (Tier-3 CI-gate re-review, P3.4 high, round 10 --
+    same helper as ``test_review_scratch.py``'s own precedent)."""
+    target.mkdir(exist_ok=True)
+    if sys.platform == "win32":
+        import subprocess  # nosec B404 - fixed argv, shell=False
+        subprocess.run(  # nosec B603 B607 - fixed argv, shell=False
+            ["cmd", "/c", "mklink", "/J", str(path), str(target)],
+            capture_output=True, text=True, check=True, timeout=30,
+        )
+    else:
+        path.symlink_to(target, target_is_directory=True)
+
+
+def test_apply_writes_refuses_a_symlinked_test_file_outside_the_project_root(tmp_path):
+    """Tier-3 CI-gate re-review (P3.4 high): ``backfill_test_links.py`` calls
+    ``apply_writes`` with no containment check of its own, so this guard is
+    the ONLY thing standing between a committed symlink (or, on Windows, an
+    unprivileged directory junction in the ANCESTOR chain) and a write
+    outside the repo. Confirms the real external target is never modified."""
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    outside_dir = tmp_path / "outside_project_root_dir"
+    outside_target = outside_dir / "test_link.py"
+    _plant_reparse_point(project_root / "tests", outside_dir)
+    outside_target.write_text("def test_it():\n    assert True\n", encoding="utf-8")
+    rel = "tests/test_link.py"
+
+    record = _TestRecord(test_id=f"{rel}::test_it", rel_path=rel, name="test_it",
+                          layer="unit", decl_line=0, indent=0)
+    cand = Candidate(fr="FR-01.02", confidence=1.0, signals=["path_fr_token"])
+
+    applied, failures = apply_writes(project_root, [(record, cand)])
+
+    assert applied == []
+    assert failures == [{"test": record.test_id, "fr": cand.fr, "reason": "path_escapes_project_root"}]
+    assert outside_target.read_text(encoding="utf-8") == "def test_it():\n    assert True\n"
+
+
+def test_is_contained_accepts_a_real_path_beneath_the_root(tmp_path):
+    (tmp_path / "sub").mkdir()
+    real_file = tmp_path / "sub" / "f.py"
+    real_file.write_text("x", encoding="utf-8")
+    assert is_contained(tmp_path, real_file)

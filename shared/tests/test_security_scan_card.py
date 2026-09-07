@@ -80,7 +80,7 @@ def test_scan_emits_exactly_one_card(tmp_path: Path) -> None:
     assert len(_cards(tmp_path)) == 1
 
 
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC11")
 def test_card_states_the_counts_per_severity(tmp_path: Path) -> None:
     findings = [
         {**_FINDING, "severity": "critical", "rule": "c1", "affected_line": 1},
@@ -93,7 +93,7 @@ def test_card_states_the_counts_per_severity(tmp_path: Path) -> None:
     assert "low: 1" in payload
 
 
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC11")
 def test_card_asks_how_far_to_go(tmp_path: Path) -> None:
     findings = [
         {**_FINDING, "severity": "critical", "rule": "c1", "affected_line": 1},
@@ -106,7 +106,7 @@ def test_card_asks_how_far_to_go(tmp_path: Path) -> None:
     assert payload.count("?") >= 1
 
 
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC04")
 def test_card_names_what_was_not_checked(tmp_path: Path) -> None:
     _scan(tmp_path, {"sast"}, [_FINDING])
     card = _cards(tmp_path)[0]
@@ -151,7 +151,7 @@ def test_the_wrapper_emits_both_surfaces_by_itself(tmp_path: Path) -> None:
     assert "semgrep:r1:a.py:3" in keys, "the per-finding enumeration is missing"
 
 
-@pytest.mark.covers("FR-01.07")
+@pytest.mark.covers("FR-01.07/AC08")
 def test_the_wrapper_mirrors_the_redacted_findings(tmp_path: Path) -> None:
     """Triage gets the REDACTED set, not raw secret evidence.
 

@@ -22,6 +22,7 @@ explain away:
 """
 
 from __future__ import annotations
+import pytest
 
 import subprocess
 import sys
@@ -67,6 +68,7 @@ def _on_main(root: Path, text: str, message: str) -> None:
     _git(root, "checkout", "-q", "work")
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_branch_line_that_merely_mentions_what_it_discards(tmp_path):
     """D1 — the check's OWN motivating case, with the branch line reworded.
 
@@ -87,6 +89,7 @@ def test_a_branch_line_that_merely_mentions_what_it_discards(tmp_path):
     assert "THEIR DOCUMENTED BEHAVIOUR" in dropped[DOC]
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones(tmp_path):
     """D2 — the same hole at scale. With `-U0` two adjacent deletions and one
     addition share a hunk, so a single long line the branch had all along would
@@ -102,6 +105,7 @@ def test_one_pre_existing_line_cannot_vouch_for_several_deleted_ones(tmp_path):
     assert {"- run the gate", "- run the gate in CI"} <= set(dropped[DOC])
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file(tmp_path):
     """D3 — the hunk pairing is only evidence while hunks stay small. Lines are
     compared after `.strip()`, so re-indenting a file produces no finding; git,
@@ -126,6 +130,7 @@ def test_a_whitespace_reformat_cannot_widen_a_hunk_into_the_whole_file(tmp_path)
     assert "raise Stop" in dropped[DOC]
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_typo_fix_on_the_default_branch_cannot_erase_a_finding(tmp_path):
     """D4 — "the default branch no longer has this exact line" is true both when
     it superseded the line and when it merely corrected a character in a line this

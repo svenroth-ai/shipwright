@@ -66,6 +66,7 @@ def _splits(root: Path, *, marker_ts: str, entries: list[dict]) -> Path:
 
 # --- the defect -----------------------------------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_later_split_that_skipped_the_marker_write_is_caught(tmp_path):
     """HIGH-2. Split 1 wrote the marker at its own anchor and completed; split 2
     completed at a NEWER anchor and wrote nothing. The ids match; the note does
@@ -79,6 +80,7 @@ def test_a_later_split_that_skipped_the_marker_write_is_caught(tmp_path):
     assert "re-run its C3 step" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_split_that_did_re_write_the_marker_passes(tmp_path):
     """The same two completions, with the marker refreshed by the second — so
     the marker's anchor EQUALS the latest completion's, which is what a correct
@@ -90,6 +92,7 @@ def test_the_split_that_did_re_write_the_marker_passes(tmp_path):
     assert result.ok is True, result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_single_stale_completion_is_caught_too(tmp_path):
     """The gate is the ANCHOR's existence, not a count of entries.
 
@@ -109,6 +112,7 @@ def test_a_single_stale_completion_is_caught_too(tmp_path):
 
 # --- the false positives the rule must not create -------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_completion_with_no_anchor_never_consults_the_clock(tmp_path):
     """Entries written before `event_at` existed have no value on the marker's
     clock. Comparing their wall clock to a marker is exactly the defect, so the
@@ -122,6 +126,7 @@ def test_a_completion_with_no_anchor_never_consults_the_clock(tmp_path):
     assert result.ok is True, result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_rerun_under_a_sticky_id_with_no_new_event_passes(tmp_path):
     """The reproduced regression. `record_event` dedups `phase_completed`
     first-wins, so a re-run appends NO event: the marker is rewritten but
@@ -134,6 +139,7 @@ def test_a_rerun_under_a_sticky_id_with_no_new_event_passes(tmp_path):
     assert result.ok is True, result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_wall_clock_at_is_never_what_gets_compared(tmp_path):
     """Directly pins the defect's mechanism: every `at` here is LATER than the
     marker, and every `event_at` equals it. Reading `at` warns; reading
@@ -147,6 +153,7 @@ def test_the_wall_clock_at_is_never_what_gets_compared(tmp_path):
 
 # --- what it cannot settle, it says -----------------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_day_precision_legacy_entry_is_not_compared_to_the_marker(tmp_path):
     """A bare `date` is a wall clock AND day-precision. Neither is comparable
     with the marker, so the id answers alone rather than a guess being made."""
@@ -158,6 +165,7 @@ def test_a_day_precision_legacy_entry_is_not_compared_to_the_marker(tmp_path):
     assert check_c3(tmp_path, "build").ok is True
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_anchor_that_is_present_but_unreadable_is_stated(tmp_path):
     """Absent and unreadable are DIFFERENT states. No `event_at` is a pre-change
     entry, where the run id is legitimately the whole answer. An `event_at` that
@@ -175,6 +183,7 @@ def test_an_anchor_that_is_present_but_unreadable_is_stated(tmp_path):
     assert "cannot be read" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_marker_pinning_only_a_day_cannot_settle_it_either(tmp_path):
     """The note's own timestamp gets the same treatment as a completion's: a bare
     date pins a DAY, and reading it as midnight is the fabrication HIGH-1 removed
@@ -188,6 +197,7 @@ def test_a_marker_pinning_only_a_day_cannot_settle_it_either(tmp_path):
 
 
 @pytest.mark.parametrize("marker_ts", ["", "not-a-date", "(no events)"])
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_unusable_marker_timestamp_is_stated_when_the_completion_is_anchored(
     tmp_path, marker_ts
 ):

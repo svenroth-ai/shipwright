@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-09-07T08:00:31.525660+00:00
-Source-State: run=iterate-2026-09-07-p3-2-tag-grammar-manifest-v4
+Generated: 2026-09-07T19:24:15.713726+00:00
+Source-State: run=iterate-2026-09-07-p3-4-tagging-backfill
 Consistency-audit: last run 2026-07-28 (41 days earlier) — FAIL
-Total commits: 1471
+Total commits: 1468
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 504
-    "feat" : 388
-    "chore" : 267
-    "docs" : 157
+    "fix" : 503
+    "feat" : 390
+    "chore" : 265
+    "docs" : 156
     "refactor" : 88
-    "test" : 38
+    "test" : 37
     "ci" : 18
     "other" : 9
     "perf" : 1
@@ -23,11 +23,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 504 commits
+### Fixes (fix) — 503 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-07 | compliance | correct stale v3-schema references in test_links.py docs/errors | ba24820e6356 |
 | 2026-09-07 | safety-gate | analyze JS/TS test files in the main-repair safety gate (#685) | fb0abde2b3dc |
 | 2026-09-07 | triage | fold sibling-worktree decisions into main's own read (#684) | 9c71110a46c8 |
 | 2026-09-06 | compliance | reconcile D1/D3 for FR-01.18 (/shipwright-grade) (#682) | 7e106939fbf8 |
@@ -532,11 +531,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 388 commits
+### Features (feat) — 390 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-07 | compliance | AC-scoped @covers tag grammar + test-traceability manifest v4 | 62d8dc106323 |
+| 2026-09-07 | compliance | wire AC-identity mint + tagging backfill into spec.md (P3.4) | 7063f7b794d7 |
+| 2026-09-07 | compliance | F11 binding-completeness gate + ledger/(E)-bullet reconciliation (P3.3) (#687) | 263c9197e642 |
+| 2026-09-07 | compliance | AC-scoped @covers tag grammar + test-traceability manifest v4 (P3.2) (#686) | c0d1b38be277 |
 | 2026-09-07 | compliance | mint/read tool-assigned per-criterion AC ids (P3.1) (#683) | 39562119357b |
 | 2026-09-06 | compliance | add diff-scoped FR-row hygiene gate + I7/I8 checks (#679) | 985c5853d267 |
 | 2026-09-03 | external-review | add Codex CLI as a second, config-driven GPT review-leg path (#672) | 07d42df65510 |
@@ -925,12 +926,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 267 commits
+### Chores (chore) — 265 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-07 | compliance | regenerate committed manifest to schema v4 | 8f80645de2f3 |
-| 2026-09-07 | review | record the Stage-1 REJECT for p3.2 | 702ba90cfd76 |
 | 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
 | 2026-09-01 | release | v0.33.1 (#667) | 77d10de1c32a |
 | 2026-08-29 | docs | sync guide.md with grade plugin, compliance groups A-I, traceability tagging (#663) | 31517fe72604 |
@@ -1197,11 +1196,10 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 157 commits
+### Documentation (docs) — 156 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-07 | adr | correct P3.2's decision provenance to match the reworded AC-3/new AC-4 | 8491f323729f |
 | 2026-08-10 | — | remove expired refactoring-churn warning from README (#626) | 005f7bfe5843 |
 | 2026-08-09 | — | add threshold-based guide to keeping token cost controllable (#621) | 58cda771438f |
 | 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
@@ -1452,11 +1450,10 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 38 commits
+### Tests (test) — 37 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-07 | compliance | pin v4 manifest additive-shape guarantee against frozen v3 (P3.2 AC-3) | f13dd2a1c4e0 |
 | 2026-08-26 | compliance | pin fr_criteria.py parsing widenings, fix table description exemption (#650) | ec777034800c |
 | 2026-08-10 | shared | normalize Windows worktree path aliases (#628) | 5243930c7299 |
 | 2026-08-09 | security | cover review_record_tier CLI path and needs-review label (#624) | e425fb14795f |
@@ -1548,7 +1545,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1471 |
+| Total commits | 1468 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1471 |
+| Human-authored commits | 1468 |
 

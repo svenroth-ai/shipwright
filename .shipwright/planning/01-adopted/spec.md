@@ -59,35 +59,35 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0101"></a>
 ### FR-01.01 — /shipwright-run
 
-- (E) Given a described change, when the pipeline is run, then the phases are
+- (E) [AC01] Given a described change, when the pipeline is run, then the phases are
   carried out in their fixed order, each one handing what it produced to the
   next, until what was described exists as delivered work — the operator does not
   invoke each phase by hand.
-- (E) Given a phase that did not satisfy its own checks, when it is asked to be
+- (E) [AC02] Given a phase that did not satisfy its own checks, when it is asked to be
   marked finished, then it is not — the run pauses for a person to decide, so a
   phase is never quietly counted as done on work that failed its own test.
-- (E) Given a person decides to go ahead regardless, when the phase is marked
+- (E) [AC03] Given a person decides to go ahead regardless, when the phase is marked
   finished anyway, then what was overridden and why is recorded — so afterwards
   "passed its checks" and "was waved through" can still be told apart.
-- (E) Given a run that was interrupted part-way, when it is picked up again,
+- (E) [AC04] Given a run that was interrupted part-way, when it is picked up again,
   then it continues at the phase it had reached rather than starting over, and
   the document a person reads on returning states which phases are finished and
   which one was interrupted — the run already knows this; the point is that the
   person is told without having to ask.
-- (E) Given any surface the assistant runs on — including editor extensions and
+- (E) [AC05] Given any surface the assistant runs on — including editor extensions and
   desktop chat, neither of which can open a second bound session — when a
   pipeline run starts, then every phase is driven inside that one conversation,
   so the run advances instead of stalling at the first phase.
-- (E) Given the pipeline has run to the end, when someone asks what it covered,
+- (E) [AC06] Given the pipeline has run to the end, when someone asks what it covered,
   then scanning for vulnerabilities is not among it — that runs on its own
   schedule and on its own request — and the audit evidence was not a step
   either but was kept up alongside every phase. A finished pipeline is not a
   security clearance.
-- (E) Given a run configuration written before one-conversation mode became the
+- (E) [AC07] Given a run configuration written before one-conversation mode became the
   only mode, when any command tries to advance that run, then it is refused with
   a one-line instruction for how to migrate it, and is never silently
   reinterpreted. The run still opens for reading, so past runs stay inspectable.
-- (E) Given a phase's completion checks ask whether the handover note a person
+- (E) [AC08] Given a phase's completion checks ask whether the handover note a person
   reads on returning is current, when that is decided, then it is decided by
   whether that phase itself left the note for its own most recent completion —
   not by how recently the file was written, so a run that spent a long time
@@ -104,65 +104,65 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0102"></a>
 ### FR-01.02 — /shipwright-project
 
-- (E) Given a project description and the interview about it, when setup is
+- (E) [AC01] Given a project description and the interview about it, when setup is
   declared finished, then what exists is a catalogue of requirements, each one
   scoped so it can be delivered on its own, together with the starting guidance
   an assistant needs to work inside that project.
-- (E) Given a capability being written up as a requirement, when it cannot be
+- (E) [AC02] Given a capability being written up as a requirement, when it cannot be
   given acceptance criteria that a single delivery would satisfy, then it is too
   broad and is divided — being unable to enumerate what would settle it is the
   signal that it names several capabilities at once.
-- (E) Given the project description and the interview, when setup is declared
+- (E) [AC03] Given the project description and the interview, when setup is declared
   finished, then every capability the person described is present as a
   requirement — nothing they raised is silently dropped.
-- (E) Given the requirements produced, when they are read back, then none
+- (E) [AC04] Given the requirements produced, when they are read back, then none
   describes work the person did not ask for or confirm, so setup cannot quietly
   invent scope.
-- (E) Given a requirement is recorded, when setup is declared finished, then it
+- (E) [AC05] Given a requirement is recorded, when setup is declared finished, then it
   carries acceptance criteria its author has confirmed — no requirement leaves
   this phase unelaborated, because in a new project the person who could answer
   is in the conversation and leaving it blank is declining to ask.
-- (E) Given a requirement is recorded, when setup is declared finished, then how
+- (E) [AC06] Given a requirement is recorded, when setup is declared finished, then how
   we know it is recorded against it, and in a new project that is a person's
   confirmation — the "unconfirmed assumption" basis does not appear, because
   here, with the person in the conversation, unconfirmed means unasked — and where the
   answer genuinely does not exist yet, what would settle it is named, so an
   honest gap is distinguishable from an unasked question.
-- (E) Given a requirement is recorded, when setup is declared finished, then
+- (E) [AC07] Given a requirement is recorded, when setup is declared finished, then
   every angle of its context has been walked and left a trace — its purpose, its
   boundaries and edge cases, how it behaves when things go wrong, the terms it
   introduced, the reason behind any hard-to-reverse choice, and what it will
   deliberately not do — so it is complete because each angle was considered, not
   because the questions ran out; in a new project none of these is left blank.
-- (E) Given a requirement sentence is authored, when it is written, then it
+- (E) [AC08] Given a requirement sentence is authored, when it is written, then it
   carries no file name, no decision-record number, no code symbol and no HTTP
   verb.
-- (E) Given a requirement sentence is authored, when it is written, then it
+- (E) [AC09] Given a requirement sentence is authored, when it is written, then it
   states the capability in language a product owner can sign off without
   decoding jargon, and drops no behavioural guarantee for the sake of plainness.
-- (E) Given terms were sharpened during the interview, when setup is declared
+- (E) [AC10] Given terms were sharpened during the interview, when setup is declared
   finished, then the project's own vocabulary is captured as a context glossary
   — the project's domain terms, kept separate from the framework's own
   vocabulary — carrying no implementation detail, so two readers cannot take one
   word two ways.
-- (E) Given a choice made during setup is hard to reverse and surprising without
+- (E) [AC11] Given a choice made during setup is hard to reverse and surprising without
   context, when it is made, then the reason behind it is recorded and reachable
   from the requirement it shapes.
-- (E) Given setup infers something it was not told — whether this is a web app
+- (E) [AC12] Given setup infers something it was not told — whether this is a web app
   or a command-line tool, the stack, how data is stored, how people sign in —
   when the interview begins, then those inferences are stated back for
   correction before the first clarifying question, so a wrong guess is caught
   cheaply instead of silently shaping everything after it.
-- (E) Given the requirements, when the project is divided for delivery, then
+- (E) [AC13] Given the requirements, when the project is divided for delivery, then
   each part has one cohesive purpose and few enough moving pieces to plan in one
   sitting — or, when the project is genuinely one coherent system, it is
   deliberately left as a single part, which is a valid outcome and not a
   failure.
-- (E) Given a project has been set up, when setup is declared finished, then the
+- (E) [AC14] Given a project has been set up, when setup is declared finished, then the
   starting guidance an assistant needs to work correctly inside the project
   exists, so a fresh session does not have to re-derive the project's shape from
   the code.
-- (E) Given a change retires a requirement, when the requirements document is
+- (E) [AC15] Given a change retires a requirement, when the requirements document is
   updated, then the retired requirement moves into a clearly marked retired
   section instead of being deleted; coverage reporting stops counting it as
   live, and its number stays permanently taken.
@@ -170,14 +170,14 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0103"></a>
 ### FR-01.03 — /shipwright-plan
 
-- (E) Given requirements to implement, when planning is declared finished, then
+- (E) [AC01] Given requirements to implement, when planning is declared finished, then
   what exists is an implementation plan divided into sections the build phase
   can take one at a time — not a single undivided document.
-- (E) Given a plan is being produced, when the step in which two independent
+- (E) [AC02] Given a plan is being produced, when the step in which two independent
   outside reviewers check it cannot run because no access key is configured,
   then the run stops and asks whether to add a key or continue without that
   review — it is never skipped quietly.
-- (E) Given the outside reviewers cannot be reached or have been switched
+- (E) [AC03] Given the outside reviewers cannot be reached or have been switched
   off, when the plan's review step ends, then an independent reviewer has
   still checked the plan against the requirements and its findings are each
   folded in or recorded with a reason — the step is never satisfied by the
@@ -188,41 +188,41 @@ _Where the work detail lives_ at the end of this document.
   reviewer runs on is configurable per project, defaulting to the same
   model as the rest of the session when left unset — it is never hard-wired
   to one fixed model.
-- (E) Given that review step has ended by any route — reviewed, declined by the
+- (E) [AC04] Given that review step has ended by any route — reviewed, declined by the
   operator, or switched off in configuration — when the plan is divided into
   sections, then the route taken is on record, and dividing it refuses to begin
   while no route has been recorded.
-- (E) Given the requirements the plan is written from, when the plan is declared
+- (E) [AC05] Given the requirements the plan is written from, when the plan is declared
   finished, then every one of them is assigned to at least one section.
-- (E) Given a finished plan, when its sections are checked, then every section
+- (E) [AC06] Given a finished plan, when its sections are checked, then every section
   traces back to at least one requirement it serves, so a plan cannot quietly
   add work nobody asked for.
-- (E) Given the sections, when the plan is declared finished, then each
+- (E) [AC07] Given the sections, when the plan is declared finished, then each
   one says what it is for, lists at least two implementation steps, and states
   how it will be tested.
-- (E) Given a section, when someone builds it, then that section together with
+- (E) [AC08] Given a section, when someone builds it, then that section together with
   the prerequisites it names is enough to implement it — a builder does not have
   to read the other sections to know what to do, because the section names what
   it depends on, the files it expects to touch, and how it will be tested.
-- (E) Given the outside reviewers are available, when the plan is reviewed, then
+- (E) [AC09] Given the outside reviewers are available, when the plan is reviewed, then
   they are asked a second question as well — whether the work should be built at
   all, and what the smallest thing that would do is — and they are asked it over
   a short summary of the problem and the options rather than over the plan, with
   the plan's own reasons for rejecting those options left out, so their answer
   is not a restatement of the author's.
-- (E) Given that second question is being asked, when the summary is assembled,
+- (E) [AC10] Given that second question is being asked, when the summary is assembled,
   then handing the reviewers the plan in its place is refused outright rather
   than quietly accepted, because a review of the plan reads identically to a
   review of the summary and would be trusted as one.
-- (E) Given either reviewer answers that the work should not be built this way,
+- (E) [AC11] Given either reviewer answers that the work should not be built this way,
   when the plan is declared finished, then the run stops and asks a person to
   choose — take the alternative, keep the plan with the reason written down, or
   rework it — and the choice is on record before any code exists.
-- (E) Given an outside review raised findings, when the plan is declared
+- (E) [AC12] Given an outside review raised findings, when the plan is declared
   finished, then each finding has been either folded into the plan or recorded
   with the reason it was rejected — a review whose findings were only counted has
   not been done.
-- (E) Given the two outside reviewers reached opposite conclusions about the
+- (E) [AC13] Given the two outside reviewers reached opposite conclusions about the
   plan as a whole — one endorsing it, the other saying the approach is wrong —
   when the review step ends, then that disagreement is recorded as its own
   outcome and put to the person to decide, and dividing the plan into sections
@@ -230,35 +230,35 @@ _Where the work detail lives_ at the end of this document.
   reviewer's conclusion could not be read at all, or when only one of the two
   answered: neither is agreement. Two independent reviewers exist so that
   disagreement is noticed, which a single count of findings cannot show.
-- (E) Given a project with a user interface, when the plan is declared finished,
+- (E) [AC14] Given a project with a user interface, when the plan is declared finished,
   then it names the end-to-end journeys that must work, so the test phase has
   something concrete to verify the build against.
-- (E) Given a section that needs something another section produces, when the
+- (E) [AC15] Given a section that needs something another section produces, when the
   plan is written, then it names which sections it presupposes, and the order
   they are numbered in never places a prerequisite after the section that needs
   it — stating the dependency is what makes the order something that can be
   checked rather than merely intended.
-- (E) Given a planning session that was interrupted, when it is resumed, then it
+- (E) [AC16] Given a planning session that was interrupted, when it is resumed, then it
   continues from the step it had reached rather than starting over, and a plan
   whose review was never recorded is sent back to be reviewed rather than
   resumed past it.
-- (E) Given a finished plan, when it is handed on, then no production code has
+- (E) [AC17] Given a finished plan, when it is handed on, then no production code has
   been written and no tests have been run — planning stops at the plan.
-- (E) Given design decisions taken during planning that go beyond what the
+- (E) [AC18] Given design decisions taken during planning that go beyond what the
   chosen technology stack already settles, when the plan is written, then each
   is recorded in the project's decision log with its reasoning.
-- (E) Given one of the outside reviewers answers but does not actually deliver a
+- (E) [AC19] Given one of the outside reviewers answers but does not actually deliver a
   review — nothing at all, or an answer the provider itself reports as cut off
   mid-sentence — when the review step reports its result, then that reviewer is
   recorded as having failed, with the reason, rather than as having reviewed.
   If neither reviewer delivered, the step fails loudly instead of passing.
   (iterate-2026-07-27-name-the-blocker)
-- (E) Given the default outside reviewers are invoked, when their results are
+- (E) [AC20] Given the default outside reviewers are invoked, when their results are
   recorded, then they are identified truthfully as DeepSeek and OpenAI — never
   with DeepSeek hidden behind the historical Gemini name — and the OpenAI arm
   keeps its selected GPT model. Historical Gemini/OpenAI records remain readable
   as historical evidence. (iterate-2026-08-03-p2-33-deepseek-zdr-review)
-- (E) Given DeepSeek is asked to review project material, when its route is
+- (E) [AC21] Given DeepSeek is asked to review project material, when its route is
   selected, then only deliberately configured US or EU endpoints whose
   zero-retention handling has been verified may receive it. If none is
   available, that reviewer is reported unavailable and the route is not widened
@@ -268,77 +268,77 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0104"></a>
 ### FR-01.04 — /shipwright-design
 
-- (E) Given requirements with a user-facing side, when design is declared
+- (E) [AC01] Given requirements with a user-facing side, when design is declared
   finished, then every one of them has at least one screen — none is left
   without a mockup.
-- (E) Given screens have been designed, when design is declared finished, then
+- (E) [AC02] Given screens have been designed, when design is declared finished, then
   the design tokens a build needs — colours, typography, spacing — exist as one
   reusable definition, so the build matches the design instead of guessing at
   it.
-- (E) Given screens that belong to a single journey, when design is declared
+- (E) [AC03] Given screens that belong to a single journey, when design is declared
   finished, then the path between them is shown as a flow, not only the screens
   in isolation, so the route a user takes can be reviewed before it is built.
-- (E) Given screens covering the user-facing requirements, when the design is
+- (E) [AC04] Given screens covering the user-facing requirements, when the design is
   approved, then each of those requirements records which screen stands for it,
   so the build knows what each requirement is meant to look like.
-- (E) Given shared page furniture — navigation, header, footer, branding — when
+- (E) [AC05] Given shared page furniture — navigation, header, footer, branding — when
   screens are produced, then every screen takes it from one definition, so no
   two screens disagree, and changing it once updates all of them.
-- (E) Given a generated mockup, when someone opens it, then it displays in a
+- (E) [AC06] Given a generated mockup, when someone opens it, then it displays in a
   browser on its own — no build step, no server, and no dependency install.
-- (E) Given requirements with a user-facing side, when mockups are produced,
+- (E) [AC07] Given requirements with a user-facing side, when mockups are produced,
   then the look and feel is put to a person for approval on a few representative
   screens before the rest are generated — the phase waits for that approval
   rather than generating every screen in a style that might be rejected.
-- (E) Given a full set of mockups, when design is asked to finish, then it does
+- (E) [AC08] Given a full set of mockups, when design is asked to finish, then it does
   so only after a person has reviewed them and approved — design never declares
   itself finished on its own, and feedback rounds continue until the person
   approves.
-- (E) Given the operator supplies mockups of their own, when the phase runs,
+- (E) [AC09] Given the operator supplies mockups of their own, when the phase runs,
   then those are taken as given and only the missing screens are generated —
   supplied work is never overwritten.
-- (E) Given feedback on a single screen, when it is applied, then only that
+- (E) [AC10] Given feedback on a single screen, when it is applied, then only that
   screen is regenerated and the others are left untouched.
-- (E) Given a round of feedback changes what a screen or a flow *does* — a step
+- (E) [AC11] Given a round of feedback changes what a screen or a flow *does* — a step
   added, an option removed, a path through the product reordered — and not merely
   how it looks, when the design is approved, then the requirement it belongs to is
   corrected to say so. Design is where flows are rightly rethought, so what is
   learned there reaches the requirements instead of living only in the mockup.
-- (E) Given the design phase runs, when it produces its output, then what it
+- (E) [AC12] Given the design phase runs, when it produces its output, then what it
   produces are review mockups, not production code — the build phase writes the
   real thing, so a mockup is never mistaken for the shipped implementation.
 
 <a id="fr-0105"></a>
 ### FR-01.05 — /shipwright-build
 
-- (E) Given a planned section, when building it is declared finished, then what
+- (E) [AC01] Given a planned section, when building it is declared finished, then what
   exists is working code that runs — the section has been turned into part of
   the product, not into a description of one.
-- (E) Given a request to build, when no planned section is named, then it
+- (E) [AC02] Given a request to build, when no planned section is named, then it
   refuses and says that unplanned changes belong to the change workflow — build
   works from a plan, one section at a time.
-- (E) Given a planned section, when it is built, then the result does exactly
+- (E) [AC03] Given a planned section, when it is built, then the result does exactly
   what that section specified — every acceptance criterion the section carries is
   met, none silently skipped or quietly downgraded, and nothing outside the
   section's scope is added.
-- (E) Given a section that changes what the user sees and a design mockup exists
+- (E) [AC04] Given a section that changes what the user sees and a design mockup exists
   for it, when it is built, then the mockup is read first and used as the
   baseline, and the built screen is checked back against it — a mockup is never
   ignored, and never loosely approximated in place of matching it.
-- (E) Given the approved mockup and the section's own description contradict each
+- (E) [AC05] Given the approved mockup and the section's own description contradict each
   other, when that is noticed, then building stops and a person decides — because
   the mockup is the thing someone actually looked at and judged against real use,
   the expected outcome is that the requirement is corrected to match it, not that
   the mockup is quietly overridden or quietly followed.
-- (E) Given a section cannot be built without touching something shared that lies
+- (E) [AC06] Given a section cannot be built without touching something shared that lies
   outside it, when that change is made, then it is the smallest one the section
   needs and it is recorded as belonging to that section — "nothing outside the
   section" forbids unrequested extra work, not the work the section needs to
   function.
-- (E) Given a planned section, when build calls it finished, then the section's
+- (E) [AC07] Given a planned section, when build calls it finished, then the section's
   behaviour is proven by tests that pass — it is never declared done on unproven
   code.
-- (E) Given a completed section, when it is delivered, then it arrives as one
+- (E) [AC08] Given a completed section, when it is delivered, then it arrives as one
   self-contained unit — one section, one branch, one commit — under the
   framework's delivery discipline (the constitution's how), which build follows
   rather than restates.
@@ -346,32 +346,32 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0106"></a>
 ### FR-01.06 — /shipwright-test
 
-- (E) Given a project with tests, when the test phase runs, then the tests are
+- (E) [AC01] Given a project with tests, when the test phase runs, then the tests are
   actually executed at every level the project has — unit, integration,
   database, end-to-end and smoke — and it is their real outcome that is
   reported, not a summary of what was expected to happen.
-- (E) Given the test phase reports, when its record is read, then every test
+- (E) [AC02] Given the test phase reports, when its record is read, then every test
   level the project has carries an explicit outcome — passed, failed, or not run
   with a stated reason — and for the levels the pipeline itself checks, a skip
   with no reason given stops the phase from being called complete.
-- (E) Given the phase completes, when the record is read, then it shows tests
+- (E) [AC03] Given the phase completes, when the record is read, then it shows tests
   were run and counted — a record showing nothing executed is never accepted as
   a passing one. What is checked is the record; that it matches what actually
   ran rests on the phase writing it honestly.
-- (E) Given a level or check that could not start, or could not reach what it
+- (E) [AC04] Given a level or check that could not start, or could not reach what it
   needs to run, when results are reported, then it is recorded as not run, with
   the reason — never as passed.
-- (E) Given test results that record having been produced outside a pipeline
+- (E) [AC05] Given test results that record having been produced outside a pipeline
   run, when the pipeline asks whether this change was tested, then they are
   refused and the tests are run again in context — results from elsewhere never
   stand in once they say so.
-- (E) Given the browser tests have run, when their numbers are recorded, then the
+- (E) [AC06] Given the browser tests have run, when their numbers are recorded, then the
   numbers are the ones the test tool itself reported, and any difference from
   what was first written down is corrected and the correction noted.
-- (E) Given a project with no browser tests yet and a plan describing user
+- (E) [AC07] Given a project with no browser tests yet and a plan describing user
   journeys, when the test phase runs, then runnable tests are written from those
   journeys instead of the whole browser layer being skipped for want of them.
-- (E) Given a plan describing several user journeys and browser tests that
+- (E) [AC08] Given a plan describing several user journeys and browser tests that
   already exist for some of them, when the test phase runs, then each journey is
   reported individually as covered or not — a journey added to the plan later is
   never passed over because some other journey has a test. On a project built
@@ -379,44 +379,44 @@ _Where the work detail lives_ at the end of this document.
   an existing codebase it is recorded as a follow-up for onboarding instead.
   Whether a test genuinely exercises its journey is offered as an indication,
   never as proof.
-- (E) Given a check that reports a failure without stopping the run, when the
+- (E) [AC09] Given a check that reports a failure without stopping the run, when the
   session ends, then a tracked follow-up remains — so a suite that has been
   failing for weeks is distinguishable from one that started failing today.
-- (E) Given a project that declared which failures predate its onboarding, when
+- (E) [AC10] Given a project that declared which failures predate its onboarding, when
   the test phase reports, then those are reported as known and accepted,
   separately from genuine failures, and the run is not called failing on their
   account — the same list the audit phase reads, so the two never describe one
   run differently. A declared list that cannot be read excuses nothing, and says
   so.
-- (E) Given a test that failed and then passed when tried again, when results
+- (E) [AC11] Given a test that failed and then passed when tried again, when results
   are recorded, then it counts as a pass and stops nothing, and is reported
   separately as having needed a retry — so a test that has needed one for weeks
   becomes visible before it fails for good. Each test counts once however many
   attempts it took.
-- (E) Given a project whose screens were designed as mockups first, when the test
+- (E) [AC12] Given a project whose screens were designed as mockups first, when the test
   phase runs, then each screen is compared back to its mockup and every
   divergence is named — and a screen that matched before and diverges now is
   reported as a regression, distinct from one never checked.
-- (E) Given a project with several pages, when the test phase runs, then a
+- (E) [AC13] Given a project with several pages, when the test phase runs, then a
   pattern used one way on most pages and differently on a few is reported as an
   outlier, grouped by what caused it.
-- (E) Given a project that declared performance budgets, when the test phase
+- (E) [AC14] Given a project that declared performance budgets, when the test phase
   runs, then loading speed and delivered size are measured against those budgets
   and the result says which budget was exceeded and by how much — the project
   choosing whether exceeding one warns or stops the run, and an overrun that only
   warns is still recorded as a follow-up that outlives the run.
-- (E) Given a change that declared pairs of code writing and reading the same
+- (E) [AC15] Given a change that declared pairs of code writing and reading the same
   stored format, when the coverage report runs, then each declared pair is
   reported as apparently covered by a test, apparently not covered, or
   undetermined — offered as an indication, never as proof that a value survives
   the round trip.
-- (E) Given a change that wrote or read stored formats but declared no such pair,
+- (E) [AC16] Given a change that wrote or read stored formats but declared no such pair,
   when the coverage report runs, then that change is flagged as a missed
   declaration.
-- (E) Given the phase completes, when the audit-evidence phase runs, then the
+- (E) [AC17] Given the phase completes, when the audit-evidence phase runs, then the
   per-level results, the browser test report and the coverage report are
   available to it as recorded evidence.
-- (E) Given a test run that passed, when its result is read as assurance, then it
+- (E) [AC18] Given a test run that passed, when its result is read as assurance, then it
   covers no check for vulnerabilities, leaked secrets or unsafe dependencies —
   those belong to a separate phase this one never starts, so a green test run is
   never mistaken for a security clearance.
@@ -424,75 +424,75 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0107"></a>
 ### FR-01.07 — /shipwright-security
 
-- (E) Given a project to scan, when the scan runs, then it looks for the kinds
+- (E) [AC01] Given a project to scan, when the scan runs, then it looks for the kinds
   of weakness that actually put a project at risk: code written so that an
   attacker can slip their own commands or queries into it, dependencies carrying
   publicly known vulnerabilities, access credentials committed by accident, and
   attempts to hijack the assistant's own instructions through the files that
   configure it.
-- (E) Given a project to scan, when findings are reported, then they arrive in
+- (E) [AC02] Given a project to scan, when findings are reported, then they arrive in
   one shape whichever check produced them — the same shape for a flaw in the
   code, a known-vulnerable dependency, a secret committed by accident, and an
   attempt to hijack the assistant's own instructions hidden in the files that
   configure it — so they can be read, counted and acted on together.
-- (E) Given one of those checks fails to run or cannot be reached, when results
+- (E) [AC03] Given one of those checks fails to run or cannot be reached, when results
   are reported, then that check is reported as having failed and the run does
   not report success — a check that did not run is never counted as a clean
   result.
-- (E) Given a machine that has only some of the checks available, when results
+- (E) [AC04] Given a machine that has only some of the checks available, when results
   are reported, then the report names the kinds of weakness that were not
   looked for at all, and says they are unexamined rather than clean — so a
   scan run with one check available never reads as a clean result for every
   kind. A report that cannot say what it examined states that too, rather than
   implying everything was.
-- (E) Given two scans of the same project are compared, when the later one no
+- (E) [AC05] Given two scans of the same project are compared, when the later one no
   longer shows a finding, then it counts as fixed only for the kinds of
   weakness both scans actually examined; for a kind the later scan did not
   examine, the comparison says the two cannot be compared there instead of
   reporting the finding as gone.
-- (E) Given the project keeps its own record of consciously accepted findings,
+- (E) [AC06] Given the project keeps its own record of consciously accepted findings,
   when a check runs on the developer's machine, then it reaches the same verdict
   as that check running on the code host — the local run extends that record
   rather than substituting one of its own. Where honouring it would leave a check
   looking for almost nothing, the result is reported as untrustworthy rather than
   clean.
-- (E) Given no scanner is available at all, when the phase starts, then it stops
+- (E) [AC07] Given no scanner is available at all, when the phase starts, then it stops
   with setup instructions rather than reporting that nothing was found.
-- (E) Given a finding that exposes a leaked secret, when the report is written,
+- (E) [AC08] Given a finding that exposes a leaked secret, when the report is written,
   then the secret's value is masked, and the option to keep raw values is
   refused outright when running unattended in automation.
-- (E) Given a leaked credential is found, when the finding is reported, then it
+- (E) [AC09] Given a leaked credential is found, when the finding is reported, then it
   says the credential must be treated as compromised and replaced — removing it
   from the code is not the fix, because what has been published stays published.
-- (E) Given the run states an overall verdict, when it is read, then the verdict
+- (E) [AC10] Given the run states an overall verdict, when it is read, then the verdict
   names the severity it acted on and how many findings remain below it — never a
   bare "passed", which reads as "nothing found" when it means "nothing of the
   most severe kind".
-- (E) Given findings are handed to a person to work through, when they are
+- (E) [AC11] Given findings are handed to a person to work through, when they are
   presented, then how many there are at each severity is stated and the choice of
   how far to go is put to that person — the tool never silently decides that the
   less severe ones do not matter.
-- (E) Given the detailed findings of a scan, when they are written down, then
+- (E) [AC12] Given the detailed findings of a scan, when they are written down, then
   they stay in a place that does not travel with the code — a description of how
   this project can be attacked never becomes part of what the project publishes.
-- (E) Given a finding the tool fixed by itself, when it is reported as fixed,
+- (E) [AC13] Given a finding the tool fixed by itself, when it is reported as fixed,
   then the project's tests passed after the fix — "fixed" never means merely
   "edited".
-- (E) Given a finding that needs human judgement, when the scan is complete,
+- (E) [AC14] Given a finding that needs human judgement, when the scan is complete,
   then the report carries the person's decision — fix, decline or defer — and
   the reason they gave.
-- (E) Given the scan is complete, when the audit-evidence phase runs, then what
+- (E) [AC15] Given the scan is complete, when the audit-evidence phase runs, then what
   the scan found is available to it as recorded evidence, in the form the scan
   itself produced rather than a summary written by hand afterwards.
-- (E) Given a finding the project has consciously accepted, when later scans
+- (E) [AC16] Given a finding the project has consciously accepted, when later scans
   run, then the acceptance is recorded in a register kept with the project
   itself, so it stays visible and reviewable rather than the finding quietly
   disappearing from the results.
-- (E) Given the scan runs on the code host, when it finishes, then its findings
+- (E) [AC17] Given the scan runs on the code host, when it finishes, then its findings
   are published to the host's own security surface in the format that surface
   expects, so they appear where a reader already looks for alerts rather than
   only inside one run's log.
-- (E) Given a project the framework manages, when findings are found, then it
+- (E) [AC18] Given a project the framework manages, when findings are found, then it
   drives the fixes through to completion; given any other repository, then it
   reports what it found and offers to hand the findings over to be worked
   through, rather than changing code it was not asked to change.
@@ -500,69 +500,69 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0108"></a>
 ### FR-01.08 — /shipwright-deploy
 
-- (E) Given a project and a hosting target configured for it, when a release is
+- (E) [AC01] Given a project and a hosting target configured for it, when a release is
   asked for, then the project is put onto that target and made to run there —
   and which target that is belongs to the project: more than one kind can be
   configured, and the phase is not tied to a single hosting company.
-- (E) Given tests that have not passed, when a release to a hosting target is
+- (E) [AC02] Given tests that have not passed, when a release to a hosting target is
   attempted, then it is refused until a person explicitly confirms going ahead
   anyway — it never proceeds quietly on failing tests.
-- (E) Given the operation has completed, when it is checked, then the running
+- (E) [AC03] Given the operation has completed, when it is checked, then the running
   application is contacted to prove it is actually alive, and a failure to
   answer is treated as a failed release rather than a finished one.
-- (E) Given an application that takes a while to start, when it is checked, then
+- (E) [AC04] Given an application that takes a while to start, when it is checked, then
   it is asked repeatedly until it answers or until a deadline passes, and how
   long to keep asking is the hosting target's own setting rather than a fixed
   wait — so a slow start is not mistaken for a failed release. Asking once and
   giving up is not enough. When no deadline is configured, it is asked once.
-- (E) Given a release that has failed, when that is established, then the
+- (E) [AC05] Given a release that has failed, when that is established, then the
   previously working version is put back without a person having to intervene —
   the way back is part of releasing, not a separate procedure somebody has to
   know about.
-- (E) Given a return to a named previous version, when it runs, then that
+- (E) [AC06] Given a return to a named previous version, when it runs, then that
   version is what is sent to the hosting target, and success is reported only
   when the target has been asked to run it and did not object — never for a
   version the request never carried. Where the target can be asked which
   version it is now on, the answer is reported: a version it confirms, a
   version it cannot confirm (said in those words), or a disagreement, which is
   a failure.
-- (E) Given stored data has already moved past the version being returned to,
+- (E) [AC07] Given stored data has already moved past the version being returned to,
   when the return is requested, then it is refused and says so — naming what
   has moved on and what this target does about data — rather than putting the
   older code in front of a shape it does not know. Proceeding regardless is a
   deliberate, separately expressed decision. Being unable to tell whether the
   data has moved on is refused the same way.
-- (E) Given a change to stored data applied along the way, when its own checks
+- (E) [AC08] Given a change to stored data applied along the way, when its own checks
   report a mismatch afterwards, then the same return-to-previous-state path is
   offered, and choosing to continue regardless requires a written record naming
   the failing check and the reason it was overridden.
-- (E) Given any hosting target the product presents as supported, when it is
+- (E) [AC09] Given any hosting target the product presents as supported, when it is
   offered, then the way back to the previous working state is written down for
   that target — which mechanism it uses, and what it does about stored data that
   has already moved on — in a form checked against a common shape, so the
   question is answered before the target is offered rather than during an
   incident.
-- (E) Given the running application is stopped as part of getting back to a
+- (E) [AC10] Given the running application is stopped as part of getting back to a
   working state, when that is done, then what remains for a person to finish is
   stated plainly — stopping what is broken is reported as stopping it, never as
   a completed restore.
-- (E) Given a release that has to be undone, when the return to the previous
+- (E) [AC11] Given a release that has to be undone, when the return to the previous
   state happens — whether triggered automatically or asked for by a person —
   then it announces itself and is recorded with its cause; it never happens
   silently.
-- (E) Given a return to the previous state is requested by a person, when it
+- (E) [AC12] Given a return to the previous state is requested by a person, when it
   runs, then it requires explicit confirmation and afterwards proves the
   restored application is alive.
-- (E) Given the way back to the previous state is attempted, when it does not
+- (E) [AC13] Given the way back to the previous state is attempted, when it does not
   succeed, then that is reported as a failure of the way back itself — never
   swallowed, and never reported as if the previous state had been restored.
-- (E) Given the way back has failed after it began changing the hosting target,
+- (E) [AC14] Given the way back has failed after it began changing the hosting target,
   when it reports, then it states plainly that neither the new nor the previous
   version is confirmed running, what was last attempted and what that found, and
   what had already been changed — and it stops there rather than carrying on
   unattended. This is told apart from a refusal made before the target was
   contacted, which changes nothing and says so.
-- (E) Given a return to a previous version, when it completes, then what came
+- (E) [AC15] Given a return to a previous version, when it completes, then what came
   back is the running code — stored data that has already moved forward stays
   where it is, and how that is handled is answered by the target's own written
   record, so nobody assumes the data went back too.
@@ -570,35 +570,35 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0109"></a>
 ### FR-01.09 — /shipwright-changelog
 
-- (E) Given the work recorded since the last release, when the phase finishes,
+- (E) [AC01] Given the work recorded since the last release, when the phase finishes,
   then three things exist: a release note a person can read without knowing the
   commit history, a version marking that release, and an open request to deliver
   it — the release is prepared, not merely described.
-- (E) Given the work recorded since the last release, when release notes are
+- (E) [AC02] Given the work recorded since the last release, when release notes are
   produced, then each entry is grouped by the kind of change it was, in a form a
   human reads rather than a raw list of commits.
-- (E) Given no work has been recorded since the last release, when a release is
+- (E) [AC03] Given no work has been recorded since the last release, when a release is
   attempted, then it says so and stops rather than producing an empty release.
-- (E) Given the kinds of change since the last release, when the next version
+- (E) [AC04] Given the kinds of change since the last release, when the next version
   number is proposed, then a change that breaks compatibility raises the first
   number, a new capability the second, and anything else the third — except
   before the first stable release, where a break raises the second number
   instead, because nothing has been promised as stable yet. A project with no
   release at all starts at its first pre-stable version.
-- (E) Given several changes were developed in parallel, when their decision
+- (E) [AC05] Given several changes were developed in parallel, when their decision
   records are published at release, then their sequential numbers are assigned at
   that one point, so two parallel changes can never claim the same number.
-- (E) Given release notes are added to the existing history, when the file is
+- (E) [AC06] Given release notes are added to the existing history, when the file is
   written, then the new release-note section goes above the most recent released one and
   the document's title and older entries are left intact.
-- (E) Given a version already present in the history — an earlier attempt
+- (E) [AC07] Given a version already present in the history — an earlier attempt
   having stopped partway — when its release note is written again, whether
   assembled at release time from the entries recorded since the last release or
   written directly, then that version's section is replaced rather than added a
   second time, so one version appears exactly once; and where more than one
   section already claims that version, writing stops and says why rather than
   overwriting what it could not interpret.
-- (E) Given a release note assembled from the entries recorded since the last
+- (E) [AC08] Given a release note assembled from the entries recorded since the last
   release, when the section already on record is not what those entries now say
   — an earlier attempt having consumed some of them before stopping, or the
   section having been edited by hand — or carries a marking that rewriting it
@@ -606,17 +606,17 @@ _Where the work detail lives_ at the end of this document.
   stops and says which of these it found, leaving both the history and every
   pending entry untouched. Replacing regardless would delete released history,
   which is worse than the duplicate section it would avoid.
-- (E) Given entries written the older way, straight into the pending release-note section,
+- (E) [AC09] Given entries written the older way, straight into the pending release-note section,
   when a release is assembled, then each one is named back to the operator
   rather than being folded in silently.
-- (E) Given a release is about to be written, when the operator asks to see it
+- (E) [AC10] Given a release is about to be written, when the operator asks to see it
   first, then the full result can be previewed without anything on disk being
   changed.
-- (E) Given the release note is written and the request to deliver it is open,
+- (E) [AC11] Given the release note is written and the request to deliver it is open,
   when someone asks whether the release is out, then it is not — preparing a
   release publishes nothing by itself; that happens only once the request is
   merged and the release is put onto its target.
-- (E) Given a project has declared which published package manifests carry
+- (E) [AC12] Given a project has declared which published package manifests carry
   its version (e.g. a package.json a registry would receive), when a release
   is prepared, then the version is written into every declared manifest as
   part of the same release commit, and the commit is checked afterward to
@@ -624,13 +624,13 @@ _Where the work detail lives_ at the end of this document.
   version is marked with its tag. A manifest still found at its previous
   version stops the release rather than letting the tag claim a version the
   manifest does not carry. A project that has declared none is unaffected.
-- (E) Given a declared manifest that carries its version in more than one
+- (E) [AC13] Given a declared manifest that carries its version in more than one
   place — once at the top level and again inside a list of named entries,
   such as a catalog of the products it publishes — when a release is
   prepared, then every one of those version occurrences is written together
   in the same pass, so no entry in the catalog is left naming an older
   version than the file it lives in.
-- (E) Given the version marking already exists, when the release is
+- (E) [AC14] Given the version marking already exists, when the release is
   delivered, then a release page is also created on the code host for that
   version, carrying a short, readable summary of what changed and a link
   back to the full release note — so a reader who finds only the version
@@ -640,7 +640,7 @@ _Where the work detail lives_ at the end of this document.
   publishing — never published unchecked — and the version marking and the
   link back to the full record are always constructed directly from the
   recorded facts of the release, never left to the condensing step.
-- (E) Given creating the release page fails for any reason, when the rest of
+- (E) [AC15] Given creating the release page fails for any reason, when the rest of
   the release has already completed, then the release itself is not undone
   or held back — only the release page is missing, and that is reported
   rather than silently dropped. Given a version was released before this
@@ -651,15 +651,15 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0110"></a>
 ### FR-01.10 — /shipwright-compliance
 
-- (E) Given a project under the framework, when the compliance phase runs, then
+- (E) [AC01] Given a project under the framework, when the compliance phase runs, then
   what exists is evidence someone outside the project can read without access to
   the running system: which requirement is covered by which test, what changed
   and when, what the project depends on, and a single page summarising where it
   stands.
-- (E) Given an evidence document, when it no longer matches the state it was
+- (E) [AC02] Given an evidence document, when it no longer matches the state it was
   produced from — hand-edited, or only partly regenerated — then it is reported
   as no longer valid instead of continuing to count as evidence.
-- (E) Given an evidence document or a recorded test run, when it is produced, then it
+- (E) [AC03] Given an evidence document or a recorded test run, when it is produced, then it
   names the change it was built from — not merely when it was written — so a reader
   can tell evidence built from a known point in the project's history apart from
   evidence whose origin is unstated. For an evidence document that is the most recent
@@ -668,7 +668,7 @@ _Where the work detail lives_ at the end of this document.
   read from the project rather than asserted by whoever wrote the record. Where it
   cannot be established, the artifact says so instead of showing a plausible-looking
   value.
-- (E) Given a project is onboarded, when its first evidence documents are produced,
+- (E) [AC04] Given a project is onboarded, when its first evidence documents are produced,
   then they name the state of the code they were built from — taken from what
   onboarding recorded, not from wherever the project happens to stand by the time
   the documents are written, which is a different thing whenever the onboarding was
@@ -676,52 +676,52 @@ _Where the work detail lives_ at the end of this document.
   none, and onboarding still finishes: a project with nothing recorded yet is a
   legitimate thing to onboard, and an unstated origin is honest where a guessed one
   is not.
-- (E) Given an evidence document is reported as no longer matching the state it was
+- (E) [AC05] Given an evidence document is reported as no longer matching the state it was
   produced from, when a way to put it right is offered, then that way can actually
   resolve the case at hand: re-producing the document where it merely drifted
   locally, and — where the recorded copy itself is the one left behind — the ordered
   steps that get a corrected copy recorded, including clearing unrelated unfinished
   work first. An offered remedy that cannot complete from the state being reported
   sends the reader in a circle.
-- (E) Given a completed change that says it affects behaviour but names no
+- (E) [AC06] Given a completed change that says it affects behaviour but names no
   requirement and gives no reason for naming none, when the cross-check audit
   runs, then it is reported together with a suggested command to fix it, without
   failing the audit.
-- (E) Given the cross-check runs only when someone asks for it — it is on demand
+- (E) [AC07] Given the cross-check runs only when someone asks for it — it is on demand
   by design, with no schedule behind it — when any evidence document is read,
   then that document states when the cross-check last happened, or states that it
   never has, so a reader can judge how much the evidence is worth instead of
   assuming it was checked. A cross-check restricted to part of the project says
   so, and the answer survives a fresh copy of the project.
-- (E) Given the evidence is read as a record of the project, when it is relied
+- (E) [AC08] Given the evidence is read as a record of the project, when it is relied
   on, then it covers only what the project actually recorded — a change that
   recorded nothing about the requirement it touched does not appear, so the
   evidence is a floor on what is known, never a claim that nothing else
   happened.
-- (E) Given the change log, when requirement traceability is scored, then a
+- (E) [AC09] Given the change log, when requirement traceability is scored, then a
   change counts as traced if it names a requirement or is a recognised
   behaviour-preserving change carrying a one-line reason; the share of recent
   changes that name a requirement is shown for information only, so the workload
   mix — features versus maintenance — never moves the grade.
-- (E) Given a requirement was covered by a tested change at any point in the
+- (E) [AC10] Given a requirement was covered by a tested change at any point in the
   past, when the audit runs, then it stays reported as covered; a later edit to
   the requirements document does not reset that.
-- (E) Given a requirement was introduced by a change that ran tests, when the
+- (E) [AC11] Given a requirement was introduced by a change that ran tests, when the
   audit runs, then that change counts as both covering and delivering it, so a
   requirement that was right the first time is never reported as outstanding
   merely for having needed no revision since; a change that introduces a
   requirement without running tests still owes both.
-- (E) Given a completed change whose test run recorded host-gated skipped tests
+- (E) [AC12] Given a completed change whose test run recorded host-gated skipped tests
   (folded into the total, so fewer tests passed than ran), when the cross-check
   audit and the test-evidence report run, then the skipped tests are separated
   from genuine failures — a green run that merely skipped tests is not reported
   as landing in a failing build, and the skip count is disclosed even when every
   executed test passed.
-- (E) Given requirement names or descriptions carry implementation detail, when
+- (E) [AC13] Given requirement names or descriptions carry implementation detail, when
   the audit runs, then it reports how many and which ones without changing the
   verdict or the exit code, so an existing catalog can be cleaned up gradually
   rather than all at once.
-- (E) Given two rows claim the same requirement ID anywhere in the catalog —
+- (E) [AC14] Given two rows claim the same requirement ID anywhere in the catalog —
   including reuse of a number already retired — when the audit runs, then it
   fails, because one ID naming two requirements breaks the identity that tests
   and the change log both depend on.
@@ -729,83 +729,83 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0111"></a>
 ### FR-01.11 — /shipwright-iterate
 
-- (E) Given a change described in ordinary words for a project already finished,
+- (E) [AC01] Given a change described in ordinary words for a project already finished,
   when the change workflow completes, then that change exists in the product —
   built, tested, reviewed and recorded — without the whole pipeline having to
   be run again for it.
-- (E) Given a change described in ordinary words, when it is picked up, then its
+- (E) [AC02] Given a change described in ordinary words, when it is picked up, then its
   kind and its size are detected and the process scales to match — from a quick
   fix through to a fully specified feature with plan, review and tests.
-- (E) Given a feature or a change, when it is classified, then it records whether
+- (E) [AC03] Given a feature or a change, when it is classified, then it records whether
   it adds, modifies, removes or leaves the requirements untouched, and one that
   names no requirement and gives no reason is rejected at the moment it is
   recorded. A fix is deliberately outside this: repairing behaviour back to what
   was intended moves no requirement, so it owes no such record.
-- (E) Given a feature or change that touched no requirements document, when it
+- (E) [AC04] Given a feature or change that touched no requirements document, when it
   is finished, then finishing fails unless the record says the requirements were
   deliberately left untouched and says why in one line.
-- (E) Given a change completes, polishes, fixes or extends a capability that
+- (E) [AC05] Given a change completes, polishes, fixes or extends a capability that
   already has a requirement, when its requirement impact is classified, then it
   is routed to modifying that requirement's criteria rather than to adding a new
   requirement.
-- (E) Given a change does introduce a new requirement, when its number is
+- (E) [AC06] Given a change does introduce a new requirement, when its number is
   chosen, then it takes the next free number in that group counted over live and
   retired requirements alike, so a retired number is never reused and the number
   is never guessed.
-- (E) Given a change of medium size or larger, when it is finished, then
+- (E) [AC07] Given a change of medium size or larger, when it is finished, then
   whatever a person can actually see or use — a page, a command, an interface,
   or an explicitly recorded "none" — is driven through a running system;
   producing only documents counts as no test and fails the gate.
-- (E) Given a project that declares how its test suite is laid out, when the
+- (E) [AC08] Given a project that declares how its test suite is laid out, when the
   pre-finish test gate runs, then the test units run as parallel processes and
   return the same pass-or-fail verdict as running them one after another. A unit
   that fails only under concurrency is re-run alone in a clean directory and
   that result is the one that counts, so a race can never falsely stop the work;
   an infrastructure fault is retried once, and a fault that repeats still fails
   the gate.
-- (E) Given the parallel gate exists, when the shared build service runs, then
+- (E) [AC09] Given the parallel gate exists, when the shared build service runs, then
   it still runs the same units one after another, as an independent cross-check
   against a green that only parallel execution would produce.
-- (E) Given the plugin is enabled, when the user types an ordinary prompt, then
+- (E) [AC10] Given the plugin is enabled, when the user types an ordinary prompt, then
   the right next step is offered; in a directory that is not a Shipwright
   project the offer stays silent and changes nothing.
-- (E) Given a change is reviewed, when each review pass finishes — the author's
+- (E) [AC11] Given a change is reviewed, when each review pass finishes — the author's
   own check, the plan review, the code review, the doubt pass and the outside
   second opinion — then what that pass found is written down for that run and
   can be read back later, instead of surviving only as prose in a decision note.
   (iterate-2026-07-21-review-record)
-- (E) Given a feature or change of the depth that gets a written plan, when
+- (E) [AC12] Given a feature or change of the depth that gets a written plan, when
   that plan's review step runs, then an independent reviewer checks it first,
   the same way `/shipwright-plan`'s own plan review does — on a Claude model
   configurable per project, defaulting to the session's own model when unset
   — before any outside second opinion is asked. (iterate-2026-08-08-plan-reviewer-configurable)
-- (E) Given a review pass did not run, when the change is finished, then the
+- (E) [AC13] Given a review pass did not run, when the change is finished, then the
   record says so explicitly and gives the reason, and finishing is refused while
   any pass is left unanswered — so "nothing shown" always means "genuinely did
   not run" and never "nobody wrote it down". A finished review cannot afterwards
   be quietly restated. (iterate-2026-07-21-review-record)
-- (E) Given a review record contains a reviewer type a current reader did not
+- (E) [AC14] Given a review record contains a reviewer type a current reader did not
   previously know, when that entry is complete and internally consistent, then
   the record remains readable and the extra reviewer stays visible; a malformed
   entry still fails the integrity check. (iterate-2026-08-03-p2-33-deepseek-zdr-review)
-- (E) Given outside-review conclusions are compared, when the current
+- (E) [AC15] Given outside-review conclusions are compared, when the current
   DeepSeek/OpenAI pair or a historical Gemini/OpenAI pair is read, then the same
   disagreement, unreadable-answer, and one-answer rules are applied. A mixed or
   incomplete pair is never silently treated as agreement.
   (iterate-2026-08-03-p2-33-deepseek-zdr-review)
-- (E) Given a finished change is waiting on the code host to merge it, when it
+- (E) [AC16] Given a finished change is waiting on the code host to merge it, when it
   has not merged, then the report names what is holding it up — conversations
   still unresolved, required checks that never reported, the host's own verdict
   that the merge is blocked — rather than only how long it waited. Anything that
   could not be checked is said to be unchecked, never counted as clear.
   (iterate-2026-07-27-name-the-blocker)
-- (E) Given the code host states a reason a change cannot be merged — it
+- (E) [AC17] Given the code host states a reason a change cannot be merged — it
   conflicts with what it is merging into, it is still a draft, its base has
   moved on, or the host itself refuses it — when the wait is reported, then that
   reason is named in words. A state the host reports that is not recognised is
   reported as not understood rather than as nothing being wrong.
   (iterate-2026-07-27-merge-state-vocabulary)
-- (E) Given a change was brought up to date with work that finished while it was
+- (E) [AC18] Given a change was brought up to date with work that finished while it was
   open, when it is checked before being handed over, then anything that arrived
   in that work and is no longer present is reported and the hand-over refused —
   so bringing a change up to date cannot quietly undo someone else's finished
@@ -823,59 +823,59 @@ _Where the work detail lives_ at the end of this document.
   passed over.
   (iterate-2026-07-27-no-silent-revert,
   iterate-2026-07-28-silent-revert-false-positives)
-- (E) Given the record of a change is checked for describing the run that is
+- (E) [AC19] Given the record of a change is checked for describing the run that is
   finishing, when that check runs, then it is decided by whether the record
   names that run, and never by how recently the file was written — so a run that
   spends a long time waiting is not reported as out of date.
   (iterate-2026-07-27-name-the-blocker)
-- (E) Given a change is recorded by adding a criterion to a requirement that
+- (E) [AC20] Given a change is recorded by adding a criterion to a requirement that
   already exists — the way this project asks such changes to be recorded — when
   it is checked for being tested at the levels that requirement demands, then it
   is resolved to that requirement and checked, instead of being reported as
   impossible to determine. A change to the requirements that touches no
   requirement at all is still reported as undetermined for a person to settle,
   never passed in silence. (iterate-2026-07-27-name-the-blocker)
-- (E) Given a finished change whose code host cannot be asked to merge it automatically
+- (E) [AC21] Given a finished change whose code host cannot be asked to merge it automatically
   because the branch it merges into is **not protected**, when the change is delivered,
   then it is merged once every check the host actually ran has passed, instead of being
   left open for a person to merge by hand. Where the host merely refuses for the moment,
   waiting continues as before; where the situation cannot be read at all, the previous
   behaviour is kept. (iterate-2026-07-31-f11-delivery-truth)
-- (E) Given the branch it merges into **is** protected and only the host's automatic-merge
+- (E) [AC22] Given the branch it merges into **is** protected and only the host's automatic-merge
   setting is switched off, when the change is delivered, then it is reported as not
   delivered and the one setting to change is named — a protected branch's required reviews
   and checks are not something to merge past on the strength of the tests run on the
   author's own machine, however the host words its refusal.
   (iterate-2026-07-31-f11-delivery-truth)
-- (E) Given a change was merged by the tool rather than by the host, when delivery
+- (E) [AC23] Given a change was merged by the tool rather than by the host, when delivery
   is reported, then the report names who merged it and how many checks the host
   actually ran — so a delivery resting only on the checks run on the author's own
   machine can never read as one the host confirmed.
   (iterate-2026-07-31-f11-delivery-truth)
-- (E) Given a project would rather nothing was ever merged on its behalf, when that
+- (E) [AC24] Given a project would rather nothing was ever merged on its behalf, when that
   preference is recorded, then the tool only ever asks the host to merge, and a change it
   cannot get merged is reported as not delivered **straight away** rather than waited on —
   because waiting for a merge that nobody will perform is not waiting, it is stalling.
   (iterate-2026-07-31-f11-delivery-truth)
-- (E) Given a change fell behind the work it merges into while it was waiting, when
+- (E) [AC25] Given a change fell behind the work it merges into while it was waiting, when
   the tool merges it, then it is first brought up to date and checked again, and what
   gets merged is exactly what was checked — never a stale copy, and never a newer one
   that arrived in between. (iterate-2026-07-31-f11-delivery-truth)
-- (E) Given the check that a change's record names the run now finishing, when the
+- (E) [AC26] Given the check that a change's record names the run now finishing, when the
   two names differ only in punctuation or in characters that cannot be seen, then
   they count as the same name — so the check can never report a mismatch while
   showing the same name on both sides of it.
   (iterate-2026-07-31-f11-delivery-truth)
-- (E) Given a small-sized change reaches the point of writing its short
+- (E) [AC27] Given a small-sized change reaches the point of writing its short
   implementation plan, when that plan is agreed, then it is saved to a file
   like every larger change's plan is, instead of existing only for the
   length of the conversation. (iterate-2026-08-09-compaction-state-audit)
-- (E) Given a reviewer has just finished checking a change, when its reply
+- (E) [AC28] Given a reviewer has just finished checking a change, when its reply
   comes back, then that reply is written down before anything else happens —
   before the next reviewer is asked, before any other step — so a session
   interruption right after a reviewer answers can never lose what it found.
   (iterate-2026-08-09-compaction-state-audit)
-- (E) Given a change was interrupted partway through its review passes, when
+- (E) [AC29] Given a change was interrupted partway through its review passes, when
   it is picked back up, then what is reported names every review pass still
   open, read from the same record each pass writes to — not only whether an
   outside second opinion ran. (iterate-2026-08-09-compaction-state-audit)
@@ -883,67 +883,67 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview
 
-- (E) Given a project with work already built, when a preview is asked for, then
+- (E) [AC01] Given a project with work already built, when a preview is asked for, then
   the project is running on this machine and the address to open it in a
   browser is handed back — looking at it costs one request, not a setup.
-- (E) Given a project with nothing built yet, when a preview is requested, then
+- (E) [AC02] Given a project with nothing built yet, when a preview is requested, then
   it explains that at least one piece of work must be finished first and stops.
-- (E) Given required settings are missing, when a preview is requested, then the
+- (E) [AC03] Given required settings are missing, when a preview is requested, then the
   operator is walked through supplying them rather than being told to check the
   logs.
-- (E) Given the application is already running locally, when a preview is
+- (E) [AC04] Given the application is already running locally, when a preview is
   requested again, then the running instance is reused instead of a second one
   being started.
-- (E) Given the application is running, when the preview is ready, then the
+- (E) [AC05] Given the application is running, when the preview is ready, then the
   address to open in a browser is shown and it keeps running — including past
   the end of the conversation that started it, so nobody loses the page they are
   looking at — and the next request recognises it and reuses it rather than
   failing on an address already in use.
-- (E) Given something else is already answering on that address, when a preview
+- (E) [AC06] Given something else is already answering on that address, when a preview
   is requested, then only this project's own running instance is ever reused —
   a stranger's application is never handed back as if it were this one.
-- (E) Given the application fails to start, when the failure is seen, then the
+- (E) [AC07] Given the application fails to start, when the failure is seen, then the
   cause is investigated and addressed rather than merely reported.
-- (E) Given a new technology stack, when it states how its local server is
+- (E) [AC08] Given a new technology stack, when it states how its local server is
   started, then previewing works for it without any change to the preview
   capability itself.
-- (E) Given a preview is running, when it is taken as evidence, then it shows
+- (E) [AC09] Given a preview is running, when it is taken as evidence, then it shows
   the project as it stands on this machine only — it is not a release, and a
   working preview says nothing about whether the hosted version works.
 
 <a id="fr-0113"></a>
 ### FR-01.13 — /shipwright-adopt
 
-- (E) Given an existing codebase, when it is onboarded, then what exists
+- (E) [AC01] Given an existing codebase, when it is onboarded, then what exists
   afterwards is enough for the change workflow to take over: guidance an
   assistant can work from, a requirements catalogue derived from what the code
   actually does, audit evidence, and a starting set of tests.
-- (E) Given requirements derived from reading code, when they are written, then
+- (E) [AC02] Given requirements derived from reading code, when they are written, then
   each is marked as derived and unconfirmed, and how many there are is reported
   when onboarding hands over — a catalogue nobody has confirmed never looks like
   one somebody did.
-- (E) Given onboarding finishes, when it hands over, then it leaves a tracked
+- (E) [AC03] Given onboarding finishes, when it hands over, then it leaves a tracked
   follow-up to take the derived requirements through the shared questioning
   method with a person — reading the code is a start and is not enough on its
   own, and without that follow-up the gap is found years later.
-- (E) Given a codebase that arrives with failing tests, or with capabilities no
+- (E) [AC04] Given a codebase that arrives with failing tests, or with capabilities no
   test covers, when it is onboarded, then those are recorded as inherited rather
   than counted as this project's own failures — an onboarded project is not
   required to arrive perfect, only to arrive honestly described.
-- (E) Given an existing codebase, when it is onboarded, then a local secrets
+- (E) [AC05] Given an existing codebase, when it is onboarded, then a local secrets
   file is created carrying the placeholder keys that codebase's stack needs —
   but only after it is confirmed to be excluded from version control. If that
   cannot be confirmed the file is not written at all, so no secret is ever
   staged for commit.
-- (E) Given onboarding derives a requirement's name and description from the
+- (E) [AC06] Given onboarding derives a requirement's name and description from the
   code it read, when they are written, then they name a capability and describe
   it in plain business language, rather than describing what the code does.
-- (E) Given an operator's egress policy requires all outbound traffic through
+- (E) [AC07] Given an operator's egress policy requires all outbound traffic through
   an OpenAI-compatible gateway, when onboarding's Layer-3 external review runs,
   then it can be routed through that gateway instead of OpenRouter or direct
   OpenAI — and if the gateway is unreachable or misconfigured, the review fails
   rather than silently falling back to a direct call the egress policy forbids.
-- (E) Given onboarding has produced the audit evidence for a project, when it
+- (E) [AC08] Given onboarding has produced the audit evidence for a project, when it
   hands over, then it says that this evidence is brought up to date at releases
   and on request rather than continuously, and names both ways to bring it up to
   date — so whoever relies on it learns that it ages at the moment they are
@@ -953,103 +953,103 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0114"></a>
 ### FR-01.14 — Triage Inbox
 
-- (E) Given any check, scan or audit has raised findings for this project, when
+- (E) [AC01] Given any check, scan or audit has raised findings for this project, when
   the operator opens the Triage Inbox, then it holds every one of them — one
   entry per finding, each stating whether it is still open, already taken into
   work, deliberately deferred, or dismissed — so "what is still open here?" is
   answerable in that one place, without asking any of the checks that raised
   them.
-- (E) Given a finding from any local check, scan or audit, when it is recorded,
+- (E) [AC02] Given a finding from any local check, scan or audit, when it is recorded,
   then it lands in the project's Triage Inbox exactly once for that finding,
   even when several producers record it at the same moment.
-- (E) Given findings are waiting, when the operator works through them, then
+- (E) [AC03] Given findings are waiting, when the operator works through them, then
   each one is taken into work, dismissed, or deliberately deferred until later
   — and whichever way that decision was made, the entry afterwards carries the
   same recorded decision, its reason, and a reference to the work it became,
   and no longer appears among the open ones.
-- (E) Given a finding is taken into work, when that is done from the Command
+- (E) [AC04] Given a finding is taken into work, when that is done from the Command
   Center, then the piece of work is created there and linked back to the entry;
   done from the command line, the operator names work that already exists,
   because the command line deliberately does not reach into the work list.
-- (E) Given the code host's automated scans, when they are imported, then one
+- (E) [AC05] Given the code host's automated scans, when they are imported, then one
   entry is created per action the operator can take, not one per underlying
   finding, and each entry carries a ready-to-paste instruction for acting on it.
   An entry missing that instruction renders a visible failure placeholder rather
   than degrading quietly.
-- (E) Given a previously imported finding no longer appears, when the import
+- (E) [AC06] Given a previously imported finding no longer appears, when the import
   next succeeds, then its entry is closed automatically; an import that failed
   closes nothing, so a broken fetch can never mass-resolve real findings.
-- (E) Given the operator defers a finding, when that decision is recorded, then
+- (E) [AC07] Given the operator defers a finding, when that decision is recorded, then
   it names the day the finding should come back, and from that day the entry is
   among the open ones again without anyone acting — so deferring cannot become
   permanent through inattention. Until that day the same finding is not recorded
   a second time, so deferring a machine-raised finding actually quiets it
   instead of producing a duplicate on the next run.
-- (E) Given a deferred finding stops being true before the day it was due back,
+- (E) [AC08] Given a deferred finding stops being true before the day it was due back,
   when the check that raised it next succeeds without it, then its entry is
   closed automatically — exactly as an open one is — so the deferred list never
   fills with problems that no longer exist.
-- (E) Given a finding was deferred by mistake, when the operator reverses it,
+- (E) [AC09] Given a finding was deferred by mistake, when the operator reverses it,
   then it returns among the open ones with the reason recorded, without anyone
   editing the stored record by hand.
-- (E) Given an operator correction is held only in the local outbox, when a
+- (E) [AC10] Given an operator correction is held only in the local outbox, when a
   triage view is produced, then it says separately that the correction has not
   reached a branch, without changing the existing signal for an undelivered
   decision. A card with both facts reports both, so neither is hidden by the
   other. (iterate-2026-08-09-p2-56-amend-delivery-signal)
-- (E) Given findings have been deferred, when the operator looks at any of the
+- (E) [AC11] Given findings have been deferred, when the operator looks at any of the
   places this project shows its findings, then the deferred ones are present
   there in their own section with the day they return — never silently absent
   and never reduced to a count. Where a place shows only the first few, it says
   how many it did not show, and any two of them show the same few.
-- (E) Given a leaked-secret alert, when it is imported, then the secret value
+- (E) [AC12] Given a leaked-secret alert, when it is imported, then the secret value
   itself is never written into the Triage Inbox, and the entry carries only a
   rotation checklist and a link.
-- (E) Given the code host's tooling is missing or not signed in, when the import
+- (E) [AC13] Given the code host's tooling is missing or not signed in, when the import
   runs, then it finishes quietly without blocking the session.
-- (E) Given a class of finding the host's own analysis covers, when that
+- (E) [AC14] Given a class of finding the host's own analysis covers, when that
   analysis is available, then the copy published by a recent successful security
   run is not read at all, so the two sources are never counted twice; when the
   analysis is unavailable, that published copy is used in its place.
-- (E) Given a class of finding the host's own analysis never carries, when the
+- (E) [AC15] Given a class of finding the host's own analysis never carries, when the
   import runs, then it is always taken from the published results — otherwise
   the project would be blind to that whole class exactly while the host's
   analysis is working.
-- (E) Given published scan results older than the configured freshness window,
+- (E) [AC16] Given published scan results older than the configured freshness window,
   when the import runs, then they are ignored and nothing is closed
   automatically — a stale clean scan never resolves a real finding.
-- (E) Given a source that cannot be reached — missing tooling, no run, expired
+- (E) [AC17] Given a source that cannot be reached — missing tooling, no run, expired
   or unreadable results — when the import runs, then that source leaves the
   Triage Inbox exactly as it was: nothing added for it and nothing closed for
   it, while the sources that did answer are recorded normally. No import failure
   ever blocks the session.
-- (E) Given a scanner's findings are recorded, when the entry is written, then
+- (E) [AC18] Given a scanner's findings are recorded, when the entry is written, then
   it carries only aggregated counts and stable links, never the finding text
   itself, and its detail is length-capped.
-- (E) Given an entry has to carry text the project does not control — the name
+- (E) [AC19] Given an entry has to carry text the project does not control — the name
   of a failing check, or the title someone gave a proposed change — when it is
   shown, then that text cannot take over the display it appears in, and it is
   length-capped so one entry cannot crowd out the rest.
-- (E) Given several producers record findings at the same moment, when their
+- (E) [AC20] Given several producers record findings at the same moment, when their
   entries are written, then none can swallow, truncate or hide another: every
   entry written is one that can afterwards be read back.
-- (E) Given part of the stored record is damaged, when it is read, then the
+- (E) [AC21] Given part of the stored record is damaged, when it is read, then the
   entries around it still resolve and the damaged part is surfaced as damaged
   data — never as absence, which would read as though nothing had ever been
   recorded there.
-- (E) Given damaged storage is repaired, when the repair runs, then it reports
+- (E) [AC22] Given damaged storage is repaired, when the repair runs, then it reports
   what it would do and changes nothing until it is explicitly ordered to, keeps
   a verbatim copy of anything it cannot interpret, and leaves untouched any
   file whose contents it cannot preserve.
-- (E) Given the Triage Inbox is compacted to keep it readable, when entries are
+- (E) [AC23] Given the Triage Inbox is compacted to keep it readable, when entries are
   removed, then only findings a background check closed by itself may go; every
   decision a person made stays as the record of what was decided and why, and
   nothing still open, deferred or taken into work is ever removed.
-- (E) Given more findings are open than a summarised view shows, when that view
+- (E) [AC24] Given more findings are open than a summarised view shows, when that view
   is produced, then it states how many it is not showing rather than presenting
   its excerpt as the whole, and lower-severity entries are set aside rather than
   dropped.
-- (E) Given the pre-commit test gate finds a test unit that fails when the units
+- (E) [AC25] Given the pre-commit test gate finds a test unit that fails when the units
   run side by side but passes when run on its own, when it lets the run continue —
   because the on-its-own result is the trustworthy one and stopping would block the
   work for no reason — then the gate records that unit in the Triage Inbox itself,
@@ -1058,12 +1058,12 @@ _Where the work detail lives_ at the end of this document.
   clash between simultaneous runs and an unreliable test, it is not closed by the
   next run that happens to look clean, and if it cannot be recorded at all the run
   is stopped rather than reported as passing.
-- (E) Given the Triage Inbox is taken as a plan, when it is read, then it is
+- (E) [AC26] Given the Triage Inbox is taken as a plan, when it is read, then it is
   explicitly not one: it collects findings and records decisions, it does not
   schedule work, set priorities by itself, or fix anything — the work list it
   feeds is a separate place, and a finding nobody has decided on stays open
   rather than expiring.
-- (E) Given a person has recorded a decision on an entry, when a background
+- (E) [AC27] Given a person has recorded a decision on an entry, when a background
   check that started before that decision reaches the same entry and would
   close it by itself, then it leaves the entry exactly as the person decided it
   — their decision and their reason both stand, and no automatic decision is
@@ -1072,11 +1072,11 @@ _Where the work detail lives_ at the end of this document.
   not count it among the ones it closed. This holds for every check that closes
   entries by itself; it does not extend to a decision made at the very same
   moment from a surface that does not take part in this coordination.
-- (E) Given anything asks for an entry's decision to be recorded, when that
+- (E) [AC28] Given anything asks for an entry's decision to be recorded, when that
   request is turned down because the entry had already moved on, then the
   caller is told so plainly and cannot mistake it for success — a decision that
   was not recorded is never reported as one that was.
-- (E) Given an entry's title, detail, severity or kind was recorded wrong, when
+- (E) [AC29] Given an entry's title, detail, severity or kind was recorded wrong, when
   the operator corrects it from the command line, then the entry is updated in
   place under the same reference, its correction is attributed and timestamped,
   and a correction that changes nothing recognized is refused rather than
@@ -1086,38 +1086,38 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0115"></a>
 ### FR-01.15 — Cross-repo output contract
 
-- (E) Given this repository produces data a different repository reads, when it
+- (E) [AC01] Given this repository produces data a different repository reads, when it
   ships, then the shape of that data is published alongside it as a versioned
   contract — so the reader can tell from the version alone whether it
   understands what it received, without having to inspect the data first.
-- (E) Given such a payload changes shape, when its contract gate runs, then the
+- (E) [AC02] Given such a payload changes shape, when its contract gate runs, then the
   emitted shape is compared against the shape last published and the gate fails
   until the version has been raised to match the kind of change: removing or
   retyping anything the reader relies on demands more than merely adding to it.
-- (E) Given the comparison would be worthless if the same change could rewrite
+- (E) [AC03] Given the comparison would be worthless if the same change could rewrite
   what it is compared against, when the gate runs, then the published shape is
   read from a state the proposed change cannot alter — never from a copy kept
   beside the code, because editing that copy erases the very evidence the check
   depends on and leaves the difference looking empty.
-- (E) Given a part of the payload the reader relies on becomes optional, when
+- (E) [AC04] Given a part of the payload the reader relies on becomes optional, when
   the gate runs, then that counts as a breaking change even though no field
   disappeared — the data still parses and the reader still breaks, which is the
   one kind of change nobody notices in time.
-- (E) Given the published shape was derived from data that never exercised part
+- (E) [AC05] Given the published shape was derived from data that never exercised part
   of it — a list that happened to be empty, a value only ever seen absent — when
   it is published, then that weakness is stated rather than passing as a full
   description, so nobody reads "this is always absent" as a promise it was never
   in a position to make.
-- (E) Given the shape is checked, when it is checked, then it is checked against
+- (E) [AC06] Given the shape is checked, when it is checked, then it is checked against
   what the reader actually fetches — the real command and its real output — not
   only against what the producing code would emit, because everything upstream
   can be correct while a wrapper, an encoder or a changed invocation alters what
   finally leaves the building.
-- (E) Given a payload is handed to a different repository, when it is produced,
+- (E) [AC07] Given a payload is handed to a different repository, when it is produced,
   then the capability producing it states plainly that it has an outside reader
   and what the contract is — a shape nobody declared is a shape nobody will
   think to version.
-- (E) Given a contract is in force, when it is read, then it binds this side
+- (E) [AC08] Given a contract is in force, when it is read, then it binds this side
   only: it says what is published and how a change to it is announced, and it
   makes no promise about what the receiving side does with that announcement —
   how a reader behaves when it meets a version it does not know is the
@@ -1126,40 +1126,40 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0116"></a>
 ### FR-01.16 — Guided requirement elicitation
 
-- (E) Given a requirement has been elicited, when the interview ends, then what
+- (E) [AC01] Given a requirement has been elicited, when the interview ends, then what
   exists is a requirement its author has confirmed and whose context is
   completely covered — every dimension either answered or explicitly marked as
   an unconfirmed guess — so that for any one of them a later reader can name
   which of three it was: decided by the person, found in the code, or admitted
   as unknown.
-- (E) Given requirements are gathered anywhere in Shipwright — a new project, an
+- (E) [AC02] Given requirements are gathered anywhere in Shipwright — a new project, an
   adopted codebase, or an ongoing change — when the interview runs, then it
   follows one shared method rather than three separate ones: one question is put
   at a time, each carrying a recommended answer, and a fact that can be read from
   the code or the tools is looked up instead of being asked.
-- (E) Given the method has parts, when it is run, then it is run in the order the
+- (E) [AC03] Given the method has parts, when it is run, then it is run in the order the
   method states, and what the capability produces is named before any analysis
   begins — criteria written after the analysis inherit its bias, because refusals
   and edge cases are what stand out while the core capability is too self-evident
   to write down. A requirement whose first criterion is a refusal is the
   signature of the order having been skipped.
-- (E) Given a term is sharpened or captured, when it is written down, then it is
+- (E) [AC04] Given a term is sharpened or captured, when it is written down, then it is
   checked against the terms already recorded rather than merely appended to
   them — a list that is only ever added to becomes a collision generator, and
   one word carrying two meanings is introduced by the very person holding the
   list.
-- (E) Given a requirement is being elicited, when its boundaries are tested, then
+- (E) [AC05] Given a requirement is being elicited, when its boundaries are tested, then
   at least two concrete edge-case scenarios are put **to the person** and what
   each settled is recorded — answering one's own scenario does not count, because
   the value lies in the case the other person decides differently than was
   assumed. Asked for as encouragement rather than as a number, this produced none
   at all.
-- (E) Given elicitation is under way, when a choice is made that is hard to
+- (E) [AC06] Given elicitation is under way, when a choice is made that is hard to
   reverse, surprising without context, and the result of a genuine trade-off,
   then the reason behind it is captured at that moment as a decision record, and
   the project's domain vocabulary is kept in a plain glossary that carries no
   implementation detail.
-- (E) Given a requirement's context is being gathered, when elicitation
+- (E) [AC07] Given a requirement's context is being gathered, when elicitation
   finishes, then every dimension of that context — its purpose, its boundaries
   and edge cases, its failure behaviour, its glossary terms, its rationale, and
   what it explicitly will not do — is either answered or explicitly recorded as
@@ -1167,17 +1167,17 @@ _Where the work detail lives_ at the end of this document.
   dimension is left silently unanswered. A dimension may be marked a guess only
   where the answer genuinely could not be obtained — never while someone who
   could have answered it was in the conversation.
-- (E) Given the coverage is complete, when the requirement is about to be
+- (E) [AC08] Given the coverage is complete, when the requirement is about to be
   written, then the shared understanding is played back and the person confirms
   it first — that confirmation is the hand-off from their picture of the thing to
   the recorded one, and without it what gets recorded is the interviewer's guess.
-- (E) Given the shared method is defined, when a capability that elicits
+- (E) [AC09] Given the shared method is defined, when a capability that elicits
   requirements is invoked, then it is bound to that one method and may add its
   own surface-specific questions but cannot skip the shared coverage checklist —
   and which capabilities those are is established by looking for them, not by
   consulting a list someone must remember to extend, because the surface added
   next is precisely the one nobody adds to the list.
-- (E) Given this is read as a guarantee about a particular conversation, when it
+- (E) [AC10] Given this is read as a guarantee about a particular conversation, when it
   is read, then it is not one: what can be established is that the method exists
   whole and that every place gathering requirements is bound to it. Whether the
   answers were any good, or whether a question was genuinely put to the person
@@ -1187,65 +1187,65 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0117"></a>
 ### FR-01.17 — Independent re-check on the code host
 
-- (E) Given a change proposed for merge, when the code host picks it up, then
+- (E) [AC01] Given a change proposed for merge, when the code host picks it up, then
   the project's tests, its lint, its security checks and the host's own code
   analysis all run again there — a pass on the author's machine is never
   accepted in place of that, because nothing about the author's machine can be
   verified from outside it.
-- (E) Given those checks, when any one of them is failing or has not reported an
+- (E) [AC02] Given those checks, when any one of them is failing or has not reported an
   answer yet, then the change cannot merge — silence counts as not passing, not
   as passing.
-- (E) Given a change proposed for merge, when it arrives, then it is reviewed on
+- (E) [AC03] Given a change proposed for merge, when it arrives, then it is reviewed on
   the host automatically, without the author having to ask for a review, and
   only the person who owns the project can waive that review.
-- (E) Given a review has run, when it reaches a verdict, then the verdict and
+- (E) [AC04] Given a review has run, when it reaches a verdict, then the verdict and
   the reasons behind it are written onto the change itself, where the people
   deciding whether to merge it will read them — not left in the log of a run
   nobody opens.
-- (E) Given a change proposed by someone outside the project, when the host runs
+- (E) [AC05] Given a change proposed by someone outside the project, when the host runs
   its checks on it, then those checks never hand that change the project's
   credentials — an untrusted change is examined, never trusted with the keys to
   the project it is asking to join.
-- (E) Given the set of checks that must pass before merging is configured outside
+- (E) [AC06] Given the set of checks that must pass before merging is configured outside
   the project, when it no longer matches the checks the project actually has, then
   that difference is raised as a tracked follow-up — a check that runs, reports
   and gates nothing is worse than no check, because it reads as protection.
-- (E) Given a change that alters the checks themselves, when it is examined, then
+- (E) [AC07] Given a change that alters the checks themselves, when it is examined, then
   it earns the closest scrutiny available and cannot exempt itself from it —
   whoever unlocks a door is not the one who decides it may be unlocked.
 
 <a id="fr-0118"></a>
 ### FR-01.18 — /shipwright-grade
 
-- (E) Given any git repository, when it is graded, then what exists afterwards
+- (E) [AC01] Given any git repository, when it is graded, then what exists afterwards
   is a report giving it a letter grade with, for each dimension, the score, the
   evidence behind it, and whether that evidence was read from the project's own
   records or estimated from the outside — and the repository itself is exactly
   as it was, so it may be pointed at code nobody has permission to change.
-- (E) Given the same repository at the same point in its history, when it is
+- (E) [AC02] Given the same repository at the same point in its history, when it is
   graded again, then the same grade comes out — the judgement is derived rather
   than formed, so two people comparing notes are comparing the same thing.
-- (E) Given a repository the framework already manages and one it does not, when
+- (E) [AC03] Given a repository the framework already manages and one it does not, when
   both are graded, then both are measured against the same rubric by the same
   engine, so a grade taken from the outside and the framework's own dashboard
   cannot tell two different stories about the same controls.
-- (E) Given a dimension cannot be determined from what the repository shows,
+- (E) [AC04] Given a dimension cannot be determined from what the repository shows,
   when the grade is computed, then it is marked as not determinable and left out
   of the calculation entirely — never scored as nothing, never filled in with a
   guess.
-- (E) Given nothing at all can be measured, when the grade is computed, then the
+- (E) [AC05] Given nothing at all can be measured, when the grade is computed, then the
   answer is that the repository cannot be graded — not the worst grade. Absence
   of evidence is not evidence of absence, and an invented bad grade would be
   exactly as dishonest as an invented good one.
-- (E) Given a control the repository plainly ought to have is missing or broken,
+- (E) [AC06] Given a control the repository plainly ought to have is missing or broken,
   when the grade is computed, then the headline grade is capped for that reason
   and the reason is stated — so a flattering average over the dimensions that
   happened to be measurable cannot cover for a load-bearing one that is dark.
-- (E) Given dimensions could not be determined, when the report is presented,
+- (E) [AC07] Given dimensions could not be determined, when the report is presented,
   then they are named as the controls adopting the framework would make visible,
   rather than quietly dropped — the gaps are the honest part of what is being
   offered, not something to round away.
-- (E) Given a repository that is not public, when it is graded, then nothing
+- (E) [AC08] Given a repository that is not public, when it is graded, then nothing
   about it leaves the machine unless consent was given twice: once for reaching
   out at all, and again for doing so on a repository that is not public — so a
   permission granted broadly never sweeps a private repository along with it.
@@ -1253,45 +1253,45 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0119"></a>
 ### FR-01.19 — Recovery of a broken shared branch
 
-- (E) Given several changes merged in quick succession, when each is checked,
+- (E) [AC01] Given several changes merged in quick succession, when each is checked,
   then every one of them is checked on its own and none is skipped because a
   later one arrived — otherwise "this change broke it" is a guess dressed as a
   fact, and the wrong author is asked to explain someone else's mistake.
-- (E) Given the shared branch is broken, when it is examined, then what comes
+- (E) [AC02] Given the shared branch is broken, when it is examined, then what comes
   back names the earliest change that broke it, what failed, and which other
   changes that one had never been tested alongside — everything a repair needs,
   without assembling it by hand.
-- (E) Given the answer cannot be established — the history looked at was too
+- (E) [AC03] Given the answer cannot be established — the history looked at was too
   short, a check never reported, or the code host could not be reached — when
   the shared branch is examined, then that is what comes back, never "it is
   fine". A health answer that reads "I could not tell" as "healthy" is worse
   than none, because it is believed.
-- (E) Given a repair would make a test ask for less than it did — dropping a
+- (E) [AC04] Given a repair would make a test ask for less than it did — dropping a
   check, removing a test, or switching one off — when it is proposed, then it is
   refused, and refused again by the code host using the version of the rule that
   the proposed change cannot edit. Adjusting a test until it passes is not a
   repair.
-- (E) Given a repair only updates what a test expects because another change
+- (E) [AC05] Given a repair only updates what a test expects because another change
   legitimately moved it, when it is proposed, then it is allowed and it must say
   why the new expectation is the correct one — the commonest honest repair is
   not blocked, but it is never silent either.
-- (E) Given the breakage is not something a repair should attempt — a security
+- (E) [AC06] Given the breakage is not something a repair should attempt — a security
   finding, more changes implicated than one overlap explains, or two attempts
   already spent — when it is examined, then it is filed for a decision with what
   was learned and the way back to the previous state, instead of being repaired
   by guesswork. Filing it twice for the same breakage is prevented.
-- (E) Given two people or agents start at the same moment, when each looks for
+- (E) [AC07] Given two people or agents start at the same moment, when each looks for
   work to do, then only one of them ends up repairing that breakage — the claim
   is made by an act the other cannot also perform, not by asking first and
   hoping. And given a claim is abandoned part-way, then it stops holding the
   place, so a worker that walked away cannot block every later attempt.
-- (E) Given a size limit is only crossed when two separately-acceptable changes
+- (E) [AC08] Given a size limit is only crossed when two separately-acceptable changes
   combine, when they are merged, then the crossing is visible on the shared
   branch — previously nothing looked, because each change had been fine alone.
-- (E) Given anything did leave the machine, when the report is written, then it
+- (E) [AC09] Given anything did leave the machine, when the report is written, then it
   states exactly what was fetched, so a reader can tell what the grade rests on
   and what was sent away to find out.
-- (E) Given a grade is quoted as an argument, when it is read, then it claims
+- (E) [AC10] Given a grade is quoted as an argument, when it is read, then it claims
   only which controls a repository visibly has — not that the software works,
   not that it is safe, and never in place of an examination by a person. Where
   it works without the project's own records it is an estimate made from the
@@ -1300,31 +1300,31 @@ _Where the work detail lives_ at the end of this document.
 <a id="fr-0120"></a>
 ### FR-01.20 — Context-Cost Meter
 
-- (E) Given the assistant finishes a turn, when its transcript is read, then
+- (E) [AC01] Given the assistant finishes a turn, when its transcript is read, then
   every exchange with the model is counted exactly once — never once per
   transcript line — because a single exchange is written as several lines that
   all share one request id, and those are folded together before anything is
   counted.
-- (E) Given a counted exchange happened while a pipeline phase was active, when
+- (E) [AC02] Given a counted exchange happened while a pipeline phase was active, when
   it is recorded, then it carries that phase's label, so the running total can
   be broken down by phase instead of standing as one number nobody can
   attribute.
-- (E) Given no phase is active — no pipeline is running, or the session is
+- (E) [AC03] Given no phase is active — no pipeline is running, or the session is
   outside one — when an exchange is recorded, then it is still recorded, only
   labelled as belonging to no phase, never silently dropped and never
   attributed to a phase it did not happen in.
-- (E) Given a session is running, when its status line is shown, then the
+- (E) [AC04] Given a session is running, when its status line is shown, then the
   exchanges counted and the modelled cost seen so far are shown as a running
   total — available while the session is still running, not only after it has
   already ended. Given the same running session, when its per-phase breakdown
   is asked for directly, then it is shown broken down by phase on demand,
   without waiting for the session to end.
-- (E) Given the existing warning that a session's working context is getting
+- (E) [AC05] Given the existing warning that a session's working context is getting
   full, when it is asked to use this measured exchange count instead of its
   original count of tool calls, then it does so at the same two thresholds
   it already used. It still counts tool calls by default until a follow-up
   change compares the two and switches over — this one only adds the choice.
-- (E) Given a session's automatic-compaction setting is left unset or set above
+- (E) [AC06] Given a session's automatic-compaction setting is left unset or set above
   what the active model's context window allows, or its reasoning-effort level
   is worth flagging, when a readiness check is run, then each is reported as a
   finding, in the same reported shape as the project's existing pre-push

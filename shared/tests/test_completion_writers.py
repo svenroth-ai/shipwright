@@ -11,6 +11,7 @@ where relevant, runs Canon C3. Fixture and producer shape stay separately pinned
 """
 
 from __future__ import annotations
+import pytest
 
 import json
 import os
@@ -23,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "tools"))
 
-from _c3_fixtures import ITERATE_RUN, history_entries, write_handoff  # noqa: E402
+from _c3_fixtures import ITERATE_RUN, history_entries  # noqa: E402
 from shared.tests._iterate_entry_helpers import write_current_evidence  # noqa: E402
 from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
 from lib.phase_history import latest_completion  # noqa: E402
@@ -62,6 +63,7 @@ def append_completion(root: Path, phase: str, run_id: str) -> dict:
 
 # --- append_phase_history stamps an instant, not just a day -------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_writer_stamps_a_full_instant(tmp_path):
     """HIGH-1 at its source. `date` alone cannot order anything inside a day,
     and the marker it is compared against is always an intra-day instant."""
@@ -71,6 +73,7 @@ def test_the_writer_stamps_a_full_instant(tmp_path):
     assert entry["date"] == entry["at"][:10], "the two keys must name one moment"
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_written_entry_reads_back_as_an_instant(tmp_path):
     """End to end: what the writer emits must be usable by what C3 reads.
 
@@ -90,6 +93,7 @@ def test_the_written_entry_reads_back_as_an_instant(tmp_path):
         )
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_completion_recorded_with_no_events_yet_carries_no_anchor(tmp_path):
     """The companion state: `append_phase_history` on a project with an empty
     event log omits `event_at` rather than nulling it, and C3 then falls back to
@@ -102,6 +106,7 @@ def test_a_completion_recorded_with_no_events_yet_carries_no_anchor(tmp_path):
     assert completion.anchor is None and completion.wall is not None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_hand_built_shape_matches_the_writer(tmp_path):
     """The anti-drift assertion: the fixture helper the other C3 suites use must
     carry exactly the keys the writer carries.
@@ -123,6 +128,7 @@ def test_the_hand_built_shape_matches_the_writer(tmp_path):
     assert "event_at" in fixture, "and the fixtures must model it"
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_writer_refuses_to_let_a_caller_overwrite_the_timestamp(tmp_path):
     """`at` joined `run_id`/`date` as canonical, so the guard must cover it."""
     result = subprocess.run(
@@ -158,6 +164,7 @@ def canon_block(root: Path, phase: str, run_id: str, label: str) -> None:
          "--phase", phase, "--run-id", run_id, env=env)
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_marker_and_the_completion_land_on_one_clock(tmp_path):
     """The invariant everything else rests on: a correct canon block leaves the
     marker's timestamp and the completion's `event_at` EQUAL. They are stamped
@@ -181,6 +188,7 @@ def test_the_marker_and_the_completion_land_on_one_clock(tmp_path):
     )
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_phase_rerun_that_records_no_new_event_still_passes(tmp_path):
     """THE regression. `record_event` dedups `phase_completed` first-wins on
     (phase, splitId), so a re-run appends no event; the marker is rewritten but
@@ -213,6 +221,7 @@ def test_a_phase_rerun_that_records_no_new_event_still_passes(tmp_path):
     assert result.ok is True, result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_split_that_skips_the_marker_write_is_still_caught(tmp_path):
     """The true positive, driven the same way — so the fix above cannot have
     been bought by blinding the check. Split 2 records its own event and its own
@@ -233,6 +242,7 @@ def test_a_split_that_skips_the_marker_write_is_still_caught(tmp_path):
     assert "predates that run's last recorded completion" in result.detail
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one(tmp_path):
     """The other-phase branch, same root cause. deploy owns the note; changelog
     is re-run and rewrites the marker WITHOUT recording a new event. deploy did
@@ -248,54 +258,5 @@ def test_a_later_phase_that_rewrites_the_note_does_not_accuse_the_earlier_one(tm
     assert result.is_skipped, result.detail
     assert "superseded" in result.detail and "changelog" in result.detail
 
-
-# --- iterate's completions come from its own ledger ---------------------------
-
-def test_the_iterate_ledger_writer_produces_a_readable_completion(tmp_path):
-    """HIGH-3. `iterate` has never written `phase_history`; F5c writes the
-    file-per-run ledger. C3 must read the record iterate actually keeps."""
-    root = _project(tmp_path)
-    _run("record_event.py", "--project-root", str(root),
-         "--type", "phase_completed", "--phase", "iterate", "--detail", "done")
-    _run("append_iterate_entry.py", "--project-root", str(root),
-         "--run-id", ITERATE_RUN, "--entry-json", json.dumps({
-             "type": "change", "complexity": "medium",
-             "branch": "iterate/c3-phase-history-join", "tests_passed": True,
-         }))
-
-    completion = latest_completion(root, "iterate")
-    config = json.loads((root / "shipwright_run_config.json").read_text(encoding="utf-8"))
-    entry = json.loads(
-        (root / ".shipwright" / "agent_docs" / "iterates" /
-         f"{ITERATE_RUN}.json").read_text(encoding="utf-8"))
-
-    assert "iterate" not in config.get("phase_history", {}), (
-        "the ledger writer must not have started writing phase_history"
-    )
-    assert completion is not None, "iterate's completion must be readable"
-    assert completion.run_id == ITERATE_RUN
-    assert completion.wall is not None, (
-        "its wall clock must be readable — that is what orders iterate against "
-        "another phase in the cross-phase branch"
-    )
-    # The bound this line used to guard has MOVED, on purpose: the ledger stamps
-    # the anchor too now (trg-1346abbd), so C3 reads one clock for iterate as
-    # well. `test_iterate_ledger_anchor.py` owns that behaviour end to end.
-    assert entry["event_at"], "the ledger must carry the anchor C3 reads"
-    assert completion.anchor is not None
-
-
-def test_an_iterate_that_wrote_its_note_passes_end_to_end(tmp_path):
-    """Ledger entry + marker, both from real writers, joined by C3."""
-    root = _project(tmp_path)
-    _run("append_iterate_entry.py", "--project-root", str(root),
-         "--run-id", ITERATE_RUN, "--entry-json", json.dumps({
-             "type": "change", "complexity": "medium", "tests_passed": True,
-             "branch": "iterate/c3-phase-history-join",
-         }))
-    write_handoff(root, phase="iterate", run_id=ITERATE_RUN,
-                  timestamp="2026-07-27T08:00:00+00:00")
-
-    result = check_c3(root, "iterate")
-
-    assert result.ok is True, result.detail
+# Iterate's completions (from its own file-per-run ledger, not phase_history)
+# moved to test_completion_writers_iterate_ledger.py at the 300-LOC threshold.
