@@ -1174,3 +1174,51 @@ def test_js_an_assertion_inside_a_template_interpolation_is_visible():
     after = "it('a', () => { const label = `${'ok'}`; expect(2).toBe(2); });\n"
     findings = aw.detect_weakening([_jschange(before, after)])
     assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_a_newly_added_fit_each_focus_blocks_its_siblings():
+    """External Tier-3 review, PR #685 (twelfth round, blocking): claimed
+    `fit.each(...)` is treated as an ordinary `.each` call with no `.only`
+    effect, so a newly-focused parametrized test would silently shadow its
+    siblings with no finding. Traced and reproduced directly against
+    `_js_collect`: `fit`/`fdescribe` already get `mod = \"only\"` whenever the
+    formula above leaves `mod` as `None` -- which chain `.each` alone also
+    does -- so `fit.each(...)` already composes correctly and this already
+    blocks. The one real gap the review surfaced was test coverage, not
+    behavior; this and the next three tests close it."""
+    before = ("describe('suite', () => {\n"
+              "  it.each([[1]])('a %i', (a) => { expect(a).toBe(1); });\n"
+              "  it('sibling', () => { expect(2).toBe(2); });\n});\n")
+    after = ("describe('suite', () => {\n"
+             "  fit.each([[1]])('a %i', (a) => { expect(a).toBe(1); });\n"
+             "  it('sibling', () => { expect(2).toBe(2); });\n});\n")
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_a_newly_added_fit_each_tagged_template_focus_blocks_its_siblings():
+    """Same claim, the other documented `.each` form (tagged-template table,
+    no parens) -- also already correct, also uncovered before this round."""
+    before = ("describe('suite', () => {\n"
+              "  it.each`a | b\n${1} | ${1}`('adds %s', ({a, b}) => { expect(a).toBe(b); });\n"
+              "  it('sibling', () => { expect(2).toBe(2); });\n});\n")
+    after = ("describe('suite', () => {\n"
+             "  fit.each`a | b\n${1} | ${1}`('adds %s', ({a, b}) => { expect(a).toBe(b); });\n"
+             "  it('sibling', () => { expect(2).toBe(2); });\n});\n")
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_a_newly_added_fdescribe_each_focus_blocks_its_siblings():
+    """`fdescribe.each(...)` half of the same claim: a newly-focused
+    parametrized describe block must shadow every OTHER top-level test."""
+    before = ("describe.each([[1]])('suite %i', (a) => {\n"
+              "  it('one', () => { expect(a).toBe(1); });\n});\n"
+              "describe('other', () => {\n"
+              "  it('two', () => { expect(2).toBe(2); });\n});\n")
+    after = ("fdescribe.each([[1]])('suite %i', (a) => {\n"
+             "  it('one', () => { expect(a).toBe(1); });\n});\n"
+             "describe('other', () => {\n"
+             "  it('two', () => { expect(2).toBe(2); });\n});\n")
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
