@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T00:50:21.890114+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T00:51:04.454560+00:00",
+      "disposition": "small-complexity change per Phase Matrix -- external LLM plan review only fires at medium+",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/assertion_weakening.py",
+          "line": 953,
+          "finding": "analyze_file's language-recognition guard dropped the pre-existing '.py' exemption when restructured for JS/TS support, wrongly blocking ordinary conftest.py/fixture edits. Fixed: restored the exemption, added test_a_conftest_py_change_under_a_tests_path_is_not_a_false_block.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/assertion_weakening.py",
+          "line": 369,
+          "finding": "_JS_ASSERT_HEAD only matched bare assert(x)/expect(x), never member-style assert.strictEqual(a,b)/assert.ok(x) (Node assert / Chai assert) -- a silent, undocumented uncounted-assertion gap. Fixed: extended the regex to match assert.<method>(, deliberately not expect.<method>( to avoid double-counting Jest/Vitest matcher factories. Added two tests.",
+          "suggestion": "fixed",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/assertion_weakening.py",
+          "line": 537,
+          "finding": "_js_collect is ~115 lines combining several concerns.",
+          "suggestion": "extract per-call pooling loop into a helper on a future touch",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/lib/assertion_weakening.py",
+          "line": 514,
+          "finding": "_js_assertion_signatures rescans the whole file per test call instead of precomputing once.",
+          "suggestion": "precompute match positions once per file on a future touch",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/assertion_weakening.py",
+          "line": 812,
+          "finding": "dict(was.instances)/dict(now.instances) collapse duplicate-content keys to their last occurrence without an inline comment explaining why that's safe.",
+          "suggestion": "fixed -- added clarifying comment",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-07T01:28:45.866412+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T01:28:46.143411+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T00:51:04.663242+00:00",
+      "disposition": "small-complexity change per Phase Matrix -- external code review is advisory/medium+ only; Claude-only review cascade (spec/code/doubt) ran instead",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T01:26:20.687421+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T00:51:04.557827+00:00",
+      "disposition": "small-complexity change per Phase Matrix -- internal plan review (opus-plan-reviewer) only fires at medium+",
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

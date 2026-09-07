@@ -1,0 +1,1 @@
+Main-repair safety gate (check_repair_safety.py) now analyzes .test.ts/.spec.ts (Jest/Vitest/Playwright) test files instead of blanket-blocking every repair that touches one; a Python-ast-only detector previously false-blocked any TS/JS repo's main-repair regardless of whether coverage was actually weakened.

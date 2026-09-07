@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
+  "date": "2026-09-07",
+  "section": "Iterate — bug: JS/TS-aware main-repair safety gate",
+  "title": "JS/TS-aware test-weakening detector for the main-repair safety gate",
+  "context": "assertion_weakening.py parsed test files with Python ast only; any repo whose tests are .test.ts hit unsupported_test_file (blocking) on every main-repair touching a test file, regardless of actual weakening. Verified false-positive on leadwright e764f89.",
+  "decision": "Add a hand-written JS/TS test scanner, dispatched by extension in analyze_file, pooling tests by identity (literal name or dynamic-name sentinel) with multiset marks and exact-content-key matching to bound false blocks.",
+  "consequences": "TS/JS repos get real weakening analysis instead of a blanket block. Restored a dropped .py conftest exemption and extended assert-call matching (both caught by code review).",
+  "rationale": "A false BLOCK is worse than a false negative for this gate (it is the gate's whole reason for existing), so ambiguous pooled findings are reported, not blocked; only unambiguous loss blocks.",
+  "rejected": "Ordinal-keying (gameable by decoy reordering); a real JS/TS parser dependency (adds a non-Python runtime dep to a Python-only shared lib); an explicit opt-out path (leaves the gate unenforced or exactly as blocked as before).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-06-ts-repair-safety-unsupported-js-ts-detector.md"
+}
