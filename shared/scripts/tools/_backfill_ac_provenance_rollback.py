@@ -74,11 +74,13 @@ def apply_with_rollback(project_root: Path, report: dict, spec_path: Path,
 
     try:
         orphans = validate_applied(project_root, apply_result, spec_path)
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         # validate_applied reads spec.md AFTER writes already landed -- a
         # transient failure there must not leave those writes un-rolled-back
         # (Tier-3 CI-gate re-review, P3.4 high; this used to run outside any
-        # try/except at all).
+        # try/except at all). UnicodeDecodeError (malformed UTF-8) is a
+        # ValueError, not an OSError -- `except OSError` alone does not
+        # catch it (Tier-3 CI-gate re-review, P3.4 high, round 9).
         apply_result["validate_error"] = str(exc)
         return _rolled_back_result(apply_result, _restore()), 1
 

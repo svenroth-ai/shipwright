@@ -118,10 +118,10 @@ revise both — run over the merge-base diff)
 | D5 | low | The committed coverage-report matches the tree exactly | accepted-and-fixed — two rows corrected for the two post-tagging bloat-cap splits (`test_completion_writers.py`, `test_silent_revert.py`); see `coverage-report.md` |
 
 ## Tier-3 CI-Gate Findings (required "PR Review" check, openai/gpt-5.6-luna,
-verdict block — eight re-review rounds of the merge-commit diff, the first
+verdict block — nine re-review rounds of the merge-commit diff, the first
 after the doubt-review fix commit fell behind `origin/main` and had to be
-refreshed via `ensure_current.py`, T2/T3/T4/T6/T7/T8/T9 each fixed and re-pushed
-in turn, T5 disputed with a reproduction rather than fixed)
+refreshed via `ensure_current.py`, T2/T3/T4/T6/T7/T8/T9/T10 each fixed and
+re-pushed in turn, T5 disputed with a reproduction rather than fixed)
 
 | # | Severity | Finding (short) | Disposition |
 |---|---|---|---|
@@ -134,6 +134,7 @@ in turn, T5 disputed with a reproduction rather than fixed)
 | T7 | high | `apply_writes` can return a `write_failures` entry for an insertion candidate (e.g. a TOCTOU race — `apply_upgrades` already read the file successfully once itself before adding it to the insert batch, `apply_writes` re-reads it a second time at the end) AFTER a SIBLING candidate's bare-tag upgrade elsewhere in the same batch already succeeded and was written directly to disk; `main()` folded `write_failures` into the ordinary `skipped` list and still returned `rc=0` — a partial application reported as an unqualified success, with the sibling upgrade never rolled back | accepted-and-fixed, narrowly scoped — `apply_upgrades` now also returns `write_failures_occurred: bool`, kept DISTINCT from the pre-existing `skipped` reasons (`file_absent_at_head`, `ambiguous_*`, etc. — deliberate, by-design non-writes, never treated as failures; rolling those back too would regress the tool's own documented best-effort-per-file design). `main()` now rolls back on `orphans OR write_failures_occurred`, sharing the same pre-write snapshot both branches already used. Regression test: `main()` with a monkeypatched `apply_upgrades` that writes one real bare-tag upgrade to disk and then reports `write_failures_occurred=True` — the already-written file is confirmed restored to its original content. This round's edits crossed the repo's 300-LOC bloat-gate cap on three files; cleared by splitting `main()`'s three snapshot/restore tests (orphan, mid-batch OSError, silent write-failure) out of `test_backfill_ac_provenance_cli.py` into a new `test_backfill_ac_provenance_cli_rollback.py` sibling (same precedent as that file's own `_git.py`/`_apply_skips.py` splits) and tightening two in-code comments, rather than filing an exception |
 | T8 | high | `main()`'s own snapshot-before-write / restore-on-failure pair (T6's and T7's safety net) bypassed the T4 containment guard entirely — the snapshot loop read every candidate via `abs_path.is_file()` with no `is_contained` check, and the restore loop's `abs_path.write_bytes(content)` FOLLOWS a symlink, so a committed symlink candidate could get its EXTERNAL target rewritten purely by an unrelated sibling's rollback (an orphan or a write-failure elsewhere in the same batch) — the exact vulnerability class T4 closed, reopened in a code path T4 never touched | accepted-and-fixed — every snapshot read and every restore write now goes through `is_contained(project_root, abs_path)` first, skipping a non-contained path in both directions. The fix also crossed the same 300-LOC bloat-gate cap again (this file keeps growing one Tier-3 finding at a time); cleared by extracting the whole snapshot/apply/rollback orchestration out of `main()` into a new `_backfill_ac_provenance_rollback.py` module (`apply_with_rollback`), leaving `main()` a thin CLI shell — same "split, not exception" precedent as T7. Regression test: a symlinked candidate alongside a sibling whose upgrade is rolled back — the symlink's real external target is confirmed byte-for-byte unchanged after the run |
 | T9 | high | `apply_with_rollback`'s own two remaining seams were not failure-safe: `validate_applied(...)` ran OUTSIDE any `try`/`except`, so a transient spec-read failure AFTER writes already landed crashed `main()` uncaught with no rollback; and `_restore()`'s per-file `write_bytes` had no exception handling at all, so a restore failure on ONE file aborted the loop and left every LATER file un-restored | accepted-and-fixed — `validate_applied(...)` is now wrapped in `try/except OSError`, reporting `apply_result["validate_error"]` and triggering the same rollback path; `_restore()` is now best-effort per file (`try/except OSError` around each `write_bytes`), collecting failed paths into `restore_failures` instead of raising, with a `_rolled_back_result` helper setting `rolled_back = not restore_failures`. Regression tests: (1) a monkeypatched `validate_applied` raising `OSError` after a real successful write — the write is confirmed restored and `rc == 1`; (2) a monkeypatched `write_bytes` failing for one specific file during restore while a sibling restore succeeds — the sibling IS still restored despite the other's failure, proving `_restore()` is genuinely best-effort, not abort-on-first-failure |
+| T10 | high | The T9 fix's `except OSError` around `validate_applied(...)` was itself incomplete: `validate_applied` reads spec.md via `spec_path.read_text(encoding="utf-8")`, which raises `UnicodeDecodeError` on malformed UTF-8 — a `ValueError` subclass, NOT an `OSError` — so that specific, plausible failure mode still crashed `main()` uncaught with writes left un-rolled-back, one round after the seam was supposedly closed | accepted-and-fixed — the clause now catches `(OSError, UnicodeDecodeError)`. Regression test: a genuinely malformed (non-UTF-8) spec.md file, exercising the REAL `validate_applied` (not monkeypatched) against a real successful write, confirming the write is restored and `rc == 1`. This round's addition crossed the 300-LOC bloat-gate cap on `test_backfill_ac_provenance_cli_rollback.py` a fourth time in this same file's lineage; cleared by the same "split, not exception" precedent — the failure-safety tests (T9's two + T10's + the T8 symlink test) moved into a new `test_backfill_ac_provenance_cli_rollback_failsafe.py` sibling, leaving the original file with only the pre-existing orphan-tag and mid-batch-write-failure tests |
 
 T1/T2/T3 are mechanism-level fixes to code this unit itself introduced (not
 the frozen shared `backfill_scan.py`/`fr_tag_grammar.py` engines, which have
@@ -148,7 +149,7 @@ editing it (neither is "frozen" the way `fr_tag_grammar.py` is).
 ## Consequences
 
 The monorepo's AC-scoped coverage is no longer zero, with an honest,
-conservative, and now bug-fixed derivation trail; ten real correctness/security
+conservative, and now bug-fixed derivation trail; eleven real correctness/security
 bugs (cross-FR slug reuse, whole-file regex over-substitution, per-file
 mis-attribution inside a group-level-verified mechanical batch, that same
 over-substitution mechanism's general form in both the upgrade AND the
@@ -156,14 +157,15 @@ insertion write path, a symlink path-traversal write in the WRITER, an
 uncaught mid-batch write failure, a SILENTLY-succeeding mid-batch write
 failure, that SAME symlink path-traversal class reopened in `main()`'s
 own snapshot/restore pair — a code path the first symlink fix never
-touched — and that same rollback wrapper's own validation/restore seams
-not being failure-safe) were found and fixed — two by this unit's own
-review cascade before shipping, one (D1) by the orchestrator's Stage-3
-doubt-review after merge-base review, seven (T2, T3, T4, T6, T7, T8, T9)
-by the required Tier-3 CI-gate re-review of the merge commit across eight
-separate re-review rounds (one of the eight, T5, was a disputed false
-positive verified NOT to reproduce and left unfixed) — plus a metadata bug
-(epoch-zero timestamp) in
+touched — that same rollback wrapper's own validation/restore seams not
+being failure-safe, and that SAME seam's exception clause itself being
+narrower than the exception it needed to catch) were found and fixed —
+two by this unit's own review cascade before shipping, one (D1) by the
+orchestrator's Stage-3 doubt-review after merge-base review, eight (T2,
+T3, T4, T6, T7, T8, T9, T10) by the required Tier-3 CI-gate re-review of
+the merge commit across nine separate re-review rounds (one of the nine,
+T5, was a disputed false positive verified NOT to reproduce and left
+unfixed) — plus a metadata bug (epoch-zero timestamp) in
 this unit's own regen step and a latent Windows newline-corruption bug (D4)
 in an unexercised
 code path. D2 remains an
