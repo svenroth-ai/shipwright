@@ -3,6 +3,36 @@
 **Run-ID:** iterate-2026-09-07-p3-2-tag-grammar-manifest-v4
 **Campaign:** req3-04c-ac-identity-wave2, sub-iterate p3.2 (tag-grammar-manifest-v4)
 
+## Correction (2026-09-07, after PR #686's Stage-1 REJECT)
+
+Everything below this note describes AC#3 as it read when this sub-iterate was
+first built: **"the shipwright-webui reader accepts v4"**, verified by two
+empirical round-trip probes against the WebUI's `readTraceabilityIndex`
+(see Confidence Calibration below). That framing was WRONG and the Stage-1
+spec-reviewer correctly REJECTED on it: a monorepo sub-iterate cannot commit
+into the separate `shipwright-webui` repository, and the campaign SPEC itself
+self-contradicted on whether this unit owned that work at all. The operator
+resolved this: the WebUI reader is owned by sub-iterate `w3` of a *separate*
+campaign (`req3-06-mechanics-webui`, card `trg-a2017e6f`), and AC#3 was
+reworded to the narrower, in-repo-verifiable claim this unit actually owes the
+WebUI — **a wire-format guarantee, not an implementation**: "the v4 manifest
+stays readable by a v3-shaped consumer — additive nodes only, no field
+removed or retyped, verified against a frozen v3 fixture." A new AC#4 was
+added: "no change is attempted in the shipwright-webui repository."
+
+The two round-trip probes described below are **historical** — they answered
+a question ("does the WebUI reader crash or drop data on v4?") that is no
+longer this unit's acceptance criterion, and they are not test-locked (an
+external, unreproducible manual check). The CURRENT evidence for the
+corrected AC#3 is `plugins/shipwright-compliance/tests/test_traceability_contract.py::TestTheGate::test_v4_stays_additive_over_the_frozen_v3_shape`
+— a real pytest assertion that diffs the live v4 contract's skeleton against
+the frozen `contracts/test-traceability-3.0.json` fixture and asserts nothing
+was removed or retyped. AC#4 is satisfied trivially: this diff never touches
+a `shipwright-webui` path (confirmed by Stage-2/Stage-3 review). The rest of
+this ADR (grammar design, manifest shape, version lockstep, rejected
+alternatives #1-#3) is unaffected by the correction and stands as originally
+decided.
+
 ## Context
 
 P3.1 (PR #683) minted tool-assigned `[ACnn]` markers for FR acceptance
