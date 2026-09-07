@@ -150,25 +150,54 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/layer_coverage_binding.py",
+          "line": 56,
+          "finding": "_binding_result duplicates the four-branch CheckResult-shaping structure of the pre-existing _cross_layer_result in layer_coverage.py. This diff's (+N more) truncation fix was applied only to the new copy; the identical pre-existing bug still exists untouched in _cross_layer_result. Not a reason to reject this diff (sibling file untouched, out of surgical scope) but same duplication-drift risk one layer up in message formatting.",
+          "suggestion": "File a follow-up to extract a shared _format_gap_list helper (or backport the fix) next time either formatter is touched.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-07T13:57:57.889119+00:00",
-      "disposition": "delegated_to_orchestrator: campaign-mode.md 3f-bis runs the spec-reviewer/code-reviewer/doubt-reviewer cascade before merge; runner has no Agent tool to spawn it",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T15:37:15.349210+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling-blast-radius",
+          "file": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md",
+          "line": null,
+          "finding": "Claim under doubt: The empirical dry-run (0 hard / 1 advisory across 20 active FRs) proves the new HARD gate cannot immediately block real-world work when it rolls out. — The dry-run measures only this monorepo's own self-referential, adopt-bootstrapped corpus (100% inferred_legacy). A greenfield target project authored via the normal /shipwright-project path produces required_layers_source=explicit immediately, which gets no legacy-valve grace period. The blast radius on real, non-adopt Shipwright-managed target projects is unmeasured, not zero. Disposition: accepted-and-tracked -- ADR's blast-radius section amended with an explicit scope caveat; trg-aedcfe7b minted as the tracked owner.",
+          "suggestion": "Amend the ADR with an explicit scope caveat and mint a tracked follow-up card (done: trg-aedcfe7b).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md",
+          "line": null,
+          "finding": "Claim under doubt: Finding #5's disposition (legacy/defaulted sources route ADVISORY) means a previously-valid, older FR is safely grandfathered against this new gate. — The actual boundary is the provenance MARKER (inferred_legacy/defaulted_legacy), not FR age -- orthogonal properties that only coincide in this bootstrapped corpus. A genuinely old FR authored via the normal explicit path gets zero grace period on its next unrelated touch. Disposition: accepted-and-fixed -- Consequences section and finding #5's disposition row corrected in the ADR to state the marker-based boundary precisely.",
+          "suggestion": "Correct the ADR's Consequences section and finding #5's disposition wording (done).",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-07T13:57:57.998159+00:00",
-      "disposition": "delegated_to_orchestrator: campaign-mode.md 3f-bis runs the spec-reviewer/code-reviewer/doubt-reviewer cascade before merge; runner has no Agent tool to spawn it",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T15:46:43.073562+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },
@@ -254,13 +283,13 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-07T13:57:57.778583+00:00",
-      "disposition": "spec-reviewer is Stage 1 of the orchestrator's cascade (SKILL.md Step 8 / campaign-mode.md 3f-bis), not the sub-iterate runner's job — runner has no Agent tool",
-      "recorded_by": "none",
+      "completed_at": "2026-09-07T15:32:43.055743+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },

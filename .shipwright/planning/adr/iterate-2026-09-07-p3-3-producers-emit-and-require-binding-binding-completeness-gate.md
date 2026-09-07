@@ -48,7 +48,9 @@ tagged for the same requirement executed and passed) now HARD-blocks at
 display id collides across namespaces (structurally ambiguous, ADVISORY).
 An empirical dry-run against the live corpus (see "Rollout blast-radius
 measurement" below) shows the gate cannot immediately HARD-block any FR
-active today. The ledger now carries an explicit, falsifiable reconciliation
+active in THIS monorepo today — that measurement's scope is this repo only
+(see the caveat below); it is not evidence about target Shipwright-managed
+projects. The ledger now carries an explicit, falsifiable reconciliation
 statement instead of two silently-diverging numbering schemes.
 
 ## Rationale
@@ -119,6 +121,19 @@ today — every gap it would find right now routes ADVISORY via the
 pre-rollout legacy valve, exactly as `evaluate_cross_layer` already does for
 the same corpus.
 
+**Scope caveat (added at Stage-3 doubt-review, PR #687):** this measurement
+is a self-test of this monorepo's own corpus, not a rollout-safety guarantee
+for the population `shared/scripts/` actually ships to. This repo's
+`test-traceability.json` is 100% `inferred_legacy` because it was
+adopt/backfill-bootstrapped (`iterate-backfill-plugin-fr-tags-BRIEF.md`) —
+not because Shipwright-managed projects are typically legacy-sourced. A
+greenfield target project authored via the normal `/shipwright-project` path
+produces `required_layers_source: explicit` immediately
+(`fr-authoring.md` §Layers), which receives no legacy-valve grace period from
+this gate. The blast radius on real, non-adopt target projects is therefore
+**unmeasured**, not zero. Tracked as `trg-aedcfe7b` rather than left as an
+implicit assumption in this ADR.
+
 ## Self-Review (references/iteration-reviews.md checklist)
 
 1. **Spec Compliance** — pass. Both literal ACs implemented and test-pinned;
@@ -162,7 +177,7 @@ the same corpus.
 | 2 | high | openai | Plan declines to wire producers despite the "producers emit" title | rejected-with-reason — scope deliberately narrowed to the require half; deferral tracked in `campaign.md` (P3.5/follow-up card) |
 | 3 | high | openai | No authoritative rule for deriving "the highest observable layer" | accepted-and-fixed — `_highest_ok_layer` docstring pins the exact existing `_cov_status` eligibility contract; unrecognised-label test added |
 | 4 | medium | glm | Emit-half deferral has no tracked owner | accepted-and-fixed — `campaign.md` P3.3 line updated with an explicit deferral note |
-| 5 | medium | openai | Migration boundary: a previously-valid FR could unexpectedly HARD-fail | accepted-and-fixed — legacy/defaulted sources already route ADVISORY (pre-rollout valve); dry-run confirms 0 HARD today |
+| 5 | medium | openai | Migration boundary: a previously-valid FR could unexpectedly HARD-fail | accepted-and-fixed, disposition corrected at Stage-3 doubt-review — legacy/defaulted-**source** FRs route ADVISORY (pre-rollout valve); dry-run confirms 0 HARD today. **Correction:** the boundary is the provenance MARKER (`inferred_legacy`/`defaulted_legacy`), not FR **age** — a genuinely old FR authored via the normal `explicit` path gets no grace period on its next unrelated touch. See "Rollout blast-radius measurement" scope caveat. |
 | 6 | medium | openai | Test matrix omits ambiguity cases (multiple required layers, declared-higher-than-evidence, empty required_layers) | accepted-and-fixed — dedicated tests added for each case |
 | 7 | medium | openai | Ledger reconciliation described as a method, not a concrete deliverable | accepted-and-fixed — explicit per-FR table (walk date / bullet count / post-walk-citation count) added to the ledger doc |
 | 8 | medium | glm | AC2 has no defined deliverable | accepted-and-fixed — same table as #7 |
@@ -171,6 +186,18 @@ the same corpus.
 | 11 | low | glm | Ledger citation method spot-verified on only two rows | accepted-and-fixed — investigated further via git-blame cross-check, found confounded (bulk commit `28491e1c9`), documented as a negative result with the residual gap disclosed |
 | 12 | low | openai | Third independent expensive regen call, justified only by precedent | rejected-with-reason (disclosed, not fixed) — see Rejected #5; deferred to a future consolidation pass |
 | 13 | — | glm (summary) | Overall: producer work + highest-layer contract underspecified before this can show end-to-end behaviour | addressed by findings #2/#3/#5 above; verdict overall was "reject" from openai / "revise" from glm — both providers' concrete findings are individually dispositioned above |
+
+## Stage-3 Doubt-Review Findings (PR #687, internal cascade)
+
+Spec-review and code-review both passed clean. Doubt-review independently
+re-derived the dry-run number against the live corpus (confirmed genuine:
+20/20 `inferred_legacy`) rather than trusting the ADR's claim, then attacked
+the claim's *scope* rather than its arithmetic.
+
+| # | Severity | Finding (short) | Disposition |
+|---|---|---|---|
+| D1 | high | The dry-run measures this monorepo's own self-referential, adopt-bootstrapped corpus (100% `inferred_legacy`), not the target-project population `shared/scripts/` actually ships to; a greenfield `/shipwright-project` FR is `explicit` immediately and gets no grace period. Blast radius on real target projects is unmeasured, not zero. | accepted-and-tracked — "Rollout blast-radius measurement" section above amended with an explicit scope caveat; `trg-aedcfe7b` minted as the concrete tracked owner (options: fixture-corpus dry-run, or a rollout-cutoff/transition rule) |
+| D2 | medium | The Consequences section and finding #5's disposition described the safety boundary as FR **age** ("a previously-valid FR"), but the code's actual boundary is the provenance **marker** (`inferred_legacy`/`defaulted_legacy`), which is orthogonal to age and only coincides with it in this one bootstrapped corpus. | accepted-and-fixed — Consequences section and finding #5's disposition row corrected above to state the marker-based boundary precisely |
 
 ## External-Code-Review-Findings
 
