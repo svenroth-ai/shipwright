@@ -217,6 +217,45 @@ def test_main_rolls_back_every_touched_file_when_an_orphan_tag_is_written(tmp_pa
     assert (tmp_path / rel).read_text(encoding="utf-8") == _UNTAGGED  # restored, not left half-written
 
 
+def test_main_rolls_back_every_touched_file_when_a_write_fails_mid_batch(tmp_path, monkeypatch):
+    """Tier-3 CI-gate re-review (P3.4 high): ``apply_upgrades`` writes each
+    bare-tag upgrade immediately as it iterates candidates, so an I/O failure
+    partway through a multi-file batch previously propagated straight out of
+    ``main()`` -- the orphan rollback below only runs on a NORMAL return, so
+    a file already written before the failure stayed modified forever. A
+    write failure on the SECOND file must restore the FIRST file too."""
+    rel_a, rel_b = "tests/test_a.py", "tests/test_b.py"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / rel_a).write_text(_BARE_TAGGED, encoding="utf-8")
+    (tmp_path / rel_b).write_text(_BARE_TAGGED.replace("test_one", "test_two"), encoding="utf-8")
+    spec = tmp_path / "spec.md"
+    spec.write_text(_MINTED_SPEC, encoding="utf-8")
+
+    fake_report = {"candidates": [
+        _candidate("FR-01.01", "AC01", [rel_a]),
+        _candidate("FR-01.01", "AC01", [rel_b]),
+    ]}
+    monkeypatch.setattr(mod, "_is_shallow_clone", lambda *_: False)
+    monkeypatch.setattr(mod, "derive", lambda *_a, **_k: fake_report)
+
+    real_write_bytes = Path.write_bytes
+    calls = {"n": 0}
+
+    def flaky_write_bytes(self, data):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise OSError("simulated disk failure")
+        return real_write_bytes(self, data)
+
+    monkeypatch.setattr(Path, "write_bytes", flaky_write_bytes)
+
+    rc = mod.main(["--project-root", str(tmp_path), "--spec-file", str(spec), "--write"])
+
+    assert rc == 1
+    assert (tmp_path / rel_a).read_text(encoding="utf-8") == _BARE_TAGGED       # restored after being written
+    assert (tmp_path / rel_b).read_text(encoding="utf-8") == _BARE_TAGGED.replace("test_one", "test_two")
+
+
 # --------------------------------------------------------------------------- #
 # derive() status accounting                                                  #
 # --------------------------------------------------------------------------- #

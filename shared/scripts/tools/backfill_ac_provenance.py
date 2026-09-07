@@ -265,7 +265,22 @@ def main(argv: list[str] | None = None) -> int:
                 abs_path = project_root / rel
                 if abs_path.is_file():
                     originals[abs_path] = abs_path.read_bytes()
-        apply_result = apply_upgrades(project_root, report)
+        try:
+            apply_result = apply_upgrades(project_root, report)
+        except OSError as exc:
+            # Tier-3 CI-gate re-review (P3.4 high): apply_upgrades writes each
+            # bare-tag upgrade immediately as it iterates candidates, so an I/O
+            # failure partway through (disk full, permission error, file made
+            # read-only mid-run) previously propagated straight out of main()
+            # -- the orphan-rollback below runs only on a NORMAL return, so
+            # every file already written before the failure stayed modified.
+            # Restore the same snapshot the orphan path uses; there is no
+            # partial `apply_result` to report, only what failed.
+            for abs_path, content in originals.items():
+                abs_path.write_bytes(content)
+            out["apply"] = {"write_error": str(exc), "rolled_back": True}
+            print(json.dumps(out, indent=2, ensure_ascii=False))
+            return 1
         out["apply"] = apply_result
         orphans = validate_applied(project_root, apply_result, spec_path)
         if orphans:
