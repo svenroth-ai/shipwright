@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-p3-1-ac-identity-reader-corpus",
+  "date": "2026-09-07",
+  "section": "campaign req3-04c-ac-identity-wave2 / P3.1 (SPEC §8 E1)",
+  "title": "AC-id minting + reader for the shipped FR heading+bullet shape",
+  "context": "Campaign req3-04c-ac-identity-wave2, sub-iterate P3.1: SPEC §8 E1 needs a tool-minted, permanent, per-criterion identity (AC id) for the shipped FR heading+bullet shape, mirroring how FR ids are minted (fr-authoring.md §4). Dormant infra only -- not wired into the real spec.md or any consumer yet (P3.2/P3.3's job).",
+  "decision": "Embed [ACnn] literally in the criterion bullet (square brackets, never parens -- avoids colliding with the (E) marker / (iterate-slug) footnotes). Persist a per-FR high-water-mark registry, seeded bidirectionally (max of registry vs. document) so a lagging or ahead snapshot self-heals. mint()/read() share block-discovery, both delegate criterion-text extraction to lib.fr_criteria(R0); mint() applies read()'s SAME leading-bullet-run gate, so a bullet is never minted that read() cannot also see.",
+  "consequences": "AC ids are permanent (never renumbered/reused), tool-minted (never typed), and readable via ac_identity.read()/read_all(). mint_ac_ids.py CLI serializes concurrent --write via a registry-file lock, writes the registry before the spec (a registry-ahead gap self-heals; a spec-ahead gap risks reuse), and validates registry values. Still dormant: fr_criteria callers reading an already-minted real document would see [ACnn] as literal text -- named here, deferred to whoever wires minting in.",
+  "rationale": "No content hash (D9): ACs get reworded, which would break every existing tag. Position-only identity breaks on reorder/insert/delete. Composing on lib.fr_criteria (R0) avoids re-implementing (and silently diverging from) its continuation-line joining, whitespace normalisation, and placeholder-dropping rules.",
+  "rejected": "Content-hash identity (D9 -- rewording breaks every tag). Position-index identity (breaks on insert/reorder/delete). Reimplementing fr_criteria's block/criteria parsing inside ac_identity instead of composing on R0 (duplication risk, would drift from the canonical reader over time).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.1-ac-identity-reader-corpus.md"
+}

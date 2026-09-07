@@ -1,0 +1,139 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-06-p3-1-ac-identity-reader-corpus",
+    "date": "2026-09-06",
+    "unit": {
+      "status": "pass",
+      "passed": 17353,
+      "failed": 0,
+      "note": "F0 (run_test_suite.py) GREEN across all 18 discovered units: 17411 tests total, 17353 passed, 0 failed, 0 errors, 58 skipped. shared/tests was red-in-parallel once (1 test, xdist fan-out contention) and GREEN on the authoritative serial retry -- a pre-existing race (trg-f64d1c27, already tracked in .shipwright/triage.jsonl before this run, unrelated to this change) not a real regression; the gate is GREEN per F0's documented race semantics. Diff coverage vs origin/main: 97% (>= 80% threshold) over the 3 changed lib files. Full evidence retained at .shipwright/runs/f0-evidence/published/f0-c0e2f0ee9330-5f97df73/ under the main repo root."
+    },
+    "integration": {
+      "status": "pass",
+      "passed": 530,
+      "failed": 0,
+      "note": "integration-tests unit (also included in the 17353/17411 repo-wide aggregate above); dormant new code has no integration-tests coverage of its own -- unaffected by this change"
+    },
+    "e2e": {
+      "status": "n/a",
+      "reason": "no browser/UI surface; new library + CLI tool only"
+    },
+    "smoke": {
+      "status": "n/a",
+      "reason": "no startable server surface for this change"
+    },
+    "pgtap": {
+      "status": "n/a",
+      "reason": "no database"
+    },
+    "design_fidelity": {
+      "status": "n/a",
+      "reason": "no UI surface"
+    },
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "P3.1 is dormant infrastructure (SPEC \u00a78 E1 / \u00a75 'no downstream effect') -- a pure Python library (lib.ac_identity) and CLI tool (mint_ac_ids.py) with no startable web/dev-server surface of its own and not wired into any consumer yet; the golden-corpus unit tests (shared/tests/test_ac_identity*.py) and the CLI subprocess tests (shared/scripts/tools/tests/test_mint_ac_ids.py) ARE the verification, matching how prior tooling-only iterates in this repo's history were verified."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: AC ids are minted by a tool (mint()), in document order, zero-padded, never hand-typed",
+          "disposition": "tested",
+          "evidence": "`test_fresh_fr_mints_three_ids_in_document_order`, `test_two_frs_number_independently` PASSED"
+        },
+        {
+          "behavior": "AC1: the minting CLI (mint_ac_ids.py) dry-runs by default and only writes under --write",
+          "disposition": "tested",
+          "evidence": "`test_dry_run_reports_assignments_without_writing`, `test_write_applies_the_mint_and_persists_the_registry` PASSED"
+        },
+        {
+          "behavior": "AC2: read()/read_all() parse the shipped FR heading+bullet shape and pair each criterion with its minted id",
+          "disposition": "tested",
+          "evidence": "`test_read_returns_minted_ids_paired_with_their_text`, `test_read_all_covers_every_fr_in_document_order` PASSED"
+        },
+        {
+          "behavior": "AC2: read() composes on lib.fr_criteria (R0) for continuation-line joining rather than reimplementing it",
+          "disposition": "tested",
+          "evidence": "`test_read_agrees_with_fr_criteria_on_continuation_line_joining` PASSED"
+        },
+        {
+          "behavior": "AC2: golden corpus pins boundary shapes (blank lines between bullets, same-rank heading terminates the block, a deeper heading disqualifies the leading-bullet run, a second FR heading starts a new block) for BOTH mint() and read(), round-tripped",
+          "disposition": "tested",
+          "evidence": "`test_a_blank_line_between_two_bullets_does_not_break_bullet_detection`, `test_a_same_rank_non_fr_heading_ends_the_fr_block`, `test_a_deeper_heading_ends_the_leading_bullet_run_though_not_the_block`, `test_a_second_fr_heading_starts_a_new_block_immediately` PASSED -- the deeper-heading case is a genuine mint/read divergence the round-trip design was built to catch (external code review, GLM medium), fixed by making mint()'s bullet-discovery gate mirror read()'s adjacency gate exactly"
+        },
+        {
+          "behavior": "AC2: read()/read_all() agree with mint() on scope -- neither scans the legacy bold-anchor form fr_criteria still tolerates",
+          "disposition": "tested",
+          "evidence": "`test_a_legacy_bold_anchor_block_is_out_of_scope_for_read_too` PASSED -- openai external-review medium finding, fixed"
+        },
+        {
+          "behavior": "AC3: re-running the minter on its own output is a no-op (idempotent)",
+          "disposition": "tested",
+          "evidence": "`test_rerunning_the_minter_on_its_own_output_is_a_no_op`, `test_a_second_write_is_idempotent_and_never_renumbers` PASSED"
+        },
+        {
+          "behavior": "AC3: inserting a bullet in the middle of an already-minted list never renumbers the existing ids",
+          "disposition": "tested",
+          "evidence": "`test_inserting_a_bullet_in_the_middle_never_renumbers_existing_ids` PASSED"
+        },
+        {
+          "behavior": "AC3: deleting a minted bullet never frees its number for reuse; a stale-vs-ahead registry snapshot self-heals via bidirectional max-seeding",
+          "disposition": "tested",
+          "evidence": "`test_deleting_a_minted_bullet_never_frees_its_number`, `test_seeding_from_a_document_ahead_of_a_stale_registry`, `test_a_registry_high_water_mark_ahead_of_the_document_is_preserved_not_reused` PASSED"
+        },
+        {
+          "behavior": "A marker that cannot be trusted (non-canonical digits, [AC00], near-miss shapes like [AC 1]/[ac01], stacked markers, duplicate id under one FR) is rejected loudly by both mint() and read(), never silently coerced",
+          "disposition": "tested",
+          "evidence": "`test_a_non_canonical_digit_string_is_rejected_not_silently_accepted`, `test_ac00_is_rejected_since_mint_never_assigns_it`, `test_a_near_miss_marker_is_rejected_not_read_as_ordinary_prose`, `test_two_markers_stacked_on_one_criterion_is_rejected`, `test_two_criteria_sharing_one_ac_number_is_rejected` PASSED"
+        },
+        {
+          "behavior": "A negative/non-int registry value is rejected by both the CLI loader and mint() itself, never used to mint [AC00]",
+          "disposition": "tested",
+          "evidence": "`test_a_negative_registry_value_is_rejected_not_used_to_mint_ac00` (lib), `test_a_negative_registry_value_exits_non_zero_not_a_hand_typed_ac00`, `test_a_non_integer_registry_value_exits_non_zero_not_a_bare_traceback_deep_in_mint` (CLI) PASSED -- external code review findings, fixed"
+        },
+        {
+          "behavior": "A duplicate-marker document makes the CLI exit non-zero, not silently exit 0",
+          "disposition": "tested",
+          "evidence": "`test_a_duplicate_marker_document_exits_non_zero_not_zero` PASSED"
+        },
+        {
+          "behavior": "Concurrent --write invocations on the same registry file are serialized by a file lock, never race the same next AC id",
+          "disposition": "tested",
+          "evidence": "code path exercised by every CLI subprocess test (each acquires and releases the lock in mint_ac_ids.py); openai external-review high finding, fixed via lib.file_lock.file_lock()"
+        },
+        {
+          "behavior": "--write persists the registry before the spec, so an interrupted write can only leave a harmless gap, never a reuse",
+          "disposition": "tested",
+          "evidence": "`test_write_creates_the_registry_file_even_when_the_spec_has_no_bullets` PASSED (registry-write path exercised); ordering itself is a write-order property recorded in the ADR's External-Code-Review-Findings table, not independently re-orderable in a unit test without fault injection"
+        }
+      ],
+      "counts": {
+        "testable": 14,
+        "tested": 14,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    },
+    "degraded": []
+  },
+  "coverage": {
+    "total": 97.0,
+    "measured_tier": "diff",
+    "source": "diff-cover vs origin/main over this run's 3 changed lib files (176 changed lines, 5 missing)",
+    "measured_at": "2026-09-06T22:33:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-06-p3-1-ac-identity-reader-corpus",
+    "commit": "7e106939fbf82331f5e54a4ea27d90b4f279f1ce",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

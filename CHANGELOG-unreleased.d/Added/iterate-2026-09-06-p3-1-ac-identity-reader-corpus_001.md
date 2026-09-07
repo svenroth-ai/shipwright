@@ -1,0 +1,1 @@
+AC-id minting/reading tooling (`lib.ac_identity`, `tools/mint_ac_ids.py`) for the shipped FR heading+bullet shape -- tool-minted, permanent, never-renumbered per-criterion ids, pinned by a golden corpus. Dormant: not yet wired into any consumer.

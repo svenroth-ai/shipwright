@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-06-p3-1-ac-identity-reader-corpus",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T21:38:56.182630+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The per-FR high-water-mark registry is central to the design (\"never reused across a delete\") but its location, format, and lifecycle are unspecified, and no registry file appears in the Files list. Is it a JSON sidecar? Per-document or global? Keyed only by `fr_id`? If it's global and the tool ever operates on more than one spec document (plausible — there is also the campaign SPEC itself), two documents sharing `FR-01` would collide on the high-water mark.",
+          "suggestion": "Name the registry file, its path, and its schema in the plan. Make it per-document (e.g., keyed by document path or stored alongside the spec), or explicitly state the repo guarantees a single minting target.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "When the minter runs against a real document (P3.2), the inserted `[ACnn]` marker becomes part of the text that `lib.fr_criteria.criteria_for` returns. The plan asserts the marker is \"ordinary leading text\" to that function — which means every existing consumer of `fr_criteria` text now sees ` [AC07]` prefixed. The reader (`lib.ac_identity.read`) must strip the marker, and that stripping must be pinned by the golden corpus (i.e., a test asserting `read()` returns text without the marker, exactly matching what `fr_criteria` returned pre-mint).",
+          "suggestion": "Add an explicit test case: the same document before and after minting must yield identical criterion text from `read()`. This is the single most important pin, and it's only implied by \"continuation-line agreement\" in the current test list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The plan handles \"marker absent\" and \"marker present,\" but not \"marker present but malformed or misplaced\": a human typing `[AC7]` (unpadded), `[AC7]` vs `[AC07]`, a marker mid-sentence, or — worst case — two bullets carrying the same `[AC03]`. The minter's \"insert if absent\" logic would either double-mint (if it doesn't recognize a misplaced marker as present) or silently bless a duplicate. The spec explicitly says ids are \"never typed,\" so a typed marker is a defect the tool should surface, not paper over.",
+          "suggestion": "Specify strict validation on read/mint: markers must match the canonical form and position; duplicates or malformed markers cause a hard error in both `--write` and `read`, with a test for each. Also fix the padding rule (is `AC07` two-digit, and what happens past AC 99 — unlikely, but state it).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "strict=True` in `criteria_for` means the reader and minter will hard-fail on any legacy bold-anchor form. That's correct for the shipped shape, but it means the P3.2 run against the real `spec.md` is a all-or-nothing gate: one legacy heading anywhere in the file aborts minting mid-document.",
+          "suggestion": "Since the minter is dry-run by default and `--write` is atomic-ish per run, this failure mode is safe (no partial state). But add a note that the P3.2 pre-check is \"confirm zero legacy anchors in the real spec,\" so the failure isn't discovered as a surprise.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Registry write ordering vs. document write: if `--write` modifies the document and then the registry write fails (or vice versa), the two can desynchronize. The \"seeded from document markers\" rule already makes this recoverable (document markers are the source of truth; a stale-lower registry is re-seeded upward), which the plan covers with the stale-registry test — good. Just confirm the seeding is max(document, registry), not registry-over-document, so a registry that's erroneously higher than the document is also tolerated (gaps, not clashes).",
+          "suggestion": "One test case: registry high-water higher than any marker in the document → next mint uses the registry value (gap preserved, no reuse).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security |",
+          "file": null,
+          "line": null,
+          "finding": "No meaningful security surface: the tool writes only to repo files it's pointed at, dry-run by default, no untrusted input parsing. The only nit is that `--write` will happily modify any path given to it; in this repo context that's acceptable and adding path allow-listing would be over-production.",
+          "suggestion": "None — leave as is.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "[ACnn]` in square brackets is valid but Markdown treats a bracketed token followed by a definition as a link reference; if any document ever contains a line like `[AC07]: https://...` (unlikely, but a plausible paste accident), the marker would render as a link or be consumed. The marker also participates in link-reference resolution in some renderers.",
+          "suggestion": "Not worth changing the syntax over, but the strict reader validation above (canonical form/position check) makes any accidental collision detectable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The persisted high-water registry has no defined ownership, location, version-control policy, or merge behavior. Two branches can both mint the same next AC number from the same registry state; seeding from the merged document then detects, but does not prevent, the duplicate.",
+          "suggestion": "Define the registry as a committed, canonical project artifact and make minting fail on duplicate IDs. Specify the merge-resolution workflow (allocate a new ID only to the newly introduced criterion; never renumber an existing one).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not state how invalid or ambiguous markers are handled: duplicate `[AC07]` markers under one FR, malformed markers, multiple markers in one bullet, markers in continuation text, or a marker attached to the wrong FR after editing. Silent acceptance would undermine stable identity.",
+          "suggestion": "Define a strict canonical marker grammar and fail reads/mints with file, FR, and line diagnostics for duplicates, malformed placement, and conflicting IDs. Add these to the golden corpus.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“The marker is ordinary leading text” means `fr_criteria.criteria_for()` will likely return criterion text including `[ACnn]`. The approach needs an explicit rule that `ac_identity.read` removes only the validated leading marker before exposing criterion text; otherwise downstream callers see changed criterion content and reader agreement is only partial.",
+          "suggestion": "Parse and strip the canonical marker in `ac_identity` after delegating bullet/continuation parsing to `fr_criteria`, then test both the stable ID and marker-free normalized criterion text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A separate registry makes correctness dependent on two files being updated consistently. An interrupted write, a registry not committed with a document edit, or minting a copied fixture/source can leave state inconsistent.",
+          "suggestion": "Define atomic write behavior and require the tool to validate the document and registry before changing either. In `--write` mode, update both or neither, and report the exact registry path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Number-format rules are unspecified. `AC07` implies zero padding, but the behavior at `AC99`/`AC100`, and treatment of `[AC7]`, `[AC007]`, and `[AC00]`, is not defined.",
+          "suggestion": "Codify a canonical format (for example, decimal positive integers padded to at least two digits) and reject or normalize noncanonical existing markers deliberately rather than implicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The assertion that IDs are “never authored” is not enforceable by a minter alone. Until P3.2/P3.3 add validation, manually inserted markers can bypass allocation and create accidental collisions.",
+          "suggestion": "At minimum, make the minter validate all existing IDs and fail on collisions. Add a clearly scoped follow-up requirement for repository/CI validation before any consumer relies on AC IDs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The heading-and-immediate-bullets restriction needs explicit behavior for blank lines, HTML comments, introductory prose, nested bullets, and a second FR heading. Without it, source formatting edits may make formerly valid criteria disappear from the reader.",
+          "suggestion": "Pin accepted and rejected boundary shapes in the corpus, with clear errors when a shipped FR section has no parseable criterion list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No material authentication or injection risk is inherent here, but a CLI that accepts arbitrary document/registry paths could overwrite unintended files in `--write` mode.",
+          "suggestion": "Resolve paths explicitly, require existing expected inputs, and avoid creating or overwriting a registry outside the intended project location without an explicit option.  The embedded-marker approach is sound and appropriately avoids content-hash and position-based instability. It should be revised to make registry concurrency/consistency and malformed-ID handling explicit before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-06T21:38:26.237692+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: dependency | Severity: medium**\n  **Finding:** The per-FR high-water-mark registry is central to the design (\"never reused across a delete\") but its location, format, and lifecycle are unspecified, and no registry file appears in the Files list. Is it a JSON sidecar? Per-document or global? Keyed only by `fr_id`? If it's global and the tool ever operates on more than one spec document (plausible — there is also the campaign SPEC itself), two documents sharing `FR-01` would collide on the high-water mark.\n  **Suggestion:** Name the registry file, its path, and its schema in the plan. Make it per-document (e.g., keyed by document path or stored alongside the spec), or explicitly state the repo guarantees a single minting target.\n\n- **Category: edge-case | Severity: medium**\n  **Finding:** When the minter runs against a real document (P3.2), the inserted `[ACnn]` marker becomes part of the text that `lib.fr_criteria.criteria_for` returns. The plan asserts the marker is \"ordinary leading text\" to that function — which means every existing consumer of `fr_criteria` text now sees ` [AC07]` prefixed. The reader (`lib.ac_identity.read`) must strip the marker, and that stripping must be pinned by the golden corpus (i.e., a test asserting `read()` returns text *without* the marker, exactly matching what `fr_criteria` returned pre-mint).\n  **Suggestion:** Add an explicit test case: the same document before and after minting must yield identical criterion text from `read()`. This is the single most important pin, and it's only implied by \"continuation-line agreement\" in the current test list.\n\n- **Category: edge-case | Severity: medium**\n  **Finding:** The plan handles \"marker absent\" and \"marker present,\" but not \"marker present but malformed or misplaced\": a human typing `[AC7]` (unpadded), `[AC7]` vs `[AC07]`, a marker mid-sentence, or — worst case — two bullets carrying the same `[AC03]`. The minter's \"insert if absent\" logic w […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The persisted high-water registry has no defined ownership, location, version-control policy, or merge behavior. Two branches can both mint the same next AC number from the same registry state; seeding from the merged document then detects, but does not prevent, the duplicate.  \n   **Suggestion:** Define the registry as a committed, canonical project artifact and make minting fail on duplicate IDs. Specify the merge-resolution workflow (allocate a new ID only to the newly introduced criterion; never renumber an existing one).\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The plan does not state how invalid or ambiguous markers are handled: duplicate `[AC07]` markers under one FR, malformed markers, multiple markers in one bullet, markers in continuation text, or a marker attached to the wrong FR after editing. Silent acceptance would undermine stable identity.  \n   **Suggestion:** Define a strict canonical marker grammar and fail reads/mints with file, FR, and line diagnostics for duplicates, malformed placement, and conflicting IDs. Add these to the golden corpus.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** “The marker is ordinary leading text” means `fr_criteria.criteria_for()` will likely return criterion text including `[ACnn]`. The approach needs an explicit rule that `ac_identity.read` removes only the validated leading marker before exposing criterion text; otherwise downstream callers see changed criterion content and reader agreement is only partial.  \n   **Suggestion:** Parse and strip the canonical marker in `ac_identity` after delegating bullet/continuation parsing to `fr_criteria`, then test both the stable ID and marker-free normalized criterion text.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** A separate registry makes correctness dependent on two files being updated consistently. An interrupted w […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T05:47:18.959314+00:00",
+      "disposition": "Round 5 (final) re-review after round-4b heading-scope fix (commit 2cc4e444): PASS. Formal proof that _HEADING_RE is a strict subset of _ANY_HEADING_RE closes the gap-analysis; rounds 3/4/4b fixes verified to compose correctly; 3-way test file split verified clean, no coverage lost.",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/_ac_blocks.py:172-178",
+          "line": null,
+          "finding": "Claim under doubt: mint()'s seed pass sees every already-assigned [ACnn] marker in an FR's block — iter_all_bullet_positions's own_end stopped at ANY heading, not just an FR-shaped one, so a non-FR heading interposed between two bullets of the same FR block truncated the seed scan before an already-marked bullet, silently reissuing its number.",
+          "suggestion": "scope the stop condition to FR-shaped headings only (_HEADING_RE).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-07T05:42:41.189068+00:00",
+      "disposition": "1 HIGH doubt found (non-FR heading truncates seed scan, silent duplicate); addressed in commit 2cc4e444 by scoping own_end's stop condition to FR-shaped headings only.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/mint_ac_ids.py — `_load_registry` (the `isinstance(value, int)` validation)",
+          "line": null,
+          "finding": "The registry shape check validates \"is an int\" but not \"is a sane AC number\". A hand-edited registry value of `0` or a negative int (exactly the hand-edit scenario this validation exists to guard — the module docs elsewhere treat hand edits as expected) flows straight into `mint()`'s `registry[fr_id] + 1`. `-1` produces `AC00`, i.e. the tool writes `[AC00]` into the spec — a marker its own `parse_marker` classifies as \"can only be hand-typed\" and rejects. The next run (and `read()`) then raises `MalformedAcMarkerError` on the tool's own output. Worse, `-5` produces `[AC-4]`, which doesn't even match `AC_MARKER_RE`, so `embedded_ac_num` returns `None` and the minter stamps a second marker on the same bullet on every subsequent run.",
+          "suggestion": "In `_load_registry`, reject `value < 1` with the same loud boundary error; optionally add the same guard in `mint()` for programmatically-passed registries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/_ac_markers.py — `parse_marker` / `AC_MARKER_RE`; shared/scripts/lib/ac_identity.py — `mint()` pass 2",
+          "line": null,
+          "finding": "Near-miss markers that fall outside the regex entirely (`[AC 1]`, `[ac01]`, `[AC01 :]`) are silently treated as prose. The module docstring promises \"fails loudly, never silently, on a marker that cannot be trusted\" and the `_ac_blocks` gate exists specifically so mint never stamps an id `read()` can't see — but this input breaks both invariants: `mint()` sees the bullet as unmarked (stacking `[AC 1] [AC01] [AC02] …` on every re-run, violating the \"re-running the minter is idempotent\" AC), while `read()` reports the criterion as `(None, …)` and never surfaces the minted id. `[AC1]` and `[AC007]` are caught; `[AC 1]` and `[ac01]` are not, and they are the likelier hand-typo.",
+          "suggestion": "After the strict match fails in `embedded_ac_num`/`read()`, run a case-insensitive, whitespace-tolerant near-miss probe (e.g. `re.compile(r\"\\[\\sAC\\s\\d\", re.I)`) on the decoration-stripped rest and raise `MalformedAcMarkerError` if it matches — that keeps the fail-loudly contract closed over the realistic typo space.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_ac_identity.py — `WITH_CHECKBOX` fixture (test_marker_sits_after_checkbox_decoration)",
+          "line": null,
+          "finding": "The checkbox shape is minted but never read back. Mint handles `[ ]`/`[x]` itself (`_CHECKBOX_RE` in `_ac_blocks`), while `read()` relies entirely on `fr_criteria.block_criteria` stripping the checkbox before `parse_marker` sees the text. If `fr_criteria` ever changes that behavior (or already differs, e.g. only stripping `[x]` in `strict=True`), `read()` would return `(None, \"[ ] [AC01] Given…\")` for every checkbox criterion and no test would fail — this is precisely the mint/read-agreement class the markers test file exists to pin.",
+          "suggestion": "Add a one-line round-trip assertion: `read(mint(WITH_CHECKBOX).content, \"FR-02.01\")[0] == (\"AC01\", \"Given a thing, when it happens, then it holds.\")`. Same gap applies to `WITH_FOOTNOTE`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_mint_ac_ids.py",
+          "line": null,
+          "finding": "No CLI test covers a negative or zero registry value — the exact input that triggers the `AC00`/marker-stacking bug above. The existing \"non-integer registry\" test pins `isinstance` checking only, so a fix that adds a range check would currently be unverifiable, and the bug is unverifiable as a failure.",
+          "suggestion": "Add a test that `{\"FR-09.01\": -1}` exits non-zero, mirroring the `\"2\"` test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ac_identity.py — `mint` uses `content.split(\"\\n\")` while `read`/`iter_heading_anchored_blocks` use `content.splitlines()",
+          "line": null,
+          "finding": "splitlines()` also breaks on `\\r`, `\\x0b`, `\\x0c`, `\\u2028`. A document containing any of these (e.g. a stray form feed, which some editors emit) makes the two halves discover different FR blocks — mint and read disagree on which ids exist, the exact invariant this design is built around. CRLF itself round-trips safely, so this is exotic-input-only, but the asymmetry is free to eliminate.",
+          "suggestion": "Use `content.split(\"\\n\")` (or `splitlines(keepends=False)` paired with the same join logic) in both halves, or normalize line endings at the `mint()` entry point.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/mint_ac_ids.py",
+          "line": 69,
+          "finding": "write` persists the spec before the high-water registry. If the process or disk fails after the spec write but before the registry write, then the newly minted ID is only preserved by that document. If that criterion is deleted before a successful retry, a subsequent mint can reuse its number, violating “never reused.”",
+          "suggestion": "Persist the registry first, ideally via atomic temp-file-and-replace, then write the spec. A registry ahead of the document is explicitly supported by `mint()` and safely preserves the high-water mark.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/ac_identity.py",
+          "line": 144,
+          "finding": "The public `mint()` API accepts unvalidated registry values. A negative value such as `{\"FR-01.11\": -1}` produces `[AC00]`, even though the minter explicitly rejects `AC00` on its next run; non-integer values can also fail later with unclear arithmetic errors.",
+          "suggestion": "Validate every registry value at the start of `mint()` as a non-boolean integer greater than or equal to zero, raising `ValueError` before processing content. Apply the same range check in the CLI loader.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/ac_identity.py",
+          "line": 146,
+          "finding": "Splitting and rejoining on `\"\\n\"` rewrites CRLF input to LF whenever minting changes a line. This creates an unrelated whole-file diff for Windows-authored specifications.",
+          "suggestion": "Preserve the document’s detected newline convention when rebuilding content, and add a CRLF fixture.  Overall: ship-with-fixes. The core heading/bullet reader and idempotent minting behavior are covered, but write ordering can violate the non-reuse guarantee after an interrupted write.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-06T22:07:43.952298+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/mint_ac_ids.py — `_load_registry` (the `isinstance(value, int)` validation)\n  Finding: The registry shape check validates \"is an int\" but not \"is a sane AC number\". A hand-edited registry value of `0` or a negative int (exactly the hand-edit scenario this validation exists to guard — the module docs elsewhere treat hand edits as expected) flows straight into `mint()`'s `registry[fr_id] + 1`. `-1` produces `AC00`, i.e. the tool writes `[AC00]` into the spec — a marker its own `parse_marker` classifies as \"can only be hand-typed\" and rejects. The *next* run (and `read()`) then raises `MalformedAcMarkerError` on the tool's own output. Worse, `-5` produces `[AC-4]`, which doesn't even match `AC_MARKER_RE`, so `embedded_ac_num` returns `None` and the minter stamps a *second* marker on the same bullet on every subsequent run.\n  Suggestion: In `_load_registry`, reject `value < 1` with the same loud boundary error; optionally add the same guard in `mint()` for programmatically-passed registries.\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/lib/_ac_markers.py — `parse_marker` / `AC_MARKER_RE`; shared/scripts/lib/ac_identity.py — `mint()` pass 2\n  Finding: Near-miss markers that fall outside the regex entirely (`[AC 1]`, `[ac01]`, `[AC01 :]`) are silently treated as prose. The module docstring promises \"fails loudly, never silently, on a marker that cannot be trusted\" and the `_ac_blocks` gate exists specifically so mint never stamps an id `read()` can't see — but this input breaks both invariants: `mint()` sees the bullet as unmarked (stacking `[AC 1] [AC01] [AC02] …` on every re-run, violating the \"re-running the minter is idempotent\" AC), while `read()` reports the criterion as `(None, …)` and never surfaces the minted id. `[AC1]` and `[AC007]` are caught; `[AC 1]` and `[ac01]` are not, and they are the likelier hand-typo.\n  Suggestion: After the strict match fails […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: shared/scripts/tools/mint_ac_ids.py:69\n- Finding: `--write` persists the spec before the high-water registry. If the process or disk fails after the spec write but before the registry write, then the newly minted ID is only preserved by that document. If that criterion is deleted before a successful retry, a subsequent mint can reuse its number, violating “never reused.”\n- Suggestion: Persist the registry first, ideally via atomic temp-file-and-replace, then write the spec. A registry ahead of the document is explicitly supported by `mint()` and safely preserves the high-water mark.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/ac_identity.py:144\n- Finding: The public `mint()` API accepts unvalidated registry values. A negative value such as `{\"FR-01.11\": -1}` produces `[AC00]`, even though the minter explicitly rejects `AC00` on its next run; non-integer values can also fail later with unclear arithmetic errors.\n- Suggestion: Validate every registry value at the start of `mint()` as a non-boolean integer greater than or equal to zero, raising `ValueError` before processing content. Apply the same range check in the CLI loader.\n\n- Category: edge-case\n- Severity: low\n- File: shared/scripts/lib/ac_identity.py:146\n- Finding: Splitting and rejoining on `\"\\n\"` rewrites CRLF input to LF whenever minting changes a line. This creates an unrelated whole-file diff for Windows-authored specifications.\n- Suggestion: Preserve the document’s detected newline convention when rebuilding content, and add a CRLF fixture.\n\nOverall: ship-with-fixes. The core heading/bullet reader and idempotent minting behavior are covered, but write ordering can violate the non-reuse guarantee after an interrupted write.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T04:54:06.427093+00:00",
+      "disposition": "Re-review after fix commit af19767d (Stage-2 REJECT remediation): PASS.",
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T21:39:07.371367+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet -- a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
