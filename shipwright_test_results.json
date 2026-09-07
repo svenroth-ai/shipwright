@@ -1,20 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "date": "2026-09-07",
+    "run_id": "iterate-2026-09-06-fr-hygiene-touched-rows",
+    "date": "2026-09-06",
     "unit": {
       "status": "pass",
-      "passed": 17371,
-      "total": 17430,
-      "skipped": 59,
+      "passed": 17301,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, four external PR-check findings across three review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x3, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, and a regex-literal bracket-matching false block) were fixed, adding 8 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 2 new for the regex-literal fix), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (77 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17371/17430) add those 8 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
+      "note": "Green and complete across all 18 discovered F0 units (14 plugins + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests): 17360 tests total, 17301 passed, 0 failed, 0 errors, 59 skipped. Diff coverage vs origin/main: 92% (>= 80% threshold). Full evidence retained at .shipwright/runs/f0-evidence/published/f0-885c502bf8fd-08a8200d/ under the main repo root."
     },
     "integration": {
       "status": "pass",
-      "passed": 0,
+      "passed": 530,
       "failed": 0,
-      "note": "integration-tests unit passed (included in the 17363/17422 repo-wide aggregate above); this change has no cross-component/FRAMEWORK-machinery surface, so no integration-tests file was added specifically for it"
+      "note": "integration-tests unit (also included in the 17301/17360 repo-wide aggregate above)"
     },
     "e2e": {
       "status": "n/a",
@@ -36,135 +34,220 @@
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "shared-library detector change (no route/component/CLI/dev-server surface of its own); this repo's own unit tests (shared/tests/test_assertion_weakening.py, 92 tests) plus the mirrored-gate pre-flight (scripts/verify_local.py) and the full F0 suite are the verification."
+      "justification": "framework/tooling change with no startable web/dev-server/CLI surface of its own -- this repo's own unit + real-git integration tests (shared/tests, shared/scripts/tests, plugins/shipwright-compliance/tests, integration-tests) are the verification, matching how every other F11-verifier-adding iterate in this repo's own history (check_integration_coverage, check_ci_supplychain_ack) was verified."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "analyze_file dispatches .py test files to the existing ast-based path, unchanged",
+          "behavior": "Gate STOPs on a new row with a name/description violation",
           "disposition": "tested",
-          "evidence": "pre-existing Python-path test suite in test_assertion_weakening.py re-run green (unchanged behavior)"
+          "evidence": "`test_fails_on_name_and_description_violations_in_a_new_row` PASSED"
         },
         {
-          "behavior": "analyze_file dispatches .test.ts/.spec.ts/.test.js/.spec.js to the new JS/TS scanner instead of unsupported_test_file",
+          "behavior": "Gate STOPs on an edited row's description violation",
           "disposition": "tested",
-          "evidence": "test_js_* dispatch tests PASSED \u2014 this is the fix for the original leadwright false-block bug"
+          "evidence": "`test_fails_on_edited_description_of_an_existing_row` PASSED"
         },
         {
-          "behavior": "A .py file under a tests/-shaped path with no pytest-collected tests (conftest.py, tests/__init__.py) is exempt, not blocked",
+          "behavior": "Gate STOPs on a folded criterion that is malformed",
           "disposition": "tested",
-          "evidence": "test_a_conftest_py_change_under_a_tests_path_is_not_a_false_block PASSED \u2014 code-review HIGH finding, fixed and pinned (a pre-existing exemption dropped when JS/TS dispatch was added)"
+          "evidence": "`test_fails_on_malformed_criterion_added_by_a_fold_edit` PASSED"
         },
         {
-          "behavior": "A genuinely unsupported test-file language still gets the blocking unsupported_test_file finding",
+          "behavior": "Gate passes when a touched row is clean",
           "disposition": "tested",
-          "evidence": "pre-existing test_unsupported_test_file_* cases re-run green (unchanged behavior for non-Python/non-JS languages)"
+          "evidence": "`test_passes_when_touched_row_is_clean` PASSED"
         },
         {
-          "behavior": "describe/it/test declarations, .skip/.only/.todo/.fixme modifiers and xdescribe/xit/xtest aliases are recognized",
+          "behavior": "Gate ignores an untouched legacy violation",
           "disposition": "tested",
-          "evidence": "test_js_* modifier/alias recognition tests PASSED"
+          "evidence": "`test_ignores_a_legacy_violation_in_a_row_this_run_never_touched` PASSED"
         },
         {
-          "behavior": ".each parametrize (both parenthesized and tagged-template forms) is recognized as one test declaration per call site",
+          "behavior": "Gate passes (fast) when no spec.md touched",
           "disposition": "tested",
-          "evidence": "test_js_*each* tests PASSED"
+          "evidence": "`test_passes_when_no_spec_touched` PASSED"
         },
         {
-          "behavior": "expect(...)/assert(...) and member-style assert.strictEqual(...)/assert.ok(...) (Node assert/Chai) both count as assertions",
+          "behavior": "Gate skips outside a git work tree",
           "disposition": "tested",
-          "evidence": "test_js_a_member_style_assert_call_counts_as_an_assertion PASSED \u2014 code-review MEDIUM finding, fixed and pinned"
+          "evidence": "`test_skips_outside_a_git_work_tree` PASSED"
         },
         {
-          "behavior": "An expect.<matcher> factory used as an argument (e.g. expect.stringContaining(...)) is not double-counted as its own assertion",
+          "behavior": "I7 detects a malformed criterion at the whole-catalogue advisory level",
           "disposition": "tested",
-          "evidence": "test_js_an_expect_matcher_factory_is_not_double_counted_as_its_own_assertion PASSED (rewritten during doubt-review to assert directly on _js_collect's signature count, not a weak before==after diff)"
+          "evidence": "`test_i7_reports_the_requirement_with_a_malformed_criterion` PASSED"
         },
         {
-          "behavior": "Dynamically-named tests (it(caseName, fn)) are pooled under a shared sentinel identity instead of colliding with each other or being invisible",
+          "behavior": "I7 never fails the audit",
           "disposition": "tested",
-          "evidence": "test_js_* dynamic-name pooling tests PASSED"
+          "evidence": "`test_i7_never_fails` PASSED"
         },
         {
-          "behavior": "Duplicate literal test names are pooled, not ordinal-keyed (immune to decoy reordering)",
+          "behavior": "I7 does not flag a row with zero criteria (that's I6's finding)",
           "disposition": "tested",
-          "evidence": "test_js_duplicate_literal_test_names_are_pooled_not_ordinal_keyed, test_js_a_decoy_reusing_a_literal_test_name_softens_but_does_not_hide_a_real_loss PASSED"
+          "evidence": "`test_i7_does_not_flag_a_row_with_no_criteria_at_all` PASSED"
         },
         {
-          "behavior": "Marks are tracked as a multiset (Counter), so a repeated mark occurrence is only flagged when the occurrence COUNT increases, not merely present",
+          "behavior": "I8 flags a TBD older than 90 days",
           "disposition": "tested",
-          "evidence": "test_js_* multiset-mark tests PASSED"
+          "evidence": "`test_old_tbd_is_flagged_stale` PASSED"
         },
         {
-          "behavior": "A pooled identity losing one of its instances (instance_count decreases) is reported non-blocking (pooled_test_instance_lost), never silently ignored",
+          "behavior": "I8 does not flag a fresh TBD",
           "disposition": "tested",
-          "evidence": "test_js_removing_an_empty_skip_stub_while_skipping_its_real_sibling_is_not_a_silent_clear PASSED"
+          "evidence": "`test_fresh_tbd_is_not_flagged` PASSED"
         },
         {
-          "behavior": "A skip/xfail mark gained on a content signature occurring exactly once on both before and after sides is caught (exact-content-key match)",
+          "behavior": "I8 never fires on a row carrying NO TBD marker line at all (a row with only real criteria and no leftover placeholder)",
           "disposition": "tested",
-          "evidence": "test_js_a_skip_swap_is_caught_by_exact_content_match PASSED"
+          "evidence": "`test_row_with_real_criteria_never_flagged` PASSED \u2014 narrower than \"any row with real criteria\" (external review, openai leg): a TBD line left behind ALONGSIDE real criteria elsewhere in the same row is dead placeholder litter and I8 correctly still reports it"
         },
         {
-          "behavior": "A relocated-mark finding BLOCKS only when the whole pool's content-signature Counter is unchanged (full bijection); otherwise it is only REPORTED, never a false block",
+          "behavior": "`is_well_formed_criterion` recognizes/rejects the shape correctly (incl. keyword-order and whole-word cases)",
           "disposition": "tested",
-          "evidence": "test_js_a_skip_swap_is_still_blocked_alongside_an_unrelated_conserved_decoy_pair (blocking) and test_js_a_skip_swap_is_reported_not_blocked_alongside_an_unrelated_sibling_content_edit (non-blocking) PASSED \u2014 the round-9\u219210\u219211 false-block trade-off, this file's central design decision"
+          "evidence": "`test_fr_criterion_shape.py` (6 cases) PASSED"
         },
         {
-          "behavior": "A coincidental content collision across an unrelated edit does not trigger a false BLOCK",
+          "behavior": "The detector-vocabulary move (`group_i_detectors` \u2192 shared lib) preserves all existing I1/I2/I3 behavior",
           "disposition": "tested",
-          "evidence": "test_js_a_coincidental_content_collision_across_an_unrelated_edit_is_not_blocked PASSED \u2014 round-10 fix"
+          "evidence": "`covered-by-existing-test` \u2014 full pre-existing Group I suite (97 tests) re-run green"
         },
         {
-          "behavior": "check_repair_safety.py's \"review\" verdict message names the actual non-blocking finding kind(s) present, not a message hardcoded to one kind",
+          "behavior": "Gate judges the DELTA, not the whole row: a legacy-dirty Name is not re-flagged by a description-only edit",
           "disposition": "tested",
-          "evidence": "pre-existing + updated check_repair_safety.py review-message tests re-run green"
+          "evidence": "`test_ignores_a_legacy_dirty_name_when_only_description_is_edited` PASSED \u2014 internal Opus plan-review finding (HIGH), fixed and pinned"
         },
         {
-          "behavior": "Two content-IDENTICAL pooled instances swapping a skip mark between them is a known, accepted residual (false negative, not a false block) \u2014 the scanner does not catch it, and a regression test pins that it does not",
+          "behavior": "Gate judges the DELTA: a fold that adds one clean criterion does not inherit a block from a different, pre-existing malformed criterion on the same row",
           "disposition": "tested",
-          "evidence": "test_js_two_identically_asserted_instances_swapping_skip_still_defeats_the_bijection PASSED (asserts the residual returns no finding, documenting the accepted limitation rather than leaving it unverified)"
+          "evidence": "`test_ignores_legacy_dirty_criteria_when_a_clean_criterion_is_folded_in` PASSED \u2014 same finding, criteria half"
         },
         {
-          "behavior": "The JS/TS string-literal scanner does not exponentially backtrack on an adversarial run of backslashes, and still reads a different quote character as literal content inside a string",
+          "behavior": "A row reinstated from `## Removed Requirements` (criteria section present at base all along) does not inherit a block on its unchanged legacy criteria",
           "disposition": "tested",
-          "evidence": "test_js_string_literal_regex_does_not_exponentially_backtrack_on_a_run_of_backslashes and test_js_string_literal_still_allows_a_different_quote_character_as_literal_content PASSED \u2014 CodeQL (high severity, this PR's own required check) caught the original backreference-based pattern; fixed with three non-overlapping alternatives"
+          "evidence": "`test_reinstated_row_does_not_inherit_a_legacy_malformed_criterion` PASSED \u2014 Stage-2 code-reviewer finding (MEDIUM), fixed and pinned; genuinely reddens under the pre-fix code (traced by the reviewer)"
         },
         {
-          "behavior": "A member-style helper call named test/it/describe (fixture.test(...)) or a function-declaration head shaped like one (function test(...)) is not misread as a real describe/it/test call",
+          "behavior": "An already-merged commit (base_sha == commit) reports an honest skip, not a false \"clean\"",
           "disposition": "tested",
-          "evidence": "test_js_a_member_style_helper_call_named_test_is_not_treated_as_a_declaration and test_js_a_function_declaration_named_test_is_not_treated_as_a_call PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685: blocking + non-blocking findings, both fixed by checking the token immediately preceding the matched name"
+          "evidence": "`test_reports_skip_when_commit_is_already_contained_in_the_trunk` PASSED \u2014 Stage-2 code-reviewer finding (MEDIUM), fixed and pinned"
         },
         {
-          "behavior": "A member-style helper call named assert/expect (fixture.assert.ok(...), helper.expect(...)) is not counted as a real Node-assert/Chai-assert/Jest-expect assertion",
+          "behavior": "Gate fails closed when `git_context` cannot answer whether this is a work tree",
           "disposition": "tested",
-          "evidence": "test_js_a_member_style_helper_call_named_assert_is_not_counted_as_an_assertion and test_js_a_member_style_helper_call_named_expect_is_not_counted_as_an_assertion PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, second round: _JS_ASSERT_HEAD anchored with (?<![\\w.$]) so neither alternative can match after member access"
+          "evidence": "`test_fails_closed_when_git_context_is_unresolvable` PASSED"
         },
         {
-          "behavior": "A JS regex literal containing a bracket character (including inside a character class) does not desync the bracket-matching scan into a false blocking unparseable finding, and division after a value is not mistaken for a regex literal",
+          "behavior": "Gate fails closed when the merge-base cannot be resolved",
           "disposition": "tested",
-          "evidence": "test_js_a_regex_literal_with_a_lone_bracket_is_parsed_not_a_false_block (rewritten from the prior round's accepted-limit test), test_js_a_character_class_containing_a_slash_does_not_end_the_regex_early, and test_js_division_after_a_value_is_not_mistaken_for_a_regex_literal PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, third round: _js_bracket_match now lexes /pattern/flags as a non-code span via _js_slash_starts_regex + _js_regex_literal_end, mirroring the existing string-literal handling"
+          "evidence": "`test_fails_closed_when_merge_base_is_unresolvable` PASSED"
+        },
+        {
+          "behavior": "Gate fails closed when the base spec text cannot be read",
+          "disposition": "tested",
+          "evidence": "`test_fails_closed_when_base_spec_text_is_unreadable` PASSED"
+        },
+        {
+          "behavior": "A brand-new spec.md (absent at merge-base) is judged against an empty base, not treated as an infra failure",
+          "disposition": "tested",
+          "evidence": "`test_passes_when_a_brand_new_spec_file_is_added` PASSED \u2014 glm external-review finding"
+        },
+        {
+          "behavior": "A violating row in a brand-new spec FILE (not just a new row in an existing file) is still caught \u2014 refutes an \"untracked file bypass\" hypothesis",
+          "disposition": "tested",
+          "evidence": "`test_fails_on_a_dirty_row_in_a_brand_new_spec_file` PASSED \u2014 openai external-review claim (HIGH), empirically disproven and pinned"
+        },
+        {
+          "behavior": "`spec_text_at` returns `\"\"` (not `None`) for a path absent at a valid, resolvable base commit",
+          "disposition": "tested",
+          "evidence": "empirical probe against a real two-commit repo (not a pytest case \u2014 recorded in the ADR's External-Code-Review-Findings table) confirms `\"\"`, refuting the openai `None`-false-block claim"
+        },
+        {
+          "behavior": "`git blame` porcelain `committer-time` for an uncommitted line is current wall-clock time, not `0`",
+          "disposition": "tested",
+          "evidence": "empirical probe against a real repo with an uncommitted edit (recorded in the ADR) confirms non-zero, refuting the glm stale-uncommitted-TBD claim"
+        },
+        {
+          "behavior": "`FrTableRow.text` is the Description-preferred cell only, never the whole physical row",
+          "disposition": "tested",
+          "evidence": "code inspection of `_fr_table_columns.title_cell` (recorded in the ADR) confirms, refuting the glm Priority/Basis-edit-triggers-block claim"
+        },
+        {
+          "behavior": "A dirty row added TWO commits back on the branch, with an unrelated commit as HEAD, is still caught (the merge-base range is used, not a single-commit fallback)",
+          "disposition": "tested",
+          "evidence": "`test_a_dirty_row_added_in_an_earlier_commit_is_still_caught_at_a_later_head` PASSED \u2014 doubt-review finding (HIGH), fixed and pinned"
+        },
+        {
+          "behavior": "A non-canonical FR id (e.g. `FR-1.02`) this run adds, carrying a dirty name/description, is still flagged instead of silently invisible",
+          "disposition": "tested",
+          "evidence": "`test_a_non_canonical_id_this_run_added_is_still_flagged` PASSED \u2014 doubt-review finding (MEDIUM), fixed and pinned"
+        },
+        {
+          "behavior": "A criterion anchored OUTSIDE the recognised `## Acceptance Criteria` region (same id already found inside it) still marks the row touched",
+          "disposition": "tested",
+          "evidence": "`test_a_criterion_anchored_outside_the_recognised_ac_region_is_still_touched` PASSED \u2014 doubt-review finding (MEDIUM), fixed and pinned"
+        },
+        {
+          "behavior": "A wholly-TBD `/shipwright-adopt` spec (no feature has any AC) still renders each FR's `TBD_MARKER` under its own `### FR-xx.yy` heading, not undifferentiated prose",
+          "disposition": "tested",
+          "evidence": "`test_an_all_tbd_adoption_still_renders_the_marker_under_an_fr_heading` (integration-tests) PASSED \u2014 doubt-review finding (MEDIUM), fixed and pinned; renders through the real `_render_spec_md`, not a hand-typed fixture"
+        },
+        {
+          "behavior": "Merge-base fail-closed check fires unconditionally, before any \"was spec.md touched\" question \u2014 no path is supplied at all",
+          "disposition": "tested",
+          "evidence": "`test_fails_closed_when_merge_base_is_unresolvable` (rewritten) PASSED \u2014 doubt-review finding (HIGH), structural fix removed the vulnerable fallback path entirely"
+        },
+        {
+          "behavior": "Group I's empty-corpus SKIP-on-all-checks set includes I7 and I8, not just I1-I6",
+          "disposition": "tested",
+          "evidence": "`test_fv2_group_i_skips_every_check_on_empty` (integration-tests, updated) PASSED \u2014 stale expected-set from before I7/I8 existed, caught by the full integration-tests root run this doubt-review pass triggered"
+        },
+        {
+          "behavior": "A legacy dirty row relocated (byte-identical) to a different split's spec.md is not re-flagged; the same move WITH a violation added during it is still caught",
+          "disposition": "tested",
+          "evidence": "`test_a_row_moved_between_spec_files_is_not_reflagged_when_unchanged` PASSED, `test_a_row_moved_between_spec_files_is_flagged_for_a_violation_added_during_the_move` PASSED \u2014 round-2 doubt-review finding (HIGH), fixed and pinned"
+        },
+        {
+          "behavior": "A criterion anchored under a non-canonical heading id (e.g. missing zero-pad) that this run adds is flagged instead of silently invisible to every FR-catalogue check",
+          "disposition": "tested",
+          "evidence": "`test_orphan_criterion_anchor_with_non_canonical_id_is_flagged` PASSED \u2014 round-2 doubt-review finding (MEDIUM), fixed and pinned"
+        },
+        {
+          "behavior": "A duplicate FR id newly introduced at HEAD (a dirty row shadowed behind a clean same-id legacy row) is flagged rather than silently dropped by a dict-based lookup",
+          "disposition": "tested",
+          "evidence": "`test_a_new_duplicate_id_at_head_is_flagged` PASSED \u2014 round-2 doubt-review finding (HIGH), fixed and pinned"
+        },
+        {
+          "behavior": "A second row sharing an already-malformed legacy id/reason pair is still flagged as a new reject, not masked by set-based dedup",
+          "disposition": "tested",
+          "evidence": "`test_a_second_row_with_the_same_malformed_id_and_reason_is_flagged` PASSED \u2014 round-2 doubt-review finding (LOW), fixed and pinned"
         }
       ],
       "counts": {
-        "testable": 21,
-        "tested": 21,
+        "testable": 37,
+        "tested": 37,
         "untestable": 0,
         "untested_testable": 0
-      }
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      },
+      "ledger_path": ".shipwright/planning/iterate/2026-09-06-fr-hygiene-touched-rows.md"
     },
     "degraded": []
   },
   "coverage": {
-    "total": 97.2,
-    "measured_tier": "file",
-    "source": "diff-cover vs origin/main on shared/scripts/lib/assertion_weakening.py (this run's F0 pass)",
-    "measured_at": "2026-09-07T01:15:08Z"
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
   },
   "source_state": {
-    "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "02c41c94aec82546989e03e45a2a2bc08bef9cc7",
+    "run_id": "iterate-2026-09-06-fr-hygiene-touched-rows",
+    "commit": "b3b80238cf47d7d6369c7efb1e906ee596598eab",
     "dirty": true,
     "base": null,
     "release": null
