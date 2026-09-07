@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17363,
-      "total": 17422,
+      "passed": 17365,
+      "total": 17424,
       "skipped": 59,
       "failed": 0,
-      "note": "Green and complete across all 18 discovered F0 units (14 plugins + shared/tests + shared/scripts/tests + shared/scripts/tools/tests + integration-tests): 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped. One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold). Full evidence retained at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, a CodeQL required-check finding (ReDoS, high severity) was fixed with 2 additional regression tests in shared/tests/test_assertion_weakening.py, verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (71 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate this follow-up commit; the counts here (17365/17424) add those 2 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-ReDoS-fix commit)."
     },
     "integration": {
       "status": "pass",
@@ -122,14 +122,19 @@
           "evidence": "pre-existing + updated check_repair_safety.py review-message tests re-run green"
         },
         {
-          "behavior": "Two content-IDENTICAL pooled instances swapping a skip mark between them is a known, accepted residual (false negative, not a false block) — the scanner does not catch it, and a regression test pins that it does not",
+          "behavior": "Two content-IDENTICAL pooled instances swapping a skip mark between them is a known, accepted residual (false negative, not a false block) \u2014 the scanner does not catch it, and a regression test pins that it does not",
           "disposition": "tested",
           "evidence": "test_js_two_identically_asserted_instances_swapping_skip_still_defeats_the_bijection PASSED (asserts the residual returns no finding, documenting the accepted limitation rather than leaving it unverified)"
+        },
+        {
+          "behavior": "The JS/TS string-literal scanner does not exponentially backtrack on an adversarial run of backslashes, and still reads a different quote character as literal content inside a string",
+          "disposition": "tested",
+          "evidence": "test_js_string_literal_regex_does_not_exponentially_backtrack_on_a_run_of_backslashes and test_js_string_literal_still_allows_a_different_quote_character_as_literal_content PASSED \u2014 CodeQL (high severity, this PR's own required check) caught the original backreference-based pattern; fixed with three non-overlapping alternatives"
         }
       ],
       "counts": {
-        "testable": 17,
-        "tested": 17,
+        "testable": 18,
+        "tested": 18,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -144,7 +149,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "92348182cb658c87626d41809166510b3f54c3a5",
+    "commit": "0fa35fdc1f5964533f46e0fe60f8b989d30207c8",
     "dirty": true,
     "base": null,
     "release": null
