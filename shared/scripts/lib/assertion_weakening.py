@@ -701,11 +701,23 @@ _JS_ALLOWED_CHAINS = frozenset({
 _JS_ASSERT_HEAD = re.compile(
     r"(?<![\w.$])assert\.\w+\s*\(|(?<![\w.$])(?P<name>expect|assert)\s*\("
 )
-#: The pooled-dynamic-tests qualname (see `_js_collect`). A literal newline
-#: makes it a string no JS/TS source can ever produce as a test name:
-#: `_JS_STRING_LIT`'s `.` cannot cross a raw newline in any quote type, so
-#: `_js_test_name` can never extract this exact text from a real call.
-_DYNAMIC_POOL_KEY = "<dynamically-named tests>\n"
+#: The pooled-dynamic-tests qualname (see `_js_collect`). Embeds a raw,
+#: unescaped instance of ALL THREE quote delimiters (`'`, `"`, `` ` ``), which
+#: makes it a string no JS/TS source can ever produce as a test name: each of
+#: `_JS_STRING_LIT`'s three alternatives excludes only its OWN delimiter from
+#: its content class, so whichever one is matching would stop at its own
+#: embedded copy and could never capture the rest of this text too -- no
+#: single literal, of any quote type, can ever equal this exact string.
+#: Deliberately NOT keyed on an embedded raw newline instead (an earlier
+#: revision's approach): true for single/double-quoted strings (which cannot
+#: contain a raw line terminator at all -- see the quote-scanning fail-closed
+#: check above), but never true for a template literal, which is explicitly
+#: allowed to span real newlines. A template-literal test name built to
+#: contain that same text-plus-newline would have collided with a pooled
+#: dynamic-name entry, silently merging its assertions/marks into the pool
+#: and hiding a real change to either side (external Tier-3 review, PR #685,
+#: fourteenth round).
+_DYNAMIC_POOL_KEY = "<dynamically-named tests: unreachable ' \" ` marker>"
 #: Three explicit alternatives, not one pattern with a `\1` backreference to
 #: the opening quote (CodeQL, high severity: the backreference form's body
 #: was `(?:\\.|(?!\1).)*` — a backslash can be consumed either as the start

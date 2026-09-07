@@ -707,18 +707,39 @@ def test_js_a_decoy_with_identical_assertion_text_can_hide_a_real_loss():
 def test_js_a_test_named_like_the_dynamic_pool_sentinel_is_not_overwritten():
     """`it('<dynamically-named tests>', fn)` is syntactically valid JS — a
     real test with (nearly) that name must not collide with the pooled-
-    dynamic-tests entry. The sentinel's embedded newline (doubt review,
-    round 3) already makes an exact collision structurally impossible — no
-    JS string literal can contain a raw newline — so this checks the
-    near-miss case stays a distinct, independently-tracked entry."""
+    dynamic-tests entry. The sentinel embeds a raw instance of all three
+    quote delimiters (doubt review round 3, revised external Tier-3 review
+    round 14), which already makes an exact collision structurally
+    impossible — no single string literal can contain an unescaped copy of
+    its own delimiter — so this checks the near-miss case stays a distinct,
+    independently-tracked entry."""
     before = ("const c = 'c';\nit(c, () => { expect(9).toBe(9); });\n"
               "it('<dynamically-named tests>', () => { expect(1).toBe(1); expect(2).toBe(2); });\n")
     after = ("const c = 'c';\nit(c, () => { expect(9).toBe(9); });\n"
              "it('<dynamically-named tests>', () => { expect(1).toBe(1); });\n")
     findings = aw.detect_weakening([_jschange(before, after)])
     assert "assertions_removed" in _kinds(findings, blocking=True)
-    assert any("<dynamically-named tests>" in f.subject and "\n" not in f.subject
-               for f in findings)
+    assert any(f.subject.endswith("<dynamically-named tests>") for f in findings)
+
+
+def test_js_a_crafted_template_literal_name_does_not_collide_with_the_dynamic_pool():
+    """External Tier-3 review, PR #685 (fourteenth round, blocking): the
+    prior sentinel was just `<dynamically-named tests>` plus a trailing raw
+    newline -- reachable from a template literal (which, unlike single/
+    double-quoted strings, can legally contain a raw newline), so a test
+    whose template-literal name happened to match that exact text plus a
+    newline would pool together with genuinely dynamic-named tests, letting
+    one side's assertion loss cancel out against the other's gain in the
+    combined pooled aggregate -- the exact kind of silent clear this
+    scanner's own pooling design otherwise goes out of its way to avoid."""
+    src = (
+        "const dynamicName = 'x';\n"
+        "it(dynamicName, () => { expect(1).toBe(1); });\n"
+        "it(`<dynamically-named tests>\n`, () => { expect(2).toBe(2); });\n"
+    )
+    result = aw._js_collect(src)
+    assert result is not None
+    assert len(result) == 2
 
 
 def test_js_duplicate_literal_test_names_are_pooled_not_ordinal_keyed():
