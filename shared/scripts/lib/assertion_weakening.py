@@ -501,7 +501,26 @@ def _js_scan_code(source: str, i: int, n: int, stop_at: int | None) -> _JsScanRe
             quote = c
             i += 1
             while i < n and source[i] != quote:
-                i += 2 if source[i] == "\\" else 1
+                if source[i] == "\\":
+                    # A backslash escapes whatever follows, including a raw
+                    # line terminator (a legal line-continuation) -- `\r\n`
+                    # is one such terminator, so it must be consumed as a
+                    # pair, not just its `\r` half (leaving a bare `\n` that
+                    # would otherwise trip the check below).
+                    i += 3 if source[i:i + 3] == "\\\r\n" else 2
+                    continue
+                if source[i] in "\r\n":
+                    # A single/double-quoted string cannot legally contain
+                    # an unescaped line terminator -- unlike a template
+                    # literal (`_js_scan_template`), which can. Treating one
+                    # as ordinary string content let this scanner run past
+                    # the line where the string was actually supposed to
+                    # end, silently swallowing whatever real code followed
+                    # as "string" (external Tier-3 review, PR #685,
+                    # thirteenth round). Fail closed, same as any other
+                    # syntactically invalid after revision.
+                    return None
+                i += 1
             if i >= n:
                 # No closing delimiter before end-of-file: the file is not
                 # valid JS/TS. Fail closed rather than silently treating

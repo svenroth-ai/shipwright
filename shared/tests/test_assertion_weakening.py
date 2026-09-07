@@ -1222,3 +1222,37 @@ def test_js_a_newly_added_fdescribe_each_focus_blocks_its_siblings():
              "  it('two', () => { expect(2).toBe(2); });\n});\n")
     assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
                                   blocking=True)
+
+
+def test_js_an_unescaped_lf_inside_a_single_quoted_string_fails_closed():
+    """External Tier-3 review, PR #685 (thirteenth round, blocking): a
+    single/double-quoted string cannot legally contain a raw, unescaped
+    line terminator -- unlike a template literal, which can. Treating one
+    as ordinary string content let the scanner run past the line where the
+    string was actually supposed to end, silently swallowing real code
+    (here, the entire rest of the test) as "string content"."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a\nb', () => { expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_an_unescaped_crlf_inside_a_double_quoted_string_fails_closed():
+    """Same claim, the other named newline form (CRLF) and the other quote
+    character (double quotes) -- both explicitly asked for by the review."""
+    before = 'it("a", () => { expect(1).toBe(1); });\n'
+    after = 'it("a\r\nb", () => { expect(1).toBe(1); });\r\n'
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_a_backslash_line_continuation_inside_a_string_is_not_a_false_block():
+    """The other side of the same fix: a backslash immediately before a line
+    terminator is a legal escape (line continuation) -- must not regress
+    into a false `unparseable`. The test name's literal source text (an
+    identity key elsewhere in this scanner) is unchanged across revisions;
+    only the matcher argument changes, isolating this from a rename."""
+    before = "it('a\\\nb', () => { expect(1).toBe(1); });\n"
+    after = "it('a\\\nb', () => { expect(1).toBe(2); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []

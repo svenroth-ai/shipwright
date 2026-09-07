@@ -161,11 +161,16 @@
         "behavior": "fit.each(...)/fdescribe.each(...) (both call-parens and tagged-template-table forms) already apply full .only-shadow semantics to a newly-focused parametrized test/describe -- the existing bare fit/fdescribe-is-.only aliasing composes correctly with .each-chain recognition since chain==\".each\" alone also leaves mod as None before that check runs -- verified directly against _js_collect and detect_weakening; the gap the review surfaced was missing test coverage of an already-correct behavior, not an actual defect",
         "disposition": "tested",
         "evidence": "test_js_a_newly_added_fit_each_focus_blocks_its_siblings, test_js_a_newly_added_fit_each_tagged_template_focus_blocks_its_siblings, and test_js_a_newly_added_fdescribe_each_focus_blocks_its_siblings PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, twelfth round: claimed fit.each/fdescribe.each fall through as ordinary .each calls with no .only effect; reproduced the exact scenario directly against _js_collect and the full detect_weakening pipeline and found the claim did not hold (skip_added already fires) — behavior was already correct, only test coverage was missing"
+      },
+      {
+        "behavior": "A single- or double-quoted string cannot legally contain a raw, unescaped line terminator (LF or CRLF) -- unlike a template literal, which can -- so the quote scanner now fails closed (unparseable) on one instead of silently treating it as ordinary string content and running past the line where the string was actually supposed to end; a backslash immediately before a line terminator (a legal escape/line-continuation, both LF and CRLF forms) is still accepted and does not regress into a false block",
+        "disposition": "tested",
+        "evidence": "test_js_an_unescaped_lf_inside_a_single_quoted_string_fails_closed, test_js_an_unescaped_crlf_inside_a_double_quoted_string_fails_closed, and test_js_a_backslash_line_continuation_inside_a_string_is_not_a_false_block PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, thirteenth round: the quote-scanning loop in _js_scan_code now fails closed on an unescaped \\r or \\n encountered before the closing quote, while still consuming a backslash-escaped line terminator (including the \\r\\n pair, as a unit) as a legal continuation"
       }
     ],
     "counts": {
-      "testable": 30,
-      "tested": 30,
+      "testable": 31,
+      "tested": 31,
       "untestable": 0,
       "untested_testable": 0
     }
