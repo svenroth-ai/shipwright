@@ -43,10 +43,26 @@ def apply_with_rollback(project_root: Path, report: dict, spec_path: Path,
             if abs_path.is_file() and is_contained(project_root, abs_path):
                 originals[abs_path] = abs_path.read_bytes()
 
-    def _restore() -> None:
+    def _restore() -> list[str]:
+        # Best-effort (Tier-3 CI-gate re-review, P3.4 high): a write failure
+        # on ONE file during restore must not abort the loop and leave every
+        # LATER file un-restored -- every file gets its own restore attempt,
+        # and a failure is reported rather than silently swallowed or crashed.
+        failures: list[str] = []
         for abs_path, content in originals.items():
-            if is_contained(project_root, abs_path):
+            if not is_contained(project_root, abs_path):
+                continue
+            try:
                 abs_path.write_bytes(content)
+            except OSError:
+                failures.append(str(abs_path))
+        return failures
+
+    def _rolled_back_result(result: dict, restore_failures: list[str]) -> dict:
+        result["rolled_back"] = not restore_failures
+        if restore_failures:
+            result["restore_failures"] = restore_failures
+        return result
 
     try:
         apply_result = apply_upgrades(project_root, report)
@@ -54,19 +70,25 @@ def apply_with_rollback(project_root: Path, report: dict, spec_path: Path,
         # An I/O failure partway through apply_upgrades's per-file writes
         # previously propagated straight out of main(), leaving every file
         # written before the failure modified with no rollback.
-        _restore()
-        return {"write_error": str(exc), "rolled_back": True}, 1
+        return _rolled_back_result({"write_error": str(exc)}, _restore()), 1
 
-    orphans = validate_applied(project_root, apply_result, spec_path)
+    try:
+        orphans = validate_applied(project_root, apply_result, spec_path)
+    except OSError as exc:
+        # validate_applied reads spec.md AFTER writes already landed -- a
+        # transient failure there must not leave those writes un-rolled-back
+        # (Tier-3 CI-gate re-review, P3.4 high; this used to run outside any
+        # try/except at all).
+        apply_result["validate_error"] = str(exc)
+        return _rolled_back_result(apply_result, _restore()), 1
+
     # A write attempted for one candidate can fail after a SIBLING candidate's
     # upgrade already landed on disk in the same batch -- that must roll back
     # too, not just report an unqualified success.
     if orphans or apply_result.get("write_failures_occurred"):
-        _restore()
         if orphans:
             apply_result["orphan_tags_written"] = orphans
-        apply_result["rolled_back"] = True
-        return apply_result, 1
+        return _rolled_back_result(apply_result, _restore()), 1
     return apply_result, 0
 
 
