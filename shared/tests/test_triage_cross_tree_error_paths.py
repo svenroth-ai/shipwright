@@ -11,6 +11,7 @@ through the CLI subprocess round-trip, invisible to diff-coverage)."""
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -177,6 +178,37 @@ def test_a_sibling_switching_branch_is_picked_up_without_a_worktrees_change(
     assert triage_cross_tree.sibling_worktree_logs(main) == [
         ("iterate/camp-a-v2", wt / ".shipwright" / "triage.jsonl"),
     ]
+
+
+def test_a_rewrite_with_a_colliding_mtime_still_invalidates_the_parse_cache(
+    tmp_path: Path,
+) -> None:
+    """PR #684 review: `_CACHE` keyed on bare `st_mtime` (a float) can share a
+    value across two rapid rewrites on a coarse-mtime filesystem, serving the
+    first write's content forever. Forcing an EXACT mtime collision via
+    `os.utime` and changing only the byte content (so `st_size` differs)
+    proves the `(mtime_ns, size)` fingerprint still invalidates."""
+    main = _make_main(tmp_path)
+    wt = main / ".worktrees" / "camp-a"
+    (wt / ".shipwright").mkdir(parents=True)
+    admin = main / ".git" / "worktrees" / "camp-a"
+    admin.mkdir(parents=True)
+    (admin / "HEAD").write_text("ref: refs/heads/iterate/camp-a\n", encoding="utf-8")
+    (wt / ".git").write_text(f"gitdir: {admin}\n", encoding="utf-8")
+    log_path = wt / ".shipwright" / "triage.jsonl"
+    log_path.write_text(_j({"v": 1}) + "\n" + _j(_APPEND) + "\n", encoding="utf-8")
+    stamp = log_path.stat().st_mtime
+
+    [(_branch, first)] = triage_cross_tree.foreign_records_by_branch(main)
+    assert [r["event"] for r in first] == []
+
+    log_path.write_text(
+        _j({"v": 1}) + "\n" + _j(_APPEND) + "\n" + _j(_DISMISS) + "\n", encoding="utf-8")
+    os.utime(log_path, (stamp, stamp))  # force an exact st_mtime collision
+    assert log_path.stat().st_mtime == stamp
+
+    [(_branch, second)] = triage_cross_tree.foreign_records_by_branch(main)
+    assert [r["event"] for r in second] == ["status"]
 
 
 # ---------------------------------------------------------------------------
