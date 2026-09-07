@@ -925,6 +925,59 @@ def _js_resolve_test_call(
     return None
 
 
+_JS_SIMPLE_ESCAPES = {
+    "n": "\n", "r": "\r", "t": "\t", "b": "\b", "f": "\f", "v": "\v",
+    "0": "\0", "\n": "", "\r": "",
+}
+_JS_HEX_ESCAPE = re.compile(r"x([0-9a-fA-F]{2})")
+_JS_UNICODE_ESCAPE = re.compile(r"u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})")
+
+
+def _js_decode_string_escapes(raw: str) -> str:
+    """Decode a string/template literal body's backslash escapes to the
+    actual runtime string value, so `'it\\'s a test'` and `"it's a test"` —
+    same value, different source spelling -- are recognized as the SAME test
+    identity instead of one looking removed and the other newly added.
+    `${...}` interpolations are left untouched even when the raw text passed
+    in is a template-literal body containing one: `${` has no backslash in
+    it, so it is simply copied through by the `c != "\\"` branch like any
+    other plain character, unparsed and unevaluated -- decoding backslash
+    escapes and evaluating an interpolation are unrelated operations, and
+    only the former is in scope here (external Tier-3 review, PR #685,
+    twentieth round).
+    """
+    out = []
+    i = 0
+    n = len(raw)
+    while i < n:
+        c = raw[i]
+        if c != "\\" or i + 1 >= n:
+            out.append(c)
+            i += 1
+            continue
+        nxt = raw[i + 1]
+        if nxt == "\r" and raw[i + 2:i + 3] == "\n":
+            i += 3
+            continue
+        if nxt in _JS_SIMPLE_ESCAPES:
+            out.append(_JS_SIMPLE_ESCAPES[nxt])
+            i += 2
+            continue
+        hm = _JS_HEX_ESCAPE.match(raw, i + 1)
+        if hm:
+            out.append(chr(int(hm.group(1), 16)))
+            i = hm.end()
+            continue
+        um = _JS_UNICODE_ESCAPE.match(raw, i + 1)
+        if um:
+            out.append(chr(int(um.group(1) or um.group(2), 16)))
+            i = um.end()
+            continue
+        out.append(nxt)
+        i += 2
+    return "".join(out)
+
+
 def _js_test_name(source: str, open_idx: int, close_idx: int) -> str | None:
     """The test's name — its first string-literal argument, if there is one.
 
@@ -950,9 +1003,10 @@ def _js_test_name(source: str, open_idx: int, close_idx: int) -> str | None:
     m = _JS_STRING_LIT.match(source, start)
     if not m or m.end() > close_idx:
         return None
-    return m.group(1) if m.group(1) is not None else (
+    raw = m.group(1) if m.group(1) is not None else (
         m.group(2) if m.group(2) is not None else m.group(3)
     )
+    return _js_decode_string_escapes(raw)
 
 
 def _js_assertion_signatures(

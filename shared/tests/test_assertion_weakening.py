@@ -1397,3 +1397,50 @@ def test_js_a_backslash_line_continuation_inside_a_string_is_not_a_false_block()
     after = "it('a\\\nb', () => { expect(1).toBe(2); });\n"
     findings = aw.detect_weakening([_jschange(before, after)])
     assert _kinds(findings, blocking=True) == []
+
+
+def test_js_a_differently_escaped_but_equal_test_name_is_not_a_false_removal():
+    """External Tier-3 review, PR #685 (twentieth round, blocking): test
+    names were keyed on raw literal source text, not the runtime string
+    value, so switching a name's quote style (here: a single-quoted name
+    with an escaped apostrophe versus an equivalent double-quoted name with
+    no escape needed) reported the old spelling as removed and the new one
+    as an unrelated new test -- a false `test_removed` block on a change
+    that touched no real test identity at all."""
+    before = "it('it\\'s a test', () => { expect(1).toBe(1); });\n"
+    after = 'it("it\'s a test", () => { expect(1).toBe(1); });\n'
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+
+
+def test_js_a_genuinely_renamed_test_is_still_reported_removed():
+    """The other side of the same fix: decoding escapes must not make the
+    scanner blind to an actual rename -- two literals that decode to
+    DIFFERENT runtime values are still different identities."""
+    before = "it('alpha', () => { expect(1).toBe(1); });\n"
+    after = "it('beta', () => { expect(1).toBe(1); });\n"
+    assert "test_removed" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                     blocking=True)
+
+
+def test_js_common_escape_sequences_decode_to_their_runtime_characters():
+    """Direct unit coverage of the decoder itself for the escape forms named
+    in the review and the ones already load-bearing elsewhere in this file
+    (line-continuation, `\\uXXXX`, `\\u{X}`, `\\xXX`) -- not just the
+    single-quote-vs-double-quote case exercised end-to-end above."""
+    assert aw._js_decode_string_escapes("a\\nb") == "a\nb"
+    assert aw._js_decode_string_escapes("a\\tb") == "a\tb"
+    assert aw._js_decode_string_escapes("a\\\\b") == "a\\b"
+    assert aw._js_decode_string_escapes("a\\\nb") == "ab"
+    assert aw._js_decode_string_escapes("a\\\r\nb") == "ab"
+    assert aw._js_decode_string_escapes("caf\\u00e9") == "café"
+    assert aw._js_decode_string_escapes("\\u{1F600}") == "\U0001F600"
+    assert aw._js_decode_string_escapes("a\\x41b") == "aAb"
+    assert aw._js_decode_string_escapes("a\\db") == "adb"  # unknown escape: drop the backslash
+
+
+def test_js_a_template_interpolation_is_untouched_by_escape_decoding():
+    """A `${...}` inside a template-literal test name must pass through
+    verbatim -- decoding backslash escapes and evaluating an interpolation
+    are unrelated operations, and this scanner never attempts the latter."""
+    assert aw._js_decode_string_escapes("case ${x}\\n") == "case ${x}\n"

@@ -196,11 +196,16 @@
         "behavior": "A `/` immediately (zero-gap) preceded by `<` is read as a JSX closing tag (`</Tag>`), not a regex open -- `<` is not a JS value character either, so without this carve-out the round-nineteen fail-closed fix would misclassify every JSX/TSX closing tag's slash as an unterminated regex and report the whole file unparseable",
         "disposition": "tested",
         "evidence": "test_js_a_jsx_closing_tag_slash_is_not_mistaken_for_a_regex_open PASSED, and the pre-existing JSX apostrophe-contraction tests (fifteenth round) continue to pass unchanged — found and fixed in the same round as the unterminated-regex fail-closed fix, before ever reaching external review, since the fifteenth round's own regression tests caught it immediately"
+      },
+      {
+        "behavior": "A test's pooling identity is now the DECODED runtime string value of its name literal (backslash escapes resolved: \\n, \\t, \\\\, \\uXXXX, \\u{X}, \\xXX, line-continuation), not its raw source spelling, so switching quote style or escape style on an unchanged name (e.g. `'it\\'s a test'` vs `\"it's a test\"`) no longer looks like the old test was removed and a new one added",
+        "disposition": "tested",
+        "evidence": "test_js_a_differently_escaped_but_equal_test_name_is_not_a_false_removal, test_js_a_genuinely_renamed_test_is_still_reported_removed, test_js_common_escape_sequences_decode_to_their_runtime_characters, and test_js_a_template_interpolation_is_untouched_by_escape_decoding all PASSED -- external Tier-3 review (openai/gpt-5.6-luna), PR #685, twentieth round: test names were keyed on raw literal text rather than runtime value, producing a false blocking test_removed finding on a harmless escape-style change"
       }
     ],
     "counts": {
-      "testable": 37,
-      "tested": 37,
+      "testable": 38,
+      "tested": 38,
       "untestable": 0,
       "untested_testable": 0
     }
