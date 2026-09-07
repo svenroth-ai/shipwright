@@ -742,6 +742,43 @@ def test_js_a_crafted_template_literal_name_does_not_collide_with_the_dynamic_po
     assert len(result) == 2
 
 
+def test_js_an_apostrophe_contraction_in_jsx_text_is_not_a_false_block():
+    """External Tier-3 review, PR #685 (fifteenth round, blocking): `.tsx`/
+    `.jsx` are in `_JS_EXTENSIONS`, but the quote scanner unconditionally
+    treated any `'`/`"` as opening a string, so an ordinary English
+    contraction inside JSX text (`it's`, `don't`) -- glued directly onto
+    the preceding word, something no two adjacent valid JS tokens can do --
+    opened a phantom string and could report a normal test file
+    `unparseable`."""
+    before = "it('renders', () => { render(<div>ok</div>); expect(1).toBe(1); });\n"
+    after = ("it('renders', () => { render(<div>it's fine, don't worry</div>); "
+             "expect(1).toBe(1); });\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+
+
+def test_js_a_straight_double_quote_in_jsx_text_is_not_a_false_block():
+    """Same claim, the other quote character and a different glued shape --
+    feet/inches-style text (`5'6"`) is common in JSX prose too."""
+    before = "it('renders', () => { render(<div>ok</div>); expect(1).toBe(1); });\n"
+    after = ('it(\'renders\', () => { render(<div>height 5\'6"</div>); '
+             "expect(1).toBe(1); });\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+
+
+def test_js_a_keyword_glued_string_still_parses_as_a_real_string():
+    """The other side of the same fix: `return"x"` (keyword glued directly
+    onto a string with no space, valid JS) must still be read as a real
+    string, not misclassified as prose the way an ordinary identifier-glued
+    quote now is."""
+    before = "function f() { return'x'; }\nit('a', () => { expect(f()).toBe('x'); });\n"
+    after = "function f() { return'y'; }\nit('a', () => { expect(f()).toBe('y'); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+    assert "assertion_changed" in _kinds(findings, blocking=False)
+
+
 def test_js_duplicate_literal_test_names_are_pooled_not_ordinal_keyed():
     """Two `it('works', ...)` calls sharing one literal title — ordinary
     Jest/Vitest style across different `describe` blocks — used to be keyed

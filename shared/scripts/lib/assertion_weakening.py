@@ -348,6 +348,23 @@ def _js_word_before(
     return source[k + 1:j + 1]
 
 
+def _js_quote_glued_to_word(source: str, i: int) -> str | None:
+    """The identifier/keyword-shaped word immediately (zero-gap, no
+    whitespace at all) before the quote at `source[i]`, or `None` if the
+    quote isn't glued to one -- i.e. there is whitespace, punctuation, or
+    start-of-source right before it instead.
+    """
+    if i == 0:
+        return None
+    j = i - 1
+    if not (source[j].isalnum() or source[j] in "_$"):
+        return None
+    k = j
+    while k >= 0 and (source[k].isalnum() or source[k] in "_$"):
+        k -= 1
+    return source[k + 1:j + 1]
+
+
 def _js_slash_starts_regex(
     source: str, i: int, control_closes: AbstractSet[int] = frozenset(),
 ) -> bool:
@@ -497,6 +514,25 @@ def _js_scan_code(source: str, i: int, n: int, stop_at: int | None) -> _JsScanRe
     while i < n:
         c = source[i]
         if c in _JS_QUOTE_STARTS:
+            glued = _js_quote_glued_to_word(source, i)
+            if glued is not None and glued not in _JS_REGEX_CONTEXT_KEYWORDS:
+                # A straight quote glued directly onto a preceding word with
+                # NO separator at all -- "it's", "don't", `5'6"` -- is not
+                # something any two adjacent, valid JS tokens can produce: a
+                # real string only ever opens at the start of an expression
+                # (after punctuation/whitespace) or immediately after one of
+                # the few keywords that can precede a bare value with no gap
+                # (`return"x"`, already carved out via
+                # `_JS_REGEX_CONTEXT_KEYWORDS`). This shape is JSX text --
+                # `.tsx`/`.jsx` are in `_JS_EXTENSIONS` -- so treat the quote
+                # as ordinary prose, not the start of a string (external
+                # Tier-3 review, PR #685, fifteenth round: unconditionally
+                # opening a string here turned every contraction in a valid
+                # JSX/TSX test file's rendered text into either an
+                # unterminated-string false `unparseable`, or a real string
+                # elsewhere in the file being misread as this one's content).
+                i += 1
+                continue
             start = i
             quote = c
             i += 1

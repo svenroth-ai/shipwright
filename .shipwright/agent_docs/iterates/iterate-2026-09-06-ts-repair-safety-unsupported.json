@@ -171,11 +171,16 @@
         "behavior": "The pooled-dynamic-tests sentinel key can never be produced by any real test name of any quote type: it now embeds a raw, unescaped instance of all three JS/TS quote delimiters ('\"`), so whichever _JS_STRING_LIT alternative is matching would stop at its own embedded copy and could never capture the rest of the sentinel text -- replacing the prior newline-based design, which was reachable from a template literal (unlike single/double-quoted strings, templates can legally contain a raw newline) and so could silently pool a real named test's assertions/marks together with genuinely dynamic-named tests",
         "disposition": "tested",
         "evidence": "test_js_a_crafted_template_literal_name_does_not_collide_with_the_dynamic_pool PASSED (2 independently-tracked _js_collect entries, not merged into one pooled key), and test_js_a_test_named_like_the_dynamic_pool_sentinel_is_not_overwritten's docstring/assertion updated to the new invariant — external Tier-3 review (openai/gpt-5.6-luna), PR #685, fourteenth round: the old sentinel `<dynamically-named tests>\\n` was reachable from a real template-literal test name, since template literals (unlike single/double-quoted strings) may legally contain a raw newline"
+      },
+      {
+        "behavior": "A straight quote (' or \") glued directly onto a preceding word with no separator at all -- an English contraction (it's, don't) or feet/inches-style text (5'6\") inside JSX/TSX rendered text -- is treated as ordinary prose, not the start of a JS string, since no two adjacent valid JS tokens can produce that exact glued shape (a real string only opens at the start of an expression, or immediately after one of the few keywords that can precede a bare value with no gap, e.g. return\"x\", which is still recognized correctly)",
+        "disposition": "tested",
+        "evidence": "test_js_an_apostrophe_contraction_in_jsx_text_is_not_a_false_block, test_js_a_straight_double_quote_in_jsx_text_is_not_a_false_block, and test_js_a_keyword_glued_string_still_parses_as_a_real_string PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, fifteenth round: .tsx/.jsx are in _JS_EXTENSIONS but the quote scanner unconditionally opened a string on any quote character, so a normal contraction in valid JSX text could report a safe test file unparseable"
       }
     ],
     "counts": {
-      "testable": 32,
-      "tested": 32,
+      "testable": 33,
+      "tested": 33,
       "untestable": 0,
       "untested_testable": 0
     }
