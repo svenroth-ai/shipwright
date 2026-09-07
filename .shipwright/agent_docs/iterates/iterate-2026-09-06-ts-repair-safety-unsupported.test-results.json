@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17388,
-      "total": 17447,
+      "passed": 17391,
+      "total": 17450,
       "skipped": 59,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, eleven external PR-check findings across ten review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x10, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, a false negative on optional-chaining test declarations, a documentation/implementation mismatch on .fixme, and a comment-between-keyword-and-paren false block) were fixed, adding 25 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 19 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, optional-chaining, fixme, and comment-aware-control-paren fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (94 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17388/17447) add those 25 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, twelve external PR-check findings across eleven review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x11, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, a false negative on optional-chaining test declarations, a documentation/implementation mismatch on .fixme, a comment-between-keyword-and-paren false block, and a fail-open on malformed template-literal interpolations) were fixed, adding 28 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 22 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, optional-chaining, fixme, comment-aware-control-paren, and template-interpolation fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (97 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here add those 28 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
     },
     "integration": {
       "status": "pass",
@@ -180,11 +180,16 @@
           "behavior": "A comment between a control-flow keyword (if/while/for) and its condition paren does not hide the keyword from the control-flow-regex heuristic, so a regex literal right after the condition still parses correctly instead of desyncing the bracket scanner",
           "disposition": "tested",
           "evidence": "test_js_a_comment_between_if_and_its_condition_paren_is_not_a_false_block, test_js_a_comment_between_while_and_its_condition_paren_is_not_a_false_block, and test_js_a_comment_between_for_and_its_condition_paren_is_not_a_false_block PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, tenth round: _js_word_before now skips recorded comment spans (not just whitespace) when looking backward for if/while/for, closing the gap the seventh round's fix left for the comment-in-between case"
+        },
+        {
+          "behavior": "A template literal's ${...} interpolation is scanned as real nested code (its own strings, comments, regex literals, nested templates, and brackets), not skipped as one opaque span from backtick to backtick, so a malformed/unbalanced interpolation in an after revision fails closed as unparseable instead of silently passing analysis, while a genuinely balanced interpolation (e.g. a dynamic test name) keeps parsing cleanly",
+          "disposition": "tested",
+          "evidence": "test_js_a_malformed_template_interpolation_in_after_revision_fails_closed, test_js_a_valid_template_interpolation_is_not_a_false_block, and test_js_an_assertion_inside_a_template_interpolation_is_visible PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, eleventh round: implemented recursive template-expression scanning (_js_scan_template + _js_scan_code) replacing the prior opaque-span treatment; as a side effect an assertion inside an interpolation is now visible to the assertion scanner too"
         }
       ],
       "counts": {
-        "testable": 28,
-        "tested": 28,
+        "testable": 29,
+        "tested": 29,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -199,7 +204,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "addd6a6102ffcbea8fa96383a13ece7bfd022c67",
+    "commit": "ea572720d7e4657c30d49fa5d131df5ab8164e5b",
     "dirty": true,
     "base": null,
     "release": null

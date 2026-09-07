@@ -290,7 +290,10 @@ def _is_recognized_test_file(path: str) -> bool:
     return is_test_file(path) or is_js_test_file(path)
 
 
-_JS_STRING_STARTS = frozenset("'\"`")
+#: Backtick is deliberately excluded — a template literal isn't a simple
+#: quoted run, it can contain `${...}` interpolations of real code (see
+#: `_js_scan_template`), so it needs its own handling, not this branch's.
+_JS_QUOTE_STARTS = frozenset("'\"")
 _JS_BRACKET_PAIRS = {"(": ")", "{": "}", "[": "]"}
 _JS_BRACKET_CLOSERS = {v: k for k, v in _JS_BRACKET_PAIRS.items()}
 
@@ -415,39 +418,85 @@ def _js_regex_literal_end(source: str, i: int) -> int | None:
     return None
 
 
-def _js_bracket_match(
-    source: str,
-) -> tuple[dict[int, int], list[tuple[int, int]]] | None:
-    """Map every code `(`/`{`/`[` index to its matching close, and separately
-    record the `[start, end)` span of every string literal and comment
-    skipped along the way. `None` means the brackets did not balance — the
-    caller fails closed rather than trusting a partial map.
+#: What one `_js_scan_code` call returns on success: the index just past
+#: what it scanned, plus everything it collected along the way.
+_JsScanResult = tuple[int, dict[int, int], list[tuple[int, int]], list[tuple[int, int]], set[int]]
 
-    The spans exist so a name-like regex run afterwards (`_JS_NAME`,
-    `_JS_ASSERT_HEAD`) can tell a real `it`/`expect`/... occurrence from one
-    that only appears inside a comment or a string — this scanner already
-    has to walk past those to match brackets correctly; recording where they
-    were is nearly free, and skipping it left an earlier revision of this
-    file treating "`it.skip(...)`" inside a `//` comment as a real call.
 
-    Accepted limitation (external Tier-3 review, PR #685, fourth round,
-    non-blocking comment): a template literal is skipped as one opaque
-    string span from the opening backtick to the next unescaped one, so a
-    `${...}` interpolation's own bracket syntax is never validated —
-    consistent with this file's stated design (a false BLOCK is worse than
-    a false negative): an interpolation this permissive already can't
-    desync the OUTER bracket count either way, since the whole template is
-    one atomic span regardless of what's inside it.
+def _js_scan_template(source: str, start: int, n: int) -> _JsScanResult | None:
+    """Scan the template literal opening at the backtick `start`. Returns
+    `(end, match, non_code, comment_spans, control_closes)` for everything
+    up to and including the matching closing backtick, or `None` if the
+    template never closes, or a `${...}` interpolation's own brackets do
+    not balance — both fail closed the same way an unterminated string
+    already does (external Tier-3 review, PR #685, eleventh round: a
+    malformed interpolation was previously invisible, since the whole
+    template was skipped as one opaque span from backtick to backtick
+    regardless of what was inside it — inconsistent with every other
+    "cannot confirm this is valid" path in this file, which all fail
+    closed).
+
+    Everything between backticks that is NOT inside a `${...}` is raw text
+    (recorded as one non-code span per run); everything INSIDE a `${...}`
+    is scanned as ordinary code by `_js_scan_code` — including nested
+    strings, comments, regex literals, and nested template literals — so a
+    real `expect(...)`/`it(...)` occurrence inside an interpolation is now
+    visible to the name/assertion scanners afterward too (closing, as a
+    side effect, the fourth round's separately-named non-blocking comment
+    about executable interpolations being invisible).
+    """
+    non_code: list[tuple[int, int]] = []
+    match: dict[int, int] = {}
+    comment_spans: list[tuple[int, int]] = []
+    control_closes: set[int] = set()
+    i = start + 1
+    text_start = start
+    while i < n:
+        c = source[i]
+        if c == "\\":
+            i += 2
+            continue
+        if c == "`":
+            non_code.append((text_start, i + 1))
+            return i + 1, match, non_code, comment_spans, control_closes
+        if c == "$" and source[i:i + 2] == "${":
+            non_code.append((text_start, i))
+            brace_idx = i + 1
+            sub = _js_scan_code(source, brace_idx, n, stop_at=brace_idx)
+            if sub is None:
+                return None
+            end, s_match, s_non_code, s_comments, s_control = sub
+            match.update(s_match)
+            non_code.extend(s_non_code)
+            comment_spans.extend(s_comments)
+            control_closes.update(s_control)
+            i = end
+            text_start = i
+            continue
+        i += 1
+    return None  # unterminated template -- fail closed
+
+
+def _js_scan_code(source: str, i: int, n: int, stop_at: int | None) -> _JsScanResult | None:
+    """Scan ordinary JS/TS code from `i`. With `stop_at` given — the index
+    of an already-encountered `{` that opens a template interpolation —
+    scanning stops the instant THAT `{` closes, bounding the interpolation
+    to its own expression without a second, duplicate implementation of
+    every rule below (a call from `_js_scan_template`, one level of
+    mutual recursion for a nested template inside an interpolation).
+    Without it, scans to end of `source`, and anything left open on the
+    stack at that point fails closed exactly like a plain unbalanced file
+    always has. `_js_bracket_match` is the public, single-call entry point
+    (`stop_at=None`, `i=0`).
     """
     stack: list[tuple[str, int, bool]] = []
     match: dict[int, int] = {}
     non_code: list[tuple[int, int]] = []
     comment_spans: list[tuple[int, int]] = []
     control_closes: set[int] = set()
-    i, n = 0, len(source)
     while i < n:
         c = source[i]
-        if c in _JS_STRING_STARTS:
+        if c in _JS_QUOTE_STARTS:
             start = i
             quote = c
             i += 1
@@ -464,6 +513,17 @@ def _js_bracket_match(
                 return None
             i += 1
             non_code.append((start, i))
+            continue
+        if c == "`":
+            tmpl = _js_scan_template(source, i, n)
+            if tmpl is None:
+                return None
+            end, t_match, t_non_code, t_comments, t_control = tmpl
+            match.update(t_match)
+            non_code.extend(t_non_code)
+            comment_spans.extend(t_comments)
+            control_closes.update(t_control)
+            i = end
             continue
         if c == "/" and source[i:i + 2] == "//":
             start = i
@@ -502,8 +562,36 @@ def _js_bracket_match(
             match[open_idx] = i
             if is_control:
                 control_closes.add(i)
+            if stop_at is not None and open_idx == stop_at:
+                return i + 1, match, non_code, comment_spans, control_closes
         i += 1
-    return None if stack else (match, non_code)
+    if stop_at is not None:
+        return None  # the interpolation's own `{` never closed -- fail closed
+    return None if stack else (i, match, non_code, comment_spans, control_closes)
+
+
+def _js_bracket_match(
+    source: str,
+) -> tuple[dict[int, int], list[tuple[int, int]]] | None:
+    """Map every code `(`/`{`/`[` index to its matching close, and separately
+    record the `[start, end)` span of every string literal, comment, and
+    template-literal raw-text run skipped along the way. `None` means the
+    brackets did not balance (including inside a template's `${...}`
+    interpolation) — the caller fails closed rather than trusting a partial
+    map.
+
+    The spans exist so a name-like regex run afterwards (`_JS_NAME`,
+    `_JS_ASSERT_HEAD`) can tell a real `it`/`expect`/... occurrence from one
+    that only appears inside a comment or a string — this scanner already
+    has to walk past those to match brackets correctly; recording where they
+    were is nearly free, and skipping it left an earlier revision of this
+    file treating "`it.skip(...)`" inside a `//` comment as a real call.
+    """
+    result = _js_scan_code(source, 0, len(source), stop_at=None)
+    if result is None:
+        return None
+    _end, match, non_code, _comment_spans, _control_closes = result
+    return match, non_code
 
 
 def _js_in_non_code(non_code: list[tuple[int, int]], pos: int) -> bool:

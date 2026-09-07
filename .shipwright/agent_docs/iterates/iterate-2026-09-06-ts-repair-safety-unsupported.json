@@ -20,12 +20,12 @@
       {
         "behavior": "analyze_file dispatches .test.ts/.spec.ts/.test.js/.spec.js to the new JS/TS scanner instead of unsupported_test_file",
         "disposition": "tested",
-        "evidence": "test_js_* dispatch tests PASSED \u2014 this is the fix for the original leadwright false-block bug"
+        "evidence": "test_js_* dispatch tests PASSED — this is the fix for the original leadwright false-block bug"
       },
       {
         "behavior": "A .py file under a tests/-shaped path with no pytest-collected tests (conftest.py, tests/__init__.py) is exempt, not blocked",
         "disposition": "tested",
-        "evidence": "test_a_conftest_py_change_under_a_tests_path_is_not_a_false_block PASSED \u2014 code-review HIGH finding, fixed and pinned (a pre-existing exemption dropped when JS/TS dispatch was added)"
+        "evidence": "test_a_conftest_py_change_under_a_tests_path_is_not_a_false_block PASSED — code-review HIGH finding, fixed and pinned (a pre-existing exemption dropped when JS/TS dispatch was added)"
       },
       {
         "behavior": "A genuinely unsupported test-file language still gets the blocking unsupported_test_file finding",
@@ -45,7 +45,7 @@
       {
         "behavior": "expect(...)/assert(...) and member-style assert.strictEqual(...)/assert.ok(...) (Node assert/Chai) both count as assertions",
         "disposition": "tested",
-        "evidence": "test_js_a_member_style_assert_call_counts_as_an_assertion PASSED \u2014 code-review MEDIUM finding, fixed and pinned"
+        "evidence": "test_js_a_member_style_assert_call_counts_as_an_assertion PASSED — code-review MEDIUM finding, fixed and pinned"
       },
       {
         "behavior": "An expect.<matcher> factory used as an argument (e.g. expect.stringContaining(...)) is not double-counted as its own assertion",
@@ -80,12 +80,12 @@
       {
         "behavior": "A relocated-mark finding BLOCKS only when the whole pool's content-signature Counter is unchanged (full bijection); otherwise it is only REPORTED, never a false block",
         "disposition": "tested",
-        "evidence": "test_js_a_skip_swap_is_still_blocked_alongside_an_unrelated_conserved_decoy_pair (blocking) and test_js_a_skip_swap_is_reported_not_blocked_alongside_an_unrelated_sibling_content_edit (non-blocking) PASSED \u2014 the round-9\u219210\u219211 false-block trade-off, this file's central design decision"
+        "evidence": "test_js_a_skip_swap_is_still_blocked_alongside_an_unrelated_conserved_decoy_pair (blocking) and test_js_a_skip_swap_is_reported_not_blocked_alongside_an_unrelated_sibling_content_edit (non-blocking) PASSED — the round-9→10→11 false-block trade-off, this file's central design decision"
       },
       {
         "behavior": "A coincidental content collision across an unrelated edit does not trigger a false BLOCK",
         "disposition": "tested",
-        "evidence": "test_js_a_coincidental_content_collision_across_an_unrelated_edit_is_not_blocked PASSED \u2014 round-10 fix"
+        "evidence": "test_js_a_coincidental_content_collision_across_an_unrelated_edit_is_not_blocked PASSED — round-10 fix"
       },
       {
         "behavior": "check_repair_safety.py's \"review\" verdict message names the actual non-blocking finding kind(s) present, not a message hardcoded to one kind",
@@ -151,11 +151,16 @@
         "behavior": "A comment between a control-flow keyword (if/while/for) and its condition paren does not hide the keyword from the control-flow-regex heuristic, so a regex literal right after the condition still parses correctly instead of desyncing the bracket scanner",
         "disposition": "tested",
         "evidence": "test_js_a_comment_between_if_and_its_condition_paren_is_not_a_false_block, test_js_a_comment_between_while_and_its_condition_paren_is_not_a_false_block, and test_js_a_comment_between_for_and_its_condition_paren_is_not_a_false_block PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, tenth round: _js_word_before now skips recorded comment spans (not just whitespace) when looking backward for if/while/for, closing the gap the seventh round's fix left for the comment-in-between case"
+      },
+      {
+        "behavior": "A template literal's ${...} interpolation is scanned as real nested code (its own strings, comments, regex literals, nested templates, and brackets), not skipped as one opaque span from backtick to backtick, so a malformed/unbalanced interpolation in an after revision fails closed as unparseable instead of silently passing analysis, while a genuinely balanced interpolation (e.g. a dynamic test name) keeps parsing cleanly",
+        "disposition": "tested",
+        "evidence": "test_js_a_malformed_template_interpolation_in_after_revision_fails_closed, test_js_a_valid_template_interpolation_is_not_a_false_block, and test_js_an_assertion_inside_a_template_interpolation_is_visible PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, eleventh round: implemented recursive template-expression scanning (_js_scan_template + _js_scan_code) replacing the prior opaque-span treatment; as a side effect an assertion inside an interpolation is now visible to the assertion scanner too"
       }
     ],
     "counts": {
-      "testable": 28,
-      "tested": 28,
+      "testable": 29,
+      "tested": 29,
       "untestable": 0,
       "untested_testable": 0
     }

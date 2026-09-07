@@ -1138,3 +1138,39 @@ def test_a_python_test_renamed_to_a_js_test_path_is_not_flagged_as_removed():
                   status="R", path=JS_TEST_PATH, old_path="tests/test_thing.py")
     ])
     assert "test_removed_by_rename" not in _kinds(findings, blocking=True)
+
+
+def test_js_a_malformed_template_interpolation_in_after_revision_fails_closed():
+    """External Tier-3 review, PR #685 (eleventh round, blocking): a
+    template literal used to be skipped as one opaque span from backtick to
+    backtick, so a `${...}` interpolation's own unbalanced bracket was
+    invisible — this after revision has a `${(}` interpolation whose `(`
+    never closes, and must be reported `unparseable`, the same fail-closed
+    shape as any other unbalanced after revision."""
+    before = "it(`case ${1}`, () => { expect(1).toBe(1); });\n"
+    after = "it(`case ${(}`, () => { expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_a_valid_template_interpolation_is_not_a_false_block():
+    """The other side of the same fix: an ordinary, balanced `${...}`
+    interpolation (dynamic test names are extremely common in real suites)
+    must keep scanning cleanly, not regress into a false `unparseable`."""
+    before = "it(`case ${1 + 1}`, () => { expect(1).toBe(1); });\n"
+    after = "it(`case ${1 + 1}`, () => { expect(1).toBe(2); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+    assert "assertion_changed" in _kinds(findings, blocking=False)
+
+
+def test_js_an_assertion_inside_a_template_interpolation_is_visible():
+    """Side effect of recursive interpolation scanning: an interpolation's
+    body is now real code to the scanners, not opaque text, so an assertion
+    removed from inside one is caught the same as anywhere else (closes a
+    fourth-round non-blocking comment about executable interpolations being
+    invisible)."""
+    before = "it('a', () => { const label = `${expect(1).toBe(1) && 'ok'}`; expect(2).toBe(2); });\n"
+    after = "it('a', () => { const label = `${'ok'}`; expect(2).toBe(2); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
