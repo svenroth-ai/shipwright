@@ -1,0 +1,116 @@
+{
+  "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
+  "date": "2026-09-07T01:23:00.157048Z",
+  "event_at": "2026-09-06T14:44:23.812134+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/ts-repair-safety-unsupported",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-06-ts-repair-safety-unsupported",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "analyze_file dispatches .py test files to the existing ast-based path, unchanged",
+        "disposition": "tested",
+        "evidence": "pre-existing Python-path test suite in test_assertion_weakening.py re-run green (unchanged behavior)"
+      },
+      {
+        "behavior": "analyze_file dispatches .test.ts/.spec.ts/.test.js/.spec.js to the new JS/TS scanner instead of unsupported_test_file",
+        "disposition": "tested",
+        "evidence": "test_js_* dispatch tests PASSED \u2014 this is the fix for the original leadwright false-block bug"
+      },
+      {
+        "behavior": "A .py file under a tests/-shaped path with no pytest-collected tests (conftest.py, tests/__init__.py) is exempt, not blocked",
+        "disposition": "tested",
+        "evidence": "test_a_conftest_py_change_under_a_tests_path_is_not_a_false_block PASSED \u2014 code-review HIGH finding, fixed and pinned (a pre-existing exemption dropped when JS/TS dispatch was added)"
+      },
+      {
+        "behavior": "A genuinely unsupported test-file language still gets the blocking unsupported_test_file finding",
+        "disposition": "tested",
+        "evidence": "pre-existing test_unsupported_test_file_* cases re-run green (unchanged behavior for non-Python/non-JS languages)"
+      },
+      {
+        "behavior": "describe/it/test declarations, .skip/.only/.todo/.fixme modifiers and xdescribe/xit/xtest aliases are recognized",
+        "disposition": "tested",
+        "evidence": "test_js_* modifier/alias recognition tests PASSED"
+      },
+      {
+        "behavior": ".each parametrize (both parenthesized and tagged-template forms) is recognized as one test declaration per call site",
+        "disposition": "tested",
+        "evidence": "test_js_*each* tests PASSED"
+      },
+      {
+        "behavior": "expect(...)/assert(...) and member-style assert.strictEqual(...)/assert.ok(...) (Node assert/Chai) both count as assertions",
+        "disposition": "tested",
+        "evidence": "test_js_a_member_style_assert_call_counts_as_an_assertion PASSED \u2014 code-review MEDIUM finding, fixed and pinned"
+      },
+      {
+        "behavior": "An expect.<matcher> factory used as an argument (e.g. expect.stringContaining(...)) is not double-counted as its own assertion",
+        "disposition": "tested",
+        "evidence": "test_js_an_expect_matcher_factory_is_not_double_counted_as_its_own_assertion PASSED (rewritten during doubt-review to assert directly on _js_collect's signature count, not a weak before==after diff)"
+      },
+      {
+        "behavior": "Dynamically-named tests (it(caseName, fn)) are pooled under a shared sentinel identity instead of colliding with each other or being invisible",
+        "disposition": "tested",
+        "evidence": "test_js_* dynamic-name pooling tests PASSED"
+      },
+      {
+        "behavior": "Duplicate literal test names are pooled, not ordinal-keyed (immune to decoy reordering)",
+        "disposition": "tested",
+        "evidence": "test_js_duplicate_literal_test_names_are_pooled_not_ordinal_keyed, test_js_a_decoy_reusing_a_literal_test_name_softens_but_does_not_hide_a_real_loss PASSED"
+      },
+      {
+        "behavior": "Marks are tracked as a multiset (Counter), so a repeated mark occurrence is only flagged when the occurrence COUNT increases, not merely present",
+        "disposition": "tested",
+        "evidence": "test_js_* multiset-mark tests PASSED"
+      },
+      {
+        "behavior": "A pooled identity losing one of its instances (instance_count decreases) is reported non-blocking (pooled_test_instance_lost), never silently ignored",
+        "disposition": "tested",
+        "evidence": "test_js_removing_an_empty_skip_stub_while_skipping_its_real_sibling_is_not_a_silent_clear PASSED"
+      },
+      {
+        "behavior": "A skip/xfail mark gained on a content signature occurring exactly once on both before and after sides is caught (exact-content-key match)",
+        "disposition": "tested",
+        "evidence": "test_js_a_skip_swap_is_caught_by_exact_content_match PASSED"
+      },
+      {
+        "behavior": "A relocated-mark finding BLOCKS only when the whole pool's content-signature Counter is unchanged (full bijection); otherwise it is only REPORTED, never a false block",
+        "disposition": "tested",
+        "evidence": "test_js_a_skip_swap_is_still_blocked_alongside_an_unrelated_conserved_decoy_pair (blocking) and test_js_a_skip_swap_is_reported_not_blocked_alongside_an_unrelated_sibling_content_edit (non-blocking) PASSED \u2014 the round-9\u219210\u219211 false-block trade-off, this file's central design decision"
+      },
+      {
+        "behavior": "A coincidental content collision across an unrelated edit does not trigger a false BLOCK",
+        "disposition": "tested",
+        "evidence": "test_js_a_coincidental_content_collision_across_an_unrelated_edit_is_not_blocked PASSED \u2014 round-10 fix"
+      },
+      {
+        "behavior": "check_repair_safety.py's \"review\" verdict message names the actual non-blocking finding kind(s) present, not a message hardcoded to one kind",
+        "disposition": "tested",
+        "evidence": "pre-existing + updated check_repair_safety.py review-message tests re-run green"
+      },
+      {
+        "behavior": "Two content-IDENTICAL pooled instances swapping a skip mark between them is a known, accepted residual (false negative, not a false block)",
+        "disposition": "untestable",
+        "reason_code": "known-limitation-documented",
+        "reason": "irreducible without true AST identity tracking (a regex/bracket-balancing scanner cannot distinguish two byte-identical call sites); documented as an accepted residual in the module docstring and the ADR, same class as the file's original Python-only design's accepted residual"
+      }
+    ],
+    "counts": {
+      "testable": 16,
+      "tested": 16,
+      "untestable": 1,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "shared-library detector change (no route/component/CLI/dev-server surface of its own); this repo's own unit tests (shared/tests/test_assertion_weakening.py, 92 tests) plus the mirrored-gate pre-flight (scripts/verify_local.py) and the full F0 suite are the verification."
+  },
+  "declared_removals": []
+}

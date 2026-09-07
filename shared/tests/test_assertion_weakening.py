@@ -149,11 +149,29 @@ def test_an_unparseable_after_revision_fails_closed():
                                    blocking=True)
 
 
-def test_a_changed_non_python_test_file_is_refused_not_waved_through():
+def test_a_changed_test_file_in_an_unread_language_is_refused_not_waved_through():
+    """JS/TS now has its own reader (below) — this checks a language neither
+    reader covers still fails closed instead of being silently waved through."""
     findings = aw.detect_weakening([
-        _change("it('x')", "it.skip('x')", path="e2e/tests/login.spec.ts")
+        _change("it 'x' do\nend\n", "it 'x' do\n  xit\nend\n",
+                path="e2e/tests/login_spec.rb")
     ])
     assert "unsupported_test_file" in _kinds(findings, blocking=True)
+
+
+def test_a_conftest_py_change_under_a_tests_path_is_not_a_false_block():
+    """Code review: adding JS/TS support dropped the pre-existing `.py`
+    exemption on the `unsupported_test_file` guard, so ANY `.py` file under a
+    `tests/`-shaped path that isn't pytest-collected (`conftest.py`,
+    `tests/__init__.py`, a fixture module) wrongly fell into the blocking
+    refusal — even though `ast` reads Python fine; it just has no tests to
+    lose here. `conftest.py` is exactly the ordinary, extremely common case
+    this must never block."""
+    findings = aw.detect_weakening([
+        _change("import pytest\n", "import pytest\n\n\ndef fixture_helper():\n    pass\n",
+                path="shared/tests/conftest.py")
+    ])
+    assert findings == []
 
 
 # --------------------------------------------------------------------------
@@ -245,3 +263,558 @@ def test_verdict_blocks_only_on_a_blocking_finding():
     blocked = aw.Finding(kind="assertions_removed", blocking=True,
                          subject="x", detail="y")
     assert aw.verdict([reported, blocked]) == "blocked"
+
+
+# --------------------------------------------------------------------------
+# JS/TS reader — a bracket-balancing scanner, not a real parser (see module
+# docstring). The Python suite above is the contract; these mirror it.
+# --------------------------------------------------------------------------
+
+JS_TEST_PATH = "web/tests/thing.test.ts"
+
+
+def _jschange(before, after, path=JS_TEST_PATH, status="M", old_path=None):
+    return aw.FileChange(status=status, path=path, old_path=old_path,
+                         before=before, after=after)
+
+
+def test_js_an_assertion_removed_from_a_test_blocks():
+    before = "it('a', () => { expect(1).toBe(1); expect(2).toBe(2); });\n"
+    after = "it('a', () => { expect(1).toBe(1); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_a_bare_node_assert_call_counts_as_an_assertion():
+    before = "it('a', () => { assert(x); assert(y); });\n"
+    after = "it('a', () => { assert(x); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_a_member_style_assert_call_counts_as_an_assertion():
+    """`assert.strictEqual(a, b)` (Node's built-in `assert` module, and
+    Chai's `assert` interface) is at least as common as bare `assert(x)` and
+    was silently uncounted — not even a reported finding, unlike every other
+    named limit in this file (code review)."""
+    before = "it('a', () => { assert.strictEqual(x, 1); assert.ok(y); });\n"
+    after = "it('a', () => { assert.strictEqual(x, 1); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_an_expect_matcher_factory_is_not_double_counted_as_its_own_assertion():
+    """`expect.stringContaining(...)`/`expect.any(...)` are matcher FACTORIES
+    passed as an argument into a real `expect(...)` call, not independent
+    assertions — `_JS_ASSERT_HEAD` deliberately does not extend member-style
+    matching to `expect.<method>(`, unlike `assert.<method>(`, so this single
+    real assertion is not inflated into two. Asserted directly on the
+    collected signature count, not on an unchanged-diff producing no
+    findings (an identical before/after would pass even with a double-count
+    bug, since both sides would double-count identically)."""
+    source = "it('a', () => { expect(x).toEqual(expect.stringContaining('a')); });\n"
+    tests = aw._js_collect(source)
+    assert tests is not None
+    (only_test,) = tests.values()
+    assert len(only_test.assertions) == 1
+
+
+def test_js_a_multiline_formatted_call_still_catches_a_removed_assertion():
+    """`it(\\n  'name',\\n  fn\\n)` — a common formatter style for a long
+    callback — must read the same as the single-line form. An earlier
+    revision anchored the name-literal match right after `(` with no gap
+    tolerance, silently dropping every such test from collection (code
+    review)."""
+    before = "it(\n  'a',\n  () => {\n    expect(1).toBe(1);\n    expect(2).toBe(2);\n  }\n);\n"
+    after = "it(\n  'a',\n  () => {\n    expect(1).toBe(1);\n  }\n);\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_reformatting_a_call_to_multiline_is_not_itself_a_finding():
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it(\n  'a',\n  () => { expect(1).toBe(1); }\n);\n"
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_a_removed_test_blocks():
+    before = ("it('a', () => { expect(1).toBe(1); });\n"
+              "it('b', () => { expect(2).toBe(2); });\n")
+    after = "it('a', () => { expect(1).toBe(1); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "test_removed" in _kinds(findings, blocking=True)
+    assert any(f"{JS_TEST_PATH}::b" == f.subject for f in findings)
+
+
+def test_js_an_it_skip_added_to_an_existing_test_blocks():
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it.skip('a', () => { expect(1).toBe(1); });\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_an_xit_rename_added_blocks():
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "xit('a', () => { expect(1).toBe(1); });\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_a_describe_skip_added_blocks_its_tests():
+    before = "describe('suite', () => {\n  it('a', () => { expect(1).toBe(1); });\n});\n"
+    after = ("describe.skip('suite', () => {\n"
+             "  it('a', () => { expect(1).toBe(1); });\n});\n")
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_an_xdescribe_rename_blocks_its_tests():
+    before = "describe('suite', () => {\n  it('a', () => { expect(1).toBe(1); });\n});\n"
+    after = "xdescribe('suite', () => {\n  it('a', () => { expect(1).toBe(1); });\n});\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_an_unbalanced_after_revision_fails_closed():
+    """Missing the closing `});` — the bracket scanner cannot trust anything
+    it extracted, so this is `unparseable`, the same fail-closed shape as an
+    unparseable Python revision."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect(1).toBe(1);\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_adding_assertions_is_never_a_finding():
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect(1).toBe(1); expect(2).toBe(2); });\n"
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_a_changed_matcher_argument_is_reported_but_does_not_block():
+    before = "it('a', () => { expect(n).toBe(5); });\n"
+    after = "it('a', () => { expect(n).toBe(6); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+    assert "assertion_changed" in _kinds(findings, blocking=False)
+
+
+def test_js_an_unbalanced_before_revision_does_not_block():
+    """Only the *after* revision must scan cleanly — a base we cannot read is
+    not this change's doing (mirrors the Python `unparseable`-before case)."""
+    findings = aw.detect_weakening([
+        _jschange("it('a', () => { expect(1).toBe(1);\n",
+                  "it('a', () => { expect(1).toBe(1); });\n")
+    ])
+    assert _kinds(findings, blocking=True) == []
+
+
+def test_js_renaming_a_test_out_of_collection_blocks():
+    body = "it('a', () => { expect(1).toBe(1); });\n"
+    findings = aw.detect_weakening([
+        _jschange(body, body, status="R",
+                  path="web/lib/thing.ts", old_path=JS_TEST_PATH)
+    ])
+    assert "test_removed_by_rename" in _kinds(findings, blocking=True)
+
+
+def test_js_each_parametrized_assertion_removal_blocks():
+    """`test.each`/`it.each` is Jest/Vitest's `@pytest.mark.parametrize`
+    equivalent — a two-call chain (table, then name+body). Missed entirely by
+    an earlier revision of the scanner (external spec review round 1)."""
+    before = ("test.each([[1, 1], [2, 2]])('adds %i', (a, b) => {\n"
+              "  expect(a + 0).toBe(a);\n  expect(a).toBe(b);\n});\n")
+    after = ("test.each([[1, 1], [2, 2]])('adds %i', (a, b) => {\n"
+             "  expect(a).toBe(b);\n});\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_skip_each_newly_applied_blocks():
+    before = "test.each([[1]])('x %i', (a) => { expect(a).toBe(1); });\n"
+    after = "test.skip.each([[1]])('x %i', (a) => { expect(a).toBe(1); });\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_describe_each_wrapping_still_sees_removed_tests():
+    before = ("describe.each([['a']])('%s', (label) => {\n"
+              "  it('one', () => { expect(1).toBe(1); });\n"
+              "  it('two', () => { expect(2).toBe(2); });\n});\n")
+    after = ("describe.each([['a']])('%s', (label) => {\n"
+             "  it('one', () => { expect(1).toBe(1); });\n});\n")
+    assert "test_removed" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                    blocking=True)
+
+
+def test_js_each_tagged_template_table_is_supported():
+    """`.each` given a tagged-template table (no parens at all around it) is
+    the other documented Jest/Vitest form — invisible in an earlier revision
+    of this scanner (external spec review round 2)."""
+    before = ("test.each`a | b\n${1} | ${1}`('adds %s', ({a, b}) => {\n"
+              "  expect(a).toBe(b);\n});\n")
+    after = ("test.each`a | b\n${1} | ${1}`('adds %s', ({a, b}) => {\n"
+             "});\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_an_each_head_with_no_table_or_body_fails_closed():
+    """A recognized chain (`.each`) that never resolves to an actual call is
+    treated the same as an unrecognized one: fail closed, not silently skip."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect(1).toBe(1); });\ntest.each;\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_an_unrecognized_modifier_chain_fails_closed_rather_than_missing_it():
+    """`.concurrent` is real Jest API this scanner does not implement — rather
+    than silently miss whatever is inside it, the whole file fails closed."""
+    before = "test.concurrent('a', async () => { expect(1).toBe(1); });\n"
+    after = "test.concurrent('a', async () => {});\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_a_line_broken_chain_is_not_collapsed_to_a_bare_reference():
+    """`test\\n  .skip(...)` is ordinary Prettier-formatted code — an earlier
+    revision's strict-adjacency chain regex saw an empty chain here and
+    silently treated the whole declaration as a non-call (external spec
+    review round 3)."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it\n  .skip('a', () => { expect(1).toBe(1); });\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_a_comment_before_the_dot_is_not_collapsed_to_a_bare_reference():
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it/* eslint-disable-next-line */.skip('a', () => { expect(1).toBe(1); });\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_computed_member_access_fails_closed_rather_than_missing_it():
+    """`test['skip'](...)` chains through a computed property, not a `.word` —
+    a shape this scanner does not resolve, so it must fail closed rather than
+    silently read this as an ordinary, un-skipped `test` call."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it['skip']('a', () => { expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_a_comment_mentioning_a_test_api_call_is_not_mistaken_for_one():
+    """`_JS_NAME`/`_JS_ASSERT_HEAD` scan raw text; without the non-code spans
+    from `_js_bracket_match`, a TODO like this would itself have been misread
+    as a real `it.skip(...)` declaration (external spec review round 3)."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = ("// TODO: consider it.skip('a', () => { expect(0).toBe(0); });\n"
+             "it('a', () => { expect(1).toBe(1); });\n")
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_a_comment_mentioning_expect_inside_a_test_is_not_counted():
+    before = "it('a', () => {\n  // was: expect(2).toBe(2);\n  expect(1).toBe(1);\n});\n"
+    after = "it('a', () => {\n  expect(1).toBe(1);\n});\n"
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_a_newly_added_only_shadows_its_siblings():
+    """`it.only(...)` makes Jest/Vitest skip every OTHER test in the file at
+    runtime, with no mark on the siblings themselves — an earlier revision
+    recognized `.only` as a chain but gave it no effect, so this silenced a
+    neighbor without touching its body at all (doubt review)."""
+    before = ("it('a', () => { expect(1).toBe(1); });\n"
+              "it('b', () => { expect(2).toBe(2); });\n")
+    after = ("it.only('a', () => { expect(1).toBe(1); });\n"
+             "it('b', () => { expect(2).toBe(2); });\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" in _kinds(findings, blocking=True)
+    assert any(f"{JS_TEST_PATH}::b" == f.subject for f in findings)
+
+
+def test_js_a_describe_only_shadows_tests_outside_it():
+    before = ("describe('A', () => { it('a', () => { expect(1).toBe(1); }); });\n"
+              "it('b', () => { expect(2).toBe(2); });\n")
+    after = ("describe.only('A', () => { it('a', () => { expect(1).toBe(1); }); });\n"
+             "it('b', () => { expect(2).toBe(2); });\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" in _kinds(findings, blocking=True)
+    assert any(f"{JS_TEST_PATH}::b" == f.subject for f in findings)
+
+
+def test_js_a_test_nested_under_describe_only_is_not_itself_shadowed():
+    before = "describe.only('A', () => {\n  it('a', () => { expect(1).toBe(1); expect(2).toBe(2); });\n});\n"
+    after = "describe.only('A', () => {\n  it('a', () => { expect(1).toBe(1); });\n});\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+    assert "skip_added" not in _kinds(findings, blocking=True)
+
+
+def test_js_a_dynamic_test_names_assertion_loss_is_still_caught():
+    """`it(caseName, fn)` — a common data-driven-test pattern — resolves to a
+    real call but has no string-literal name; dropping it outright made it
+    invisible to diffing on both sides (doubt review, round 1). Pooled into
+    one aggregate entry for the file instead."""
+    before = "const name = 'a';\nit(name, () => { expect(1).toBe(1); expect(2).toBe(2); });\n"
+    after = "const name = 'a';\nit(name, () => { expect(1).toBe(1); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_a_decoy_dynamic_test_softens_but_does_not_hide_a_real_loss():
+    """An ordinal-keyed first attempt at this (round 1 fix) let a dynamic test
+    inserted earlier in the same diff reoccupy a shifted test's key, comparing
+    a real assertion loss against unrelated decoy content and hiding it
+    entirely (doubt review, round 2). Pooling every dynamic-named test's
+    assertions into one aggregate entry makes this order-independent: with
+    DIFFERENT decoy assertion text (the ordinary case), the real loss still
+    shows up, at minimum as a reported `assertion_changed`."""
+    before = "const a = 'a';\nit(a, () => { expect(1).toBe(1); expect(2).toBe(2); });\n"
+    after = (
+        "const b = 'b';\nit(b, () => { expect(9).toBe(9); expect(8).toBe(8); });\n"
+        "const a = 'a';\nit(a, () => { expect(1).toBe(1); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert findings != []
+
+
+def test_js_a_decoy_with_identical_assertion_text_can_hide_a_real_loss():
+    """Named, honest residual limit (doubt review, round 3): content-only
+    pooling cannot distinguish "this assertion moved to another dynamic test"
+    from "this assertion was deleted and an unrelated one happens to read the
+    same" — realistic for table-driven tests sharing boilerplate assertions.
+    Left open rather than silently left as a surprise; see `_js_collect`'s
+    docstring. A body-hash-based best-effort pairing would close this but
+    was judged not worth the added complexity for a residual, inherently
+    unprovable-complete gap in anonymous-test identity."""
+    before = "const a = 'a';\nit(a, () => { expect(result).toBe(true); expect(extra).toBe(1); });\n"
+    after = (
+        "const c = 'c';\nit(c, () => { expect(extra).toBe(1); });\n"
+        "const a = 'a';\nit(a, () => { expect(result).toBe(true); });\n"
+    )
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_a_test_named_like_the_dynamic_pool_sentinel_is_not_overwritten():
+    """`it('<dynamically-named tests>', fn)` is syntactically valid JS — a
+    real test with (nearly) that name must not collide with the pooled-
+    dynamic-tests entry. The sentinel's embedded newline (doubt review,
+    round 3) already makes an exact collision structurally impossible — no
+    JS string literal can contain a raw newline — so this checks the
+    near-miss case stays a distinct, independently-tracked entry."""
+    before = ("const c = 'c';\nit(c, () => { expect(9).toBe(9); });\n"
+              "it('<dynamically-named tests>', () => { expect(1).toBe(1); expect(2).toBe(2); });\n")
+    after = ("const c = 'c';\nit(c, () => { expect(9).toBe(9); });\n"
+             "it('<dynamically-named tests>', () => { expect(1).toBe(1); });\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+    assert any("<dynamically-named tests>" in f.subject and "\n" not in f.subject
+               for f in findings)
+
+
+def test_js_duplicate_literal_test_names_are_pooled_not_ordinal_keyed():
+    """Two `it('works', ...)` calls sharing one literal title — ordinary
+    Jest/Vitest style across different `describe` blocks — used to be keyed
+    `works` / `works#2` by scan order. A decoy inserted earlier in the diff
+    could reoccupy the `works` ordinal and launder a real loss in the shifted
+    test into a comparison against unrelated content (doubt review, round 4;
+    the identical exposure round 2 already fixed for dynamic names). Pooling
+    every same-named test together, the same way, makes this order-
+    independent: the aggregate assertion count still drops when one is
+    genuinely removed."""
+    before = (
+        "describe('A', () => { it('works', () => { expect(1).toBe(1); expect(2).toBe(2); }); });\n"
+        "describe('B', () => { it('works', () => { expect(3).toBe(3); }); });\n"
+    )
+    after = (
+        "describe('A', () => { it('works', () => { expect(1).toBe(1); }); });\n"
+        "describe('B', () => { it('works', () => { expect(3).toBe(3); }); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
+def test_js_a_decoy_reusing_a_literal_test_name_softens_but_does_not_hide_a_real_loss():
+    """The round-4 PoC: a decoy `describe('C', ...)` reusing title `'works'`
+    is inserted BEFORE the test that actually loses an assertion. Under the
+    old ordinal keying this fully hid the loss (`works` compared decoy-vs-
+    original-A, `works#2` compared old-A-content vs B, the real A-vs-A
+    comparison never happened). Pooling makes it order-independent: with
+    DIFFERENT decoy assertion text (the ordinary case), the real loss still
+    surfaces, at minimum as a reported `assertion_changed`."""
+    before = (
+        "describe('A', () => { it('works', () => { expect(1).toBe(1); expect(2).toBe(2); }); });\n"
+        "describe('B', () => { it('works', () => { expect(3).toBe(3); }); });\n"
+    )
+    after = (
+        "describe('C', () => { it('works', () => { expect(9).toBe(9); expect(8).toBe(8); }); });\n"
+        "describe('A', () => { it('works', () => { expect(1).toBe(1); }); });\n"
+        "describe('B', () => { it('works', () => { expect(3).toBe(3); }); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert findings != []
+
+
+def test_js_a_new_skip_on_one_pooled_instance_is_caught_even_if_another_was_already_skipped():
+    """Pooling marks as a plain set (round 4) made a genuinely new `.skip` on
+    one same-named test invisible whenever ANOTHER pooled instance already
+    carried `skip` before the change — no reordering or decoy needed, just an
+    ordinary pre-existing skipped duplicate-named test elsewhere in the file
+    (doubt review, round 5). Marks are now a multiset, keyed on occurrence
+    COUNT increasing, the same "quantity, not presence" floor assertions
+    already get."""
+    before = "it('works', () => { expect(1).toBe(1); });\nit.skip('works', () => { expect(2).toBe(2); });\n"
+    after = "it.skip('works', () => { expect(1).toBe(1); });\nit.skip('works', () => { expect(2).toBe(2); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" in _kinds(findings, blocking=True)
+
+
+def test_js_removing_an_empty_skip_stub_while_skipping_its_real_sibling_is_not_a_silent_clear():
+    """The round-6 PoC: an empty-bodied, already-skipped `it.skip('works', () => {})`
+    placeholder is removed in the SAME edit that newly `.skip`'s a real,
+    assertion-bearing `it('works', ...)` sibling. The "skip" mark's pooled
+    occurrence count stays flat (1 before, 1 after — it just relocated), and
+    the removed stub contributed zero assertions, so neither the mark-count
+    nor the assertion-count check sees any change: `verdict()` came out
+    `clear` (doubt review, round 6). Tracking pooled instance count and
+    reporting a decrease turns this into a `review` verdict instead."""
+    before = "it('works', () => { expect(1).toBe(1); });\nit.skip('works', () => {});\n"
+    after = "it.skip('works', () => { expect(1).toBe(1); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert findings != []
+    assert aw.verdict(findings) != "clear"
+    assert "pooled_test_instance_lost" in _kinds(findings, blocking=False)
+
+
+def test_js_a_skip_swap_between_two_surviving_pooled_instances_is_caught_by_exact_content_match():
+    """The round-7 PoC: TWO same-titled tests both survive (`instance_count`
+    unchanged), and their assertion bodies are untouched — only WHICH
+    physical instance carries `.skip` is swapped. The pool's aggregate
+    assertion multiset is identical and the aggregate skip-mark count is
+    identical (1 before, 1 after — it just relocated), so `instance_count`
+    and the aggregate mark-count check both see no change — but because the
+    two instances have distinct, non-colliding assertion content, an exact
+    content bijection recovers which physical instance gained the skip
+    (doubt review, round 8; `_relocated_mark_findings`)."""
+    before = (
+        "it('works', () => { expect(1).toBe(1); });\n"
+        "it.skip('works', () => { expect(2).toBe(2); });\n"
+    )
+    after = (
+        "it.skip('works', () => { expect(1).toBe(1); });\n"
+        "it('works', () => { expect(2).toBe(2); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" in _kinds(findings, blocking=True)
+
+
+def test_js_a_skip_swap_is_still_blocked_alongside_an_unrelated_conserved_decoy_pair():
+    """Doubt review, round 9 then round 11: two unrelated, mutually-identical
+    decoy instances elsewhere in the pool (ordinary boilerplate duplication)
+    are PRESENT WITH THE SAME COUNT before and after — untouched, they add no
+    new text and erase none, so they cannot supply round 10's coincidental-
+    collision material. `full_bijection` is Counter equality, not "every
+    count is 1", so this conserved duplicate does not downgrade the swap's
+    own genuinely unambiguous match: it still blocks."""
+    before = (
+        "it('works', () => { expect(1).toBe(1); });\n"
+        "it.skip('works', () => { expect(2).toBe(2); });\n"
+        "it('works', () => { expect(3).toBe(3); });\n"
+        "it('works', () => { expect(3).toBe(3); });\n"
+    )
+    after = (
+        "it.skip('works', () => { expect(1).toBe(1); });\n"
+        "it('works', () => { expect(2).toBe(2); });\n"
+        "it('works', () => { expect(3).toBe(3); });\n"
+        "it('works', () => { expect(3).toBe(3); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" in _kinds(findings, blocking=True)
+    assert aw.verdict(findings) != "clear"
+
+
+def test_js_a_skip_swap_is_reported_not_blocked_alongside_an_unrelated_sibling_content_edit():
+    """Doubt review, round 9 then round 10: an ORDINARY, unrelated edit to a
+    completely different same-titled sibling (a routine value fix, no
+    ambiguity of its own) means the pool is not a full bijection, so the
+    swap's own otherwise-clean key match is reported rather than blocked —
+    the sibling's edit means a coincidental text collision can't be ruled
+    out (round 10)."""
+    before = (
+        "it('works', () => { expect(1).toBe(1); });\n"
+        "it.skip('works', () => { expect(2).toBe(2); });\n"
+        "it('works', () => { expect(3).toBe(3); });\n"
+    )
+    after = (
+        "it.skip('works', () => { expect(1).toBe(1); });\n"
+        "it('works', () => { expect(2).toBe(2); });\n"
+        "it('works', () => { expect(4).toBe(4); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" not in _kinds(findings, blocking=True)
+    assert "pooled_mark_possibly_relocated" in _kinds(findings, blocking=False)
+
+
+def test_js_a_coincidental_content_collision_across_an_unrelated_edit_is_not_blocked():
+    """Doubt review, round 10: the exact false-positive a full-pool-bijection
+    requirement exists to prevent. `B`'s NEW text happens to equal `A`'s OLD
+    text (a coincidence, not the same instance persisting), while `A` is
+    independently rewritten to something else entirely. A per-key-only match
+    would misread the coincidentally-matching key as "this instance gained a
+    skip" and BLOCK a diff that introduced no real weakening at all — this
+    file's own stated design blocks only unambiguous loss, so this must be at
+    most reported, never blocked."""
+    before = (
+        "it('works', () => { expect(status).toBe(200); });\n"
+        "it.skip('works', () => { expect(other).toBe(1); });\n"
+    )
+    after = (
+        "it('works', () => { expect(newThing).toBe(42); });\n"
+        "it.skip('works', () => { expect(status).toBe(200); });\n"
+    )
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "skip_added" not in _kinds(findings, blocking=True)
+
+
+def test_js_two_identically_asserted_instances_swapping_skip_still_defeats_the_bijection():
+    """Named, honest residual limit (doubt review, round 8): the exact-
+    content matching that closes the round-7 gap only works when the two
+    instances' assertion content is DISTINGUISHABLE. If both instances assert
+    the identical thing (realistic for boilerplate-heavy table-driven tests),
+    that content key occurs twice on each side, so `_relocated_mark_findings`
+    skips it (no unique key to hang the comparison on) — the same
+    content-collision residual round 3 already named, not a new one."""
+    before = (
+        "it('works', () => { expect(1).toBe(1); });\n"
+        "it.skip('works', () => { expect(1).toBe(1); });\n"
+    )
+    after = (
+        "it.skip('works', () => { expect(1).toBe(1); });\n"
+        "it('works', () => { expect(1).toBe(1); });\n"
+    )
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_a_regex_literal_with_a_lone_bracket_fails_closed_not_silently():
+    """The bracket scanner has no notion of a JS regex literal, so a lone
+    unmatched bracket character inside one desyncs it. Documented stated
+    limit: this fails in the safe direction (a spurious block), not by
+    silently missing a real change (doubt review)."""
+    before = "it('a', () => { expect(x).toMatch(/\\(/); expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect(x).toMatch(/\\(/); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_a_python_test_renamed_to_a_js_test_path_is_not_flagged_as_removed():
+    """Cross-language rename: both ends are still test-collected — this is a
+    stated limit (content isn't re-diffed across languages), not a removal."""
+    findings = aw.detect_weakening([
+        _jschange("def test_a():\n    assert 1\n",
+                  "it('a', () => { expect(1).toBe(1); });\n",
+                  status="R", path=JS_TEST_PATH, old_path="tests/test_thing.py")
+    ])
+    assert "test_removed_by_rename" not in _kinds(findings, blocking=True)

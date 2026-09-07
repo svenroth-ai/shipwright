@@ -174,12 +174,49 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     if result == "review":
-        print(
-            "NOTE: an assertion's expectation changed. That is allowed — it is "
-            "the commonest honest repair — but the pull request must say why "
-            "the NEW value is the truth.",
-            file=sys.stderr,
+        # Kind-aware: a "review" verdict can come from more than one non-
+        # blocking finding kind, and a message hardcoded to just one of them
+        # misdescribes the mechanism for every other kind, weakening the
+        # "reviewer must say why" discipline the whole non-blocking-finding
+        # design depends on (doubt review, round 7).
+        review_kinds = {f.kind for f in findings if not f.blocking}
+        review_notes = {
+            "assertion_changed": (
+                "an assertion's expectation changed. That is allowed — it is "
+                "the commonest honest repair — but the pull request must say "
+                "why the NEW value is the truth."
+            ),
+            "pooled_test_instance_lost": (
+                "a JS/TS test sharing its name (or dynamic identity) with "
+                "another test in the same file disappeared while a sibling "
+                "with that identity survived. Assertion and mark counts "
+                "alone cannot rule out that its coverage or skip state moved "
+                "onto the survivor — the pull request must say what "
+                "actually happened to it."
+            ),
+            "pooled_mark_possibly_relocated": (
+                "a JS/TS test sharing its name (or dynamic identity) with "
+                "another test in the same file appears to have gained a "
+                "skip/xfail mark, but another part of the same pool changed "
+                "too — this could be the same instance persisting, or an "
+                "unrelated coincidental text match. The pull request must "
+                "say which."
+            ),
+        }
+        # Every recognized kind present gets its own note; an unrecognized
+        # kind (a future addition this file hasn't been taught about yet)
+        # falls back to a generic one instead of going undescribed — this
+        # is per-KIND, not "only if nothing else matched", so a novel kind
+        # is never silently dropped just because it co-occurs with one this
+        # file already knows (doubt review, round 7).
+        notes = [review_notes[k] for k in sorted(review_kinds) if k in review_notes]
+        notes.extend(
+            "a non-blocking finding was reported. See the findings above "
+            "for what changed and why it needs a human read, not a "
+            "mechanical one."
+            for k in sorted(review_kinds) if k not in review_notes
         )
+        print("NOTE: " + " ".join(notes), file=sys.stderr)
     return 0
 
 
