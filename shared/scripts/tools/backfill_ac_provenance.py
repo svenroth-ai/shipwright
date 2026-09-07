@@ -68,6 +68,7 @@ if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
 from _backfill_ac_provenance_apply import apply_upgrades, validate_applied  # noqa: E402
+from _backfill_ac_provenance_rollback import apply_with_rollback  # noqa: E402
 from verifiers.git_helpers import _run_git  # noqa: E402
 
 _DEFAULT_SPEC = Path(".shipwright/planning") / "01-adopted" / "spec.md"
@@ -252,45 +253,15 @@ def main(argv: list[str] | None = None) -> int:
     report = derive(project_root, spec_path)
     out: dict = {"derive": report}
     if args.write:
-        # Snapshot every candidate file BEFORE writing (external plan review,
-        # P3.4, glm low / external code review, P3.4, openai medium): if the
-        # post-write validation below finds an orphan tag, every file this run
-        # touched is restored byte-for-byte rather than leaving a half-applied
-        # tree behind a non-zero exit.
-        originals: dict[Path, bytes] = {}
-        for cand in report["candidates"]:
-            if cand.get("status") != "candidate":
-                continue
-            for rel in cand.get("test_files", []):
-                abs_path = project_root / rel
-                if abs_path.is_file():
-                    originals[abs_path] = abs_path.read_bytes()
-        try:
-            apply_result = apply_upgrades(project_root, report)
-        except OSError as exc:
-            # Tier-3 CI-gate re-review (P3.4 high): an I/O failure partway
-            # through apply_upgrades's per-file writes previously propagated
-            # straight out of main(), leaving every file written before the
-            # failure modified with no rollback. Restore the same snapshot
-            # the orphan path below uses; there is no partial `apply_result`.
-            for abs_path, content in originals.items():
-                abs_path.write_bytes(content)
-            out["apply"] = {"write_error": str(exc), "rolled_back": True}
+        # Snapshot-before-write + rollback-on-failure lives in
+        # _backfill_ac_provenance_rollback.py (split at the 300-LOC
+        # threshold) -- covers an OSError mid-batch, a post-write orphan tag,
+        # and a silently-reported write failure for a sibling candidate.
+        out["apply"], rc = apply_with_rollback(project_root, report, spec_path,
+                                                apply_upgrades, validate_applied)
+        if rc:
             print(json.dumps(out, indent=2, ensure_ascii=False))
-            return 1
-        out["apply"] = apply_result
-        orphans = validate_applied(project_root, apply_result, spec_path)
-        # A write attempted for one candidate can fail after a SIBLING
-        # candidate's upgrade already landed on disk in the same batch (Tier-3
-        # CI-gate re-review, P3.4 high) -- roll back that too, same snapshot.
-        if orphans or apply_result.get("write_failures_occurred"):
-            for abs_path, content in originals.items():
-                abs_path.write_bytes(content)
-            if orphans:
-                out["apply"]["orphan_tags_written"] = orphans
-            out["apply"]["rolled_back"] = True
-            print(json.dumps(out, indent=2, ensure_ascii=False))
-            return 1
+            return rc
     print(json.dumps(out, indent=2, ensure_ascii=False))
     return 0
 

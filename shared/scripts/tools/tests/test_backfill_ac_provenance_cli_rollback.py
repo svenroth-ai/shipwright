@@ -11,8 +11,11 @@ apply/validate, status accounting) stay in the sibling file.
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 from pathlib import Path
+
+import pytest
 
 _TOOLS = Path(__file__).resolve().parents[1]
 if str(_TOOLS) not in sys.path:
@@ -112,6 +115,56 @@ def test_main_rolls_back_a_successful_bare_tag_upgrade_when_a_sibling_insertion_
 
     assert rc == 1
     assert (tmp_path / rel).read_text(encoding="utf-8") == _BARE_TAGGED  # rolled back, not left applied
+
+
+def test_apply_with_rollback_never_reads_or_writes_through_an_escaping_symlink(tmp_path, monkeypatch):
+    """Tier-3 CI-gate re-review (P3.4 high): the snapshot/restore pair
+    previously bypassed the T4 containment guard entirely -- ``write_bytes``
+    on restore FOLLOWS a symlink, so an escaping candidate's external target
+    could be rewritten purely by an UNRELATED sibling's rollback. A symlinked
+    candidate alongside a sibling whose upgrade gets rolled back must leave
+    the symlink's real external target byte-for-byte untouched."""
+    outside_target = tmp_path.parent / "outside_project_root_target.py"
+    outside_content = "def test_it():\n    assert True\n"
+    outside_target.write_text(outside_content, encoding="utf-8")
+
+    rel_link, rel_b = "tests/test_link.py", "tests/test_bare.py"
+    (tmp_path / "tests").mkdir()
+    link = tmp_path / rel_link
+    try:
+        os.symlink(outside_target, link)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+    (tmp_path / rel_b).write_text(_BARE_TAGGED, encoding="utf-8")
+    spec = tmp_path / "spec.md"
+    spec.write_text(_MINTED_SPEC, encoding="utf-8")
+
+    fake_report = {"candidates": [
+        _candidate("FR-01.01", "AC01", [rel_link]),
+        _candidate("FR-01.01", "AC01", [rel_b]),
+    ]}
+    monkeypatch.setattr(mod, "_is_shallow_clone", lambda *_: False)
+    monkeypatch.setattr(mod, "derive", lambda *_a, **_k: fake_report)
+
+    def fake_apply_upgrades(project_root, report):
+        # The symlinked candidate is never touched here either -- only the
+        # normal sibling's upgrade lands, then a write_failure is reported.
+        (project_root / rel_b).write_text(
+            _BARE_TAGGED.replace('covers("FR-01.01")', 'covers("FR-01.01/AC01")'), encoding="utf-8")
+        return {
+            "upgraded_bare_tags": [{"file": rel_b, "fr_id": "FR-01.01", "ac_id": "AC01",
+                                     "slug": "x", "commit": "deadbeef", "tags_upgraded": 1}],
+            "inserted_new_tags": [], "skipped": [],
+            "tags_upgraded_total": 1, "tags_inserted_total": 0,
+            "write_failures_occurred": True,
+        }
+    monkeypatch.setattr(mod, "apply_upgrades", fake_apply_upgrades)
+
+    rc = mod.main(["--project-root", str(tmp_path), "--spec-file", str(spec), "--write"])
+
+    assert rc == 1
+    assert (tmp_path / rel_b).read_text(encoding="utf-8") == _BARE_TAGGED  # rolled back
+    assert outside_target.read_text(encoding="utf-8") == outside_content   # external target NEVER touched
 
 
 def test_main_rolls_back_every_touched_file_when_a_write_fails_mid_batch(tmp_path, monkeypatch):

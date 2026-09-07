@@ -118,10 +118,10 @@ revise both — run over the merge-base diff)
 | D5 | low | The committed coverage-report matches the tree exactly | accepted-and-fixed — two rows corrected for the two post-tagging bloat-cap splits (`test_completion_writers.py`, `test_silent_revert.py`); see `coverage-report.md` |
 
 ## Tier-3 CI-Gate Findings (required "PR Review" check, openai/gpt-5.6-luna,
-verdict block — six re-review rounds of the merge-commit diff, the first
+verdict block — seven re-review rounds of the merge-commit diff, the first
 after the doubt-review fix commit fell behind `origin/main` and had to be
-refreshed via `ensure_current.py`, T2/T3/T4/T6/T7 each fixed and re-pushed in
-turn, T5 disputed with a reproduction rather than fixed)
+refreshed via `ensure_current.py`, T2/T3/T4/T6/T7/T8 each fixed and re-pushed
+in turn, T5 disputed with a reproduction rather than fixed)
 
 | # | Severity | Finding (short) | Disposition |
 |---|---|---|---|
@@ -132,6 +132,7 @@ turn, T5 disputed with a reproduction rather than fixed)
 | T5 | high (disputed — false positive) | `_upgrade_bare_tags` allegedly replaces only the OPENING quote of a single-quoted `covers('FR-01.01')` bare tag, leaving the original closing quote behind and emitting invalid Python (`covers("FR-01.01/AC01')`) | disputed-and-not-fixed — reproduced directly: `_covers_pattern`'s regex captures the opening quote AND backreferences it (`\1`) to require the SAME character as the closing delimiter, so the matched span always spans the ENTIRE quoted literal (both delimiters), not just the opening one; the hardcoded `covers("{fr_id}/{ac_id}"` replacement therefore replaces the whole literal in one span and always emits valid, consistently double-quoted syntax. Verified by directly invoking `_upgrade_bare_tags` on a single-quoted fixture and asserting `ast.parse` on the rewritten file does not raise — it does not. Added the requested regression test anyway (proves the gate wrong going forward); no production code changed, since none is warranted for a claim that does not reproduce |
 | T6 | high | `apply_upgrades` writes each bare-tag upgrade immediately (`abs_path.write_bytes(...)`) while iterating candidates, uncaught — an I/O failure partway through a multi-file batch (disk full, permission error, a file made read-only mid-run) previously propagated straight out of `main()`, so the existing pre-write snapshot/restore (D3's own safety net, built for the ORPHAN-tag case) never ran and every file already written before the failure stayed modified with no recovery | accepted-and-fixed — `main()`'s call to `apply_upgrades` is now wrapped in `try/except OSError`, restoring every file in the same pre-write snapshot the orphan-rollback path already uses and returning `rc=1` with `{"write_error": ..., "rolled_back": True}`. Regression test: a two-file batch where the SECOND file's write raises `OSError` — the FIRST file (already written) is confirmed restored to its original content, not left half-applied. Advisory (non-blocking) follow-up from the same review round, tracked rather than fixed: multiline/commented `@pytest.mark.covers(...)` decorators are invisible to the current single-line-regex ownership check (`_DECORATOR_LINE_RE`) — a real but pre-existing conservatism (such a tag is silently treated as "no bare tag here" rather than mis-parsed), not a regression this fix introduces; reworking the ownership check to a full AST/decorator-span parse is scope creep against a one-shot backfill unit (`trg-ce51177e`'s sibling — same "next unit that touches this module" disposition as D2) |
 | T7 | high | `apply_writes` can return a `write_failures` entry for an insertion candidate (e.g. a TOCTOU race — `apply_upgrades` already read the file successfully once itself before adding it to the insert batch, `apply_writes` re-reads it a second time at the end) AFTER a SIBLING candidate's bare-tag upgrade elsewhere in the same batch already succeeded and was written directly to disk; `main()` folded `write_failures` into the ordinary `skipped` list and still returned `rc=0` — a partial application reported as an unqualified success, with the sibling upgrade never rolled back | accepted-and-fixed, narrowly scoped — `apply_upgrades` now also returns `write_failures_occurred: bool`, kept DISTINCT from the pre-existing `skipped` reasons (`file_absent_at_head`, `ambiguous_*`, etc. — deliberate, by-design non-writes, never treated as failures; rolling those back too would regress the tool's own documented best-effort-per-file design). `main()` now rolls back on `orphans OR write_failures_occurred`, sharing the same pre-write snapshot both branches already used. Regression test: `main()` with a monkeypatched `apply_upgrades` that writes one real bare-tag upgrade to disk and then reports `write_failures_occurred=True` — the already-written file is confirmed restored to its original content. This round's edits crossed the repo's 300-LOC bloat-gate cap on three files; cleared by splitting `main()`'s three snapshot/restore tests (orphan, mid-batch OSError, silent write-failure) out of `test_backfill_ac_provenance_cli.py` into a new `test_backfill_ac_provenance_cli_rollback.py` sibling (same precedent as that file's own `_git.py`/`_apply_skips.py` splits) and tightening two in-code comments, rather than filing an exception |
+| T8 | high | `main()`'s own snapshot-before-write / restore-on-failure pair (T6's and T7's safety net) bypassed the T4 containment guard entirely — the snapshot loop read every candidate via `abs_path.is_file()` with no `is_contained` check, and the restore loop's `abs_path.write_bytes(content)` FOLLOWS a symlink, so a committed symlink candidate could get its EXTERNAL target rewritten purely by an unrelated sibling's rollback (an orphan or a write-failure elsewhere in the same batch) — the exact vulnerability class T4 closed, reopened in a code path T4 never touched | accepted-and-fixed — every snapshot read and every restore write now goes through `is_contained(project_root, abs_path)` first, skipping a non-contained path in both directions. The fix also crossed the same 300-LOC bloat-gate cap again (this file keeps growing one Tier-3 finding at a time); cleared by extracting the whole snapshot/apply/rollback orchestration out of `main()` into a new `_backfill_ac_provenance_rollback.py` module (`apply_with_rollback`), leaving `main()` a thin CLI shell — same "split, not exception" precedent as T7. Regression test: a symlinked candidate alongside a sibling whose upgrade is rolled back — the symlink's real external target is confirmed byte-for-byte unchanged after the run |
 
 T1/T2/T3 are mechanism-level fixes to code this unit itself introduced (not
 the frozen shared `backfill_scan.py`/`fr_tag_grammar.py` engines, which have
@@ -146,20 +147,22 @@ editing it (neither is "frozen" the way `fr_tag_grammar.py` is).
 ## Consequences
 
 The monorepo's AC-scoped coverage is no longer zero, with an honest,
-conservative, and now bug-fixed derivation trail; eight real correctness/security
+conservative, and now bug-fixed derivation trail; nine real correctness/security
 bugs (cross-FR slug reuse, whole-file regex over-substitution, per-file
 mis-attribution inside a group-level-verified mechanical batch, that same
 over-substitution mechanism's general form in both the upgrade AND the
-insertion write path, a symlink path-traversal write, an uncaught mid-batch
-write failure, and a SILENTLY-succeeding mid-batch write failure — both
-leaving a partially-applied tree, one via an exception, one via a normal
-return) were found and fixed — two by this unit's own review cascade before
+insertion write path, a symlink path-traversal write in the WRITER, an
+uncaught mid-batch write failure, a SILENTLY-succeeding mid-batch write
+failure, and that SAME symlink path-traversal class reopened in `main()`'s
+own snapshot/restore pair — a code path the first symlink fix never
+touched) were found and fixed — two by this unit's own review cascade before
 shipping, one (D1) by the orchestrator's Stage-3 doubt-review after
-merge-base review, five (T2, T3, T4, T6, T7) by the required Tier-3 CI-gate
-re-review of the merge commit across six separate re-review rounds (one of
-the six, T5, was a disputed false positive verified NOT to reproduce and
-left unfixed) — plus a metadata bug (epoch-zero timestamp) in this unit's own
-regen step and a latent Windows newline-corruption bug (D4) in an unexercised
+merge-base review, six (T2, T3, T4, T6, T7, T8) by the required Tier-3
+CI-gate re-review of the merge commit across seven separate re-review rounds
+(one of the seven, T5, was a disputed false positive verified NOT to
+reproduce and left unfixed) — plus a metadata bug (epoch-zero timestamp) in
+this unit's own regen step and a latent Windows newline-corruption bug (D4)
+in an unexercised
 code path. D2 remains an
 acknowledged, currently-latent risk left tracked rather than fixed, in shared
 `fr_criteria.py` infrastructure this unit does not own (`trg-ce51177e`; fixing
