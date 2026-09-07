@@ -93,16 +93,15 @@
         "evidence": "pre-existing + updated check_repair_safety.py review-message tests re-run green"
       },
       {
-        "behavior": "Two content-IDENTICAL pooled instances swapping a skip mark between them is a known, accepted residual (false negative, not a false block)",
-        "disposition": "untestable",
-        "reason_code": "known-limitation-documented",
-        "reason": "irreducible without true AST identity tracking (a regex/bracket-balancing scanner cannot distinguish two byte-identical call sites); documented as an accepted residual in the module docstring and the ADR, same class as the file's original Python-only design's accepted residual"
+        "behavior": "Two content-IDENTICAL pooled instances swapping a skip mark between them is a known, accepted residual (false negative, not a false block) — the scanner does not catch it, and a regression test pins that it does not",
+        "disposition": "tested",
+        "evidence": "test_js_two_identically_asserted_instances_swapping_skip_still_defeats_the_bijection PASSED (asserts the residual returns no finding, documenting the accepted limitation rather than leaving it unverified)"
       }
     ],
     "counts": {
-      "testable": 16,
-      "tested": 16,
-      "untestable": 1,
+      "testable": 17,
+      "tested": 17,
+      "untestable": 0,
       "untested_testable": 0
     }
   },

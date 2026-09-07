@@ -114,11 +114,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-07T00:50:42.995773+00:00",
+      "completed_at": "2026-09-07T01:26:20.687421+00:00",
       "disposition": null,
-      "recorded_by": "claude",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
     },
     "plan_internal": {
       "review_type": "plan_internal",
