@@ -153,6 +153,7 @@ import ast
 import bisect
 import re
 from collections import Counter
+from collections.abc import Sequence
 from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
 
@@ -312,12 +313,32 @@ _JS_REGEX_CONTEXT_KEYWORDS = frozenset({
 _JS_CONTROL_PAREN_KEYWORDS = frozenset({"if", "while", "for"})
 
 
-def _js_word_before(source: str, idx: int) -> str:
-    """The word-shaped token immediately before `idx`, skipping whitespace.
-    Empty if there is none (start of file, or a non-word character there)."""
+def _js_word_before(
+    source: str, idx: int, comment_spans: Sequence[tuple[int, int]] = (),
+) -> str:
+    """The word-shaped token immediately before `idx`, skipping whitespace
+    AND any of `comment_spans` that ends exactly where the skip currently
+    stands — so `if /* c */ (enabled) /\\[/.test(v);` still finds `if`
+    (external Tier-3 review, PR #685, tenth round: whitespace-only skip
+    left a comment between the keyword and its `(` invisible, so this exact
+    valid-JS shape produced a false blocking `unparseable` the same way
+    round seven's fix did for the no-comment case). `comment_spans` only
+    ever holds `//`/`/* */` comments — a preceding STRING/regex span must
+    NOT be skipped the same way, since that span IS a real value token, not
+    filler between a keyword and its parenthesis.
+    """
     j = idx - 1
-    while j >= 0 and source[j] in " \t\r\n":
-        j -= 1
+    while True:
+        while j >= 0 and source[j] in " \t\r\n":
+            j -= 1
+        moved = False
+        for start, end in comment_spans:
+            if end - 1 == j:
+                j = start - 1
+                moved = True
+                break
+        if not moved:
+            break
     k = j
     while k >= 0 and (source[k].isalnum() or source[k] in "_$"):
         k -= 1
@@ -421,6 +442,7 @@ def _js_bracket_match(
     stack: list[tuple[str, int, bool]] = []
     match: dict[int, int] = {}
     non_code: list[tuple[int, int]] = []
+    comment_spans: list[tuple[int, int]] = []
     control_closes: set[int] = set()
     i, n = 0, len(source)
     while i < n:
@@ -448,6 +470,7 @@ def _js_bracket_match(
             j = source.find("\n", i)
             i = n if j == -1 else j
             non_code.append((start, i))
+            comment_spans.append((start, i))
             continue
         if c == "/" and source[i:i + 2] == "/*":
             start = i
@@ -456,6 +479,7 @@ def _js_bracket_match(
                 return None  # unterminated block comment -- fail closed, same reasoning as above
             i = j + 2
             non_code.append((start, i))
+            comment_spans.append((start, i))
             continue
         if c == "/" and _js_slash_starts_regex(source, i, control_closes):
             end = _js_regex_literal_end(source, i)
@@ -467,7 +491,9 @@ def _js_bracket_match(
             # all; fall through and treat `/` as an ordinary, non-bracket
             # character (matches nothing below either way).
         if c in _JS_BRACKET_PAIRS:
-            is_control = c == "(" and _js_word_before(source, i) in _JS_CONTROL_PAREN_KEYWORDS
+            is_control = (
+                c == "(" and _js_word_before(source, i, comment_spans) in _JS_CONTROL_PAREN_KEYWORDS
+            )
             stack.append((c, i, is_control))
         elif c in _JS_BRACKET_CLOSERS:
             if not stack or stack[-1][0] != _JS_BRACKET_CLOSERS[c]:

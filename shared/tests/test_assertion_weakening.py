@@ -950,6 +950,54 @@ def test_js_division_right_after_a_grouping_paren_is_still_division():
     assert "assertions_removed" in kinds
 
 
+def test_js_a_comment_between_if_and_its_condition_paren_is_not_a_false_block():
+    """`if /* c */ (enabled) /\\[/.test(value);` -- a comment between the
+    keyword and its condition paren must not hide the keyword from
+    `_js_word_before`, or the regex right after the `)` misreads as division
+    and its escaped bracket corrupts bracket tracking (external Tier-3
+    review, PR #685, tenth round)."""
+    before = ("it('a', () => {\n"
+              "  if /* c */ (enabled) /\\[/.test(value);\n"
+              "  expect(1).toBe(1);\n"
+              "});\n")
+    after = ("it('a', () => {\n"
+             "  if /* c */ (enabled) /\\[/.test(value);\n"
+             "});\n")
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
+def test_js_a_comment_between_while_and_its_condition_paren_is_not_a_false_block():
+    """Same requirement as the `if` case above, for `while`."""
+    before = ("it('a', () => {\n"
+              "  while // c\n"
+              "  (enabled) /\\[/.test(value);\n"
+              "  expect(1).toBe(1);\n"
+              "});\n")
+    after = ("it('a', () => {\n"
+             "  while // c\n"
+             "  (enabled) /\\[/.test(value);\n"
+             "});\n")
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
+def test_js_a_comment_between_for_and_its_condition_paren_is_not_a_false_block():
+    """Same requirement as the `if` case above, for `for`."""
+    before = ("it('a', () => {\n"
+              "  for /* c */ (let i = 0; i < 1; i++) /\\[/.test(value);\n"
+              "  expect(1).toBe(1);\n"
+              "});\n")
+    after = ("it('a', () => {\n"
+             "  for /* c */ (let i = 0; i < 1; i++) /\\[/.test(value);\n"
+             "});\n")
+    kinds = _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True)
+    assert "unparseable" not in kinds
+    assert "assertions_removed" in kinds
+
+
 def test_js_a_character_class_containing_a_slash_does_not_end_the_regex_early():
     """`/[a/b]/` must not be misread as ending at the `/` inside the
     character class -- `_js_regex_literal_end` tracks `[`/`]` state so an
