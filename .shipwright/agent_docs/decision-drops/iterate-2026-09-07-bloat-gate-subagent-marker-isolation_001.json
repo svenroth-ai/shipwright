@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-07-bloat-gate-subagent-marker-isolation",
+  "date": "2026-09-07",
+  "section": "Iterate — bug: bloat-gate subagent marker isolation",
+  "title": "Per-(session, agent) bloat marker keying",
+  "context": "bloat_gate_on_stop.py and check_file_size.py keyed the per-session marker by session_id alone; a background subagent (Task tool) shares its spawner's session_id, so its in-flight oversize edit could block the spawning session's own Stop on a file it never touched.",
+  "decision": "Key the marker by (session_id, agent_id) via a new bloat_marker_key.py, using a collision-free ~XX hex-escape suffix when agent_id is present; unchanged when absent.",
+  "consequences": "Subagent and spawning session get isolated marker files; existing single-agent behavior is byte-identical. bloat_gate_on_stop.py is Stop-only, so subagent self-enforcement stays delegated to F0/F11's independent bloat_baseline.scan().",
+  "rationale": "agent_id is the only field distinguishing a subagent's hook call from its spawner's when they share session_id (live-payload-verified); marker isolation, not worktree-wide vs diff-scoped, was the actual defect.",
+  "rejected": "Making the subagent self-resolve its own oversize touches before yielding was rejected: its own F0/F11 finalization already independently enforces the ceiling, so isolation alone is sufficient without runner-side logic.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

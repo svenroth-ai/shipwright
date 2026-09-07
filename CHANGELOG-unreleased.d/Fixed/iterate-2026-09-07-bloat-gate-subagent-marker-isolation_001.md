@@ -1,0 +1,1 @@
+Bloat-gate Stop hook no longer blocks an orchestrator session's own turn completion on a background subagent's still in-flight, uncommitted oversize edit when they share a git worktree and session id.

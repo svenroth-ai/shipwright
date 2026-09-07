@@ -1,0 +1,10 @@
+{
+  "reviewer": "opus-plan-reviewer",
+  "severity": "low",
+  "findings": [
+    {"category": "completeness", "severity": "low", "finding": "200-char post-encoding truncation reintroduced collision risk", "suggestion": "remove cap or add boundary test", "resolution": "accepted-and-fixed: cap removed, boundary test added"},
+    {"category": "architecture", "severity": "low", "finding": "spec's Out-of-Scope overstated F0/F11 as marker-based safety net; it is an independent bloat_baseline.scan()", "suggestion": "correct wording; optional reaper follow-up", "resolution": "accepted-and-fixed: spec wording corrected, reaper documented as out-of-scope follow-up"},
+    {"category": "completeness", "severity": "low", "finding": "docs/hooks-and-pipeline.md Stop-row left describing pre-fix behavior, asymmetric with the updated PostToolUse row", "suggestion": "update for symmetry", "resolution": "accepted-and-fixed"}
+  ],
+  "summary": "The two already-accepted external-review fixes hold up under verification. Three additional low-severity gaps found and fixed: truncation collision risk removed, F0/F11 marker-reading claim corrected, doc row symmetry restored. None blocked merge."
+}

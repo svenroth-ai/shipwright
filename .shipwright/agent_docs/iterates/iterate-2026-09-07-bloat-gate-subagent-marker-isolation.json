@@ -1,0 +1,81 @@
+{
+  "run_id": "iterate-2026-09-07-bloat-gate-subagent-marker-isolation",
+  "date": "2026-09-07T18:53:48.664453Z",
+  "event_at": "2026-09-07T18:52:32.383226+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/bloat-gate-subagent-marker-isolation",
+  "spec": ".shipwright/planning/iterate/iterate-2026-09-07-bloat-gate-subagent-marker-isolation.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-07-bloat-gate-subagent-marker-isolation",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Subagent's marker write is keyed separately from the spawning session's own",
+        "disposition": "tested",
+        "evidence": "test_writer_keys_subagent_marker_separately_from_orchestrator PASSED"
+      },
+      {
+        "behavior": "Orchestrator's Stop does not block on a sibling subagent's in-flight marker (real writer + real gate compose, exact repro of the reported bug)",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_orchestrator_stop_ignores_inflight_subagent_marker PASSED (hardened post-external-review with a marker-existence precondition assertion)"
+      },
+      {
+        "behavior": "Subagent's own Stop-class event still sees/blocks on its own marker (defensive-correctness property; gate is Stop-only, never SubagentStop, in production)",
+        "disposition": "tested",
+        "evidence": "test_subagent_own_stop_still_sees_its_own_marker PASSED"
+      },
+      {
+        "behavior": "marker_key sanitizes filesystem-unsafe agent_id characters via a strict safe-character-class check",
+        "disposition": "tested",
+        "evidence": "test_marker_key_sanitizes_unsafe_agent_id_characters PASSED (strengthened post-external-review)"
+      },
+      {
+        "behavior": "Encoding is collision-free (bijection), not lossy character substitution",
+        "disposition": "tested",
+        "evidence": "test_marker_key_encoding_is_collision_free_not_lossy_substitution PASSED -- external review finding, fixed and pinned"
+      },
+      {
+        "behavior": "Whitespace-only agent_id treated as absent",
+        "disposition": "tested",
+        "evidence": "test_marker_key_whitespace_only_agent_id_treated_as_absent PASSED"
+      },
+      {
+        "behavior": "No collision past the removed 200-char truncation boundary",
+        "disposition": "tested",
+        "evidence": "test_marker_key_no_collision_past_prior_200_char_truncation_boundary PASSED -- internal plan review finding, fixed and pinned"
+      },
+      {
+        "behavior": "No-agent_id key matches prior session-only behavior exactly (AC #4 byte-identical)",
+        "disposition": "tested",
+        "evidence": "test_marker_key_no_agent_id_matches_prior_session_only_behavior PASSED; full pre-existing bloat-gate suite (211 tests across 13 files) re-run unmodified, all green"
+      },
+      {
+        "behavior": "Real Claude Code subagent PostToolUse payloads genuinely carry agent_id (not just per official docs)",
+        "disposition": "tested",
+        "evidence": "live payload capture 2026-09-07 (plugin-cache hook instrumentation, user-approved) -- agent_id + agent_type present on a real subagent call, absent on a real top-level call"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    },
+    "ledger_path": ".shipwright/planning/iterate/iterate-2026-09-07-bloat-gate-subagent-marker-isolation.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "framework hook-script bugfix with no startable web/dev-server/CLI surface of its own -- shared/tests (unit + real subprocess-level integration tests exercising the actual hook scripts) is the verification."
+  },
+  "declared_removals": []
+}

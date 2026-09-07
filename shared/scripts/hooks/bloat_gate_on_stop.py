@@ -11,6 +11,12 @@ Diagnostics route to stderr.
 
 Iron-Law / Red-Flags / Rationalization-Prevention block-body adapted from
 ``obra/superpowers`` verification-before-completion (MIT, © Jesse Vincent).
+
+Registered on ``Stop`` only, never ``SubagentStop`` — so a subagent's OWN
+oversize edit is not interactively gated here (by design: its own F0/F11
+finalization is the real backstop); this hook only stops a sibling
+subagent's in-flight marker from blocking the SPAWNING session's own Stop
+(see ``bloat_baseline.marker_key``; external review, 2026-09-07).
 """
 
 from __future__ import annotations
@@ -31,18 +37,12 @@ from lib.repo_root import main_repo_root_or  # noqa: E402
 
 
 def _session_id(payload: object = None) -> str:
-    """Per-session marker key. Prefer the hook stdin payload's ``session_id``
-    (the canonical id, same across PostToolUse + Stop of one session); fall back
-    to the ``SHIPWRIGHT_SESSION_ID`` env var, then ``"unknown"``. The env var is
-    NOT set in this Stop process, so env-only keying pooled every session into a
-    shared ``bloat_pending.unknown.json`` — one session's oversize file then
-    blocked another's Stop (fixed 2026-05-29)."""
-    if isinstance(payload, dict):
-        sid = payload.get("session_id")
-        if isinstance(sid, str) and sid.strip():
-            return sid.strip()
-    sid = (os.environ.get("SHIPWRIGHT_SESSION_ID") or "").strip()
-    return sid or "unknown"
+    """Per-(session, agent) marker key — see :func:`bloat_baseline.marker_key`
+    and this module's docstring for the ``agent_id``/``SubagentStop`` story."""
+    return _bb.marker_key(
+        payload if isinstance(payload, dict) else None,
+        os.environ.get("SHIPWRIGHT_SESSION_ID"),
+    )
 
 
 def _read_payload() -> dict:
