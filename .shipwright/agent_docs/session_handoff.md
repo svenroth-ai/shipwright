@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-06-fr-hygiene-touched-rows"
+run_id: "iterate-2026-09-07-bloat-gate-subagent-marker-isolation"
 phase: "iterate"
-reason: "iterate: fr-hygiene-touched-rows"
-timestamp: "2026-09-06T10:22:57.720561+00:00"
+reason: "iterate: bloat-gate subagent marker isolation"
+timestamp: "2026-09-07T18:52:32.383226+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-06 10:22:57 UTC
+> Auto-generated 2026-09-07 18:52:32 UTC
 
 ## Session Info
 
-- **Session ID**: 28f49677-63d2-4c13-8b2f-23650c338a96
-- **Timestamp**: 2026-09-06 10:22:57 UTC
-- **Reason**: iterate completion: iterate-2026-09-06-fr-hygiene-touched-rows
+- **Session ID**: cbb6ea59-7579-4cb2-ad36-22c85e4a8aaa
+- **Timestamp**: 2026-09-07 18:52:32 UTC
+- **Reason**: iterate completion: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-06-fr-hygiene-touched-rows
-- **Date**: 2026-09-06T10:25:13.027137Z
-- **Type**: feature
+- **Run ID**: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
+- **Date**: 2026-09-07T18:53:48.664453Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/fr-hygiene-touched-rows
-- **ADR**: iterate-2026-09-06-fr-hygiene-touched-rows
+- **Branch**: iterate/bloat-gate-subagent-marker-isolation
+- **ADR**: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-09-06-fr-hygiene-touched-rows.md
+- **Spec**: .shipwright/planning/iterate/iterate-2026-09-07-bloat-gate-subagent-marker-isolation.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fr-hygiene-touched-rows
-- **Run ID**: iterate-2026-09-06-fr-hygiene-touched-rows
-- **Spec**: .shipwright/planning/iterate/2026-09-06-fr-hygiene-touched-rows.md
+- **Branch**: iterate/bloat-gate-subagent-marker-isolation
+- **Run ID**: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
+- **Spec**: .shipwright/planning/iterate/iterate-2026-09-07-bloat-gate-subagent-marker-isolation.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-09-06T09:04:53))
+- **External Review Marker**: stale (predates spec (2026-09-07T12:31:12))
 - **Review Cascade**: complete
 
 ### Mandatory replay on Resume
@@ -53,8 +53,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fr-hygiene-touched-rows
-- **Last Commit**: 95e87264 feat(compliance): add diff-scoped FR-row hygiene gate + I7/I8 checks
+- **Branch**: iterate/bloat-gate-subagent-marker-isolation
+- **Last Commit**: 416eb7daa Merge remote-tracking branch 'origin/main' into iterate/bloat-gate-subagent-marker-isolation
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,17 +70,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-fe941a44 | work_completed | iterate (fr-hygiene-touched-rows: diff-scoped, non-dodgeable F11 gate for FR rows a run itself touches, plus I7 (criterion shape) and I8 (stale TBD age) Group I checks) | 2026-09-06 |
-| evt-a96caec2 | work_completed | iterate (iterate: fix Codex login-status probe misreporting availability) | 2026-09-04 |
-| evt-0cc48f04 | work_completed | iterate (Swap the Tier-3 PR-review CI gate's default model from GLM 5.3 to GPT-5.6 Luna after GLM was found to silently hang (no error, no timeout) on the shared ZDR-gated 2-reseller OpenRouter provider pool; Luna is outside that namespace and routes across 3 independent hosts instead. DeepSeek and GLM remain available as operator overrides.) | 2026-09-03 |
-| evt-7f745844 | work_completed | iterate (Fix a Windows-only silent-corruption bug where bash and native Python resolve a bare /tmp/<path> to two different physical files across the code-review pipeline and campaign-loop diff/units-list handoff) | 2026-09-04 |
-| evt-f3294af4 | work_completed | iterate (pr_review.py now logs a bounded decision excerpt unconditionally, not just on unknown-decision, so a legitimate block/approve/comment is never mistaken for a CI hang) | 2026-09-03 |
+| evt-1fd34813 | work_completed | iterate (F11 binding-completeness gate (P3.3): reject a behaviour-changed FR's binding when it names a lower test layer than its own executed-passing evidence proves; reconcile the evidence ledger's row numbering against spec.md's (E) bullets) | 2026-09-07 |
+| evt-9aa05ae6 | work_completed | iterate (AC-scoped @covers tag grammar + test-traceability manifest v4) | 2026-09-07 |
+| evt-82f2a2c5 | work_completed | iterate (Fix bloat-gate Stop hook blocking an orchestrator's own turn completion on a background subagent's in-flight, uncommitted oversize edit when they share a git worktree and session id.) | 2026-09-07 |
+| evt-ef91cff7 | work_completed | iterate (Fold sibling-worktree triage decisions into a main tree's own read) | 2026-09-07 |
+| evt-b186118f | work_completed | iterate (JS/TS-aware test-weakening detector for the main-repair safety gate) | 2026-09-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 571
-- **Last iterate**: feature — fr-hygiene-touched-rows: diff-scoped, non-dodgeable F11 gate for FR rows a run itself touches, plus I7 (criterion shape) and I8 (stale TBD age) Group I checks (2026-09-06)
+- **Total work events**: 580
+- **Last iterate**: feature — F11 binding-completeness gate (P3.3): reject a behaviour-changed FR's binding when it names a lower test layer than its own executed-passing evidence proves; reconcile the evidence ledger's row numbering against spec.md's (E) bullets (2026-09-07)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
