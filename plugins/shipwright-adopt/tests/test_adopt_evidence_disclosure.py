@@ -44,7 +44,7 @@ def step_h() -> str:
 # --- AC-4: the handover states the cadence and both refresh paths -------------
 
 
-@pytest.mark.covers("FR-01.13")
+@pytest.mark.covers("FR-01.13/AC08")
 def test_handoff_names_both_ways_to_refresh_the_evidence(step_h: str) -> None:
     assert "/shipwright-compliance --refresh-pr" in step_h, (
         "the on-demand half is the only path available between releases"
@@ -54,7 +54,7 @@ def test_handoff_names_both_ways_to_refresh_the_evidence(step_h: str) -> None:
     )
 
 
-@pytest.mark.covers("FR-01.13")
+@pytest.mark.covers("FR-01.13/AC08")
 def test_handoff_says_the_evidence_does_not_stay_current(step_h: str) -> None:
     """Naming the commands is not enough if nothing says why you would run them.
 
@@ -75,7 +75,7 @@ def test_handoff_says_the_evidence_does_not_stay_current(step_h: str) -> None:
 # --- the stamp step is wired, and its three outcomes are distinguished --------
 
 
-@pytest.mark.covers("FR-01.13")
+@pytest.mark.covers("FR-01.13/AC08")
 def test_step_h_stamps_before_committing_and_verifies_after(step_h: str) -> None:
     """All three anchors, in order — the COMMIT is the one that matters.
 
@@ -102,7 +102,7 @@ def test_step_h_stamps_before_committing_and_verifies_after(step_h: str) -> None
     )
 
 
-@pytest.mark.covers("FR-01.13")
+@pytest.mark.covers("FR-01.13/AC08")
 def test_step_h_stages_after_stamping(step_h: str) -> None:
     """The stamp writes the WORKTREE; the commit records the INDEX.
 
@@ -118,7 +118,7 @@ def test_step_h_stages_after_stamping(step_h: str) -> None:
     )
 
 
-@pytest.mark.covers("FR-01.13")
+@pytest.mark.covers("FR-01.13/AC08")
 def test_step_h_distinguishes_no_base_from_partial(step_h: str) -> None:
     """The two non-ok outcomes need opposite handling, so both must be named.
 
@@ -135,7 +135,7 @@ def test_step_h_distinguishes_no_base_from_partial(step_h: str) -> None:
 # --- AC-5: the fact outlives the banner --------------------------------------
 
 
-@pytest.mark.covers("FR-01.13")
+@pytest.mark.covers("FR-01.13/AC08")
 def test_generated_claude_md_carries_the_same_statement() -> None:
     """Read off the renderer's template, not a rendered fixture.
 

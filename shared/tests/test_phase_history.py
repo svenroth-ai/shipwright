@@ -16,6 +16,7 @@ Reading the RECORD (``latest_completion``) lives in
 """
 
 from __future__ import annotations
+import pytest
 
 import sys
 from datetime import datetime, timezone
@@ -40,6 +41,7 @@ def _at(text: str) -> datetime:
 
 # --- both real shapes ---------------------------------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_at_shape_pins_an_instant():
     """What every phase producer writes since this iterate."""
     when = entry_wall_time({"run_id": "r", "at": "2026-07-27T10:00:00+00:00"})
@@ -48,6 +50,7 @@ def test_the_at_shape_pins_an_instant():
                                 _at("2026-07-27T10:00:00+00:00"))
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_bare_date_pins_a_day_not_midnight():
     """The HIGH-1 defect, pinned. `changelog` entries written before this iterate
     carry only a date, and midnight is an instant the record never claimed."""
@@ -59,6 +62,7 @@ def test_a_bare_date_pins_a_day_not_midnight():
     assert when.latest < _at("2026-06-14T00:00:00+00:00")
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_full_timestamp_in_the_date_key_is_still_an_instant():
     """The iterate ledger stamps a full instant under `date`. The shape is read
     from the VALUE, never from which key carried it."""
@@ -67,6 +71,7 @@ def test_a_full_timestamp_in_the_date_key_is_still_an_instant():
     assert when is not None and when.earliest == when.latest
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_naive_timestamp_is_read_as_utc():
     when = entry_wall_time({"at": "2026-07-27T10:00:00"})
 
@@ -74,6 +79,7 @@ def test_a_naive_timestamp_is_read_as_utc():
     assert when.earliest.utcoffset() == timezone.utc.utcoffset(None)
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_at_wins_over_date_when_both_are_present():
     when = entry_wall_time({"at": "2026-07-27T10:00:00+00:00", "date": "2020-01-01"})
 
@@ -82,6 +88,7 @@ def test_at_wins_over_date_when_both_are_present():
 
 # --- event_at is the clock the marker can actually be compared to -------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_event_at_wins_over_every_other_key():
     """`at` is wall clock; `event_at` is the newest-event time, the same value
     the canon marker stamps. Only the second is comparable with the marker, so
@@ -96,6 +103,7 @@ def test_event_at_wins_over_every_other_key():
     assert when is not None and when.earliest == _at("2026-07-27T10:00:00+00:00")
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_anchor_never_falls_back_to_a_wall_clock_key():
     """The two accessors are deliberately NOT one "best time" function.
 
@@ -111,6 +119,7 @@ def test_the_anchor_never_falls_back_to_a_wall_clock_key():
     assert entry_anchor({"event_at": "2026-07-27T10:00:00+00:00"}) is not None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock():
     """It must NOT quietly borrow the `at` — that would be the cross-clock
     comparison, reached through a malformed record instead of a design error."""
@@ -120,6 +129,7 @@ def test_a_broken_event_at_is_no_anchor_even_beside_a_good_wall_clock():
     assert entry_wall_time(entry) is not None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_wall_clock_reader_takes_the_first_key_that_PARSES():
     """Not the first that EXISTS: chaining with `or` let a present-but-broken
     `at` void an entry carrying a perfectly good `date` — a stated-unknown where
@@ -131,16 +141,19 @@ def test_the_wall_clock_reader_takes_the_first_key_that_PARSES():
 
 # --- after() answers, or says it cannot ---------------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_instant_before_the_question_is_not_after():
     assert entry_anchor({"event_at": "2026-07-27T10:00:00+00:00"}).after(
         _at("2026-07-27T12:00:00+00:00")) is False
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_instant_after_the_question_is_after():
     assert entry_anchor({"event_at": "2026-07-27T12:00:00+00:00"}).after(
         _at("2026-07-27T10:00:00+00:00")) is True
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_exact_tie_is_not_after():
     """STRICT, and load-bearing. A completion recorded at the same anchor as the
     note was recorded by the canon block that WROTE the note — the marker and the
@@ -150,17 +163,20 @@ def test_an_exact_tie_is_not_after():
         _at("2026-07-27T10:00:00+00:00")) is False
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_day_that_ends_before_the_question_answers_false():
     """A bare date is not useless: across days it still settles the order."""
     assert entry_wall_time({"date": "2026-06-13"}).after(
         _at("2026-07-27T10:00:00+00:00")) is False
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_day_that_starts_after_the_question_answers_true():
     assert entry_wall_time({"date": "2026-07-28"}).after(
         _at("2026-07-27T10:00:00+00:00")) is True
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_question_inside_the_recorded_day_is_unanswerable():
     """The case midnight used to answer with total confidence."""
     assert entry_wall_time({"date": "2026-07-27"}).after(
@@ -169,13 +185,16 @@ def test_a_question_inside_the_recorded_day_is_unanswerable():
 
 # --- unusable input is None, never a guess ------------------------------------
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_unparseable_timestamp_is_none():
     assert entry_wall_time({"at": "not-a-date"}) is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_missing_timestamp_is_none():
     assert entry_wall_time({"run_id": "r"}) is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_non_string_timestamp_is_none():
     assert entry_wall_time({"at": 1753612800}) is None

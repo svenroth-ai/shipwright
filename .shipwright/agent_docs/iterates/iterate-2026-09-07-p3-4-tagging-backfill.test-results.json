@@ -1,0 +1,123 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
+    "date": "2026-09-07",
+    "unit": {
+      "status": "passed",
+      "passed": 17569,
+      "total": 17627
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "monorepo tooling change (a new AC-provenance backfill script + its own tests); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "footnote-slug uniqueness is computed DOCUMENT-WIDE, not per-FR, so a slug repeating across FRs is dropped everywhere",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_drops_a_slug_unique_per_fr_but_reused_across_frs PASSED"
+        },
+        {
+          "behavior": "a slug unique within one FR and absent elsewhere is kept",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_keeps_a_slug_unique_within_a_single_fr_and_absent_elsewhere PASSED"
+        },
+        {
+          "behavior": "a file claimed by two different (fr_id, ac_id) pairs is dropped from both, never arbitrarily resolved",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_backfill_ac_provenance_cli.py::test_a_file_claimed_by_two_different_acs_is_dropped_from_both PASSED"
+        },
+        {
+          "behavior": "an untagged test gets a new AC-scoped covers() tag inserted",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_inserts_a_new_ac_scoped_tag_on_an_untagged_test PASSED"
+        },
+        {
+          "behavior": "an existing bare FR-only covers() tag is widened to the derived AC, and only the real decorator line changes (never a lookalike string in a docstring/comment/assertion)",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_apply_skips.py::test_apply_upgrades_only_rewrites_the_real_decorator_never_lookalike_text PASSED"
+        },
+        {
+          "behavior": "a test already tagged for a different FR is never touched",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_never_touches_a_test_already_tagged_for_something_else PASSED"
+        },
+        {
+          "behavior": "re-running the write pass against its own output is a no-op (idempotent, no duplicate tags)",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_is_idempotent_on_rerun PASSED"
+        },
+        {
+          "behavior": "a post-write orphan tag (resolves to no minted AC) rolls back every file this run touched, byte-for-byte, before a non-zero exit",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli.py::test_main_rolls_back_every_touched_file_when_an_orphan_tag_is_written PASSED"
+        },
+        {
+          "behavior": "the git join (Run-ID trailer -> commit -> added test files) resolves against a real repo, including the exact-trailer-line match that rejects a prefix-slug false-positive",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli_git.py::test_commits_for_run_id_does_not_cross_match_a_prefix_slug PASSED"
+        },
+        {
+          "behavior": "derive()/main() end-to-end against a real 2-commit repo produces the exact candidate/no_commit_found/no_added_test_file_in_commit status split",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli_git.py::test_derive_end_to_end_against_a_real_repo PASSED"
+        },
+        {
+          "behavior": "a shallow clone is refused rather than silently under-reporting history",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_cli_git.py::test_main_refuses_a_shallow_clone PASSED"
+        },
+        {
+          "behavior": "a candidate file that is non-Python, absent at HEAD, or unreadable (invalid UTF-8) is skipped with a named reason, never silently dropped or crashed on",
+          "disposition": "tested",
+          "evidence": "test_backfill_ac_provenance_apply_skips.py::test_apply_upgrades_skips_a_non_python_candidate_file, ..._skips_a_file_absent_at_head, ..._skips_an_unreadable_file ALL PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
+    "commit": "263c9197e6428134ad4e97c55384bf5dad89cbc1",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

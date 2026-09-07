@@ -20,6 +20,7 @@ conflict resolved in favour of one side without reading the other.
 """
 
 from __future__ import annotations
+import pytest
 
 import subprocess
 import sys
@@ -76,6 +77,7 @@ def _main_gains(root: Path, text: str) -> None:
 
 # --- the pure detector --------------------------------------------------------
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_the_463_shape_is_caught(tmp_path):
     """The motivating case: the branch integrates main, resolves the conflict in
     favour of its own copy, and main's newer content disappears."""
@@ -92,6 +94,7 @@ def test_the_463_shape_is_caught(tmp_path):
     assert "THEIR DOCUMENTED BEHAVIOUR" in dropped[DOC]
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_clean_integration_drops_nothing(tmp_path):
     """The normal case: both sides' content survives the merge."""
     root = _repo(tmp_path)
@@ -107,6 +110,7 @@ def test_a_clean_integration_drops_nothing(tmp_path):
     assert dropped_lines(root, "main", "HEAD") == {}
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_branch_that_never_integrated_is_not_accused(tmp_path):
     """A branch that simply has not merged main yet is BEHIND, not reverting.
     Accusing it would fire on every branch the moment anything lands on main."""
@@ -118,6 +122,7 @@ def test_a_branch_that_never_integrated_is_not_accused(tmp_path):
     assert dropped_lines(root, "main", "HEAD") == {}
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_editing_a_line_that_existed_before_is_not_a_drop(tmp_path):
     """An edit to a line that predates the fork is nobody else's work."""
     root = _repo(tmp_path)
@@ -132,6 +137,7 @@ def test_editing_a_line_that_existed_before_is_not_a_drop(tmp_path):
     assert dropped_lines(root, "main", "HEAD") == {}
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_overwriting_a_line_main_itself_changed_IS_reported(tmp_path):
     """The one case that is genuinely undecidable from content, pinned honestly.
 
@@ -164,6 +170,7 @@ def test_overwriting_a_line_main_itself_changed_IS_reported(tmp_path):
     assert result.ok is True
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_deleting_a_file_after_taking_their_work_is_reported(tmp_path):
     """Losing a whole file counts the same as losing lines inside one."""
     root = _repo(tmp_path)
@@ -178,6 +185,7 @@ def test_deleting_a_file_after_taking_their_work_is_reported(tmp_path):
     assert DOC in dropped_lines(root, "main", "HEAD")
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_a_branch_that_never_integrated_is_not_this_checks_business(tmp_path):
     """The boundary, stated on purpose. Without an integration there are no two
     sides to compare, so a deletion is simply the branch's own change — visible
@@ -192,6 +200,7 @@ def test_a_branch_that_never_integrated_is_not_this_checks_business(tmp_path):
     assert dropped_lines(root, "main", "HEAD") == {}
 
 
+@pytest.mark.covers("FR-01.11/AC18")
 def test_blank_and_whitespace_lines_are_ignored(tmp_path):
     """Formatting churn must not read as lost work."""
     root = _repo(tmp_path)
@@ -201,119 +210,5 @@ def test_blank_and_whitespace_lines_are_ignored(tmp_path):
 
     assert dropped_lines(root, "main", "HEAD") == {}
 
-
-# --- the F11 check ------------------------------------------------------------
-
-def test_the_check_blocks_and_names_the_file(tmp_path):
-    root = _repo(tmp_path)
-    _fork(root)
-    _write(root, "alpha\nbravo\ncharlie\nBRANCH LINE\n", "our work")
-    _main_gains(root, "alpha\nbravo\ncharlie\nTHEIR DOCUMENTED BEHAVIOUR\n")
-    _git(root, "merge", "-q", "main", "-s", "ours", "-m", "merge main (ours)")
-
-    result = check_no_silent_revert(root, default_branch="main")
-
-    assert result.ok is False
-    assert result.severity != "warning"          # has teeth
-    assert DOC in result.detail
-    assert "THEIR DOCUMENTED BEHAVIOUR" in result.detail   # shows WHAT is being lost
-
-
-def test_a_declared_removal_passes(tmp_path):
-    """Deliberately removing something main just added is legitimate — it just
-    has to be said out loud, the same shape as every other disposition here."""
-    root = _repo(tmp_path)
-    _fork(root)
-    _main_gains(root, "alpha\nbravo\ncharlie\nTHEIR LINE\n")
-    _git(root, "merge", "-q", "main", "-s", "ours", "-m", "merge main (ours)")
-
-    declared = [{"path": DOC, "reason": "superseded by the rewrite in this change"}]
-    result = check_no_silent_revert(root, default_branch="main", declared_removals=declared)
-
-    assert result.ok is True
-    assert "declared" in result.detail.lower()
-
-
-def test_a_declaration_without_a_reason_does_not_count(tmp_path):
-    """An escape hatch that takes no argument is not a disposition."""
-    root = _repo(tmp_path)
-    _fork(root)
-    _main_gains(root, "alpha\nbravo\ncharlie\nTHEIR LINE\n")
-    _git(root, "merge", "-q", "main", "-s", "ours", "-m", "merge main (ours)")
-
-    result = check_no_silent_revert(
-        root, default_branch="main", declared_removals=[{"path": DOC, "reason": "  "}],
-    )
-
-    assert result.ok is False
-
-
-def test_a_declaration_for_another_file_does_not_cover_this_one(tmp_path):
-    root = _repo(tmp_path)
-    _fork(root)
-    _main_gains(root, "alpha\nbravo\ncharlie\nTHEIR LINE\n")
-    _git(root, "merge", "-q", "main", "-s", "ours", "-m", "merge main (ours)")
-
-    result = check_no_silent_revert(
-        root, default_branch="main",
-        declared_removals=[{"path": "docs/other.md", "reason": "unrelated"}],
-    )
-
-    assert result.ok is False
-
-
-def test_a_clean_branch_passes(tmp_path):
-    root = _repo(tmp_path)
-    _fork(root)
-    _write(root, "alpha\nbravo\ncharlie\nBRANCH LINE\n", "our work")
-
-    result = check_no_silent_revert(root, default_branch="main")
-
-    assert result.ok is True
-
-
-def test_no_default_branch_is_a_visible_skip_not_a_pass(tmp_path):
-    """Fail-honest: if the comparison cannot be made, say so rather than
-    reporting that nothing was lost."""
-    root = _repo(tmp_path)
-
-    result = check_no_silent_revert(root, default_branch="no-such-branch")
-
-    assert result.severity == "skipped"
-    assert "no-such-branch" in result.detail
-
-
-def test_a_non_git_tree_skips(tmp_path):
-    result = check_no_silent_revert(tmp_path, default_branch="main")
-    assert result.severity == "skipped"
-
-
-def test_derived_churn_artifacts_are_excluded(tmp_path):
-    """Found by running this check against its own branch: all eleven files it
-    flagged were CHURN_ALLOWLIST artifacts and none was authored content.
-
-    Those files are regenerated from the merged tree rather than merged line by
-    line, so their content legitimately changes wholesale at every integration.
-    Comparing them would fire on every iterate — a gate nobody would keep.
-    """
-    from lib.churn_merge import CHURN_ALLOWLIST
-
-    churn = "shipwright_test_results.json"
-    assert churn in CHURN_ALLOWLIST
-
-    root = _repo(tmp_path)
-    (root / churn).write_text('{"a": 1}\n', encoding="utf-8")
-    _git(root, "add", "-A")
-    _git(root, "commit", "-qm", "add a derived artifact")
-    _fork(root)
-    _write(root, "alpha\nbravo\ncharlie\nBRANCH LINE\n", "our work")
-    # Main regenerates the derived artifact...
-    _git(root, "checkout", "-q", "main")
-    (root / churn).write_text('{"a": 2, "regenerated": true}\n', encoding="utf-8")
-    _git(root, "add", "-A")
-    _git(root, "commit", "-qm", "main regenerates it")
-    _git(root, "checkout", "-q", "work")
-    # ...and we take ours wholesale, exactly as the churn resolver does.
-    _git(root, "merge", "-q", "main", "-s", "ours", "-m", "merge main (ours)")
-
-    assert dropped_lines(root, "main", "HEAD") == {}
+# The F11 check (`check_no_silent_revert`) tests moved to
+# test_silent_revert_check.py at the 300-LOC threshold.

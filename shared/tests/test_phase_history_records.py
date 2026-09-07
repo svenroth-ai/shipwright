@@ -10,6 +10,7 @@ to be checked against a bucket nothing has ever written for it.
 """
 
 from __future__ import annotations
+import pytest
 
 import json
 import sys
@@ -35,6 +36,7 @@ def _cfg(root: Path, history) -> Path:
     return root
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_the_last_appended_entry_wins(tmp_path):
     """File order is completion order — append_phase_history appends. Sorting by
     timestamp instead would reorder the date-only changelog entries, several of
@@ -51,6 +53,7 @@ def test_the_last_appended_entry_wins(tmp_path):
     assert completion.known_run_ids == ("first", "second")
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_repeated_run_ids_are_kept_not_deduped(tmp_path):
     """C3 counts them: one run recording SEVERAL completions is the sticky-id
     case (`build` splits), and the only case where the run id alone cannot say
@@ -68,6 +71,7 @@ def test_repeated_run_ids_are_kept_not_deduped(tmp_path):
     assert completion.anchor.earliest == _at("2026-07-27T12:00:00+00:00")
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_entries_without_a_run_id_are_skipped(tmp_path):
     root = _cfg(tmp_path, {"build": [
         {"run_id": "real", "at": "2026-07-27T10:00:00+00:00"},
@@ -79,14 +83,17 @@ def test_entries_without_a_run_id_are_skipped(tmp_path):
     assert completion is not None and completion.run_id == "real"
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_phase_with_no_entries_is_none(tmp_path):
     assert latest_completion(_cfg(tmp_path, {"build": []}), "build") is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_absent_phase_is_none(tmp_path):
     assert latest_completion(_cfg(tmp_path, {"build": []}), "test") is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_run_config_saved_with_a_bom_is_still_read(tmp_path):
     """Notepad writes UTF-8 WITH BOM, and `json.loads` rejects it at char 0.
     Read as plain utf-8 the config vanishes, and C3 announces "no completion
@@ -104,6 +111,7 @@ def test_a_run_config_saved_with_a_bom_is_still_read(tmp_path):
     assert completion is not None and completion.run_id == "r-1"
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_completion_can_be_narrowed_to_one_run(tmp_path):
     """C3 needs the owner's completion for the run the NOTE names, not the
     owner's latest: those differ exactly when the owner completed again without
@@ -123,20 +131,24 @@ def test_a_completion_can_be_narrowed_to_one_run(tmp_path):
     assert latest_completion(root, "deploy", run_id="never-ran") is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_malformed_run_config_is_none(tmp_path):
     (tmp_path / "shipwright_run_config.json").write_text("{not json", encoding="utf-8")
 
     assert latest_completion(tmp_path, "build") is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_missing_run_config_is_none(tmp_path):
     assert latest_completion(tmp_path, "build") is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_a_non_list_bucket_is_none(tmp_path):
     assert latest_completion(_cfg(tmp_path, {"build": "nope"}), "build") is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_an_entry_with_an_unusable_time_still_yields_the_run_id(tmp_path):
     """`when` and `run_id` fail independently: C3 must be able to say 'the run
     matches but I cannot order the two events'."""
@@ -149,6 +161,7 @@ def test_an_entry_with_an_unusable_time_still_yields_the_run_id(tmp_path):
     assert completion.wall is None
 
 
+@pytest.mark.covers("FR-01.01/AC08")
 def test_it_reads_the_shapes_the_live_repo_actually_carries(tmp_path):
     """Compatibility with writer-produced JSON, not just hand-built fixtures
     (external plan review, openai R2).

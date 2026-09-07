@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T17:58:49.596399+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The arithmetic doesn't reconcile: 475 → 713 is +238 total tags, but the plan claims 258 AC-scoped tags added (238 derived + 20 hand-mapped). Presumably the 20 hand-mapped ones upgraded existing bare-FR tags rather than adding new ones — plausible, but unstated. Also the denominator grew 13728 → 13766 (+38 tests); is that the new tool's own tests, or something else?",
+          "suggestion": "State explicitly that hand-mapped tags were upgrades of existing tags (no net new), and explain the +38 denominator delta. A reviewer checking the ACs numerically will hit this immediately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 writes AC ids into the real `spec.md` using `mint_ac_ids.py --write`. This is a mutating prerequisite performed inside this unit, gated only on the author's manual verification that the F11 gate routes `inferred_legacy` to ADVISORY and that suites were run. There's no stated rollback or idempotence check (running `--write` twice, or on a spec already partially minted).",
+          "suggestion": "Document the exact post-mint spec.md diff count, confirm `--write` is idempotent, and note the recovery path (git revert of spec.md) before proceeding to derivation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC \"Every added tag names an AC id that exists\" is asserted but no verification step is listed. The mechanical join (footnote slug → Run-ID commit → added file) has several failure points (slug regex drift, multiple ACs minted per FR after step 1 changes bullet identities, renames between commit and HEAD). A tag could reference an AC id that was subsequently re-minted or renumbered.",
+          "suggestion": "Add an explicit post-write validation pass: every emitted `@covers(ac:...)` id must resolve against the current minted spec.md; fail loudly on any orphan. Cheap and directly satisfies the AC.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The derivation drops files claimed by multiple (fr_id, ac_id) pairs and slugs shared across criteria — good — but the dropped/conflict counts aren't reported. For a backfill whose credibility rests on \"derived vs hand-mapped stated, never blended,\" the silently-dropped bucket is the third number a reviewer will ask for.",
+          "suggestion": "Log and report conflict/unresolvable-slug counts in the tool output; zero-cost given the logic already exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Regenerating `test-traceability.json` at schema v4 with new `ac_id`/`acs` fields — \"unchanged shape\" is doing work here: any downstream consumer doing strict key validation on trace nodes could break even without a schema version bump.",
+          "suggestion": "Confirm no consumer does strict/unknown-key rejection on trace entries (grep for the schema-v4 reader), or bump the schema minor if there's any doubt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The git-status-`A`-only rule is well-reasoned, but it means the entire mechanical yield comes from commits that wholesale-added test files. If a qualifying commit added a file and the file was later split or renamed, the derived tag attaches to a path that may no longer exist or no longer contain those tests.",
+          "suggestion": "Verify each derived file still exists at HEAD and (cheaply) that it still contains tests; drop otherwise.  Overall assessment: The approach is sound and appropriately conservative — refusing to guess on ambiguous mappings and reusing existing primitives rather than building new ones is the right call. The main gaps are bookkeeping (arithmetic reconciliation, dropped-count reporting) and an explicit post-write validation that every emitted AC id resolves, which is the AC this change is graded on.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "“File was added by the criterion’s Run-ID commit” does not establish that every test in that file verifies that one criterion. New files can contain setup, regression coverage for several behaviors, or tests added before/after the relevant change within the same commit. The proposed rule avoids shared pre-existing files, but still over-attributes coverage at file scope.",
+          "suggestion": "Derive only tags attached to an unambiguous test-level target (for example, a uniquely attributable test node/path), or add a deterministic file-content guard that confirms a single relevant test target before writing. Otherwise emit these as advisory candidates for manual review.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The provenance join is historical, but tags are written to the current tree. A file may have been subsequently changed, renamed, split, deleted/recreated, or had the relevant test removed after the qualifying commit. “Added in commit X” alone is therefore stale evidence.",
+          "suggestion": "Resolve additions against the current path and verify subsequent history before applying a tag; exclude renamed/copied paths and files whose relevant test target cannot be shown to remain. Include explicit counters for exclusions due to history drift.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on Git history, Run-ID trailers, and footnote slugs being complete and locally available, but does not state prerequisites or behavior for shallow clones, rewritten history, merge commits, duplicate trailers, or unavailable Git metadata. This can silently reduce yield or produce non-reproducible results.",
+          "suggestion": "Make repository/history availability a preflight check, define merge and rename handling, fail clearly when required history is unavailable, and save the exact revision plus tool inputs/results used for the backfill.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The before/after figures are not directly reconcilable: any-tag coverage increases by 238, while AC-scoped coverage increases by 258. Also, the denominator changes from 13,728 to 13,766 although this task is described as a tagging-only backfill. Without an explained fixed baseline, the acceptance-criterion coverage report is hard to audit.",
+          "suggestion": "Measure both snapshots from the same commit/worktree except for the tag changes, report tag additions/replacements/removals separately, and explain every denominator change. Add a machine-checkable reconciliation assertion to the report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Existing bare-FR tags may be retained alongside a newly inserted AC tag, replaced, or parsed as already-covered depending on the grammar. The plan says it reuses existing-tag detection but does not define this migration behavior; collector totals and duplicate-link behavior can differ materially.",
+          "suggestion": "State and test the intended rule: preserve bare FR tags for compatibility or replace them only when the exact AC tag is added. Ensure repeated runs are idempotent and that the collector emits one expected link per test/FR/AC relationship.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new derivation tool is a decision-making writer, but the plan mentions reuse of insertion/parsing helpers without requiring fixture-based tests for its own filtering rules. The safety of this change depends on negative cases: ambiguous slugs, multiple commits, multiple AC claims, pre-existing tags, malformed trailers, and no-op reruns.",
+          "suggestion": "Add focused unit/fixture tests plus an end-to-end dry-run fixture that asserts exact writes, exclusions, derived/hand counts, and collector output before writing to the real spec/tree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "There is no inherent authorization or data-exposure change here. The practical security risk is command injection if Run-ID/slug/path values from Git or Markdown are interpolated into shell commands by the new tool.",
+          "suggestion": "Invoke Git with argument arrays rather than shell strings, treat provenance text as data, and constrain written paths to repository test files.  Overall, the conservative intent is sound and appropriately avoids fuzzy attribution, but the proposed file-level historical inference and unreconciled measurement need tightening before it is safe to treat the added tags as reliable AC evidence.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T17:34:42.111470+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The arithmetic doesn't reconcile: 475 → 713 is +238 total tags, but the plan claims 258 AC-scoped tags added (238 derived + 20 hand-mapped). Presumably the 20 hand-mapped ones *upgraded existing* bare-FR tags rather than adding new ones — plausible, but unstated. Also the denominator grew 13728 → 13766 (+38 tests); is that the new tool's own tests, or something else?\n  **Suggestion:** State explicitly that hand-mapped tags were upgrades of existing tags (no net new), and explain the +38 denominator delta. A reviewer checking the ACs numerically will hit this immediately.\n\n- **Category: risk — Severity: medium**\n  **Finding:** Step 1 writes AC ids into the real `spec.md` using `mint_ac_ids.py --write`. This is a mutating prerequisite performed inside this unit, gated only on the author's manual verification that the F11 gate routes `inferred_legacy` to ADVISORY and that suites were run. There's no stated rollback or idempotence check (running `--write` twice, or on a spec already partially minted).\n  **Suggestion:** Document the exact post-mint spec.md diff count, confirm `--write` is idempotent, and note the recovery path (git revert of spec.md) before proceeding to derivation.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** AC \"Every added tag names an AC id that exists\" is asserted but no verification step is listed. The mechanical join (footnote slug → Run-ID commit → added file) has several failure points (slug regex drift, multiple ACs minted per FR after step 1 changes bullet identities, renames between commit and HEAD). A tag could reference an AC id that was subsequently re-minted or renumbered.\n  **Suggestion:** Add an explicit post-write validation pass: every emitted `@covers(ac:...)` id must resolve against the current minted spec.md; fail loudly on any orphan. Cheap and directly satisfies the AC.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** Th […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** “File was added by the criterion’s Run-ID commit” does not establish that every test in that file verifies that one criterion. New files can contain setup, regression coverage for several behaviors, or tests added before/after the relevant change within the same commit. The proposed rule avoids shared pre-existing files, but still over-attributes coverage at file scope.  \n   **Suggestion:** Derive only tags attached to an unambiguous test-level target (for example, a uniquely attributable test node/path), or add a deterministic file-content guard that confirms a single relevant test target before writing. Otherwise emit these as advisory candidates for manual review.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The provenance join is historical, but tags are written to the current tree. A file may have been subsequently changed, renamed, split, deleted/recreated, or had the relevant test removed after the qualifying commit. “Added in commit X” alone is therefore stale evidence.  \n   **Suggestion:** Resolve additions against the current path and verify subsequent history before applying a tag; exclude renamed/copied paths and files whose relevant test target cannot be shown to remain. Include explicit counters for exclusions due to history drift.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan relies on Git history, Run-ID trailers, and footnote slugs being complete and locally available, but does not state prerequisites or behavior for shallow clones, rewritten history, merge commits, duplicate trailers, or unavailable Git metadata. This can silently reduce yield or produce non-reproducible results.  \n   **Suggestion:** Make repository/history availability a preflight check, define merge and rename handling, fail clearly when required history is unavailable, and save the exact revision plus tool inputs/results used for the backf […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T17:36:45.194815+00:00",
+      "disposition": "runner has no Agent tool; code-reviewer cascade runs at the orchestrator's 3f-bis before merge (campaign-mode.md), not inside the sub-iterate runner",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T17:36:45.307041+00:00",
+      "disposition": "runner has no Agent tool; conditional doubt-reviewer runs at the orchestrator's 3f-bis before merge (campaign-mode.md), not inside the sub-iterate runner",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 15,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "entire diff (notably absent: any coverage-report artifact)",
+          "line": null,
+          "finding": "Two of the three acceptance criteria are not delivered in the diff. \"Coverage reported before and after, for the monorepo\" and \"Derived vs hand-mapped counts are stated, not blended\" appear nowhere in the changed files. The only place the numbers (475 → 713, 238 derived + 20 hand-mapped) appear is inside `reviews.json`, quoted secondhand by the external reviewers — and those reviewers explicitly flag that the arithmetic doesn't reconcile (+238 total vs 258 AC-scoped; denominator 13,728 → 13,766 unexplained). The regenerated `test-traceability.json` shows only the after state; the before snapshot and the split are not committed anywhere.",
+          "suggestion": "Commit the actual before/after coverage report (or a summary artifact under the iterate's planning dir) with the derived-vs-hand-mapped split, dropped/conflict counts, and a reconciliation of the +38 denominator delta (likely this unit's own new tests — say so).  2. Category: bug — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/compliance/test-traceability.json` (line 4, `\"generated_at\": \"1970-01-01T00:00:00+00:00\"`)",
+          "line": null,
+          "finding": "The regenerated traceability artifact carries an epoch-zero timestamp. The previous value was a real instant. Either the collector was run under a frozen/mocked clock or the timestamp plumbing broke; either way the committed \"generated_at\" is false provenance metadata for an audit-evidence artifact whose whole purpose (FR-01.10 AC03) is to name its origin truthfully.",
+          "suggestion": "Regenerate the artifact in an environment with a real clock and verify the timestamp before committing.  3. Category: regression — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/compliance/test-traceability.json` (`schema_version: 4` unchanged, new `ac_id` / `acs` keys added throughout)",
+          "line": null,
+          "finding": "New per-test `ac_id` fields and per-FR `acs` sub-objects are added to the traceability payload without bumping the schema version. The spec for this unit explicitly says it owes the WebUI sibling repo \"consistency with the AC-tag grammar … (shared, cross-repo wire format)\". A strict reader in the parallel `req3-06-mechanics-webui` campaign doing key validation on v4 trace nodes breaks silently.",
+          "suggestion": "Confirm no consumer rejects unknown keys on v4 nodes (grep the WebUI repo's reader), or bump the schema version.  4. Category: bug — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py` (`_upgrade_bare_tags` / `apply_upgrades`)",
+          "line": null,
+          "finding": "The upgrade pass widens every bare `covers(\"<fr_id>\")` in a file to the single derived AC — including tests in that file that cover a different AC of the same FR. The external plan review flagged file-scope over-attribution as high severity, and the insertion path at least restricts itself to wholly-untagged tests; the upgrade path has no per-test guard at all and rewrites tags a human deliberately placed at FR granularity into a specific AC claim.",
+          "suggestion": "Restrict the bare-tag upgrade to files where the commit's criterion is the only plausible owner (e.g., all bare tags in the file resolve to that one FR/AC chain), or leave mixed files as hand-mapping candidates.  5. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/backfill_ac_provenance.py` (`_commits_for_run_id`)",
+          "line": null,
+          "finding": "grep=Run-ID: <slug>` with `-F` is a substring match over the entire commit message. A slug that is a prefix of another slug (e.g., `iterate-x` vs `iterate-x-follow-up`), or a later commit's prose mentioning a prior `Run-ID:` in its body, inflates the commit count and silently drops a valid candidate as `ambiguous_commit_count`. The failure direction is under-report, which the tool presents as a clean, auditable number.",
+          "suggestion": "Match on the exact trailer line (e.g., `--grep=^Run-ID: <slug>$` with `-E`, or parse trailers with `git interpret-trailers`) rather than a body-wide substring.  6. Category: test — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/tests/test_backfill_ac_provenance_cli.py` (`test_derive_status_counts_never_folds_a_conflict_into_candidate_count`)",
+          "line": null,
+          "finding": "This test never calls `derive()` — it re-implements the counting loop inline on hand-built candidates, so it passes even if `derive()`'s real status accounting is broken. Combined with the fact that no test in the diff exercises the git join (`_commits_for_run_id`, `_added_test_files`, the shallow-clone refusal, `main()`), the tool's primary path is untested despite the module docstring claiming it is \"exercised indirectly by running the tool against THIS repo's own history\" — no such test exists. The derived tags already committed to the repo rested on this untested path (and the module's own docstring admits one wrong batch of 7 files had to be reverted).",
+          "suggestion": "Add one integration test that runs `main()` (dry-run) against this repo's real history and pins the candidate/status counts, plus a test for the shallow-clone refusal and the `--write` orphan exit path.  7. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py` (`_enumerate_python_tests`, `test_id = f\"{rel}::{name}\"`)",
+          "line": null,
+          "finding": "The insertion-path test id drops class qualification. If `parse_source`'s hits carry pytest-style ids (`file::Class::name`) — which is likely, since it's the FR-level engine's scanner — the `if test_id in existing` guard never matches for class methods already carrying a tag, and the tool inserts a second `covers` decorator onto them. `ast.walk` also enumerates nested `test` functions, which get decorators at their own indent. No test covers class-based, duplicate-named, or nested tests.",
+          "suggestion": "Add a fixture with two classes each defining `test_one` (one already tagged) and a nested `test` helper, and assert no duplicate decorators and no nested-function insertion.  8. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/backfill_ac_provenance.py` (`main`, orphan handling)",
+          "line": null,
+          "finding": "When `validate_applied` finds orphan tags, `main` prints the report and returns 1 — but the tags are already written to disk. There is no rollback, leaving a half-applied tree with a non-zero exit that a wrapper may treat as \"nothing happened\".",
+          "suggestion": "Either revert the files this run touched (git checkout of the affected paths) or clearly document that exit 1 leaves writes on disk and must be followed by manual revert.  9. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/backfill_ac_provenance.py` (`_added_test_files`)",
+          "line": null,
+          "finding": "Git C-quotes paths containing non-ASCII or special characters in `--name-status` output by default (`core.quotePath`), so such added test files parse to a quoted/escaped string that won't match a real path — silently dropped at apply time as `file_absent_at_head`. Also, `\"/tests/\" in rel` is a substring test that mis-matches paths like `a/tests_integration/x/tests/y.py` (matches via the trailing segment) while missing top-level `test_x.py` layouts.",
+          "suggestion": "Pass `-c core.quotePath=off -z` (or use `--name-status -z`) and split on NUL; match the tests directory on path segments.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/compliance/test-traceability.json",
+          "line": 1,
+          "finding": "The diff commits only a regenerated “after” traceability snapshot. It does not state the monorepo coverage before and after, nor derived-versus-hand-mapped counts. The review record repeats that this reconciliation is missing, but is not the required backfill report.",
+          "suggestion": "Commit a machine-readable or Markdown backfill report with fixed-baseline before/after totals, tag insertions versus upgrades, and separate derived and hand-mapped counts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py",
+          "line": 77,
+          "finding": "_upgrade_bare_tags` performs a raw regex substitution across the entire file. It can rewrite `covers(\"FR-…\")` in fixture strings, assertions, comments, documentation, or non-pytest objects, then counts those rewrites as upgraded tags even though no test marker changed.",
+          "suggestion": "Locate and rewrite only `pytest.mark.covers(...)` decorator AST nodes (or reuse the tag parser’s precise source spans), and count only successfully changed decorators.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py",
+          "line": 119,
+          "finding": "For a candidate file with no same-FR bare tag, the implementation adds the AC tag to every untagged `test` function in that file. Being added in the Run-ID commit establishes file-level provenance, not that every test in a potentially multi-purpose file verifies the one AC; this creates false AC coverage.",
+          "suggestion": "Limit mechanical upgrades to existing same-FR test markers, or emit untagged tests as review candidates rather than assigning an AC tag automatically.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/backfill_ac_provenance.py",
+          "line": 211,
+          "finding": "Validation of newly written tags happens only after `apply_upgrades` has mutated files. If an orphan is detected, the command exits non-zero but leaves the invalid tags in the worktree, violating the requirement that every added tag name an existing AC.",
+          "suggestion": "Validate all candidate `(FR, AC)` pairs before writing, or retain original contents and roll back every changed file if post-write validation fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/_backfill_ac_provenance_apply.py",
+          "line": 111,
+          "finding": "Bare-tag upgrades use direct `Path.write_text` with no atomic write or error handling. A permission, disk, or interrupted-write failure can truncate one test file after earlier files were already changed, while the insertion path uses the shared writer’s failure reporting.",
+          "suggestion": "Route upgrades through the same atomic write mechanism as `apply_writes`, and return structured failures without leaving partially written files.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_backfill_ac_provenance_cli.py",
+          "line": 205,
+          "finding": "The status-accounting test manually reconstructs `status_counts` after calling only `_mark_multiply_claimed_files`; it never calls `derive`. A broken `derive` implementation that omitted or incorrectly computed `status_counts` would still pass. The suite also does not exercise the Git correlation or CLI shallow-clone behavior it claims is indirectly covered.",
+          "suggestion": "Add fixture-repository tests invoking `derive`/`main` with mocked Git responses or a temporary Git repo, asserting exact candidate statuses and emitted JSON.  Ship-with-fixes: the AC-ID minting and conservative provenance filtering are useful, but the required reporting is absent and the writer can create inaccurate or invalid coverage evidence.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T17:57:21.264250+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: spec — Severity: high**\nFile: entire diff (notably absent: any coverage-report artifact)\nFinding: Two of the three acceptance criteria are not delivered in the diff. \"Coverage reported before and after, for the monorepo\" and \"Derived vs hand-mapped counts are stated, not blended\" appear nowhere in the changed files. The only place the numbers (475 → 713, 238 derived + 20 hand-mapped) appear is *inside* `reviews.json`, quoted secondhand by the external reviewers — and those reviewers explicitly flag that the arithmetic doesn't reconcile (+238 total vs 258 AC-scoped; denominator 13,728 → 13,766 unexplained). The regenerated `test-traceability.json` shows only the *after* state; the before snapshot and the split are not committed anywhere.\nSuggestion: Commit the actual before/after coverage report (or a summary artifact under the iterate's planning dir) with the derived-vs-hand-mapped split, dropped/conflict counts, and a reconciliation of the +38 denominator delta (likely this unit's own new tests — say so).\n\n**2. Category: bug — Severity: medium**\nFile: `.shipwright/compliance/test-traceability.json` (line 4, `\"generated_at\": \"1970-01-01T00:00:00+00:00\"`)\nFinding: The regenerated traceability artifact carries an epoch-zero timestamp. The previous value was a real instant. Either the collector was run under a frozen/mocked clock or the timestamp plumbing broke; either way the committed \"generated_at\" is false provenance metadata for an audit-evidence artifact whose whole purpose (FR-01.10 AC03) is to name its origin truthfully.\nSuggestion: Regenerate the artifact in an environment with a real clock and verify the timestamp before committing.\n\n**3. Category: regression — Severity: medium**\nFile: `.shipwright/compliance/test-traceability.json` (`schema_version: 4` unchanged, new `ac_id` / `acs` keys added throughout)\nFinding: New per-test `ac_id` fields and per-FR `acs` sub-objects are added to the traceability payload without bu […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: `.shipwright/compliance/test-traceability.json:1`  \n  Finding: The diff commits only a regenerated “after” traceability snapshot. It does not state the monorepo coverage before and after, nor derived-versus-hand-mapped counts. The review record repeats that this reconciliation is missing, but is not the required backfill report.  \n  Suggestion: Commit a machine-readable or Markdown backfill report with fixed-baseline before/after totals, tag insertions versus upgrades, and separate derived and hand-mapped counts.\n\n- Category: bug  \n  Severity: high  \n  File: `shared/scripts/tools/_backfill_ac_provenance_apply.py:77`  \n  Finding: `_upgrade_bare_tags` performs a raw regex substitution across the entire file. It can rewrite `covers(\"FR-…\")` in fixture strings, assertions, comments, documentation, or non-pytest objects, then counts those rewrites as upgraded tags even though no test marker changed.  \n  Suggestion: Locate and rewrite only `pytest.mark.covers(...)` decorator AST nodes (or reuse the tag parser’s precise source spans), and count only successfully changed decorators.\n\n- Category: bug  \n  Severity: high  \n  File: `shared/scripts/tools/_backfill_ac_provenance_apply.py:119`  \n  Finding: For a candidate file with no same-FR bare tag, the implementation adds the AC tag to every untagged `test*` function in that file. Being added in the Run-ID commit establishes file-level provenance, not that every test in a potentially multi-purpose file verifies the one AC; this creates false AC coverage.  \n  Suggestion: Limit mechanical upgrades to existing same-FR test markers, or emit untagged tests as review candidates rather than assigning an AC tag automatically.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/tools/backfill_ac_provenance.py:211`  \n  Finding: Validation of newly written tags happens only after `apply_upgrades` has mutated files. If an orphan is detected, the command exits non-zero  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T17:36:45.089935+00:00",
+      "disposition": "runner has no Agent tool; spec-reviewer HARD-GATE cascade runs at the orchestrator's 3f-bis before merge (campaign-mode.md), not inside the sub-iterate runner",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T17:34:49.017406+00:00",
+      "disposition": "plan review has no internal arm (project_plan_review_has_no_internal_arm) — only the external LLM pass (glm+openai/codex) runs at Step 3.5; there is no internal spec/code-shaped reviewer for a mini-plan document, so this row documents the permanent gap rather than a deferred action",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

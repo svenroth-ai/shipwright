@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
+  "date": "2026-09-07",
+  "section": "Iterate — feature: monorepo AC-provenance tagging backfill",
+  "title": "Mechanical AC-provenance backfill, conservative by construction",
+  "context": "Monorepo AC-scoped test coverage was 0%; only mechanical FR tags existed. Need a non-guessing way to raise it.",
+  "decision": "Join a criterion's provenance footnote to its introducing commit's Run-ID and tag every test in a file that commit ADDED; hand-map a small bounded remainder; both counted separately.",
+  "consequences": "AC-scoped coverage 0% -> 1.14% (157/13767: 137 derived + 20 hand-mapped); two review-cascade-found bugs fixed pre-ship (cross-FR slug reuse, whole-file regex over-substitution).",
+  "rationale": "Fuzzy/title-similarity matching would inflate the number dishonestly (backfill_signals.TITLE_CAP precedent); mechanical yield is small but trustworthy.",
+  "rejected": "Full coverage via fuzzy matching (rejected as dishonest); per-FR-only slug uniqueness (found unsound mid-review, replaced with document-wide uniqueness).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-07-p3-4-tagging-backfill-mechanical-ac-provenance-backfill.md"
+}
