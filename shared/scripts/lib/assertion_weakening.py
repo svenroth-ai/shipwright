@@ -1003,14 +1003,29 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
             continue
         if not recognized:
             return None
-        mod = chain[1:].split(".", 1)[0] if chain and chain != ".each" else None
-        if m.group(0) in ("fit", "fdescribe") and mod is None:
+        if chain and chain != ".each":
+            # A written-out modifier chain (`.skip`, `.only.each`, ...) —
+            # its own first segment names the mark.
+            mod = chain[1:].split(".", 1)[0]
+        elif m.group(0) in ("fit", "fdescribe"):
             #: `fit`/`fdescribe` ARE `.only` — Jest/Jasmine's own alias, not
-            #: a chained modifier — so a bare `fit(...)`/`fdescribe(...)`
-            #: (or the `.each` form, where the formula above also leaves
-            #: `mod` as `None`) gets exactly the same "only" treatment a
-            #: written-out `.only` chain would, below.
+            #: a chained modifier — so BOTH the bare form (`fit(...)`,
+            #: chain == "") AND the `.each` form (`fit.each(...)`, chain ==
+            #: ".each") land in this branch and get exactly the same "only"
+            #: treatment a written-out `.only` chain would, below. This is
+            #: an explicit branch of its own, not a `mod is None` fallback
+            #: check after the fact, specifically so `fit.each`/
+            #: `fdescribe.each` composing with `.only` semantics is visible
+            #: by inspection, not implied (external Tier-3 review, PR #685,
+            #: eighteenth round re-raised the twelfth round's already-
+            #: refuted claim that this composition silently fails; this
+            #: shape removes the ambiguity a `mod is None` side-channel
+            #: check invited, without changing behavior at all — see the
+            #: fit/fdescribe.each regression tests already covering both
+            #: the call-parens and tagged-template forms).
             mod = "only"
+        else:
+            mod = None
         calls.append((m.group(0), mod, m.start(), *resolved))
 
     describes = [c for c in calls if c[0] in ("describe", "xdescribe", "fdescribe")]

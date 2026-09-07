@@ -234,7 +234,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "29e4651561074c59d4eb99d5706351b2b873c437",
+    "commit": "6674b39842573bc486be750a3e8a9ae46f5453da",
     "dirty": true,
     "base": null,
     "release": null
