@@ -1,10 +1,9 @@
 """Single producer for the bloat-allowlist schema + classification.
 
-Consumed by Phase-0 / adopt baseline_generator (writers),
-check_file_size.py (classify + limit), and bloat_gate_on_stop.py
-(reader). Centralising the schema + classification here prevents
-producer/consumer drift. check_file_size.py keeps thin delegating
-wrappers so legacy call sites stay stable.
+Consumed by Phase-0 / adopt baseline_generator (writers), check_file_size.py
+(classify + limit + marker key), and bloat_gate_on_stop.py (reader). Centralising
+the schema + classification here prevents producer/consumer drift; both hook
+scripts keep thin delegating wrappers so legacy call sites stay stable.
 
 Schema (``<project_root>/shipwright_bloat_baseline.json``):
 
@@ -38,6 +37,7 @@ if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
 from atomic_write import durable_atomic_write  # noqa: E402
+from bloat_marker_key import marker_key  # noqa: E402,F401 -- re-export for _bb.marker_key
 
 # ---------------------------------------------------------------------
 # Constants

@@ -149,14 +149,13 @@ def _now_iso() -> str:
 
 
 def _session_id(payload: object = None) -> str:
-    """Marker key from the stdin payload ``session_id`` (env var is unset in this
-    process), then ``SHIPWRIGHT_SESSION_ID``, then ``"unknown"`` — env-only keying
-    pooled sessions into one bucket and blocked the wrong Stop (fixed 2026-05-29)."""
-    if isinstance(payload, dict):
-        sid = payload.get("session_id")
-        if isinstance(sid, str) and sid.strip():
-            return sid.strip()
-    return (os.environ.get("SHIPWRIGHT_SESSION_ID") or "").strip() or "unknown"
+    """Marker key: payload ``session_id`` (+ ``agent_id`` suffix when the hook
+    fires inside a subagent — see :func:`bloat_baseline.marker_key`), else
+    ``SHIPWRIGHT_SESSION_ID`` (unset in this process), else ``"unknown"``."""
+    return _bb.marker_key(
+        payload if isinstance(payload, dict) else None,
+        os.environ.get("SHIPWRIGHT_SESSION_ID"),
+    )
 
 
 def _marker_path(cwd: Path, sid: str) -> Path:
