@@ -499,6 +499,23 @@ def test_js_each_tagged_template_table_is_supported():
     assert "assertions_removed" in _kinds(findings, blocking=True)
 
 
+def test_js_each_tagged_template_table_with_a_nested_template_is_supported():
+    """External Tier-3 review, PR #685 (seventeenth round, blocking):
+    `.each`'s tagged-template table was skipped by a separate, simpler
+    scanner (`_js_skip_template`) that predated the recursive template
+    scanner round eleven added elsewhere in this file, so a table
+    containing its OWN nested template literal (inside a `${...}`
+    interpolation) ended the skip at the nested template's opening
+    backtick, leaving the real call unfound and the after revision reported
+    `unparseable`."""
+    before = ("test.each`a | b\n${`nested`} | ${1}`('adds %s', ({a, b}) => {\n"
+              "  expect(a).toBe(b);\n});\n")
+    after = ("test.each`a | b\n${`nested`} | ${1}`('adds %s', ({a, b}) => {\n"
+             "});\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert "assertions_removed" in _kinds(findings, blocking=True)
+
+
 def test_js_an_each_head_with_no_table_or_body_fails_closed():
     """A recognized chain (`.each`) that never resolves to an actual call is
     treated the same as an unrecognized one: fail closed, not silently skip."""

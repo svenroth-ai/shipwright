@@ -181,11 +181,16 @@
         "behavior": "A mark (e.g. skip) moving OUT of a unique-content pooled instance and INTO a duplicate-content group (two or more pooled instances sharing identical assertion content) is now reported as pooled_mark_possibly_relocated, closing a case where the whole pool's aggregate mark count stayed flat (the move's other end cancelled it out) and the per-unique-content-key relocation matcher never considered the duplicate-content key at all, since it isn't unique -- previously a completely silent clear. A mark that PURELY permutes between exactly two identical-content instances with nothing else in the pool touched remains the pre-existing, named, mathematically irreducible residual (a multiset of (content, marks) pairs is indistinguishable before vs after), not something this or any aggregate-based check can recover",
         "disposition": "tested",
         "evidence": "test_js_a_skip_moving_into_a_duplicate_content_group_is_reported and test_js_a_pure_swap_within_an_identical_duplicate_pair_is_the_named_irreducible_residual PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, sixteenth round: added a duplicate-content-group aggregate-mark-composition check to _relocated_mark_findings, alongside (not replacing) the existing unique-content exact-match pass"
+      },
+      {
+        "behavior": "The .each tagged-template table form's own skip-past helper (_js_skip_template) now delegates to the recursive template scanner (_js_scan_template) instead of a separate, simpler backtick-to-backtick search, so a table containing its own nested template literal inside a ${...} interpolation is skipped correctly instead of the scan ending early at the nested template's opening backtick and leaving the real (...) call unresolved",
+        "disposition": "tested",
+        "evidence": "test_js_each_tagged_template_table_with_a_nested_template_is_supported PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, seventeenth round: _js_skip_template predated round eleven's recursive template scanner and was never migrated to it, so it retained the old opaque backtick-to-backtick limitation the rest of the file had already closed"
       }
     ],
     "counts": {
-      "testable": 34,
-      "tested": 34,
+      "testable": 35,
+      "tested": 35,
       "untestable": 0,
       "untested_testable": 0
     }

@@ -847,16 +847,22 @@ def _js_scan_chain(
 
 def _js_skip_template(source: str, backtick_idx: int) -> int | None:
     """`backtick_idx` is an opening backtick. Returns the index just past the
-    matching close, or `None` if there isn't one. Mirrors `_js_bracket_match`'s
-    own treatment of every string type as opaque text — a `${}` interpolation
-    is not parsed, so a backtick inside one would end the scan early. Accepted
-    stated limit, not unique to `.each`'s tagged-template table form.
+    matching close, or `None` if there isn't one.
+
+    Delegates to `_js_scan_template` (the recursive scanner `_js_bracket_
+    match` itself uses) rather than a lighter-weight backtick-to-backtick
+    search, so `.each`'s tagged-template table form gets the exact same
+    handling of `${...}` interpolations everything else does -- including a
+    NESTED template literal inside one. An earlier, simpler version of this
+    function predated that scanner and stopped at the first literal
+    backtick regardless of what it was nested inside, so a table containing
+    one ended the "skip" early; the mismatched position that produced then
+    made `_js_resolve_test_call` fail to find the real call afterward,
+    reporting a valid after revision `unparseable` (external Tier-3 review,
+    PR #685, seventeenth round).
     """
-    n = len(source)
-    j = backtick_idx + 1
-    while j < n and source[j] != "`":
-        j += 2 if source[j] == "\\" else 1
-    return None if j >= n else j + 1
+    result = _js_scan_template(source, backtick_idx, len(source))
+    return None if result is None else result[0]
 
 
 def _js_resolve_test_call(

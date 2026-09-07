@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17403,
-      "total": 17462,
+      "passed": 17404,
+      "total": 17463,
       "skipped": 59,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, seventeen external PR-check findings across sixteen review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x16, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, a false negative on optional-chaining test declarations, a documentation/implementation mismatch on .fixme, a comment-between-keyword-and-paren false block, a fail-open on malformed template-literal interpolations, a false BLOCK claiming fit.each/fdescribe.each lose .only semantics that did not reproduce (closed with coverage, not a behavior change), a fail-open on unescaped raw line terminators inside single/double-quoted strings, a reachable dynamic-pool sentinel collision via a template-literal name, a false BLOCK on JSX/TSX text containing an apostrophe contraction or feet/inches notation, and a silent-clear gap where a mark moving into/out of a duplicate-content pooled group produced no finding) were fixed or investigated, adding 40 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 34 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, optional-chaining, fixme, comment-aware-control-paren, template-interpolation, fit/fdescribe-each, quoted-string-newline, dynamic-pool-sentinel, JSX-glued-quote, and duplicate-content-group-relocation fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (109 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here add those 40 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, eighteen external PR-check findings across seventeen review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x17, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, a false negative on optional-chaining test declarations, a documentation/implementation mismatch on .fixme, a comment-between-keyword-and-paren false block, a fail-open on malformed template-literal interpolations, a false BLOCK claiming fit.each/fdescribe.each lose .only semantics that did not reproduce (closed with coverage, not a behavior change), a fail-open on unescaped raw line terminators inside single/double-quoted strings, a reachable dynamic-pool sentinel collision via a template-literal name, a false BLOCK on JSX/TSX text containing an apostrophe contraction or feet/inches notation, a silent-clear gap where a mark moving into/out of a duplicate-content pooled group produced no finding, and a false BLOCK on a .each tagged-template table containing its own nested template literal, caused by a leftover pre-round-eleven template skipper never migrated to the recursive scanner) were fixed or investigated, adding 41 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 35 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, optional-chaining, fixme, comment-aware-control-paren, template-interpolation, fit/fdescribe-each, quoted-string-newline, dynamic-pool-sentinel, JSX-glued-quote, duplicate-content-group-relocation, and each-nested-template fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (110 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here add those 41 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
     },
     "integration": {
       "status": "pass",
@@ -210,11 +210,16 @@
           "behavior": "A mark (e.g. skip) moving OUT of a unique-content pooled instance and INTO a duplicate-content group (two or more pooled instances sharing identical assertion content) is now reported as pooled_mark_possibly_relocated, closing a case where the whole pool's aggregate mark count stayed flat (the move's other end cancelled it out) and the per-unique-content-key relocation matcher never considered the duplicate-content key at all, since it isn't unique -- previously a completely silent clear. A mark that PURELY permutes between exactly two identical-content instances with nothing else in the pool touched remains the pre-existing, named, mathematically irreducible residual (a multiset of (content, marks) pairs is indistinguishable before vs after), not something this or any aggregate-based check can recover",
           "disposition": "tested",
           "evidence": "test_js_a_skip_moving_into_a_duplicate_content_group_is_reported and test_js_a_pure_swap_within_an_identical_duplicate_pair_is_the_named_irreducible_residual PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, sixteenth round: added a duplicate-content-group aggregate-mark-composition check to _relocated_mark_findings, alongside (not replacing) the existing unique-content exact-match pass"
+        },
+        {
+          "behavior": "The .each tagged-template table form's own skip-past helper (_js_skip_template) now delegates to the recursive template scanner (_js_scan_template) instead of a separate, simpler backtick-to-backtick search, so a table containing its own nested template literal inside a ${...} interpolation is skipped correctly instead of the scan ending early at the nested template's opening backtick and leaving the real (...) call unresolved",
+          "disposition": "tested",
+          "evidence": "test_js_each_tagged_template_table_with_a_nested_template_is_supported PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, seventeenth round: _js_skip_template predated round eleven's recursive template scanner and was never migrated to it, so it retained the old opaque backtick-to-backtick limitation the rest of the file had already closed"
         }
       ],
       "counts": {
-        "testable": 34,
-        "tested": 34,
+        "testable": 35,
+        "tested": 35,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -229,7 +234,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "3feb5e8b399889606388084b1254b0e09175dc8d",
+    "commit": "29e4651561074c59d4eb99d5706351b2b873c437",
     "dirty": true,
     "base": null,
     "release": null
