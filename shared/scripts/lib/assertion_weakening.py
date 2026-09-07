@@ -711,13 +711,14 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
     """Every `it`/`test` in the file, addressed by (de-duplicated) name.
 
     `None` propagates a bracket-scan failure, an unrecognized modifier chain
-    (including a computed-access one — see `_js_scan_chain`), or a recognized
-    chain (anything but `""`) that never resolved to an actual call — all
-    three are the signal to fail closed exactly like an unparseable Python
-    revision. A bare, uncalled `it`/`test`/... reference (chain `""`, no
-    following `(`) is the one case treated as "not a declaration" rather than
-    "unreadable", since that is ordinary code (assigning `it` to a variable,
-    passing it around) with nothing to weaken.
+    (including a computed-access one — see `_js_scan_chain`) that IS actually
+    invoked, or a recognized chain (anything but `""`) that never resolved to
+    an actual call — all three are the signal to fail closed exactly like an
+    unparseable Python revision. A chain — recognized or not — that is never
+    invoked here at all (`const helper = it.customModifier;`, chain `""`, no
+    following `(`) is treated as "not a declaration" rather than "unreadable",
+    since that is ordinary code (assigning `it`/a property of it to a
+    variable, passing it around) with nothing to weaken.
     """
     scanned = _js_bracket_match(source)
     if scanned is None:
@@ -731,13 +732,25 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
         if not _js_name_is_standalone_call(source, m.start()):
             continue  # `fixture.test(...)` / `function test(...)` — not a describe/it/test call
         chain, chain_end = _js_scan_chain(source, match, m.end())
-        if chain not in _JS_ALLOWED_CHAINS:
-            return None
+        recognized = chain in _JS_ALLOWED_CHAINS
         resolved = _js_resolve_test_call(source, match, chain_end, chain.endswith(".each"))
         if resolved is None:
-            if chain:
+            #: A chain that is never actually invoked here is ordinary code
+            #: (`const helper = it.customModifier;`, `test['skip']` passed
+            #: around without a call) — nothing to weaken, whether or not
+            #: the chain shape itself is one this scanner recognizes.
+            #: A RECOGNIZED chain left unresolved (`test.each;` with no
+            #: table/body) is different: it looks like an incomplete/broken
+            #: declaration rather than a plain reference, so it keeps
+            #: failing closed exactly as before (external Tier-3 review, PR
+            #: #685, fifth round: an unrecognized chain used to fail closed
+            #: purely for existing, regardless of whether it was invoked at
+            #: all, blocking ordinary non-test property references).
+            if chain and recognized:
                 return None
             continue
+        if not recognized:
+            return None
         mod = chain[1:].split(".", 1)[0] if chain and chain != ".each" else None
         calls.append((m.group(0), mod, m.start(), *resolved))
 

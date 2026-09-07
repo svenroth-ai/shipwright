@@ -857,6 +857,30 @@ def test_js_division_after_a_value_is_not_mistaken_for_a_regex_literal():
     assert "assertions_removed" in kinds
 
 
+def test_js_an_unrecognized_chain_never_invoked_is_not_a_false_block():
+    """`const helper = it.customModifier;` is a plain property reference, not
+    a test declaration -- the chain (`.customModifier`) is unrecognized, but
+    since it is never actually called here there is nothing to weaken.
+    Before this fix, ANY unrecognized chain failed closed regardless of
+    whether it was invoked, blocking ordinary non-test code (external Tier-3
+    review, PR #685, fifth round)."""
+    before = "it('a', () => { expect(1).toBe(1); });\nconst helper = it.customModifier;\n"
+    after = "it('a', () => { expect(1).toBe(1); });\nconst runner = test.concurrent;\n"
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
+def test_js_an_unrecognized_chain_that_is_actually_invoked_still_fails_closed():
+    """The companion case to the test above: once an unrecognized chain is
+    actually CALLED (`test.concurrent(...)`), this scanner still cannot
+    safely interpret it and must keep failing closed -- the fix narrows the
+    blocking path to invoked chains, it does not remove it."""
+    before = "test.concurrent('a', async () => { expect(1).toBe(1); });\n"
+    after = ("test.concurrent('a', async () => { expect(1).toBe(1); });\n"
+             "const runner = test.concurrent;\n")
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
 def test_js_an_unterminated_string_in_the_after_revision_fails_closed_as_unparseable():
     """An unterminated quoted string is not valid JS/TS. Before the fix,
     `_js_bracket_match` advanced to end-of-file and returned a (bogus)
