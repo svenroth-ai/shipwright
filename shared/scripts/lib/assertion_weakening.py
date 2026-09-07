@@ -536,9 +536,15 @@ _JS_NAME = re.compile(r"\b(?:describe|xdescribe|fdescribe|it|xit|fit|test|xtest)
 #: second regex re-deciding "supported" on its own that could quietly drift
 #: out of sync with the resolver (the gap external spec review caught here,
 #: across three rounds: `.each`, `.each` as a tagged template, then a chain
-#: reachable only through whitespace/comments/computed access).
+#: reachable only through whitespace/comments/computed access). `.fixme` was
+#: advertised (this module's own test-completeness ledger claimed it) but
+#: never actually added here, so every invoked `test.fixme(...)`/
+#: `it.fixme(...)` fell through to the unrecognized-and-invoked path and
+#: blocked the repair outright (external Tier-3 review, PR #685, ninth
+#: round: a documentation/implementation mismatch, not a new gap).
 _JS_ALLOWED_CHAINS = frozenset({
-    "", ".skip", ".only", ".todo", ".each", ".skip.each", ".only.each", ".todo.each",
+    "", ".skip", ".only", ".todo", ".fixme", ".each",
+    ".skip.each", ".only.each", ".todo.each", ".fixme.each",
 })
 #: `assert.<method>(` (Node's built-in `assert` module, and Chai's `assert`
 #: interface — `assert.strictEqual(a, b)`, `assert.ok(x)`) is at least as
@@ -882,11 +888,11 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
             continue
         test_name = _js_test_name(source, open_idx, close_idx)
         marks: set[str] = set()
-        if name in ("xit", "xtest") or mod in ("skip", "todo"):
+        if name in ("xit", "xtest") or mod in ("skip", "todo", "fixme"):
             marks.add("skip")
         for d_name, d_mod, _d_head, d_open, d_close in describes:
             if d_open < open_idx and close_idx < d_close and (
-                d_name == "xdescribe" or d_mod in ("skip", "todo")
+                d_name == "xdescribe" or d_mod in ("skip", "todo", "fixme")
             ):
                 marks.add("skip")
         if any_only and not _only_protected(open_idx, close_idx, mod):

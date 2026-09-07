@@ -141,11 +141,16 @@
         "behavior": "An optional-chaining test declaration (test?.('a', fn), test?.skip('a', fn)) is recognized rather than silently dropped as an ordinary reference; an optional-chained property that is never actually invoked is still treated as ordinary code",
         "disposition": "tested",
         "evidence": "test_js_an_optional_call_test_declaration_fails_closed_rather_than_missing_it, test_js_an_optional_chained_modifier_fails_closed_rather_than_missing_it, and test_js_an_optional_chained_property_never_invoked_is_not_a_false_block PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, eighth round: _js_scan_chain now recognizes `?.` the same way it already recognized `.` and computed access, tainting the chain with a `.[optional]`/`.[optional-call]` sentinel that is never in _JS_ALLOWED_CHAINS, routing it through the same invoked-vs-not fail-closed logic the fifth round's fix already applies to every other unrecognized chain shape"
+      },
+      {
+        "behavior": "The .fixme modifier this module's own ledger already advertised is actually recognized (it.fixme(...)/test.fixme(...) added blocks, removed is not itself a finding), matching the treatment .skip/.todo already get",
+        "disposition": "tested",
+        "evidence": "test_js_an_it_fixme_added_to_an_existing_test_blocks and test_js_removing_an_it_fixme_is_not_itself_a_finding PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, ninth round: _JS_ALLOWED_CHAINS was missing `.fixme`/`.fixme.each` despite this exact ledger claiming support, so every invoked `.fixme(...)` fell through to the unrecognized-and-invoked fail-closed path and blocked the repair — a documentation/implementation mismatch, now fixed by adding the chain and propagating it through mark collection alongside skip/todo"
       }
     ],
     "counts": {
-      "testable": 26,
-      "tested": 26,
+      "testable": 27,
+      "tested": 27,
       "untestable": 0,
       "untested_testable": 0
     }

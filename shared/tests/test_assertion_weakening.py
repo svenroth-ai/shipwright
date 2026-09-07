@@ -379,6 +379,27 @@ def test_js_an_xit_rename_added_blocks():
                                   blocking=True)
 
 
+def test_js_an_it_fixme_added_to_an_existing_test_blocks():
+    """`.fixme` was advertised (this module's own test-completeness ledger
+    claimed it) but never actually added to `_JS_ALLOWED_CHAINS`, so every
+    invoked `it.fixme(...)`/`test.fixme(...)` fell through to the
+    unrecognized-and-invoked fail-closed path and blocked the repair outright
+    -- a documentation/implementation mismatch (external Tier-3 review, PR
+    #685, ninth round)."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it.fixme('a', () => { expect(1).toBe(1); });\n"
+    assert "skip_added" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                  blocking=True)
+
+
+def test_js_removing_an_it_fixme_is_not_itself_a_finding():
+    """The companion case: `.fixme` REMOVED (the test starts running again)
+    is not a weakening -- same treatment `.skip` removal already gets."""
+    before = "it.fixme('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect(1).toBe(1); });\n"
+    assert _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True) == []
+
+
 def test_js_a_describe_skip_added_blocks_its_tests():
     before = "describe('suite', () => {\n  it('a', () => { expect(1).toBe(1); });\n});\n"
     after = ("describe.skip('suite', () => {\n"

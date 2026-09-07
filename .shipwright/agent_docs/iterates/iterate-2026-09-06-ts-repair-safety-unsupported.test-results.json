@@ -4,11 +4,11 @@
     "date": "2026-09-07",
     "unit": {
       "status": "pass",
-      "passed": 17383,
-      "total": 17442,
+      "passed": 17385,
+      "total": 17444,
       "skipped": 59,
       "failed": 0,
-      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, nine external PR-check findings across eight review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x8, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, and a false negative on optional-chaining test declarations) were fixed, adding 20 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 14 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, and optional-chaining fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (89 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17383/17442) add those 20 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
+      "note": "Full F0 suite run: 18 units, 17422 tests total, 17363 passed, 0 failed, 0 errors, 59 skipped (evidence at .shipwright/runs/f0-evidence/published/f0-d4ff96a648f1-b4ef5f8f/ under the main repo root). One shared/tests unit red-in-parallel/green-alone flake (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, unrelated to this change) auto-retried serially and filed as trg-f64d1c27. After that run, ten external PR-check findings across nine review rounds (CodeQL ReDoS, high severity; Tier-3 openai/gpt-5.6-luna PR Review x9, member-access misclassification in both _JS_NAME and _JS_ASSERT_HEAD, a regex-literal bracket-matching false block, an unterminated-string/comment fail-open, an unrecognized-chain false block on non-invoked property references, a false negative on fit/fdescribe, a regex-after-control-flow-condition false block, a false negative on optional-chaining test declarations, and a documentation/implementation mismatch on .fixme) were fixed, adding 22 regression tests total to shared/tests/test_assertion_weakening.py (1 rewritten + 16 new across the regex-literal, fail-closed, chain-invocation, fit/fdescribe, control-flow-regex, optional-chaining, and fixme fixes), verified directly via `uv run pytest shared/tests/test_assertion_weakening.py` (91 passed) and `uvx ruff check` \u2014 not re-included in the full-F0 aggregate above, whose totals predate these follow-up commits; the counts here (17385/17444) add those 22 tests on top of the retained F0 numbers. CI's own required checks re-run the full suite on push. Diff coverage vs origin/main on the changed file: 97.2% (>= 80% threshold, measured at the pre-follow-up-fixes commit)."
     },
     "integration": {
       "status": "pass",
@@ -170,11 +170,16 @@
           "behavior": "An optional-chaining test declaration (test?.('a', fn), test?.skip('a', fn)) is recognized rather than silently dropped as an ordinary reference; an optional-chained property that is never actually invoked is still treated as ordinary code",
           "disposition": "tested",
           "evidence": "test_js_an_optional_call_test_declaration_fails_closed_rather_than_missing_it, test_js_an_optional_chained_modifier_fails_closed_rather_than_missing_it, and test_js_an_optional_chained_property_never_invoked_is_not_a_false_block PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, eighth round: _js_scan_chain now recognizes `?.` the same way it already recognized `.` and computed access, tainting the chain with a `.[optional]`/`.[optional-call]` sentinel that is never in _JS_ALLOWED_CHAINS, routing it through the same invoked-vs-not fail-closed logic the fifth round's fix already applies to every other unrecognized chain shape"
+        },
+        {
+          "behavior": "The .fixme modifier this module's own ledger already advertised is actually recognized (it.fixme(...)/test.fixme(...) added blocks, removed is not itself a finding), matching the treatment .skip/.todo already get",
+          "disposition": "tested",
+          "evidence": "test_js_an_it_fixme_added_to_an_existing_test_blocks and test_js_removing_an_it_fixme_is_not_itself_a_finding PASSED \u2014 external Tier-3 review (openai/gpt-5.6-luna), PR #685, ninth round: _JS_ALLOWED_CHAINS was missing `.fixme`/`.fixme.each` despite this exact ledger claiming support, so every invoked `.fixme(...)` fell through to the unrecognized-and-invoked fail-closed path and blocked the repair \u2014 a documentation/implementation mismatch, now fixed by adding the chain and propagating it through mark collection alongside skip/todo"
         }
       ],
       "counts": {
-        "testable": 26,
-        "tested": 26,
+        "testable": 27,
+        "tested": 27,
         "untestable": 0,
         "untested_testable": 0
       }
@@ -189,7 +194,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-06-ts-repair-safety-unsupported",
-    "commit": "e9e564ceeb8178f9582f85276d5419670c342e4e",
+    "commit": "1fb23f222284ddb9c1375fede66c543830f5b6bb",
     "dirty": true,
     "base": null,
     "release": null
