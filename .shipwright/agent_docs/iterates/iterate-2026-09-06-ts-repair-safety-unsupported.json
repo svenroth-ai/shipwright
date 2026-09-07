@@ -201,11 +201,21 @@
         "behavior": "A test's pooling identity is now the DECODED runtime string value of its name literal (backslash escapes resolved: \\n, \\t, \\\\, \\uXXXX, \\u{X}, \\xXX, line-continuation), not its raw source spelling, so switching quote style or escape style on an unchanged name (e.g. `'it\\'s a test'` vs `\"it's a test\"`) no longer looks like the old test was removed and a new one added",
         "disposition": "tested",
         "evidence": "test_js_a_differently_escaped_but_equal_test_name_is_not_a_false_removal, test_js_a_genuinely_renamed_test_is_still_reported_removed, test_js_common_escape_sequences_decode_to_their_runtime_characters, and test_js_a_template_interpolation_is_untouched_by_escape_decoding all PASSED -- external Tier-3 review (openai/gpt-5.6-luna), PR #685, twentieth round: test names were keyed on raw literal text rather than runtime value, producing a false blocking test_removed finding on a harmless escape-style change"
+      },
+      {
+        "behavior": "Two runtime-identical JS strings above the BMP that are spelled differently in source (a single `\\u{...}` codepoint escape versus the two `\\uXXXX` UTF-16 surrogate-pair escapes it decomposes into) now decode to the same Python character, so a test name containing one no longer looks renamed/removed when its emoji or other astral-plane escape is merely re-spelled",
+        "disposition": "tested",
+        "evidence": "test_js_a_codepoint_escape_and_its_surrogate_pair_spelling_are_equal PASSED -- external Tier-3 review (openai/gpt-5.6-luna), PR #685, twenty-first round: the round-twenty escape decoder normalized quote/backslash spelling but still let this second equivalent-name gap through"
+      },
+      {
+        "behavior": "A `\\u{...}` escape whose hex value is a syntactically well-formed but out-of-Unicode-range code point (above 0x10FFFF) no longer raises an uncaught Python ValueError from `chr()` and crashes the checker -- it now falls back to the same undecoded-literal treatment already given to any other malformed escape, failing closed the controlled way",
+        "disposition": "tested",
+        "evidence": "test_js_an_out_of_range_unicode_codepoint_escape_does_not_crash PASSED -- external Tier-3 review (openai/gpt-5.6-luna), PR #685, twenty-first round: same round as the surrogate-pair fix, found while implementing round twenty's escape decoder's `\\u{...}` branch"
       }
     ],
     "counts": {
-      "testable": 38,
-      "tested": 38,
+      "testable": 40,
+      "tested": 40,
       "untestable": 0,
       "untested_testable": 0
     }

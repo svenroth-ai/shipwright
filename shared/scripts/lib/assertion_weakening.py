@@ -930,7 +930,8 @@ _JS_SIMPLE_ESCAPES = {
     "0": "\0", "\n": "", "\r": "",
 }
 _JS_HEX_ESCAPE = re.compile(r"x([0-9a-fA-F]{2})")
-_JS_UNICODE_ESCAPE = re.compile(r"u\{([0-9a-fA-F]+)\}|u([0-9a-fA-F]{4})")
+_JS_UNICODE_BRACE_ESCAPE = re.compile(r"u\{([0-9a-fA-F]+)\}")
+_JS_UNICODE4_ESCAPE = re.compile(r"u([0-9a-fA-F]{4})")
 
 
 def _js_decode_string_escapes(raw: str) -> str:
@@ -968,11 +969,49 @@ def _js_decode_string_escapes(raw: str) -> str:
             out.append(chr(int(hm.group(1), 16)))
             i = hm.end()
             continue
-        um = _JS_UNICODE_ESCAPE.match(raw, i + 1)
-        if um:
-            out.append(chr(int(um.group(1) or um.group(2), 16)))
-            i = um.end()
-            continue
+        bm = _JS_UNICODE_BRACE_ESCAPE.match(raw, i + 1)
+        if bm:
+            cp = int(bm.group(1), 16)
+            if cp <= 0x10FFFF:
+                out.append(chr(cp))
+                i = bm.end()
+                continue
+            # Out of Unicode range -- not something real JS source could
+            # ever contain (a syntax error there too). Fall through to the
+            # unknown-escape default below rather than let `chr()` raise
+            # ValueError and crash the checker outright instead of it
+            # failing closed the controlled way every other malformed
+            # construct in this file does (external Tier-3 review, PR
+            # #685, twenty-first round).
+        else:
+            um = _JS_UNICODE4_ESCAPE.match(raw, i + 1)
+            if um:
+                cp = int(um.group(1), 16)
+                end = um.end()
+                # A JS string is a sequence of UTF-16 code UNITS, not
+                # Unicode code points: a character above 0xFFFF is spelled
+                # as a high/low SURROGATE PAIR, either directly as two
+                # `\uXXXX` escapes (this branch) or as one `\u{...}` escape
+                # above (which already decodes straight to `chr(cp)`,
+                # Python's own single-character form for it). Recombining a
+                # pair here into that same single Python character keeps
+                # both spellings of one runtime-identical test name mapped
+                # to the SAME decoded key -- without it, a purely cosmetic
+                # re-spelling of an emoji-bearing name looked like the old
+                # test was removed (external Tier-3 review, PR #685,
+                # twenty-first round).
+                if 0xD800 <= cp <= 0xDBFF and raw[end:end + 1] == "\\":
+                    um2 = _JS_UNICODE4_ESCAPE.match(raw, end + 1)
+                    if um2:
+                        cp2 = int(um2.group(1), 16)
+                        if 0xDC00 <= cp2 <= 0xDFFF:
+                            combined = 0x10000 + ((cp - 0xD800) << 10) + (cp2 - 0xDC00)
+                            out.append(chr(combined))
+                            i = um2.end()
+                            continue
+                out.append(chr(cp))
+                i = end
+                continue
         out.append(nxt)
         i += 2
     return "".join(out)

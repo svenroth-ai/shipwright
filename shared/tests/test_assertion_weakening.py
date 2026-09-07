@@ -1434,9 +1434,33 @@ def test_js_common_escape_sequences_decode_to_their_runtime_characters():
     assert aw._js_decode_string_escapes("a\\\nb") == "ab"
     assert aw._js_decode_string_escapes("a\\\r\nb") == "ab"
     assert aw._js_decode_string_escapes("caf\\u00e9") == "café"
-    assert aw._js_decode_string_escapes("\\u{1F600}") == "\U0001F600"
+    assert aw._js_decode_string_escapes("\\u{1F600}") == "😀"
     assert aw._js_decode_string_escapes("a\\x41b") == "aAb"
     assert aw._js_decode_string_escapes("a\\db") == "adb"  # unknown escape: drop the backslash
+
+
+def test_js_a_codepoint_escape_and_its_surrogate_pair_spelling_are_equal():
+    """External Tier-3 review, PR #685 (twenty-first round, blocking): a JS
+    string is a sequence of UTF-16 code UNITS, not Unicode code points, so a
+    character above 0xFFFF can be spelled either as one `\\u{...}` codepoint
+    escape or as the two `\\uXXXX` surrogate-code-unit escapes that same
+    codepoint decomposes into -- both are the SAME runtime string, and must
+    decode to the same Python character here too, or a purely cosmetic
+    re-spelling of an emoji-bearing test name looks like the old test was
+    removed."""
+    codepoint_form = aw._js_decode_string_escapes("\\u{1F600}")
+    surrogate_pair_form = aw._js_decode_string_escapes("\\uD83D\\uDE00")
+    assert codepoint_form == surrogate_pair_form == "😀"
+
+
+def test_js_an_out_of_range_unicode_codepoint_escape_does_not_crash():
+    """The other half of the same review finding: `\\u{...}` with a value
+    above the maximum valid Unicode code point (0x10FFFF) is not real JS
+    source -- decoding it must fail closed like any other malformed
+    construct in this file, not raise an uncaught Python exception and
+    crash the checker."""
+    assert aw._js_decode_string_escapes("\\u{110000}") == "u{110000}"
+    assert aw._js_decode_string_escapes("\\u{FFFFFFFF}") == "u{FFFFFFFF}"
 
 
 def test_js_a_template_interpolation_is_untouched_by_escape_decoding():
