@@ -186,11 +186,21 @@
         "behavior": "The .each tagged-template table form's own skip-past helper (_js_skip_template) now delegates to the recursive template scanner (_js_scan_template) instead of a separate, simpler backtick-to-backtick search, so a table containing its own nested template literal inside a ${...} interpolation is skipped correctly instead of the scan ending early at the nested template's opening backtick and leaving the real (...) call unresolved",
         "disposition": "tested",
         "evidence": "test_js_each_tagged_template_table_with_a_nested_template_is_supported PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, seventeenth round: _js_skip_template predated round eleven's recursive template scanner and was never migrated to it, so it retained the old opaque backtick-to-backtick limitation the rest of the file had already closed"
+      },
+      {
+        "behavior": "An unterminated regex literal (confirmed by _js_slash_starts_regex to sit where an expression is expected, ruling out division) that never closes before a newline now fails closed (unparseable) the same way an unterminated string or comment already does, instead of silently falling back to treating the unterminated regex's own text as ordinary code",
+        "disposition": "tested",
+        "evidence": "test_js_an_unterminated_regex_literal_in_after_fails_closed PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, nineteenth round: an earlier revision's own docstring called the fall-through a legitimate \"not actually a regex\" case, which was the fail-open this fixes"
+      },
+      {
+        "behavior": "A `/` immediately (zero-gap) preceded by `<` is read as a JSX closing tag (`</Tag>`), not a regex open -- `<` is not a JS value character either, so without this carve-out the round-nineteen fail-closed fix would misclassify every JSX/TSX closing tag's slash as an unterminated regex and report the whole file unparseable",
+        "disposition": "tested",
+        "evidence": "test_js_a_jsx_closing_tag_slash_is_not_mistaken_for_a_regex_open PASSED, and the pre-existing JSX apostrophe-contraction tests (fifteenth round) continue to pass unchanged — found and fixed in the same round as the unterminated-regex fail-closed fix, before ever reaching external review, since the fifteenth round's own regression tests caught it immediately"
       }
     ],
     "counts": {
-      "testable": 35,
-      "tested": 35,
+      "testable": 37,
+      "tested": 37,
       "untestable": 0,
       "untested_testable": 0
     }

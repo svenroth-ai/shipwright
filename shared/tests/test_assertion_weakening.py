@@ -1135,6 +1135,34 @@ def test_js_division_after_a_value_is_not_mistaken_for_a_regex_literal():
     assert "assertions_removed" in kinds
 
 
+def test_js_an_unterminated_regex_literal_in_after_fails_closed():
+    """External Tier-3 review, PR #685 (nineteenth round, blocking): once
+    `_js_slash_starts_regex` has confirmed a `/` sits where an expression
+    is expected (ruling out division, which needs a preceding value), a
+    regex literal that never closes before a newline means the source
+    itself is invalid JS/TS -- not a stray division either. The scanner
+    used to silently fall back to treating the unterminated regex's own
+    text as ordinary code instead of failing closed the way an
+    unterminated string or comment already does."""
+    before = "function f() { return /abc/.test('x'); }\nit('a', () => { expect(f()).toBe(true); });\n"
+    after = "function f() { return /abc\n}\nit('a', () => { expect(f()).toBe(true); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_a_jsx_closing_tag_slash_is_not_mistaken_for_a_regex_open():
+    """The other side of the same fix: `</Tag>`'s `/` sits right after `<`,
+    which is not a JS "value" character either, so it would ALSO look like
+    a position where a regex could open -- and since a JSX closing tag's
+    `/` never has a matching close before the next newline, the round's
+    fail-closed fix would otherwise report every JSX/TSX test file
+    containing one `unparseable`. `<` immediately (zero-gap) before `/` is
+    read as a JSX closing tag, not a regex open."""
+    before = "it('a', () => { render(<div>ok</div>); expect(1).toBe(1); });\n"
+    after = "it('a', () => { render(<div>ok, still ok</div>); expect(1).toBe(1); });\n"
+    assert _kinds(aw.detect_weakening([_jschange(before, after)]), blocking=True) == []
+
+
 def test_js_an_unrecognized_chain_never_invoked_is_not_a_false_block():
     """`const helper = it.customModifier;` is a plain property reference, not
     a test declaration -- the chain (`.customModifier`) is unrecognized, but

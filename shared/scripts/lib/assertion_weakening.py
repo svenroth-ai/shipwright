@@ -390,6 +390,19 @@ def _js_slash_starts_regex(
     if j < 0:
         return True
     prev = source[j]
+    if prev == "<" and j == i - 1:
+        # `</` glued with zero gap is overwhelmingly a JSX closing tag
+        # (`.tsx`/`.jsx` are in `_JS_EXTENSIONS`) -- `<` immediately
+        # followed by a regex literal with no space at all (`a</re/.test(x)`,
+        # legal but only ever seen in minified, machine-generated JS) is
+        # vanishingly rare in hand-written test source by comparison. Now
+        # that an unterminated regex fails closed rather than silently
+        # falling through (see `_js_regex_literal_end`), misreading a
+        # closing tag's `/` as a regex open would report every JSX test
+        # file with one `unparseable` (external Tier-3 review, PR #685,
+        # nineteenth round's own fix, caught immediately by the JSX
+        # regression tests the fifteenth round already added).
+        return False
     if prev == ")" and j in control_closes:
         return True
     if prev in ")]}" or prev in "'\"`":
@@ -408,10 +421,16 @@ def _js_slash_starts_regex(
 def _js_regex_literal_end(source: str, i: int) -> int | None:
     """End index (exclusive) of the regex literal starting at `source[i]`
     (a `/` already confirmed by `_js_slash_starts_regex`), or `None` if it
-    never closes before a newline — that reads as "not actually a regex"
-    (a stray division, or malformed source), and the caller falls back to
-    treating `/` as an ordinary character rather than committing to a span
-    it cannot confirm."""
+    never closes before a newline. `_js_slash_starts_regex` already ruled
+    out a stray division at this position (division needs a preceding
+    VALUE, which an expression-expected position by definition doesn't
+    have), so `None` here means the source itself is invalid -- not valid
+    JS/TS division either -- and the caller fails closed the same way an
+    unterminated string or comment does, rather than treating the
+    unterminated regex's own text as ordinary code (external Tier-3 review,
+    PR #685, nineteenth round: an earlier revision of this function's own
+    docstring called that a legitimate "not actually a regex" fallback,
+    which is the fail-open this fixes)."""
     n = len(source)
     j = i + 1
     in_class = False
@@ -598,13 +617,22 @@ def _js_scan_code(source: str, i: int, n: int, stop_at: int | None) -> _JsScanRe
             continue
         if c == "/" and _js_slash_starts_regex(source, i, control_closes):
             end = _js_regex_literal_end(source, i)
-            if end is not None:
-                non_code.append((i, end))
-                i = end
-                continue
-            # Doesn't actually close before a newline — not a regex after
-            # all; fall through and treat `/` as an ordinary, non-bracket
-            # character (matches nothing below either way).
+            if end is None:
+                # `_js_slash_starts_regex` already confirmed this is a
+                # position where an expression is expected, not one where
+                # a VALUE (division's left operand) already sits -- so this
+                # can only be a regex literal, and one that never closes
+                # before a newline is not valid JS/TS syntax, the same way
+                # an unterminated string or comment isn't. Fail closed
+                # instead of silently treating the unterminated regex's own
+                # text as ordinary code from here on (external Tier-3
+                # review, PR #685, nineteenth round: this let an actually-
+                # invalid after revision pass analysis as though it were
+                # syntactically valid).
+                return None
+            non_code.append((i, end))
+            i = end
+            continue
         if c in _JS_BRACKET_PAIRS:
             is_control = (
                 c == "(" and _js_word_before(source, i, comment_spans) in _JS_CONTROL_PAREN_KEYWORDS
