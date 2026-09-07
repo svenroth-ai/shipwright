@@ -23,7 +23,7 @@ if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
 from ac_identity import read_all  # noqa: E402
-from backfill_write import apply_writes  # noqa: E402
+from backfill_write import apply_writes, is_contained  # noqa: E402
 from fr_tag_grammar import parse_source  # noqa: E402
 
 
@@ -171,6 +171,13 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
                 continue
             if not abs_path.is_file():
                 skipped.append({**cand, "file": rel, "reason": "file_absent_at_head"})
+                continue
+            if not is_contained(project_root, abs_path):
+                # A committed symlink (or Windows reparse point) under a test
+                # directory can redirect a write outside the repository --
+                # is_file() FOLLOWS the final symlink, so it alone does not
+                # catch this (external Tier-3 CI-gate review, P3.4 high).
+                skipped.append({**cand, "file": rel, "reason": "path_escapes_project_root"})
                 continue
             try:
                 # Read RAW bytes (not read_text): universal-newline mode would

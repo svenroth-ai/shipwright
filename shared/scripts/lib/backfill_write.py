@@ -34,6 +34,28 @@ import ast
 from pathlib import Path
 
 
+def is_contained(project_root: Path, abs_path: Path) -> bool:
+    """True iff ``abs_path`` is a real path beneath ``project_root`` with no
+    symlink (or Windows reparse point) anywhere in the chain that leads there.
+
+    A committed symlink under a test directory would otherwise redirect a
+    write outside the repository: ``Path.is_file()`` FOLLOWS the final
+    symlink (so a symlink to a real file passes it), and neither this module
+    nor its callers previously checked containment at all before reading or
+    writing (external Tier-3 CI-gate review, P3.4 high). Checked with
+    ``is_symlink()`` (the leaf itself) PLUS a resolved-path containment check
+    (which follows every ancestor component too, catching a symlinked
+    directory higher up the path, not just the leaf)."""
+    try:
+        if abs_path.is_symlink():
+            return False
+        resolved = abs_path.resolve(strict=True)
+        root = project_root.resolve(strict=True)
+    except OSError:
+        return False
+    return resolved == root or root in resolved.parents
+
+
 def make_tag_line(rel_path: str, indent: int, fr: str) -> str:
     pad = " " * indent
     if rel_path.endswith(".py"):
@@ -91,6 +113,10 @@ def apply_writes(project_root: Path, writes: list[tuple]) -> tuple[list, list]:
         by_file.setdefault(record.rel_path, []).append((record, cand))
     for rel, items in by_file.items():
         abs_path = Path(project_root) / rel
+        if not is_contained(Path(project_root), abs_path):
+            failures.extend({"test": r.test_id, "fr": c.fr, "reason": "path_escapes_project_root"}
+                             for r, c in items)
+            continue
         try:
             # Read RAW bytes (not read_text): universal-newline mode would strip
             # \r\n so the CRLF detection below would be dead on every platform.

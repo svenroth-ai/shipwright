@@ -13,8 +13,11 @@ write pass, upgrade pass, and idempotency tests already in the sibling file.
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 from pathlib import Path
+
+import pytest
 
 _TOOLS = Path(__file__).resolve().parents[1]
 if str(_TOOLS) not in sys.path:
@@ -208,3 +211,28 @@ def test_apply_upgrades_inserts_a_qualified_id_for_the_one_untagged_method(tmp_p
     assert result["inserted_new_tags"][0]["test"] == f"{rel}::TestOne.test_it"
     text = (tmp_path / rel).read_text(encoding="utf-8")
     assert '@pytest.mark.covers("FR-01.01/AC01")' in text
+
+
+def test_apply_upgrades_skips_a_candidate_file_that_is_really_a_symlink_escape(tmp_path):
+    """Tier-3 CI-gate re-review (P3.4 high): a committed symlink under a test
+    directory would let ``--write`` follow it and modify a file OUTSIDE the
+    repository -- ``Path.is_file()`` alone FOLLOWS the final symlink. The real
+    target here sits outside ``tmp_path`` (the project root) entirely; the
+    fix must refuse the write and must never touch that external target."""
+    outside_root = tmp_path.parent / "outside_project_root_target.py"
+    outside_root.write_text(_ONE_CLASS_ONE_UNTAGGED_METHOD, encoding="utf-8")
+    rel = "tests/test_escaping_link.py"
+    (tmp_path / "tests").mkdir()
+    link = tmp_path / rel
+    try:
+        os.symlink(outside_root, link)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+
+    report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
+    result = apply_mod.apply_upgrades(tmp_path, report)
+
+    assert result["tags_inserted_total"] == 0
+    assert result["skipped"] == [{**_candidate("FR-01.01", "AC01", [rel]),
+                                    "file": rel, "reason": "path_escapes_project_root"}]
+    assert outside_root.read_text(encoding="utf-8") == _ONE_CLASS_ONE_UNTAGGED_METHOD
