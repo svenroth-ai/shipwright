@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-09-06T10:22:57.720561+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-09-06-fr-hygiene-touched-rows
-Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
+Generated: 2026-09-07T08:00:31.525660+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-09-07-p3-2-tag-grammar-manifest-v4
+Consistency-audit: last run 2026-07-28 (41 days earlier) — FAIL
 
 ## Summary
 
@@ -11,7 +11,7 @@ Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
 | Runtime dependencies | 7 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 12 |
-| Licenses resolved | 7 / 12 |
+| Licenses resolved | 10 / 12 |
 | Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
@@ -19,10 +19,10 @@ Consistency-audit: last run 2026-07-28 (40 days earlier) — FAIL
 
 ```mermaid
 pie title License Distribution (all 12 packages)
+    "MIT" : 5
     "Apache-2.0" : 4
-    "MIT" : 2
     "PSFL" : 1
-    "unknown" : 5
+    "unknown" : 2
 ```
 
 ## Runtime Dependencies
@@ -42,12 +42,12 @@ pie title License Distribution (all 12 packages)
 | Package | Version | License |
 |---------|---------|---------|
 | diff-cover | 10.3.0 | - |
-| pytest | 9.0.3 | - |
-| pytest | 9.1.1 | - |
+| pytest | 9.0.3 | MIT |
+| pytest | 9.1.1 | MIT |
 | pytest-cov | 7.1.0 | - |
-| pytest-mock | 3.15.1 | - |
+| pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-**5 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+**2 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
 
