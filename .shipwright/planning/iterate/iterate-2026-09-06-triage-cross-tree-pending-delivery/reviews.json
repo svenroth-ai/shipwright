@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-06-triage-cross-tree-pending-delivery",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T23:05:03.192121+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T23:07:16.288457+00:00",
+      "disposition": "medium+ only rule (SKILL.md Phase Matrix): external plan/iterate review runs only at medium+ complexity; this run is classified small (no risk flags at Stage 2 Repo Scout time) per .shipwright/agent_docs/iterates/iterate-2026-09-06-triage-cross-tree-pending-delivery.plan.json",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/triage_cli_commands.py",
+          "line": null,
+          "finding": "_emit_json call site and dead None defaults on the two branch-map params.",
+          "suggestion": "Wrapped the call; dropped the None defaults on the private helper (now keyword-only, required).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "_CACHE keyed on path alone while _cached_records now has a keep predicate; safety rests on an undocumented structural invariant (a root's .git cannot be both a directory and a file, so a path can never be read both filtered and unfiltered).",
+          "suggestion": "Documented the structural reason directly in _cached_records's docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/triage_contract.py",
+          "line": null,
+          "finding": "originBranch (per-row) can be ambiguous when a row's pendingStatusDelivery and pendingAmendDelivery come from different branches -- the row flag cannot say which fact it belongs to.",
+          "suggestion": "Added one sentence to the originBranch paragraph pointing a consumer that needs to disambiguate at the two envelope maps instead.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-06T23:05:50.767262+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling / blast radius",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: The module docstring's caching design is calibrated against '~45 small files'. — Measured the real store: 84 sibling worktrees, some logs 1000+ records with multi-KB fields, e.g. a ~4KB amend detail blob -- not ~45 small files. Every read of a sibling parses and (pre-fix) retained ALL of that per process, on the polled list surface.",
+          "suggestion": "Filter foreign records to status/amend only before they enter the cache, since nothing downstream ever consumes a foreign append. Fixed: foreign_records_by_branch now passes keep=_is_status_or_amend to _cached_records.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: originBranches names, per id, which branch holds a decision -- correctly, for both the status and amend envelope blocks. — Constructed a two-sibling case: branch A holds a foreign amend for id X, branch B holds a foreign status for id X. {**cross_amends, **cross_status} collapses to one map naming branch B for both, so undeliveredAmends.originBranches reports B, which holds no amend for X -- an actively wrong branch name, not merely a missing one.",
+          "suggestion": "Thread two separate maps instead of merging. Fixed: cross_tree_delivery_facts now returns (status_ids, amend_ids, status_origin_branches, amend_origin_branches); build_listing uses each only for its own envelope block; a new test reconstructs the two-branch scenario and asserts they stay separate.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: A pending-decision marker naming a branch is always actionable signal. — This repo has ~84 sibling worktrees including clearly abandoned checkouts (superseded -redo/-w3 variants, a fix-main-<sha> throwaway). Since the module never shells out to git, it cannot ask whether a branch is merged or abandoned -- a decision on a dead branch reports pending forever, diluting the 5-id-capped notice with entries an operator can never act on except by deleting the worktree.",
+          "suggestion": "Document as an accepted design constraint rather than fix -- answering 'is this merged' needs the git subprocess this module deliberately avoids, or a persistent cross-process registry, both out of scope for this fix. Done: added a 'No expiry, by design constraint' paragraph to the module docstring.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: corruption in the JSON contract reports every span that could not be read, so an operator never mistakes an unreadable item for an absent one. — A corrupt span in a SIBLING log goes through report_corruption (stderr only); list --json's corruption block is built from store_facts, which reads only this tree's own tracked+outbox. A decision lost to corruption in a sibling is therefore invisible to the machine contract entirely, with only an indistinguishable stderr basename as a human signal.",
+          "suggestion": "Fold foreign corruption into the corruption envelope block, or document the gap. Documented (not fixed, to avoid touching the JSON shape itself in this change): added a 'Foreign corruption is stderr-only' paragraph to the module docstring.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: Reading a sibling's tracked log while another process concurrently removes that worktree (git worktree remove) cannot produce a crash or a wrong-branch attribution. — Walked every step of sibling_worktree_logs -> _branch_name -> _cached_records against git worktree remove's actual filesystem sequence (dir delete, then admin-dir prune). Every intermediate OSError path returns None/[]/skip -- could not construct a crash or a wrong attribution; admin-dir reuse is also blocked since git refuses an occupied .git/worktrees/<name> and removal changes .worktrees' own mtime, invalidating the discovery cache.",
+          "suggestion": "No change needed -- disproof attempt held; every failure path fails toward the safe direction (skip, never crash or mis-attribute).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: The (path, mtime) cache can never produce a false 'delivered' reading for a LOCAL tracked/outbox file read through _cached_records within cross_tree_delivery_facts. — On a coarse-mtime filesystem, a stale local cache entry could in theory drop a just-appended id from the appended-ids set, silently suppressing a foreign status event that should read pending -- the false-reassurance direction. Not reachable today only because cross_tree_delivery_facts has exactly one call site per process and nothing writes to those files first in the same process.",
+          "suggestion": "Document the invariant so a future second call site does not silently reintroduce the risk. Done: noted in _cached_records's docstring as part of the structural-safety argument added in this round.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: _branch_name correctly resolves a linked worktree's admin directory from its .git file's gitdir: line on every git worktree layout. — git >= 2.48 with worktree.useRelativePaths can write a RELATIVE gitdir: target. Path(line.split(':',1)[1].strip()) then resolves against the process CWD, not the worktree's own directory -- every sibling's HEAD read fails at once, a total silent regression back to the pre-fix bug with zero error signal. Windows absolute-path parsing (drive letter, forward slashes) was checked against real artifacts on this host and is correct as written.",
+          "suggestion": "Resolve a non-absolute admin_dir against worktree_dir. Fixed: added the is_absolute() check and resolution; new test uses a genuinely relative path that only resolves correctly from that base.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/triage_cross_tree.py",
+          "line": null,
+          "finding": "Claim under doubt: The module fixes the general statement in its own docstring: 'a decision recorded in ANY tree other than the one being read is invisible to that reader.' — Only one direction is implemented -- main reads siblings. A worktree still cannot see a decision recorded on main or on a peer worktree, and hooks/iterate phases running inside a worktree are exactly the readers most likely to need that answer. The original docstring stated the general problem without scoping which direction was actually addressed.",
+          "suggestion": "Scope the docstring's claim to what is implemented and record why the reverse direction is out of scope. Done: docstring now says the fix addresses main-reads-siblings only, and why.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-06T23:07:04.680719+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T23:07:16.528825+00:00",
+      "disposition": "external_review.py --mode iterate is gated to medium+ complexity per SKILL.md's Phase Matrix; this run is classified small, so no external code review was due — not a session-policy opt-out",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T23:05:29.513614+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-06T23:07:16.407274+00:00",
+      "disposition": "medium+ only rule (SKILL.md Phase Matrix): internal opus-plan-reviewer runs only at medium+ complexity before Branch A/B/C; this run is classified small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

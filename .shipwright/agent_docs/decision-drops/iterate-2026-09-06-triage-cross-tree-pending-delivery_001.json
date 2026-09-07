@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-06-triage-cross-tree-pending-delivery",
+  "date": "2026-09-07",
+  "section": "Iterate — bug: triage cross-tree pending-delivery visibility",
+  "title": "Fold sibling-worktree triage decisions into a main tree's own read",
+  "context": "A decision recorded only in a worktree's tracked triage.jsonl read back on main as still open, with pendingDelivery False — a false reassurance.",
+  "decision": "main's read_all_items now folds a known id's status/amend events from every sibling worktree's tracked log, naming the branch; filesystem-only discovery, cached.",
+  "consequences": "main never reports 'still open' about a decision already made on a sibling branch; two accepted gaps (no expiry, foreign corruption stderr-only) documented, not fixed.",
+  "rationale": "Boundary is reported-never-delivered: nothing is written; only a sibling's TRACKED log is read; only main reads siblings.",
+  "rejected": "A delivery-receipt file, a git subprocess for discovery/liveness, and a persistent cross-process cache were all rejected as out of scope.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-06-triage-cross-tree-pending-delivery-cross-tree-fold.md"
+}
