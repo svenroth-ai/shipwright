@@ -1,0 +1,122 @@
+{
+  "run_id": "iterate-2026-09-07-p3-2-tag-grammar-manifest-v4",
+  "date": "2026-09-07T07:59:01.760212Z",
+  "event_at": "2026-09-07T01:23:26.866087+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-p3.2-tag-grammar-manifest-v4",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.2-tag-grammar-manifest-v4.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-07-p3-2-tag-grammar-manifest-v4",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "A bare @pytest.mark.covers(\"FR-XX.YY\") tag still resolves exactly as before (AC#1)",
+        "disposition": "tested",
+        "evidence": "test_pytest_marker_bare_fr_still_resolves_with_no_ac PASSED"
+      },
+      {
+        "behavior": "canonical_fr_ac() resolves a bare FR to (fr_id, None) and an AC-scoped token to (fr_id, ac_id)",
+        "disposition": "tested",
+        "evidence": "test_canonical_fr_ac PASSED"
+      },
+      {
+        "behavior": "A pytest_marker tag naming FR-XX.YY/ACnn binds the test to that AC",
+        "disposition": "tested",
+        "evidence": "test_pytest_marker_binds_ac_scoped_tag PASSED"
+      },
+      {
+        "behavior": "A malformed AC suffix invalidates the WHOLE tag, never falling back to a bare-FR hit",
+        "disposition": "tested",
+        "evidence": "test_pytest_marker_malformed_ac_suffix_invalidates_the_whole_tag PASSED, test_malformed_ac_suffix_is_invalid_not_a_bare_fr_hit PASSED"
+      },
+      {
+        "behavior": "An AC-scoped tag produces a new acs node on the owning requirement, schema-valid under v4",
+        "disposition": "tested",
+        "evidence": "test_ac_scoped_tag_produces_an_acs_node PASSED"
+      },
+      {
+        "behavior": "An AC's per-layer coverage is 'ok' only when a filed link actually executed=pass",
+        "disposition": "tested",
+        "evidence": "test_ac_node_coverage_is_ok_only_when_a_link_passed PASSED"
+      },
+      {
+        "behavior": "A bare-FR tag creates no acs node but still covers the parent FR",
+        "disposition": "tested",
+        "evidence": "test_bare_fr_tag_creates_no_ac_node_but_still_covers_the_fr PASSED"
+      },
+      {
+        "behavior": "acs entries are ordered by AC number, not lexically (AC99 before AC100)",
+        "disposition": "tested",
+        "evidence": "test_acs_are_sorted_by_ac_number_not_lexically PASSED"
+      },
+      {
+        "behavior": "A test carrying both a bare and an AC-scoped tag for the same FR merges into ONE parent link, not duplicated",
+        "disposition": "tested",
+        "evidence": "test_bare_and_ac_scoped_tags_on_the_same_test_merge_not_duplicate PASSED"
+      },
+      {
+        "behavior": "A test bound to TWO DIFFERENT ACs of the same FR does not let the parent link silently pick one ac_id",
+        "disposition": "tested",
+        "evidence": "test_two_different_acs_on_the_same_test_do_not_pick_one_at_the_parent PASSED -- real bug fixed after external code review"
+      },
+      {
+        "behavior": "schema_version and MODEL_VERSION move together, never independently (AC#2)",
+        "disposition": "tested",
+        "evidence": "test_model_version_tracks_manifest_schema_version PASSED"
+      },
+      {
+        "behavior": "The frozen v3->v4 contract bump is a real generated diff; the old v3.0 fixture stays byte-frozen",
+        "disposition": "tested",
+        "evidence": "test_traceability_contract.py full suite (18 tests) PASSED",
+        "category": "integration"
+      },
+      {
+        "behavior": "Every documented v4 wire field is actually present on the LIVE-generated contract, not just the frozen fixture",
+        "disposition": "tested",
+        "evidence": "test_every_documented_field_is_on_the_wire PASSED"
+      },
+      {
+        "behavior": "acs is treated as execution-derived and never gates structural manifest drift",
+        "disposition": "tested",
+        "evidence": "test_acs_map_disagreement_alone_is_not_structural PASSED"
+      },
+      {
+        "behavior": "The two in-repo consumers pinned to schema_version==3 do not silently SKIP against a real v4 manifest",
+        "disposition": "tested",
+        "evidence": "full plugins/shipwright-compliance suite (1677 passed, 5 skipped) re-run green"
+      },
+      {
+        "behavior": "The shipwright-webui reader accepts a v4 manifest without crashing or dropping the file (AC#3, narrowed reading)",
+        "disposition": "tested",
+        "evidence": "two real round-trip probes against the actual built readTraceabilityIndex, both status:ok",
+        "category": "integration"
+      },
+      {
+        "behavior": "Zero existing @covers tags in either repo already use a /-suffix the new fail-closed rule would newly reject",
+        "disposition": "tested",
+        "evidence": "empirical grep sweep of both repos, zero matches outside this diff's own new tests"
+      }
+    ],
+    "counts": {
+      "testable": 17,
+      "tested": 17,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    },
+    "ledger_path": ".shipwright/planning/adr/iterate-2026-09-07-p3-2-tag-grammar-manifest-v4-ac-binding.md"
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "framework/tooling change (tag-grammar parser + compliance manifest collector) with no startable web/dev-server/CLI surface of its own -- this repo's own unit + real-fixture tests plus two REAL round-trip probes against the actual built shipwright-webui reader are the verification. Not mandatory at effective complexity 'small', recorded anyway."
+  },
+  "declared_removals": []
+}

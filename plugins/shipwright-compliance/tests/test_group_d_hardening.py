@@ -96,7 +96,7 @@ def _collided_manifest(*, b_removed: bool) -> dict:
         b = {**b, "status": "removed", "title": "Old dup",
              "tests": {}, "coverage": {"unit": "n/a"}}
     return {
-        "schema_version": 3, "collector_version": "test", "generated_at": "t",
+        "schema_version": 4, "collector_version": "test", "generated_at": "t",
         "source_commit": "x", "spec_hash": "h",
         # Two nodes, one display id — only reachable by hand-editing under v3.
         "requirements": {"03::FR-03.01": a, "02::FR-03.01": b},

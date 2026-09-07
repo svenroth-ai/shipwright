@@ -11,6 +11,7 @@ from pathlib import Path
 from lib.fr_tag_grammar import (
     TAG_SOURCES,
     TAG_TOKEN_RE,
+    canonical_fr_ac,
     canonical_fr_id,
     parse_python,
     parse_source,
@@ -54,6 +55,45 @@ def test_pytest_marker_malformed_and_nonstring_are_invalid():
 def test_non_covers_decorator_ignored():
     src = 'import pytest\n@pytest.mark.parametrize("x", [1])\ndef test_a(x):\n    pass\n'
     assert parse_python(src, "t.py") .hits == ()
+
+
+# --- AC-scoped pytest form (P3.2, D9) ---------------------------------------
+
+def test_canonical_fr_ac():
+    assert canonical_fr_ac("FR-01.11/AC07") == ("FR-01.11", "AC07")
+    assert canonical_fr_ac("@FR-01.11/AC07") == ("FR-01.11", "AC07")
+    assert canonical_fr_ac("FR-01.11") == ("FR-01.11", None)     # bare stays valid (E1)
+    assert canonical_fr_ac("FR-01.11/AC7") is None                # non-canonical digits
+    assert canonical_fr_ac("FR-01.11/AC007") is None
+    assert canonical_fr_ac("FR-01.11/AC00") is None                # never minted
+    assert canonical_fr_ac("FR-01.11/ac07") is None                # case
+    assert canonical_fr_ac("FR-1.3/AC07") is None                  # bad FR half too
+
+
+def test_pytest_marker_binds_ac_scoped_tag():
+    src = ('import pytest\n@pytest.mark.covers("FR-01.11/AC07")\n'
+           'def test_a():\n    pass\n')
+    res = parse_python(src, "tests/test_a.py")
+    assert not res.invalid
+    assert len(res.hits) == 1
+    h = res.hits[0]
+    assert h.fr_id == "FR-01.11" and h.ac_id == "AC07" and h.tag_source == "pytest_marker"
+
+
+def test_pytest_marker_bare_fr_still_resolves_with_no_ac():
+    # The 1'243 existing tags: a bare FR id must keep resolving, ac_id=None (E1).
+    src = 'import pytest\n@pytest.mark.covers("FR-01.11")\ndef test_a():\n    pass\n'
+    res = parse_python(src, "tests/test_a.py")
+    assert res.hits[0].fr_id == "FR-01.11" and res.hits[0].ac_id is None
+
+
+def test_pytest_marker_malformed_ac_suffix_invalidates_the_whole_tag():
+    src = ('import pytest\n@pytest.mark.covers("FR-01.11/AC7")\n'
+           'def test_a():\n    pass\n')
+    res = parse_python(src, "tests/test_a.py")
+    assert not res.hits
+    assert res.invalid[0].raw == "FR-01.11/AC7"
+    assert res.invalid[0].reason == "non_canonical_ac_id"
 
 
 # --- TS/JS forms -----------------------------------------------------------

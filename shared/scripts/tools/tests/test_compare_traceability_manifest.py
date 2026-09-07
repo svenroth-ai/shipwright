@@ -166,6 +166,14 @@ class TestExecutionTierNeverGates:
         code, _stdout = _run(tmp_path, old, new)
         assert code == mod.EXIT_OK
 
+    def test_acs_map_disagreement_alone_is_not_structural(self, tmp_path):
+        # v4, D9: `acs` is execution-derived like `tests`/`coverage`, so it must not gate.
+        old_req = _requirement(acs={"AC07": {"tests": {}, "coverage": {"unit": "ok"}}})
+        new_req = _requirement(acs={"AC07": {"tests": {}, "coverage": {"unit": "MISSING"}}})
+        old, new = (_manifest(requirements={"01::FR-01.06": r}) for r in (old_req, new_req))
+        code, _stdout = _run(tmp_path, old, new)
+        assert code == mod.EXIT_OK
+
 
 class TestStructuralDriftGates:
     def test_priority_change_is_structural_drift(self, tmp_path):

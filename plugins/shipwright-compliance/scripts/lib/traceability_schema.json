@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://shipwright.dev/schemas/test-traceability.v3.schema.json",
-  "title": "Test-Traceability Manifest v3",
-  "description": "Generated compliance artifact (.shipwright/compliance/test-traceability.json) joining requirements to their tagged tests per layer, with per-test execution evidence. Frozen contract for the requirement->test traceability campaign (Spec test-traceability-across-layers.md sec 11). The committed artifact is derived/RTM-visibility only; enforcing gates regenerate base+head themselves (R3). v3: the requirement key namespace derives from the FR id's group digits (01::FR-01.03) instead of the spec's parent directory name (01-adopted::FR-01.03), so a directory rename no longer rewrites every key. Requirement INNER fields are unchanged from v2.",
+  "$id": "https://shipwright.dev/schemas/test-traceability.v4.schema.json",
+  "title": "Test-Traceability Manifest v4",
+  "description": "Generated compliance artifact (.shipwright/compliance/test-traceability.json) joining requirements to their tagged tests per layer, with per-test execution evidence. Frozen contract for the requirement->test traceability campaign (Spec test-traceability-across-layers.md sec 11). The committed artifact is derived/RTM-visibility only; enforcing gates regenerate base+head themselves (R3). v4 (campaign req3-04c-ac-identity-wave2 P3.2, D9 -- no content hash): additive AC-scoped test binding. A testLink may carry an optional `ac_id` (the tool-minted `ACnn` identity from lib.ac_identity, when the source tag named one -- e.g. covers(\"FR-01.11/AC07\")), and a requirement node may carry an optional `acs` breakdown mirroring its own tests/coverage shape, scoped per AC. Both are OMITTED ENTIRELY when the requirement has no AC-scoped tag anywhere, so a repo with none of these tags yet emits a byte-identical v3-shaped body (only the schema_version const moves). v3's namespace-derivation note (01::FR-01.03 instead of 01-adopted::FR-01.03) carries forward unchanged.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -18,7 +18,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": 3,
+      "const": 4,
       "description": "Pinned manifest schema version. Travels with requirement_model.MODEL_VERSION."
     },
     "collector_version": {
@@ -225,6 +225,42 @@
               "$ref": "#/$defs/coverageStatus"
             }
           }
+        },
+        "acs": {
+          "type": "object",
+          "description": "AC-scoped breakdown (v4, D9). OMITTED ENTIRELY when this requirement has no AC-scoped tag anywhere -- additive, same churn rule as fold_map, so a repo with no AC tags yet emits a byte-identical v3-shaped node. Keyed by the tool-minted canonical AC id (lib.ac_identity / lib.fr_tag_grammar.canonical_fr_ac), NEVER a content hash of the criterion's wording (D9 -- criteria get reworded and a hash would break on every reword). Each node mirrors this requirement's own tests/coverage shape, scoped to just that AC's directly-tagged links -- an AC has no required_layers of its own yet (deferred to P3.3/P3.5), so acNode.coverage is not subject to requiredLayersHaveCoverage.",
+          "propertyNames": {
+            "pattern": "^AC\\d{2,}$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/acNode"
+          }
+        }
+      }
+    },
+    "acNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tests", "coverage"],
+      "description": "One AC's test binding + coverage, scoped within its parent requirement (v4, D9).",
+      "properties": {
+        "tests": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "unit": { "type": "array", "items": { "allOf": [ { "$ref": "#/$defs/testLink" }, { "properties": { "layer": { "const": "unit" } } } ] } },
+            "integration": { "type": "array", "items": { "allOf": [ { "$ref": "#/$defs/testLink" }, { "properties": { "layer": { "const": "integration" } } } ] } },
+            "e2e": { "type": "array", "items": { "allOf": [ { "$ref": "#/$defs/testLink" }, { "properties": { "layer": { "const": "e2e" } } } ] } }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "unit": { "$ref": "#/$defs/coverageStatus" },
+            "integration": { "$ref": "#/$defs/coverageStatus" },
+            "e2e": { "$ref": "#/$defs/coverageStatus" }
+          }
         }
       }
     },
@@ -265,6 +301,11 @@
           "type": "string",
           "pattern": "^FR-\\d{2}\\.\\d{2}$",
           "description": "PROVENANCE ONLY. Present when the source tag named a FOLDED id and was resolved through fold_map to the surviving FR this link is filed under. The requirement this link covers is always the survivor (the node the link sits in); resolved_from records the id the test source literally carries, so an auditor reading @covers(\"FR-01.44\") can see why it counts toward FR-01.28. Omitted for a direct (non-folded) tag."
+        },
+        "ac_id": {
+          "type": "string",
+          "pattern": "^AC\\d{2,}$",
+          "description": "v4, D9. The tool-minted AC identity (lib.ac_identity) the source tag named alongside its FR, e.g. covers(\"FR-01.11/AC07\") -> \"AC07\". Present on this link REGARDLESS of whether it is filed under the requirement's top-level `tests` or under one of its `acs[ac_id].tests` (both carry the same link shape); omitted for a bare FR tag (E1: covers the requirement, AC unspecified). Python-only for this grammar version (fr_tag_grammar.canonical_fr_ac) -- the field itself is runner-agnostic and additive, so a future TS/JS AC tag needs no schema change."
         }
       }
     },

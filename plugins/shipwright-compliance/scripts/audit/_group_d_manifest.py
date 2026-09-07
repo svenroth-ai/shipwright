@@ -15,7 +15,7 @@ from pathlib import Path
 _MANIFEST_REL = ".shipwright/compliance/test-traceability.json"
 _SCHEMA_PATH = Path(__file__).resolve().parents[1] / "lib" / "traceability_schema.json"
 # Pinned to the schema's `const`, which travels with requirement_model.MODEL_VERSION.
-MANIFEST_SCHEMA_VERSION = 3
+MANIFEST_SCHEMA_VERSION = 4
 
 #: Provenance tokens that keep the PRE-TT8 event-only proof — the single
 #: definition of "legacy-exempt", deliberately not restated per consumer.
@@ -54,7 +54,7 @@ def manifest_present(project_root: Path) -> bool:
 
 
 def load_manifest(project_root: Path) -> dict | None:
-    """Read + schema-validate the committed v3 manifest. ``None`` on ANY failure.
+    """Read + schema-validate the committed v4 manifest. ``None`` on ANY failure.
 
     ``None`` drives a SKIP upstream — a missing/untrusted proof is never a pass. The
     committed manifest is derived / RTM-visibility only (R3); the detective validates it
@@ -67,9 +67,9 @@ def load_manifest(project_root: Path) -> dict | None:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    # Exactly-v3, mirroring the previous exactly-v2 strictness. A repo whose committed
-    # manifest is still v2 degrades to SKIP (never a silent pass) until the next regen
-    # rewrites it — the same fail-closed treatment a v1 manifest already got.
+    # Exactly-v4, mirroring the previous exactly-v3 strictness. A repo whose committed
+    # manifest is still v3 degrades to SKIP (never a silent pass) until the next regen
+    # rewrites it — the same fail-closed treatment a v1/v2 manifest already got.
     if not isinstance(data, dict) or data.get("schema_version") != MANIFEST_SCHEMA_VERSION:
         return None
     if not isinstance(data.get("requirements"), dict):

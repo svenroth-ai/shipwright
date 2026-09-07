@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "collector_version": "test_links/0.0.0-contract",
   "generated_at": "2026-07-15T00:00:00+00:00",
   "source_commit": "1111111111111111111111111111111111111111",
