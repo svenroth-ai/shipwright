@@ -101,7 +101,7 @@ revise both — run over the merge-base diff)
 | 5 | OpenAI | high | Untagged-test insertion tags every `test*` in the file — file-scope, not test-scope, attribution | accepted-with-mitigation — same disposition as plan-review #7 |
 | 6 | GLM | medium | `--grep` substring match over-approximates (prefix-slug collision, prose mention) | accepted-and-fixed — every candidate commit now re-checked against an exact whole-line `Run-ID: <slug>` regex match (git's native trailer parser was tried first and rejected — this repo's real commits put `Run-ID:` and `Co-authored-by:` in separate paragraphs, so `%(trailers:...)` silently under-reports) |
 | 7 | GLM+OpenAI | medium | No fixture/integration test exercises the git join at all | accepted-and-fixed — `test_backfill_ac_provenance_cli_git.py` added, against real throwaway git repos |
-| 8 | GLM | low | `_enumerate_python_tests`/insertion path may mis-handle class-qualified or nested test ids | not-fixed, tracked — real edge case, no evidence it fired in this run (all mechanical candidates are module-level `test_*` functions); left as a known limitation of the insertion path, not blocking this backfill's own correctness |
+| 8 | GLM | low | `_enumerate_python_tests`/insertion path may mis-handle class-qualified or nested test ids | accepted-and-fixed at the Tier-3 CI-gate re-review — see below; AST-qualified (`Class.test_name`) rather than left tracked |
 | 9 | GLM | low | Orphan-tag write left on disk after a non-zero exit | accepted-and-fixed — `main()` now snapshots every candidate file before writing and restores all of them byte-for-byte on an orphan |
 | 10 | GLM | low | `core.quotePath` could hide non-ASCII paths; `"/tests/" in rel` misses a top-level `tests/` layout | accepted-and-fixed — `-c core.quotePath=off` added; substring check replaced with a path-segment check (caught a REAL bug: the fix's own regression test failed against the pre-fix code) |
 | 11 | GLM | medium | `_upgrade_bare_tags` uses `write_text` with no atomic-write/failure handling | accepted-and-fixed at Stage-3 doubt-review — see D4 below; `write_text`'s `os.linesep` re-expansion was also a latent CRLF-corruption bug on Windows, not just a non-atomicity gap; both closed together by routing through the same raw-bytes/detected-newline discipline as `apply_writes` |
@@ -117,23 +117,38 @@ revise both — run over the merge-base diff)
 | D4 | low | "0 tool-driven upgrades fired this run" (why the newline bug was left as tracked-not-fixed) is evidence, not just arithmetic | accepted-and-fixed regardless of which — fixed `_upgrade_bare_tags`'s write path to use the same raw-bytes/detected-newline discipline as `backfill_write.apply_writes`, closing both the non-atomicity gap (#11 above) and the CRLF-corruption risk in the same change |
 | D5 | low | The committed coverage-report matches the tree exactly | accepted-and-fixed — two rows corrected for the two post-tagging bloat-cap splits (`test_completion_writers.py`, `test_silent_revert.py`); see `coverage-report.md` |
 
+## Tier-3 CI-Gate Findings (required "PR Review" check, openai/gpt-5.6-luna,
+verdict block — re-review of the merge-commit diff after the doubt-review fix
+commit fell behind `origin/main` and had to be refreshed via `ensure_current.py`)
+
+| # | Severity | Finding (short) | Disposition |
+|---|---|---|---|
+| T1 | high | `_enumerate_python_tests`'s unqualified `rel::name` id (same as finding #8 above) collides for two same-named methods in different classes, and this unit's own dedup-by-test_id (D3's fix) then silently drops one write | accepted-and-fixed — `_enumerate_python_tests` now returns an AST-qualified name (`ClassName.test_name`, nested classes dotted); this tool's own `test_id`/dedup keys use it, while the "already tagged" check against the frozen `fr_tag_grammar` reference parser's `existing` set still matches on the unqualified form (that parser's own id format is out of scope to change here). Regression test: two classes with an identically-named `test_it` method, both must receive their own tag |
+| T2 | high | `_upgrade_bare_tags` widened every line in the file matching `@pytest.mark.covers("<fr_id>")`, regardless of which test the decorator belonged to — the general mechanism behind the D1 bug already found and fixed by hand, still live in the code itself | accepted-and-fixed — rewritten to map each bare-tagged line to its OWN AST-qualified test via `decorator_list`, upgrade only when exactly one test in the file owns that bare tag, and skip as `ambiguous_multiple_bare_tags_same_fr` (no line touched, no fallthrough to new-tag insertion) when two or more do. Regression test: two tests sharing one bare FR tag, neither touched |
+
+Both T1/T2 are mechanism-level fixes to code this unit itself introduced (not
+the frozen shared `backfill_scan.py`/`fr_tag_grammar.py` engines, which have
+the same unqualified-id shape by long-standing, out-of-scope design) — T2 in
+particular means the D1 root cause is now closed at the mechanism, not only
+patched by hand for the one batch the doubt-review happened to catch.
+
 ## Consequences
 
 The monorepo's AC-scoped coverage is no longer zero, with an honest,
-conservative, and now bug-fixed derivation trail; three real correctness bugs
+conservative, and now bug-fixed derivation trail; four real correctness bugs
 (cross-FR slug reuse, whole-file regex over-substitution, per-file
-mis-attribution inside a group-level-verified mechanical batch) were found
-and fixed — two by this unit's own review cascade before shipping, one (D1)
-by the orchestrator's Stage-3 doubt-review after merge-base review — plus a
-metadata bug (epoch-zero timestamp) in this unit's own regen step and a
-latent Windows newline-corruption bug (D4) in an unexercised code path. D2
-and the earlier-tracked class-qualified-test-ids finding (#8) both remain
-acknowledged, currently-latent risks left tracked rather than fixed — #8 in
-this unit's own insertion path (no evidence it fires against this run's real
-data), D2 in shared `fr_criteria.py` infrastructure this unit does not own
-(`trg-ce51177e`; fixing it means touching 9 downstream gate consumers, which
-is scope creep against a one-shot backfill unit and belongs to whichever unit
-next touches that module).
+mis-attribution inside a group-level-verified mechanical batch, and the
+same over-substitution mechanism's general form) were found and fixed — two
+by this unit's own review cascade before shipping, one (D1) by the
+orchestrator's Stage-3 doubt-review after merge-base review, one (T2) by the
+required Tier-3 CI-gate re-review of the merge commit — plus a metadata bug
+(epoch-zero timestamp) in this unit's own regen step and a latent Windows
+newline-corruption bug (D4) in an unexercised code path. D2 remains an
+acknowledged, currently-latent risk left tracked rather than fixed, in shared
+`fr_criteria.py` infrastructure this unit does not own (`trg-ce51177e`; fixing
+it means touching 9 downstream gate consumers, which is scope creep against a
+one-shot backfill unit and belongs to whichever unit next touches that
+module).
 
 ## Rejected alternatives
 

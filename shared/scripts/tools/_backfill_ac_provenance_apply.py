@@ -48,19 +48,37 @@ class _Record:
 
 
 def _enumerate_python_tests(source: str) -> list[tuple[str, int, int]]:
-    """``(name, decl_line, indent)`` for every ``test*`` function — the Python
+    """``(qualname, decl_line, indent)`` for every ``test*`` function — the Python
     half of ``backfill_scan._enumerate``, kept local so this tool depends on
     the shared engine's WRITER (``backfill_write``) but not its private
-    filesystem-scan internals."""
+    filesystem-scan internals.
+
+    ``qualname`` is AST-qualified by enclosing class (``ClassName.test_name``,
+    nested classes dotted) — a plain ``ast.walk`` (as the shared engine's own
+    ``backfill_scan._enumerate`` uses, and the frozen ``fr_tag_grammar``
+    reference parser too) loses class context, so two same-named methods in
+    different classes produce the identical ``rel::name`` id and collide in
+    THIS tool's own dedup-by-test_id / write-report keys (external code
+    review, P3.4 high). Fixing the shared engine/frozen grammar the same way
+    is out of scope here — that changes their `test_id` format for every
+    caller; this tool only needs its own keys to stop colliding."""
     try:
         tree = ast.parse(source)
     except SyntaxError:
         return []
-    return [
-        (n.name, n.lineno - 1, n.col_offset)
-        for n in ast.walk(tree)
-        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name.startswith("test")
-    ]
+    out: list[tuple[str, int, int]] = []
+
+    def visit(node: ast.AST, prefix: list[str]) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.ClassDef):
+                visit(child, [*prefix, child.name])
+            elif isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if child.name.startswith("test"):
+                    out.append((".".join([*prefix, child.name]), child.lineno - 1, child.col_offset))
+                visit(child, prefix)
+
+    visit(tree, [])
+    return out
 
 
 def _covers_pattern(fr_id: str) -> re.Pattern:
@@ -78,21 +96,59 @@ def _covers_pattern(fr_id: str) -> re.Pattern:
 _DECORATOR_LINE_RE = re.compile(r"^\s*@pytest\.mark\.covers\(.*\)\s*$")
 
 
-def _upgrade_bare_tags(text: str, fr_id: str, ac_id: str) -> tuple[str, int]:
-    """Widen an already-bare ``covers("<fr_id>")`` to name ``ac_id`` -- ONLY on a
-    line that is itself a ``@pytest.mark.covers(...)`` decorator, never a
-    same-looking occurrence anywhere else in the file's text."""
+def _bare_tag_test_owners(tree: ast.AST, lines: list[str], fr_id: str) -> dict[str, list[int]]:
+    """Map each test's AST-qualified name to the 0-based line indices of its OWN
+    bare ``@pytest.mark.covers("<fr_id>")`` decorator(s) — never just every
+    line in the file that happens to match, which conflates unrelated tests
+    that merely share the same bare FR tag (external code review, P3.4 high)."""
     pattern = _covers_pattern(fr_id)
+    owners: dict[str, list[int]] = {}
+
+    def visit(node: ast.AST, prefix: list[str]) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.ClassDef):
+                visit(child, [*prefix, child.name])
+            elif isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if child.name.startswith("test"):
+                    qualname = ".".join([*prefix, child.name])
+                    for dec in child.decorator_list:
+                        i = dec.lineno - 1
+                        if 0 <= i < len(lines) and _DECORATOR_LINE_RE.match(lines[i]) and pattern.search(lines[i]):
+                            owners.setdefault(qualname, []).append(i)
+                visit(child, prefix)
+
+    visit(tree, [])
+    return owners
+
+
+def _upgrade_bare_tags(text: str, fr_id: str, ac_id: str) -> tuple[str, int, bool]:
+    """Widen an already-bare ``covers("<fr_id>")`` to name ``ac_id`` -- ONLY on
+    the ONE test's own decorator line, and ONLY when exactly one test in the
+    file carries that bare tag. Two-or-more tests sharing the same bare FR tag
+    is ambiguous (which one does this AC actually describe?) and must be
+    reported, never guessed at by upgrading every matching line regardless of
+    which test it belongs to (external code review, P3.4 high — a raw
+    whole-file substitution "is not conservative"). Returns
+    ``(new_text, count, ambiguous)``; ``ambiguous`` true means nothing was
+    written and the caller must skip, not fall through to new-tag insertion."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text, 0, False
     lines = text.split("\n")
+    owners = _bare_tag_test_owners(tree, lines, fr_id)
+    if not owners:
+        return text, 0, False
+    if len(owners) > 1:
+        return text, 0, True
+    pattern = _covers_pattern(fr_id)
     count = 0
-    for i, line in enumerate(lines):
-        if not _DECORATOR_LINE_RE.match(line):
-            continue
-        new_line, n = pattern.subn(f'covers("{fr_id}/{ac_id}"', line)
+    for i in next(iter(owners.values())):
+        new_line, n = pattern.subn(f'covers("{fr_id}/{ac_id}"', lines[i])
         if n:
             lines[i] = new_line
             count += n
-    return "\n".join(lines), count
+    return "\n".join(lines), count, False
 
 
 def apply_upgrades(project_root: Path, report: dict) -> dict:
@@ -127,7 +183,15 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
                 skipped.append({**cand, "file": rel, "reason": "unreadable"})
                 continue
             newline = "\r\n" if "\r\n" in text else "\n"
-            new_text, count = _upgrade_bare_tags(text, cand["fr_id"], cand["ac_id"])
+            new_text, count, ambiguous = _upgrade_bare_tags(text, cand["fr_id"], cand["ac_id"])
+            if ambiguous:
+                # Two-or-more tests in this file share the bare fr_id tag —
+                # which one this AC actually describes is unknowable from the
+                # candidate alone (external code review, P3.4 high). Report,
+                # never guess: no line is upgraded and the file is not also
+                # offered for new-tag insertion (it already has real tags).
+                skipped.append({**cand, "file": rel, "reason": "ambiguous_multiple_bare_tags_same_fr"})
+                continue
             if count:
                 lines = new_text.split("\n")
                 # _upgrade_bare_tags split on bare "\n": a CRLF source leaves a
@@ -145,10 +209,17 @@ def apply_upgrades(project_root: Path, report: dict) -> dict:
             # as a new-tag insertion candidate (re-read: the upgrade pass above
             # never touches this file, so `text` is still current).
             existing = {h.test for h in parse_source(rel, text).hits}
-            for name, decl_line, indent in _enumerate_python_tests(text):
-                test_id = f"{rel}::{name}"
-                if test_id in existing:
+            for qualname, decl_line, indent in _enumerate_python_tests(text):
+                # `existing` is keyed by the frozen fr_tag_grammar's unqualified
+                # "rel::name" binding (ADR-frozen contract, out of scope to
+                # requalify) — check membership on the same unqualified form,
+                # but carry the QUALIFIED name in this tool's own test_id so two
+                # same-named methods in different classes never collide in the
+                # dedup/report keys below (external code review, P3.4 high).
+                unqualified = f"{rel}::{qualname.rsplit('.', 1)[-1]}"
+                if unqualified in existing:
                     continue  # already tagged for something else — never guessed
+                test_id = f"{rel}::{qualname}"
                 writes.append((_Record(test_id, rel, decl_line, indent), _Candidate(token)))
                 write_meta.append({
                     "test": test_id, "fr_id": cand["fr_id"], "ac_id": cand["ac_id"],

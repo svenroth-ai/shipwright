@@ -97,3 +97,68 @@ def test_apply_upgrades_only_rewrites_the_real_decorator_never_lookalike_text(tm
     text = (tmp_path / rel).read_text(encoding="utf-8")
     assert text.count('covers("FR-01.01/AC01")') == 1  # the real decorator, upgraded
     assert text.count('covers("FR-01.01")') == 3        # docstring + comment + assertion, untouched
+
+
+_TWO_TESTS_SAME_BARE_FR = '''from __future__ import annotations
+
+import pytest
+
+
+@pytest.mark.covers("FR-01.01")
+def test_alpha():
+    assert True
+
+
+@pytest.mark.covers("FR-01.01")
+def test_beta():
+    assert False
+'''
+
+
+def test_apply_upgrades_skips_ambiguous_when_two_tests_share_the_bare_fr_tag(tmp_path):
+    """External code review (P3.4 high): upgrading EVERY matching decorator
+    line regardless of which test it belongs to can silently assign one AC to
+    an unrelated test. Two tests sharing a bare FR tag for different reasons
+    must be reported as ambiguous, with NEITHER line touched."""
+    rel = "tests/test_ambiguous.py"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / rel).write_text(_TWO_TESTS_SAME_BARE_FR, encoding="utf-8")
+    report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
+    result = apply_mod.apply_upgrades(tmp_path, report)
+    assert result["tags_upgraded_total"] == 0
+    assert result["tags_inserted_total"] == 0
+    assert result["skipped"] == [{**_candidate("FR-01.01", "AC01", [rel]),
+                                    "file": rel, "reason": "ambiguous_multiple_bare_tags_same_fr"}]
+    text = (tmp_path / rel).read_text(encoding="utf-8")
+    assert text == _TWO_TESTS_SAME_BARE_FR  # untouched — neither decorator was guessed at
+
+
+_TWO_CLASSES_SAME_METHOD_NAME = '''from __future__ import annotations
+
+
+class TestOne:
+    def test_it(self):
+        assert True
+
+
+class TestTwo:
+    def test_it(self):
+        assert False
+'''
+
+
+def test_apply_upgrades_inserts_into_both_same_named_methods_in_different_classes(tmp_path):
+    """External code review (P3.4 high): an unqualified ``rel::name`` test_id
+    collides for two same-named methods in different classes, and the tool's
+    own dedup-by-test_id then silently drops one. AST-qualifying by enclosing
+    class must let both receive their own tag."""
+    rel = "tests/test_two_classes.py"
+    (tmp_path / "tests").mkdir()
+    (tmp_path / rel).write_text(_TWO_CLASSES_SAME_METHOD_NAME, encoding="utf-8")
+    report = {"candidates": [_candidate("FR-01.01", "AC01", [rel])]}
+    result = apply_mod.apply_upgrades(tmp_path, report)
+    assert result["tags_inserted_total"] == 2
+    inserted_tests = {m["test"] for m in result["inserted_new_tags"]}
+    assert inserted_tests == {f"{rel}::TestOne.test_it", f"{rel}::TestTwo.test_it"}
+    text = (tmp_path / rel).read_text(encoding="utf-8")
+    assert text.count('@pytest.mark.covers("FR-01.01/AC01")') == 2
