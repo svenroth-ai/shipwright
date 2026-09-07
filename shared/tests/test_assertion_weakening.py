@@ -1468,3 +1468,42 @@ def test_js_a_template_interpolation_is_untouched_by_escape_decoding():
     verbatim -- decoding backslash escapes and evaluating an interpolation
     are unrelated operations, and this scanner never attempts the latter."""
     assert aw._js_decode_string_escapes("case ${x}\\n") == "case ${x}\n"
+
+
+def test_js_playwrights_test_describe_is_not_a_false_block():
+    """External Tier-3 review, PR #685 (twenty-second round, blocking):
+    Playwright's `test.describe(...)` (a suite grouping, not a test
+    declaration) was matched as an invoked `test` call with an unrecognized
+    modifier chain, failing the whole file closed as unparseable -- even
+    though the real, individually-named test inside it was untouched."""
+    before = "test.describe('suite', () => { test('a', () => { expect(1).toBe(1); }); });\n"
+    after = "test.describe('suite', () => { test('a', () => { expect(1).toBe(2); }); });\n"
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+    assert "assertion_changed" in _kinds(findings)
+
+
+def test_js_playwrights_test_step_is_not_a_false_block():
+    """Same review finding, the other named API: `test.step(...)` labels a
+    sub-step inside a test's body -- its own assertions are still visible
+    via the enclosing real test's span, but the `test.step` call itself must
+    not fail the file closed as an unrecognized invoked chain."""
+    before = (
+        "test('a', async () => { await test.step('do it', async () => { "
+        "expect(1).toBe(1); }); });\n"
+    )
+    after = before.replace("toBe(1)", "toBe(2)")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+    assert "assertion_changed" in _kinds(findings)
+
+
+def test_js_a_genuinely_unrecognized_chain_on_test_still_fails_closed():
+    """The other side of the same fix: only the specific Playwright-namespace
+    chains named above are exempted -- an actually unknown chain on `test`
+    must still fail closed exactly as before, so this narrowing cannot be
+    used to sneak an unrelated weakened modifier past the gate unnoticed."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { expect(1).toBe(1); }); test.bogus('b', () => {});\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                    blocking=True)

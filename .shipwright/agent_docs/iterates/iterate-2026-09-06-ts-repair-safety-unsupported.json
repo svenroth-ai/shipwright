@@ -211,11 +211,16 @@
         "behavior": "A `\\u{...}` escape whose hex value is a syntactically well-formed but out-of-Unicode-range code point (above 0x10FFFF) no longer raises an uncaught Python ValueError from `chr()` and crashes the checker -- it now falls back to the same undecoded-literal treatment already given to any other malformed escape, failing closed the controlled way",
         "disposition": "tested",
         "evidence": "test_js_an_out_of_range_unicode_codepoint_escape_does_not_crash PASSED -- external Tier-3 review (openai/gpt-5.6-luna), PR #685, twenty-first round: same round as the surrogate-pair fix, found while implementing round twenty's escape decoder's `\\u{...}` branch"
+      },
+      {
+        "behavior": "Playwright's `test.describe(...)` (a suite grouping) and `test.step(...)` (a labelled sub-step inside a test body) are recognized as known, ignored Playwright-namespace calls on `test` instead of failing the whole file closed as an unrecognized-and-invoked modifier chain, while a genuinely unknown chain on `test` still fails closed exactly as before",
+        "disposition": "tested",
+        "evidence": "test_js_playwrights_test_describe_is_not_a_false_block, test_js_playwrights_test_step_is_not_a_false_block, and test_js_a_genuinely_unrecognized_chain_on_test_still_fails_closed all PASSED -- external Tier-3 review (openai/gpt-5.6-luna), PR #685, twenty-second round: an ordinary, unweakened Playwright spec file using either API was reported unparseable and blocked outright"
       }
     ],
     "counts": {
-      "testable": 40,
-      "tested": 40,
+      "testable": 41,
+      "tested": 41,
       "untestable": 0,
       "untested_testable": 0
     }

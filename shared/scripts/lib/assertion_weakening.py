@@ -743,6 +743,31 @@ _JS_ALLOWED_CHAINS = frozenset({
     "", ".skip", ".only", ".todo", ".fixme", ".each",
     ".skip.each", ".only.each", ".todo.each", ".fixme.each",
 })
+#: Playwright's `test` namespace object also exposes non-test-declaration
+#: helpers as chained calls on that same `test` identifier: `test.describe(
+#: ...)` groups tests into a suite (analogous to `describe`, not a test
+#: itself) and `test.step(...)` marks a labelled sub-step INSIDE an
+#: already-collected test's body. An invoked call to either one used to fail
+#: closed as an "unrecognized modifier chain", reporting an ordinary,
+#: unweakened Playwright spec file as unparseable and blocking the repair
+#: outright (external Tier-3 review, PR #685, twenty-second round).
+#: Recognized here and then explicitly SKIPPED — not folded into `tests`
+#: (would double-count assertions already attributed to the real test(s)
+#: nested inside, or fabricate a pooled test entry for a suite that is not
+#: a test) or into `describes` (would need this scanner to track
+#: Playwright's own focus/skip propagation rules, distinct from Jest/
+#: Jasmine's, which it does not implement). Named narrowing, not closed: a
+#: `test.describe.only`/`test.describe.skip` suite-level focus or skip is
+#: invisible to mark tracking here -- a false negative, not a false block.
+#: Assertions inside a `test.step(...)` callback are still visible: they
+#: sit within the enclosing real test's own [open_idx, close_idx] span, the
+#: same span `_js_assertion_signatures` already scans regardless of what
+#: nested wrapper calls that span contains.
+_JS_TEST_NAMESPACE_IGNORED_CHAINS = frozenset({
+    ".describe", ".describe.only", ".describe.skip", ".describe.fixme",
+    ".describe.configure", ".describe.parallel", ".describe.serial",
+    ".step", ".step.skip",
+})
 #: `assert.<method>(` (Node's built-in `assert` module, and Chai's `assert`
 #: interface — `assert.strictEqual(a, b)`, `assert.ok(x)`) is at least as
 #: common as bare `assert(x)` and was invisible without this, an undocumented
@@ -1105,6 +1130,8 @@ def _js_collect(source: str) -> dict[str, "_Test"] | None:
         if not _js_name_is_standalone_call(source, m.start()):
             continue  # `fixture.test(...)` / `function test(...)` — not a describe/it/test call
         chain, chain_end = _js_scan_chain(source, match, m.end())
+        if m.group(0) == "test" and chain in _JS_TEST_NAMESPACE_IGNORED_CHAINS:
+            continue
         recognized = chain in _JS_ALLOWED_CHAINS
         resolved = _js_resolve_test_call(source, match, chain_end, chain.endswith(".each"))
         if resolved is None:
