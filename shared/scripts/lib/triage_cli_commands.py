@@ -35,6 +35,7 @@ from triage import (  # noqa: E402
 from shared_lib_loader import load_shared_lib  # noqa: E402
 from lib.triage_amend import has_amend_content, validate_amend_event  # noqa: E402
 from lib.triage_contract import build_listing  # noqa: E402
+from lib.triage_cross_tree import cross_tree_delivery_facts  # noqa: E402
 from lib.triage_delivery import format_pending_delivery_notice  # noqa: E402
 from lib.triage_integrity import store_facts  # noqa: E402
 from lib.triage_render import format_item, render_deferred_section  # noqa: E402
@@ -79,6 +80,11 @@ def ensure_utf8_stdout() -> None:
             pass  # detached/closed stream — let the write surface the error
 
 
+def _is_valid_amend(event: dict) -> bool:
+    return has_amend_content(event) and validate_amend_event(
+        event, severities=SEVERITIES, kinds=KINDS)
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     ensure_utf8_stdout()
     project_root = Path(args.project_root)
@@ -89,13 +95,14 @@ def cmd_list(args: argparse.Namespace) -> int:
     deferred = [it for it in resolved if it.get("status") == "snoozed"]
     corruption, undelivered, undelivered_amends = store_facts(
         _triage_path(project_root), _outbox_path(project_root),
-        applied_statuses=STATUSES,
-        is_valid_amend=lambda event: has_amend_content(event) and validate_amend_event(
-            event, severities=SEVERITIES, kinds=KINDS),
+        applied_statuses=STATUSES, is_valid_amend=_is_valid_amend,
     )
+    cross_status, cross_amends, status_branches, amend_branches = cross_tree_delivery_facts(
+        project_root, applied_statuses=STATUSES, is_valid_amend=_is_valid_amend)
+    undelivered, undelivered_amends = undelivered | cross_status, undelivered_amends | cross_amends
     if getattr(args, "json", False):
-        return _emit_json(project_root, items, deferred, undelivered,
-                          undelivered_amends, corruption)
+        return _emit_json(project_root, items, deferred, undelivered, undelivered_amends, corruption,
+                          status_origin_branches=status_branches, amend_origin_branches=amend_branches)
     if not items:
         sys.stdout.write("No open triage items.\n\n")
     for item in items:
@@ -106,12 +113,14 @@ def cmd_list(args: argparse.Namespace) -> int:
     # A dismissed-but-buffered item is in neither section, so this is its only
     # human-visible delivery signal; amend delivery is exposed in the JSON contract.
     if undelivered:
-        sys.stdout.write(format_pending_delivery_notice(undelivered) + "\n\n")
+        sys.stdout.write(format_pending_delivery_notice(
+            undelivered, origin_branches=status_branches) + "\n\n")
     return 0
 
 
 def _emit_json(project_root: Path, items: list[dict], deferred: list[dict],
-               undelivered: set, undelivered_amends: set, corruption: list) -> int:
+               undelivered: set, undelivered_amends: set, corruption: list, *,
+               status_origin_branches: dict, amend_origin_branches: dict) -> int:
     """Serialise the machine contract. Its shape lives in `lib.triage_contract`."""
     payload = build_listing(
         items, deferred,
@@ -121,6 +130,8 @@ def _emit_json(project_root: Path, items: list[dict], deferred: list[dict],
         undelivered_status_ids=undelivered,
         undelivered_amend_ids=undelivered_amends,
         corruption=corruption,
+        status_origin_branches=status_origin_branches,
+        amend_origin_branches=amend_origin_branches,
     )
     sys.stdout.write(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     return 0

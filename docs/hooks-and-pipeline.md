@@ -341,6 +341,14 @@ outbox on idle main (`should_route_to_outbox`), else residence-derived (a flip
 follows its append's file), so an idle-main dismiss is never undelivered tracked
 drift (2026-06-12); the D2 sweep folds the outbox into the iterate PR branch +
 GCs it. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY.
+**On a MAIN tree only** (2026-09-06, `trg-5e0b9b16`/`trg-e85c5c8e`), that union
+additionally folds in status/amend events for KNOWN ids from every sibling
+worktree's own tracked log (`lib.triage_cross_tree`, filesystem-only
+discovery, `(path, mtime)`-cached) — a decision recorded in a worktree, not
+yet delivered to `origin`, now resolves to its decided status and is marked
+pending, naming the branch (`originBranch`/`originBranches` in `list --json`)
+instead of reading back as still-open. Reported, never delivered: nothing is
+written by this fold, and it never seeds an id this tree never appended.
 
 **A tool that rewrites the TRACKED log and does not commit it switches the
 delivery channel off** (audit 2026-07-28 finding 16, fixed

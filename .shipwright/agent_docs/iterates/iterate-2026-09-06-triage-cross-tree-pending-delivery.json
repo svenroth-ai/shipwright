@@ -1,0 +1,32 @@
+{
+  "run_id": "iterate-2026-09-06-triage-cross-tree-pending-delivery",
+  "date": "2026-09-07T00:05:01.740838Z",
+  "event_at": "2026-09-06T14:44:23.812134+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/triage-cross-tree-pending-delivery",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-06-triage-cross-tree-pending-delivery",
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 15,
+      "tested": 15,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_triage_cross_tree_cli_roundtrip.py -v",
+    "exit_code": 0,
+    "tests_run": 2
+  },
+  "declared_removals": []
+}

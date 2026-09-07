@@ -860,7 +860,7 @@
     {
       "path": "shared/scripts/lib/triage_cli_commands.py",
       "limit": 300,
-      "current": 313,
+      "current": 324,
       "state": "grandfathered",
       "adr": null
     },
@@ -1105,7 +1105,7 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 882,
+      "current": 893,
       "state": "exception",
       "adr": "ADR-121"
     },

@@ -93,3 +93,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Resolve the bash/Python temp-file boundary instead of trusting a bare `/tmp/` path](iterate-2026-09-03-review-scratch-path-scratch-boundary.md)
 - [ADR: Stop sending codex-exec-only flags to `codex login status`](iterate-2026-09-05-codex-availability-probe-flags-codex-login-status-flags.md)
 - [ADR: Diff-scoped FR-hygiene gate for touched rows, plus I7/I8](iterate-2026-09-06-fr-hygiene-touched-rows-fr-hygiene-gate.md)
+- [Fold sibling-worktree triage decisions into a main tree's own read](iterate-2026-09-06-triage-cross-tree-pending-delivery-cross-tree-fold.md)
