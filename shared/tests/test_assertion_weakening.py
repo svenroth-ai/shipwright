@@ -779,6 +779,44 @@ def test_js_a_keyword_glued_string_still_parses_as_a_real_string():
     assert "assertion_changed" in _kinds(findings, blocking=False)
 
 
+def test_js_a_skip_moving_into_a_duplicate_content_group_is_reported():
+    """External Tier-3 review, PR #685 (sixteenth round, blocking): a mark
+    moving OUT of a unique-content instance and INTO a duplicate-content
+    group (two pooled instances with identical assertion content) left the
+    whole pool's aggregate mark count flat -- the move's other end cancels
+    it out -- and never touched the per-unique-content-key relocation
+    matcher, since a duplicate-content key isn't unique. Previously a
+    completely silent clear; now reported (still ambiguous -- more than one
+    instance shares the content, so which one moved is unknown)."""
+    before = ("describe('suite', () => {\n"
+              "  it('dup', () => { expect(1).toBe(1); });\n"
+              "  it('dup', () => { expect(1).toBe(1); });\n"
+              "  it.skip('dup', () => { expect(2).toBe(2); });\n});\n")
+    after = ("describe('suite', () => {\n"
+             "  it.skip('dup', () => { expect(1).toBe(1); });\n"
+             "  it('dup', () => { expect(1).toBe(1); });\n"
+             "  it('dup', () => { expect(2).toBe(2); });\n});\n")
+    findings = aw.detect_weakening([_jschange(before, after)])
+    assert _kinds(findings, blocking=True) == []
+    assert "pooled_mark_possibly_relocated" in _kinds(findings, blocking=False)
+
+
+def test_js_a_pure_swap_within_an_identical_duplicate_pair_is_the_named_irreducible_residual():
+    """The one shape the fix above does NOT and cannot close: a mark
+    permuting between exactly two instances that share identical content,
+    with nothing else in the pool touched. Viewed as a multiset of
+    (content, marks) pairs the after state is indistinguishable from
+    before -- not merely hard to pin down, genuinely unrecoverable -- so
+    this stays the irreducible residual this file has named since round 3."""
+    before = ("describe('suite', () => {\n"
+              "  it.skip('dup', () => { expect(1).toBe(1); });\n"
+              "  it('dup', () => { expect(1).toBe(1); });\n});\n")
+    after = ("describe('suite', () => {\n"
+             "  it('dup', () => { expect(1).toBe(1); });\n"
+             "  it.skip('dup', () => { expect(1).toBe(1); });\n});\n")
+    assert aw.detect_weakening([_jschange(before, after)]) == []
+
+
 def test_js_duplicate_literal_test_names_are_pooled_not_ordinal_keyed():
     """Two `it('works', ...)` calls sharing one literal title — ordinary
     Jest/Vitest style across different `describe` blocks — used to be keyed

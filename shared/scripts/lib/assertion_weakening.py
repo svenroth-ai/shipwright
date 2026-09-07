@@ -1298,6 +1298,49 @@ def _relocated_mark_findings(path: str, qualname: str, was: _Test, now: _Test) -
                     "instance persisting; a human read is needed",
                 )
             )
+    # The loop above's own docstring names the residual it deliberately does
+    # NOT close: two instances sharing IDENTICAL content defeat the
+    # per-key exact match, since neither is individually addressable. A mark
+    # that PURELY permutes between two such instances, with nothing else in
+    # the pool changing, is genuinely unrecoverable — as a multiset of
+    # (content, marks) pairs, the after state is indistinguishable from the
+    # before one, full stop, not merely hard to pin down.
+    #
+    # But a narrower, DETECTABLE case was still falling through uncaught: a
+    # mark moving INTO or OUT OF a duplicate-content group from elsewhere in
+    # the same pool. That changes the group's own aggregate mark composition
+    # while leaving both that content's occurrence count (still shared,
+    # unique-content matching above never looks at it) and the WHOLE pool's
+    # aggregate (the move's other end cancels it out) exactly flat — invisible
+    # to every check above and to the plain aggregate check below alike: a
+    # silent clear of a genuine execution-state change, not merely an
+    # unreported one (external Tier-3 review, PR #685, sixteenth round).
+    # Reported, not blocked — still ambiguous, since more than one instance
+    # shares this content and nothing here says which one specifically
+    # gained or lost the mark.
+    for content, count in before_counts.items():
+        if count <= 1 or after_counts.get(content, 0) != count:
+            continue
+        before_group_marks = Counter()
+        for assertions, marks in was.instances:
+            if assertions == content:
+                before_group_marks.update(marks)
+        after_group_marks = Counter()
+        for assertions, marks in now.instances:
+            if assertions == content:
+                after_group_marks.update(marks)
+        if before_group_marks != after_group_marks:
+            findings.append(
+                Finding(
+                    "pooled_mark_possibly_relocated", False, f"{path}::{qualname}",
+                    f"{count} instances share identical assertion content, "
+                    "and the marks attached to them as a group changed even "
+                    "though neither that content's occurrence count nor the "
+                    "whole pool's aggregate mark count did — a mark may have "
+                    "moved between this group and elsewhere in the pool; a "
+                    "human read is needed",
+                )
+            )
     return findings
 
 
