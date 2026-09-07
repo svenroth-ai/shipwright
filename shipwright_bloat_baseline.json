@@ -1070,7 +1070,7 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 1085,
+      "current": 1087,
       "state": "exception",
       "adr": "ADR-125"
     },

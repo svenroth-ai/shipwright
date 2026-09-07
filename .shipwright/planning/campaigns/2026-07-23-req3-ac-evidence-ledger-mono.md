@@ -1712,3 +1712,98 @@ lines before finalizing.
 The criteria drafted for .04/.05/.07/.08/.09/.12 in the first pass of this run
 were written from `SKILL.md` prose, **not** verified against code, and are held
 as drafts pending the same treatment FR-01.03 received.
+
+## Reconciliation with spec.md's (E) bullets (P3.3, 2026-09-07)
+
+Campaign `req3-04c-ac-identity-wave2` (§3.3 of its BRIEF) flagged that this
+ledger's per-FR `#` column and `spec.md`'s `(E)` bullets are **not aligned**.
+The alignment problem has two separable parts, and only one of them is a
+mechanical fact this pass can state with confidence.
+
+**1. The two numbering schemes were never meant to match 1:1 — this is not a
+counting bug, it is an undocumented difference in what each number counts.**
+`(E)` is a marker, not an index (SPEC E1: "empirical / assertion-shaped", the
+same reason a criterion is `AC07` and not `E07`) — `spec.md` never numbers its
+bullets. This ledger's `#`/`C`/`—` labels, by contrast, are a **per-FR-walk
+sequence** assigned during that FR's own walk session, and the walk routinely
+does NOT produce one row per `(E)` bullet: it **splits** a bullet into several
+rows, **merges** several bullets into one row, **synthesizes** a `C` ("central")
+row that restates the requirement's core promise without being any single
+bullet's text, and **adds** rows for guarantees the walk found true by reading
+the code that no bullet states at all ("out-of-scope, added by the probe" — see
+`.01`'s row 7 and `.18`'s row 9). `FR-01.18` is the clearest concrete case:
+8 `(E)` bullets in `spec.md` today, a 10-row table (`C` + 9), because two of
+those ten rows (the "report states what left the machine" row and the
+out-of-scope row) were derived by the walk, not lifted from a bullet. A raw
+bullet-count-vs-row-count comparison across the whole ledger would therefore
+manufacture false "gaps" out of exactly the splits/merges/synthesis the walk's
+own methodology (see `.06`'s and `.18`'s write-ups above) already explains —
+publishing one here was considered and rejected for that reason.
+
+**2. What IS a mechanical, reproducible fact: which FRs have gained `(E)`
+bullets citing an iterate dated AFTER their ledger walk.** Every bullet this
+campaign has added since Phase 2 carries a trailing `(iterate-YYYY-MM-DD-…)`
+citation naming the run that wrote it (see `fr-authoring.md`'s citation
+convention) — a signal already in the text, not a re-derivation. Comparing each
+such citation's date against the walk date in this ledger's own `## FR-xx.xx …
+✅ walked YYYY-MM-DD` heading names, with certainty, every bullet the walk
+could not have seen:
+
+| FR | Walked | `(E)` bullets today | Bullets citing a post-walk iterate |
+|---|---|---|---|
+| FR-01.01 | 2026-07-25 | 8 | 1 (iterate-2026-07-27, handover-note disclosure) |
+| FR-01.03 | 2026-07-23 | 21 | 3 (iterate-2026-07-27, iterate-2026-08-03 ×2 — outside-reviewer delivery/recording) |
+| FR-01.11 | 2026-07-25 | 29 | 16 (iterate-2026-07-27 ×4, iterate-2026-07-31 ×6, iterate-2026-08-03 ×2, iterate-2026-08-08, iterate-2026-08-09 ×3 — review-record, merge-state, silent-revert, auto-merge and plan-reviewer guarantees) |
+| FR-01.14 | 2026-07-26 | 29 | 1 (iterate-2026-08-09, outbox-correction visibility) |
+| FR-01.02, .04–.10, .12, .13, .15–.18 | (various) | — | 0 — no bullet cites a post-walk iterate |
+
+FR-01.11 carries the overwhelming majority of the drift: 16 of its 29 bullets
+postdate its 2026-07-25 walk — unsurprising, since it is the phase this
+campaign (P3.3, and Phase 3 generally) has changed the most. **These 21 bullets
+(1+3+16+1 across the four affected FRs) are the actual, itemizable "not yet in
+the ledger" set** — not a guess from a row-count delta, and not something this
+pass re-walks: reading each one's mechanism against the code is the same
+interview-plus-code-verification judgment call the original walk made, and
+belongs to a walk pass, not a P3.3 mechanism unit (the same "content work is a
+separate unit from mechanism work" boundary this campaign already draws for
+`REQ3-TB-MONO`). Filed as the concrete backlog for that pass, so it does not
+have to be re-derived: FR-01.11 first (16 bullets), then FR-01.03 (3), then
+FR-01.01 and FR-01.14 (1 each).
+
+**A second cross-check was run and its negative result is worth recording**
+(external plan review, P3.3, 2026-09-07): could `git blame` corroborate the
+"0 drift" FRs independently of citation text, in case a bullet was edited or
+added without one? Blaming every `(E)` bullet's own line showed the OPPOSITE
+of a corroboration — every uncited bullet across every FR, including FRs
+walked as late as 2026-07-26, blames **2026-07-27**. That is not 14 FRs each
+gaining silent edits on the same day; it is `28491e1c9` ("REQ-3 Phase 2 —
+every requirement now states what it guarantees", #436), the single commit
+that first landed the ENTIRE `(E)`-bullet catalog this ledger walked — one to
+three days after the walk **sessions'** own dates (a walk's session date and
+the PR that ships its output are not the same date). `git blame` therefore
+answers "when did this line's CURRENT TEXT land", which for nearly every
+bullet in the repository is the date of that one bulk-authoring commit,
+regardless of how much later the bullet was actually last touched in
+substance — it cannot distinguish "this bullet is original Phase-2 content"
+from "this bullet was silently reworded after the walk" once both share the
+same first-commit ancestor. The citation-based method above does not share
+that confound: a citation is text a LATER, individual iterate deliberately
+appended, so its presence (or absence) survives the bulk commit unaffected.
+**Consequence, stated plainly:** this reconciliation's real, disclosed limit
+is that a bullet edited *in place* after its walk **without** adding a
+citation would not be caught by either method — that residual gap is
+accepted here (a repo-wide git-blame corroboration was tried and shown
+unusable, and no cheaper mechanical alternative was found), same posture as
+`(inferred_legacy)`'s pre-rollout valve elsewhere in this campaign: named and
+accepted rather than silently assumed away.
+
+**Already-known, unambiguous case, restated for completeness:** FR-01.19 and
+FR-01.20 (10 and 6 `(E)` bullets respectively) were minted after this ledger's
+sweep and carry **zero** ledger rows — not a partial drift like the four FRs
+above, but the entire requirement unwalked (campaign card, §3.3).
+
+Method (reproducible against any later `spec.md`/ledger state): for each `##
+FR-xx.xx … walked YYYY-MM-DD` heading, collect that FR's `- (E)` bullets from
+`spec.md` (joining wrapped continuation lines), extract any trailing
+`(iterate-YYYY-MM-DD-…)` / `(campaign-YYYY-MM-DD-…)` citation from each, and
+flag a bullet whose citation date is later than the walk date.

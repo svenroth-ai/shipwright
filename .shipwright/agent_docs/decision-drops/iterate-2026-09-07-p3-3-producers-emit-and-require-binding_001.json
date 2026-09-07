@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-07-p3-3-producers-emit-and-require-binding",
+  "date": "2026-09-07",
+  "section": "Iterate — feature: F11 binding-completeness gate (P3.3)",
+  "title": "Binding-completeness F11 gate + ledger/(E)-bullet reconciliation",
+  "context": "P3.3 ACs: reject a binding naming only unit tests once integration/e2e evidence exists for the same FR; reconcile the ledger's row numbering against spec.md's (E) bullets.",
+  "decision": "Added F11 gate check_binding_completeness (require-half only); extracted shared route_gap_severity; ran an empirical dry-run (0 hard/1 advisory over 20 FRs); reconciled the ledger via a citation-based post-walk-bullet table.",
+  "consequences": "A behaviour-changed FR whose binding understates its own evidence now HARD-blocks at medium+ (ADVISORY for legacy/collision); dry-run shows no FR at risk today. Emit-half (producer wiring) deferred to P3.5/follow-up, tracked in campaign.md.",
+  "rationale": "Narrow scope keeps blast radius to one enforcement mechanism. Row-count reconciliation proved structurally incompatible with the ledger's split/merge conventions (FR-01.18); citation-based method chosen and spot-verified before trusting at scale.",
+  "rejected": "Wire all 3 producers now; new machine-readable ledger schema (REQ3.06's job); raw row-count reconciliation; git-blame cross-check (confounded by bulk commit 28491e1c9); shared single regen snapshot across all 3 run_all_checks gates.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md"
+}

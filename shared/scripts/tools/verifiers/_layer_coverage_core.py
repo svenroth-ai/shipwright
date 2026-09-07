@@ -85,6 +85,19 @@ class LayerGap:
     reason: str        # MISSING | ambiguous_fanout
 
 
+def route_gap_severity(*, ambiguous: bool, source: str) -> str:
+    """``"hard"`` or ``"advisory"`` — the ONE severity-routing rule every layer-binding
+    gate in this family shares (external plan review, P3.3: two gates computing the
+    same routing from two copies of the rule can silently diverge the first time
+    either changes). A collision display id is ADVISORY regardless (its ``ok`` is
+    never credited AND a HARD block would be a false-red); otherwise a KNOWN legacy
+    source is ADVISORY (the pre-rollout valve) and everything else — ``explicit`` or
+    an unrecognised/missing provenance token — is HARD (fail-closed)."""
+    if ambiguous:
+        return "advisory"
+    return "advisory" if source in _LEGACY_SOURCES else "hard"
+
+
 @dataclass
 class CrossLayerVerdict:
     changed_keys: list[str] = field(default_factory=list)
@@ -201,12 +214,7 @@ def evaluate_cross_layer(
                 disp, key, layer, priority, source,
                 "ambiguous_fanout" if ambiguous else "MISSING",
             )
-            if ambiguous:
-                verdict.advisory.append(gap)
-            elif source not in _LEGACY_SOURCES:
-                verdict.hard.append(gap)
-            else:
-                verdict.advisory.append(gap)
+            getattr(verdict, route_gap_severity(ambiguous=ambiguous, source=source)).append(gap)
     return verdict
 
 
@@ -217,4 +225,5 @@ __all__ = [
     "behavior_changed_keys",
     "criteria_changed_keys",
     "evaluate_cross_layer",
+    "route_gap_severity",
 ]
