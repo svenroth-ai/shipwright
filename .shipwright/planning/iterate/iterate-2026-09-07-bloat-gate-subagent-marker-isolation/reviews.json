@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-07-bloat-gate-subagent-marker-isolation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T12:24:56.417555+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The fix moves subagent oversize enforcement from \"blocks the orchestrator's Stop (annoyingly, but it did surface the oversize state)\" to \"delegated to the subagent's F0/F11 finalization.\" But per the spec's own Architecture Review finding #2, `bloat_gate_on_stop.py` never fires with `agent_id` in production (registered on `Stop` only, never `SubagentStop`). So the new `bloat_pending.<sid>.<agent_id>.json` markers are written by the subagent's PostToolUse but read by no one — AC #3 is a \"defensive-correctness property,\" not a live path. The entire enforcement burden now rests on the claim that F0/F11 finalization checks file sizes against the same 300/400-line ceiling. If F0/F11 is a lighter-weight check (or is skipped when a runner crashes/times out), this fix converts a false-positive block into a silent enforcement gap for all subagent edits.",
+          "suggestion": "Verify empirically that F0/F11 enforces the identical ceiling on the same file set — quote the enforcement point in the spec rather than citing `campaign-worktree.md` architecturally. If it doesn't, registering the gate on `SubagentStop` as well (so the subagent's own terminal event consumes its own marker) is a small, targeted addition that makes AC #3 a real path instead of dead-correct code.  2. Category: dependency — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Any existing cleanup/janitor logic that removes marker files by exact session key (`bloat_pending.<sid>.json` on session end, lock-dir sweeps, dashboard tooling that reads markers) will now miss the agent-suffixed variants. The spec's boundary table covers only the writer→gate pair; it doesn't establish whether anything else in the repo globs or deletes these files.",
+          "suggestion": "Grep for `bloat_pending` consumers outside the two hook scripts. If a session-end cleanup exists, it needs the same composite-key treatment; if none exists, note that explicitly so a future reader doesn't assume one.  3. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Subagent markers that are written but never consumed (per finding 1, no live reader) accumulate in `.shipwright/locks/` until TTL — and TTL appears to mean \"ignore if older than 1h,\" not \"delete.\" Each spawned subagent with an oversize touch creates a new uniquely-keyed file; agent_ids are per-spawn, so repeated campaign runs produce one orphan file per subagent incident, persisting indefinitely on disk even after expiry.",
+          "suggestion": "Confirm whether anything ever unlinks expired marker files. If not, a one-line \"delete if expired\" check in whichever hook touches the locks dir next is cheap; if the volume is genuinely negligible, document that decision the way finding #3 in the Architecture Review did.  4. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The writer-side resolution path: when a subagent subsequently shrinks a file back under ceiling, its PostToolUse runs with the same `agent_id`, so it updates the correct suffixed marker — this is fine and covered. But if the subagent dies mid-edit (context limit, task kill), its marker persists with no agent left to resolve it. Pre-fix this blocked the orchestrator (the bug); post-fix it's inert until TTL, which is the intended behavior — just worth confirming the orchestrator's gate doesn't fall back to any \"read all markers for this session\" mode under error conditions (e.g., malformed payload where `agent_id` parsing fails and the gate silently degrades to session-only matching).",
+          "suggestion": "Verify the marker-key function's failure mode on malformed payloads (missing `session_id`, non-string `agent_id`) is an explicit, tested behavior, not an incidental one — the whitespace-only test suggests the team already thinks this way, so extend it one step to absent/malformed `session_id`.  5. Category: approach — Severity: low (positive)",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The core approach is sound and I have no design objection: keying on the composite `(session_id, agent_id)` is the correct root-cause fix, the hex-escape bijection for sanitization is the right call over lossy substitution (architecture review finding #1 was correctly handled), and the no-`agent_id` path preserving byte-identical keys means zero migration burden. The rejected alternative (runner self-resolve) was correctly identified as fixing the symptom, not the defect. The stale-marker TTL decision (architecture finding #3) is a reasonable bounded-rollout trade.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan still implies subagent self-enforcement through a “Stop-class event,” but the registered gate runs on `Stop`, not `SubagentStop`. The later architecture note correctly narrows this to a defensive property, yet the acceptance criterion and alternative rationale retain the stronger production claim.",
+          "suggestion": "Update the acceptance criterion and plan wording to state explicitly that this change provides marker isolation only. Separately verify that F0/F11 finalization does not depend on this Stop marker being consumed; otherwise wire and test an actual `SubagentStop` consumer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Even if `agent_id` encoding is collision-free, the composite filename can still be ambiguous if `session_id` may contain the separator. For example, a session-only key `a.b` and a composite `(a, b)` both produce `a.b`. UUID-only session IDs may make this unlikely today, but the format is a producer/consumer boundary and should not silently rely on an undocumented restriction.",
+          "suggestion": "Confirm and document that `session_id` cannot contain `.`. If that guarantee is unavailable, use an unambiguous suffix format while preserving the legacy no-agent filename exactly, such as `bloat_pending.<legacy-session>.agent-<encoded-agent>.json`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Existing old-format subagent markers remain under the parent session key until TTL expiry and can continue blocking the orchestrator during rollout. This is acknowledged, but deployment behavior is not stated.",
+          "suggestion": "Document the one-hour transient explicitly in release/operational notes and ensure rollback does not leave operators confused by mixed-format markers.  Overall, the root-cause fix is sound and appropriately small, with strong regression coverage. Resolve the live subagent-enforcement wording and make the key composition unambiguous before merging.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-07T12:31:12.065911+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**1. Category: risk — Severity: medium**\n**Finding:** The fix moves subagent oversize enforcement from \"blocks the orchestrator's Stop (annoyingly, but it *did* surface the oversize state)\" to \"delegated to the subagent's F0/F11 finalization.\" But per the spec's own Architecture Review finding #2, `bloat_gate_on_stop.py` never fires with `agent_id` in production (registered on `Stop` only, never `SubagentStop`). So the new `bloat_pending.<sid>.<agent_id>.json` markers are written by the subagent's PostToolUse but read by *no one* — AC #3 is a \"defensive-correctness property,\" not a live path. The entire enforcement burden now rests on the claim that F0/F11 finalization checks file sizes against the same 300/400-line ceiling. If F0/F11 is a lighter-weight check (or is skipped when a runner crashes/times out), this fix converts a false-positive block into a silent enforcement gap for all subagent edits.\n**Suggestion:** Verify empirically that F0/F11 enforces the identical ceiling on the same file set — quote the enforcement point in the spec rather than citing `campaign-worktree.md` architecturally. If it doesn't, registering the gate on `SubagentStop` as well (so the subagent's own terminal event consumes its own marker) is a small, targeted addition that makes AC #3 a real path instead of dead-correct code.\n\n**2. Category: dependency — Severity: low**\n**Finding:** Any existing cleanup/janitor logic that removes marker files by exact session key (`bloat_pending.<sid>.json` on session end, lock-dir sweeps, dashboard tooling that reads markers) will now miss the agent-suffixed variants. The spec's boundary table covers only the writer→gate pair; it doesn't establish whether anything *else* in the repo globs or deletes these files.\n**Suggestion:** Grep for `bloat_pending` consumers outside the two hook scripts. If a session-end cleanup exists, it needs the same composite-key treatment; if none exists, note that explicitly so a future rea […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan still implies subagent self-enforcement through a “Stop-class event,” but the registered gate runs on `Stop`, not `SubagentStop`. The later architecture note correctly narrows this to a defensive property, yet the acceptance criterion and alternative rationale retain the stronger production claim.  \n   **Suggestion:** Update the acceptance criterion and plan wording to state explicitly that this change provides marker isolation only. Separately verify that F0/F11 finalization does not depend on this Stop marker being consumed; otherwise wire and test an actual `SubagentStop` consumer.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Even if `agent_id` encoding is collision-free, the composite filename can still be ambiguous if `session_id` may contain the separator. For example, a session-only key `a.b` and a composite `(a, b)` both produce `a.b`. UUID-only session IDs may make this unlikely today, but the format is a producer/consumer boundary and should not silently rely on an undocumented restriction.  \n   **Suggestion:** Confirm and document that `session_id` cannot contain `.`. If that guarantee is unavailable, use an unambiguous suffix format while preserving the legacy no-agent filename exactly, such as `bloat_pending.<legacy-session>.agent-<encoded-agent>.json`.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** Existing old-format subagent markers remain under the parent session key until TTL expiry and can continue blocking the orchestrator during rollout. This is acknowledged, but deployment behavior is not stated.  \n   **Suggestion:** Document the one-hour transient explicitly in release/operational notes and ensure rollback does not leave operators confused by mixed-format markers.\n\nOverall, the root-cause fix is sound and appropriately small, with strong regression coverage. Resolve the live subagent-enforcement wording and  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T12:40:02.389181+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/bloat_marker_key.py",
+          "line": null,
+          "finding": "Claim under doubt: AC #4 claims no-agent_id keys stay byte-identical to prior behavior, i.e. a plain top-level PostToolUse payload never carries agent_id. — Live capture confirmed agent_id present on a SUBAGENT payload, but nothing had confirmed genuine absence on a top-level payload before this review — a wrong assumption would silently disable the gate for the ordinary orchestrator path, since bloat_gate_on_stop.py structurally never sees agent_id. Resolved with evidence already on hand: the same live-capture session's own first captured line (a top-level Edit call, made before any subagent ran) has no agent_id key at all in the payload. Not a live defect.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/bloat_marker_key.py",
+          "line": null,
+          "finding": "Claim under doubt: _encode_agent_component's strict-mode utf-8 encode never raises on adversarial agent_id input. — An unpaired surrogate code point would raise UnicodeEncodeError inside the per-character loop. Accepted, not fixed: both hooks fail open on any exception; agent_id is Claude-Code-internal, not attacker-controlled.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/tests/test_bloat_gate_subagent_marker_isolation.py",
+          "line": null,
+          "finding": "Claim under doubt: The two hooks' _session_id() delegating wrappers are adequately covered by tests. — They are exercised only via subprocess-based integration tests, which per this repo's known diff-coverage limitation may register as uncovered by a strict line-coverage gate despite being behaviorally proven. Accepted, not fixed: pre-existing, project-wide, already-known gate characteristic.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-07T18:04:25.864761+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "codex",
+      "completed_at": "2026-09-07T18:08:04.676829+00:00",
+      "disposition": null,
+      "recorded_by": "external_review.py",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] ## Review\n\n### Implementation vs. spec\n\nThe core fix is correct. `marker_key()` in `bloat_marker_key.py` reproduces the prior session-only key exactly when `agent_id` is absent (payload `session_id` -> stripped env var -> `unknown`, same strip semantics in both branches), so AC #4's byte-identical requirement is satisfied by inspection. The `~XX` hex-escape encoding is genuinely injective: `~` is not in the safe set, so `~` only ever appears as an escape introducer, and the agent component can never contain `.` (escaped as `~2e`), which keeps the `<sid>.<agent>` boundary unambiguous. Docs updates cover both rows (AC #5). AC #3 is honestly scoped in the docs as a defensive property rather than a live path.\n\n### Findings\n\n- Category: test, Severity: medium, File: shared/tests/test_bloat_gate_subagent_marker_isolation.py::test_orchestrator_stop_ignores_inflight_subagent_marker. Finding: the integration test never asserted that the subagent's marker was actually written before checking the gate passes -- a silent write failure would make the test pass vacuously (no marker anywhere, not isolation). Suggestion: assert the marker file exists after the writer step, before invoking the gate.\n- Category: test, Severity: low, File: same file, test_marker_key_sanitizes_unsafe_agent_id_characters. Finding: the '..' not in key assertion was trivially guaranteed by the encoding and would pass under a lossy implementation too. Suggestion: assert the encoded component matches a strict safe-character-class check instead.\n\n### Overall assessment\n\nThe fix is sound, injective, backward-compatible, and honestly documented; the only substantive gap was that the flagship integration test could pass without its precondition being verified.\n\nSHIPWRIGHT_VERDICT: approve\n\n[openai] Category: spec, Severity: medium, File: shared/scripts/hooks/bloat_gate_on_stop.py:14. Finding: AC #3 requires a subagent's own Stop-class event to find and block on its marker, but this hook remains registered only for Stop, not SubagentStop -- the diff explicitly documents that this production path never occurs, so the synthetic direct invocation is not evidence that live enforcement exists. Suggestion: register an appropriate subagent-stop hook, or formally scope AC #3 as a defensive-correctness property rather than a live enforcement claim.\n\nOverall assessment: ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T12:24:04.980975+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-07T12:36:43.642806+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}
