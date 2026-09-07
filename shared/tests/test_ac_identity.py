@@ -211,6 +211,38 @@ def test_seeding_sees_a_marker_outside_the_leading_bullet_run():
     assert again.content == result.content
 
 
+def test_seeding_does_not_credit_a_nested_frs_own_bullets_to_the_parent():
+    """Code review round 4 (HIGH), regression from the round-3 fix above:
+    ``_iter_heading_blocks_by_index`` deliberately runs a parent FR's block
+    through a NESTED, deeper-rank FR heading (mirrors
+    ``fr_criteria.iter_anchored_blocks``'s own overlap, exercised on the same
+    fixture shape by
+    ``test_layer_coverage_criteria_anchoring.test_a_nested_fr_heading_still_
+    gets_its_own_digest_entry``) -- harmless for ``read()``, whose
+    ``block_criteria(strict=True)`` only ever reaches the LEADING run and so
+    never sees past the nested heading. But the ungated
+    ``iter_all_bullet_positions`` scanned the FULL block range, so a nested
+    FR's own already-minted bullet was credited to the PARENT's fr_id during
+    seeding. Each FR restarts its own AC numbering at 1, so the nested
+    block's first marker is almost always ``[AC01]`` too -- colliding with
+    the parent's own real ``[AC01]`` and raising a false
+    ``DuplicateAcIdError`` on every re-mint of an already-minted
+    nested-heading document, breaking the very idempotency guarantee the
+    round-3 fix exists to protect."""
+    already_minted_with_nesting = (
+        "### FR-01.01 — Parent\n\n"
+        "- (E) [AC01] Parent criterion one.\n\n"
+        "#### FR-01.02 — Nested\n\n"
+        "- (E) [AC01] Nested criterion one.\n"
+    )
+    result = ac_identity.mint(
+        already_minted_with_nesting, registry={"FR-01.01": 1, "FR-01.02": 1}
+    )
+    assert result.assigned == ()
+    assert result.content == already_minted_with_nesting
+    assert result.registry == {"FR-01.01": 1, "FR-01.02": 1}
+
+
 # ---------------------------------------------------------------------------
 # read() — the reader half, built on lib.fr_criteria (R0).
 # ---------------------------------------------------------------------------

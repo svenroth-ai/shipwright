@@ -155,9 +155,25 @@ def iter_all_bullet_positions(lines: list[str]) -> Iterator[tuple[str, int]]:
     but seeding never writes anything, so the risk runs the other way —
     missing an existing marker outside the leading run would let a
     lost/stale registry re-assign its number to a different criterion
-    (external code review, 2026-09-06 round 3)."""
+    (external code review, 2026-09-06 round 3).
+
+    Stops at the next heading of ANY rank, not just same-or-higher
+    (code review round 4) — ``_iter_heading_blocks_by_index``'s ``end``
+    deliberately runs a parent block through a NESTED, deeper-rank FR
+    heading (matching ``fr_criteria.iter_anchored_blocks``'s overlap;
+    harmless for ``read()``, whose ``block_criteria(strict=True)`` only
+    ever looks at the LEADING run and so never reaches that far). This
+    function has no such leading-run gate, so scanning the full ``end``
+    would credit a nested FR's own bullets to the OUTER ``fr_id`` — each
+    FR restarts its own AC numbering at 1, so a nested block's first
+    marked bullet is almost always ``[AC01]`` too, producing a false
+    ``DuplicateAcIdError`` against the parent's own real ``AC01`` on
+    every re-mint of an already-minted nested-heading document."""
     for fr_id, start, end in _iter_heading_blocks_by_index(lines):
-        for idx in range(start, end):
+        own_end = start
+        while own_end < end and not _ANY_HEADING_RE.match(lines[own_end]):
+            own_end += 1
+        for idx in range(start, own_end):
             if BULLET_RE.match(lines[idx]):
                 yield fr_id, idx
 
