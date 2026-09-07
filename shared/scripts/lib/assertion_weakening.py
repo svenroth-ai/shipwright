@@ -377,6 +377,15 @@ def _js_bracket_match(
     has to walk past those to match brackets correctly; recording where they
     were is nearly free, and skipping it left an earlier revision of this
     file treating "`it.skip(...)`" inside a `//` comment as a real call.
+
+    Accepted limitation (external Tier-3 review, PR #685, fourth round,
+    non-blocking comment): a template literal is skipped as one opaque
+    string span from the opening backtick to the next unescaped one, so a
+    `${...}` interpolation's own bracket syntax is never validated —
+    consistent with this file's stated design (a false BLOCK is worse than
+    a false negative): an interpolation this permissive already can't
+    desync the OUTER bracket count either way, since the whole template is
+    one atomic span regardless of what's inside it.
     """
     stack: list[tuple[str, int]] = []
     match: dict[int, int] = {}
@@ -390,6 +399,15 @@ def _js_bracket_match(
             i += 1
             while i < n and source[i] != quote:
                 i += 2 if source[i] == "\\" else 1
+            if i >= n:
+                # No closing delimiter before end-of-file: the file is not
+                # valid JS/TS. Fail closed rather than silently treating
+                # everything after the open quote as string content
+                # (external Tier-3 review, PR #685, fourth round: this
+                # previously let an otherwise-balanced-looking after
+                # revision with a genuinely unterminated string pass
+                # analysis instead of reporting `unparseable`).
+                return None
             i += 1
             non_code.append((start, i))
             continue
@@ -402,7 +420,9 @@ def _js_bracket_match(
         if c == "/" and source[i:i + 2] == "/*":
             start = i
             j = source.find("*/", i + 2)
-            i = n if j == -1 else j + 2
+            if j == -1:
+                return None  # unterminated block comment -- fail closed, same reasoning as above
+            i = j + 2
             non_code.append((start, i))
             continue
         if c == "/" and _js_slash_starts_regex(source, i):

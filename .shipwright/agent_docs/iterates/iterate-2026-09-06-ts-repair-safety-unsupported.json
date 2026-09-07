@@ -116,11 +116,16 @@
         "behavior": "A JS regex literal containing a bracket character (including inside a character class) does not desync the bracket-matching scan into a false blocking unparseable finding, and division after a value is not mistaken for a regex literal",
         "disposition": "tested",
         "evidence": "test_js_a_regex_literal_with_a_lone_bracket_is_parsed_not_a_false_block (rewritten from the prior round's accepted-limit test), test_js_a_character_class_containing_a_slash_does_not_end_the_regex_early, and test_js_division_after_a_value_is_not_mistaken_for_a_regex_literal PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, third round: _js_bracket_match now lexes /pattern/flags as a non-code span via _js_slash_starts_regex + _js_regex_literal_end, mirroring the existing string-literal handling"
+      },
+      {
+        "behavior": "An unterminated quoted string or unterminated /* block comment in a JS/TS file's after revision fails closed as blocking unparseable, instead of the bracket scanner silently advancing to end-of-file and reporting a spuriously balanced bracket map",
+        "disposition": "tested",
+        "evidence": "test_js_an_unterminated_string_in_the_after_revision_fails_closed_as_unparseable and test_js_an_unterminated_block_comment_in_the_after_revision_fails_closed_as_unparseable PASSED — external Tier-3 review (openai/gpt-5.6-luna), PR #685, fourth round: _js_bracket_match now returns None (fail closed) instead of consuming the rest of the source as one bogus non-code span"
       }
     ],
     "counts": {
-      "testable": 21,
-      "tested": 21,
+      "testable": 22,
+      "tested": 22,
       "untestable": 0,
       "untested_testable": 0
     }

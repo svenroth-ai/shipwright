@@ -857,6 +857,27 @@ def test_js_division_after_a_value_is_not_mistaken_for_a_regex_literal():
     assert "assertions_removed" in kinds
 
 
+def test_js_an_unterminated_string_in_the_after_revision_fails_closed_as_unparseable():
+    """An unterminated quoted string is not valid JS/TS. Before the fix,
+    `_js_bracket_match` advanced to end-of-file and returned a (bogus)
+    balanced bracket map instead of failing closed, so a genuinely
+    non-compiling repair could pass this safety gate silently (external
+    Tier-3 review, PR #685, fourth round: blocking finding)."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { const s = 'unterminated; expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
+def test_js_an_unterminated_block_comment_in_the_after_revision_fails_closed_as_unparseable():
+    """Same fail-closed requirement as the unterminated-string case above,
+    for an unterminated `/* ... */` block comment."""
+    before = "it('a', () => { expect(1).toBe(1); });\n"
+    after = "it('a', () => { /* unterminated expect(1).toBe(1); });\n"
+    assert "unparseable" in _kinds(aw.detect_weakening([_jschange(before, after)]),
+                                   blocking=True)
+
+
 def test_js_string_literal_regex_does_not_exponentially_backtrack_on_a_run_of_backslashes():
     """CodeQL (high severity, this run's own PR check): the original
     `_JS_STRING_LIT` body was `(?:\\\\.|(?!\\1).)*` -- a backslash could be
