@@ -1006,7 +1006,7 @@
     {
       "path": "shared/scripts/tools/record_layer_promotion_decision.py",
       "limit": 300,
-      "current": 346,
+      "current": 389,
       "state": "deferred-plan",
       "adr": null,
       "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
@@ -1066,7 +1066,7 @@
     {
       "path": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py",
       "limit": 300,
-      "current": 416,
+      "current": 460,
       "state": "deferred-plan",
       "adr": null,
       "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",

@@ -340,6 +340,50 @@ def test_demoted_action_on_a_collision_id_still_clears_it(tmp_path):
     assert "evidence_fingerprint" not in entry
 
 
+def test_demoted_action_on_a_collision_refuses_when_a_colliding_row_is_already_explicit(tmp_path):
+    # Blocking finding, Tier-3 PR-review CI gate (post-push round, distinct
+    # from our internal review cascade): a collision id (more than one
+    # ACTIVE row) has no single resolvable spec_path, so a demotion here
+    # writes nothing for it -- but recording `demoted` while ANOTHER
+    # colliding row (a different spec_path) already carries an explicit
+    # Layers cell would strand that row with no `promoted` ledger entry
+    # consistent with it, failing the repo-wide `explicit <= promoted`
+    # provenance invariant two integration tests enforce. Must refuse
+    # outright -- nothing written at all, same as
+    # `test_promoted_action_on_a_collision_id_is_rejected_use_demoted_instead`'s
+    # sibling refusal on the promoted side.
+    manifest_path = tmp_path / ".shipwright" / "compliance" / "test-traceability.json"
+    project = _write_project(tmp_path)  # writes FR-01.11 (inferred) at _SPEC_RELPATH
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    second_spec_relpath = ".shipwright/planning/02-adopted/spec.md"
+    manifest["requirements"]["02::FR-01.11"] = {
+        "id": "FR-01.11", "spec_path": second_spec_relpath, "status": "active",
+        "coverage": {}, "tests": {},
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    second_spec_dir = tmp_path / ".shipwright" / "planning" / "02-adopted"
+    second_spec_dir.mkdir(parents=True, exist_ok=True)
+    (second_spec_dir / "spec.md").write_text("\n".join([
+        "# Spec", "", "## Functional Requirements", "",
+        FR_TABLE_HEADER, FR_TABLE_SEPARATOR,
+        "| FR-01.11 | Adopted | x | Must | y. | code | unit |",
+        "",
+    ]), encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="already carry an explicit Layers cell"):
+        mod.main([
+            "--project-root", str(project), "--fr-id", "FR-01.11", "--action", "demoted",
+            "--reason", "collision id vetoed",
+        ])
+
+    # Nothing written at all -- neither spec.md file, nor the ledger.
+    first_spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "unit (inferred)" in first_spec
+    second_spec = (project / second_spec_relpath).read_text(encoding="utf-8")
+    assert "| unit |" in second_spec
+    assert not ledger_path(project).exists()
+
+
 def test_a_second_invocation_times_out_while_the_lock_is_held(tmp_path, monkeypatch):
     """Stage-4 doubt-review Medium finding, P3.5 post-push round -- the same
     hazard ``test_mint_ac_ids.py:198`` documents fixing once already in this

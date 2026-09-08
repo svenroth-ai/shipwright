@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr",
-  "date": "2026-09-08T17:25:29.840066Z",
+  "date": "2026-09-08T18:20:40.196586Z",
   "event_at": "2026-09-08T08:14:38.449533+00:00",
   "type": "feature",
   "complexity": "small",
@@ -141,11 +141,16 @@
         "behavior": "evidence_fingerprint's digest is stable under reordering of two test links sharing id/path/ac_id but differing only in tag_source (a total-order gap in _link_sort_key, Stage-3 doubt-review round 3, P3.5 post-push round)",
         "disposition": "tested",
         "evidence": "shared/tests/test_layer_promotion_ledger.py::test_evidence_fingerprint_is_stable_under_reordering_of_links_sharing_id_path_and_ac_id"
+      },
+      {
+        "behavior": "demoting an ambiguous collision id is refused, not silently recorded, when any colliding row (a different spec_path) already carries an explicit Layers cell -- prevents stranding an explicit row with no promoted ledger entry consistent with it (Tier-3 PR-review CI gate BLOCK finding, P3.5 post-push round)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py::test_demoted_action_on_a_collision_refuses_when_a_colliding_row_is_already_explicit"
       }
     ],
     "counts": {
-      "testable": 26,
-      "tested": 26,
+      "testable": 27,
+      "tested": 27,
       "untestable": 0,
       "untested_testable": 0
     }

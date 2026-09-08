@@ -28,7 +28,12 @@ Two actions, and only two:
   the demotion would leave the cell explicit forever, and `evaluate_fr`'s
   demoted-branch `already_explicit` check has no exitability qualifier —
   every future run would re-escalate `contradicts_recorded_decision` with no
-  way to clear it.
+  way to clear it. For an ambiguous COLLISION id (more than one ACTIVE row
+  shares it), this CLI cannot say which row's cell to revert — it REFUSES
+  the demotion outright if any colliding row is currently explicit (Tier-3
+  PR-review CI gate finding, P3.5 post-push round), rather than record a
+  ``demoted`` entry that would strand that row with no ``promoted`` entry
+  to justify it.
 
 Usage::
 
@@ -164,18 +169,56 @@ def _plan_decision(args, manifest: dict, project_root: Path) -> dict:
         # demote" depends on the ledger to prevent.
     else:
         # A demotion is a veto, not a write — a collision fan-out (more than
-        # one ACTIVE match) is not an obstacle here (the only way to clear a
-        # collision escalation for good); the fingerprint is recorded only
-        # when exactly one node resolves the id.
+        # one ACTIVE match) is not an obstacle to RECORDING the veto (the
+        # only way to clear a collision escalation for good), but IS
+        # refused below when any colliding row is currently explicit (see
+        # the `node is None` branch); the fingerprint is recorded only when
+        # exactly one node resolves the id.
         matches = _find_active_nodes(manifest, args.fr_id)
         if not matches:
             raise SystemExit(f"no ACTIVE requirement {args.fr_id!r} found in the manifest")
         node = matches[0] if len(matches) == 1 else None
+        if node is None:
+            # A collision fan-out has no single resolvable spec_path, so a
+            # demotion here writes nothing (see below) — but that is only
+            # safe when NO colliding row is currently explicit. Refuse
+            # otherwise (Tier-3 PR-review CI gate finding, P3.5 post-push
+            # round): recording `demoted` for the id while an explicit row
+            # stands unrevert-ed would strand that row with no `promoted`
+            # ledger entry consistent with it, failing the repo-wide
+            # `explicit <= promoted` provenance invariant — the same
+            # question `_find_node_for_promotion` already refuses to guess
+            # for `--action promoted`, mirrored here for the demote side.
+            explicit_paths: list[str] = []
+            for match in matches:
+                if not match.get("spec_path"):
+                    raise SystemExit(
+                        f"requirement {args.fr_id!r} has no spec_path in the manifest"
+                    )
+                try:
+                    match_spec_path = resolve_spec_path_within_root(project_root, match["spec_path"])
+                    match_content = match_spec_path.read_text(encoding="utf-8")
+                except (OSError, LayerCellWriteError) as exc:
+                    raise SystemExit(str(exc)) from exc
+                if is_layers_cell_explicit_live(match_content, args.fr_id):
+                    explicit_paths.append(match["spec_path"])
+            if explicit_paths:
+                raise SystemExit(
+                    f"{args.fr_id!r} is an ambiguous collision id and "
+                    f"{len(explicit_paths)} of its {len(matches)} colliding row(s) "
+                    f"already carry an explicit Layers cell ({sorted(explicit_paths)}) "
+                    "— demoting the collision id cannot revert a row it has no single "
+                    "spec_path to target, and would leave that row standing with no "
+                    "ledger entry consistent with it. Resolve the id collision first "
+                    "(so each row has its own unambiguous id and can be demoted "
+                    "individually), or manually revert the explicit cell(s) to "
+                    "(inferred) before demoting this collision id."
+                )
         # Demoting an ALREADY-explicit FR must not leave it explicit forever
         # — revert to `(inferred)` so the demoted invariant `evaluate_fr`
         # relies on to ever exit still holds. Skipped for a collision
-        # fan-out (`node is None`): that arm never re-escalates on
-        # `already_explicit`, so there is no per-node cell to rewrite.
+        # fan-out (`node is None`): the refusal above already guarantees no
+        # colliding row is explicit, so there is no per-node cell to revert.
         if node is not None:
             if not node.get("spec_path"):
                 raise SystemExit(f"requirement {args.fr_id!r} has no spec_path in the manifest")

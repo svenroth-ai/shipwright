@@ -1188,6 +1188,85 @@ shared/scripts/tests and shared/scripts/tools/tests unchanged;
 integration-tests unchanged), repo-wide ruff clean, `verify_local.py`'s 3
 mirrored gates green.
 
+## Tier-3 PR-review CI gate BLOCK — a demoted collision could strand an explicit sibling row
+
+**Provenance, named explicitly per the coordinator's instruction:** this
+finding is NOT from our internal review cascade (Stage-1 spec-review /
+Stage-2 code-review / Stage-3 doubt-review) — it is from PR #690's
+automated Tier-3 PR-review CI gate, a separate required GitHub check that
+runs post-push against the pushed diff. It posted a genuine BLOCK verdict
+against HEAD `95656216`, examining an interaction none of the ~10
+Stage-1 / 7 Stage-2 / 3 Stage-3 rounds above had specifically probed: the
+collision × demoted interaction. (The same CI gate pass also re-examined
+the CI-evidence-provenance concern from earlier rounds and downgraded it
+to a non-blocking comment, explicitly accepting the existing `trg-fcd48a56`
+tracking as reasonable for this PR's scope — no action needed there.)
+
+**The gap:** `record_layer_promotion_decision.py`'s `--action demoted` path
+for an ambiguous COLLISION id (more than one ACTIVE manifest node sharing a
+display id, in different `spec_path`s) never touches spec.md at all — by
+design, since a collision has no single resolvable `spec_path` to revert.
+But it also never CHECKED whether any of the colliding rows was currently
+explicit before recording the demotion. `layer_promotion.evaluate_fr`'s
+own collision branch then returns `demoted_consistent` unconditionally for
+that ledger action, with no live-state check at all (unlike the
+non-collision `demoted` branch's `already_explicit` guard). Concretely: two
+active nodes share a display id in different files; one already carries an
+explicit Layers cell (hand-promoted, or promoted before the second node
+existed and created the collision); an operator demotes the collision id;
+the CLI records `demoted` and writes nothing to either spec.md file — the
+already-explicit row is left standing with a ledger that now says
+`demoted` for its own display id, not `promoted`, failing the repo-wide
+`explicit <= promoted` provenance invariant the two integration tests
+enforce. A human explicitly vetoing a collision could silently strand an
+explicit row with no ledger entry backing it.
+
+Distinct from the already-accepted Low finding about `already_explicit`'s
+display-id keying on the PROMOTED-collision path (that one is theoretically
+reachable but safe today, because `_find_node_for_promotion` already
+refuses `--action promoted` for any collision id): this is the
+DEMOTED-collision path specifically, which had NO equivalent refusal.
+
+**The fix** (reviewer offered two shapes — refuse, or an atomic
+all-matching-row revert; chose refuse): `record_layer_promotion_decision.
+py`'s `_plan_decision` now, for a collision fan-out (`node is None`),
+reads every colliding row's live spec.md content and refuses the whole
+demotion with a named `SystemExit` if ANY of them is currently explicit —
+before the ledger lock's load-decide-write span writes anything at all.
+Chose refuse over an atomic multi-file revert: an all-matching-row revert
+would need to span an unbounded number of DIFFERENT spec.md files
+atomically (a collision fan-out is not bounded to two), multiplying the
+concurrency-guard surface (`ConcurrentSpecEditError` today only ever
+protects ONE file per call) for a case the mechanism's own module docstring
+already treats as `operator`-resolved, not automated — refusing and naming
+the conflicting spec_path(s) mirrors the EXACT pattern
+`_find_node_for_promotion` already uses for the promoted-collision case
+("resolve the underlying id collision first"), so the fix reuses an
+established idiom rather than inventing a new one. `evaluate_fr`'s
+collision branch is unchanged: with the CLI now refusing to ever create
+the bad state, a `demoted` entry for a collision id is guaranteed to have
+held the invariant at record time, so `demoted_consistent` trusting the
+ledger unconditionally remains correct — the fix is a write-time
+precondition, not a read-time re-derivation.
+
+One new CLI-level regression test,
+`test_demoted_action_on_a_collision_refuses_when_a_colliding_row_is_already_
+explicit` (`test_record_layer_promotion_decision.py`), constructing two
+colliding nodes in two different spec.md files (one inferred, one already
+explicit) and asserting the demotion is refused, naming the conflict, with
+NOTHING written — neither spec.md file changes and the ledger file is
+never created. Both existing collision-demotion tests
+(`test_demoted_action_on_a_collision_id_still_clears_it` and the promoted
+sibling) remain green unmodified — they exercise the still-permitted
+all-inferred collision case.
+
+Bumped two already-deferred bloat-baseline entries to their new line counts
+(`record_layer_promotion_decision.py` 346→389,
+`test_record_layer_promotion_decision.py` 416→460); no new crossings;
+`anti_ratchet_check.py` exits 0. Full canonical suite re-run clean across
+all four roots, repo-wide ruff clean, `verify_local.py`'s 3 mirrored gates
+green.
+
 ## The emit-half question (`trg-875104ac`) — still open, not covered here
 
 `trg-875104ac` tracks whether P3.5 also covers the "emit half": producers
