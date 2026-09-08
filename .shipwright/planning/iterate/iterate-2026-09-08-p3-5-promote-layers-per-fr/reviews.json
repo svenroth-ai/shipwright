@@ -160,29 +160,20 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 1,
       "findings": [
         {
           "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/lib/layer_promotion.py",
-          "line": 217,
-          "finding": "The comment justifying the un-fixed already_explicit display-id keying overstates unreachability: it claims a collision can only ever carry a demoted entry because the human CLI refuses --action promoted for an ambiguous id, but collision_display_ids counts nodes of any status while record_layer_promotion_decision._find_active_nodes counts only active ones -- an id active in one namespace and removed in another IS a collision for the automated tool but resolves to one active node in the operator CLI, so a promoted entry on a collision id is actually possible today (just safe, for a different reason than stated: with one active node, live_explicit is unambiguous). Accepted as-is: reviewer explicitly said this does not warrant holding the PR.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "performance",
-          "file": "shared/scripts/tools/promote_required_layers.py",
-          "line": 140,
-          "finding": "plan_promotions re-parses the FR table 3x per requirement (a silent regression of an earlier deliberate 3x->2x cut, re-added by the residual-text check). Negligible at this repo's scale. Accepted as-is.",
+          "category": "readability",
+          "file": "shared/scripts/tools/record_layer_promotion_decision.py",
+          "line": 141,
+          "finding": "_plan_decision is now 100 lines / 5 indentation levels, repeating the same spec_path guard and resolve+read+SystemExit mapping three times -- same shape a prior round already split once in this file. File is 89 lines over its deferred-plan bloat budget. Accepted as-is: reviewer explicitly non-blocking.",
           "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-08T17:38:25.693388+00:00",
+      "completed_at": "2026-09-08T18:32:44.433117+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -307,7 +298,7 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-08T17:33:06.707008+00:00",
+      "completed_at": "2026-09-08T18:27:48.031431+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
