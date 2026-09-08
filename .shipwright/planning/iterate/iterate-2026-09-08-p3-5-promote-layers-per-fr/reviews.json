@@ -160,14 +160,14 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 2,
       "findings": [
         {
           "severity": "low",
           "category": "correctness",
           "file": "shared/scripts/lib/layer_promotion.py",
-          "line": 95,
-          "finding": "Manifest-shape trust is asymmetric with the ledger path: bound_but_absent_layers has no isinstance(links, list) guard, and plan_promotions accesses node['id']/node.get('spec_path','') unguarded, where a null spec_path would raise a raw TypeError escaping main() uncaught -- the same defect class already fixed twice on the ledger side (_parse_ledger). Reachable only via a hand-edited manifest/spec.md, same reachability tier as the already-fixed ledger cases. Accepted as-is: reviewer explicitly said this does not justify holding the PR, though noted it as the one item worth fixing eventually for consistency.",
+          "line": 217,
+          "finding": "The comment justifying the un-fixed already_explicit display-id keying overstates unreachability: it claims a collision can only ever carry a demoted entry because the human CLI refuses --action promoted for an ambiguous id, but collision_display_ids counts nodes of any status while record_layer_promotion_decision._find_active_nodes counts only active ones -- an id active in one namespace and removed in another IS a collision for the automated tool but resolves to one active node in the operator CLI, so a promoted entry on a collision id is actually possible today (just safe, for a different reason than stated: with one active node, live_explicit is unambiguous). Accepted as-is: reviewer explicitly said this does not warrant holding the PR.",
           "suggestion": null,
           "source": "code-reviewer"
         },
@@ -175,23 +175,14 @@
           "severity": "low",
           "category": "performance",
           "file": "shared/scripts/tools/promote_required_layers.py",
-          "line": 144,
-          "finding": "Three separate full-document parses per FR (partially regressing a deliberate 3x->2x reduction from an earlier round, since the residual-content check added a third parse back). Negligible at this repo's 20 FRs; O(n^2) with a 3x constant for a much larger adopted spec.md. Accepted as-is.",
-          "suggestion": null,
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/tools/promote_required_layers.py",
-          "line": 146,
-          "finding": "bool(content) and layers is not None has an unreachable-false conjunct (layers is already None whenever content is falsy). Accepted as-is.",
+          "line": 140,
+          "finding": "plan_promotions re-parses the FR table 3x per requirement (a silent regression of an earlier deliberate 3x->2x cut, re-added by the residual-text check). Negligible at this repo's scale. Accepted as-is.",
           "suggestion": null,
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-08T17:00:02.589147+00:00",
+      "completed_at": "2026-09-08T17:38:25.693388+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -200,15 +191,16 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-08T06:06:49.083929+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-08T17:38:45.260711+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -315,7 +307,7 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-08T16:54:22.505347+00:00",
+      "completed_at": "2026-09-08T17:33:06.707008+00:00",
       "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
