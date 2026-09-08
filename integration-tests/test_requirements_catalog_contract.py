@@ -233,18 +233,38 @@ def test_the_catalog_declares_no_removed_requirements_section(catalog):
 
 
 def test_every_layers_cell_keeps_the_inferred_marker(catalog):
-    """Layers stay NON-authoritative through the merge.
+    """Layers stay NON-authoritative EXCEPT for a recorded, evidence-backed
+    promotion (`iterate-2026-09-08-p3-5-promote-layers-per-fr`).
 
     A ``Layers`` cell without the literal ``(inferred)`` marker flips that
     requirement's provenance to ``explicit``, which routes any coverage gap to a
-    hard ERROR. Most of the requirements have no test links at all, so dropping
-    the marker while rewriting the table would hard-block the campaign on gaps
-    nobody introduced. Narrow regex on purpose: ``unit, e2e (auto)`` does not
-    match and would yield ``explicit``.
+    hard ERROR. Most of the requirements have no test links at all, so an
+    UNRECORDED drop of the marker would hard-block the campaign on gaps nobody
+    introduced — that unrecorded case is still asserted against below. Narrow
+    regex on purpose: ``unit, e2e (auto)`` does not match and would yield
+    ``explicit``.
     """
-    cells = [
-        [c.strip() for c in line.strip().strip("|").split("|")][6]
+    import json
+    ledger_path = REPO_ROOT / ".shipwright" / "compliance" / "layer_promotion_ledger.json"
+    promoted: set[str] = set()
+    if ledger_path.exists():
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        promoted = {
+            fr_id for fr_id, decisions in ledger.get("decisions", {}).items()
+            if decisions and decisions[-1].get("action") == "promoted"
+        }
+    rows = [
+        [c.strip() for c in line.strip().strip("|").split("|")]
         for line in catalog.splitlines() if _TABLE_ROW.match(line)
     ]
-    assert len(cells) == len(EXPECTED_IDS)
-    assert all(re.search(r"\(\s*inferred\s*\)", c, re.I) for c in cells)
+    assert len(rows) == len(EXPECTED_IDS)
+    for cells in rows:
+        fr_id, layers_cell = cells[0], cells[6]
+        has_marker = bool(re.search(r"\(\s*inferred\s*\)", layers_cell, re.I))
+        if fr_id in promoted:
+            assert not has_marker, (
+                f"{fr_id} is recorded as promoted but still carries the "
+                f"(inferred) marker"
+            )
+        else:
+            assert has_marker, f"{fr_id} unmarked with no matching ledger entry"

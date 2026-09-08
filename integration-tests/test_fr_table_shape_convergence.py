@@ -122,33 +122,50 @@ def test_no_producer_still_emits_the_retired_source_column() -> None:
 # ---------------------------------------------------------------------------
 
 
+#: P3.5's ledger is the ONE legitimate way a row reaches ``explicit`` — read
+#: it rather than hardcode ids, so this stays load-bearing against an
+#: unrecorded flip.
+_PROMOTION_LEDGER = REPO_ROOT / ".shipwright" / "compliance" / "layer_promotion_ledger.json"
+
+
+def _promoted_fr_ids() -> set[str]:
+    import json
+    if not _PROMOTION_LEDGER.exists():
+        return set()
+    ledger = json.loads(_PROMOTION_LEDGER.read_text(encoding="utf-8"))
+    return {k for k, v in ledger.get("decisions", {}).items() if v and v[-1].get("action") == "promoted"}
+
+
 def test_every_live_requirement_stays_on_legacy_provenance() -> None:
-    """ZERO ``explicit``. If this fails, the next gate run hard-aborts."""
+    """``explicit`` ids == the ledger's recorded promotions, exactly. An
+    unrecorded flip still hard-fails, as it would hard-abort the gate."""
     rows = _census(LIVE_SPEC)
-    # 19 -> 20: FR-01.20 appended 2026-08-07. The count moves; the invariant
-    # below does NOT — the new row carries the (inferred) marker precisely so
-    # `explicit` stays empty and the layer-coverage gate stays advisory.
-    assert len(rows) == 20
-    explicit = [r["id"] for r in rows if r["source"] == "explicit"]
-    assert explicit == [], (
-        f"{len(explicit)} requirement(s) flipped to `explicit` provenance: "
-        f"{explicit}. Most have zero test links, so this hard-aborts "
-        f"the layer-coverage gate (SPEC §6.2). Every Layers cell must carry the "
-        f"literal (inferred) marker."
+    assert len(rows) == 20  # 19 -> 20: FR-01.20 appended 2026-08-07.
+    explicit = {r["id"] for r in rows if r["source"] == "explicit"}
+    promoted = _promoted_fr_ids()
+    assert explicit - promoted == set(), (
+        f"explicit with no ledger entry: {sorted(explicit - promoted)}"
     )
-    assert {r["source"] for r in rows} <= {"inferred_legacy", "defaulted_legacy"}
+    assert promoted <= explicit, f"reverted: {sorted(promoted - explicit)}"
+    assert {r["source"] for r in rows if r["id"] not in promoted} <= {
+        "inferred_legacy", "defaulted_legacy",
+    }
 
 
 def test_every_live_layers_cell_carries_the_marker() -> None:
-    """The AC, asserted on the artifact rather than on the intent."""
+    """The AC on the artifact. Every row keeps the marker EXCEPT a ledger-
+    recorded, evidence-backed promotion."""
     rows = [
         line for line in LIVE_SPEC.read_text(encoding="utf-8").splitlines()
         if line.startswith("| FR-")
     ]
     assert len(rows) == 20  # FR-01.20 appended 2026-08-07
+    promoted = _promoted_fr_ids()
     for line in rows:
+        fr_id = line.split("|")[1].strip()
         layers_cell = line.rstrip("|").rsplit("|", 1)[-1].strip()
-        assert "(inferred)" in layers_cell, f"unmarked Layers cell: {line[:60]}…"
+        marked = "(inferred)" in layers_cell
+        assert marked != (fr_id in promoted), f"marker/ledger mismatch: {line[:60]}…"
 
 
 def test_an_unmarked_cell_really_would_flip_to_explicit(tmp_path: Path) -> None:

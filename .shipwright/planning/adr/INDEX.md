@@ -98,3 +98,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR: AC-scoped @covers tag grammar + test-traceability manifest v4](iterate-2026-09-07-p3-2-tag-grammar-manifest-v4-ac-binding.md)
 - [Binding-completeness F11 gate + ledger/(E)-bullet reconciliation (P3.3)](iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md)
 - [Mechanical AC-provenance backfill, conservative by construction](iterate-2026-09-07-p3-4-tagging-backfill-mechanical-ac-provenance-backfill.md)
+- [Per-FR, evidence-driven Layers promotion — never a sweep](iterate-2026-09-08-p3-5-promote-layers-per-fr-layers-promotion-mechanism.md)

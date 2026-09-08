@@ -1,0 +1,160 @@
+{
+  "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr",
+  "date": "2026-09-08T17:25:29.840066Z",
+  "event_at": "2026-09-08T08:14:38.449533+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-p3.5-promote-layers-per-fr",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-08-p3-5-promote-layers-per-fr",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "promotion happens automatically for a clean FR with no operator interaction, with the evidence (highest observable layer) named in the ledger entry",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_clean_promotion_exits_zero_writes_spec_and_ledger PASSED"
+      },
+      {
+        "behavior": "no batch/sweep path exists: one FR's escalation never blocks a sibling FR's clean promotion in the same run",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_one_escalation_does_not_block_another_frs_clean_promotion PASSED"
+      },
+      {
+        "behavior": "a bound-but-unexecuted test escalates unconditionally (absent != green), regardless of rank relative to the highest passing layer",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion.py::test_absent_binding_at_or_below_highest_ok_still_escalates PASSED"
+      },
+      {
+        "behavior": "an existing required layer without fresh ok evidence blocks promotion even when a different layer is newly green",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion.py::test_existing_required_layer_without_fresh_ok_evidence_skips_not_promotes PASSED"
+      },
+      {
+        "behavior": "a collision (ambiguous display id) escalates layer_undeterminable, and only an operator's recorded demoted/promoted decision clears it on a re-run",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion.py::test_collision_id_cleared_by_a_recorded_demotion_is_exitable PASSED"
+      },
+      {
+        "behavior": "a promoted FR cannot silently demote: a hand-narrowed explicit cell (still nominally 'explicit') escalates contradicts_recorded_decision rather than a clean skip",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion.py::test_ledger_promoted_but_live_cell_narrowed_escalates_contradiction PASSED"
+      },
+      {
+        "behavior": "the automated tool never overrides an operator's recorded demotion: unchanged evidence stays a decided skip, and evidence that newly looks green escalates to a human rather than silently promoting (Stage-1 spec-review round 2, P3.5: replaces a deleted test with the two that now jointly cover both halves)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_demoted_fr_with_unchanged_evidence_is_a_clean_skip_writes_nothing PASSED; shared/scripts/tools/tests/test_promote_required_layers.py::test_demoted_fr_with_drifted_evidence_escalates_and_writes_nothing PASSED"
+      },
+      {
+        "behavior": "the human-only CLI hardcodes decided_by=operator; an unrecognised --decided-by flag is rejected by argparse itself",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py::test_decided_by_is_always_operator_never_configurable PASSED"
+      },
+      {
+        "behavior": "a re-run over an already-promoted FR is a clean, byte-identical no-op (idempotent), never a second write or ledger entry",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_rerun_after_promotion_is_a_clean_noop PASSED"
+      },
+      {
+        "behavior": "the ledger is written before spec.md on both the automated tool and the human CLI, so a ledger-write failure never leaves an unrecorded promoted cell",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py::test_ledger_write_failure_leaves_spec_md_untouched PASSED"
+      },
+      {
+        "behavior": "a concurrent edit to spec.md between planning and writing a promotion is detected and refused, never silently overwritten",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion_apply.py::test_write_promotion_files_refuses_a_concurrent_edit PASSED"
+      },
+      {
+        "behavior": "escalating over half the evaluated set surfaces a sweep_signal_warning report without changing the exit-code contract",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_majority_escalating_adds_a_sweep_signal_warning_but_keeps_exit_three PASSED"
+      },
+      {
+        "behavior": "the repo-wide guard pinning every live FR to legacy provenance recognizes a ledger-recorded promotion as the one legitimate exception, and still hard-fails an unrecorded/accidental flip",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_fr_table_shape_convergence.py::test_every_live_requirement_stays_on_legacy_provenance PASSED"
+      },
+      {
+        "behavior": "LAYER_RANK is a direct re-export of tools.verifiers._layer_coverage_binding._LAYER_RANK, not an independent copy -- a canonical layer added upstream cannot silently diverge the promoter from the gate it promotes into",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion.py (full 35-test file re-run green after the re-export fix; highest_ok_layer delegates directly)"
+      },
+      {
+        "behavior": "the lock-release test is mechanism-sensitive, not merely outcome-sensitive: deleting main()'s finally: lock_cm.__exit__(...) makes the (restructured) test fail, not merely leaves it green via GeneratorExit refcount cleanup",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_an_exception_inside_the_locked_span_still_releases_the_lock and its twin in test_record_layer_promotion_decision.py -- both empirically verified to fail (real LockTimeout after a 10s wait) when the finally block is manually removed, then restored"
+      },
+      {
+        "behavior": "record_layer_promotion_decision.py's promoted branch widens OSError handling to match its demoted sibling, and rejects a missing/empty spec_path by name before resolving it",
+        "disposition": "tested",
+        "evidence": "test_promoted_action_with_missing_spec_path_is_rejected_by_name and test_promoted_action_on_a_deleted_spec_md_fails_with_a_named_error (test_record_layer_promotion_decision.py)"
+      },
+      {
+        "behavior": "a type-corrupted ledger required_layers element (e.g. null) fails closed with ValueError, not a raw AttributeError",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion.py::test_ledger_promoted_with_a_corrupted_required_layers_element_fails_closed"
+      },
+      {
+        "behavior": "a ledger entry with an unrecognised action value (a typo, or a foreign value) fails closed with ValueError naming the FR id at load time, rather than silently falling through evaluate_fr as if the FR had no ledger entry at all",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion_ledger.py::test_load_ledger_rejects_an_unrecognised_action"
+      },
+      {
+        "behavior": "a corrupted decisions[fr_id] value (not a list, or a list of non-dict entries) fails closed with ValueError naming the FR id, not a raw AttributeError/KeyError",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion_ledger.py::test_load_ledger_rejects_a_non_list_decision_history and ::test_load_ledger_rejects_a_non_dict_history_entry"
+      },
+      {
+        "behavior": "a promoted ledger entry with a corrupted required_layers element (e.g. null) fails closed at load time with a normal CLI JSON error shape (rc 2, an error key naming the FR id), not an uncaught traceback",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_a_corrupted_ledger_required_layers_is_an_operational_failure, alongside the lib-level shared/tests/test_layer_promotion.py pin of the underlying _canonical_layer_tokens behavior"
+      },
+      {
+        "behavior": "a promotable FR whose live spec.md cell still carries a hand-added annotation or non-canonical token is skipped, instead of the automated tool's rewrite silently deleting the text with no warning (Stage-1 spec-review REJECT, P3.5 post-push round: corrected from an escalation to a named skip -- the predicate demonstrably holds, so this is not one of the spec's three named undecidable cases)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_layer_cell_writer.py::test_live_cell_has_non_canonical_content (parametrized), shared/tests/test_layer_promotion.py::test_promotable_evidence_but_a_hand_annotated_live_cell_is_skipped_instead_of_overwriting, shared/scripts/tools/tests/test_promote_required_layers.py::test_a_hand_annotated_cell_is_skipped_instead_of_silently_losing_the_annotation"
+      },
+      {
+        "behavior": "an OSError while reading the layer-promotion ledger (a permissions error, or the path becoming a directory) surfaces as this CLI's normal error shape in both the automated and operator CLIs, not an uncaught traceback",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_an_os_error_reading_the_ledger_is_an_operational_failure_not_a_traceback, shared/scripts/tools/tests/test_record_layer_promotion_decision.py::test_an_os_error_reading_the_ledger_is_a_named_systemexit_not_a_traceback"
+      },
+      {
+        "behavior": "evidence_fingerprint's agreement between evaluate_fr's mutated eval_node and plan_promotions' own reporting node is pinned directly, so a future widening of the fingerprint payload (e.g. to include required_layers) fails loudly here instead of silently diverging in production",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion_ledger.py::test_evidence_fingerprint_agrees_across_a_shallow_copy_that_only_touches_required_layers"
+      },
+      {
+        "behavior": "a spec.md write failure on the demote-revert path names the ledger-recorded/cell-still-explicit state and tells the operator the same --action demoted command will retry and clear it (the opposite framing from the automated tool's own matching message, which must warn a re-run will NOT clear it)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py::test_demoted_action_spec_write_failure_names_the_state_and_says_a_retry_will_clear_it"
+      },
+      {
+        "behavior": "a promotion's whole-row rewrite is value-preserving but not byte-preserving for an untouched sibling cell (a hand-written backslash re-escapes; hand-added column-alignment padding collapses) -- accepted-not-fixed (Stage-3 doubt-review round 3, P3.5 post-push round), pinned as an explicit tested contract rather than left an untested side effect",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_layer_cell_writer.py::test_normalizes_a_hand_written_backslash_in_an_untouched_cell_when_the_row_is_rewritten, shared/tests/test_fr_layer_cell_writer.py::test_collapses_hand_added_column_alignment_padding_in_an_untouched_cell_when_the_row_is_rewritten"
+      },
+      {
+        "behavior": "evidence_fingerprint's digest is stable under reordering of two test links sharing id/path/ac_id but differing only in tag_source (a total-order gap in _link_sort_key, Stage-3 doubt-review round 3, P3.5 post-push round)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion_ledger.py::test_evidence_fingerprint_is_stable_under_reordering_of_links_sharing_id_path_and_ac_id"
+      }
+    ],
+    "counts": {
+      "testable": 26,
+      "tested": 26,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "monorepo compliance-tooling change (a new per-FR Layers-promotion mechanism + its own tests); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0), including a real, verified-idempotent run of the new CLI against this repo's own spec.md and manifest."
+  },
+  "declared_removals": []
+}

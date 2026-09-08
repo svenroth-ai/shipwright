@@ -1,0 +1,70 @@
+{
+  "decisions": {
+    "FR-01.06": [
+      {
+        "action": "promoted",
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:5d313c32f0d671d995d22be8926c8dce691541f47b21f44fd9651c1695121c1b",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-09-08T06:58:17.490Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr"
+      }
+    ],
+    "FR-01.07": [
+      {
+        "action": "promoted",
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:d9a0ec020918b0fa62e79f6bd5557d762c0d00e657903e0a3514c41d6fabd00e",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-09-08T06:58:17.490Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr"
+      }
+    ],
+    "FR-01.09": [
+      {
+        "action": "promoted",
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:188cc196eca89e503b877ef6dc74cd7d6ebc6b413349cda1b47507d9e8b33620",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-09-08T06:58:17.490Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr"
+      }
+    ],
+    "FR-01.13": [
+      {
+        "action": "promoted",
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:2c15e1c01c0ead6ad3c6b304b179e28e9b0f4a5975b144067b033d5db6ef45c6",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-09-08T06:58:17.490Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr"
+      }
+    ],
+    "FR-01.14": [
+      {
+        "action": "promoted",
+        "decided_by": "tool",
+        "evidence_fingerprint": "sha256:141e58e6ee2dc3c8d4669409a786107dc6b2011f0fe131a02633533c5a71d028",
+        "reason": "highest observable layer 'unit' ran executed-passing this run; binding promoted to match evidence",
+        "recorded_at": "2026-09-08T06:58:17.490Z",
+        "required_layers": [
+          "unit"
+        ],
+        "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr"
+      }
+    ]
+  },
+  "schema_version": 1
+}

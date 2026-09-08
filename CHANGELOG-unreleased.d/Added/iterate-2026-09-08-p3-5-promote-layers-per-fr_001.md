@@ -1,0 +1,1 @@
+compliance: promote a requirement's Layers binding from legacy to explicit automatically, per requirement, wherever its own test-coverage evidence justifies it (never a sweep), with a durable per-FR ledger and a human-only override CLI for the rare undecidable case

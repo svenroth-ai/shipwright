@@ -844,6 +844,24 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/lib/layer_promotion.py",
+      "limit": 300,
+      "current": 364,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-5 code-review Medium finding: crosses the budget after the fix that removed the unpinned LAYER_RANK duplicate (net line-count win vs. the alternative fix) and after exhausting attribution-comment trimming. No further cut is available without losing genuine rationale; deferred to a future iterate for a real split/extraction pass."
+    },
+    {
+      "path": "shared/scripts/lib/layer_promotion_ledger.py",
+      "limit": 300,
+      "current": 343,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-2 code-review Low 1+2 follow-up: crossed the budget after adding per-entry action-vocabulary validation to _parse_ledger (closes a real fail-open on a corrupted/foreign ledger action value). Deferred to a future iterate for a real split/extraction pass, consistent with the other layer-promotion modules already deferred in this same round."
+    },
+    {
       "path": "shared/scripts/lib/review_record_schema.py",
       "limit": 300,
       "current": 313,
@@ -970,11 +988,29 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/promote_required_layers.py",
+      "limit": 300,
+      "current": 333,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-5 code-review Medium finding: crosses the budget after exhausting attribution-comment trimming and after this round's spec.md-parse-count and lock-release \"your call\" fixes. Deferred to a future iterate for a real split/extraction pass."
+    },
+    {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
       "current": 767,
       "state": "exception",
       "adr": "ADR-111"
+    },
+    {
+      "path": "shared/scripts/tools/record_layer_promotion_decision.py",
+      "limit": 300,
+      "current": 346,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-5 code-review Medium finding: crosses the budget after the Low-2 fix (widened OSError handling + named spec_path guard on both promoted/demoted branches) and after exhausting attribution-comment trimming. Deferred to a future iterate for a real split/extraction pass."
     },
     {
       "path": "shared/scripts/tools/record_requirement_impact.py",
@@ -1012,11 +1048,29 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/tests/test_promote_required_layers.py",
+      "limit": 300,
+      "current": 544,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-5 code-review Medium finding: CLI test coverage, including this round's mechanism-sensitive lock-release restructuring. The overage (161 lines) is far larger than any plausible attribution-comment trim can close. Deferred to a future iterate."
+    },
+    {
       "path": "shared/scripts/tools/tests/test_record_event.py",
       "limit": 300,
       "current": 883,
       "state": "exception",
       "adr": "ADR-092"
+    },
+    {
+      "path": "shared/scripts/tools/tests/test_record_layer_promotion_decision.py",
+      "limit": 300,
+      "current": 416,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-5 code-review Medium finding: CLI test coverage, including this round's Low-1 mechanism-sensitive restructuring and 2 new Low-2 tests. Deferred to a future iterate."
     },
     {
       "path": "shared/scripts/tools/tests/test_suite_coverage_gate.py",
@@ -1383,6 +1437,15 @@
       "adr": null
     },
     {
+      "path": "shared/tests/test_layer_promotion.py",
+      "limit": 300,
+      "current": 514,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-5 code-review Medium finding: test file coverage for layer_promotion.py's pure-evaluator branches; the overage (167 lines) is far larger than any plausible attribution-comment trim can close. Precedent: test_record_event.py is already baselined as an in-scope test file. Deferred to a future iterate."
+    },
+    {
       "path": "shared/tests/test_list_iterate_branches.py",
       "limit": 300,
       "current": 757,
@@ -1612,6 +1675,33 @@
       "current": 371,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/scripts/lib/fr_layer_cell_writer.py",
+      "limit": 300,
+      "current": 359,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-3 doubt-review round 2 Medium finding: crossed the budget after adding live_cell_has_non_canonical_content (detects a hand-added annotation/non-canonical token a promotion rewrite would otherwise silently delete). Deferred to a future iterate for a real split/extraction pass, consistent with the other layer-promotion modules already deferred."
+    },
+    {
+      "path": "shared/tests/test_fr_layer_cell_writer.py",
+      "limit": 300,
+      "current": 322,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-3 doubt-review round 3 Low finding: crossed the budget after two new tests pinning write_layers_cell's value-preserving-not-byte-preserving contract for an untouched sibling cell (a hand-written backslash, and column-alignment padding), a rebuttal disposition recorded in the ADR rather than a code fix. Test-file coverage, same precedent as test_record_event.py. Deferred to a future iterate for a real split/extraction pass."
+    },
+    {
+      "path": "shared/tests/test_layer_promotion_ledger.py",
+      "limit": 300,
+      "current": 320,
+      "state": "deferred-plan",
+      "adr": null,
+      "plan_ref": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.5-promote-layers-per-fr.md",
+      "note": "P3.5 Stage-3 doubt-review round 2 Low finding follow-up: crossed the budget after adding the evidence_fingerprint shallow-copy-coincidence pinning test. Deferred to a future iterate for a real split/extraction pass."
     }
   ]
 }

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-08-p3-5-promote-layers-per-fr",
+  "date": "2026-09-08",
+  "section": "campaign req3-04c-ac-identity-wave2 / p3.5",
+  "title": "Per-FR, evidence-driven Layers promotion mechanism (never a sweep)",
+  "context": "All 20 FRs are required_layers_source=inferred_legacy. P3.5 builds the mechanism that promotes one FR's binding to explicit per-requirement, one-way, wherever its own coverage evidence justifies it, escalating only for 3 named undecidable cases via the diff_risk_recheck process contract.",
+  "decision": "New lib.layer_promotion (pure evaluator) + lib.layer_promotion_ledger (durable per-FR record) + lib.fr_layer_cell_writer (surgical cell writer) + tools/promote_required_layers.py (automated CLI, exit 0/3/other) + tools/record_layer_promotion_decision.py (human-only demote/override CLI). Real run: 5 of 20 FRs promoted, 13 skipped, 2 escalated (bound-but-absent test at same layer as an ok result, correctly caught after a round-1 code-review fix).",
+  "consequences": "5 FRs' required_layers now enforce at HARD severity in P3.3's gates (verified matching current ok coverage, so nothing newly fails). trg-875104ac (emit-half) stays open -- distinct lifecycle moment, not covered here. trg-8d6f4b90 (WebUI counterpart) and trg-fcd48a56 (CI-evidence provenance, cross-cutting) remain open tracked follow-ups.",
+  "rationale": "Mirrors diff_risk_recheck's exit-code shape and its two load-bearing properties (never self-ack; content-not-presence validation) via a domain-appropriate ledger, since the literal CI-supply-chain ack file has no schema for a per-FR required_layers value or permanent history (D5). Full external-review disposition table and reasoning in the linked spec-ref.",
+  "rejected": "A single global sweep across all 20 FRs in one pass -- explicitly forbidden by D5 and the sub-iterate spec's own scope section.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-08-p3-5-promote-layers-per-fr-layers-promotion-mechanism.md"
+}

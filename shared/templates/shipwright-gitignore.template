@@ -102,6 +102,13 @@
 # cross-layer gate (which reads them in-memory), never durable committed artifacts.
 /.shipwright/compliance/evidence/
 /.shipwright/compliance/test-evidence-index.json
+# The layer-promotion ledger's own FileLock sidecar (Low finding, Stage-4
+# code-review, P3.5 post-push round) -- never contains data, must never be
+# tracked. Same rationale as the iterates/ FileLock sidecar above; needed
+# here too because /.shipwright/compliance/ is re-included wholesale and the
+# root .gitignore's un-managed `*.json.lock` rule is not propagated by this
+# template.
+/.shipwright/compliance/layer_promotion_ledger.json.lock
 # External-review gate markers under planning/iterate/ are TRANSIENT run-scoped
 # state (mark-review-state.py Branch A/B/C), not durable audit evidence: the RTM
 # (rtm.collect_external_review_states) explicitly SKIPS planning/iterate/ and only
