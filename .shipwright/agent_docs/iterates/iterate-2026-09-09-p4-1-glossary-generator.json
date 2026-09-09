@@ -38,14 +38,14 @@
         "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_project_interview_protocol_wires_the_context_producer PASSED"
       },
       {
-        "behavior": "AC3: a term elicited/sharpened through the wired CLI invocation shape lands in CONTEXT.md in the documented format",
+        "behavior": "AC3: a term elicited/sharpened through the wired invocation shape lands in CONTEXT.md in the documented format",
         "disposition": "tested",
-        "evidence": "shared/tests/test_write_context_term_cli.py::test_wired_cli_sharpens_a_term_into_context_md PASSED"
+        "evidence": "shared/tests/test_write_context_term_payload.py::test_payload_file_sharpens_a_term_containing_a_single_quote PASSED (--payload-file is the wired invocation as of the shell quote-breakout fix; test_write_context_term_cli.py exercises the legacy --term/--definition/--avoid flag path, not the wired one)"
       },
       {
-        "behavior": "AC4: a second sharpened term (via the wired CLI path) does not corrupt or duplicate the first",
+        "behavior": "AC4: a second sharpened term (via the wired path) does not corrupt or duplicate the first",
         "disposition": "tested",
-        "evidence": "shared/tests/test_write_context_term_cli.py::test_wired_cli_second_sharpened_term_does_not_corrupt_first, shared/tests/test_write_context_term.py::test_second_term_is_appended_not_duplicated, ::test_third_term_does_not_corrupt_first_two, ::test_update_preserves_other_terms PASSED"
+        "evidence": "shared/tests/test_write_context_term_payload.py::test_payload_file_clear_avoid_round_trips (two sequential --payload-file invocations against the same CONTEXT.md), shared/tests/test_write_context_term.py::test_second_term_is_appended_not_duplicated, ::test_third_term_does_not_corrupt_first_two, ::test_update_preserves_other_terms PASSED"
       },
       {
         "behavior": "an embedded newline in --term/--definition/--avoid is collapsed to single-line prose so it cannot mis-parse as a second entry on the next run",

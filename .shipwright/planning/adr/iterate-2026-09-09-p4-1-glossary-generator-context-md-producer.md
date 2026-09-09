@@ -184,3 +184,19 @@ unexpected keyword argument 'newline'`, 12 failing tests) before it could
 reach CI. Fixed by switching to `Path.open(..., newline="")`, which has
 accepted `newline=` since pathlib's inception. See F3a for the reusable
 learning.
+
+## Stale evidence citation fix (PR #699) — seventh round
+
+One MEDIUM finding after the sixth round's `--payload-file` fix:
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| `test_write_context_term_cli.py`'s docstring still called itself "the wired path" / "the exact invocation shape interview-protocol.md tells the agent to use", and the Test Completeness Ledger cited it as AC3/AC4 evidence — but every test in that file uses the now-deprecated `--term`/`--definition`/`--avoid` flags, not `--payload-file`, which became the actual wired path in the sixth round. A reader following the evidence trail from the ledger would land on the deprecated form labelled as authoritative | Medium | accepted-and-fixed — `test_write_context_term_cli.py`'s docstring reworded to state it covers the LEGACY trusted-caller flag path only, never the interview-wired invocation, and points to `test_write_context_term_payload.py` as where AC2/AC3/AC4 evidence now lives. The Test Completeness Ledger (`.shipwright/agent_docs/iterates/iterate-2026-09-09-p4-1-glossary-generator.json` and its immutable `.test-results.json` sibling) AC3/AC4 rows re-cited: AC3 now cites `test_write_context_term_payload.py::test_payload_file_sharpens_a_term_containing_a_single_quote` (the actual wired invocation); AC4 now cites `test_write_context_term_payload.py::test_payload_file_clear_avoid_round_trips` (two sequential wired invocations against the same file) alongside the unaffected `test_write_context_term.py` `upsert_term`-level append/no-duplication tests, which were never CLI-specific and remain valid regardless of which flag path is wired |
+
+Five LOW findings from this pass deferred to a follow-up triage card
+(coordinator's explicit scoping — not addressed here): the CLI test
+file's own name, `--help` text on the legacy flags, a negative
+drift-test assertion, empty-string `avoid` handling in the payload path,
+and `term_markup_count` still scanning bolded cross-references inside
+`Language` section definitions, plus the redundant `mkdir` line in
+`interview-protocol.md`'s payload-writing step.

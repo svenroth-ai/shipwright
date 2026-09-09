@@ -1,9 +1,18 @@
-"""CLI ("wired path") tests for shared/scripts/tools/write_context_term.py.
+"""CLI tests for shared/scripts/tools/write_context_term.py's LEGACY
+``--term``/``--definition``/``--avoid`` flag path.
 
-Exercises the exact invocation shape
+**Not the interview-wired invocation** (P4.1 final review — the flag path
+these tests exercise is deprecated in favor of ``--payload-file``, since a
+value assembled from interview text into a shell-quoted ``--term
+'<value>'`` argument breaks out of the quoting the moment it contains a
+single quote). These tests cover the flag path for callers that already
+hold trusted, non-shell-composed values (this file itself, other scripts) —
+never for free text from an interview. The invocation
 ``plugins/shipwright-project/skills/project/references/interview-protocol.md``
-tells the agent to use when a term is sharpened (AC2/AC3/AC4) — as opposed to
-``test_write_context_term.py``, which calls ``upsert_term`` directly.
+actually tells the agent to use is ``--payload-file``, covered by
+``test_write_context_term_payload.py`` (AC2/AC3/AC4 evidence lives there
+now). As opposed to ``test_write_context_term.py``, which calls
+``upsert_term`` directly.
 """
 
 from __future__ import annotations
