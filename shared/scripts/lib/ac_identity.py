@@ -41,7 +41,8 @@ bold-anchor form (``**FR-XX.YY: Name**``) kept for older documents. Both
 only, ``### FR-XX.YY`` / any rank — see that module), so the two can never
 see a different set of ids. Continuation-line joining and whitespace
 normalisation are NOT reimplemented here: once a block is found, its
-criteria still come from `fr_criteria.block_criteria(..., strict=True)`.
+criteria still come from
+`fr_criteria.block_criteria(..., strict=True, strip_ac_marker=False)`.
 
 **Never renumbered, never reused — how.** A ``registry`` (``fr_id -> highest
 number ever minted``) travels across runs. Re-running `mint()`:
@@ -80,23 +81,14 @@ both validate every marker they see and raise (never coerce or ignore) on:
   otherwise introduce that neither the marker syntax nor the registry alone
   would catch.
 
-**Two known, deferred effects of minting a REAL document (external plan
-review; code review round 3).** `read()` strips `[ACnn]`, but
-`lib.fr_criteria.criteria_for` itself does not know the marker exists — so
-any OTHER `fr_criteria` caller reading an already-minted document sees
-`[ACnn] ` as literal text:
-
-1. a digest gate (e.g. `_layer_coverage_ac`) keyed to criterion text changes;
-2. a minted PLACEHOLDER bullet stops collapsing to `fr_criteria`'s bare-
-   placeholder token set — `"[AC01] TBD"` normalises to `ac01tbd`, which
-   is not in that set — so a placeholder-only FR flips from `has_criteria =
-   False` to `True` for every such caller (pinned today at
-   `test_mint_and_read_agree_on_a_duplicate_split_across_a_placeholder`,
-   which exercises the same collapse loss via the duplicate-detection path).
-
-Both are inert today, since this run never mints the real spec.md; whoever
-wires minting into a real, gate-read document (P3.2/P3.3) decides how to
-handle them — named here so neither is a surprise there.
+**Every OTHER `fr_criteria` caller is marker-blind by default (resolved,
+P3.4 doubt review #689).** `read()` parses `[ACnn]` itself, so it calls
+`fr_criteria.block_criteria(..., strip_ac_marker=False)` to keep seeing it.
+Every other reader of criterion text (fr_hygiene, spec_parser, the
+layer-coverage digest gate, I6 — nine call sites total, none of them this
+module) gets the marker stripped by `fr_criteria` itself before it ever sees
+the text — see that module's docstring. Fixed at that one seam rather than
+taught to each caller.
 """
 
 from __future__ import annotations
@@ -220,10 +212,12 @@ def read(content: str, fr_id: str) -> list[tuple[str | None, str]]:
     ``fr_criteria.iter_anchored_blocks`` directly here also matched the
     legacy bold-anchor form, so ``read()`` could see an id ``mint()`` never
     scanned). Criterion TEXT extraction from each matching block is still
-    ``fr_criteria.block_criteria(..., strict=True)`` (R0) — continuation-line
-    joining and whitespace normalisation are not reimplemented here, and the
-    ``[ACnn]`` marker (if present) is just ordinary leading text to it,
-    unaffected by its checkbox/assertion stripping.
+    ``fr_criteria.block_criteria(..., strict=True, strip_ac_marker=False)``
+    (R0) — continuation-line joining and whitespace normalisation are not
+    reimplemented here; ``strip_ac_marker=False`` keeps the ``[ACnn]`` marker
+    (if present) as ordinary leading text to it, unaffected by its
+    checkbox/assertion stripping, so ``parse_marker`` below still has
+    something to parse.
 
     Raises ``MalformedAcMarkerError`` / ``DuplicateAcIdError`` on a marker
     that cannot be trusted — see ``mint()``; a caller that only ever reads
@@ -235,7 +229,7 @@ def read(content: str, fr_id: str) -> list[tuple[str | None, str]]:
     for anchored_id, block in iter_heading_anchored_blocks(content):
         if anchored_id != fr_id:
             continue
-        for text in fr_criteria.block_criteria(block, strict=True):
+        for text in fr_criteria.block_criteria(block, strict=True, strip_ac_marker=False):
             num, remainder = parse_marker(text, fr_id=fr_id)
             if num is None:
                 out.append((None, text))

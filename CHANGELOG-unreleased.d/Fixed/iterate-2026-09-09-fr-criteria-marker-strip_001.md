@@ -1,0 +1,1 @@
+lib.fr_criteria now strips a minted [ACnn] marker before any of its nine consumers read criterion text, so the cross-layer digest gate no longer sees every minted criterion as changed and a minted placeholder bullet still collapses to the bare-placeholder token set (P3.4 doubt review, #689)

@@ -48,6 +48,21 @@ def canonical_ac_id(num: int) -> str:
     return f"AC{num:02d}"
 
 
+def strip_leading_ac_marker(text: str) -> str:
+    """``text`` with a leading ``[ACnn]``-shaped marker removed, or ``text``
+    unchanged when it carries none.
+
+    Lenient by SHAPE, not by canonical validity (``[AC7]`` is stripped too) —
+    a caller using this to get plain prose has no use for a malformed marker
+    either; a caller that must trust the number uses ``parse_marker`` instead,
+    which is the one that raises on it. ``count=1`` is deliberate, not a
+    missed case: a bullet with two STACKED markers already failed
+    ``mint()``/``read()`` validation (``MalformedAcMarkerError``) before it
+    could ever reach here, so there is at most one to strip on any input this
+    module's own tools ever produced."""
+    return AC_MARKER_RE.sub("", text, count=1)
+
+
 def parse_marker(text: str, *, fr_id: str) -> tuple[int | None, str]:
     """``(number, remainder)`` for a ``[ACnn]`` marker at the START of
     ``text``, or ``(None, text)`` when there is none.
@@ -96,4 +111,5 @@ __all__ = [
     "MalformedAcMarkerError",
     "canonical_ac_id",
     "parse_marker",
+    "strip_leading_ac_marker",
 ]
