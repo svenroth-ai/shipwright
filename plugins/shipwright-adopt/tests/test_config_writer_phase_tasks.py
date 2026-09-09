@@ -12,7 +12,33 @@ import re
 import uuid
 from pathlib import Path
 
+import pytest
+
+from lib.adopted_phase_tasks import build_adopted_phase_task
 from lib.config_writer import write_all
+
+
+def test_an_out_of_vocabulary_step_raises() -> None:
+    """``write_all(..., completed_steps=[...])`` is a public keyword parameter,
+    so a typo or a caller-supplied custom list must fail loud rather than
+    silently mint a phase_tasks[] entry violating the schema's Phase enum and
+    slashCommand pattern (caught in review at 3f-bis, campaign
+    p4-04-retire-write-once-steps)."""
+    with pytest.raises(ValueError, match="not a valid Phase"):
+        build_adopted_phase_task("buidl", now="2026-09-09T00:00:00Z")
+
+
+def test_write_all_propagates_the_same_guard_through_completed_steps(tmp_path: Path) -> None:
+    """The public seam, not just the helper directly."""
+    with pytest.raises(ValueError, match="not a valid Phase"):
+        write_all(
+            tmp_path,
+            scope="full_app", profile="supabase-nextjs", split_name="01-adopted",
+            plugin_version="0.1.0", dev_url=None, test_cmd=None, commit_sha=None,
+            features_inferred=1, nested_excluded=[],
+            fr_count=1, qr_count=0,
+            completed_steps=["project", "buidl"],
+        )
 
 
 def test_phase_tasks_entries_satisfy_schema_required_fields(tmp_path: Path) -> None:
