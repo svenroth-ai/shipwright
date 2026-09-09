@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T21:42:35.972557+00:00",
+      "disposition": "7-item checklist walked; 1 item failed and was fixed (Error Handling: EmptyLinkWalk escaped main() as Python exit 1, indistinguishable from a real hard finding -- now caught and mapped to exit 2 with JSON, pinned by test_the_empty_link_tripwire_exits_two_not_one). Item 7 (Affected Boundaries, ADR-024): producer = the gate's JSON stdout, consumers = CI log + p3.7's feeder; round-tripped 15x in-process plus once across a real subprocess boundary.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan explicitly changes the meaning of AC-1 from “behaviour-changing PR” to “PR changing spec criteria.” A code-only behaviour change with no AC edit passes untouched. This is acknowledged as Q1b, but it still means the proposed gate does not enforce the stated north-star condition.",
+          "suggestion": "Obtain an explicit change to the source acceptance criterion/scope that defines behaviour change as a spec-criteria change, or add a reliable code-to-AC signal. Do not present the implemented gate as enforcing behaviour-changing PRs generally.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "AC identity rotation bypasses the greenness check. Changing `[AC01]` to `[AC02]` (optionally while editing the criterion), or moving a criterion between FRs, becomes `removed` + `added`; `added` deliberately does not require green bindings and `removed` is report-only. This can discard an existing AC-to-test obligation without triggering `binding_removed`, which only examines `changed` `(fr_id, ac_id)` pairs.",
+          "suggestion": "Treat an AC-ID replacement or relocation as a hard authoring violation unless the registry proves an approved migration, or match removed/added criteria by normalized text and route the old binding through the same retention/greenness checks. Add regression tests for marker replacement and cross-FR relocation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The gate relies on `python-checks` remaining a required, PR-running check, but the plan only says this is true today. It does not verify that all merge paths use that job—particularly merge-queue/`merge_group` runs if enabled later—or establish ownership of the branch-protection contract.",
+          "suggestion": "Add a CI/branch-protection contract check or explicitly document and verify the supported merge events. If merge queue is used, run the gate for `merge_group` against the appropriate base/head refs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The base-manifest-absent mode intentionally degrades to head-only bindings. On a long-lived branch whose base predates the manifest, a PR can remove a binding while editing its AC and receive only a warning, despite the plan identifying that as the exact disarming state.",
+          "suggestion": "Make this compatibility mode temporary and explicit: require rebasing onto a base containing the manifest for protected branches, or block changed ACs with head-side binding loss when `base_manifest_absent` is encountered.  Overall, the evaluator structure and fresh-CI-evidence design are sound, and the plan handles several subtle manifest and quantifier failures well. However, AC-ID replacement/movement is a practical bypass, and the declared spec-derived scope must be reconciled with the stated behavioural requirement before build.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T21:41:30.943205+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] This is an exceptionally well-worked plan — four review rounds, build-time amendments from its own tests, and the load-bearing traps (∃/∀, node-vocabulary vs link-counts, node-id spaces) each have pinned regression tests. My findings are refinements, not corrections of direction.\n\n**Findings**\n\n- **Category: edge-case · Severity: medium · Deleting a minted AC entirely is exit 0.** A PR that *removes* a `[ACnn]` criterion (rather than editing it) lands in the `removed` row → report-only → exit 0, and no unminted/arm-1 signal fires (the text is gone, not unmarked). That PR changes behaviour while removing the very AC that named it, and the bound tests it silently orphans are p3.7(b)'s job — so for the window until p3.7 lands, \"delete the AC\" is a cleaner dodge than the two-PR unbind sequence §7 already names. **Suggestion:** either classify a `removed` minted AC that had base links ≥ 1 as HARD (the binding now points at nothing — arguably a `binding_removed` variant on the spec side), or explicitly add this deletion shape to the p3.7(b) card alongside the two-PR sequence so it isn't only implicit in the `removed` table row.\n\n- **Category: edge-case · Severity: low · Arm 2's \"new active FR\" determination is underspecified.** §5.2 arm 2 fires on \"a NEW active FR at head with zero minted criteria\" but the plan never states what set operation identifies *new* (head-manifest requirements minus base-manifest requirements, by `fr_id`?). Same-family question as round 3's `.get(fr)` finding: a bare set-difference on dicts, or a missing-base manifest, changes the outcome. **Suggestion:** one sentence in §5.2 naming the input (e.g. \"FR ids present in head manifest's requirements, absent at base, with `status: active`\") and a companion assertion in AC-K2 covering the FR-added-with-intro-sentence precedence case it interacts with.\n\n- **Category: risk · Severity: low · The gate inherits `python-checks`' job graph as a hard dependency.** The whole design (\"same run, sam […truncated]\n\n[openai] 1. Category: approach  \n   Severity: high  \n   Finding: The plan explicitly changes the meaning of AC-1 from “behaviour-changing PR” to “PR changing spec criteria.” A code-only behaviour change with no AC edit passes untouched. This is acknowledged as Q1b, but it still means the proposed gate does not enforce the stated north-star condition.  \n   Suggestion: Obtain an explicit change to the source acceptance criterion/scope that defines behaviour change as a spec-criteria change, or add a reliable code-to-AC signal. Do not present the implemented gate as enforcing behaviour-changing PRs generally.\n\n2. Category: security  \n   Severity: high  \n   Finding: AC identity rotation bypasses the greenness check. Changing `[AC01]` to `[AC02]` (optionally while editing the criterion), or moving a criterion between FRs, becomes `removed` + `added`; `added` deliberately does not require green bindings and `removed` is report-only. This can discard an existing AC-to-test obligation without triggering `binding_removed`, which only examines `changed` `(fr_id, ac_id)` pairs.  \n   Suggestion: Treat an AC-ID replacement or relocation as a hard authoring violation unless the registry proves an approved migration, or match removed/added criteria by normalized text and route the old binding through the same retention/greenness checks. Add regression tests for marker replacement and cross-FR relocation.\n\n3. Category: dependency  \n   Severity: medium  \n   Finding: The gate relies on `python-checks` remaining a required, PR-running check, but the plan only says this is true today. It does not verify that all merge paths use that job—particularly merge-queue/`merge_group` runs if enabled later—or establish ownership of the branch-protection contract.  \n   Suggestion: Add a CI/branch-protection contract check or explicitly document and verify the supported merge events. If merge queue is used, run the gate for `merge_group` against the appropriate base/head refs.\n\n4. Category: ed […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T22:01:27.146189+00:00",
+      "disposition": "Campaign sub-iterate runner: this subagent's tool set is Read/Write/Edit/Bash/Glob/Grep with no Agent tool, so it structurally cannot spawn the internal cascade (campaign runner Step 3.7 item 1). NOT a session policy and NOT a skip - the orchestrator runs spec-reviewer -> code-reviewer -> doubt-reviewer at campaign-mode 3f-bis before the merge and promotes this row with --force. Doubt review is mandatory for this campaign and is explicitly requested.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T22:01:27.273408+00:00",
+      "disposition": "Campaign sub-iterate runner: this subagent's tool set is Read/Write/Edit/Bash/Glob/Grep with no Agent tool, so it structurally cannot spawn the internal cascade (campaign runner Step 3.7 item 1). NOT a session policy and NOT a skip - the orchestrator runs spec-reviewer -> code-reviewer -> doubt-reviewer at campaign-mode 3f-bis before the merge and promotes this row with --force. Doubt review is mandatory for this campaign and is explicitly requested.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec ·",
+          "file": "shared/scripts/tools/tests/test_keystone_gate_infra.py` (absence), design §6 / `.shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md` §6",
+          "line": null,
+          "finding": "The design says all three probes \"must run and be reported before build is considered done\". Probe A and Probe C are approximated synthetically in tests, but Probe B is entirely absent: no test drives `ac_criteria_digests` over the real `spec.md` at `545a4f320^`/`545a4f320` (verifying §2.2's measured 268-`added` shape), and no test exercises the base-manifest `git show` read at a real commit predating `.shipwright/compliance/test-traceability.json` — the very boundary the design's own self-review (§11 item 7(iii)) flags as \"un-probed and the first place to look\". All base-manifest tests use synthetic two-commit fixture repos; a real-git-history quirk (e.g. `git_blob_read` behaviour on an old tree shape) would not be caught.",
+          "suggestion": "Add a probe-B test (skippable if the pinned commits are absent) that performs both measurements against the real repo history, or record explicitly in the design that it was deferred with a card.  2. Retiring a requirement misreports as `binding_removed` with the wrong remedy",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": "shared/scripts/tools/verifiers/_keystone_core.py` — `_links_for` (active-only filter) and the `changed` loop",
+          "line": null,
+          "finding": "A PR that flips a requirement's `status` from `active` to `retired` in the manifest while also editing that FR's criterion text gets `head_links == 0` (the retired node is filtered out) with `base_links >= 1` → `binding_removed`, telling the author to \"restore the `@covers` tag\" — which still exists; the retirement zeroed the count. The outcome is fail-closed (blocks), so it is not a dodge, but the remedy is unactionable for the legitimate retire-an-FR flow.",
+          "suggestion": "When the head manifest contains a non-active node with the display id and an `acs` entry, emit a distinct \"requirement retired while its criterion changed — retire the criterion and its binding together\" finding instead of `binding_removed`.  3. `not_selected` is a catch-all for unexpected `executed` values",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": "shared/scripts/tools/verifiers/_keystone_core.py` — `_walk_links` else-branch",
+          "line": null,
+          "finding": "A link with `status == \"enabled\"` and any `executed` value other than `pass`/`fail` (e.g. `\"error\"`, `None`, a schema change to the field) is reported as `not_selected` (\"this AC's binding names a test CI did not run — retag it\"), which misroutes the operator when the actual cause is a failed/erroring execution or a manifest schema drift.",
+          "suggestion": "In the else-branch, name the actual observed value in the message (it does include `executed={executed!r}`, good) — consider splitting `fail`-adjacent values like `\"error\"` into the `failed` remedy. Low priority since it still blocks.  4. Duplicated `_run` / `_manifest_with_binding` helpers across two test modules",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test ·",
+          "file": "test_check_keystone_ac_gate.py:76-90` and `test_keystone_gate_infra.py:39-72",
+          "line": null,
+          "finding": "The CLI-harness (`_run`, `_manifest_with_binding`, `_edit_ac01`) is copy-pasted verbatim into the second module rather than moved to `_keystone_repo.py` — exactly the drift the fixture helper's own docstring says it exists to prevent. Not currently wrong, but the two copies can diverge silently.",
+          "suggestion": "Move both into `_keystone_repo.py` and import.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[check_keystone_ac_gate.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/check_keystone_ac_gate.py:16)",
+          "line": null,
+          "finding": "The gate explicitly permits a PR that changes runtime behaviour but does not edit an acceptance criterion. It only computes a spec-text AC change set, whereas the stated AC requires every behaviour-changing PR to name its changed ACs.",
+          "suggestion": "Add a trustworthy behaviour-change/naming signal that covers code changes, or formally amend the governing specification to define behaviour change as spec-criterion changes only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[check_keystone_ac_gate.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/check_keystone_ac_gate.py:25)",
+          "line": null,
+          "finding": "The required `ac_id → tests → last_verified_commit` baseline is deliberately not implemented. The diff has no persisted or validated `last_verified_commit` data, despite it being in the stated scope.",
+          "suggestion": "Implement and validate the baseline, or obtain a formal specification change removing that requirement before merging.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[_keystone_core.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/verifiers/_keystone_core.py:82)",
+          "line": null,
+          "finding": "A valid-JSON but structurally malformed regenerated manifest can crash the gate: `_read_head_manifest` checks only that the top level is a dict, while `_links_for` unconditionally calls `.values()` on `requirements`. This produces an uncaught `AttributeError` (process exit 1, no JSON) instead of the specified exit 2 infrastructure verdict.",
+          "suggestion": "Validate `requirements` and the relevant nested manifest shapes before evaluation, and convert malformed structures to `ReadError`/exit 2 with a JSON payload.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_check_keystone_ac_gate.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/tests/test_check_keystone_ac_gate.py:173)",
+          "line": null,
+          "finding": "“Probe A” does not exercise manifest regeneration; it directly overwrites the manifest with `write_manifest`. It would still pass if the actual regeneration step stopped overwriting the committed manifest or wrote evidence to a different location, leaving the hand-edit bypass undetected.",
+          "suggestion": "Add an integration probe that invokes the real regeneration/checker path with controlled JUnit input, then runs the gate against its produced manifest.  Block: the implementation deliberately narrows two stated core requirements, and it also has an unhandled malformed-manifest path. Those need resolution before this can be considered compliant.  SHIPWRIGHT_VERDICT: reject",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T22:01:10.989435+00:00",
+      "disposition": "Two rounds; round 1 discarded (diff built against a MOVED origin/main, not the merge-base, so both reviewers correctly flagged a phantom revert of the merged s2 iterate). Round 2 on the merge-base diff: glm approve, openai reject. 8 findings dispositioned in design doc s12.1 - 3 accepted-and-fixed (malformed-manifest AttributeError -> exit 2 + JSON; Probe B run against real history; CLI test harness hoisted), 1 accepted-in-part (regeneration path identity pinned, full integration probe carded), 4 rejected-with-reason (2 are the ratified Q1/Q2 rulings, 2 are low-severity fail-closed message-quality points recorded as limitations).",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Probe B is missing — spec-mandated validation not implemented**\n- Category: spec · Severity: medium\n- File: `shared/scripts/tools/tests/test_keystone_gate_infra.py` (absence), design §6 / `.shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md` §6\n- Finding: The design says all three probes \"must run and be reported before build is considered done\". Probe A and Probe C are approximated synthetically in tests, but **Probe B is entirely absent**: no test drives `ac_criteria_digests` over the real `spec.md` at `545a4f320^`/`545a4f320` (verifying §2.2's measured 268-`added` shape), and no test exercises the base-manifest `git show` read at a *real* commit predating `.shipwright/compliance/test-traceability.json` — the very boundary the design's own self-review (§11 item 7(iii)) flags as \"un-probed and the first place to look\". All base-manifest tests use synthetic two-commit fixture repos; a real-git-history quirk (e.g. `git_blob_read` behaviour on an old tree shape) would not be caught.\n- Suggestion: Add a probe-B test (skippable if the pinned commits are absent) that performs both measurements against the real repo history, or record explicitly in the design that it was deferred with a card.\n\n**2. Retiring a requirement misreports as `binding_removed` with the wrong remedy**\n- Category: edge-case · Severity: low\n- File: `shared/scripts/tools/verifiers/_keystone_core.py` — `_links_for` (active-only filter) and the `changed` loop\n- Finding: A PR that flips a requirement's `status` from `active` to `retired` in the manifest **while also editing that FR's criterion text** gets `head_links == 0` (the retired node is filtered out) with `base_links >= 1` → `binding_removed`, telling the author to \"restore the `@covers` tag\" — which still exists; the retirement zeroed the count. The outcome is fail-closed (blocks), so it is not a dodge, but the remedy is unactionable for the legitimate retire-an-FR flow.\n- Suggestion: When the head manife […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: [check_keystone_ac_gate.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/check_keystone_ac_gate.py:16)\n- Finding: The gate explicitly permits a PR that changes runtime behaviour but does not edit an acceptance criterion. It only computes a spec-text AC change set, whereas the stated AC requires every behaviour-changing PR to name its changed ACs.\n- Suggestion: Add a trustworthy behaviour-change/naming signal that covers code changes, or formally amend the governing specification to define behaviour change as spec-criterion changes only.\n\n- Category: spec\n- Severity: medium\n- File: [check_keystone_ac_gate.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/check_keystone_ac_gate.py:25)\n- Finding: The required `ac_id → tests → last_verified_commit` baseline is deliberately not implemented. The diff has no persisted or validated `last_verified_commit` data, despite it being in the stated scope.\n- Suggestion: Implement and validate the baseline, or obtain a formal specification change removing that requirement before merging.\n\n- Category: bug\n- Severity: medium\n- File: [_keystone_core.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bhia6d72/shared/scripts/tools/verifiers/_keystone_core.py:82)\n- Finding: A valid-JSON but structurally malformed regenerated manifest can crash the gate: `_read_head_manifest` checks only that the top level is a dict, while `_links_for` unconditionally calls `.values()` on `requirements`. This produces an uncaught `AttributeError` (process exit 1, no JSON) instead of the specified exit 2 infrastructure verdict.\n- Suggestion: Validate `requirements` and the relevant nested manifest shapes before evaluation, and convert malformed structures to `ReadError`/exit 2 with a JSON payload.\n\n- Category: test\n- Severity: medium\n- File: [test_check_keystone_ac_gate.py](C:/Users/SvenRoth/AppData/L […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "reject"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T22:01:27.000305+00:00",
+      "disposition": "Campaign sub-iterate runner: this subagent's tool set is Read/Write/Edit/Bash/Glob/Grep with no Agent tool, so it structurally cannot spawn the internal cascade (campaign runner Step 3.7 item 1). NOT a session policy and NOT a skip - the orchestrator runs spec-reviewer -> code-reviewer -> doubt-reviewer at campaign-mode 3f-bis before the merge and promotes this row with --force. Doubt review is mandatory for this campaign and is explicitly requested.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T21:41:36.038339+00:00",
+      "disposition": "No internal plan-review arm exists in the iterate contract (project_plan_has_no_internal_arm): the plan pass is the external LLM review, which ran and returned two reviewers' findings. Documented permanent gap, never promoted.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

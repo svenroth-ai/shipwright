@@ -121,6 +121,15 @@ CI_ONLY_GATES = {
         "file layout to mirror — plan.json is written fresh by an earlier ci.yml step "
         "and the paths it names only exist inside this job's own workspace."
     ),
+    "Keystone AC gate (gate)": (
+        "Structural, not a to-do. The gate's whole claim is that the tests bound to a "
+        "changed acceptance criterion ran green in THIS run, which it reads from the "
+        "traceability manifest an EARLIER ci.yml step regenerated in place from this "
+        "run's own JUnit. In a working tree that file is the committed one, so a local "
+        "invocation would grade the PR against execution claims nobody re-verified — "
+        "the self-vouching this campaign exists to remove. It is also pull_request-only "
+        "and has no merge base to diff against outside a PR."
+    ),
 }
 
 

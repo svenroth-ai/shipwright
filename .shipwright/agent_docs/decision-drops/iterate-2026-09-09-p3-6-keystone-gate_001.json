@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
+  "date": "2026-09-10",
+  "section": "Compliance / CI gates",
+  "title": "Keystone AC gate: a changed acceptance criterion must have re-run its tests green, in THIS run",
+  "context": "REQ-3 SPEC 1.4 says a behaviour-changing PR must not merge without naming its changed ACs and re-running the tests bound to them, green. P3.4 minted 268 AC ids; P3.5 promoted required_layers; nothing yet enforced the binding at merge time. Measured first: only 9 of 268 ACs carry a binding today, and a hand-edited committed manifest is already inert because ci.yml regenerates it in place before comparing.",
+  "decision": "A pull_request-only ci.yml step running check_keystone_ac_gate.py after the manifest-regeneration step in the SAME job. It digests each acceptance criterion at base and head from spec.md, then judges every CHANGED or ADDED AC on LINK COUNTS in the two manifests: base>=1/head=0 blocks as binding_removed; 0/0 is report-only; any head link that is not enabled+pass blocks with a distinct reason code (skipped / failed / not_selected). Exit 0 clean, 1 blocked, 2 infra, always with a JSON verdict.",
+  "consequences": "Scope, not to be dropped from any summary: a PR that changes behaviour in code and changes no acceptance criterion passes untouched - this enforces spec-to-test consistency, not code-to-spec consistency. Reach today: it protects the 9 bound ACs, prevents a bound AC being quietly unbound in one PR, and grows as binding grows. Deleting or rotating an AC id is REPORTED (removed_with_bindings), not blocked - that predicate is p3.7(b)'s orphan detector. Exactly as strong as ci.yml, by design.",
+  "rationale": "It does NOT call resolve_execution_evidence: that answers 'can I trust evidence I did not produce', and ci_provenance._qualifying_runs accepts only push runs on the default branch - on a pull_request it resolves unavailable on 100 percent of PRs, leaving the gate inert. Same run, same process tree, so read the producer directly. The quantifier is ALL bound links, never _cov_status's any(); the walk RAISES on an empty link set, since all() over empty is vacuously true.",
+  "rejected": "D9's ac_id->tests->last_verified_commit baseline (Q1): ci.yml re-runs every suite on every PR, so there is nothing selective for a ledger to compensate for, and a stored baseline is a self-reported trust artifact. Author-DECLARED changed ACs (Q1b): a declaration is forgeable, a spec-derived signal is not. Path-based code-behaviour detection (Track R): struck from scope on measured grounds.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md"
+}
