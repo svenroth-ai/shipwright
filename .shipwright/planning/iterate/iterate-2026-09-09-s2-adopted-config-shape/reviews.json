@@ -132,27 +132,121 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/handoff_pipeline.py",
+          "line": 186,
+          "finding": "render_pipeline_phases (called unconditionally by generate_session_handoff.py) gated purely on non-empty phase_tasks[], with no schemaVersion/provenance check. An adopted repo's seeded entries against the full pipeline rendered a self-contradictory 'Finished: N of M' block alongside status: complete -- the same failure AC1 targets, via a second unmigrated reader.",
+          "suggestion": "fixed and re-verified: render_pipeline_phases now returns [] when every phase_tasks[] entry is establishedAtAdoption: true. Covered by two synthetic-but-shape-faithful unit tests in shared/tests/test_handoff_pipeline_phases.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_quality/_engagement.py",
+          "line": 81,
+          "finding": "has_phase_tasks classified presence of phase_tasks[] as orchestrator-driven; an adopted repo's all-establishedAtAdoption array flipped resolve_source's telemetry label from standalone to orchestrator.",
+          "suggestion": "fixed and re-verified: has_phase_tasks now excludes an array where every entry is establishedAtAdoption: true. New tests in shared/tests/test_phase_quality_resolve_source.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "plugins/shipwright-adopt/scripts/lib/config_writer.py",
+          "line": 195,
+          "finding": "The adopted run_config is a hybrid: a v1 shape now also carrying a v2 phase_tasks[] field. Repo readers use two different discriminators for drivenness (schemaVersion == 2 vs. mere phase_tasks[] presence).",
+          "suggestion": "acceptable deferral, independently re-verified against the other presence-keyed readers (phase_invocation_mode.py, master_stop_check.py both gate on schemaVersion == 2, so unaffected). Documented in the ADR as the rule future sub-iterates (s3/s4) must apply.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopted_phase_tasks.py",
+          "line": 31,
+          "finding": "build_adopted_phase_task had no enum check on step; write_all(..., completed_steps=[...]) is a public keyword parameter.",
+          "suggestion": "fixed and re-verified: raises ValueError for a step outside the schema's Phase enum, now covered by a direct unit test and one through the public write_all seam.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/tests/test_config_writer_phase_tasks.py",
+          "line": 45,
+          "finding": "The schema-shape test hardcoded copies of the schema's required set and two regex patterns instead of reading them from the schema file.",
+          "suggestion": "fixed and re-verified: now reads required, PhaseTaskId, slashCommand and PhaseTaskStatus straight from run_config.v2.schema.json (still no jsonschema dependency).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/scripts/lib/config_writer.py",
+          "line": 114,
+          "finding": "write_iterate_config's docstring lost its shared/config/external_review.json cross-reference when trimmed for bloat-ceiling headroom.",
+          "suggestion": "fixed and re-verified: cross-reference restored, file stayed at 304 of a 305-line ceiling. A second, lower-value line (the diff-exfiltration opt-out note) was left unrestored for lack of headroom -- acceptable, rationale recoverable from iteration-reviews.md.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T19:05:53.267737+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T20:36:49.854904+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the two shared-reader fixes are durably verified",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the deferred architectural finding is adequately documented",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "additionalProperties:true makes the schema untouched-by-design",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "no new failure modes (ADR Self-Review item 2)",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T19:05:53.383159+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T20:48:49.483193+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -209,15 +303,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-09T19:05:53.148007+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T20:01:40.471651+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
