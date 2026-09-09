@@ -65,9 +65,13 @@ def _finding_text(item) -> str:
             return f"{location} - {text}"
         if location or text:
             return location or text
-        # Unknown object shape: still never a raw dict repr.
+        # Unknown object shape: still never a raw dict repr. The key is just as
+        # attacker-influenced as the value here (PR #694 CI review, round 2) --
+        # a dict shaped {"a.py`x`\ninjected": "..."} must not smuggle either
+        # half of the pair past this fallback unsanitised.
         return "; ".join(
-            f"{k}: {_UNSAFE_IN_DISPLAY.sub('?', str(v))}" for k, v in item.items()
+            f"{_UNSAFE_IN_DISPLAY.sub('?', str(k))}: {_UNSAFE_IN_DISPLAY.sub('?', str(v))}"
+            for k, v in item.items()
         )
     return _UNSAFE_IN_DISPLAY.sub("?", str(item))
 
