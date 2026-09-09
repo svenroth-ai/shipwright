@@ -1,0 +1,83 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-pr-review-dict-finding-render",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 17630,
+      "total": 17689
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure text-rendering bug fix inside a single library module (plugins/shipwright-security/scripts/lib/pr_review_render.py) invoked by a CI-only tool script -- no startable web/dev-server/CLI surface of its own; verification is the unit test suite (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an object-shaped blocking finding ({file, issue}) renders as 'file - issue' prose, never a raw Python dict repr",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_blocking_finding_renders_as_prose_not_a_dict_repr PASSED"
+        },
+        {
+          "behavior": "an object-shaped comment finding ({file, issue}) renders the same way as a blocking one",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_comment_finding_renders_as_prose_not_a_dict_repr PASSED"
+        },
+        {
+          "behavior": "an object carrying only a location key (no issue/description/message/detail/text) renders the location alone, not a dict repr",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_finding_with_only_a_location_renders_the_location_alone PASSED"
+        },
+        {
+          "behavior": "an object with no recognised key at all falls back to 'key: value' prose, never a dict repr",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_finding_with_no_recognised_keys_joins_them_as_prose PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-pr-review-dict-finding-render",
+    "commit": "c3c7ad17e0345852cffa8918a6a5f112c332782b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
