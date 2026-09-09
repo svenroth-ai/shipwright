@@ -16,7 +16,29 @@ this requires. Reading the file back is a separate, sanctioned API — see
 parse/render internals (and this contract's "exact-case, exact-prose
 matching, no folding" guarantee) live in.
 
-Usage:
+Usage — **``--payload-file`` is the sanctioned way to pass free text from an
+interview** (P4.1 final review): the caller writes a small JSON file (via the
+Write tool, never a shell command — so no shell quoting of user-dictated text
+ever occurs) and every value that reaches this script's argv is then a fixed,
+known string:
+
+    uv run shared/scripts/tools/write_context_term.py \\
+        --project-root . --payload-file /path/to/payload.json
+
+where ``payload.json`` is ``{"term": "...", "definition": "...",
+"avoid": "..." | null, "clear_avoid": false, "project_name": "...",
+"summary": "..."}`` (only ``term``/``definition`` are required). This is not
+a stylistic preference: substituting free interview text directly into a
+shell-quoted ``--term '<value>'`` breaks out of the quoting the instant the
+value itself contains a single quote (plausible, ordinary English — "the
+customer's cart") and the rest of the string is then interpreted as shell
+syntax. JSON has its own, much simpler escaping (backslash-escape ``"`` and
+``\\``) that an LLM composing the payload text handles natively — there is
+no quote-breakout surface because no shell ever parses the free text at all.
+
+``--term``/``--definition``/``--avoid`` (below) remain for callers that
+already hold trusted, non-shell-composed values (tests, other scripts) —
+never for a value assembled from unsanitized interview text:
 
     uv run shared/scripts/tools/write_context_term.py \\
         --project-root . --term "Order" \\
@@ -64,7 +86,6 @@ on a lock timeout, I/O error, or any rejected input above.
 
 from __future__ import annotations
 
-import argparse
 import json
 import sys
 from pathlib import Path
@@ -77,6 +98,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.atomic_write import durable_atomic_write, durable_read_bytes  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 
+from tools._write_context_term_cli import PayloadError, build_arg_parser, resolve_fields  # noqa: E402
 from tools.context_md_format import (  # noqa: E402
     CANONICAL_SECTIONS,
     DEFAULT_SUMMARY,
@@ -227,18 +249,14 @@ def main() -> int:
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(errors="replace")
 
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--project-root", default=".")
-    parser.add_argument("--term", required=True)
-    parser.add_argument("--definition", required=True)
-    parser.add_argument("--avoid", default=None)
-    parser.add_argument("--clear-avoid", action="store_true",
-                         help="delete an existing --avoid line (omitting --avoid keeps it)")
-    parser.add_argument("--project-name", default="", help="only used if CONTEXT.md is new")
-    parser.add_argument("--summary", default="", help="only used if CONTEXT.md is new")
-    parser.add_argument("--context-path", default="", help="explicit path override")
-    parser.add_argument("--lock-timeout", type=float, default=5.0)
+    parser = build_arg_parser(__doc__.split("\n")[0])
     args = parser.parse_args()
+
+    try:
+        fields = resolve_fields(args)
+    except PayloadError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
     project_root = Path(args.project_root).resolve()
     if args.context_path:
@@ -258,12 +276,12 @@ def main() -> int:
         with file_lock(lock_path, timeout_seconds=args.lock_timeout):
             result = upsert_term(
                 context_path,
-                term=args.term,
-                definition=args.definition,
-                avoid=args.avoid,
-                clear_avoid=args.clear_avoid,
-                project_name=args.project_name,
-                summary=args.summary,
+                term=fields["term"],
+                definition=fields["definition"],
+                avoid=fields["avoid"],
+                clear_avoid=fields["clear_avoid"],
+                project_name=fields["project_name"],
+                summary=fields["summary"],
             )
     except (LockTimeout, OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

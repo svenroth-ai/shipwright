@@ -129,6 +129,47 @@ three cheap one-line doc fixes, all resolved:
 | `write_context_term.py`'s docstring documented `created`/`appended`/`updated`/`unchanged` but a reachable `rewritten` status (an existing term matched with no value change, but the file still re-serialized to different bytes) was undocumented | Low | accepted-and-fixed — added to the docstring with what distinguishes it from `unchanged` |
 | Docstring said "every other entry/section round-trips untouched" — no longer literally true once the D3 fix reflows a hand-wrapped definition onto one line | Low | accepted-and-fixed — reworded to "normalized onto a single line" for the wrapped-definition case |
 
+## Shell quote-breakout fix — required GitHub check (PR #699) — sixth round
+
+A GitHub required check (the `pr-review` bot, not this ADR's internal
+review cascade) blocked the PR on a real, agent-triggerable shell-injection
+finding: interview-protocol.md's wired snippet told the agent to wrap
+`--term`/`--definition`/`--avoid` values in single quotes, but never
+handled a value that itself contains a single quote — extremely plausible
+in natural interview language ("the customer's cart", "it's the settled
+definition"). Substituting such a value into `--term '<value>'` breaks out
+of the shell quoting; the rest of the string is then interpreted as shell
+syntax, and the agent is instructed to literally run this as a bash
+command.
+
+**Decision:** closed the vulnerability class rather than documenting the
+escaping rule more carefully — a prompt-only guarantee cannot be repaired
+with more prompt (the same philosophy this module's own contract already
+rejects elsewhere). Added `--payload-file` to `write_context_term.py`: the
+agent writes `{"term": ..., "definition": ..., "avoid": ...}` to a scratch
+JSON file via the Write tool (never a shell command), then invokes the
+script with `--payload-file <fixed path>` — every value that reaches the
+script's argv is then a fixed, known string, and no shell ever parses the
+free interview text at all. `interview-protocol.md`'s wired snippet is now
+this two-step invocation; the old `--term '<value>'` shell-quoted form
+remains available only for callers that already hold trusted,
+non-shell-composed values (tests, other scripts).
+
+Implementation split into a new private sibling module
+`_write_context_term_cli.py` (CLI argument-resolution: `--payload-file`
+JSON validation, the `--payload-file` XOR `--term`/... mutual-exclusion
+check) to keep `write_context_term.py` under the 300-LOC bloat-baseline
+threshold — the same split precedent as `_backfill_ac_provenance_apply.py`
+and the promoted `context_md_format.py`, except this one stays private
+(single caller, unlike `context_md_format.py`'s cross-plugin `read_terms()`).
+Also fixed a latent bug the payload-loading refactor surfaced: an earlier
+in-progress draft of `main()` validated `--payload-file` fields into a
+`fields` dict but then called `upsert_term()` with the raw, unused
+`args.term`/`args.definition`/... instead — caught before commit by the new
+`test_write_context_term_payload.py` regression suite (a term with an
+embedded single quote written via `--payload-file` must actually reach
+`CONTEXT.md`, which it did not until the caller used `fields[...]`).
+
 ## F0 CI-parity note
 
 An initial fresh-verification pass ran under a hand-rolled serialized
