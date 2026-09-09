@@ -196,6 +196,30 @@ def test_an_unhashable_completed_step_entry_is_skipped_not_a_crash() -> None:
     assert {t["phase"] for t in updated["phase_tasks"]} == {"project", "plan"}
 
 
+def test_an_existing_entry_with_an_unhashable_phase_value_is_not_a_crash() -> None:
+    """PR-review gate, s2b PR #701: the same unhashable-value hazard the
+    doubt-review fixed for completed_steps entries also applies to an
+    EXISTING phase_tasks[] entry's own "phase" field -- a hand-edited or
+    corrupted config could carry `{"phase": []}` or `{"phase": {}}`, and
+    building `seen` from it would raise TypeError before the function ever
+    reaches the per-step guard. A valid completed_steps entry not already
+    represented (by a HASHABLE phase) must still backfill."""
+    cfg = _adopted_config(
+        completed_steps=["project", "plan"],
+        phase_tasks=[{"phase": []}, {"phase": {"nested": "garbage"}}],
+    )
+
+    updated, added, skipped = backfill_missing_phase_tasks(cfg, now=_NOW)
+
+    assert added == ["project", "plan"]
+    assert skipped == []
+    phases = {t["phase"] for t in updated["phase_tasks"] if isinstance(t.get("phase"), str)}
+    assert phases == {"project", "plan"}
+    # The malformed existing entries are left in place, untouched.
+    assert {"phase": []} in updated["phase_tasks"]
+    assert {"phase": {"nested": "garbage"}} in updated["phase_tasks"]
+
+
 def test_a_config_with_no_completed_steps_list_is_left_untouched() -> None:
     cfg = _adopted_config()
     cfg["completed_steps"] = None

@@ -148,7 +148,11 @@ def backfill_missing_phase_tasks(
     wrote it — is left alone. Running this twice on the same config adds
     nothing the second time (AC2), and a config that mixes seeded
     adoption entries with later REAL orchestrator-driven ones only has its
-    gap filled, never a real entry touched.
+    gap filled, never a real entry touched. A no-op path (nothing to add)
+    returns *run_config* itself, the same object the caller passed in, not
+    a copy — there is nothing to protect a copy FROM when no field is ever
+    written; "never mutated" above is about in-place writes, not about
+    identity on every return path (PR-review comment, s2b PR #701).
 
     ``test`` backfills as ``skipped``, every other phase as ``done`` — the
     same phase-NAME-keyed split ``write_run_config`` already makes for
@@ -170,7 +174,21 @@ def backfill_missing_phase_tasks(
     if "phase_tasks" in run_config and not isinstance(existing, list):
         return run_config, [], []
     existing_list = existing if isinstance(existing, list) else []
-    seen = {t.get("phase") for t in existing_list if isinstance(t, dict)}
+    # `t.get("phase")` on an already-present PhaseTask is trusted nowhere
+    # else in this codebase, and a hand-edited or corrupted config can carry
+    # a malformed entry whose "phase" is itself a list or dict -- UNHASHABLE,
+    # so including it in this set-comprehension would raise TypeError before
+    # the function ever reaches its own step-by-step guard below (PR-review
+    # gate, s2b PR #701: a case the doubt-review's completed_steps-side fix
+    # did not cover -- this is the SAME hazard on the existing-entries side).
+    # A malformed existing entry is simply not represented in `seen`; its own
+    # slot in `existing_list` is untouched either way (this function only
+    # ever appends, never rewrites `existing_list` itself).
+    seen = {
+        t.get("phase")
+        for t in existing_list
+        if isinstance(t, dict) and isinstance(t.get("phase"), str)
+    }
 
     to_add: list[str] = []
     skipped: list[Any] = []

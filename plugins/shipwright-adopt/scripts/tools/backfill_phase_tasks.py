@@ -131,8 +131,14 @@ def run(project_root: Path, *, dry_run: bool) -> dict[str, Any]:
             # as having happened then, not now -- 'now' feeds
             # createdAt/completedAt on every seeded PhaseTask, and
             # adopted_at is the only honest timestamp this tool has for work
-            # that predates its own existence.
-            now = adoption.get("adopted_at") or _utc_now_iso()
+            # that predates its own existence. A present-but-non-string value
+            # (a hand-edited config could carry anything JSON-valid) is not a
+            # usable timestamp -- schema `PhaseTask.createdAt` is
+            # `format: date-time`, so it falls back to `now` rather than
+            # propagating garbage into every generated task record
+            # (PR-review comment, s2b PR #701).
+            adopted_at = adoption.get("adopted_at")
+            now = adopted_at if isinstance(adopted_at, str) and adopted_at else _utc_now_iso()
 
             updated, added, skipped = backfill_missing_phase_tasks(run_config, now=now)
 
