@@ -151,6 +151,32 @@ def test_load_payload_file_non_string_avoid_raises(tmp_path):
         load_payload_file(str(payload_path))
 
 
+def test_load_payload_file_non_boolean_clear_avoid_raises(tmp_path):
+    """A truthy-but-not-boolean ``clear_avoid`` (e.g. a non-empty string)
+    must be rejected outright, not silently coerced to ``True`` via
+    ``bool(...)`` — a malformed payload should fail loudly, never change
+    behavior unexpectedly."""
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps({"term": "Order", "definition": "x", "clear_avoid": "false"}),
+        encoding="utf-8",
+    )
+    with pytest.raises(PayloadError, match="'clear_avoid' must be a JSON boolean"):
+        load_payload_file(str(payload_path))
+
+
+def test_load_payload_file_clear_avoid_true_still_accepted(tmp_path):
+    """A genuine JSON boolean must still work — the stricter check must not
+    reject the legitimate value it was already accepting."""
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps({"term": "Order", "definition": "x", "clear_avoid": True}),
+        encoding="utf-8",
+    )
+    fields = load_payload_file(str(payload_path))
+    assert fields["clear_avoid"] is True
+
+
 # ---------------------------------------------------------------------------
 # resolve_fields()
 # ---------------------------------------------------------------------------

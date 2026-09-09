@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.context_md_format import Term, parse_language_entries, read_terms
+from tools.context_md_format import Term, parse_language_entries, read_terms, split_lines_strict
 from tools.write_context_term import upsert_term
 
 
@@ -202,3 +202,70 @@ def test_read_terms_propagates_non_utf8_decode_error(tmp_path):
     ctx.write_bytes(b"# CONTEXT.md \xff\xfe not valid utf-8")
     with pytest.raises(UnicodeDecodeError):
         read_terms(ctx)
+
+
+# ---------------------------------------------------------------------------
+# split_lines_strict() — CRLF/CR/LF only, never the wider Unicode
+# line-separator set str.splitlines() also breaks on (P4.1 final-review
+# PR-gate, comment finding).
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("eol", ["\n", "\r\n", "\r"])
+def test_split_lines_strict_matches_splitlines_for_normal_content(eol):
+    content = f"a{eol}b{eol}{eol}c"
+    assert split_lines_strict(content) == content.splitlines()
+
+
+def test_split_lines_strict_matches_splitlines_with_trailing_terminator():
+    content = "a\nb\n"
+    assert split_lines_strict(content) == content.splitlines() == ["a", "b"]
+
+
+def test_split_lines_strict_empty_content_returns_empty_list():
+    assert split_lines_strict("") == []
+
+
+# Code points, not literal characters, so the source file never embeds a
+# raw NEL/LS/PS byte (a typed exotic-Unicode character can silently get
+# mangled by an editing tool's own encoding path -- safer to build these
+# at runtime via chr()).
+_NEL, _LS, _PS, _VT, _FF = (chr(0x85), chr(0x2028), chr(0x2029), chr(0x0B), chr(0x0C))
+
+
+@pytest.mark.parametrize(
+    "exotic", [_NEL, _LS, _PS, _VT, _FF], ids=["NEL", "LS", "PS", "VT", "FF"],
+)
+def test_split_lines_strict_preserves_exotic_unicode_separators(exotic):
+    """A NEL/LS/PS/VT/FF character embedded in hand-authored prose is not a
+    line boundary for this module's CRLF/CR/LF-only round-trip — unlike
+    ``str.splitlines()``, which WOULD split here."""
+    content = f"a{exotic}b" + "\n" + "c"
+    assert split_lines_strict(content) == [f"a{exotic}b", "c"]
+    # Prove this is a real behavioral difference from str.splitlines(),
+    # not a redundant assertion.
+    assert content.splitlines() != split_lines_strict(content)
+
+
+def test_upsert_term_preserves_exotic_unicode_separator_in_an_untouched_entry(tmp_path):
+    """An end-to-end proof against a hand-authored file (never run through
+    ``sanitize_field``, which itself collapses any Unicode-whitespace
+    character — NEL/LS/PS included — for NEWLY WRITTEN text): an EXISTING,
+    untouched entry whose definition contains a PS character (U+2029) must
+    round-trip byte-identical rather than being cut into an orphaned raw
+    block by a splitlines()-based parse while a DIFFERENT term is upserted."""
+    ctx = tmp_path / "CONTEXT.md"
+    existing_definition = "a purchase" + _PS + "with an odd separator inside it."
+    ctx.write_text(
+        "# CONTEXT.md — Acme domain glossary\n\nAcme.\n\n"
+        "## Language\n\n"
+        f"**Order** — {existing_definition}\n\n"
+        "## Relationships\n\n## Flagged ambiguities\n",
+        encoding="utf-8",
+    )
+
+    result = upsert_term(ctx, term="Cancellation", definition="voiding an Order before it ships.")
+    assert result["status"] == "appended"
+
+    content = read(ctx)
+    assert f"**Order** — {existing_definition}" in content
+    assert "**Cancellation** — voiding an Order before it ships." in content

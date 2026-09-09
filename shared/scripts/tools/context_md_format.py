@@ -69,14 +69,52 @@ def detect_eol(content: str) -> str:
     return "\r\n" if "\r\n" in content else "\n"
 
 
+_LINE_SPLIT_RE = re.compile(r"\r\n|\r|\n")
+
+
+def split_lines_strict(content: str) -> list[str]:
+    """Like ``str.splitlines()`` but splits **only** on the three line-ending
+    shapes this module's ``detect_eol``/``render_document`` round-trip
+    understands (CRLF, CR, LF) — never on the wider Unicode line-separator
+    set ``str.splitlines()`` also treats as a break (NEL U+0085, LS U+2028,
+    PS U+2029, plus VT/FF/FS/GS/RS). Those are legal, if rare, characters
+    inside hand-authored prose; ``str.splitlines()`` silently cutting a
+    definition at one of them would corrupt content that was never a line
+    boundary in the source file (P4.1 final-review PR-gate, comment
+    finding). Matches ``str.splitlines()``'s own convention of never
+    emitting a trailing empty string for a final line terminator."""
+    if content == "":
+        return []
+    lines = _LINE_SPLIT_RE.split(content)
+    if lines and lines[-1] == "" and content.endswith(("\r\n", "\r", "\n")):
+        lines.pop()
+    return lines
+
+
 def term_markup_count(content: str, term: str) -> int:
-    """Occurrences of the ``**term**`` bold-entry markup anywhere in
-    ``content`` (header, any section, incl. unparsed raw blocks) — more than
-    one means a hidden duplicate: a missing blank line before an existing
-    entry swallowed it into a raw block, a heading-less file stashed it in
-    the header, or a non-em-dash separator left it looking like a term but
-    parsing as prose (doubt-reviewer D2, P4.1 Stage-3 review)."""
-    return content.count(f"**{term}**")
+    """Occurrences of ``**term**`` **as an entry heading** — i.e. anchored to
+    the start of a line (optionally after leading whitespace or a ``- ``/
+    ``* `` list marker the format doesn't itself use for ``Language`` but a
+    hand-edit might) — anywhere in ``content`` (header, any section, incl.
+    unparsed raw blocks). More than one means a hidden duplicate: a missing
+    blank line before an existing entry swallowed it into a raw block, a
+    heading-less file stashed it in the header, or a non-em-dash separator
+    left it looking like a term but parsing as prose (doubt-reviewer D2, P4.1
+    Stage-3 review).
+
+    **Line-anchored, not a raw substring count** (P4.1 final-review PR-gate
+    fix): a term's bold markup legitimately reappears MID-LINE inside
+    another entry's definition prose as a cross-reference (``context-
+    format.md``'s own worked example: "the paying **Customer**"). A
+    whole-content substring count flagged that as a second occurrence of
+    ``**Customer**`` the moment ``Customer``'s own entry heading was
+    serialized alongside it — a false positive that permanently blocked
+    upserting any term another entry's definition happened to bold-
+    reference. Anchoring to line-start (where every actual entry heading —
+    parsed or hidden-raw — always starts) counts only real heading-shaped
+    occurrences, never a mid-sentence cross-reference."""
+    pattern = re.compile(r"^[ \t]*(?:[-*][ \t]+)?" + re.escape(f"**{term}**"), re.MULTILINE)
+    return len(pattern.findall(content))
 
 
 def parse_document(
@@ -214,7 +252,7 @@ def read_terms(context_path: Path) -> list[Term]:
     if not context_path.exists():
         return []
     content = durable_read_bytes(context_path).decode("utf-8")
-    lines = content.splitlines()
+    lines = split_lines_strict(content)
     _, sections, _ = parse_document(lines, context_path)
     entries = parse_language_entries(sections.get("Language", []))
     return [

@@ -109,6 +109,7 @@ from tools.context_md_format import (  # noqa: E402
     render_document,
     sanitize_field,
     serialize_language_entries,
+    split_lines_strict,
     term_markup_count,
 )
 
@@ -163,7 +164,10 @@ def upsert_term(
         # durable_atomic_write holder.
         content = durable_read_bytes(context_path).decode("utf-8")
         eol = detect_eol(content)
-        lines = content.splitlines()  # newline-aware regardless of "newline="
+        # Line-anchored, CRLF/CR/LF only — never the wider Unicode
+        # line-separator set str.splitlines() also treats as a break (see
+        # split_lines_strict's docstring).
+        lines = split_lines_strict(content)
         header, sections, order = parse_document(lines, context_path)
     else:
         # Sanitized like the term fields — an unsanitized value could inject

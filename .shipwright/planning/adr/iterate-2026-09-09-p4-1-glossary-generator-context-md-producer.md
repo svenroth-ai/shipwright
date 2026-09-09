@@ -214,3 +214,26 @@ both real, neither review-cascade opinion:
 
 No review-cascade findings this round (narrow CI-fix, not a re-opened review
 round) — see F3a for the reusable learning on subprocess-invisible coverage.
+
+## Required-check PR-review fix (PR #699) — ninth round
+
+A fresh, genuine BLOCK verdict from the automated Tier-3 "PR Review" gate
+(`openai/gpt-5.6-luna`) on commit `9d212efd`, after every other Required
+Check had already gone green — independently traced and confirmed real,
+not a false positive.
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| `upsert_term`'s hidden-duplicate check (`term_markup_count`, seventh round's own deferred LOW finding) ran a raw substring `.count("**{term}**")` over the FINAL, already-serialized header+Language text — i.e. AFTER the just-upserted term's own entry heading had been rendered back in. A term legitimately reappearing bold MID-SENTENCE as a cross-reference inside a DIFFERENT entry's definition (`context-format.md`'s own worked example: "the paying **Customer**") plus that term's own freshly-serialized heading together produced count > 1, permanently blocking any first-time upsert of a term another entry's prose happened to bold-reference | High (real, blocks a legitimate write path) | accepted-and-fixed — `term_markup_count` (`context_md_format.py`) now matches only LINE-ANCHORED occurrences (`^[ \t]*(?:[-*][ \t]+)?\*\*term\*\*`, `re.MULTILINE`) — the shape every actual entry heading (parsed or hidden-raw) always has — rather than a whole-text substring count. A mid-sentence cross-reference never starts a line, so it no longer counts; all three original hidden-duplicate shapes (missing blank line, heading-less file, non-em-dash separator) still start their raw line with `**Term**`, so they remain caught. Regression test added first (`shared/tests/test_write_context_term_duplicates.py::test_legitimate_bold_cross_reference_in_another_entry_is_not_flagged`), confirmed failing on the pre-fix code, then passing after the fix; all three prior hidden-duplicate-shape tests re-verified green |
+
+Two additional LOW/MEDIUM comment-level findings from the same review,
+fixed alongside since both were cheap:
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| `_write_context_term_cli.py`'s `load_payload_file` coerced `clear_avoid` with `bool(payload.get("clear_avoid", False))` — a non-empty JSON string (e.g. `"false"`) would silently coerce to `True` | Low | accepted-and-fixed — `clear_avoid` is now validated with `isinstance(clear_avoid, bool)`, rejecting anything that isn't a genuine JSON `true`/`false` with a `PayloadError` naming the offending value; regression tests added for both the rejection and the still-accepted genuine-boolean case |
+| `context_md_format.py`'s `parse_document`/`read_terms` used `str.splitlines()`, which also breaks on NEL (U+0085), LS (U+2028), PS (U+2029), VT, FF — legal if rare characters inside hand-authored prose, not intended line boundaries for this module's CRLF/CR/LF-only round-trip contract | Low | accepted-and-fixed (assessed as cheap once written as a small, well-contained helper) — added `split_lines_strict()`, a CRLF/CR/LF-only line splitter (regex-based, matches `str.splitlines()`'s no-trailing-empty-string convention), and switched both call sites to it. Regression tests cover parity with `str.splitlines()` on normal content, the exotic-separator preservation for all five excluded characters, and an end-to-end proof against a hand-authored file whose UNTOUCHED entry contains a PS character while a different term is upserted alongside it |
+
+No further findings from this pass. `shared/tests/test_write_context_term_duplicates.py`,
+`test_context_md_format.py`, and `test_write_context_term_cli_direct.py` all pass in
+full alongside the rest of the `shared/tests` suite; `uvx ruff@0.15.15 check .` clean.

@@ -62,11 +62,24 @@ def load_payload_file(path: str) -> dict[str, object]:
     if "term" not in payload or "definition" not in payload:
         raise PayloadError(f"--payload-file {path} must include 'term' and 'definition'")
     avoid = payload.get("avoid")
+    # A JSON `true`/`false` is a Python `bool`, which is itself an `int`
+    # subclass — `isinstance(x, bool)` still correctly rejects a plain `1`/
+    # `0`/other int, since those are NOT instances of `bool` even though
+    # `bool` IS an instance of `int`. `clear_avoid` defaults to `False` when
+    # omitted (unchanged), but a PRESENT-and-wrong-typed value (e.g. a
+    # non-empty string, which `bool(...)` used to silently coerce to
+    # `True`) is now rejected outright rather than coerced.
+    clear_avoid = payload.get("clear_avoid", False)
+    if not isinstance(clear_avoid, bool):
+        raise PayloadError(
+            f"--payload-file {path}: 'clear_avoid' must be a JSON boolean "
+            f"(true/false), not {clear_avoid!r}"
+        )
     fields: dict[str, object] = {
         "term": payload["term"],
         "definition": payload["definition"],
         "avoid": avoid,
-        "clear_avoid": bool(payload.get("clear_avoid", False)),
+        "clear_avoid": clear_avoid,
         "project_name": payload.get("project_name") or "",
         "summary": payload.get("summary") or "",
     }

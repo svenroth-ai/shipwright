@@ -74,3 +74,24 @@ def test_normal_resharpen_of_a_well_formed_entry_is_not_flagged(tmp_path):
     result = upsert_term(ctx, term="Order", definition="v2")
     assert result["status"] == "updated"
     assert read(ctx).count("**Order**") == 1
+
+
+def test_legitimate_bold_cross_reference_in_another_entry_is_not_flagged(tmp_path):
+    """A term legitimately reappears bold as a cross-reference inside
+    ANOTHER entry's definition prose (``context-format.md``'s own worked
+    example: "the paying **Customer**"). Upserting the referenced term
+    ("Customer") for the first time must not be rejected as a hidden
+    duplicate merely because the substring '**Customer**' now appears
+    twice in the rendered Language section — once mid-sentence inside
+    Order's definition, once as Customer's own freshly-serialized entry
+    heading. Only a '**Customer**' occurring at the START of a line (an
+    actual entry heading) counts toward the hidden-duplicate check."""
+    ctx = tmp_path / "CONTEXT.md"
+    upsert_term(ctx, term="Order", definition="a purchase made by a **Customer**.")
+
+    result = upsert_term(ctx, term="Customer", definition="the paying party on an Order.")
+
+    assert result["status"] == "appended"
+    content = read(ctx)
+    assert "**Order** — a purchase made by a **Customer**." in content
+    assert "**Customer** — the paying party on an Order." in content
