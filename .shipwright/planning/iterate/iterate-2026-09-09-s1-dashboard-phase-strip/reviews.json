@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-s1-dashboard-phase-strip",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:39:18.271780+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The change assumes `phase_tasks[]` is already populated in existing config JSON. If the writer side hasn't shipped (or hasn't dual-written in the past), a reader that reads only `phase_tasks[]` will render an empty strip for any existing/historical config — the exact regression the parent card warns about. The plan never states that the writer is already emitting `phase_tasks[]` alongside the old fields.",
+          "suggestion": "Explicitly verify the writer dual-writes both field sets today (past and present), and document that precondition in the plan. If it doesn't, either ship dual-writing first or make the reader fall back to the old fields when `phase_tasks[]` is absent/empty.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Old fields still present and still ignored\" makes the migration brittle: any config where `phase_tasks[]` is empty or missing (hand-edited fixture, older artifact, partially written file) renders an empty strip with no signal. No fallback path is specified.",
+          "suggestion": "Decide deliberately: either strict read (empty is empty, and the test covers it) or fallback with a logged deprecation warning. Silence here will bite the next sub-iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "\"Renders identically\" is under-specified as an acceptance criterion. Field order, shape (dates, labels, status enum), and any normalization the old fields underwent may differ between the two schemas. If `phase_tasks[]` has a different item shape, \"identical\" needs a mapping step the plan doesn't mention.",
+          "suggestion": "Pin identity with a golden-file test comparing the rendered output from an old-field config against a phase_tasks[] config containing equivalent data — that test is the proof of identical rendering, and it will surface shape differences immediately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The fixture test should cover the empty-`phase_tasks[]` and malformed-item cases, not just the happy path.",
+          "suggestion": "Add two small cases: empty array, and an item missing expected keys — assert graceful rendering rather than a KeyError in the strip builder.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "No mention of whether other consumers read the same rendering function or the old fields; if the strip builder is shared, \"ignored by this reader\" may not be scoped precisely.",
+          "suggestion": "Confirm the function touched is used only by the compliance dashboard strip, or scope the field change to that code path only.  No security concerns — this is a config-field read swap with no input from untrusted sources.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan states only that the reader will switch fields; it does not define the mapping from `phase_tasks[]` into the strip’s phases, labels, ordering, and completion state. “Renders identically” is not implementable or reviewable without that contract.",
+          "suggestion": "Name the rendering function and document the exact `phase_tasks[]` properties it consumes, including sort/order semantics and how each item becomes a strip segment.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A fixture that merely contains `phase_tasks[]` can pass while the renderer still falls back to, merges, or prioritizes legacy fields. That would fail the requirement that old fields remain present but ignored.",
+          "suggestion": "Make the fixture intentionally conflict: provide valid but visibly different legacy phase data alongside `phase_tasks[]`, and assert the rendered result reflects only `phase_tasks[]`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not verify that every config producer used by a “driven run” already emits `phase_tasks[]` with the needed data. Switching the reader first can empty or degrade the strip for existing configs, saved fixtures, or alternate run paths.",
+          "suggestion": "Identify the configuration schema/version and all relevant producers. Either establish that `phase_tasks[]` is guaranteed for this sub-iterate or add an explicit, temporary handling decision for absent/empty data.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "No behavior is specified for missing, empty, malformed, duplicate, or out-of-order `phase_tasks[]`. These are the practical failure modes that could turn the visible strip blank or reorder it unexpectedly.",
+          "suggestion": "Define the expected behavior and test at least the missing/empty case and ordering behavior; preserve the existing renderer’s error/reporting convention rather than silently rendering misleading output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Pins the rendered strip” is underspecified. A snapshot of incidental Mermaid serialization or formatting may create noisy failures without proving the semantic migration.",
+          "suggestion": "Assert the generated strip’s meaningful nodes/labels/order (or a focused rendered fragment) using the conflicting legacy-field fixture.  Overall, switching this consumer first is sound and appropriately narrow, but the mini-plan needs an explicit data contract, producer guarantee, and a negative legacy-field test before it is safe to execute. No change-specific security concern is apparent because this only changes trusted configuration-field selection.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T14:38:35.484314+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: dependency — Severity: high**\n**Finding:** The change assumes `phase_tasks[]` is already populated in existing config JSON. If the writer side hasn't shipped (or hasn't dual-written in the past), a reader that reads *only* `phase_tasks[]` will render an empty strip for any existing/historical config — the exact regression the parent card warns about. The plan never states that the writer is already emitting `phase_tasks[]` alongside the old fields.\n**Suggestion:** Explicitly verify the writer dual-writes both field sets today (past and present), and document that precondition in the plan. If it doesn't, either ship dual-writing first or make the reader fall back to the old fields when `phase_tasks[]` is absent/empty.\n\n**Category: edge-case — Severity: medium**\n**Finding:** \"Old fields still present and still ignored\" makes the migration brittle: any config where `phase_tasks[]` is empty or missing (hand-edited fixture, older artifact, partially written file) renders an empty strip with no signal. No fallback path is specified.\n**Suggestion:** Decide deliberately: either strict read (empty is empty, and the test covers it) or fallback with a logged deprecation warning. Silence here will bite the next sub-iterate.\n\n**Category: approach — Severity: medium**\n**Finding:** \"Renders identically\" is under-specified as an acceptance criterion. Field order, shape (dates, labels, status enum), and any normalization the old fields underwent may differ between the two schemas. If `phase_tasks[]` has a different item shape, \"identical\" needs a mapping step the plan doesn't mention.\n**Suggestion:** Pin identity with a golden-file test comparing the rendered output from an old-field config against a phase_tasks[] config containing equivalent data — that test *is* the proof of identical rendering, and it will surface shape differences immediately.\n\n**Category: edge-case — Severity: low**\n**Finding:** The fixture test should cover the empty-`phas […truncated]\n\n[openai] 1. Category: approach  \n   Severity: medium  \n   Finding: The plan states only that the reader will switch fields; it does not define the mapping from `phase_tasks[]` into the strip’s phases, labels, ordering, and completion state. “Renders identically” is not implementable or reviewable without that contract.  \n   Suggestion: Name the rendering function and document the exact `phase_tasks[]` properties it consumes, including sort/order semantics and how each item becomes a strip segment.\n\n2. Category: risk  \n   Severity: medium  \n   Finding: A fixture that merely contains `phase_tasks[]` can pass while the renderer still falls back to, merges, or prioritizes legacy fields. That would fail the requirement that old fields remain present but ignored.  \n   Suggestion: Make the fixture intentionally conflict: provide valid but visibly different legacy phase data alongside `phase_tasks[]`, and assert the rendered result reflects only `phase_tasks[]`.\n\n3. Category: dependency  \n   Severity: medium  \n   Finding: The plan does not verify that every config producer used by a “driven run” already emits `phase_tasks[]` with the needed data. Switching the reader first can empty or degrade the strip for existing configs, saved fixtures, or alternate run paths.  \n   Suggestion: Identify the configuration schema/version and all relevant producers. Either establish that `phase_tasks[]` is guaranteed for this sub-iterate or add an explicit, temporary handling decision for absent/empty data.\n\n4. Category: edge-case  \n   Severity: medium  \n   Finding: No behavior is specified for missing, empty, malformed, duplicate, or out-of-order `phase_tasks[]`. These are the practical failure modes that could turn the visible strip blank or reorder it unexpectedly.  \n   Suggestion: Define the expected behavior and test at least the missing/empty case and ordering behavior; preserve the existing renderer’s error/reporting convention rather than silently rendering misleading output.\n\n5 […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 1130,
+          "finding": "SSoT reader inventory/rule prose was stale relative to this diff.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/mermaid.py",
+          "line": 99,
+          "finding": "TypeError on a non-string phase_tasks[] status value (unhashable-in-frozenset).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/tests/test_mermaid.py",
+          "line": 40,
+          "finding": "Coverage of the config.status=='complete' fallback branch was removed by the rewrite.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-compliance/scripts/lib/mermaid.py",
+          "line": 103,
+          "finding": "Bare 'pending' return short-circuited the phase-config fallback for a non-terminal, non-active phase_tasks[] entry.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-compliance/scripts/lib/mermaid.py",
+          "line": 39,
+          "finding": "Duplicated status vocabulary has no drift guard against the shared schema.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T16:08:08.113839+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T16:08:15.020270+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (no migrations/async-concurrency/cross-plugin-imports/irreversible-ops); Stage 2 passed at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "plugins/shipwright-compliance/scripts/lib/mermaid.py:100-113 (`_get_phase_status`)",
+          "line": null,
+          "finding": "The diff removes not only the `current_step` write-once reads but also the positional inference (\"phases before current are complete\"). For a run config with no `phase_tasks[]` (a pre-v2 config or a run created before the orchestrator planned any tasks) but with `current_step`/per-phase configs that were previously used to infer progress, the strip now renders everything PENDING until the per-phase config fallback fires. The spec targets driven runs (which always carry phase_tasks), so this is within scope, but it is a behavior change for the undriven-config path that isn't covered by any test.",
+          "suggestion": "Either add a test asserting the intended behavior for a config with no `phase_tasks[]`, or document that this fallback-removal is intentional for that path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/lib/mermaid.py:85-98 (`_phase_tasks_status`)",
+          "line": null,
+          "finding": "Unknown statuses (e.g. a status added to the schema later, or `None` from a malformed entry) fall through to `\"pending\"`. A `failed` task reads as `in_progress` (yellow) with no distinct visual; the docstring says \"live or dead\" but the rendering gives no failure signal.",
+          "suggestion": "Acceptable for this sub-iterate's scope, but consider an explicit `_COLORS`/status mapping for `failed` in a follow-up so a dead phase is visible on the strip.  Positive notes: the fixture test is byte-for-byte (strong against wrong implementations), the write-once-fields-ignored test uses contradicting signals so it can't pass accidentally, and the split-phase test covers multi-entry aggregation. The fixture deliberately retains `current_step`/`completed_steps`, satisfying the \"old fields still present and still ignored\" AC. Acceptance criteria all appear met.  Overall: sound implementation with strong tests; the only findings are low-severity behavior notes on the undriven-config fallback. Ship-as-is.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T14:41:59.287827+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] - Category: regression\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/mermaid.py:100-113 (`_get_phase_status`)\n  Finding: The diff removes not only the `current_step` write-once reads but also the positional inference (\"phases before current are complete\"). For a run config with no `phase_tasks[]` (a pre-v2 config or a run created before the orchestrator planned any tasks) but with `current_step`/per-phase configs that were previously used to infer progress, the strip now renders everything PENDING until the per-phase config fallback fires. The spec targets driven runs (which always carry phase_tasks), so this is within scope, but it is a behavior change for the undriven-config path that isn't covered by any test.\n  Suggestion: Either add a test asserting the intended behavior for a config with no `phase_tasks[]`, or document that this fallback-removal is intentional for that path.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/mermaid.py:85-98 (`_phase_tasks_status`)\n  Finding: Unknown statuses (e.g. a status added to the schema later, or `None` from a malformed entry) fall through to `\"pending\"`. A `failed` task reads as `in_progress` (yellow) with no distinct visual; the docstring says \"live or dead\" but the rendering gives no failure signal.\n  Suggestion: Acceptable for this sub-iterate's scope, but consider an explicit `_COLORS`/status mapping for `failed` in a follow-up so a dead phase is visible on the strip.\n\nPositive notes: the fixture test is byte-for-byte (strong against wrong implementations), the write-once-fields-ignored test uses contradicting signals so it can't pass accidentally, and the split-phase test covers multi-entry aggregation. The fixture deliberately retains `current_step`/`completed_steps`, satisfying the \"old fields still present and still ignored\" AC. Acceptance criteria all appear met.\n\nOverall: sound implementation with strong tests; the only findings are low-se […truncated]\n\n[openai] No defects found. The renderer now derives phase progress from `phase_tasks[]`, explicitly ignores the stale write-once fields, and the fixture test pins the complete rendered output.\n\nShip-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T15:52:42.868130+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:38:40.363204+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

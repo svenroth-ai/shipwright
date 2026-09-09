@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "runId": "run-abc12345",
+  "scope": "full_app",
+  "autonomy": "guided",
+  "mode": "single_session",
+  "deploy_target": "jelastic-dev",
+  "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
+  "status": "in_progress",
+  "current_step": "project",
+  "completed_steps": [],
+  "completed_phase_task_ids": ["ptk-0001", "ptk-0002", "ptk-0003"],
+  "phase_tasks": [
+    {
+      "phaseTaskId": "ptk-0001",
+      "phase": "project",
+      "splitId": null,
+      "sessionUuid": "00000000-0000-0000-0000-000000000001",
+      "version": 1,
+      "status": "done",
+      "title": "Project",
+      "slashCommand": "/shipwright-project",
+      "prerequisites": [],
+      "executionCount": 1,
+      "createdAt": "2026-09-06T15:00:00+00:00"
+    },
+    {
+      "phaseTaskId": "ptk-0002",
+      "phase": "design",
+      "splitId": null,
+      "sessionUuid": "00000000-0000-0000-0000-000000000002",
+      "version": 1,
+      "status": "done",
+      "title": "Design",
+      "slashCommand": "/shipwright-design",
+      "prerequisites": ["ptk-0001"],
+      "executionCount": 1,
+      "createdAt": "2026-09-06T15:05:00+00:00"
+    },
+    {
+      "phaseTaskId": "ptk-0003",
+      "phase": "plan",
+      "splitId": null,
+      "sessionUuid": "00000000-0000-0000-0000-000000000003",
+      "version": 1,
+      "status": "done",
+      "title": "Plan",
+      "slashCommand": "/shipwright-plan",
+      "prerequisites": ["ptk-0002"],
+      "executionCount": 1,
+      "createdAt": "2026-09-06T15:10:00+00:00"
+    },
+    {
+      "phaseTaskId": "ptk-0004",
+      "phase": "build",
+      "splitId": null,
+      "sessionUuid": "00000000-0000-0000-0000-000000000004",
+      "version": 1,
+      "status": "in_progress",
+      "title": "Build",
+      "slashCommand": "/shipwright-build",
+      "prerequisites": ["ptk-0003"],
+      "executionCount": 1,
+      "createdAt": "2026-09-06T15:15:00+00:00"
+    }
+  ],
+  "created_at": "2026-09-06T15:00:00+00:00"
+}

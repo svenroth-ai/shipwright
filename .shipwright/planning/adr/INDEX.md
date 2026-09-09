@@ -101,3 +101,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR: Unforgeable CI-provenance attestation for traceability manifests](iterate-2026-09-08-ci-provenance-attestation-unforgeable-manifest-attestation.md)
 - [ADR: Strip the minted \[ACnn\] marker in lib.fr_criteria, not in each of its nine readers](iterate-2026-09-09-fr-criteria-marker-strip.md)
 - [Non-converging PR-review halt (exit 8)](iterate-2026-09-09-pr-review-nonconverging-halt-terminal-exit-code.md)
+- [ADR: compliance mermaid.py dashboard phase strip reads phase_tasks\[\]](iterate-2026-09-09-s1-dashboard-phase-strip-phase-tasks-reader.md)

@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n**Category: dependency \u2014 Severity: high**\n**Finding:** The change assumes `phase_tasks[]` is already populated in existing config JSON. If the writer side hasn't shipped (or hasn't dual-written in the past), a reader that reads *only* `phase_tasks[]` will render an empty strip for any existing/historical config \u2014 the exact regression the parent card warns about. The plan never states that the writer is already emitting `phase_tasks[]` alongside the old fields.\n**Suggestion:** Explicitly verify the writer dual-writes both field sets today (past and present), and document that precondition in the plan. If it doesn't, either ship dual-writing first or make the reader fall back to the old fields when `phase_tasks[]` is absent/empty.\n\n**Category: edge-case \u2014 Severity: medium**\n**Finding:** \"Old fields still present and still ignored\" makes the migration brittle: any config where `phase_tasks[]` is empty or missing (hand-edited fixture, older artifact, partially written file) renders an empty strip with no signal. No fallback path is specified.\n**Suggestion:** Decide deliberately: either strict read (empty is empty, and the test covers it) or fallback with a logged deprecation warning. Silence here will bite the next sub-iterate.\n\n**Category: approach \u2014 Severity: medium**\n**Finding:** \"Renders identically\" is under-specified as an acceptance criterion. Field order, shape (dates, labels, status enum), and any normalization the old fields underwent may differ between the two schemas. If `phase_tasks[]` has a different item shape, \"identical\" needs a mapping step the plan doesn't mention.\n**Suggestion:** Pin identity with a golden-file test comparing the rendered output from an old-field config against a phase_tasks[] config containing equivalent data \u2014 that test *is* the proof of identical rendering, and it will surface shape differences immediately.\n\n**Category: edge-case \u2014 Severity: low**\n**Finding:** The fixture test should cover the empty-`phase_tasks[]` and malformed-item cases, not just the happy path.\n**Suggestion:** Add two small cases: empty array, and an item missing expected keys \u2014 assert graceful rendering rather than a KeyError in the strip builder.\n\n**Category: risk \u2014 Severity: low**\n**Finding:** No mention of whether other consumers read the same rendering function or the old fields; if the strip builder is shared, \"ignored by this reader\" may not be scoped precisely.\n**Suggestion:** Confirm the function touched is used only by the compliance dashboard strip, or scope the field change to that code path only.\n\nNo security concerns \u2014 this is a config-field read swap with no input from untrusted sources.\n\n## Overall Assessment\nThe sequencing instinct (reader first, alone, pinned by a fixture test) is right, but the plan rests on an unstated precondition that `phase_tasks[]` is already being written, and lacks a fallback or empty-state decision. Clarify the writer status and add the equivalence golden test before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. Category: approach  \n   Severity: medium  \n   Finding: The plan states only that the reader will switch fields; it does not define the mapping from `phase_tasks[]` into the strip\u2019s phases, labels, ordering, and completion state. \u201cRenders identically\u201d is not implementable or reviewable without that contract.  \n   Suggestion: Name the rendering function and document the exact `phase_tasks[]` properties it consumes, including sort/order semantics and how each item becomes a strip segment.\n\n2. Category: risk  \n   Severity: medium  \n   Finding: A fixture that merely contains `phase_tasks[]` can pass while the renderer still falls back to, merges, or prioritizes legacy fields. That would fail the requirement that old fields remain present but ignored.  \n   Suggestion: Make the fixture intentionally conflict: provide valid but visibly different legacy phase data alongside `phase_tasks[]`, and assert the rendered result reflects only `phase_tasks[]`.\n\n3. Category: dependency  \n   Severity: medium  \n   Finding: The plan does not verify that every config producer used by a \u201cdriven run\u201d already emits `phase_tasks[]` with the needed data. Switching the reader first can empty or degrade the strip for existing configs, saved fixtures, or alternate run paths.  \n   Suggestion: Identify the configuration schema/version and all relevant producers. Either establish that `phase_tasks[]` is guaranteed for this sub-iterate or add an explicit, temporary handling decision for absent/empty data.\n\n4. Category: edge-case  \n   Severity: medium  \n   Finding: No behavior is specified for missing, empty, malformed, duplicate, or out-of-order `phase_tasks[]`. These are the practical failure modes that could turn the visible strip blank or reorder it unexpectedly.  \n   Suggestion: Define the expected behavior and test at least the missing/empty case and ordering behavior; preserve the existing renderer\u2019s error/reporting convention rather than silently rendering misleading output.\n\n5. Category: risk  \n   Severity: low  \n   Finding: \u201cPins the rendered strip\u201d is underspecified. A snapshot of incidental Mermaid serialization or formatting may create noisy failures without proving the semantic migration.  \n   Suggestion: Assert the generated strip\u2019s meaningful nodes/labels/order (or a focused rendered fragment) using the conflicting legacy-field fixture.\n\nOverall, switching this consumer first is sound and appropriately narrow, but the mini-plan needs an explicit data contract, producer guarantee, and a negative legacy-field test before it is safe to execute. No change-specific security concern is apparent because this only changes trusted configuration-field selection.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
