@@ -1,0 +1,128 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-fr-criteria-marker-strip",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 10421,
+      "total": 10455
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure library fix in shared/scripts/lib (fr_criteria.py, ac_identity.py, plus the new _criteria_text.py split) -- no startable web/CLI/API surface of its own to browser-verify; verification is the unit/integration test suite itself (F0), advisory at this complexity per the phase matrix."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a leading [ACnn] marker is stripped by default from a criterion bullet's text",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_parsing.py::test_a_leading_ac_marker_is_stripped_by_default PASSED"
+        },
+        {
+          "behavior": "strip_ac_marker=False preserves the marker for the one caller that must still see it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_parsing.py::test_strip_ac_marker_false_preserves_the_marker PASSED"
+        },
+        {
+          "behavior": "a minted placeholder bullet (e.g. [AC01] TBD) still collapses to no criteria, not a residual bare-marker token",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_parsing.py::test_a_minted_placeholder_bullet_collapses_to_no_criteria PASSED"
+        },
+        {
+          "behavior": "stripping is lenient by marker SHAPE, not canonical validity -- a non-canonical [AC7] is stripped too",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_parsing.py::test_a_non_canonical_marker_shape_is_still_stripped PASSED"
+        },
+        {
+          "behavior": "block_criteria/criteria_for/has_criteria/leading_criteria all thread the strip_ac_marker flag consistently",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_parsing.py::test_block_criteria_criteria_for_and_leading_criteria_thread_the_flag PASSED"
+        },
+        {
+          "behavior": "ac_identity.read() still sees the marker even though fr_criteria now strips it by default for every other caller",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ac_identity_markers.py::test_read_still_sees_the_marker_though_fr_criteria_now_strips_it_by_default PASSED"
+        },
+        {
+          "behavior": "group_i_criteria (I6): a minted placeholder bullet still counts as no criteria",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_i_criteria.py::test_a_minted_placeholder_still_counts_as_no_criteria PASSED"
+        },
+        {
+          "behavior": "group_i_criteria (I6): a minted well-formed criterion reads marker-free",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_group_i_criteria.py::test_a_minted_well_formed_criterion_reads_marker_free PASSED"
+        },
+        {
+          "behavior": "the cross-layer digest gate's own digest is unaffected by minting a marker onto an already-authored criterion",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_ac_marker_blindness.py::test_layer_coverage_digest_unaffected_by_a_minted_marker PASSED"
+        },
+        {
+          "behavior": "the FR-row hygiene gate's own (sibling) digest is likewise unaffected by a minted marker",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_ac_marker_blindness.py::test_fr_hygiene_digest_unaffected_by_a_minted_marker PASSED"
+        },
+        {
+          "behavior": "a minted placeholder (contributing nothing pre-mint) still contributes nothing to either digest post-mint",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_ac_marker_blindness.py::test_a_minted_placeholder_does_not_change_either_digest PASSED"
+        },
+        {
+          "behavior": "spec_parser's FR-coherence fallback reads marker-free criteria text after mint",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_ac_marker_blindness.py::test_spec_parser_reads_marker_free_criteria_after_mint PASSED"
+        },
+        {
+          "behavior": "fr_criterion_shape judges marker-free text after mint (it never imports fr_criteria itself, so it only ever sees what an upstream reader hands it)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_fr_criteria_ac_marker_blindness.py::test_fr_criterion_shape_judges_marker_free_text_after_mint PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 0,
+        "covered_acs": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-fr-criteria-marker-strip",
+    "commit": "023d35eb24adbebad05a3dd3b03b1a0fee34dffc",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -84,6 +84,22 @@ def test_bold_label_placeholder_is_no_criteria():
 
 
 # ---------------------------------------------------------------------------
+# A minted [ACnn] marker (P3.4 doubt review, #689) must stay invisible here
+# ---------------------------------------------------------------------------
+
+def test_a_minted_placeholder_still_counts_as_no_criteria():
+    """A minted id on a placeholder bullet must not flip ``has_criteria()``
+    from ``False`` to ``True`` just because ``[AC01]`` now sits in front."""
+    doc = "### FR-01.05 — Title\n\n- (E) [AC01] TBD\n"
+    assert has_criteria(doc, "FR-01.05") is False
+
+
+def test_a_minted_well_formed_criterion_reads_marker_free():
+    doc = "### FR-01.06 — Title\n\n- (E) [AC01] Given x, when y, then z.\n"
+    assert criteria_for(doc, "FR-01.06") == ["Given x, when y, then z."]
+
+
+# ---------------------------------------------------------------------------
 # Boundaries — the cases the external plan review named
 # ---------------------------------------------------------------------------
 

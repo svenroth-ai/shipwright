@@ -137,3 +137,63 @@ def test_a_continuation_line_joins_onto_the_bullet_that_opened_it():
 # root cannot import the compliance plugin's ``scripts`` package without
 # giving it a second identity in the pytest process (ADR-044; see that
 # file's module docstring).
+
+
+# ---------------------------------------------------------------------------
+# (3) strip_ac_marker — the P3.4 doubt-review seam fix (#689)
+# ---------------------------------------------------------------------------
+
+def test_a_leading_ac_marker_is_stripped_by_default():
+    """``[ACnn]`` is leading decoration to every reader here, exactly like
+    the checkbox/``(E)`` marker it sits next to — stripped before this
+    module's nine downstream callers ever see the text."""
+    lines = ["- (E) [AC07] Given a change, when it runs, then it works."]
+    assert fr_criteria.criteria_texts(lines) == [
+        "Given a change, when it runs, then it works.",
+    ]
+
+
+def test_strip_ac_marker_false_preserves_the_marker():
+    """``ac_identity.read()`` is the one caller that must still see the
+    marker, to parse it into an id — its opt-out."""
+    lines = ["- (E) [AC07] Given a change, when it runs, then it works."]
+    assert fr_criteria.criteria_texts(lines, strip_ac_marker=False) == [
+        "[AC07] Given a change, when it runs, then it works.",
+    ]
+
+
+def test_a_minted_placeholder_bullet_collapses_to_no_criteria():
+    """The second deferred effect from ``ac_identity``'s module docstring: a
+    minted placeholder (``[AC01] TBD``) must still normalise to the
+    bare-placeholder token set, not survive as a false criterion."""
+    assert fr_criteria.criteria_texts(["- (E) [AC01] TBD"]) == []
+
+
+def test_a_non_canonical_marker_shape_is_still_stripped():
+    """Lenient by SHAPE, not canonical validity — a hand-typed ``[AC7]`` is
+    still marker-shaped decoration to a caller that only wants prose, even
+    though ``ac_identity`` itself would reject it as non-canonical."""
+    lines = ["- [AC7] Given x, when y, then z."]
+    assert fr_criteria.criteria_texts(lines) == ["Given x, when y, then z."]
+
+
+def test_block_criteria_criteria_for_and_leading_criteria_thread_the_flag():
+    """The kwarg reaches every public entry point the nine downstream
+    callers use, not just ``criteria_texts`` itself — including
+    ``block_criteria`` directly, the entry point ``ac_identity.read()``
+    actually calls with ``strip_ac_marker=False``."""
+    lines = ["- (E) [AC01] Given x, when y, then z."]
+    assert fr_criteria.block_criteria(lines) == ["Given x, when y, then z."]
+    assert fr_criteria.block_criteria(lines, strip_ac_marker=False) == [
+        "[AC01] Given x, when y, then z.",
+    ]
+
+    spec = "### FR-01.01 — Title\n\n- (E) [AC01] Given x, when y, then z.\n"
+    assert fr_criteria.criteria_for(spec, "FR-01.01") == ["Given x, when y, then z."]
+    assert fr_criteria.criteria_for(spec, "FR-01.01", strip_ac_marker=False) == [
+        "[AC01] Given x, when y, then z.",
+    ]
+    assert fr_criteria.has_criteria(spec, "FR-01.01", strip_ac_marker=False) is True
+    assert fr_criteria.leading_criteria(
+        ["- (E) [AC01] Given x, when y, then z."],
+    ) == ["Given x, when y, then z."]

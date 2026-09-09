@@ -244,6 +244,15 @@ def test_a_second_fr_heading_starts_a_new_block_immediately():
     assert by_fr["FR-07.05"][0][0] == "AC01"
 
 
+def test_read_still_sees_the_marker_though_fr_criteria_now_strips_it_by_default():
+    """``fr_criteria.block_criteria`` strips ``[ACnn]`` by DEFAULT for every
+    other caller (see ``test_fr_criteria_parsing.py``); ``read()`` is the one
+    caller that must still see it, so it passes ``strip_ac_marker=False``. A
+    regression here would silently blind ``read()`` to every marker."""
+    doc = "### FR-08.01 — Title\n\n- (E) [AC01] Given x, when y, then z.\n"
+    assert ac_identity.read(doc, "FR-08.01") == [("AC01", "Given x, when y, then z.")]
+
+
 # Registry-seeding regression coverage (code/doubt review rounds 3/4/4b: a
 # marker outside the leading bullet run, a nested FR's own bullets, a
 # non-FR heading interposed between two bullets) lives in
