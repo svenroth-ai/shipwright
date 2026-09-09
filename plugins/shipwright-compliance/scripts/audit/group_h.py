@@ -1,11 +1,11 @@
 """Group H — Bloat-policy detective audit (Campaign A.review).
 
 H0 baseline meta (skip absent / fail malformed); H1 drift (oversize file
-not in baseline); H2 ratchet-suggestion (current > on-disk LOC); H3
-anti-ratchet bypass (state=anti-ratchet); H4 exception without ADR; H5
-deferred-plan without plan_ref; H6 stale-entry (path missing on disk OR
-escapes project_root). H1/H2 reuse the producer's ``bloat_baseline.scan``
-+ ``_file_newlines`` so audit semantics cannot drift from writer
+not in baseline); H2 ratchet-suggestion (current > on-disk LOC, gated by
+``_group_h_default_branch`` — webui #450/#453/#456); H3 anti-ratchet
+bypass; H4 exception without ADR; H5 deferred-plan without plan_ref; H6
+stale-entry. H1/H2 reuse the producer's ``bloat_baseline.scan`` +
+``_file_newlines`` so audit semantics cannot drift from writer
 (external-review OpenAI #2/#3). All Findings: source=detective-only.
 """
 
@@ -15,12 +15,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from scripts.audit import _group_h_default_branch as _default_branch
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,
     Finding,
     load_shared_lib,
 )
-
 
 _bb = load_shared_lib("bloat_baseline")
 
@@ -191,20 +191,24 @@ def _check_h6(stale: list[tuple[dict, str]]) -> Finding:
                           "shipwright_bloat_baseline.json\""))
 
 
-# ---------------------------------------------------------------------------
 # H2 / H3 / H4 / H5 — entry-shape audits. All scoped to resolvable entries.
-# ---------------------------------------------------------------------------
 
 
-def _check_h2(resolvable: list[tuple[dict, Path]]) -> Finding:
+def _check_h2(project_root: Path, resolvable: list[tuple[dict, Path]]) -> Finding:
     suggestions: list[tuple[str, int, int]] = []  # path, recorded, actual
     for entry, path in resolvable:
         recorded = entry.get("current")
         if not isinstance(recorded, int):
             continue
         actual = _bb._file_newlines(path)
-        if actual < recorded:
-            suggestions.append((entry["path"], recorded, actual))
+        if actual >= recorded:
+            continue
+        # webui #450/#453/#456: don't suggest below what trunk already has.
+        origin_main = _default_branch.default_branch_lines(
+            project_root, entry["path"])
+        if origin_main is not None and origin_main >= actual:
+            continue
+        suggestions.append((entry["path"], recorded, actual))
     if not suggestions:
         return _mk("H2", "pass",
                    "baseline current matches on-disk LOC for all entries")
@@ -256,9 +260,7 @@ def _check_state_with_required(
     return _mk(check_id, "fail", detail, evidence=list(offenders))
 
 
-# ---------------------------------------------------------------------------
 # Top-level run()
-# ---------------------------------------------------------------------------
 
 
 def run(
@@ -283,7 +285,7 @@ def run(
     }
 
     out.append(_check_h1(project_root, baseline_paths))
-    out.append(_check_h2(resolvable))
+    out.append(_check_h2(project_root, resolvable))
     out.append(_check_state_with_required(
         "H3", "anti-ratchet", "", resolvable,
     ))
