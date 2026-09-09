@@ -1,7 +1,7 @@
 {
   "run_id": "iterate-2026-09-09-s1-dashboard-phase-strip",
   "date": "2026-09-09",
-  "section": "compliance/mermaid",
+  "section": "shipwright-compliance/mermaid",
   "title": "Dashboard phase strip reads phase_tasks[] instead of write-once fields",
   "context": "Campaign p4-04-retire-write-once-steps s1 of 6: the dashboard phase strip is the one reader whose regression a person sees. It moves to phase_tasks[] first and alone, per the parent card's explicit warning.",
   "decision": "_get_phase_status drops the current_step parameter and derives status via new _phase_tasks_status(phase, run_config), aggregating multi-entry split phases. current_step/completed_steps remain on the schema, unread.",
