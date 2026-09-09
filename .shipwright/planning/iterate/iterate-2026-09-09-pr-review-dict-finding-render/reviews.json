@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-pr-review-dict-finding-render",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:59:52.016355+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:51:46.531115+00:00",
+      "disposition": "medium+ only per iteration-reviews.md; this run is small complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:51:47.885137+00:00",
+      "disposition": "Full Code Review cascade is only-if-risk-flags at small complexity per iteration-reviews.md; this diff carries no risk flags (classify_complexity risk_flags=[])",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:51:47.885137+00:00",
+      "disposition": "Full Code Review cascade is only-if-risk-flags at small complexity per iteration-reviews.md; this diff carries no risk flags (classify_complexity risk_flags=[])",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:51:46.531115+00:00",
+      "disposition": "medium+ only per iteration-reviews.md; this run is small complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:51:47.885137+00:00",
+      "disposition": "Full Code Review cascade is only-if-risk-flags at small complexity per iteration-reviews.md; this diff carries no risk flags (classify_complexity risk_flags=[])",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:51:46.531115+00:00",
+      "disposition": "medium+ only per iteration-reviews.md; this run is small complexity",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
