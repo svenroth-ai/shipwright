@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "Implements exactly the '## Design (final)' section: ci.yml gets an output-emitting line on the existing drift-check step plus one new zero-fallibility step; ci_provenance.py resolves verification via the Jobs API step conclusion; ci_provenance_check.py is the CLI wrapper. No extra features beyond the spec."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "_gh_api catches OSError/SubprocessError/JSONDecodeError and returns None on any transport failure, which resolve_ci_verification maps to status='error' (exit 2), kept distinct from the definite-negative 'no_record' (exit 4) per the External Review fix."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "commit is validated against _COMMIT_RE (7-40 hex chars) before use in any API call; no secrets/tokens in source (gh CLI's own existing auth is reused, untouched); subprocess uses an argv list, no shell interpolation."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "21 new tests assert on outcomes (status/run_id/exit-code), not internals; each covers a distinct happy or error path (verified, not_verified, no_record x3 forgery variants, error x3, multi-run search, cwd-correctness, CLI exit-code mapping, real-subprocess import check, ci.yml shape)."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "One bounded gh api call per qualifying run (per_page=100, no unbounded loop); not a list endpoint; no N+1 pattern — the multi-run search only calls the jobs endpoint per candidate run, capped by the single runs-list page."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "ci_provenance.py placed FLAT in shared/scripts/ (peer of github_api.py), not under lib/, avoiding the ADR-044/045 import-collision trap; ci_provenance_check.py mirrors check_required_checks.py's sys.path.insert precedent exactly. All 5 new/edited files are under 300 LOC (largest is 205, a test file)."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "The predicate deliberately never reads or writes any local file (AC3/AC8 forgery tests assert this); its only external boundary is the GitHub Actions Jobs API response shape, pinned by test_ci_yml_provenance_step_shape.py parsing the real ci.yml rather than a producer-to-file-to-consumer round trip. Diff-driven risk detectors confirmed touches_io_boundary=False."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "`uv run shared/scripts/tools/scan_test_hygiene.py --diff` reported 'no findings' against the full changed-file set."
+    }
+  ]
+}

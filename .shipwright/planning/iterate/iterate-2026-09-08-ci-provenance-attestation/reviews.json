@@ -1,0 +1,502 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-08-ci-provenance-attestation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-08T22:35:26.616128+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The predicate collapses any `gh` failure (missing binary, timeout, bad JSON, network error) into `no_record` (step 3f), but the CLI contract (AC6 / item 4) requires transport errors to exit 2 and genuine `no_record` to exit 4. If the predicate never surfaces transport failures as a distinct outcome, the CLI cannot distinguish them — the two halves of the design contradict each other, and a transient `gh` outage would be silently reported as \"never verified.\"",
+          "suggestion": "Give `CIVerification` a fourth status (e.g. `error`/`unavailable`) or an `error` field that the CLI maps to exit 2. Keep \"safe default = don't promote\" semantics at the P3.5 consumption layer, but don't conflate at the predicate boundary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step 3d references `github_api.default_branch()` as if it exists. The spec confirms `owner_repo()` exists and is used elsewhere, but does not confirm `default_branch()`. If it doesn't exist, this is an unlisted prerequisite edit to `github_api.py` — a file the spec explicitly says is at its bloat ceiling and must not be grown.",
+          "suggestion": "Verify at build time; if missing, resolve the default branch via `gh api repos/{owner}/{repo}` (the `default_branch` field on the repo object) inside the new flat module, keeping `github_api.py` untouched.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `echo \"code=$code\" >> \"$GITHUB_OUTPUT\"` placement assumes the drift-check step's script captures the exit code with an existing `code=$?` line, which in turn implies `set -e` is disabled (or `|| code=$?` used) around the drift-check invocation. If the script has `set -e` active at the point the check runs, the script dies before either line executes and the output is never written — the two new steps silently never run (gated on an empty output), which is the safe direction but means provenance is silently never produced and nothing alerts.",
+          "suggestion": "The YAML-shape test should also assert the drift-check command is invoked with `|| code=$?` (or under `set +e`), not just that the echo precedes `exit`. Better: add a `if: steps.manifest_drift.outputs.code == '0'` fallback check in the upload step's own name/detail so absence is at least visible in run logs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The `--commit` CLI argument is interpolated directly into the `gh api` query string (`?head_sha={commit}`). A malformed or malicious value (containing `&`, spaces, or path segments) can alter the query or path rather than just failing cleanly. Low practical risk (local CLI, trusted caller), but it's the one unvalidated external input in the chain.",
+          "suggestion": "Validate the commit is a 40-char (or 7–40) hex SHA before any API call; reject with exit 2 otherwise.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "retention-days: 90` vs. the \"consumption happens close to merge time\" assumption: if P3.5 or any future audit runs against a commit older than 90 days, `no_record` is indistinguishable from never-verified. This is documented as an accepted limitation, but no code or log signal distinguishes \"run exists, artifact expired\" (the run API result would show a qualifying run with no downloadable artifact) from \"no run at all.\"",
+          "suggestion": "Consider a distinct detail string when a qualifying push run exists but artifact download fails — even if status stays `no_record`, the detail (\"artifact missing or expired on run X\") makes audits diagnosable. Cheap, no schema change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Rejected alternative (native Artifact Attestations) is correctly rejected for now, but the ADR should explicitly note that the artifact name `ci-provenance` is a de-facto contract shared between writer, workflow, and consumer with no single source of truth (it appears as a literal in `ci.yml` and in `ci_provenance.py`).",
+          "suggestion": "The YAML-shape test should also assert the artifact name literal in `ci.yml` matches the `--name` value used by the predicate, so a rename can't silently break resolution into `no_record`.  Not flagged: the overall trust architecture (push-only + API-reported run metadata as the trust boundary), the structural digest reusing `_structural_view`/`_dumps`, the flat module placement, and the test strategy (subprocess-level CLI test, forgery tests, literal `if:` pinning) are all sound and well-matched to the problem size. Length is coherent, not over-produced.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Transport, authentication, timeout, and malformed-JSON failures are specified to return `no_record`, yet the CLI reserves exit code 2 for transport errors. This conflates “GitHub definitively has no provenance” with “the verifier could not determine it,” and makes the exit-code contract impossible to implement correctly.",
+          "suggestion": "Preserve a distinct operational-error result (or raise a typed exception) from `resolve_ci_verification()`. Map only successful, complete queries to `verified` / `not_verified` / `no_record`; map GitHub and `git show` failures to CLI exit code 2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The resolver downloads only the newest qualifying run. If that run lacks an artifact because the advisory writer/upload failed, while an older qualifying run for the same commit and digest has a valid artifact, the result is incorrectly `no_record`. This is especially plausible with reruns and `continue-on-error`.",
+          "suggestion": "Iterate qualifying runs newest-to-oldest until finding an artifact/record. Return `verified` on a match; return `not_verified` only when an available record for the commit conflicts and no matching valid record exists; return `no_record` only after exhausting candidates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "per_page=20` can hide a valid older push run if many PR runs or reruns share the SHA. The stated trunk-only filter occurs after fetching those 20 records, so it is not a reliable search boundary.",
+          "suggestion": "Paginate workflow runs until a qualifying push run is found or the result set is exhausted. Optionally request `event=push` server-side as an optimization, while retaining the API-object validation as the trust boundary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan correctly scopes `owner_repo()` to `project_root`, but calls `github_api.default_branch()` without showing that it is likewise project-root-aware. If that helper derives repository state from the process CWD, the exact cross-repository/CWD defect being avoided for `owner_repo()` can reappear in the branch check.",
+          "suggestion": "Verify the helper signature and behavior. Pass `project_root` explicitly, or resolve the default branch through the same explicitly addressed GitHub API path; add a test where the process CWD differs from `project_root`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC5 says the drift-check `run:` body must remain byte-for-byte unchanged, while step 5 explicitly inserts an `echo ... >> \"$GITHUB_OUTPUT\"` into that body. These requirements cannot both pass, and a literal preservation test would reject the implementation.",
+          "suggestion": "Amend AC5 to preserve the drift checker invocation and its 0/1/2 handling, explicitly allowing the narrowly scoped output-emission line. Test those semantics rather than byte equality of the entire shell block.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "commit` is interpolated into an API query path without validation or URL encoding. `subprocess.run([...])` avoids shell injection, but malformed values can alter query semantics or produce ambiguous failures.",
+          "suggestion": "Require a full Git SHA (or safely URL-encode the query value) before issuing either `git show` or `gh api`, and treat invalid input as a CLI usage/error condition.  The artifact-based design is sound once its trust boundary is limited to successful default-branch push runs, and it avoids needless new dependencies. It needs revision to separate operational failures from absence and to search provenance records reliably across reruns. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-08T22:20:06.979628+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: high**\n  **Finding:** The predicate collapses *any* `gh` failure (missing binary, timeout, bad JSON, network error) into `no_record` (step 3f), but the CLI contract (AC6 / item 4) requires transport errors to exit **2** and genuine `no_record` to exit **4**. If the predicate never surfaces transport failures as a distinct outcome, the CLI cannot distinguish them — the two halves of the design contradict each other, and a transient `gh` outage would be silently reported as \"never verified.\"\n  **Suggestion:** Give `CIVerification` a fourth status (e.g. `error`/`unavailable`) or an `error` field that the CLI maps to exit 2. Keep \"safe default = don't promote\" semantics at the P3.5 consumption layer, but don't conflate at the predicate boundary.\n\n- **Category: dependency — Severity: medium**\n  **Finding:** Step 3d references `github_api.default_branch()` as if it exists. The spec confirms `owner_repo()` exists and is used elsewhere, but does not confirm `default_branch()`. If it doesn't exist, this is an unlisted prerequisite edit to `github_api.py` — a file the spec explicitly says is at its bloat ceiling and must not be grown.\n  **Suggestion:** Verify at build time; if missing, resolve the default branch via `gh api repos/{owner}/{repo}` (the `default_branch` field on the repo object) inside the new flat module, keeping `github_api.py` untouched.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The `echo \"code=$code\" >> \"$GITHUB_OUTPUT\"` placement assumes the drift-check step's script captures the exit code with an existing `code=$?` line, which in turn implies `set -e` is disabled (or `|| code=$?` used) around the drift-check invocation. If the script has `set -e` active at the point the check runs, the script dies before either line executes and the output is never written — the two new steps silently never run (gated on an empty output), which is the safe direction but means provenance is sil […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Transport, authentication, timeout, and malformed-JSON failures are specified to return `no_record`, yet the CLI reserves exit code 2 for transport errors. This conflates “GitHub definitively has no provenance” with “the verifier could not determine it,” and makes the exit-code contract impossible to implement correctly.  \n   **Suggestion:** Preserve a distinct operational-error result (or raise a typed exception) from `resolve_ci_verification()`. Map only successful, complete queries to `verified` / `not_verified` / `no_record`; map GitHub and `git show` failures to CLI exit code 2.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The resolver downloads only the newest qualifying run. If that run lacks an artifact because the advisory writer/upload failed, while an older qualifying run for the same commit and digest has a valid artifact, the result is incorrectly `no_record`. This is especially plausible with reruns and `continue-on-error`.  \n   **Suggestion:** Iterate qualifying runs newest-to-oldest until finding an artifact/record. Return `verified` on a match; return `not_verified` only when an available record for the commit conflicts and no matching valid record exists; return `no_record` only after exhausting candidates.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `per_page=20` can hide a valid older push run if many PR runs or reruns share the SHA. The stated trunk-only filter occurs after fetching those 20 records, so it is not a reliable search boundary.  \n   **Suggestion:** Paginate workflow runs until a qualifying push run is found or the result set is exhausted. Optionally request `event=push` server-side as an optimization, while retaining the API-object validation as the trust boundary.\n\n4. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan correctly scopes `owner_repo()` to `project_root`, but call […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 160,
+          "finding": "The unforgeability claim did not account for the caller's own git checkout `origin` remote being repointed to an attacker-controlled repository (owner_repo() reads local, mutable git remote get-url).",
+          "suggestion": "Amend the one-sentence unforgeability claim to name this explicitly.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 59,
+          "finding": "_COMMIT_RE accepts a 7-39 char abbreviated SHA, but GitHub's head_sha filter requires an exact 40-char match; the spec's own design text promised a git rev-parse expansion in the CLI that was never implemented.",
+          "suggestion": "Implement the promised git -C <project_root> rev-parse --verify expansion in the CLI.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_ci_provenance.py",
+          "line": 63,
+          "finding": "No test asserted the runs query string actually pins head_sha to the commit under test; the fake dispatch answered on path prefix alone.",
+          "suggestion": "Tighten the fake gh_api fixture to require head_sha={commit} in the query string, add an explicit binding test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 175,
+          "finding": "A malformed run id was silently continue'd, which could fall through to a definite not_verified/no_record for what was really a malformed API response.",
+          "suggestion": "Track the skip and prefer error over a false definite negative.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 179,
+          "finding": "A jobs-query failure on the newest qualifying run short-circuited the whole search to error, hiding an older run that might genuinely confirm the manifest.",
+          "suggestion": "Continue the search past a query failure; only report error if no run confirmed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 138,
+          "finding": "_provenance_step_conclusion returned only the first job's matching step, which would misreport under an OS-matrixed python-checks job.",
+          "suggestion": "Scan all jobs, prefer success if any job's step confirmed it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 59,
+          "finding": "_COMMIT_RE.match() with a $ anchor accepts a trailing newline.",
+          "suggestion": "Use fullmatch on an unanchored pattern instead.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 69,
+          "finding": "_gh_api, the only real I/O in the module, had zero direct test coverage.",
+          "suggestion": "Add direct tests for argv/cwd/timeout construction and the non-zero-exit/bad-JSON failure paths.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 127,
+          "finding": "str | None | object return annotation is vacuous, and the sentinel was declared mid-file.",
+          "suggestion": "Move the sentinel to the constants block, tighten the annotation.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_ci_provenance_check.py",
+          "line": 36,
+          "finding": "_run_cli is annotated -> int but returns a (exit_code, payload) tuple.",
+          "suggestion": "Fix the return-type annotation.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": "shared/scripts/ci_provenance.py",
+          "line": 174,
+          "finding": "No aggregate wall-clock budget across the multi-run search; a pathological commit with ~100 qualifying runs could block for a long time.",
+          "suggestion": "Cap the number of candidate runs or carry a wall-clock budget across the loop.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-quality",
+          "file": "shared/tests/test_ci_provenance.py",
+          "line": 158,
+          "finding": "test_local_file_forgery_is_never_consulted cannot fail independently of the adjacent no-run-matches test.",
+          "suggestion": "Strengthen with a spy on file-read calls, or accept as documentation of AC3.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-08T22:53:52.543354+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "verified means the manifest was verified clean by CI",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "no_record is a definite, completed negative answer",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "the multi-run search cannot let a later rerun hide an earlier genuine pass",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "pagination/rate-limiting cannot silently distort the outcome",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "the three named compromise routes are exhaustive",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "an accepted run is a run of the ci.yml that already existed on main before the commit landed",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "AC9's multi-run search fully covers the rerun case",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "all untrusted inputs to the API path are validated",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "renames are covered by the YAML-shape test",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "prefer success if ANY job confirmed is the conservative reading",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-08T23:07:56.252560+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "(absent from diff) `.shipwright/agent_docs/decision_log.md",
+          "line": null,
+          "finding": "The spec's \"Files to create/modify\" item 5 and AC7 require a new ADR in the decision log naming the unforgeability property in one sentence and the Round-3 simplification. The diff touches no ADR file — the unforgeability wording currently lives only in `ci_provenance.py`'s docstring and the iterate spec itself. The spec's own text says the ADR is \"written as a run_id-keyed decision-drop at F3, not appended directly from the iterate,\" so this may be deferred by design — but as of this diff, AC7 has no durable artifact, and nothing tracks that it must land before the iterate closes.",
+          "suggestion": "Either land the decision-drop (or its run_id-keyed placeholder) in this change, or add an explicit open-item note in the iterate record stating AC7 is pending F3 so it cannot be silently marked satisfied.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ci_yml_provenance_step_shape.py` (test_drift_check_step_emits_code_output_before_any_exit)",
+          "line": null,
+          "finding": "The shape test asserts the `echo ... >> \"$GITHUB_OUTPUT\"` line precedes `exit \"$code\"`, but does not pin the `set +e` guard (or an `|| code=$?` form) that makes the capture reachable at all. The external plan review (glm, medium) explicitly called for this: if a future edit flips the step to `set -e` (or removes the `code=$?` capture), the script dies before the echo for any nonzero exit, `outputs.code` stays empty, the provenance step is silently skipped, and every drift-found commit degrades to `not_verified` while this test stays green. The test also doesn't assert the echo comes after the `code=$?` capture, only that it exists and precedes the exit.",
+          "suggestion": "Add assertions that the step body contains `set +e` before the `ci_manifest_drift_check.py` invocation, that `code=$?` appears before the echo line, and that the echo appears between them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test / spec",
+          "file": ".github/.../spec Verification section` vs. the five new test files",
+          "line": null,
+          "finding": "The spec's Verification runner names exactly two invocations (`shared/tests/test_ci_provenance.py` and `shared/scripts/tools/tests/test_ci_provenance_check.py`), but the diff created five test files. `test_ci_yml_provenance_step_shape.py` (the AC4/AC5 gate), `test_ci_provenance_hardening.py`, and `test_ci_provenance_gh_api.py` are not exercised by the spec'd verification commands. Running the iterate's own verification as written would pass without ever executing the AC4 shape assertions the spec calls a deliverable.",
+          "suggestion": "Update the spec's Verification section (and the mini-plan's runner) to list all five invocations, or confirm the repo's full-suite run covers them and record that.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test / process",
+          "file": "shared/scripts/tools/tests/test_ci_provenance_check.py` — `def _run_cli(monkeypatch, capsys, status: str, run_id=None) -> int:",
+          "line": null,
+          "finding": "_run_cli` is annotated `-> int` but returns an `(exit_code, payload)` tuple. More importantly, `code-review.json` records this exact finding as disposition `\"accepted-and-fixed\"` — the fix was not applied. The review record misrepresents the shipped code, which undermines the record's audit value for the other \"fixed\" claims.",
+          "suggestion": "Fix the annotation to `-> tuple[int, dict]`, and re-verify that every other `\"accepted-and-fixed\"` entry in `code-review.json` actually appears in the diff (the rest check out on inspection, but the record should be trustworthy).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/ci_provenance.py` — `resolve_ci_verification` / `github_api.owner_repo(root)",
+          "line": null,
+          "finding": "The predicate's contract is \"never a crash\" / `error` on any transport failure, but `github_api.owner_repo()` is an unseen-to-this-diff module whose failure mode the predicate assumes is `return None`. If `owner_repo` propagates `OSError`/`SubprocessError` from its internal `git remote get-url` call (e.g., `git` missing), `resolve_ci_verification` raises, the CLI tracebacks with exit 1 — a code outside its documented 0/2/3/4 contract. Similarly, `Path(project_root)` raises `TypeError` on a non-str/Path argument.",
+          "suggestion": "Wrap the `owner_repo` call (or the whole resolve body) in a narrow try/except mapping unexpected exceptions to `CIVerification(\"error\", ...)`, or add a test pinning that `owner_repo` returns `None` rather than raising when `git` is unavailable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/ci_provenance.py` — `_COMMIT_RE = re.compile(r\"[0-9a-f]{40}\")",
+          "line": null,
+          "finding": "Uppercase 40-char SHAs are rejected as `error`. Git and GitHub always emit lowercase, and the CLI's `rev-parse` expansion normalizes, so this is only reachable by a direct library caller passing an uppercase SHA — a legal input rejected with \"could not determine\" rather than answered.",
+          "suggestion": "Either lowercase `commit` before matching or document the lowercase-only contract in the docstring; one line either way.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/agent_docs/decision_log.md` — missing",
+          "line": null,
+          "finding": "The required ADR decision-drop is absent from the diff. This leaves AC7 unmet: no committed ADR states who must be compromised to forge a `verified` result or records the Round-3 simplification.",
+          "suggestion": "Add the run_id-keyed ADR entry to the decision log with the specified unforgeability statement and rationale for using Jobs API step conclusions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/ci_provenance.py:133-143",
+          "line": null,
+          "finding": "Schema-malformed Jobs API entries are silently treated as an absent/non-successful provenance step. For example, `{\"jobs\":[{\"steps\":\"invalid\"}]}` returns `None`, and the resolver reports `not_verified`, despite the spec requiring malformed API responses to produce `error`.",
+          "suggestion": "Track malformed job/step records and return the jobs-query-failed sentinel (or otherwise propagate `error`) when no confirming step is found.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/ci_provenance.py:105-107",
+          "line": null,
+          "finding": "A malformed or missing `total_count` is accepted as a complete runs response. That can produce `no_record`/`not_verified` even though the resolver cannot establish whether the one-page result was truncated, contrary to the required distinct `error` outcome for malformed/incomplete API responses.",
+          "suggestion": "Require `total_count` to be a non-negative integer and return `error` if it is absent or invalid.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ci_yml_provenance_step_shape.py",
+          "line": 72,
+          "finding": "The test only checks that the new step starts with `echo`; `echo ...; false` or any subsequent fallible command would pass while making clean CI runs fail. This does not validate AC5’s requirement that the step contain no fallible logic.",
+          "suggestion": "Assert the normalized `run` body exactly equals the intended single `echo` command (or parse and assert it contains only that command).  Ship-with-fixes: the core CI wiring and resolver design are sound, but the missing ADR and error-conflation/test gaps should be corrected before relying on it as promotion evidence. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-08T23:23:34.794896+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: spec**\n**Severity: medium**\n**File: (absent from diff) `.shipwright/agent_docs/decision_log.md`**\n**Finding:** The spec's \"Files to create/modify\" item 5 and AC7 require a new ADR in the decision log naming the unforgeability property in one sentence and the Round-3 simplification. The diff touches no ADR file — the unforgeability wording currently lives only in `ci_provenance.py`'s docstring and the iterate spec itself. The spec's own text says the ADR is \"written as a run_id-keyed decision-drop at F3, not appended directly from the iterate,\" so this may be deferred by design — but as of this diff, AC7 has no durable artifact, and nothing tracks that it must land before the iterate closes.\n**Suggestion:** Either land the decision-drop (or its run_id-keyed placeholder) in this change, or add an explicit open-item note in the iterate record stating AC7 is pending F3 so it cannot be silently marked satisfied.\n\n**Category: test**\n**Severity: medium**\n**File: `shared/tests/test_ci_yml_provenance_step_shape.py` (test_drift_check_step_emits_code_output_before_any_exit)**\n**Finding:** The shape test asserts the `echo ... >> \"$GITHUB_OUTPUT\"` line precedes `exit \"$code\"`, but does not pin the `set +e` guard (or an `|| code=$?` form) that makes the capture reachable at all. The external plan review (glm, medium) explicitly called for this: if a future edit flips the step to `set -e` (or removes the `code=$?` capture), the script dies before the echo for any nonzero exit, `outputs.code` stays empty, the provenance step is silently skipped, and every drift-found commit degrades to `not_verified` while this test stays green. The test also doesn't assert the echo comes *after* the `code=$?` capture, only that it exists and precedes the exit.\n**Suggestion:** Add assertions that the step body contains `set +e` before the `ci_manifest_drift_check.py` invocation, that `code=$?` appears before the echo line, and that the echo appears between them […truncated]\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: `.shipwright/agent_docs/decision_log.md` — missing  \n  Finding: The required ADR decision-drop is absent from the diff. This leaves AC7 unmet: no committed ADR states who must be compromised to forge a `verified` result or records the Round-3 simplification.  \n  Suggestion: Add the run_id-keyed ADR entry to the decision log with the specified unforgeability statement and rationale for using Jobs API step conclusions.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/ci_provenance.py:133-143`  \n  Finding: Schema-malformed Jobs API entries are silently treated as an absent/non-successful provenance step. For example, `{\"jobs\":[{\"steps\":\"invalid\"}]}` returns `None`, and the resolver reports `not_verified`, despite the spec requiring malformed API responses to produce `error`.  \n  Suggestion: Track malformed job/step records and return the jobs-query-failed sentinel (or otherwise propagate `error`) when no confirming step is found.\n\n- Category: bug  \n  Severity: low  \n  File: `shared/scripts/ci_provenance.py:105-107`  \n  Finding: A malformed or missing `total_count` is accepted as a complete runs response. That can produce `no_record`/`not_verified` even though the resolver cannot establish whether the one-page result was truncated, contrary to the required distinct `error` outcome for malformed/incomplete API responses.  \n  Suggestion: Require `total_count` to be a non-negative integer and return `error` if it is absent or invalid.\n\n- Category: test  \n  Severity: medium  \n  File: `shared/tests/test_ci_yml_provenance_step_shape.py:72`  \n  Finding: The test only checks that the new step starts with `echo`; `echo ...; false` or any subsequent fallible command would pass while making clean CI runs fail. This does not validate AC5’s requirement that the step contain no fallible logic.  \n  Suggestion: Assert the normalized `run` body exactly equals the intended single `echo` command (or parse and asse […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-08T22:41:28.962956+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-08T22:16:13.958841+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

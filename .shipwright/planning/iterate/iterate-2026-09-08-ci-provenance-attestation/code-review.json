@@ -1,0 +1,114 @@
+{
+  "section": "iterate-2026-09-08-ci-provenance-attestation (P3.4c)",
+  "review_type": "full-review",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "security",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 160,
+      "finding": "The unforgeability claim did not account for the caller's own git checkout `origin` remote being repointed to an attacker-controlled repository (owner_repo() reads local, mutable git remote get-url).",
+      "suggestion": "Amend the one-sentence unforgeability claim to name this explicitly.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 59,
+      "finding": "_COMMIT_RE accepts a 7-39 char abbreviated SHA, but GitHub's head_sha filter requires an exact 40-char match; the spec's own design text promised a git rev-parse expansion in the CLI that was never implemented.",
+      "suggestion": "Implement the promised git -C <project_root> rev-parse --verify expansion in the CLI.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/tests/test_ci_provenance.py",
+      "line": 63,
+      "finding": "No test asserted the runs query string actually pins head_sha to the commit under test; the fake dispatch answered on path prefix alone.",
+      "suggestion": "Tighten the fake gh_api fixture to require head_sha={commit} in the query string, add an explicit binding test.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 175,
+      "finding": "A malformed run id was silently continue'd, which could fall through to a definite not_verified/no_record for what was really a malformed API response.",
+      "suggestion": "Track the skip and prefer error over a false definite negative.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 179,
+      "finding": "A jobs-query failure on the newest qualifying run short-circuited the whole search to error, hiding an older run that might genuinely confirm the manifest.",
+      "suggestion": "Continue the search past a query failure; only report error if no run confirmed.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 138,
+      "finding": "_provenance_step_conclusion returned only the first job's matching step, which would misreport under an OS-matrixed python-checks job.",
+      "suggestion": "Scan all jobs, prefer success if any job's step confirmed it.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "security",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 59,
+      "finding": "_COMMIT_RE.match() with a $ anchor accepts a trailing newline.",
+      "suggestion": "Use fullmatch on an unanchored pattern instead.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 69,
+      "finding": "_gh_api, the only real I/O in the module, had zero direct test coverage.",
+      "suggestion": "Add direct tests for argv/cwd/timeout construction and the non-zero-exit/bad-JSON failure paths.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 127,
+      "finding": "str | None | object return annotation is vacuous, and the sentinel was declared mid-file.",
+      "suggestion": "Move the sentinel to the constants block, tighten the annotation.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/tests/test_ci_provenance_check.py",
+      "line": 36,
+      "finding": "_run_cli is annotated -> int but returns a (exit_code, payload) tuple.",
+      "suggestion": "Fix the return-type annotation.",
+      "disposition": "accepted-and-fixed"
+    },
+    {
+      "severity": "low",
+      "category": "performance",
+      "file": "shared/scripts/ci_provenance.py",
+      "line": 174,
+      "finding": "No aggregate wall-clock budget across the multi-run search; a pathological commit with ~100 qualifying runs could block for a long time.",
+      "suggestion": "Cap the number of candidate runs or carry a wall-clock budget across the loop.",
+      "disposition": "accepted-and-disclosed"
+    },
+    {
+      "severity": "low",
+      "category": "test-quality",
+      "file": "shared/tests/test_ci_provenance.py",
+      "line": 158,
+      "finding": "test_local_file_forgery_is_never_consulted cannot fail independently of the adjacent no-run-matches test.",
+      "suggestion": "Strengthen with a spy on file-read calls, or accept as documentation of AC3.",
+      "disposition": "accepted-and-disclosed"
+    }
+  ]
+}

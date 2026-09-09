@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-08-ci-provenance-attestation",
+  "date": "2026-09-09",
+  "section": "Iterate — feature: CI provenance attestation for promotion evidence",
+  "title": "CI-provenance predicate for traceability-manifest verification (P3.4c)",
+  "context": "The original P3.5-class defect this sub-iterate traces back to: nothing in the framework could prove that a commit's traceability manifest had actually been CI-verified, as opposed to merely claimed. compare_traceability_manifest.py already regenerates and structurally diffs the manifest in CI (iterate-2026-08-26-r1b-ci-manifest-regen-gate), but that check is deliberately advisory-only and its result was never durably, non-forgeably readable by anything outside the CI run itself.",
+  "decision": "Add shared/scripts/ci_provenance.py (+ CLI tools/ci_provenance_check.py): resolves whether a commit's manifest was CI-confirmed by reading GitHub's own Actions Jobs API, never a local claim or artifact. verified requires a push run on the default branch, conclusion=success, and the drift-check's confirmation step reading success. ci.yml gains one new infallible echo step; the drift-check's body/exit-code contract is otherwise unchanged. Details: see spec_ref ADR.",
+  "consequences": "A future consumer (P3.5) gains a durable, non-forgeable check for CI-verified manifests, with no self-reported state trusted. Explicitly structural-only scope (not execution-tier) is disclosed in the docstring, spec, and ADR so 'verified' is never mistaken for full correctness proof. A Windows PATH executable-search risk for gh/git subprocess calls is disclosed, not fixed. Details: see spec_ref ADR.",
+  "rationale": "Round 3 (Architecture Review) found the original Round-1 artifact/digest-upload design unnecessary: the Jobs API step-conclusion read already gives GitHub-attested proof without needing an uploaded artifact to reproduce byte-for-byte between CI and the consumer, which the Round-1 design could never actually guarantee (Internal Plan Review Round-1 finding). Removing the artifact layer also removed an entire class of digest-mismatch failure modes.",
+  "rejected": "Round 1's artifact-upload + content-digest design was rejected: the digest could never reproduce between the CI environment and a later consumer process, and the intended unforgeability argument had a real hole (a PR's own workflow file runs before human review can catch a malicious edit to it) — both caught by Internal Plan Review before any code was written against that shape.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-08-ci-provenance-attestation-unforgeable-manifest-attestation.md"
+}
