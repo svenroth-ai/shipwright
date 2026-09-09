@@ -1,0 +1,53 @@
+{
+  "run_id": "iterate-2026-09-09-pr-review-dict-finding-render",
+  "date": "2026-09-09T14:59:27.864553Z",
+  "event_at": "2026-09-09T00:07:49.278705+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/pr-review-dict-finding-render",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-09-pr-review-dict-finding-render",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an object-shaped blocking finding ({file, issue}) renders as 'file - issue' prose, never a raw Python dict repr",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_blocking_finding_renders_as_prose_not_a_dict_repr PASSED"
+      },
+      {
+        "behavior": "an object-shaped comment finding ({file, issue}) renders the same way as a blocking one",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_comment_finding_renders_as_prose_not_a_dict_repr PASSED"
+      },
+      {
+        "behavior": "an object carrying only a location key (no issue/description/message/detail/text) renders the location alone, not a dict repr",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_finding_with_only_a_location_renders_the_location_alone PASSED"
+      },
+      {
+        "behavior": "an object with no recognised key at all falls back to 'key: value' prose, never a dict repr",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_render.py::TestRenderComment::test_object_shaped_finding_with_no_recognised_keys_joins_them_as_prose PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure text-rendering bug fix inside a single library module invoked by a CI-only tool script -- no startable web/dev-server/CLI surface of its own; verification is the unit test suite (F0)."
+  }
+}

@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-pr-review-nonconverging-halt",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:36:09.494776+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Threshold calibration rests on exactly one positive sample (PR #690) and one synthetic negative. The spec's own evidence undercuts the discriminative power: rounds that were \"worded completely differently\" still scored 0.32 overlap — well above the 0.2 floor. That means vocabulary overlap is a weak separator here, and the same is likely true in reverse: two genuinely distinct findings on the same file in a security-review domain will routinely share vocabulary (\"CI\", \"commit\", \"evidence\", \"test\", \"coverage\", \"fingerprint\"). Ledger row 13's negative fixture is synthetic; there's no measurement against real distinct-finding pairs. A false positive on a converging run halts it early — the exact failure mode the spec rejects push-counts for.",
+          "suggestion": "Before shipping, run the predicate over the full corpus of historical `PR Review` BLOCK pairs (all PRs, not #690) and report the recur/no-recur distribution. If distinct-finding pairs cluster near 0.2–0.32, raise `MIN_CLAIM_OVERLAP` toward 0.3 and/or require the shared tokens to include at least one non-stopword domain noun from the claim (not boilerplate). Also consider a third BLOCK as confirmation (two consecutive recurring pairs) to cut false-positive cost.  2. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The \"last two BLOCKs\" window doesn't reset on a successful intermediate state — an APPROVE between BLOCKs is explicitly ignored (ledger row 10). But what about a merged push / force-push / new commit between the two BLOCKs? If round 2's BLOCK predates the operator's fix push and round 3's BLOCK is a fresh review of the new code, the pair (2,3) compares findings against different commit states. Same underlying complaint recurring across commits is the target case, but a new review quoting a remnant of the old wording while raising a genuinely new point on the same file could trigger escalation.",
+          "suggestion": "Key the window to BLOCKs that post-date the latest push (comments have timestamps; the head SHA is available from the ladder). At minimum, confirm the two BLOCKs being compared both reviewed the same or later commits than the one being delivered.  3. Category: risk — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The parser is coupled to the exact render format (`### 🚫 Blocking issues`, `file:line — claim` bullets) but lives in a new module with no contract test against `pr_review_render.py` itself. Format drift in the renderer (emoji change, heading reword, bullet format) degrades silently — and the fail-open path means the halt feature just stops working with no signal.",
+          "suggestion": "Add one canary test that imports the real renderer (or a snapshot of its current output template) and asserts `extract_blocking_findings` parses it, so renderer changes break a test instead of the feature.  4. Category: approach — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Exit 8 is asserted as new; confirm nothing else in the F11 `case \"$?\"` block or any sibling ladder (`watch_pr_delivery`, `pr_self_merge`) already consumes 8, and that the shell arm ordering doesn't shadow it. Trivial but worth an explicit check in the diff.",
+          "suggestion": "One grep for `= 8` / `8)` across the exit-code vocabulary and F11/F5 references.  5. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The escalation only fires when the ladder's verdict is `checks_failed` — i.e., at delivery time, after the push + review cycle has already run. On #690 that's fine (rounds are hours apart), but if a non-`PR Review` check also fails in the same round, the ladder result may not be `checks_failed` attributable to the gate — worth confirming the ladder's verdict is `checks_failed` whenever any check fails, so a co-failing flaky check doesn't mask the escalation.",
+          "suggestion": "Add one test: `PR Review` red + another check red with two recurring BLOCKs — assert escalation still fires.  6. Category: security — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "No injection or auth surface: read-only `gh` call through the existing `Host.call_json` seam, no workflow changes, terminal human handoff. The only exposure is that comment bodies (attacker-influenced if a third party can comment) drive a control-flow decision — but escalation only makes delivery stop, and only on already-failing runs, so the worst case is denial-of-run, not bypass. Acceptable.",
+          "suggestion": "None needed; the fail-open direction (unreadable → `checks_failed`, never manufacture a halt) is the correct polarity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The predicate compares the two latest matching comments, but does not establish that they belong to two distinct review runs for successive PR commits. Historical BLOCK comments can therefore trigger exit 8 while the current failed `PR Review` check concerns a new finding—or while the current check has not produced its corresponding comment yet.",
+          "suggestion": "Bind each candidate verdict to the reviewed head SHA/manifest revision and the failed check run (for example, via structured metadata in the review output or check-run timestamps/details). Escalate only when the current failed review and its immediate predecessor are distinct, commit-bound runs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Fetching ordinary PR comments creates a halt/denial-of-service surface if `is_block_verdict` relies on text such as “Shipwright” or the markdown heading. A contributor able to comment on the PR could forge two plausible BLOCK comments and cause a terminal exit.",
+          "suggestion": "Verify an authoritative reviewer identity and provenance from GitHub comment metadata (and preferably a machine-readable marker produced by the trusted review integration), rather than trusting comment body content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan intentionally skips intervening APPROVEs and compares the two most recent BLOCKs. This can treat a resolved earlier issue as recurring after an approval, even though the later BLOCK is for a newly introduced concern that happens to share vocabulary and a file.",
+          "suggestion": "Treat an approval or a successful, commit-bound PR Review run as a convergence boundary; only compare adjacent failed review runs within the current unresolved sequence.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The stated parser contract is inconsistent: the described real heading is `### 🚫 Blocking issues`, while the ledger repeatedly describes `### Blocking issues`. A literal parser could silently fail open against the production renderer after even a minor template change.",
+          "suggestion": "Derive the parser from a stable structured marker if available; otherwise test the exact renderer output and explicitly support the canonical heading, with a compatibility test for expected formatting variants.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new `gh pr view --json comments` call is on the delivery path and has no stated timeout/error-class handling beyond an “unreadable payload” test. Permission failures, transient GitHub errors, pagination/large comment histories, or rate limits could delay every failed PR Review delivery attempt.",
+          "suggestion": "Use the existing host timeout/retry conventions, fetch only the minimum required comment fields/history where possible, and fail open with a concise diagnostic that distinguishes unavailable history from “no recurrence.”  Overall, the fail-open and narrow escalation intent are sound, but commit/run provenance and authenticated comment identity are essential before a terminal halt can be trusted. The current approach can halt legitimate work based on stale or forged history.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T13:34:23.017400+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: edge-case — Severity: high**\n**Finding:** Threshold calibration rests on exactly one positive sample (PR #690) and one synthetic negative. The spec's own evidence undercuts the discriminative power: rounds that were \"worded completely differently\" still scored 0.32 overlap — well above the 0.2 floor. That means vocabulary overlap is a weak separator here, and the same is likely true in reverse: two *genuinely distinct* findings on the same file in a security-review domain will routinely share vocabulary (\"CI\", \"commit\", \"evidence\", \"test\", \"coverage\", \"fingerprint\"). Ledger row 13's negative fixture is synthetic; there's no measurement against real distinct-finding pairs. A false positive on a converging run halts it early — the exact failure mode the spec rejects push-counts for.\n**Suggestion:** Before shipping, run the predicate over the full corpus of historical `PR Review` BLOCK pairs (all PRs, not #690) and report the recur/no-recur distribution. If distinct-finding pairs cluster near 0.2–0.32, raise `MIN_CLAIM_OVERLAP` toward 0.3 and/or require the shared tokens to include at least one non-stopword domain noun from the *claim* (not boilerplate). Also consider a third BLOCK as confirmation (two consecutive recurring pairs) to cut false-positive cost.\n\n**2. Category: edge-case — Severity: medium**\n**Finding:** The \"last two BLOCKs\" window doesn't reset on a successful intermediate state — an APPROVE between BLOCKs is explicitly ignored (ledger row 10). But what about a merged push / force-push / new commit between the two BLOCKs? If round 2's BLOCK predates the operator's fix push and round 3's BLOCK is a fresh review of the new code, the pair (2,3) compares findings against *different commit states*. Same underlying complaint recurring across commits is the target case, but a new review quoting a remnant of the old wording while raising a genuinely new point on the same file could trigger escalation.\n**Suggestion:** Key  […truncated]\n\n[openai] 1. Category: approach  \n   Severity: high  \n   Finding: The predicate compares the two latest matching comments, but does not establish that they belong to two distinct review runs for successive PR commits. Historical BLOCK comments can therefore trigger exit 8 while the current failed `PR Review` check concerns a new finding—or while the current check has not produced its corresponding comment yet.  \n   Suggestion: Bind each candidate verdict to the reviewed head SHA/manifest revision and the failed check run (for example, via structured metadata in the review output or check-run timestamps/details). Escalate only when the current failed review and its immediate predecessor are distinct, commit-bound runs.\n\n2. Category: security  \n   Severity: high  \n   Finding: Fetching ordinary PR comments creates a halt/denial-of-service surface if `is_block_verdict` relies on text such as “Shipwright” or the markdown heading. A contributor able to comment on the PR could forge two plausible BLOCK comments and cause a terminal exit.  \n   Suggestion: Verify an authoritative reviewer identity and provenance from GitHub comment metadata (and preferably a machine-readable marker produced by the trusted review integration), rather than trusting comment body content.\n\n3. Category: edge-case  \n   Severity: medium  \n   Finding: The plan intentionally skips intervening APPROVEs and compares the two most recent BLOCKs. This can treat a resolved earlier issue as recurring after an approval, even though the later BLOCK is for a newly introduced concern that happens to share vocabulary and a file.  \n   Suggestion: Treat an approval or a successful, commit-bound PR Review run as a convergence boundary; only compare adjacent failed review runs within the current unresolved sequence.\n\n4. Category: dependency  \n   Severity: medium  \n   Finding: The stated parser contract is inconsistent: the described real heading is `### 🚫 Blocking issues`, while the ledger repeatedly describes `# […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_pr_review_convergence.py",
+          "line": null,
+          "finding": "Acceptance-B (test_two_genuinely_different_blocks_do_not_recur) called non_converging with no commits/head_sha, so it always returned None via the commit-binding fail-open path regardless of the text predicate's decision, making it non-discriminating. FIXED: the test now supplies commit-binding data that would satisfy verdicts_span_distinct_commits, so only the text predicate can produce the asserted None.",
+          "suggestion": "Pass commits/head_sha, or reorder the checks.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_review_convergence.py",
+          "line": null,
+          "finding": "findings_recur fires on the FIRST matching (file, claim) pair even when the current verdict also introduces new findings on new files -- partial recurrence is indistinguishable from a stuck loop. DISCLOSED, not fixed: narrowing the predicate to require no new-file findings would break the validated PR #690 acceptance case itself, which is exactly this shape.",
+          "suggestion": "Disclose the risk; do not narrow the predicate.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/tests/test_pr_review_render_convergence_canary.py",
+          "line": null,
+          "finding": "The renderer canary pinned three literals but not the `- {bullet}` list-item shape extract_blocking_findings's _BULLET_RE parses. FIXED: added a fourth assertion pinning the bullet form.",
+          "suggestion": "Add an assertion pinning the bullet form.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/lib/pr_review_verdict_provenance.py",
+          "line": null,
+          "finding": "is_authentic checked author.login only -- a write-access user can edit another author's comment on GitHub, the same denial-of-delivery risk from a higher-privileged actor. FIXED: is_authentic now also requires not comment[\"includesCreatedEdit\"], with a dedicated test.",
+          "suggestion": "Reject edited comments via includesCreatedEdit.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_review_verdict_provenance.py",
+          "line": null,
+          "finding": "_commit_as_of's docstring claimed the binding was exact; it is an approximation by timestamp, not the actual reviewed head SHA. FIXED: docstring rewritten to state the approximation and the one asymmetric failure direction.",
+          "suggestion": "Correct the docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_deliver_pr_non_converging.py",
+          "line": null,
+          "finding": "The new gh pr view --json comments,commits,headRefOid call site was untested for repo-pinning, unlike every other gh call in the suite. FIXED: added an argv-pinning assertion to the end-to-end acceptance test.",
+          "suggestion": "Add an argv assertion matching the existing convention.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/deliver_pr.py",
+          "line": null,
+          "finding": "Dead code: _run_ladder's own host = host or Host.default(repo=repo) was unreachable once deliver() started resolving host up front for the escalation call too. FIXED: removed, parameter retyped Host (not Host | None).",
+          "suggestion": "Remove the unreachable fallback and fix the type.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/deliver_pr_non_converging.py",
+          "line": null,
+          "finding": "PR_REVIEW_CHECK_NAME duplicated automerge_readiness's canonical POSTED_STATUS_CONTEXTS table instead of importing it. FIXED: now imports POSTED_STATUS_CONTEXTS[\"pr-review-run.yml\"] from lib.automerge_readiness.",
+          "suggestion": "Import the canonical constant instead of redefining it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/pr_review_convergence.py",
+          "line": null,
+          "finding": "_STOPWORDS's comment claimed 'grammatical function words only' but the list also contains review-boilerplate verbs (add, require(s), tracking, follow, instead, rather). FIXED: comment rewritten to name both real categories.",
+          "suggestion": "Rewrite the comment to match the contents.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T14:01:59.126305+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/lib/pr_review_verdict_provenance.py",
+          "line": null,
+          "finding": "Claim under doubt: is_authentic (login match + not includesCreatedEdit) is sufficient proof a BLOCK comment came from the real Tier-3 reviewer. — bloat-check.yml posts PR comments under the SAME github-actions login, built from file paths with no character restriction; is_block_verdict's unanchored substring checks mean a maliciously-named file's path can satisfy the marker+badge check. Verified live that bloat-check's real comment format already matches the shape extract_blocking_findings parses. FIXED: verdicts_span_distinct_commits now requires each comment to correlate to a sibling CHANGES_REQUESTED review (matching login, unedited, submittedAt within 300s) whenever reviews data was fetched at all -- bloat-check.yml never posts a review, so a forged comment has nothing to correlate to. Closes the gap structurally rather than by pattern-matching harder.",
+          "suggestion": "Require a sibling PR review object (posted only by the trusted stage-2 job) to corroborate the comment, not just its own text/login.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_review_verdict_provenance.py",
+          "line": null,
+          "finding": "Claim under doubt: Inferring a comment's commit from commits[]/committedDate (nearest commit at-or-before the comment's createdAt) is an adequate approximation for a TERMINAL decision. — The approximation has two failure directions: a push landing mid-review makes a same-code stage-1 re-run look like a distinct current commit (false positive), and any rebase permanently breaks the binding on that PR (false negative) -- right when a long non-converging loop makes rebasing likely. An authoritative source was available with no producer change: pr_review.py's _post_verdict already posts a CHANGES_REQUESTED review alongside every comment, and GitHub stamps that review's own commit.oid at submission. FIXED: verdicts_span_distinct_commits now prefers reviews[].commit.oid, falling back to committedDate only when reviews itself is empty. Verified live against PR #690 (which was rebased mid-session): commits[] history is gone, but gh pr view --json reviews still returns both reviews' real commit.oid, submittedAt ~1s after the paired comment.",
+          "suggestion": "Use reviews[].commit_id (GitHub's own stamp, already fetched via gh pr view --json reviews) as the primary binding source.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/pr_review_convergence.py",
+          "line": null,
+          "finding": "Claim under doubt: An intervening APPROVE/comment verdict between two BLOCKs should not reset the recurring-pair check -- the last two BLOCKs are always the right ones to compare. — A stale BLOCK from long before a genuine, later APPROVE could still pair with a fresh, unrelated BLOCK, discarding positive proof of non-stuckness the predicate currently ignores. DISCLOSED, not fixed: PR #690's own 12 verdicts contain no intervening APPROVE (all consecutive BLOCKs), so there is no real-data case motivating this added complexity, and building it now -- untested against any real occurrence -- risks the same kind of premature, self-validating logic the commit-binding fix just replaced with something measured. Revisit if a future incident shows this actually firing.",
+          "suggestion": "Track whether an authentic non-BLOCK Shipwright verdict occurred between `previous` and `current`; if so, do not treat the pair as recurring.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-09-pr-review-nonconverging-halt.md",
+          "line": null,
+          "finding": "Claim under doubt: File-path-strictness and claim-vocabulary-overlap are independent mitigations, each adding safety margin on its own. — PR #690's own round-2 fixture shows review boilerplate (e.g. 'add a test in shared/tests/test_x.py') routinely supplying both a shared file path and several shared tokens together -- the two axes are correlated in practice, not independent. FIXED: the spec's Threshold Provenance section now states this correlation directly rather than implying independence; the predicate itself is unchanged since a strict file match still narrows WHERE tokens have to overlap.",
+          "suggestion": "Correct the spec wording; no code change needed since the predicate's actual behavior does not rely on the independence claim.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "observability",
+          "file": "shared/scripts/lib/pr_review_verdict_provenance.py",
+          "line": null,
+          "finding": "Claim under doubt: The seven silent fail-open return paths across this predicate, plus an unchecked isMinimized field, are acceptable as-is for this unit. — An operator cannot currently tell 'the guard ran and found nothing' from 'the guard could not evaluate at all', and a comment a human has manually minimized as outdated is still eligible to be read as a current verdict. FIXED the one part that was a real, cheap bug along the way: _commit_as_of's tie-break used to break ties by oid text instead of array/chronological order. DISCLOSED, not fixed, for the rest: tracing seven distinct internal branches through to `steps` is a moderate redesign of the return shape, and isMinimized needs one more field threaded through gh pr view --json -- both reasonable follow-ups, but every fail-open path's only effect is 'do not escalate', which was already the caller's baseline behavior before this unit existed, so this is an observability/precision gap, not a correctness gap.",
+          "suggestion": "Thread a reason code through non_converging's None returns into `steps`; also read/check isMinimized on each comment.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T14:30:14.222684+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:36:37.926927+00:00",
+      "disposition": "single-session run with Agent-tool access; the local review cascade (spec-reviewer/code-reviewer/doubt-reviewer) is run instead and satisfies the medium+ code-evidence floor via the code row",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:50:11.860871+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "The predicate never binds the two BLOCK verdicts to two DIFFERENT commits. A stage-1 re-run posts a SECOND BLOCK for the SAME commit and would have escalated on \"the fix is not addressing it\" when no fix was attempted. FIXED: _verdicts_span_distinct_commits requires the current verdict to bind to the actual head SHA and the previous verdict to bind to a different commit.",
+          "suggestion": "Bind the pair to distinct commits, current one matching head.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No author verification on the comments read — any commenter could forge two plausible BLOCK comments and force a terminal halt. FIXED: _is_authentic requires comment.author.login == github-actions before a comment counts as a verdict.",
+          "suggestion": "Fetch comments with author, require the bot identity.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "Threshold calibration is n=1 positive / n=1 synthetic negative for a TERMINAL outcome, over a highly repetitive review vocabulary. DISCLOSED, not fixed: a corpus back-test is a separate investigation; mitigated by the two commit/author binding fixes, which independently narrow the false-positive window.",
+          "suggestion": "Back-test against the historical BLOCK corpus before or alongside shipping; disclosed as a residual risk in the PR body.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "pr_review.py's structural fail-closed blocks (empty blocking list) are invisible to the predicate. DECLINED as out of scope: needs a separate zero-heuristic byte-identity arm, not part of this unit's acceptance criteria.",
+          "suggestion": "A follow-up unit: two byte-identical (footer-stripped) BLOCK bodies recur by definition.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "Cross-plugin format contract (marker/badge/heading literals) with no drift test — ADR-044 blocks a direct cross-root import. FIXED: added a canary test in the producer's own root (test_pr_review_render.py) pinning the three literals.",
+          "suggestion": "Commit a golden fixture or canary test next to the renderer.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "Multi-line bullets lose continuation-line vocabulary, and there is no basename fallback for a renamed file. DECLINED: narrow blast radius on an already-loose predicate; no real multi-line/rename BLOCK examples observed to tune against.",
+          "suggestion": "Fold continuation lines; add a stricter no-shared-file fallback if a real example surfaces.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "performance",
+          "file": null,
+          "line": null,
+          "finding": "gh pr view --json comments paging behaviour on a >100-comment PR is unverified. DECLINED as a follow-up probe: PR #690 itself (the extreme case) had 12 verdicts total, well under any plausible page size.",
+          "suggestion": "Verify gh's paging behaviour on a long-lived PR.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": null,
+          "line": null,
+          "finding": "A campaign leg that halts non-converging surfaces to the orchestrator as the same generic non-zero failure as a retryable exit. DECLINED as out of scope: this is campaign-mode.md's consumer of F11's exit code, the same 'second escalation channel' boundary the brief drew around mid-flight-escalation.md.",
+          "suggestion": "Give exit 8 the same terminal treatment as 3 and 6 in the campaign driver, as a follow-up card.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T13:35:14.296106+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

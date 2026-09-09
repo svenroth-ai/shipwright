@@ -1,0 +1,1 @@
+deliver_pr.py now halts a PR that is stuck on the same PR-review finding (exit 8, terminal) instead of looping on re-push suggestions — triggered when two consecutive PR-Review BLOCK verdicts recur on the same file and overlapping claim, both authentically-authored and bound to distinct commits via GitHub's own review data

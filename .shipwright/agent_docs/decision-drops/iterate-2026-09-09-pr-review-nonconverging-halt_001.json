@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-pr-review-nonconverging-halt",
+  "date": "2026-09-09",
+  "section": "Iterate — change: non-converging PR-review halt",
+  "title": "Non-converging PR-review halt (exit 8)",
+  "context": "PR #690 pushed 10x/7h40m, blocked every time by the same Tier-3 PR-review finding reworded 9 of 12 times; exit 2 kept suggesting re-push.",
+  "decision": "Add terminal EXIT_NON_CONVERGING=8 when the last two PR-Review BLOCK comments share a recurring (file,claim) finding, gated by review-based authenticity+commit-binding.",
+  "consequences": "Stuck runs stop after round 2 instead of round 10, handed to a human; no new Required Check, no producer change, never blocks an otherwise-passing merge.",
+  "rationale": "Sameness (not a push count) separates a stuck loop from genuinely converging rounds; commit-binding upgraded to GitHub's own reviews[].commit.oid after doubt review found the committedDate guess had both false-positive and false-negative modes.",
+  "rejected": "Push-count threshold (wrong axis); a producer-side nonce marker (larger, out-of-scope change to pr_review.py's posting protocol); resetting the BLOCK pair on an intervening APPROVE (no real-data case yet, disclosed).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-09-pr-review-nonconverging-halt-terminal-exit-code.md"
+}
