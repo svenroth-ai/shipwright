@@ -263,6 +263,10 @@ Full procedure → [references/step-h-validate-commit-handoff.md](references/ste
 
 See [references/backfill-iterate-config.md](references/backfill-iterate-config.md).
 
+## Backfilling `phase_tasks[]` on already-adopted projects
+
+See [references/backfill-phase-tasks.md](references/backfill-phase-tasks.md).
+
 ## References
 
 - `references/step-a-preflight.md` — Step A.0 + Step A pre-flight
@@ -280,6 +284,7 @@ See [references/backfill-iterate-config.md](references/backfill-iterate-config.m
 - `references/step-g-layer3-review.md` — Step G Layer-3 review
 - `references/step-h-validate-commit-handoff.md` — Step H validate / commit / handoff
 - `references/backfill-iterate-config.md` — backfill helper for pre-2026-05-05 adopts
+- `references/backfill-phase-tasks.md` — backfill helper for pre-2026-09-09 adopts (phase_tasks[])
 - `references/integration.md` — Phase-Quality / cross-plugin / marketplace wiring
 - `references/codebase-analysis.md` — detector heuristics and edge cases
 - `references/feature-inference.md` — Playwright crawl vs AST fallback rules

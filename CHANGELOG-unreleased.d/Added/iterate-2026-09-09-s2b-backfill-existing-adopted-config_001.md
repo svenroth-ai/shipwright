@@ -1,0 +1,1 @@
+shipwright-adopt: backfill phase_tasks[] into a repo adopted before 2026-09-09 via a new CLI (backfill_phase_tasks.py), idempotent and verified against a real pre-existing adopted config (campaign p4-04-retire-write-once-steps, s2b)

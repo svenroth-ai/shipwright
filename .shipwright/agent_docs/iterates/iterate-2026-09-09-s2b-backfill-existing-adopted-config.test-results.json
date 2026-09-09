@@ -1,0 +1,145 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-s2b-backfill-existing-adopted-config",
+    "date": "2026-09-10",
+    "unit": {
+      "status": "passed",
+      "passed": 17421,
+      "total": 17479
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "backfill_phase_tasks.py is a CLI tool run against an already-adopted project's shipwright_run_config.json; it has no web/dev-server surface of its own to browser-verify. Effective complexity is small (not medium+), so F0.5 is not mandatory -- verification is the unit/integration test suite (F0) plus a manual --dry-run against the real live leadwright repo, documented in the ADR's Confidence Calibration section."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: an adopted config written before this campaign (has completed_steps, no phase_tasks[]) reads correctly after the backfill",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_backfill_phase_tasks_cli.py::test_backfilled_leadwright_config_renders_complete_not_pending PASSED (real dashboard reader, mermaid.py._get_phase_status)"
+        },
+        {
+          "behavior": "AC2: the backfill is idempotent -- running it twice changes nothing",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_backfilling_the_real_leadwright_config_twice_is_a_no_op PASSED; ::test_a_second_run_never_calls_write_text_at_all PASSED (structural proof, not mtime-only)"
+        },
+        {
+          "behavior": "AC3: verified against a real pre-existing adopted config, not only a synthetic fixture",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_backfills_the_real_leadwright_config PASSED (verbatim copy of the live leadwright shipwright_run_config.json) + manual --dry-run against the actual C:\\01_Development\\leadwright checkout, confirmed byte-identical before/after (documented in the ADR; no unattended write to a sibling repo)"
+        },
+        {
+          "behavior": "a phase_tasks value that is present but malformed (not a list) is left entirely untouched, never overwritten",
+          "disposition": "tested",
+          "evidence": "test_backfill_missing_phase_tasks.py::test_a_malformed_existing_phase_tasks_value_is_left_untouched PASSED"
+        },
+        {
+          "behavior": "duplicate completed_steps entries produce only one phase_tasks entry per phase",
+          "disposition": "tested",
+          "evidence": "test_backfill_missing_phase_tasks.py::test_duplicate_completed_steps_produce_only_one_entry_per_phase PASSED"
+        },
+        {
+          "behavior": "adoption: null does not crash the backfill, resolves to not-applicable",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_a_config_with_adoption_null_does_not_crash PASSED"
+        },
+        {
+          "behavior": "a non-adopted (driven, not adopted) config is reported not-applicable and left byte-untouched",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_a_non_adopted_config_is_reported_not_applicable PASSED; test_backfill_missing_phase_tasks.py::test_a_non_adopted_config_is_left_untouched PASSED"
+        },
+        {
+          "behavior": "an out-of-vocabulary completed_steps entry is skipped, not fatal",
+          "disposition": "tested",
+          "evidence": "test_backfill_missing_phase_tasks.py::test_an_out_of_vocabulary_completed_step_is_skipped_not_fatal PASSED"
+        },
+        {
+          "behavior": "when phase_tasks[] already partially exists, only the gap is filled -- existing entries are never duplicated or rewritten",
+          "disposition": "tested",
+          "evidence": "test_backfill_missing_phase_tasks.py::test_only_the_gap_is_filled_when_phase_tasks_already_partially_present PASSED"
+        },
+        {
+          "behavior": "a BOM-prefixed config (Notepad-style save) is read, not rejected",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_a_bom_prefixed_config_is_read_not_rejected PASSED (confidence calibration probe finding, fixed via utf-8-sig)"
+        },
+        {
+          "behavior": "CRLF line endings and non-ASCII field values round-trip cleanly",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_crlf_and_non_ascii_values_round_trip_cleanly PASSED"
+        },
+        {
+          "behavior": "backfilled entries carry the original adoption timestamp, not the backfill run's own time",
+          "disposition": "tested",
+          "evidence": "test_backfill_phase_tasks_cli.py::test_seeded_entries_use_the_original_adoption_timestamp PASSED"
+        },
+        {
+          "behavior": "a backfilled phase's status agrees with what phase_history already recorded for it (e.g. 'test' backfills as skipped, matching history)",
+          "disposition": "tested",
+          "evidence": "test_backfill_missing_phase_tasks.py::test_the_test_phase_backfills_as_skipped_matching_phase_history PASSED"
+        },
+        {
+          "behavior": "the pure backfill function never mutates its input dict in place",
+          "disposition": "tested",
+          "evidence": "test_backfill_missing_phase_tasks.py::test_original_config_is_not_mutated_in_place PASSED"
+        },
+        {
+          "behavior": "the shared handoff pipeline renders no compliance-dashboard 'skipped' block for a backfilled pre-s2 config",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_adopt_phase_tasks_read_by_shared_readers.py::test_handoff_pipeline_renders_no_block_for_a_backfilled_pre_s2_config PASSED"
+        },
+        {
+          "behavior": "the shared has_phase_tasks() reader treats a backfilled pre-s2 config the same as a freshly-adopted (post-s2) one",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_adopt_phase_tasks_read_by_shared_readers.py::test_has_phase_tasks_reads_a_backfilled_pre_s2_config_as_standalone PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 16,
+        "tested": 16,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-s2b-backfill-existing-adopted-config",
+    "commit": "f061156408a071637fcba77e02d829b73a840c98",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

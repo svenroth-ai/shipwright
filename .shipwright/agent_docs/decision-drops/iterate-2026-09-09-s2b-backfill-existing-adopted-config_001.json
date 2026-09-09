@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-s2b-backfill-existing-adopted-config",
+  "date": "2026-09-09",
+  "section": "Iterate — feature: backfill phase_tasks[] for already-adopted configs",
+  "title": "Backfill phase_tasks[] into already-adopted configs",
+  "context": "s2 seeds phase_tasks[] only for NEW adoptions; a repo adopted before 2026-09-09 has completed_steps but no phase_tasks[], so migrated readers can render its phases as skipped.",
+  "decision": "Add a pure backfill_missing_phase_tasks() reusing s2's build_adopted_phase_task, plus a CLI wrapper, run against the existing config in place; idempotent, verified against the real leadwright repo.",
+  "consequences": "A pre-2026-09-09 adopted repo reads identically to a fresh s2 write once backfilled; dry-run confirmed against the live leadwright checkout, no write performed unattended.",
+  "rationale": "Reusing s2's shared entry-builder guarantees status agrees with phase_history's own outcome by construction; no fleet-wide discovery exists in this monorepo to scan against.",
+  "rejected": "convert_configs_to_events.py (wrong artifact, no phase_tasks[] concept); a fleet-wide --scan mode (no repo registry exists to enumerate against).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-09-s2b-backfill-existing-adopted-config-backfill-phase-tasks.md"
+}
