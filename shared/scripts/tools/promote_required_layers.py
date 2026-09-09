@@ -179,16 +179,24 @@ def plan_promotions(
     ``evidence`` (round 2, restart): CI-confirmed per-FR ``tests``/
     ``coverage``, resolved ONCE by the caller for the whole run (never
     per-FR — the commit is the same for every FR this run looks at).
-    ``evidence.requirements.get(fr_id)`` REPLACES — never merges with —
-    the committed manifest node's own ``tests``/``coverage`` before
-    ``evaluate_fr`` ever sees them: once CI evidence is being consulted at
-    all, the committed file's own claims about those two fields are never
-    read again. An FR absent from ``evidence.requirements`` (including the
-    whole-run case, ``evidence.status == "unavailable"``, where it is
-    always empty) evaluates against ``{}``/``{}`` — ``evaluate_fr``'s
-    existing branches already treat that identically to "no evidence yet"
-    (see the design doc's realistic-shape trace); no evaluator code change
-    was needed for this.
+    ``evidence.requirements`` is keyed by the committed manifest's own
+    NAMESPACED top-level key (``NN::FR-XX.YY``, the same key
+    ``manifest["requirements"]`` itself uses) — NOT by a node's bare
+    ``id`` field (``FR-XX.YY``). ``evidence.requirements.get(manifest_key)``
+    REPLACES — never merges with — the committed manifest node's own
+    ``tests``/``coverage`` before ``evaluate_fr`` ever sees them: once CI
+    evidence is being consulted at all, the committed file's own claims
+    about those two fields are never read again. An FR absent from
+    ``evidence.requirements`` (including the whole-run case,
+    ``evidence.status == "unavailable"``, where it is always empty)
+    evaluates against ``{}``/``{}`` — ``evaluate_fr``'s existing branches
+    already treat that identically to "no evidence yet" (see the design
+    doc's realistic-shape trace); no evaluator code change was needed for
+    this. (Round 3 post-push fix: an earlier version of this function
+    looked up by the bare ``fr_id`` instead, which could never match a key
+    keyed the namespaced way — silently forcing every decision through the
+    "no evidence" branch. See ``ci_execution_evidence.ExecutionEvidence``'s
+    own docstring for the producer side of this contract.)
 
     Reads each referenced ``spec.md`` ONCE (grouped by ``spec_path``) to
     re-derive ``required_layers_source`` LIVE rather than trusting the
@@ -250,7 +258,7 @@ def plan_promotions(
             )
 
     decisions = []
-    for node in active.values():
+    for manifest_key, node in active.items():
         fr_id = node["id"]
         eval_node = dict(node)
         if live_explicit.get(fr_id):
@@ -270,7 +278,19 @@ def plan_promotions(
         # committed file irrelevant to the predicate, not merely harder to
         # abuse. `ci_node` is `None` for any FR CI has not (yet) confirmed;
         # `{} or {}` normalises both "absent" and an explicit `{}` the same.
-        ci_node = ci_by_fr.get(fr_id)
+        #
+        # KEYED BY THE MANIFEST KEY (`NN::FR-XX.YY`), NOT `node["id"]` (round
+        # 3 post-push fix, code-reviewer HIGH + independently reconfirmed):
+        # `evidence.requirements` is built from `committed_manifest["requirements"].keys()`
+        # (`ci_execution_evidence.resolve_execution_evidence`), which are the
+        # manifest's own namespaced top-level keys -- `node["id"]` is only the
+        # bare display id stored INSIDE each node. Looking this up by `fr_id`
+        # (bare) against a dict keyed by the namespaced form could never match
+        # for any FR, silently forcing every promotion decision through the
+        # `{}`/`{}` "no evidence" branch regardless of what CI actually
+        # confirmed -- indistinguishable from the honest `unavailable` state,
+        # which is exactly why three earlier review rounds missed it.
+        ci_node = ci_by_fr.get(manifest_key)
         eval_node["coverage"] = (ci_node or {}).get("coverage") or {}
         eval_node["tests"] = (ci_node or {}).get("tests") or {}
         ledger_entry = latest_decision(ledger, fr_id)

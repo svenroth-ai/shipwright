@@ -133,7 +133,15 @@ class ExecutionEvidence:
     status: str  # "confirmed" | "unavailable" | "error"
     detail: str
     run_id: int | None = None
-    requirements: dict[str, dict] | None = None  # req_id -> {"tests": ..., "coverage": ...}
+    # Keyed by the committed manifest's own NAMESPACED top-level key
+    # (`NN::FR-XX.YY`, i.e. `committed_manifest["requirements"]`'s own keys)
+    # -- NOT by a requirement node's bare `id` field (`FR-XX.YY`). A
+    # consumer must look this up by the manifest key it iterated to get the
+    # node, never by `node["id"]` (round-3 post-push fix: an earlier
+    # `promote_required_layers.plan_promotions` did exactly that mismatch,
+    # so no lookup ever matched and every FR silently evaluated as "no CI
+    # evidence" regardless of what CI actually confirmed).
+    requirements: dict[str, dict] | None = None  # manifest_key -> {"tests": ..., "coverage": ...}
 
 
 def _download_and_parse_artifact(
@@ -326,9 +334,24 @@ def resolve_execution_evidence(
             "artifact mismatch",
             run_id, None,
         )
+
+    # Validated BEFORE `structural_diff` (round-3 post-push fix, code-reviewer
+    # medium): `_structural_view` unconditionally calls
+    # `data["requirements"].items()` -- a malformed top-level `requirements`
+    # (e.g. a list, from a corrupted/adversarial upload) raised an uncaught
+    # `AttributeError` here when this guard ran only AFTER the call below,
+    # breaking this function's own documented three-outcome
+    # (confirmed/unavailable/error) contract. `AttributeError` is also added
+    # to the caught tuple below as belt-and-braces, since a malformed
+    # per-requirement NODE (not the top-level dict) can raise the same way
+    # one level deeper, inside `_structural_view`'s per-node `.items()`.
+    raw_requirements = artifact.get("requirements")
+    if not isinstance(raw_requirements, dict):
+        return ExecutionEvidence("error", "downloaded artifact's 'requirements' is not an object", run_id, None)
+
     try:
         diff = structural_diff(committed_manifest, artifact)
-    except (KeyError, TypeError) as exc:
+    except (KeyError, TypeError, AttributeError) as exc:
         return ExecutionEvidence("error", f"downloaded artifact has an unexpected shape: {exc}", run_id, None)
     if diff:
         return ExecutionEvidence(
@@ -338,9 +361,6 @@ def resolve_execution_evidence(
             run_id, None,
         )
 
-    raw_requirements = artifact.get("requirements")
-    if not isinstance(raw_requirements, dict):
-        return ExecutionEvidence("error", "downloaded artifact's 'requirements' is not an object", run_id, None)
     expected_ids = (committed_manifest.get("requirements") or {}).keys()
     shape_error = _execution_shape_error(raw_requirements, expected_ids)
     if shape_error is not None:

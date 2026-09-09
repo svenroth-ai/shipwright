@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
-  "date": "2026-09-09T12:16:21.356365Z",
+  "date": "2026-09-09T13:26:23.254807Z",
   "event_at": "2026-09-09T12:15:21.694076+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -87,6 +87,22 @@
         "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_dry_run_with_a_corrupted_ledger_is_a_clean_operational_failure_not_a_traceback, ::test_dry_run_with_a_spec_path_escaping_the_project_root_is_a_clean_operational_failure PASSED"
       },
       {
+        "behavior": "round-4 post-push code-reviewer fix (HIGH): plan_promotions looks up CI-confirmed evidence by the committed manifest's own NAMESPACED key (NN::FR-XX.YY), not a node's bare id -- CI evidence that genuinely disagrees with a stale/rosy committed claim, in EITHER direction (CI greener than committed, and CI weaker than committed), is what actually drives the promotion decision",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_ci_confirmed_evidence_overrides_a_greener_committed_claim, ::test_ci_confirmed_evidence_overrides_a_committed_claim_that_was_too_optimistic PASSED -- both independently verified RED against the pre-fix bare-id lookup before being confirmed GREEN against the fix"
+      },
+      {
+        "behavior": "round-4 post-push code-reviewer fix (HIGH), end-to-end composition: the REAL resolve_execution_evidence (mocking only ITS OWN gh/GitHub dependencies) composed with the REAL plan_promotions produces an actual promotion -- the seam neither side's own mocked tests exercised before this fix",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_end_to_end_seam_between_the_real_resolver_and_plan_promotions PASSED -- verified RED against the pre-fix lookup before being confirmed GREEN",
+        "category": "integration"
+      },
+      {
+        "behavior": "round-4 post-push code-reviewer fix (medium): a malformed top-level artifact requirements field (e.g. a list, from a corrupted/adversarial upload) resolves a clean error, never an uncaught AttributeError deep inside structural_diff",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ci_execution_evidence.py::test_error_when_top_level_requirements_is_not_an_object PASSED -- verified RED (real AttributeError traceback reproduced) against the pre-fix guard ordering before being confirmed GREEN"
+      },
+      {
         "behavior": "the real GitHub Actions artifact-download-by-id mechanism (subprocess stdout=fh + zipfile extraction) matches production against a real artifact from this repo's own CI history -- empirical, non-mocked confidence-calibration probe, two consecutive no-finding runs, asymptote reached",
         "disposition": "tested",
         "evidence": "Step 3.8 Confidence Calibration probes (design doc `## Confidence Calibration`) against gh api repos/svenroth-ai/shipwright/actions/artifacts/10090708144/zip, cross-checked by shared/tests/test_ci_execution_evidence.py::test_download_extracts_and_parses_the_real_zip, ::test_download_reports_a_zip_missing_the_expected_file, ::test_download_reports_a_corrupt_zip (real zipfile construction, no mocked zip internals) ALL PASSED",
@@ -100,8 +116,8 @@
       }
     ],
     "counts": {
-      "testable": 17,
-      "tested": 17,
+      "testable": 19,
+      "tested": 19,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -112,7 +128,7 @@
   },
   "surface_verification": {
     "surface": "cli",
-    "tests_run": 156,
+    "tests_run": 157,
     "exit_code": 0,
     "justification": "CLI/library-only change: ci_execution_evidence.py + promote_required_layers.py + ci_execution_evidence_check.py add a gh-API-backed execution-tier evidence resolver, a per-FR promotion CLI, and a read-only diagnostic CLI -- no web UI, API server, or SSE/WS surface to drive. The surface run above is the CLI-facing pytest suite for the new/changed shared/tests modules; the canonical F0 run (all 18 monorepo test roots, this run-id, GREEN) is the broader unit/integration evidence."
   },

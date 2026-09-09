@@ -12,6 +12,25 @@ artifact download, the three-outcome contract) is covered directly by
 ``shared/tests/test_ci_execution_evidence.py``; this file only proves
 ``promote_required_layers.py``'s OWN orchestration around whatever evidence
 it is given.
+
+**Round-3 post-push addition — the composition seam.** Every test above
+monkeypatches ``mod.resolve_execution_evidence`` directly, and
+``test_ci_execution_evidence.py`` separately mocks the REAL resolver's own
+dependencies (``_gh_api``, ``_download_and_parse_artifact``) — so no test in
+either file ever composed the real resolver's actual return value with the
+real ``plan_promotions`` consumer. That composition gap is exactly what hid
+a real production defect for three review rounds: ``plan_promotions`` looked
+up CI evidence by a requirement node's bare ``id`` (``"FR-01.01"``) against a
+dict the real resolver keys by the manifest's own namespaced top-level key
+(``"01::FR-01.01"``) — a lookup that could never match, silently forcing
+every FR through the "no evidence" branch regardless of what CI actually
+confirmed. ``test_end_to_end_seam_between_the_real_resolver_and_plan_promotions``
+below composes the two for real (mocking only the resolver's OWN external
+dependencies) specifically to close that gap; see also the fixed
+``_mock_evidence_from`` (now keyed the real namespaced way, not the bare
+``id`` both sides previously agreed on) and
+``test_ci_confirmed_evidence_overrides_a_greener_committed_claim`` /
+its mirror, both of which would have failed red under the pre-fix lookup.
 """
 
 from __future__ import annotations
@@ -88,10 +107,23 @@ def _mock_evidence_from(monkeypatch, requirements: dict, *, run_id: int = 999, s
     directly from ``requirements``'s own ``tests``/``coverage`` — i.e. "CI
     confirms exactly what this test says is currently true," matching the
     pre-restart contract's behavior for every test that isn't specifically
-    exercising evidence-unavailable/error paths."""
+    exercising evidence-unavailable/error paths.
+
+    Keyed by the MANIFEST key (``"01::FR-01.01"``, the real
+    ``ci_execution_evidence.ExecutionEvidence.requirements`` contract —
+    ``committed_manifest["requirements"]``'s own top-level keys), NOT by
+    ``node["id"]`` (the node's bare display id). Round-3 post-push fix:
+    this fixture previously keyed by ``node["id"]``, which matched an
+    equally-wrong `plan_promotions` lookup by `fr_id` — the two wrongs
+    canceled out and hid a real production defect (the lookup could never
+    match against the REAL resolver's namespaced keys) from every test in
+    this file for three review rounds. See
+    ``test_end_to_end_seam_between_the_real_resolver_and_plan_promotions``
+    below for the regression pin that composes the real resolver instead of
+    this mock."""
     ci_map = {
-        node["id"]: {"tests": node.get("tests") or {}, "coverage": node.get("coverage") or {}}
-        for node in requirements.values()
+        manifest_key: {"tests": node.get("tests") or {}, "coverage": node.get("coverage") or {}}
+        for manifest_key, node in requirements.items()
     }
     evidence = ExecutionEvidence(status, "test", run_id, ci_map if status == "confirmed" else None)
     monkeypatch.setattr(mod, "resolve_execution_evidence", lambda *a, **k: evidence)
@@ -560,6 +592,119 @@ def test_forgery_hand_edited_coverage_with_no_ci_confirmation_never_promotes(tmp
     spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
     assert "(inferred)" in spec  # never promoted
     assert not ledger_path(project).exists()
+
+
+def test_ci_confirmed_evidence_overrides_a_greener_committed_claim(tmp_path, monkeypatch):
+    # CI evidence CONTRADICTS the committed manifest in the GREENER
+    # direction: the committed file claims MISSING coverage / no tests (it
+    # would never promote on its own), but CI actually confirmed real
+    # passing coverage for this exact commit. The decision must follow CI,
+    # not the committed file's own conservative/stale claim -- proving
+    # REPLACE-never-merge actually READS the CI map, not merely ignores the
+    # committed claim. Round-3 post-push regression pin (code-reviewer
+    # HIGH): under the key-mismatch bug this fixture exercises
+    # (`ci_by_fr.get(fr_id)` looked up against a dict keyed by the manifest
+    # key), `ci_node` was always `None` regardless of what CI actually
+    # confirmed, so this promotion would never have happened -- this test
+    # is red under that lookup and green only under the fix.
+    requirements = {
+        "01::FR-01.01": _node("FR-01.01", coverage={"unit": "MISSING"}, tests={"unit": []}),
+    }
+    row = "| FR-01.01 | Adopted | x | Must | y. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    ci_map = {
+        "01::FR-01.01": {"coverage": {"unit": "ok"}, "tests": {"unit": [_link(layer="unit")]}},
+    }
+    monkeypatch.setattr(
+        mod, "resolve_execution_evidence",
+        lambda *a, **k: ExecutionEvidence("confirmed", "test", 999, ci_map),
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-09-p3-5-test"])
+    assert rc == 0
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "| unit |" in spec
+    assert "(inferred)" not in spec
+    ledger = load_ledger(ledger_path(project))
+    assert ledger["decisions"]["FR-01.01"][-1]["action"] == "promoted"
+
+
+def test_ci_confirmed_evidence_overrides_a_committed_claim_that_was_too_optimistic(tmp_path, monkeypatch):
+    # Mirror of the test above: the committed file claims GREEN coverage
+    # ('ok'), but CI actually confirmed MISSING coverage / no tests for this
+    # FR. Must skip, matching CI's weaker state -- never promote on the
+    # committed file's own rosier, unverified claim. This is AC-R2's forgery
+    # test in the CONFIRMED-but-disagreeing shape (CI ran and disagrees),
+    # distinct from the `unavailable` shape
+    # `test_forgery_hand_edited_coverage_with_no_ci_confirmation_never_promotes`
+    # already covers (CI never ran at all).
+    requirements = {
+        "01::FR-01.01": _node("FR-01.01", coverage={"unit": "ok"}, tests={"unit": [_link(layer="unit")]}),
+    }
+    row = "| FR-01.01 | Adopted | x | Must | y. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    ci_map = {
+        "01::FR-01.01": {"coverage": {"unit": "MISSING"}, "tests": {"unit": []}},
+    }
+    monkeypatch.setattr(
+        mod, "resolve_execution_evidence",
+        lambda *a, **k: ExecutionEvidence("confirmed", "test", 999, ci_map),
+    )
+
+    rc = mod.main(["--project-root", str(project)])
+    assert rc == 0
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted on the committed file's own optimistic claim
+    assert not ledger_path(project).exists()
+
+
+def test_end_to_end_seam_between_the_real_resolver_and_plan_promotions(tmp_path, monkeypatch):
+    """Composes the REAL ``resolve_execution_evidence`` (mocking only ITS
+    OWN external dependencies -- ``resolve_ci_verification``, ``_gh_api``,
+    ``_download_and_parse_artifact``, ``github_api.owner_repo`` -- never
+    ``mod.resolve_execution_evidence`` itself) with the REAL
+    ``plan_promotions``, asserting a real promotion happens end-to-end. See
+    the module docstring's "Round-3 post-push addition" note: this is the
+    test that should have existed from round 1 and would have caught the
+    key-mismatch defect immediately -- every other test in this file (and in
+    ``test_ci_execution_evidence.py``) mocks one side or the other of this
+    exact seam."""
+    cee = sys.modules["ci_execution_evidence"]
+    from ci_provenance import CIVerification  # noqa: PLC0415 - same bare-name module `cee` itself imports
+
+    requirements = {
+        "01::FR-01.01": _node("FR-01.01", coverage={"unit": "MISSING"}, tests={"unit": []}),
+    }
+    row = "| FR-01.01 | Adopted | x | Must | y. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+
+    committed_manifest = json.loads((project / _MANIFEST_RELPATH).read_text(encoding="utf-8"))
+    head_sha = _git(project, "rev-parse", "HEAD").strip()
+    artifact = json.loads(json.dumps(committed_manifest))  # deep copy via round-trip
+    artifact["source_commit"] = head_sha
+    artifact["requirements"]["01::FR-01.01"]["coverage"] = {"unit": "ok"}
+    artifact["requirements"]["01::FR-01.01"]["tests"] = {"unit": [_link(layer="unit")]}
+
+    monkeypatch.setattr(cee, "resolve_ci_verification", lambda *a, **k: CIVerification("verified", "confirmed", 999))
+    monkeypatch.setattr(
+        cee, "_gh_api",
+        lambda path, *, cwd: {"artifacts": [
+            {"name": cee.EXECUTION_EVIDENCE_ARTIFACT_NAME, "expired": False,
+             "id": 1, "created_at": "2026-09-09T10:00:00Z"},
+        ]},
+    )
+    monkeypatch.setattr(cee, "_download_and_parse_artifact", lambda artifact_id, *, owner, repo, cwd: (artifact, None))
+    monkeypatch.setattr(cee.github_api, "owner_repo", lambda project_root: "acme/foo")
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-09-p3-5-seam-test"])
+    assert rc == 0
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "| unit |" in spec
+    assert "(inferred)" not in spec
+    ledger = load_ledger(ledger_path(project))
+    entry = ledger["decisions"]["FR-01.01"][-1]
+    assert entry["action"] == "promoted"
+    assert entry["ci_run_id"] == 999
 
 
 def test_confirmed_evidence_not_containing_this_fr_is_a_decided_skip_not_a_crash(tmp_path, monkeypatch):

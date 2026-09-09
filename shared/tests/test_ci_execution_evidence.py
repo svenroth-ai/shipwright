@@ -37,8 +37,15 @@ _ARTIFACT_NAME = m.EXECUTION_EVIDENCE_ARTIFACT_NAME
 
 
 def _committed_manifest(**req_overrides) -> dict:
+    # Keyed the REAL, namespaced way (`NN::FR-XX.YY`) -- not the bare `id`
+    # field a node carries internally. Round-3 post-push fix: an earlier
+    # version of this fixture used "FR-01.01" as BOTH the dict key and the
+    # node's own `id`, so it could never exercise the key/id mismatch that
+    # hid a real consumer-side bug (`promote_required_layers.plan_promotions`
+    # looking up by `node["id"]` against a dict actually keyed the namespaced
+    # way) for three review rounds.
     reqs = {
-        "FR-01.01": {
+        "01::FR-01.01": {
             "id": "FR-01.01", "spec_path": "Spec/design/01-adopted/spec.md", "title": "t",
             "priority": "must", "status": "active", "required_layers": ["unit"],
             "required_layers_source": "inferred_legacy",
@@ -149,8 +156,8 @@ def test_download_is_called_with_the_selected_artifacts_own_id(monkeypatch, tmp_
     # resolution step that could silently disagree.
     committed = _committed_manifest()
     artifact = _artifact_from(committed)
-    artifact["requirements"]["FR-01.01"]["coverage"] = {"unit": "ok"}
-    artifact["requirements"]["FR-01.01"]["tests"] = {"unit": [{"id": "t1", "status": "enabled", "executed": "pass"}]}
+    artifact["requirements"]["01::FR-01.01"]["coverage"] = {"unit": "ok"}
+    artifact["requirements"]["01::FR-01.01"]["tests"] = {"unit": [{"id": "t1", "status": "enabled", "executed": "pass"}]}
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
     monkeypatch.setattr(
         m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed(artifact_id=987)]},
@@ -170,15 +177,15 @@ def test_download_is_called_with_the_selected_artifacts_own_id(monkeypatch, tmp_
 def test_confirmed_when_everything_lines_up(monkeypatch, tmp_path):
     committed = _committed_manifest()
     artifact = _artifact_from(committed)
-    artifact["requirements"]["FR-01.01"]["coverage"] = {"unit": "ok"}
-    artifact["requirements"]["FR-01.01"]["tests"] = {"unit": [{"id": "t1", "status": "enabled", "executed": "pass"}]}
+    artifact["requirements"]["01::FR-01.01"]["coverage"] = {"unit": "ok"}
+    artifact["requirements"]["01::FR-01.01"]["tests"] = {"unit": [{"id": "t1", "status": "enabled", "executed": "pass"}]}
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
     monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
     monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
     result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
     assert result.status == "confirmed"
     assert result.run_id == _RUN_ID
-    assert result.requirements["FR-01.01"]["coverage"] == {"unit": "ok"}
+    assert result.requirements["01::FR-01.01"]["coverage"] == {"unit": "ok"}
 
 
 def test_error_when_source_commit_mismatches(monkeypatch, tmp_path):
@@ -200,13 +207,32 @@ def test_error_when_structural_shape_disagrees(monkeypatch, tmp_path):
     committed manifest -- must never be trusted either."""
     committed = _committed_manifest()
     artifact = _artifact_from(committed)
-    artifact["requirements"]["FR-01.99-injected"] = dict(artifact["requirements"]["FR-01.01"])
+    artifact["requirements"]["FR-01.99-injected"] = dict(artifact["requirements"]["01::FR-01.01"])
     artifact["requirements"]["FR-01.99-injected"]["id"] = "FR-01.99"
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
     monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
     monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
     result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
     assert result.status == "error"
+
+
+def test_error_when_top_level_requirements_is_not_an_object(monkeypatch, tmp_path):
+    # Round-3 post-push fix (code-reviewer medium): the `isinstance(...,
+    # dict)` guard on the artifact's top-level `requirements` used to run
+    # AFTER `structural_diff`, which unconditionally calls
+    # `data["requirements"].items()` -- a malformed/adversarial or corrupted
+    # upload (`ci.yml`'s `continue-on-error: true` on this step makes this
+    # possible) with `requirements` as a list raised an uncaught
+    # `AttributeError` here instead of the documented clean `error` outcome.
+    committed = _committed_manifest()
+    artifact = _artifact_from(committed)
+    artifact["requirements"] = []  # malformed: list, not an object
+    monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
+    monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
+    monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
+    result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
+    assert result.status == "error"
+    assert "requirements" in result.detail
 
 
 def test_multiple_matching_artifacts_select_the_newest_id_by_created_at(monkeypatch, tmp_path):
@@ -259,7 +285,7 @@ def test_error_when_execution_tier_coverage_is_not_an_object(monkeypatch, tmp_pa
     # inside evaluate_fr.
     committed = _committed_manifest()
     artifact = _artifact_from(committed)
-    artifact["requirements"]["FR-01.01"]["coverage"] = ["not", "an", "object"]
+    artifact["requirements"]["01::FR-01.01"]["coverage"] = ["not", "an", "object"]
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
     monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
     monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
@@ -271,7 +297,7 @@ def test_error_when_execution_tier_coverage_is_not_an_object(monkeypatch, tmp_pa
 def test_error_when_execution_tier_tests_layer_is_not_a_list(monkeypatch, tmp_path):
     committed = _committed_manifest()
     artifact = _artifact_from(committed)
-    artifact["requirements"]["FR-01.01"]["tests"] = {"unit": "not-a-list"}
+    artifact["requirements"]["01::FR-01.01"]["tests"] = {"unit": "not-a-list"}
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
     monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
     monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
@@ -287,7 +313,7 @@ def test_error_when_execution_tier_coverage_key_is_deleted_not_merely_falsy(monk
     # normalized to `{}` and treated as a genuine, decided "no evidence".
     committed = _committed_manifest()
     artifact = _artifact_from(committed)
-    del artifact["requirements"]["FR-01.01"]["coverage"]
+    del artifact["requirements"]["01::FR-01.01"]["coverage"]
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
     monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
     monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
@@ -303,7 +329,7 @@ def test_local_committed_manifest_forgery_never_consulted(monkeypatch, tmp_path)
     disagreeing means `error`, not a silent adoption of the tampered local
     claim."""
     committed = _committed_manifest()
-    committed["requirements"]["FR-01.01"]["coverage"] = {"unit": "ok"}  # hand-edited, unconfirmed
+    committed["requirements"]["01::FR-01.01"]["coverage"] = {"unit": "ok"}  # hand-edited, unconfirmed
     monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: CIVerification("no_record", "d", None))
     result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
     assert result.status == "unavailable"

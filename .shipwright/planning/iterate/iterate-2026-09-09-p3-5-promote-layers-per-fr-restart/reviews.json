@@ -123,15 +123,143 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/promote_required_layers.py",
+          "line": 273,
+          "finding": "Key-namespace mismatch makes the whole CI-evidence path dead in production. resolve_execution_evidence builds ExecutionEvidence.requirements keyed by the COMMITTED MANIFEST KEY (expected_ids = committed_manifest['requirements'].keys(), ci_execution_evidence.py:344/351), which in every real manifest is the namespaced \"01::FR-01.01\" form (verified: .shipwright/compliance/test-traceability.json:8, and _test_links_requirements.py:8 states the key is <group digits>::<FR id> by construction). plan_promotions then looks that map up by the BARE display id (fr_id = node['id'] -> ci_by_fr.get(fr_id)). The lookup can never hit, so eval_node['coverage']/['tests'] are always {} and every FR resolves to SKIP_NO_EVIDENCE_YET even when evidence.status == 'confirmed'. Fails SILENTLY as exit 0 / 'skipped' -- indistinguishable from the honest 'unavailable' steady state, and camouflaged by the spec's own 'zero promotions today' operating-context prediction.",
+          "suggestion": "Key the lookup by the manifest key: iterate for manifest_key, node in active.items(): and use ci_by_fr.get(manifest_key). Tighten ExecutionEvidence.requirements's comment to 'manifest key (NN::FR-XX.YY) -> ...'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": 92,
+          "finding": "The orchestration tests validate a mock whose contract contradicts the real producer. _mock_evidence_from builds ci_map = {node['id']: ...} (display id), while the real resolve_execution_evidence emits manifest keys; test_ci_execution_evidence.py's _committed_manifest fixture likewise uses \"FR-01.01\" as both key and id. No test in the diff composes the real resolver's output shape with plan_promotions.",
+          "suggestion": "Change both fixtures to realistic namespaced keys (01::FR-01.01 with id: FR-01.01). Add one seam test that calls the REAL resolve_execution_evidence (faking only _gh_api and _download_and_parse_artifact) and feeds its returned ExecutionEvidence straight into plan_promotions, asserting a promotion actually happens.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 329,
+          "finding": "A malformed downloaded artifact can escape as a raw traceback instead of error. structural_diff -> _structural_view does data['requirements'].items() and node.items(); an artifact with \"requirements\": [] or a non-dict requirement node raises AttributeError, caught only as (KeyError, TypeError). The isinstance(raw_requirements, dict) guard runs AFTER this call.",
+          "suggestion": "Move the requirements-is-dict check (and a per-node dict check) above the structural_diff call; add AttributeError to the except tuple as belt-and-braces.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": 1,
+          "finding": "Twelve new .py files cross the 300-LOC source limit with no bloat-baseline entry in the diff.",
+          "suggestion": "Refresh the baseline as the last finalization step, or trim review-round provenance comments (next finding) to drop several files back under the ceiling for free.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 1,
+          "finding": "Large volume of review-round provenance narration inside source docstrings/comments (reviewer identity, round number, description of superseded implementations) rather than WHY. Est ~100-130 LOC removable across ci_execution_evidence.py, promote_required_layers.py, layer_promotion_ledger.py without touching any assertion.",
+          "suggestion": "Keep one sentence of WHY per non-obvious decision; move review-round history to the ADR/decision-drop.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": 1,
+          "finding": "Missing the sharpest 'REPLACE, never merge' test -- no test where CI evidence is CONFIRMED and CONTRADICTS the committed manifest.",
+          "suggestion": "Add test_ci_confirmed_evidence_overrides_a_greener_committed_claim (committed ok / CI MISSING -> skip) and its mirror (committed MISSING / CI ok -> promotes).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 101,
+          "finding": "Imports ci_provenance's private _gh_api despite an adjacent comment justifying the sibling import for the module's PUBLIC structural_diff only.",
+          "suggestion": "Promote _gh_api to public, or state why the private is deliberately shared.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 321,
+          "finding": "Case-normalisation asymmetry: resolve_ci_verification lowercases commit, resolve_execution_evidence compares source_commit against the caller's original-case string.",
+          "suggestion": "Normalise once at entry (commit.lower()).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 279,
+          "finding": "Fail-open on an unrecognised verification status: anything other than no_record/not_verified/error falls through to the download path as if verified.",
+          "suggestion": "Invert the last branch to require status == 'verified' explicitly.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/ci_execution_evidence_check.py",
+          "line": 47,
+          "finding": "The manifest relpath literal is duplicated across 4 places (this file, promote_required_layers.py, record_layer_promotion_decision.py, ci.yml, plus churn_merge.py's existing TEST_TRACEABILITY constant).",
+          "suggestion": "Import one shared constant for the relpath.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_layer_promotion_decision.py",
+          "line": 326,
+          "finding": "Asymmetric error handling on the ledger write: catches only ConcurrentLedgerEditError, unlike the automated tool's matching call site which also catches OSError.",
+          "suggestion": "Add except OSError handling matching the automated tool's shape.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/ci_execution_evidence_check.py",
+          "line": 57,
+          "finding": "--commit interpolated into git rev-parse with no --end-of-options separator; a value beginning with '-' is parsed as an option. Low impact (read-only, fails clean) but new untrusted-input subprocess call.",
+          "suggestion": "Insert --end-of-options before the revision argument.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/layer_promotion_ledger.py",
+          "line": 295,
+          "finding": "append_decision's evidence_fingerprint parameter shadows the module-level evidence_fingerprint() function.",
+          "suggestion": "Rename the parameter.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": 599,
+          "finding": "Two clarity nits: a generator-throw trick used to raise from a lambda; an assertion that exists only to keep a variable referenced.",
+          "suggestion": "Use a plain def for the raising helper; drop the unused-variable-placating assertion.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T11:18:37.181874+00:00",
-      "disposition": "Sub-iterate runner has no Agent/Task tool (cannot spawn spec-reviewer/code-reviewer/doubt-reviewer); orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge and promotes this row with --force.",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T12:40:22.593115+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -272,15 +400,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-09T11:18:37.060966+00:00",
-      "disposition": "Sub-iterate runner has no Agent/Task tool (cannot spawn spec-reviewer/code-reviewer/doubt-reviewer); orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge and promotes this row with --force.",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T12:31:21.312940+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",

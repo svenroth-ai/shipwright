@@ -747,3 +747,28 @@ inherently unreproducible in a probe); a >100-artifact run exhausting pagination
 deferred low-severity limitation, finding #8 above, not a calibration gap); GitHub API rate-limit
 exhaustion during the artifacts-list query (ambient `gh` trust assumption already documented,
 same as `ci_provenance.py`).
+
+## Post-Push Internal Cascade Findings (Stage-1/2 spec+code-reviewer, round 4)
+
+Run against the pushed commit by the orchestrator's mandatory internal review cascade
+(`campaign-mode.md` 3f-bis) — Stage-1 (`spec-reviewer`) PASSed cleanly, reconfirming both round-3
+fixes independently. Stage-2 (`code-reviewer`) found one genuine, previously-unseen HIGH defect
+that had escaped three prior review rounds (external plan review, external code review, self
+review), plus one related medium finding. Both fixed same-round; disposed below.
+
+| # | Source | Severity | Finding (one line) | Disposition |
+|---|---|---|---|---|
+| 1 | code-reviewer | **high** | `promote_required_layers.plan_promotions` looked up CI evidence by a requirement node's bare `id` (`"FR-01.01"`) — `ci_by_fr.get(fr_id)` — but `ci_execution_evidence.resolve_execution_evidence` keys its returned `requirements` dict by the committed manifest's own NAMESPACED top-level key (`"01::FR-01.01"`, confirmed directly against the real `.shipwright/compliance/test-traceability.json`). The lookup could never match for ANY FR, silently forcing every promotion decision through the `{}`/`{}` "no evidence" branch regardless of what CI actually confirmed — indistinguishable from the honest `unavailable` steady state, and camouflaged by this doc's own "zero promotions today" operating-context prediction. The entire restart's stated purpose (promoting FRs on confirmed CI evidence) could not have worked in production. | **accepted-and-fixed.** `plan_promotions` now iterates `active.items()` and looks up `ci_by_fr.get(manifest_key)` — the SAME key the resolver used to build the map. Root-caused to a composition gap: `_mock_evidence_from` (this file's own test helper) built its CI map keyed by `node["id"]` (bare), and `test_ci_execution_evidence.py`'s `_committed_manifest` fixture used `"FR-01.01"` as BOTH the dict key and the id — an unrealistic shape that made the two WRONG assumptions mutually consistent, so no test ever composed the real resolver's actual output with the real consumer. Both fixtures corrected to use realistic namespaced keys; a new end-to-end seam test (`test_end_to_end_seam_between_the_real_resolver_and_plan_promotions`) composes the REAL resolver with the REAL `plan_promotions` and asserts an actual promotion; two new tests (`test_ci_confirmed_evidence_overrides_a_greener_committed_claim` and its mirror) directly exercise CI evidence disagreeing with the committed manifest in both directions. All three new tests were verified RED against the pre-fix lookup (reverted locally, re-ran, confirmed `reason_code: "no_evidence_yet"`, `fr_confirmed: false`) before being confirmed GREEN against the fix — not merely asserted to work. |
+| 2 | code-reviewer | medium | `resolve_execution_evidence`'s `isinstance(raw_requirements, dict)` guard ran AFTER the `structural_diff(committed_manifest, artifact)` call, not before — `_structural_view` unconditionally calls `data["requirements"].items()`, so a malformed top-level `requirements` (e.g. a list, from a corrupted/adversarial upload that `continue-on-error: true` makes possible) raised an uncaught `AttributeError` instead of the documented clean `error` outcome, breaking the module's own three-outcome contract. | **accepted-and-fixed.** The `isinstance` guard now runs BEFORE `structural_diff`; `AttributeError` also added to the caught exception tuple around that call as belt-and-braces (a malformed per-requirement NODE, not just the top-level dict, can raise the same way one level deeper). New test `test_error_when_top_level_requirements_is_not_an_object`, verified RED (real `AttributeError` traceback reproduced) against the pre-fix ordering before being confirmed GREEN against the fix. |
+
+Both fixes are narrow and surgical (no design re-opening, per the orchestrator's explicit
+instruction) — finding #1's fix is a two-line lookup-key correction plus fixture/test realism
+work; finding #2's fix is a call-order swap plus one added exception type. The `ExecutionEvidence.
+requirements` and `plan_promotions` docstrings were both tightened to name the manifest key
+explicitly (`NN::FR-XX.YY`), replacing the previously ambiguous `req_id ->` phrasing. Low-severity
+findings from this same review pass (readability/duplication/case-normalization/bloat-baseline)
+were explicitly deferred per the orchestrator's instruction, not silently dropped — same
+disposition class as the round-3 low findings already in Known Limitations above. The
+"ledger-instead-of-`diff_risk_recheck`-reuse" HIGH (spec category) finding is being adjudicated
+directly by the orchestrator's own doubt-reviewer against the round-1 rebase precedent, not sent
+back to this runner — see the orchestrator's own message for that disposition.
