@@ -152,6 +152,7 @@ def upsert_term(
 
     existed = context_path.exists()
     eol = "\n"
+    content = None
     if existed:
         # newline="" (via manual decode, not a text-mode open()) preserves
         # CRLF/LF; universal-newline translation is a TextIOWrapper feature,
@@ -228,8 +229,7 @@ def upsert_term(
             "duplicate"
         )
 
-    old_content = content if existed else None
-    if new_content != old_content:
+    if new_content != content:
         durable_atomic_write(context_path, new_content)
         write_status = status if status != "unchanged" else "rewritten"
     else:

@@ -200,3 +200,17 @@ drift-test assertion, empty-string `avoid` handling in the payload path,
 and `term_markup_count` still scanning bolded cross-references inside
 `Language` section definitions, plus the redundant `mkdir` line in
 `interview-protocol.md`'s payload-writing step.
+
+## CI post-merge fix round (PR #699) — eighth round
+
+Two NEW findings surfaced by CI on the post-merge commit (`087347aa0`, after
+the third `origin/main` merge into this branch) — neither present before,
+both real, neither review-cascade opinion:
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| CodeQL (`py/uninitialized-local-variable`-class query): `upsert_term`'s `old_content = content if existed else None` reads `content`, which is only assigned inside the `if existed:` branch above it — logically safe at runtime (the ternary only evaluates `content` when `existed` is `True`, by which point it was always assigned), but not provable by static analysis, and fragile to rely on the ternary as the only proof of safety | High (real, not a suppress-candidate) | accepted-and-fixed — initialize `content = None` unconditionally before the `if existed:` block, so the name is always bound; simplified the later read to `if new_content != content:` (the ternary was redundant once `content` is always `None` when `existed` is `False`) |
+| Diff-coverage gate: `_write_context_term_cli.py` at 17.4% and `write_context_term.py` at 70.9% on the PR's diff vs `origin/main` (needs ≥80%) | High (real, blocks merge) | accepted-and-fixed — root cause was every existing CLI test invoking the script via `subprocess.run([sys.executable, ...])`, a separate Python process this repo's coverage instrumentation never observes (no `COVERAGE_PROCESS_START`/`sitecustomize` hook configured). `main()` and every `_write_context_term_cli.py` function were therefore behaviorally tested but invisible to the gate. Added two new in-process test files — `shared/tests/test_write_context_term_direct.py` (bootstrap `sys.path` insertion + `main()`, covering every argv/exception branch: success, `PayloadError`, missing `--project-root`, missing `--context-path` parent, `ValueError` from `upsert_term`, `LockTimeout`) and `shared/tests/test_write_context_term_cli_direct.py` (`build_arg_parser`/`load_payload_file`/`resolve_fields` called directly, no subprocess) — that import the modules and call the functions in-process so coverage actually sees them execute. Verified locally with the CI-pinned toolchain (`uv run --with pytest --with pytest-mock --with pytest-cov ... --python 3.11`, `uvx diff-cover@10.3.0 ... --compare-branch=origin/main --fail-under=80`): `_write_context_term_cli.py` 100%, `write_context_term.py` 99% (only the untestable `if __name__ == "__main__": sys.exit(main())` guard line remains uncovered), overall diff coverage 96% |
+
+No review-cascade findings this round (narrow CI-fix, not a re-opened review
+round) — see F3a for the reusable learning on subprocess-invisible coverage.
