@@ -26,7 +26,8 @@ you run casually. The pure decisions live in :mod:`lib.pr_delivery` and
 
 Exit codes: 0 delivered · 2 checks failed · 3 closed unmerged · 4 pending timeout ·
 5 host error · 6 no merger can exist (arming impossible, self-merge not permitted) ·
-7 delivery refused (identity mismatch, re-verification red, or the merge failed).
+7 delivery refused (identity mismatch, re-verification red, or the merge failed) ·
+8 non-converging (:mod:`lib.deliver_pr_non_converging`; re-pushing is not the remedy).
 """
 
 from __future__ import annotations
@@ -58,6 +59,7 @@ from lib.pr_delivery import (  # noqa: E402
     EXIT_DELIVERED,
     EXIT_HOST_ERROR,
     EXIT_NO_MERGER,
+    EXIT_NON_CONVERGING,
     EXIT_PENDING,
     EXIT_REFUSED,
     STATUS_EXITS,
@@ -67,13 +69,15 @@ from lib.pr_delivery import (  # noqa: E402
     terminal_state_result,
     wrong_pr,
 )
+from lib.deliver_pr_non_converging import describe_non_converging, escalate_if_non_converging  # noqa: E402
 from lib.pr_self_merge import self_merge  # noqa: E402
 from lib.run_pointer_retirement import retire_run_pointer_best_effort  # noqa: E402
 from tools import watch_pr_delivery as wpd  # noqa: E402
 
 __all__ = [
     "EXIT_CHECKS_FAILED", "EXIT_CLOSED", "EXIT_DELIVERED", "EXIT_HOST_ERROR",
-    "EXIT_NO_MERGER", "EXIT_PENDING", "EXIT_REFUSED", "deliver", "summary",
+    "EXIT_NO_MERGER", "EXIT_NON_CONVERGING", "EXIT_PENDING", "EXIT_REFUSED",
+    "deliver", "summary",
 ]
 
 
@@ -102,6 +106,7 @@ def deliver(
     turns this on."""
     env = dict(os.environ if env is None else env)
     watch = watch or wpd.watch
+    host = host or Host.default(repo=repo)  # shared by _run_ladder and _body's escalation call
     # NOT wrapped here: `watch` also reaches self_merge()'s own internal retry
     # loop (rung 3) unchanged below — wrapping it at this level would record a
     # ci_wait span per internal poll AND another one for the whole self_merge()
@@ -112,11 +117,13 @@ def deliver(
     def _body() -> dict:
         """The ladder's own decisions — a closure so record_timing needs no
         second copy of this whole parameter list to wrap it conditionally."""
-        return _run_ladder(pr_url, project_root=project_root, run_id=run_id,
-                           head_branch=head_branch, base_branch=base_branch, repo=repo,
-                           env=env, timeout_seconds=timeout_seconds, poll_seconds=poll_seconds,
-                           arm=arm, host=host, watch=watch, verified_commit=verified_commit,
-                           now=now, record_timing=record_timing)
+        result = _run_ladder(pr_url, project_root=project_root, run_id=run_id,
+                             head_branch=head_branch, base_branch=base_branch, repo=repo,
+                             env=env, timeout_seconds=timeout_seconds, poll_seconds=poll_seconds,
+                             arm=arm, host=host, watch=watch, verified_commit=verified_commit,
+                             now=now, record_timing=record_timing)
+        return escalate_if_non_converging(result, pr_url=pr_url,
+                                          project_root=project_root, host=host)
 
     if not record_timing:
         return _body()
@@ -141,18 +148,18 @@ def _run_ladder(
     timeout_seconds: float,
     poll_seconds: float,
     arm: bool,
-    host: Host | None,
+    host: Host,
     watch,
     verified_commit: str,
     now,
     record_timing: bool,
 ) -> dict:
-    """The ladder's own decisions — unchanged by timing instrumentation."""
+    """The ladder's own decisions — unchanged by timing instrumentation.
+    ``host`` is always pre-resolved by the one caller, :func:`deliver`."""
     # ONE bundle, so no member can be half-faked. The six seams used to be six loose
     # parameters whose defaults were not consistent with each other: `capability` closed
     # over the MODULE-level `gh_json`, so faking `gh_json` alone still fired real
     # `gh api` calls at the operator's live GitHub (Stage 2).
-    host = host or Host.default(repo=repo)
     steps: list[str] = []
 
     # --- step 0: is this PR even ours? -----------------------------------------
@@ -283,6 +290,8 @@ def summary(result: dict) -> str:
     if status == "checks_failed":
         return ("NOT DELIVERED — a Required Check FAILED. Diagnose "
                 "(gh run view --log-failed <run>), FIX, re-push, then re-run delivery.")
+    if status == "non_converging":
+        return describe_non_converging(result)
     if status == "closed":
         return "NOT DELIVERED — PR was CLOSED unmerged."
     if status in ("refused", "host_error"):
