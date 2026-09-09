@@ -1,11 +1,15 @@
 """Tests for shared/scripts/tools/context_md_format.py — the continuation-
-line absorption fix (doubt-reviewer D3) and the public ``read_terms()`` API
-(doubt-reviewer D4), both from the P4.1 Stage-3 review round.
+line absorption fix (doubt-reviewer D3), the public ``read_terms()`` API
+(doubt-reviewer D4), and the duplicate-term scan's scope fix (P4.1 final
+review — the scan must not treat a legitimate bold cross-reference in
+Relationships/Flagged ambiguities as a hidden duplicate).
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+
+import pytest
 
 from tools.context_md_format import Term, parse_language_entries, read_terms
 from tools.write_context_term import upsert_term
@@ -16,9 +20,11 @@ def read(p: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Continuation-line absorption (D3) — shared/context-format.md §2's own
-# worked Cancellation example wraps across two lines with no blank
-# separator and no _Avoid_ line.
+# shared/context-format.md §2's own worked example, VERBATIM (bold
+# cross-references included) — a paraphrase without the bold markup would
+# silently avoid exercising the duplicate-term scan's scope (P4.1 final
+# review: upserting "Customer" against a paraphrased copy used to pass even
+# though it failed against the real doc).
 # ---------------------------------------------------------------------------
 
 _CONTEXT_FORMAT_MD_EXAMPLE = (
@@ -30,9 +36,11 @@ _CONTEXT_FORMAT_MD_EXAMPLE = (
     "**Cancellation** — voiding an Order before it ships. Partial cancellation\n"
     "(some line items) is distinct from full cancellation.\n\n"
     "## Relationships\n\n"
-    "- A Customer has many Orders; an Order belongs to exactly one Customer.\n\n"
+    "- A Customer has many Orders; an Order belongs to exactly one Customer.\n"
+    "- An Order has many line items; a Cancellation targets one or more line items.\n\n"
     "## Flagged ambiguities\n\n"
-    '- "account" resolved to mean Customer.\n'
+    '- "account" was used for both Customer and User — resolved 2026-07-23 to mean\n'
+    "  the paying **Customer**; the logged-in identity is a **User**.\n"
 )
 
 
@@ -68,6 +76,36 @@ def test_upserting_the_already_wrapped_cancellation_term_is_then_idempotent(tmp_
     result = upsert_term(ctx, term="Refund", definition="returning money for a cancelled order.")
     assert result["status"] == "unchanged"
     assert read(ctx) == before
+
+
+def test_preserves_relationships_and_flagged_ambiguities_content(tmp_path):
+    """A term written to Language must not disturb the bold cross-references
+    already living in Relationships/Flagged ambiguities."""
+    ctx = tmp_path / "CONTEXT.md"
+    ctx.write_text(_CONTEXT_FORMAT_MD_EXAMPLE, encoding="utf-8")
+    upsert_term(ctx, term="Refund", definition="returning money for a cancelled order.")
+    content = read(ctx)
+    assert "- A Customer has many Orders; an Order belongs to exactly one Customer." in content
+    assert "the paying **Customer**; the logged-in identity is a **User**." in content
+
+
+def test_upsert_new_term_whose_name_is_bold_in_flagged_ambiguities_succeeds(tmp_path):
+    """context-format.md §2's own worked example bolds "Customer" as a
+    cross-reference inside Flagged ambiguities ("the paying **Customer**").
+    Upserting a NEW "Customer" Language entry against that canonical
+    example must succeed — the duplicate-term scan must not treat a
+    legitimate cross-reference elsewhere in the document as a hidden
+    duplicate (regression for the scoping bug, P4.1 final review)."""
+    ctx = tmp_path / "CONTEXT.md"
+    ctx.write_text(_CONTEXT_FORMAT_MD_EXAMPLE, encoding="utf-8")
+
+    result = upsert_term(ctx, term="Customer", definition="the paying party on an Order.")
+    assert result["status"] == "appended"
+
+    content = read(ctx)
+    assert "**Customer** — the paying party on an Order." in content
+    # The Flagged-ambiguities cross-reference is untouched.
+    assert "the paying **Customer**; the logged-in identity is a **User**." in content
 
 
 def test_parse_language_entries_joins_a_continuation_line():
@@ -140,3 +178,27 @@ def test_read_terms_matching_is_exact_case_no_folding(tmp_path):
     upsert_term(ctx, term="order", definition="v2")
     terms = {t.term: t.definition for t in read_terms(ctx)}
     assert terms == {"Order": "v1", "order": "v2"}
+
+
+def test_read_terms_propagates_duplicate_heading_value_error(tmp_path):
+    """Failure contract (P4.1 final review): a malformed hand-edit is not
+    swallowed into an empty/partial result."""
+    ctx = tmp_path / "CONTEXT.md"
+    ctx.write_text(
+        "# CONTEXT.md — Acme domain glossary\n\nAcme.\n\n"
+        "## Language\n\n**Order** — a confirmed purchase.\n\n"
+        "## Language\n\n**Cancellation** — voiding an order.\n\n"
+        "## Relationships\n\n## Flagged ambiguities\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError):
+        read_terms(ctx)
+
+
+def test_read_terms_propagates_non_utf8_decode_error(tmp_path):
+    """Failure contract (P4.1 final review): non-UTF-8 content raises rather
+    than being silently treated as an empty glossary."""
+    ctx = tmp_path / "CONTEXT.md"
+    ctx.write_bytes(b"# CONTEXT.md \xff\xfe not valid utf-8")
+    with pytest.raises(UnicodeDecodeError):
+        read_terms(ctx)

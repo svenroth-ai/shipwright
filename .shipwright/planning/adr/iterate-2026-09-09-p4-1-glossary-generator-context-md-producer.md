@@ -117,6 +117,18 @@ returned 6 surviving doubts (2 High, 2 Medium, 2 Low), all fixed:
 | D5: `--avoid "   "` sanitizes to `""` (not `None`), silently taking the same path as `--clear-avoid`, and `--avoid "   " --clear-avoid` together was accepted instead of rejected | Low | accepted-and-fixed — a given-but-blank `--avoid` is now rejected the same way a blank `--definition` already is, before the mutual-exclusion check runs |
 | D6: `upsert_term` read the existing file with a bare `.open()` while writing through `durable_atomic_write`; `atomic_write.py`'s own docstring says a reader of a file it publishes should read through `durable_read_bytes` | Low | accepted-and-fixed — switched the read to `durable_read_bytes(...).decode("utf-8")`, which preserves CRLF/LF exactly like the prior `newline=""` open (decode performs no universal-newline translation) while adding the Windows delete-pending retry `durable_atomic_write`'s writes can trigger for a racing reader |
 
+## Final verification pass (PR #699) — fifth round
+
+One more blocking finding surfaced after the Stage-3 doubt-review fix, plus
+three cheap one-line doc fixes, all resolved:
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| D2's fix scanned the WHOLE rendered document for a duplicate `**term**`, but a term legitimately reappears bold as a cross-reference inside `Flagged ambiguities`/`Relationships` (context-format.md §2's own worked example: "the paying `**Customer**`; ... a `**User**`."). Upserting "Customer" against that canonical file permanently failed with a false "needs a hand-fix" error; both new test fixtures had silently paraphrased the doc's bold markup out, which is why nothing caught it | High (blocking) | accepted-and-fixed — the scan now covers only `header + sections["Language"]` (all three D2 hidden-duplicate shapes live there, never in Relationships/Flagged ambiguities); regression test upserts "Customer" into context-format.md §2's example VERBATIM (bold markup included) and confirms it succeeds; both existing fixtures (`test_context_md_format.py`, `test_write_context_term.py`) realigned to the doc's actual bold-cross-reference text instead of a paraphrase that happened to avoid the bug |
+| `read_terms()`'s docstring claimed "(never raises)" but it propagates `ValueError` (duplicate heading) and `UnicodeDecodeError` (non-UTF-8) | Low | accepted-and-fixed — docstring now states the actual failure contract; two pinning tests added (`test_read_terms_propagates_duplicate_heading_value_error`, `test_read_terms_propagates_non_utf8_decode_error`) |
+| `write_context_term.py`'s docstring documented `created`/`appended`/`updated`/`unchanged` but a reachable `rewritten` status (an existing term matched with no value change, but the file still re-serialized to different bytes) was undocumented | Low | accepted-and-fixed — added to the docstring with what distinguishes it from `unchanged` |
+| Docstring said "every other entry/section round-trips untouched" — no longer literally true once the D3 fix reflows a hand-wrapped definition onto one line | Low | accepted-and-fixed — reworded to "normalized onto a single line" for the wrapped-definition case |
+
 ## F0 CI-parity note
 
 An initial fresh-verification pass ran under a hand-rolled serialized

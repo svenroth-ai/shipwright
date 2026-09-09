@@ -26,20 +26,24 @@ Usage:
 **Idempotent + contract (external plan+code review, P4.1):** an unchanged
 term set re-runs byte-identical, incl. CRLF/LF convention. Re-sharpening a
 term overwrites in place (never a second entry); every other entry/section
-round-trips untouched — including a hand-written definition that wraps onto
-a continuation line (``shared/context-format.md`` §2's own ``Cancellation``
-example), which is absorbed into the definition rather than orphaned.
-**Omitting ``--avoid`` on a re-sharpen KEEPS the existing ``_Avoid_``
-line** (not "clear it"); ``--clear-avoid`` deletes it explicitly (mutually
-exclusive with ``--avoid``). Free-text fields are sanitized to single-line
-prose (a stray newline would otherwise mis-parse as a new entry/heading); a
-blank/whitespace-only term, definition, or (if given at all) ``--avoid`` is
-rejected, ``--term`` may not contain ``**`` (the entry delimiter), a
-duplicate ``## heading`` in an existing file is rejected rather than
-silently dropping the first occurrence, a hidden duplicate of the term
-being written (an existing occurrence a missing blank line, a heading-less
-file, or a non-em-dash separator kept out of reach of matching) is rejected
-rather than silently written a second time, and ``--project-root``/
+is preserved, except a hand-written definition that wraps onto a
+continuation line (``shared/context-format.md`` §2's own ``Cancellation``
+example) — that is **normalized onto a single line** (absorbed into the
+definition, joined with a space) rather than left to become an orphaned
+raw block. **Omitting ``--avoid`` on a re-sharpen KEEPS the existing
+``_Avoid_`` line** (not "clear it"); ``--clear-avoid`` deletes it
+explicitly (mutually exclusive with ``--avoid``). Free-text fields are
+sanitized to single-line prose (a stray newline would otherwise mis-parse
+as a new entry/heading); a blank/whitespace-only term, definition, or (if
+given at all) ``--avoid`` is rejected, ``--term`` may not contain ``**``
+(the entry delimiter), a duplicate ``## heading`` in an existing file is
+rejected rather than silently dropping the first occurrence, a hidden
+duplicate of the term being written **in the header or the Language
+section** (an existing occurrence a missing blank line, a heading-less
+file, or a non-em-dash separator kept out of reach of matching — never a
+legitimate bold cross-reference to the same term inside ``Relationships``/
+``Flagged ambiguities``, which this check does not scan) is rejected rather
+than silently written a second time, and ``--project-root``/
 ``--context-path``'s parent must already exist (never silently created).
 
 **Known limitation:** this tool only ever writes ``Language`` entries.
@@ -48,8 +52,14 @@ requirement-elicitation.md §4/§7) currently have no producer and must still
 be hand-edited — a gap the "no hand-edits while an interview is running"
 rule above does not close, only fences off from racing this tool's writes.
 
-Exit codes: 0 on success (created/appended/updated/unchanged); 1 on a lock
-timeout, I/O error, or any rejected input above.
+Exit codes: 0 on success — ``status`` is one of ``created`` (new file),
+``appended`` (new term, existing file), ``updated`` (an existing term's
+definition/avoid changed), ``unchanged`` (re-run with identical content,
+no write performed), or ``rewritten`` (an existing term matched with no
+value change, but the file was re-serialized anyway — e.g. a hand-written
+entry's whitespace was normalized — so a write DID happen; distinct from
+``unchanged`` so a caller can tell whether the file's mtime moved). Exit 1
+on a lock timeout, I/O error, or any rejected input above.
 """
 
 from __future__ import annotations
@@ -179,14 +189,21 @@ def upsert_term(
     # header, or a non-em-dash separator) would otherwise let a second,
     # invisible entry through silently — refuse loudly instead, the same way
     # the duplicate-heading check above does (doubt-reviewer D2, P4.1
-    # Stage-3 review).
-    if term_markup_count(new_content, term) > 1:
+    # Stage-3 review). Scanned over header + Language ONLY — all three
+    # hidden-duplicate shapes live there; a term legitimately reappears bold
+    # as a cross-reference in Relationships/Flagged ambiguities (context-
+    # format.md §2's own worked example: "the paying **Customer**; ... a
+    # **User**."), and scanning the whole document flagged that as a false
+    # duplicate (doubt-reviewer follow-up, P4.1 final review).
+    language_scan_text = "\n".join(header + sections["Language"])
+    if term_markup_count(language_scan_text, term) > 1:
         raise ValueError(
             f"{context_path} already contains an unparsed '**{term}**' "
-            "occurrence elsewhere (a missing blank line before it, no "
-            "'## ' heading before the Language section, or a non-em-dash "
-            "separator after the term) — fix by hand first; refusing to "
-            "write a second, hidden duplicate"
+            "occurrence elsewhere in the header or Language section (a "
+            "missing blank line before it, no '## ' heading before the "
+            "Language section, or a non-em-dash separator after the term) "
+            "— fix by hand first; refusing to write a second, hidden "
+            "duplicate"
         )
 
     old_content = content if existed else None

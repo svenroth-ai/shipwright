@@ -156,24 +156,10 @@ def test_rerun_with_two_unchanged_terms_is_byte_identical(tmp_path):
 # upsert_term — preserves hand-written content
 # ---------------------------------------------------------------------------
 
-def test_preserves_relationships_and_flagged_ambiguities_content(tmp_path):
-    ctx = tmp_path / "CONTEXT.md"
-    ctx.write_text(
-        "# CONTEXT.md — Acme domain glossary\n\n"
-        "Acme is an order-management tool.\n\n"
-        "## Language\n\n"
-        "**Order** — a confirmed purchase.\n\n"
-        "## Relationships\n\n"
-        "- A Customer has many Orders.\n\n"
-        "## Flagged ambiguities\n\n"
-        '- "account" resolved to mean Customer.\n',
-        encoding="utf-8",
-    )
-    upsert_term(ctx, term="Cancellation", definition="voiding an Order before it ships.")
-    content = read(ctx)
-    assert "- A Customer has many Orders." in content
-    assert '- "account" resolved to mean Customer.' in content
-    assert "**Cancellation**" in content
+# test_preserves_relationships_and_flagged_ambiguities_content moved to
+# test_context_md_format.py (bold-cross-reference alignment with
+# context-format.md §2's example, P4.1 final review) to stay under the
+# 300-LOC guideline.
 
 
 def test_preserves_hand_written_prose_in_language_section(tmp_path):

@@ -203,11 +203,14 @@ def read_terms(context_path: Path) -> list[Term]:
     terms back out of ``CONTEXT.md`` (doubt-reviewer D4, P4.1 Stage-3
     review) — e.g. P4.2's grill-trace completeness gate. Returns ``[]`` if
     the file doesn't exist or has no ``## Language`` section; a hand-written
-    prose block with no parseable term contributes nothing (never raises).
-    Matching is exact-case, exact-prose — see the module Contract above.
-    Reads through :func:`atomic_write.durable_read_bytes`, mirroring the
-    write side's durability contract (a reader must not observe a
-    mid-``os.replace`` Windows delete-pending state as "file missing")."""
+    prose block with no parseable term contributes nothing to the result.
+    **Failure contract:** raises ``ValueError`` on a duplicate ``## heading``
+    (a malformed hand-edit, same as the write side) and ``UnicodeDecodeError``
+    on non-UTF-8 content — neither is swallowed (P4.1 final review). Matching
+    is exact-case, exact-prose — see the module Contract above. Reads through
+    :func:`atomic_write.durable_read_bytes`, mirroring the write side's
+    durability contract (a reader must not observe a mid-``os.replace``
+    Windows delete-pending state as "file missing")."""
     if not context_path.exists():
         return []
     content = durable_read_bytes(context_path).decode("utf-8")
