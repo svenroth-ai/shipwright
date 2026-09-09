@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All 3 ACs implemented: _get_phase_status now derives from phase_tasks[] via _phase_tasks_status; a fixture-pinned test pins the rendered strip; a dedicated test proves current_step/completed_steps are present on the config but ignored."},
+    {"name": "Error Handling", "verdict": "pass", "note": "_phase_tasks_status guards non-list phase_tasks, non-dict entries, and missing status keys via isinstance()/dict.get() defaults; no exception path for malformed config data."},
+    {"name": "Security Basics", "verdict": "pass", "note": "Pure internal JSON-config reader; no user input, no SQL/HTML output, no secrets touched."},
+    {"name": "Test Quality", "verdict": "pass", "note": "4 new/rewritten tests assert on rendered mermaid output (outcomes), covering happy path, conflicting-legacy-field edge case, split-phase aggregation, and a byte-pinned fixture render."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "One list comprehension over an in-memory phase_tasks[] list per phase; no DB/network calls, no unbounded fetch."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "mermaid.py is 254 lines, test_mermaid.py 185 lines, both under the 300-line convention; new helper _phase_tasks_status follows existing module naming (_get_phase_status, _node_id)."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer: config_factory.py / phase_task_lifecycle.py (shipwright-run) already emit phase_tasks[] on driven runs, pre-dating this campaign. Consumer: mermaid.py (new, this diff). Round-trip probe: test_pins_the_rendered_strip_against_a_fixture_config reads a real on-disk JSON fixture shaped like the producer's output and asserts the exact rendered strip byte-for-byte -- a genuine producer-to-file-to-consumer round trip, not a synthetic in-memory dict."}
+  ]
+}

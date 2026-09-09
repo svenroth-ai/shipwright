@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-s1-dashboard-phase-strip",
+  "date": "2026-09-09",
+  "section": "compliance/mermaid",
+  "title": "Dashboard phase strip reads phase_tasks[] instead of write-once fields",
+  "context": "Campaign p4-04-retire-write-once-steps s1 of 6: the dashboard phase strip is the one reader whose regression a person sees. It moves to phase_tasks[] first and alone, per the parent card's explicit warning.",
+  "decision": "_get_phase_status drops the current_step parameter and derives status via new _phase_tasks_status(phase, run_config), aggregating multi-entry split phases. current_step/completed_steps remain on the schema, unread.",
+  "consequences": "Driven runs render correctly (phase_tasks[] always present). A config with no phase_tasks[] at all now reads PENDING instead of using positional current_step inference -- the gap already assigned to s2b.",
+  "rationale": "Architecture-review-approved per-reader migration (2026-09-06, GPT+GLM APPROVE): a dual-write bridge would install a new standing drift-prone mechanism in fields whose only purpose is deletion.",
+  "rejected": "Fallback to current_step when phase_tasks[] is absent: rejected, reintroduces mode-conditional truth the architecture review already rejected for the v1 update_step path.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-09-s1-dashboard-phase-strip-phase-tasks-reader.md"
+}

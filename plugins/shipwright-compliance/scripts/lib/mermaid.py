@@ -28,6 +28,17 @@ _TEXT_COLORS = {
 
 _DEFAULT_PIPELINE = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
 
+# Bucketed classification of a phase_tasks[] entry's ``status``, mirroring
+# ``shared/scripts/lib/handoff_phase_status.py`` (owner of the vocabulary:
+# ``shared/schemas/run_config.v2.schema.json`` -> ``$defs.PhaseTaskStatus``).
+# Duplicated here rather than imported: this plugin's own ``scripts/lib``
+# package and ``shared/scripts/lib`` both register under the top-level name
+# ``lib``/``scripts.lib`` (ADR-045), and this module is imported from several
+# other collectors (test_evidence.py, sbom_generator.py, change_history.py) —
+# not worth a cross-plugin loader for two frozensets.
+_FINISHED_TASK_STATUSES = frozenset({"done", "skipped"})
+_ACTIVE_TASK_STATUSES = frozenset({"in_progress", "failed"})
+
 
 def _node_id(phase: str) -> str:
     """Generate a short Mermaid node ID from a phase name."""
@@ -44,10 +55,9 @@ def pipeline_status_diagram(configs: dict[str, dict]) -> str:
 
     # Determine status per phase
     pipeline_status = run_config.get("status", "pending")
-    current_step = run_config.get("current_step", "")
 
     for node_id, label, phase_key in phases:
-        status = _get_phase_status(phase_key, current_step, pipeline_status, configs)
+        status = _get_phase_status(phase_key, pipeline_status, configs)
         status_label = status.upper().replace("_", " ")
         lines.append(f'    {node_id}["{label}<br/>{status_label}"]')
 
@@ -58,7 +68,7 @@ def pipeline_status_diagram(configs: dict[str, dict]) -> str:
     # Add styles
     lines.append("")
     for node_id, _, phase_key in phases:
-        status = _get_phase_status(phase_key, current_step, pipeline_status, configs)
+        status = _get_phase_status(phase_key, pipeline_status, configs)
         color = _COLORS.get(status, _COLORS["pending"])
         text_color = _TEXT_COLORS.get(status, _TEXT_COLORS["pending"])
         lines.append(f"    style {node_id} fill:{color},color:{text_color}")
@@ -67,40 +77,59 @@ def pipeline_status_diagram(configs: dict[str, dict]) -> str:
     return "\n".join(lines)
 
 
+def _phase_tasks_status(phase: str, run_config: dict) -> str | None:
+    """Aggregate status of *phase* from ``phase_tasks[]``, or ``None`` if there
+    is no phase_tasks evidence for it (no ``phase_tasks[]`` at all — a config
+    that has never been driven by the orchestrator — or the phase has not been
+    planned yet; phase tasks are planned incrementally). ``None`` tells the
+    caller to fall through to its other signals.
+
+    A phase can hold MULTIPLE entries when it is split (``plan``/``build``
+    under ``splits_frozen``): it counts as ``complete`` only once every one of
+    them is ``done``/``skipped``, and as ``in_progress`` if any of them is
+    live or dead, so a partly-finished phase never reads as fully banked.
+    """
+    tasks = run_config.get("phase_tasks")
+    if not isinstance(tasks, list):
+        return None
+    matching = [t for t in tasks if isinstance(t, dict) and t.get("phase") == phase]
+    if not matching:
+        return None
+    statuses = [t.get("status") for t in matching]
+    if all(s in _FINISHED_TASK_STATUSES for s in statuses):
+        return "complete"
+    if any(s in _ACTIVE_TASK_STATUSES for s in statuses):
+        return "in_progress"
+    return "pending"
+
+
 def _get_phase_status(
     phase: str,
-    current_step: str,
     pipeline_status: str,
     configs: dict[str, dict],
 ) -> str:
-    """Determine status of a pipeline phase."""
+    """Determine status of a pipeline phase.
+
+    Authority for progress within the run is ``phase_tasks[]`` (v2) — NOT the
+    write-once ``current_step`` / ``completed_steps`` fields, which
+    ``config_factory`` stamps once at run creation and the v2 lifecycle never
+    advances (campaign p4-04-retire-write-once-steps, sub-iterate s1). Those
+    two fields may still be present on the config; this reader no longer
+    consults them.
+    """
     if pipeline_status == "complete":
         return "complete"
 
     run_config = configs.get("run", {})
 
-    # Explicit completed_steps takes priority
-    completed_steps = run_config.get("completed_steps", [])
-    if phase in completed_steps:
-        return "complete"
+    phase_tasks_status = _phase_tasks_status(phase, run_config)
+    if phase_tasks_status is not None:
+        return phase_tasks_status
 
     # Check if phase has a config with status
     config = configs.get(phase, {})
     if config.get("status") == "complete":
         return "complete"
-
-    if phase == current_step:
-        return "in_progress"
-
-    # Phases before current are complete, after are pending
-    phase_order = run_config.get("pipeline", _DEFAULT_PIPELINE)
-    try:
-        current_idx = phase_order.index(current_step)
-        phase_idx = phase_order.index(phase)
-        if phase_idx < current_idx:
-            return "complete"
-    except ValueError:
-        pass
 
     return "pending"
 
