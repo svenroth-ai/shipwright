@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-s2b-backfill-existing-adopted-config",
+  "risk_recheck": {
+    "changed_file_count": 8,
+    "diff_loc": 759,
+    "risk_flags": [
+      "touches_io_boundary",
+      "touches_migrations"
+    ],
+    "diff_risk_flags": [
+      "touches_io_boundary"
+    ],
+    "complexity_floor": "small",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

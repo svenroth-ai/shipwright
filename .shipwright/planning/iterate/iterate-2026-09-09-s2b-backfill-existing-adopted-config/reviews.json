@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-s2b-backfill-existing-adopted-config",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T21:36:39.519291+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The \"implementation approach\" is a verbatim copy of the change specification. No mechanism was chosen (re-run seed vs. route through convert_configs_to_events.py), no steps, no code locations, no verification procedure. There is nothing concrete to assess for correctness.",
+          "suggestion": "Resubmit with the selected mechanism, the files/scripts touched, how idempotency is guaranteed (e.g., detect `phase_tasks` presence and skip, vs. hash-compare), and how leadwright will be verified.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "If \"re-run the seed against the existing config\" is chosen, a naive re-seed may reset or duplicate `completed_steps` data or overwrite user edits made since adoption. The spec acknowledges the reader renders old configs as \"skipped everything\" — the backfill must preserve prior completion state, mapping `completed_steps` into the new representation, not just stamp fresh tasks.",
+          "suggestion": "Specify the mapping from legacy `completed_steps` to `phase_tasks[]` and state that pre-existing completion data is carried forward, with a test proving it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Do not assume leadwright is the only one\" has no concrete plan. If the backfill is run manually against one known repo, other pre-existing adopted configs remain broken silently.",
+          "suggestion": "Include a discovery step — enumerate all configs matching the legacy shape (e.g., `completed_steps` present, `phase_tasks` absent) rather than hardcoding leadwright's path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Idempotency is an acceptance criterion but the plan doesn't say how it's tested or enforced. Re-running a seed script is often destructive on second run (duplicates, timestamp churn).",
+          "suggestion": "Define idempotency concretely: second run produces byte-identical config (or no-op), and add a test that runs the backfill twice and diffs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The \"belt\" read-time tolerance is mentioned but not owned — is it part of s2, part of this change, or dropped? If it lands in this change, it needs its own test; if not, note the dependency explicitly.",
+          "suggestion": "State which iterate owns the read-time tolerance, or cut it from scope.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan does not choose or define a backfill mechanism. “Re-run the seed” and “route it through `convert_configs_to_events.py`” may have materially different behavior, but neither is specified.",
+          "suggestion": "Choose one owner and document its exact invocation, target discovery, mutation rules, and success criteria. Prefer reusing the existing conversion path only if it preserves the semantic meaning of `completed_steps` and is safe for already-migrated configs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "There is no stated mapping between legacy `completed_steps` and the new `phase_tasks[]` schema. A generic seed may create default tasks rather than mark the historically completed work correctly.",
+          "suggestion": "Define and test the one-to-one mapping, including task IDs, completion state, timestamps/order if applicable, and any required schema/version fields.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Idempotency is asserted but not designed for. Re-running a seed/converter can duplicate phase tasks, overwrite user-edited task state, or rewrite unrelated config fields.",
+          "suggestion": "Make the migration conditional and non-destructive: detect legacy-only configs, create only missing migrated records, preserve existing `phase_tasks`, and report skipped/already-migrated configs. Add a twice-run verification using the real config.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan names `leadwright` but does not address discovery of all pre-existing adopted configs, partially migrated configs, malformed configs, or configs with both legacy and new fields.",
+          "suggestion": "Inventory candidate configs before mutation, define behavior per shape, and use a dry-run/report mode. Treat “both fields present but disagree” as an explicit conflict requiring a safe policy rather than silently choosing one.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Reads correctly” is not operationalized. A file-level assertion alone may miss reader behavior, UI/API rendering, or downstream code that still depends on `completed_steps`.",
+          "suggestion": "Verify the real pre-existing config through the migrated reader path and add regression coverage for legacy-only, migrated-only, and mixed-shape configurations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No security-specific concern is apparent, but a bulk config migration can expose or alter unrelated repositories if target paths are discovered too broadly.",
+          "suggestion": "Restrict the migration to validated application config locations, avoid following untrusted paths/symlinks where relevant, and log changed files without logging sensitive config values.  Overall, the intended correction is sound, but the proposal is not yet executable safely because it lacks a chosen migration path and precise data-preservation rules. Define those before implementation; the read-time fallback should remain only a compatibility guard.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T21:36:01.444220+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach**\n  **Severity: high**\n  **Finding:** The \"implementation approach\" is a verbatim copy of the change specification. No mechanism was chosen (re-run seed vs. route through convert_configs_to_events.py), no steps, no code locations, no verification procedure. There is nothing concrete to assess for correctness.\n  **Suggestion:** Resubmit with the selected mechanism, the files/scripts touched, how idempotency is guaranteed (e.g., detect `phase_tasks` presence and skip, vs. hash-compare), and how leadwright will be verified.\n\n- **Category: edge-case**\n  **Severity: medium**\n  **Finding:** If \"re-run the seed against the existing config\" is chosen, a naive re-seed may reset or duplicate `completed_steps` data or overwrite user edits made since adoption. The spec acknowledges the reader renders old configs as \"skipped everything\" — the backfill must preserve prior completion state, mapping `completed_steps` into the new representation, not just stamp fresh tasks.\n  **Suggestion:** Specify the mapping from legacy `completed_steps` to `phase_tasks[]` and state that pre-existing completion data is carried forward, with a test proving it.\n\n- **Category: edge-case**\n  **Severity: medium**\n  **Finding:** \"Do not assume leadwright is the only one\" has no concrete plan. If the backfill is run manually against one known repo, other pre-existing adopted configs remain broken silently.\n  **Suggestion:** Include a discovery step — enumerate all configs matching the legacy shape (e.g., `completed_steps` present, `phase_tasks` absent) rather than hardcoding leadwright's path.\n\n- **Category: risk**\n  **Severity: medium**\n  **Finding:** Idempotency is an acceptance criterion but the plan doesn't say how it's tested or enforced. Re-running a seed script is often destructive on second run (duplicates, timestamp churn).\n  **Suggestion:** Define idempotency concretely: second run produces byte-identical config (or no-op), and add a test that r […truncated]\n\n[openai] 1. Category: approach  \n   Severity: high  \n   Finding: The mini-plan does not choose or define a backfill mechanism. “Re-run the seed” and “route it through `convert_configs_to_events.py`” may have materially different behavior, but neither is specified.  \n   Suggestion: Choose one owner and document its exact invocation, target discovery, mutation rules, and success criteria. Prefer reusing the existing conversion path only if it preserves the semantic meaning of `completed_steps` and is safe for already-migrated configs.\n\n2. Category: dependency  \n   Severity: high  \n   Finding: There is no stated mapping between legacy `completed_steps` and the new `phase_tasks[]` schema. A generic seed may create default tasks rather than mark the historically completed work correctly.  \n   Suggestion: Define and test the one-to-one mapping, including task IDs, completion state, timestamps/order if applicable, and any required schema/version fields.\n\n3. Category: risk  \n   Severity: high  \n   Finding: Idempotency is asserted but not designed for. Re-running a seed/converter can duplicate phase tasks, overwrite user-edited task state, or rewrite unrelated config fields.  \n   Suggestion: Make the migration conditional and non-destructive: detect legacy-only configs, create only missing migrated records, preserve existing `phase_tasks`, and report skipped/already-migrated configs. Add a twice-run verification using the real config.\n\n4. Category: edge-case  \n   Severity: medium  \n   Finding: The plan names `leadwright` but does not address discovery of all pre-existing adopted configs, partially migrated configs, malformed configs, or configs with both legacy and new fields.  \n   Suggestion: Inventory candidate configs before mutation, define behavior per shape, and use a dry-run/report mode. Treat “both fields present but disagree” as an explicit conflict requiring a safe policy rather than silently choosing one.\n\n5. Category: risk  \n   Severity: medium  \n   Finding:  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/tests/test_backfill_phase_tasks_cli.py",
+          "line": 158,
+          "finding": "test_a_second_run_never_calls_write_text_at_all monkeypatched pathlib.Path.write_text, but the write path was switched to durable_atomic_write by the doubt-review's own earlier fix in this same sub-iterate -- Path.write_text is never called by the current implementation on ANY run (write or no-op), so the monkeypatch never triggers either way. The test passed vacuously, silently defeating the exact class of regression (a no-op run that writes anyway) it was added to catch.",
+          "suggestion": "Repoint the monkeypatch at the primitive actually used for writing (backfill_cli.durable_atomic_write) so the assertion is exercised against real code.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T22:56:56.746838+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering / boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The non-atomic write.write_text on shipwright_run_config.json is an acceptable, cosmetic risk. — shipwright_run_config.json already has dedicated, audited lock+atomic-write infrastructure (run_config_store.py's run_config_lock/atomic_write_json, honored by phase_task_lifecycle.py). backfill_phase_tasks.py participated in none of it and did a bare whole-document read-then-write, so a live /shipwright-run session concurrently advancing the same file (the tool's own stated trigger scenario) could have its state silently clobbered.",
+          "suggestion": "Acquire the same advisory lock (same lock-file path, imported from shared/scripts/lib to avoid the ADR-045 lib-namespace collision) around the ENTIRE read-modify-write, and write via durable_atomic_write. Done; proven with test_a_held_lock_blocks_the_backfill_instead_of_racing_it (a real external lock holder blocks the CLI, which fails loudly with SystemExit).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A phase name outside the schema's Phase enum is skipped and reported, not fatal to the rest of the backfill -- and 'deeply nested/pathological JSON structures' are not applicable as an edge case here. — A non-string completed_steps entry (a nested dict/list) is unhashable, so `step in seen` / `seen.add(step)` raised TypeError before ever reaching build_adopted_phase_task's enum validation -- crashing the whole CLI instead of the promised graceful skip.",
+          "suggestion": "Guard for non-str entries before the hash-membership check, routing them to skipped_phases. Done; pinned by test_an_unhashable_completed_step_entry_is_skipped_not_a_crash.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T22:32:28.340904+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py:1-30 (and references/backfill-phase-tasks.md)",
+          "line": null,
+          "finding": "The spec says \"do not assume leadwright is the only one,\" but the tool accepts exactly one `--project-root` and has no discovery/enumeration mode for other legacy-shape configs (adoption + completed_steps + missing phase_tasks). Other pre-s2 adopted repos remain silently broken until someone manually knows to run this. The plan review flagged this exact gap and it was not addressed.",
+          "suggestion": "Add a discovery mode (e.g., `--scan <root>` that finds `shipwright_run_config.json` files matching the legacy shape and reports them, ideally defaulting to dry-run) or at minimum document/grep instructions in the reference doc for enumerating candidates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-adopt/tests/fixtures/backfill_phase_tasks/leadwright_run_config.json",
+          "line": 1,
+          "finding": "AC3 is \"verified against a real pre-existing adopted config, not only a fixture.\" Everything in this diff runs against a copy of leadwright's config in a temp dir. There is no evidence (script, log, or doc) that the tool was ever executed against the live leadwright repo on disk — the tool docstrings claim \"verified against a real pre-2026-09 adopted repo\" but the diff contains only fixture-based tests. The live config may have drifted from the 2026-05-29 snapshot (post-adoption `/shipwright-run` entries, edited fields), and that state is untested.",
+          "suggestion": "Actually run `backfill_phase_tasks.py --dry-run` against the live leadwright repo and record the result (dry-run output committed alongside the fixture, or a note in the reference doc), so the \"real config, not only a fixture\" criterion is distinguishable from fixture testing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopted_phase_tasks.py:139-158 (`backfill_missing_phase_tasks`)",
+          "line": null,
+          "finding": "The backfill derives entries solely from `completed_steps` and ignores `phase_history` outcomes, even though leadwright's own real config (the fixture) records `test` as `\"adopted-skipped\"`. If `build_adopted_phase_task` always produces a `done`-terminal entry, the backfilled `test` entry misrepresents the recorded outcome; the docstring claims \"a terminal done/skipped status\" but nothing in the diff selects between them based on available data.",
+          "suggestion": "When a `phase_history[phase]` entry exists with an `outcome`, use it to choose done vs skipped; add a test pinning that the `test` phase in the leadwright fixture backfills as skipped, not done.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopted_phase_tasks.py:146-148",
+          "line": null,
+          "finding": "If `phase_tasks` exists but is a dict or a non-list, it's silently treated as `[]` and then replaced with a fresh list, discarding whatever was there. A malformed-but-present value is destroyed rather than surfaced.",
+          "suggestion": "If `phase_tasks` is present but not a list, either skip with an error/skip reason or preserve the raw value; don't overwrite it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/tests/test_backfill_phase_tasks_cli.py:107-124",
+          "line": null,
+          "finding": "The idempotency proof relies on `st_mtime_ns` not changing. On filesystems with coarse mtime granularity (1s on some HFS+/FAT deployments, or docker bind mounts), a rewrite within the same window would produce an identical mtime and a broken (rewriting) implementation could pass. The `written: False` assertion in the result dict covers the no-op claim, but the mtime check adds false confidence rather than real coverage.",
+          "suggestion": "Keep the byte-equality and `written` assertions; make the mtime assertion tolerant (or replace it by asserting `run()` never calls `write_text` via a monkeypatched Path.write_text) so the test can't pass spuriously.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "integration-tests/test_adopt_phase_tasks_read_by_shared_readers.py:71-78 (`_run_backfill`)",
+          "line": null,
+          "finding": "The subprocess script is built by `%`-interpolating filesystem paths into Python source inside single quotes (`r'%s'`). A project path containing a single quote would break out of the string into arbitrary code. It's test-only and paths come from pytest's `tmp_path`, so it's not exploitable here, but it's a fragile pattern to copy.",
+          "suggestion": "Pass paths via `sys.argv` or environment variables instead of interpolating them into the `-c` source.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py",
+          "line": 108,
+          "finding": "The change only adds a per-project CLI requiring a manually supplied `--project-root`; nothing discovers or invokes it for the existing adopted configs. Consequently, deployment leaves every pre-s2 config unchanged unless an operator already knows its path, contrary to the requirement not to assume leadwright is the only live case.",
+          "suggestion": "Add a scoped discovery/runner path that inventories and backfills all legacy adopted configs, reporting changed, skipped, and malformed targets; run it for the known live config as part of the migration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/lib/adopted_phase_tasks.py",
+          "line": 140,
+          "finding": "Duplicate values in legacy `completed_steps` are all included in `to_add`, because `have_phases` is calculated only from the pre-existing tasks. The first backfill therefore writes duplicate `phase_tasks` entries for the same phase, despite the function’s one-entry-per-phase/idempotent-by-phase contract.",
+          "suggestion": "Deduplicate completed steps while preserving order, or add each accepted step to `have_phases` during construction. Add a test with repeated completed steps.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py",
+          "line": 83,
+          "finding": "Any config containing `\"adoption\": null` (or another non-object JSON value) passes the adoption-key guard and then crashes on `.get(\"adopted_at\")`. The tool validates only the root JSON type, so malformed legacy configs produce an uncaught exception rather than a safe no-op or actionable error.",
+          "suggestion": "Validate that `adoption` is a dictionary before reading it; otherwise return a clear non-applicable/error result without modifying the file, and cover this case in CLI tests.  Overall: ship-with-fixes. The per-project conversion and its reader/idempotency tests are solid, but the required migration of the existing population is not implemented, and malformed/duplicate legacy data has concrete failure modes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T21:42:15.069491+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: medium\n  File: plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py:1-30 (and references/backfill-phase-tasks.md)\n  Finding: The spec says \"do not assume leadwright is the only one,\" but the tool accepts exactly one `--project-root` and has no discovery/enumeration mode for other legacy-shape configs (adoption + completed_steps + missing phase_tasks). Other pre-s2 adopted repos remain silently broken until someone manually knows to run this. The plan review flagged this exact gap and it was not addressed.\n  Suggestion: Add a discovery mode (e.g., `--scan <root>` that finds `shipwright_run_config.json` files matching the legacy shape and reports them, ideally defaulting to dry-run) or at minimum document/grep instructions in the reference doc for enumerating candidates.\n\n- Category: spec\n  Severity: medium\n  File: plugins/shipwright-adopt/tests/fixtures/backfill_phase_tasks/leadwright_run_config.json:1\n  Finding: AC3 is \"verified against a real pre-existing adopted config, not only a fixture.\" Everything in this diff runs against a *copy* of leadwright's config in a temp dir. There is no evidence (script, log, or doc) that the tool was ever executed against the live leadwright repo on disk — the tool docstrings claim \"verified against a real pre-2026-09 adopted repo\" but the diff contains only fixture-based tests. The live config may have drifted from the 2026-05-29 snapshot (post-adoption `/shipwright-run` entries, edited fields), and that state is untested.\n  Suggestion: Actually run `backfill_phase_tasks.py --dry-run` against the live leadwright repo and record the result (dry-run output committed alongside the fixture, or a note in the reference doc), so the \"real config, not only a fixture\" criterion is distinguishable from fixture testing.\n\n- Category: edge-case\n  Severity: medium\n  File: plugins/shipwright-adopt/scripts/lib/adopted_phase_tasks.py:139-158 (`backfill_missing_phase_tasks`)\n  Finding […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py:108`\n- Finding: The change only adds a per-project CLI requiring a manually supplied `--project-root`; nothing discovers or invokes it for the existing adopted configs. Consequently, deployment leaves every pre-s2 config unchanged unless an operator already knows its path, contrary to the requirement not to assume leadwright is the only live case.\n- Suggestion: Add a scoped discovery/runner path that inventories and backfills all legacy adopted configs, reporting changed, skipped, and malformed targets; run it for the known live config as part of the migration.\n\n- Category: edge-case\n- Severity: medium\n- File: `plugins/shipwright-adopt/scripts/lib/adopted_phase_tasks.py:140`\n- Finding: Duplicate values in legacy `completed_steps` are all included in `to_add`, because `have_phases` is calculated only from the pre-existing tasks. The first backfill therefore writes duplicate `phase_tasks` entries for the same phase, despite the function’s one-entry-per-phase/idempotent-by-phase contract.\n- Suggestion: Deduplicate completed steps while preserving order, or add each accepted step to `have_phases` during construction. Add a test with repeated completed steps.\n\n- Category: edge-case\n- Severity: medium\n- File: `plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py:83`\n- Finding: Any config containing `\"adoption\": null` (or another non-object JSON value) passes the adoption-key guard and then crashes on `.get(\"adopted_at\")`. The tool validates only the root JSON type, so malformed legacy configs produce an uncaught exception rather than a safe no-op or actionable error.\n- Suggestion: Validate that `adoption` is a dictionary before reading it; otherwise return a clear non-applicable/error result without modifying the file, and cover this case in CLI tests.\n\nOverall: ship-with-fixes. The per-project conversion and its reader/idempotency tests are sol […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T22:20:05.756581+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T21:36:11.516103+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
