@@ -217,3 +217,31 @@ def test_elicitation_surface_cites_the_module(rel):
         f"shared/requirement-elicitation.md — the method would silently stop "
         f"being applied"
     )
+
+
+def test_project_interview_protocol_wires_the_context_producer():
+    """§4/§7 require a sharpened term to land in `CONTEXT.md` the moment it is
+    resolved, not batched after the interview. `write_context_term.py` is the
+    producer (P4.1); this pins that `/shipwright-project`'s interview protocol
+    actually calls it — a prompt-only guarantee, so this is the only test that
+    can exist for it (elicitation §6's `enforced`/`prompt-only` table)."""
+    doc = REPO_ROOT / "plugins/shipwright-project/skills/project/references/interview-protocol.md"
+    body = doc.read_text(encoding="utf-8")
+    assert "write_context_term.py" in body, (
+        "interview-protocol.md must call the write_context_term.py producer "
+        "at the point a term is sharpened (requirement-elicitation.md §4/§7)"
+    )
+    # It must be described as happening DURING the turn, not batched — the
+    # distinction the sub-iterate spec calls out explicitly.
+    assert "before the next" in body.lower() or "same turn" in body.lower(), (
+        "the wiring must instruct writing CONTEXT.md during the sharpening "
+        "turn, not deferred to end-of-interview"
+    )
+    # Pin the invocation's own flags, not just the script name (external code
+    # review, P4.1) — a flag rename in the wired snippet must fail loudly
+    # rather than leave this test passing against a broken command.
+    for flag in ("--project-root", "--term", "--definition"):
+        assert flag in body, (
+            f"the write_context_term.py invocation in interview-protocol.md "
+            f"is missing {flag!r} — the wired command must stay runnable"
+        )

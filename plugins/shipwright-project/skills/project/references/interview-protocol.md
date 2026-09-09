@@ -49,6 +49,34 @@ The interview surfaces the user's mental model. Claude has freedom to ask questi
 
 **One AskUserQuestion per question.** The host (Shipwright Command Center and any compatible CLI front-end) blocks on each AskUserQuestion call and waits for a `tool_result` reply before Claude can continue. Never batch multiple questions into a single markdown list — that bypasses the interactive interview and forces the user to parse and answer a wall of text.
 
+## Capturing sharpened terms — write CONTEXT.md as you go
+
+`shared/requirement-elicitation.md` §4 fires the moment a term is **captured,
+challenged, or replaced with a precise one** during this interview; §7
+requires the result land in the target project's `CONTEXT.md` **the moment it
+is resolved** — never batched until the interview ends. Concretely: the turn
+in which you and the user settle a term's meaning (a definition confirmed, a
+vague word like "account" forced to Customer-or-User, a synonym rejected) is
+the same turn in which you write it — before the next `AskUserQuestion`:
+
+```bash
+uv run "{shared_root}/scripts/tools/write_context_term.py" \
+  --project-root "{project_root}" \
+  --term "<Term>" \
+  --definition "<the settled definition, plain prose>" \
+  [--avoid "<rejected synonym — why it's wrong>"]
+```
+
+This is the one producer for `CONTEXT.md` (format: `shared/context-format.md`)
+— idempotent (re-running with the same term is a no-op) and safe to call once
+per sharpened term, so a term revisited later just updates in place. It is a
+plain write, not an `AskUserQuestion`: it does not block the interview and it
+never substitutes for the confirm-before-acting step (§9). The
+`{planning_dir}/shipwright_project_interview.md` transcript (Checkpoints,
+below) is written **in addition to** this per-term write, not instead of it —
+the transcript is the record of the conversation, `CONTEXT.md` is the
+project's glossary.
+
 ## Scope-Aware Depth
 
 ### Full Application (deep interview)
@@ -63,6 +91,10 @@ The interview surfaces the user's mental model. Claude has freedom to ask questi
 - Don't re-ask what's documented
 
 ## Core Topics to Cover
+
+> Any topic below can surface a term worth sharpening — when it does, follow
+> "Capturing sharpened terms" above **in that same turn**, don't wait for a
+> dedicated topic.
 
 ### 1. Natural Boundaries
 

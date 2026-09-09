@@ -1,0 +1,108 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-p4-1-glossary-generator",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 17121,
+      "total": 17185
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "monorepo tooling change (a new CLI producer script + a prompt-wiring edit to an interview reference doc); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0) plus the CLI-shaped tests exercising the wired invocation."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC1: write_context_term.py creates CONTEXT.md following context-format.md's schema (header, Language/Relationships/Flagged ambiguities sections) when none exists",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term.py::test_creates_context_md_when_missing PASSED"
+        },
+        {
+          "behavior": "AC1: an unchanged term set re-runs byte-identical (idempotent), including a single term and a two-term document",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term.py::test_rerun_with_unchanged_term_is_byte_identical, ::test_rerun_with_two_unchanged_terms_is_byte_identical PASSED"
+        },
+        {
+          "behavior": "AC1: re-sharpening the same term overwrites in place (last write wins), never producing a second entry",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term.py::test_re_sharpening_a_term_updates_in_place PASSED"
+        },
+        {
+          "behavior": "AC1: an update preserves every hand-written Relationships/Flagged-ambiguities section and hand-written Language prose byte-for-byte, including the file's own CRLF/LF convention",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term.py::test_preserves_relationships_and_flagged_ambiguities_content, ::test_preserves_hand_written_prose_in_language_section, ::test_existing_crlf_file_keeps_crlf_on_update PASSED"
+        },
+        {
+          "behavior": "AC2: interview-protocol.md invokes write_context_term.py with the required flags, in the same turn a term is sharpened (not deferred to end-of-interview)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_project_interview_protocol_wires_the_context_producer PASSED"
+        },
+        {
+          "behavior": "AC3: a term elicited/sharpened through the wired CLI invocation shape lands in CONTEXT.md in the documented format",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_cli.py::test_wired_cli_sharpens_a_term_into_context_md PASSED"
+        },
+        {
+          "behavior": "AC4: a second sharpened term (via the wired CLI path) does not corrupt or duplicate the first",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_cli.py::test_wired_cli_second_sharpened_term_does_not_corrupt_first, shared/tests/test_write_context_term.py::test_second_term_is_appended_not_duplicated, ::test_third_term_does_not_corrupt_first_two, ::test_update_preserves_other_terms PASSED"
+        },
+        {
+          "behavior": "an embedded newline in --term/--definition/--avoid is collapsed to single-line prose so it cannot mis-parse as a second entry on the next run",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term.py::test_embedded_newline_in_definition_is_collapsed_to_one_line PASSED"
+        },
+        {
+          "behavior": "a blank --term/--definition, or a --term containing ** (the entry delimiter), is rejected rather than corrupting the next parse",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term.py::test_blank_term_is_rejected, ::test_blank_definition_is_rejected, ::test_term_containing_entry_delimiter_is_rejected PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-p4-1-glossary-generator",
+    "commit": "1416ac405ca30cff0175995995faf77413fc9b01",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

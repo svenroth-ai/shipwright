@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "I reviewed the diff against the spec (P4.1: CONTEXT.md producer + interview wiring, ACs 1\u20134) and dug into the parser/serializer round-trip, idempotency claims, locking, and test fidelity.\n\n**Spec compliance:** All four ACs are addressed \u2014 producer exists and is idempotent (tested byte-identical), interview-protocol.md instructs the write during the sharpening turn (not batched), a CLI test exercises the wired invocation shape, and append/merge/no-duplication is tested both unit-level and through the CLI. shipwright-adopt untouched. No missing AC.\n\nFindings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/write_context_term.py:~100 (`content.splitlines()`)\n  Finding: `str.splitlines()` splits on Unicode line boundaries beyond `\\n`/`\\r\\n` (`\\x0b`, `\\x0c`, `\\x85`, `\\u2028`, `\\u2029`). A hand-authored CONTEXT.md containing a form-feed or NEL character in the Relationships/ambiguities prose would be split into \"lines\" during parse and rejoined with the file's EOL \u2014 silently rewriting those characters into hard newlines, breaking the byte-preservation promise for hand-written sections. Tool-written content is safe (sanitizer collapses all whitespace).\n  Suggestion: split on the detected EOL explicitly (e.g. `content.split(\"\\r\\n\")` / `split(\"\\n\")`) rather than `splitlines()`.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/write_context_term.py:~200 (`e[\"avoid\"] = avoid`)\n  Finding: Re-sharpening an existing term *without* `--avoid` silently deletes the previously recorded `_Avoid_` line. That's defensible last-write-wins behavior and the docstring says so, but the interview protocol snippet marks `--avoid` as optional, so an agent dropping it on a re-sharpen erases a rejected-synonym note with no signal in the JSON status (`\"updated\"` either way).\n  Suggestion: Either document this in the protocol snippet (\"include `--avoid` again if it still applies\") or add a distinct status like `\"avoid-dropped\"` so the transcript captures it.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_requirement_elicitation_refs.py:~243\n  Finding: The drift test pins `--project-root`/`--term`/`--definition` but not `--avoid`, and its \"same turn / before the next\" assertion is satisfied by phrases anywhere in a long document, not specifically in the new section. A reworded protocol could pass while the wiring drifts. It's the best possible test for a prompt-only instruction, so this is a refinement, not a blocker.\n  Suggestion: Add `\"--avoid\"` to the flag list and anchor the \"during the turn\" assertion to the new section's text (e.g. regex over the \"Capturing sharpened terms\" block).\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/write_context_term.py:~170 (`_detect_eol`)\n  Finding: Mixed-EOL files get whatever appears first (`\\r\\n` if any CRLF exists), and the whole file is rewritten in that convention \u2014 including genuinely hand-written LF lines in a mixed file. Consistent with \"preserve the file's convention\" for normal files, but mixed files get normalized silently.\n  Suggestion: Acceptable as-is; if strict, only normalize the entry being rewritten.\n\n**Correctness checks that passed:** the `content`-unbound-when-not-existed concern is safe (conditional short-circuit); the lock covers read-modify-write; `**` in `--term` is rejected so the delimiter can't be forged from that field, and `**` in `--definition` can't forge an entry because `_TERM_RE` anchors the delimiter to the line start and the term group is non-greedy; blank term/definition rejected before any write; `--context-path` parent existence checked; exit codes and error paths are tested including the error-path CLI cases.\n\nOverall: a careful, well-tested implementation; findings are refinements, not blockers.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug\n- Severity: medium\n- File: [shared/scripts/tools/write_context_term.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-qcvrnrnr/shared/scripts/tools/write_context_term.py:221)\n- Finding: `--project-name` and `--summary` are written into a newly created document without the single-line sanitization applied to term fields. A newline-containing value can inject headings or entries and produce a `CONTEXT.md` that no longer follows the required schema.\n- Suggestion: Sanitize and validate `project_name` and `summary` before `_default_header` (or reject embedded newlines), and add CLI coverage for these inputs.\n\n- Category: edge-case\n- Severity: medium\n- File: [shared/scripts/tools/write_context_term.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-qcvrnrnr/shared/scripts/tools/write_context_term.py:97)\n- Finding: Repeated section headings corrupt existing content: `sections[name] = body` overwrites the first occurrence, while `order` retains both occurrences. A subsequent term write renders both headings with the last body, silently losing the earlier section\u2019s content.\n- Suggestion: Preserve sections as ordered heading/body occurrences, or reject duplicate headings before modifying the file rather than rewriting it destructively.\n\n- Category: test\n- Severity: low\n- File: [shared/tests/test_write_context_term_cli.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-qcvrnrnr/shared/tests/test_write_context_term_cli.py:29)\n- Finding: The wired-path test checks only selected substrings, not the complete documented schema or its field shapes. It would pass if required spacing/structure were wrong, or if injected multiline project metadata created extra sections.\n- Suggestion: Add a golden expected `CONTEXT.md` assertion based on `context-format.md`, including validation tests for multiline `--project-name` and `--summary`.\n\nShip-with-fixes: the normal wired path is implemented, but input-driven schema corruption and destructive handling of duplicate headings should be addressed first.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

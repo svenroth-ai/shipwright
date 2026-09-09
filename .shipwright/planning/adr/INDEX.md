@@ -99,3 +99,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Binding-completeness F11 gate + ledger/(E)-bullet reconciliation (P3.3)](iterate-2026-09-07-p3-3-producers-emit-and-require-binding-binding-completeness-gate.md)
 - [Mechanical AC-provenance backfill, conservative by construction](iterate-2026-09-07-p3-4-tagging-backfill-mechanical-ac-provenance-backfill.md)
 - [ADR: Unforgeable CI-provenance attestation for traceability manifests](iterate-2026-09-08-ci-provenance-attestation-unforgeable-manifest-attestation.md)
+- [CONTEXT.md producer wired into the interview protocol](iterate-2026-09-09-p4-1-glossary-generator-context-md-producer.md)
