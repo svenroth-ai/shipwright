@@ -60,3 +60,23 @@ def test_avoid_and_clear_avoid_together_is_rejected(tmp_path):
     with pytest.raises(ValueError):
         upsert_term(ctx, term="Order", definition="v1", avoid="cart.", clear_avoid=True)
     assert not ctx.exists()
+
+
+def test_whitespace_only_avoid_is_rejected(tmp_path):
+    """A given-but-blank --avoid must not silently sanitize to "" and take
+    the same path as an omitted --avoid or --clear-avoid (doubt-reviewer
+    D5, P4.1 Stage-3 review)."""
+    ctx = tmp_path / "CONTEXT.md"
+    with pytest.raises(ValueError):
+        upsert_term(ctx, term="Order", definition="v1", avoid="   ")
+    assert not ctx.exists()
+
+
+def test_whitespace_only_avoid_with_clear_avoid_is_rejected(tmp_path):
+    """--avoid "   " --clear-avoid must not be silently accepted just
+    because the blank avoid sanitizes to a falsy value before the mutual-
+    exclusion check runs (doubt-reviewer D5)."""
+    ctx = tmp_path / "CONTEXT.md"
+    with pytest.raises(ValueError):
+        upsert_term(ctx, term="Order", definition="v1", avoid="   ", clear_avoid=True)
+    assert not ctx.exists()

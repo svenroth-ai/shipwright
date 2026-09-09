@@ -6,9 +6,15 @@ requires the result land in ``CONTEXT.md`` **the moment it is resolved** —
 not batched after the interview ends. This is that producer: the ONE code
 path that writes ``CONTEXT.md``, following ``shared/context-format.md``'s
 schema exactly (Language / Relationships / Flagged ambiguities — this tool
-only writes ``Language`` entries, the ones a sharpened term produces). The
-document-format parse/render internals live in the sibling
-``_context_md_format.py``.
+only writes ``Language`` entries, the ones a sharpened term produces).
+**No other write path is safe while an interview is running** — a hand-edit
+(Edit/Write, uncoordinated with this tool's ``file_lock``) racing this
+producer's atomic full-file replace can silently drop a term; see
+``interview-protocol.md`` for the "no hand-edits during elicitation" rule
+this requires. Reading the file back is a separate, sanctioned API — see
+``context_md_format.read_terms()``, the sibling module the document-format
+parse/render internals (and this contract's "exact-case, exact-prose
+matching, no folding" guarantee) live in.
 
 Usage:
 
@@ -20,15 +26,27 @@ Usage:
 **Idempotent + contract (external plan+code review, P4.1):** an unchanged
 term set re-runs byte-identical, incl. CRLF/LF convention. Re-sharpening a
 term overwrites in place (never a second entry); every other entry/section
-round-trips untouched. **Omitting ``--avoid`` on a re-sharpen KEEPS the
-existing ``_Avoid_`` line** (not "clear it"); ``--clear-avoid`` deletes it
-explicitly (mutually exclusive with ``--avoid``). Free-text fields are
-sanitized to single-line prose (a stray newline would otherwise mis-parse
-as a new entry/heading); a blank term/definition is rejected, ``--term``
-may not contain ``**`` (the entry delimiter), a duplicate ``## heading`` in
-an existing file is rejected rather than silently dropping the first
-occurrence, and ``--project-root``/``--context-path``'s parent must
-already exist (never silently created).
+round-trips untouched — including a hand-written definition that wraps onto
+a continuation line (``shared/context-format.md`` §2's own ``Cancellation``
+example), which is absorbed into the definition rather than orphaned.
+**Omitting ``--avoid`` on a re-sharpen KEEPS the existing ``_Avoid_``
+line** (not "clear it"); ``--clear-avoid`` deletes it explicitly (mutually
+exclusive with ``--avoid``). Free-text fields are sanitized to single-line
+prose (a stray newline would otherwise mis-parse as a new entry/heading); a
+blank/whitespace-only term, definition, or (if given at all) ``--avoid`` is
+rejected, ``--term`` may not contain ``**`` (the entry delimiter), a
+duplicate ``## heading`` in an existing file is rejected rather than
+silently dropping the first occurrence, a hidden duplicate of the term
+being written (an existing occurrence a missing blank line, a heading-less
+file, or a non-em-dash separator kept out of reach of matching) is rejected
+rather than silently written a second time, and ``--project-root``/
+``--context-path``'s parent must already exist (never silently created).
+
+**Known limitation:** this tool only ever writes ``Language`` entries.
+``Relationships`` and ``Flagged ambiguities`` (also required by
+requirement-elicitation.md §4/§7) currently have no producer and must still
+be hand-edited — a gap the "no hand-edits while an interview is running"
+rule above does not close, only fences off from racing this tool's writes.
 
 Exit codes: 0 on success (created/appended/updated/unchanged); 1 on a lock
 timeout, I/O error, or any rejected input above.
@@ -46,10 +64,10 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.atomic_write import durable_atomic_write  # noqa: E402
+from lib.atomic_write import durable_atomic_write, durable_read_bytes  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 
-from tools._context_md_format import (  # noqa: E402
+from tools.context_md_format import (  # noqa: E402
     CANONICAL_SECTIONS,
     DEFAULT_SUMMARY,
     default_header,
@@ -59,6 +77,7 @@ from tools._context_md_format import (  # noqa: E402
     render_document,
     sanitize_field,
     serialize_language_entries,
+    term_markup_count,
 )
 
 
@@ -77,7 +96,19 @@ def upsert_term(
     existing ``_Avoid_`` line; ``clear_avoid=True`` deletes it."""
     term = sanitize_field(term)
     definition = sanitize_field(definition)
-    avoid = sanitize_field(avoid) if avoid else None
+    if avoid is not None:
+        # A given-but-blank --avoid (e.g. "   ") must be rejected outright,
+        # not silently fall through as if it were the same as "omitted" —
+        # sanitizing it to "" first would otherwise take the same path as
+        # --clear-avoid while --avoid + --clear-avoid together stayed
+        # accepted, contradicting the documented mutual exclusion
+        # (doubt-reviewer D5, P4.1 Stage-3 review).
+        avoid = sanitize_field(avoid)
+        if not avoid:
+            raise ValueError(
+                "--avoid must not be blank — omit it to keep an existing "
+                "_Avoid_ line, or use --clear-avoid to delete one"
+            )
     if not term:
         raise ValueError("--term must not be blank")
     if not definition:
@@ -90,10 +121,14 @@ def upsert_term(
     existed = context_path.exists()
     eol = "\n"
     if existed:
-        # newline="" preserves CRLF/LF; read_text() only grew that kwarg in
-        # 3.13, so .open() is used (CI is pinned to 3.11).
-        with context_path.open("r", encoding="utf-8", newline="") as fh:
-            content = fh.read()
+        # newline="" (via manual decode, not a text-mode open()) preserves
+        # CRLF/LF; universal-newline translation is a TextIOWrapper feature,
+        # so a plain bytes.decode() never performs it either. Reads through
+        # durable_read_bytes, mirroring the write side's durability contract
+        # (doubt-reviewer D6, P4.1 Stage-3 review) — a bare .open() does not
+        # retry a Windows delete-pending PermissionError from a concurrent
+        # durable_atomic_write holder.
+        content = durable_read_bytes(context_path).decode("utf-8")
         eol = detect_eol(content)
         lines = content.splitlines()  # newline-aware regardless of "newline="
         header, sections, order = parse_document(lines, context_path)
@@ -138,6 +173,21 @@ def upsert_term(
     sections["Language"] = serialize_language_entries(entries)
 
     new_content = render_document(header, sections, order, eol=eol)
+
+    # A hidden pre-existing occurrence of this exact term's markup (missing
+    # blank line before it, a heading-less file that stashed it in the
+    # header, or a non-em-dash separator) would otherwise let a second,
+    # invisible entry through silently — refuse loudly instead, the same way
+    # the duplicate-heading check above does (doubt-reviewer D2, P4.1
+    # Stage-3 review).
+    if term_markup_count(new_content, term) > 1:
+        raise ValueError(
+            f"{context_path} already contains an unparsed '**{term}**' "
+            "occurrence elsewhere (a missing blank line before it, no "
+            "'## ' heading before the Language section, or a non-em-dash "
+            "separator after the term) — fix by hand first; refusing to "
+            "write a second, hidden duplicate"
+        )
 
     old_content = content if existed else None
     if new_content != old_content:

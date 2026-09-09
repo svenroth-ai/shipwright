@@ -84,6 +84,19 @@ below) is written **in addition to** this per-term write, not instead of it —
 the transcript is the record of the conversation, `CONTEXT.md` is the
 project's glossary.
 
+**Never hand-edit `CONTEXT.md` (Edit/Write) while an interview is running.**
+The producer script above holds a file lock and replaces the whole file
+atomically; a hand-edit is coordinated with neither, so a hand-edit racing
+the script's write can silently drop a term either side loses. All
+`CONTEXT.md` writes during elicitation go through
+`write_context_term.py` — or wait for it to return before touching the file
+by hand. **Known limitation:** the script only ever writes `Language`
+entries. `Relationships` and `Flagged ambiguities` (also required by
+`shared/requirement-elicitation.md` §4/§7) have no producer yet and still
+require a hand-edit — do that hand-edit **after** the interview's
+`write_context_term.py` calls are done for the session, never interleaved
+with them.
+
 ## Scope-Aware Depth
 
 ### Full Application (deep interview)
