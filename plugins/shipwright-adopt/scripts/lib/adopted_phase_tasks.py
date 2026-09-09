@@ -15,6 +15,14 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+# Mirrors schema `run_config.v2.schema.json`'s `$defs.Phase` enum and the
+# `slashCommand` pattern `^/shipwright-(project|design|plan|build|test|
+# security|changelog|deploy)$`. Not loaded from the schema file: this plugin
+# is deliberately jsonschema-dependency-free (see `enrichment_schema.py`).
+_VALID_PHASES = frozenset({
+    "project", "design", "plan", "build", "test", "security", "changelog", "deploy",
+})
+
 
 def new_phase_task_id() -> str:
     """``ptk-<hex>`` id shape (schema ``PhaseTaskId`` pattern
@@ -45,7 +53,19 @@ def build_adopted_phase_task(step: str, *, now: str) -> dict[str, Any]:
     (schema ``PhaseTask.additionalProperties`` is ``true``) that keeps an
     adopted-in entry visibly distinct from one an actual phase-runner
     executed — AC2, "adopted-in and executed phases are distinguishable".
+
+    Raises ``ValueError`` for a *step* outside the schema's ``Phase`` enum —
+    ``write_all(..., completed_steps=[...])`` is a public keyword parameter, so
+    an out-of-vocabulary value (a typo, or a caller-supplied custom list) would
+    otherwise silently mint an entry violating both `$defs.Phase` and the
+    ``slashCommand`` pattern (caught in review at 3f-bis, campaign
+    p4-04-retire-write-once-steps).
     """
+    if step not in _VALID_PHASES:
+        raise ValueError(
+            f"build_adopted_phase_task: {step!r} is not a valid Phase "
+            f"({sorted(_VALID_PHASES)})",
+        )
     status = "skipped" if step == "test" else "done"
     return {
         "phaseTaskId": new_phase_task_id(),

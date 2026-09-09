@@ -117,9 +117,10 @@ def write_iterate_config(project_root: Path) -> Path:
 
     feedback_iterations seeds to 1 (shared default; no silent opt-out — a
     missing key already resolves to an interactive "missing_keys" prompt, not
-    a disguised "user_disabled"). external_code_review.enabled defaults true
-    (independent cascade gate). events_context.mode "compact" is the normal
-    bounded startup mode.
+    a disguised "user_disabled"; keep in sync with
+    shared/config/external_review.json). external_code_review.enabled
+    defaults true (independent cascade gate). events_context.mode "compact"
+    is the normal bounded startup mode.
     """
     config = {
         "external_review": {
