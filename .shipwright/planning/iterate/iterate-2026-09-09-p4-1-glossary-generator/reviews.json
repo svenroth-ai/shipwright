@@ -114,27 +114,84 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-09T16:28:23.637916+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T18:35:53.365593+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The producer's locked atomic write is sufficient to protect CONTEXT.md during elicitation. — The producer only writes Language entries; §4/§7 also require Flagged-ambiguities entries, which only an unlocked hand-edit can write today. An interleaved hand-edit can silently drop a term written by the producer. Addressed: interview-protocol.md now forbids hand-editing CONTEXT.md while an interview is running; the gap is documented as a known limitation.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Re-sharpening a term never creates a second entry. — False for hand-authored files missing a blank line before an entry, heading-less files, or a non-em-dash separator -- each silently produced a duplicate term on the next sharpen. Addressed: duplicate-term detection added (refuses loudly instead of silently duplicating), scoped to header+Language after a follow-up round fixed an over-broad first version that false-rejected legitimate bold cross-references elsewhere in the file.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Every other entry/section round-trips untouched. — Falsified by context-format.md's own canonical worked example (a definition wrapped across two lines), which got a blank line injected mid-definition and the continuation orphaned. Addressed: a non-Avoid continuation line is now absorbed into the entry's definition; a round-trip test uses the doc's own example verbatim.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Nothing needs to read CONTEXT.md back, so a private parser is sufficient. — The next campaign sub-iterate (P4.2) is specced to read undefined terms against CONTEXT.md, with no sanctioned public API -- forking the parser guarantees drift on the exact edge cases D2/D3 cover. Addressed: the format module was promoted from private to public with a documented read_terms() function, cited as the sanctioned read API in both the module docstring and the hooks-and-pipeline.md row.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: --avoid and --clear-avoid are strictly disjoint, and --avoid always sets an explicit value. — A whitespace-only --avoid value sanitized to an empty string, which is not None, so it silently took the explicit-clear path instead of being rejected like a blank --definition, and the mutual-exclusion check failed to catch a whitespace-only --avoid paired with --clear-avoid. Addressed: a blank/whitespace-only --avoid is now rejected before the mutual-exclusion check runs.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Reading the existing CONTEXT.md before upsert is safe as a bare file open. — Contradicts atomic_write.py's own documented reader contract for a file published via durable_atomic_write -- a concurrent holder can leave a delete-pending PermissionError on Windows. Addressed: the read now goes through durable_read_bytes, matching the documented contract while preserving exact CRLF/LF bytes.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T16:28:23.765056+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T18:36:40.144683+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -218,15 +275,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-09T16:28:23.519395+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T18:35:53.267169+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
