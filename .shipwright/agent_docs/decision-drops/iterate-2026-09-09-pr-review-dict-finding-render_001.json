@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-pr-review-dict-finding-render",
+  "date": "2026-09-09",
+  "section": "Iterate -- bug: PR review renderer",
+  "title": "Normalize object-shaped PR-review findings before rendering",
+  "context": "PR #690's Tier-3 review round at 2026-09-08T14:04:35Z posted blocking findings as raw Python dict reprs ({'file': ..., 'issue': '...the f...'}) inside the PR comment, truncated mid-value, because pr_review_render.render_comment stringified whatever shape the model returned for a blocking/comment finding -- sometimes a string, sometimes a structured object -- instead of normalizing it. Every other round on the same PR rendered the same section as prose.",
+  "decision": "Add pr_review_render._finding_text(item): a string passes through unchanged; a dict carrying recognizable file/issue-like keys renders as 'location - text' prose; a dict with no recognized key falls back to 'key: value' prose. render_comment now filters and renders blocking/comment findings through this normalizer instead of an f-string over the raw value.",
+  "consequences": "The PR comment, and the next remediation round that reads it, always see the finding's actual text -- never a truncated dict repr. Also split pr_review_render.py (crossed the 300-line guideline) into pr_review_render.py (comment assembly) and pr_review_sanitize.py (sanitiser + model-facing metadata), mirroring the existing pr_review_lib/pr_review_render split precedent.",
+  "rationale": "",
+  "rejected": "Fixing this only at the prompt level (forcing string-only model output) was rejected: the bug report explicitly asks to accept both shapes since the model demonstrably emits both, and a renderer-side normalizer is robust regardless of future prompt drift.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

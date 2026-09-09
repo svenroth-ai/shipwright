@@ -613,6 +613,38 @@ until the PR is
 the PR is closed, or the poll times out while pending (keep watching, not "done").
 A `needs:`-skipped Tier-1/2 `PR Review` counts as a pass.
 
+**"Diagnose, fix, re-push" is not always the remedy — the PR-review gate can
+repeat itself (trg-ac24ec5b).** PR #690 pushed ten times over ~7h40m, blocked by
+the Tier-3 `PR Review` gate every time; nine of twelve verdicts restated one
+finding in different words as line numbers drifted underneath it. A spend-keyed
+guard stays quiet through a loop like this — the cost is wall-clock, not tokens.
+So when the failing check is `PR Review` specifically (never any other Required
+Check — `lib.pr_review_convergence` reads nothing but this one gate, and the gate
+itself stays stateless per commit), `deliver_pr.py` fetches the PR's comments,
+commits, reviews and current head (`gh pr view --json
+comments,commits,headRefOid,reviews`) and asks whether the two most recent,
+authentically-authored `PR Review` BLOCK comments share a recurring finding on
+two DISTINCT, current commits: the same file (exact — the strict half), a claim
+whose significant vocabulary overlaps past a threshold (loose — normalised
+text, never string equality, since the reviewer reworks its wording every
+round), authored by the real reviewer (login **and** unedited — a write-access
+user can edit another author's comment on GitHub) with a sibling
+`CHANGES_REQUESTED` review posted within seconds of it (closes a gap plain
+login-matching leaves open: another same-repo workflow posting under the same
+`github-actions` identity, e.g. `bloat-check.yml`'s file-path list, has nothing
+to correlate to and so cannot forge a pair), and binding to two different
+commits — GitHub's own `commit.oid` stamp off that sibling review, preferred
+over an inferred `committedDate` guess — with the current one matching the
+PR's actual head (a stage-1 workflow re-run or a stale verdict under a
+transient failure must not read as "re-pushing did not help" when nothing was
+re-pushed at all).
+A match promotes `checks_failed` to `non_converging`, **exit 8** — terminal in
+F11 exactly like exit 3 (closed unmerged) and exit 6 (no merger can exist):
+re-running the delivery command changes nothing, so F11 hands both verdicts
+back to the operator, quoted side by side, instead of suggesting another push.
+This never makes a review more lenient or blocks a merge that would otherwise
+pass; it only recognises when re-pushing was never going to help.
+
 **Who merges is decided by what the host can do
 (iterate-2026-07-31-f11-delivery-truth).** On a base *without* branch protection
 `gh pr merge --auto` cannot be armed at all — `Protected branch rules not configured

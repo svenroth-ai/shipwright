@@ -51,6 +51,12 @@ EXIT_HOST_ERROR = 5
 EXIT_NO_MERGER = 6
 #: Identity mismatch, red re-verification, or the host refused the merge.
 EXIT_REFUSED = 7
+#: The `PR Review` gate failed twice running with a recurring (file, claim)
+#: blocking finding — re-pushing is not the remedy (trg-ac24ec5b). Distinct from
+#: EXIT_CHECKS_FAILED precisely because that exit's own advice ("diagnose, FIX,
+#: re-push") is what this exists to stop suggesting a third time. Terminal, like
+#: EXIT_CLOSED and EXIT_NO_MERGER — F11 never retries on this exit.
+EXIT_NON_CONVERGING = 8
 
 #: Watch verdicts that already carry their own meaning and exit code.
 STATUS_EXITS = {
@@ -276,6 +282,7 @@ __all__ = [
     "EXIT_DELIVERED",
     "EXIT_HOST_ERROR",
     "EXIT_NO_MERGER",
+    "EXIT_NON_CONVERGING",
     "EXIT_PENDING",
     "EXIT_REFUSED",
     "STATUS_EXITS",
