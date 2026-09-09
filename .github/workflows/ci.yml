@@ -367,6 +367,38 @@ jobs:
             exit "$code"
           fi
 
+      - name: Upload regenerated traceability manifest artifact (execution evidence)
+        # P3.5 restart (2026-09-09): the drift-check step above regenerates this file IN PLACE
+        # from this run's real JUnit output before comparing it. Discarding it here (as before)
+        # threw away the one thing that makes a promotion's tests/coverage fields non-forgeable
+        # — see ci_execution_evidence.py's module docstring for the full design.
+        #
+        # `if:` narrowed to code=='0' ONLY (round-2 plan review, Q2) -- an artifact uploaded on
+        # drift-code '1' is dead storage anyway: "Confirm traceability manifest verified (no
+        # drift)" is ITSELF gated on code=='0' (below), so a run with code=='1' can never become
+        # `verified` and its artifact would never be consulted regardless.
+        #
+        # continue-on-error: true, deliberately diverging from "Upload coverage artifacts"'
+        # precedent (which has none) -- that step is a debugging aid; this one is the wire this
+        # restart's WHOLE unforgeability claim rests on, and a transient upload failure must
+        # never become a NEW way for ci.yml to fail the build. IMPORTANT: with
+        # continue-on-error: true this step's own `conclusion` always reads `success` even when
+        # the upload itself failed -- only `outcome` reflects the real result. Nothing in this
+        # design reads this step's conclusion (unlike PROVENANCE_STEP_NAME); the resolver always
+        # asks the Artifacts API directly whether the named artifact actually exists for this
+        # run_id, so a swallowed failure here correctly surfaces there as `unavailable`, never as
+        # a false `confirmed`.
+        if: steps.manifest_drift.outputs.code == '0' && github.event_name == 'push'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: traceability-manifest-regenerated   # EXECUTION_EVIDENCE_ARTIFACT_NAME constant
+          path: .shipwright/compliance/test-traceability.json   # literal path, not a glob
+          if-no-files-found: ignore
+          retention-days: 90   # explicit, matching the repo default -- pinned so a future
+                                # org-level default change can't silently shrink the window
+                                # this design's "artifact retention" Known Limitation assumes
+
       - name: Confirm traceability manifest verified (no drift)
         # P3.4c (iterate-2026-09-08-ci-provenance-attestation): the ONLY
         # purpose of this step is to exist as a queryable STEP CONCLUSION.
