@@ -118,8 +118,9 @@ def backfill_missing_phase_tasks(
     * ``added_phases`` lists the phases a ``phase_tasks[]`` entry was
       created for, in ``completed_steps`` order.
     * ``skipped_phases`` lists ``completed_steps`` entries that are not a
-      valid schema ``Phase`` (old configs never validated this list) — not
-      fatal, just unrepresentable as a ``PhaseTask``.
+      valid schema ``Phase``, or not even a string (old configs never
+      validated this list) — not fatal, just unrepresentable as a
+      ``PhaseTask``.
 
     Guarded to ADOPTED configs only — ``adoption`` must be present AND a
     JSON object. An orchestrator-driven config missing ``phase_tasks[]``
@@ -172,16 +173,25 @@ def backfill_missing_phase_tasks(
     seen = {t.get("phase") for t in existing_list if isinstance(t, dict)}
 
     to_add: list[str] = []
+    skipped: list[Any] = []
     for step in completed_steps:
+        # A non-string entry (a stray dict/list from a hand-edited or
+        # corrupted config -- "old configs never validated this list", see
+        # the docstring) is UNHASHABLE, so `step in seen` / `seen.add(step)`
+        # below would raise TypeError instead of the "skipped, not fatal"
+        # behaviour this function promises (doubt-reviewer, s2b). Caught
+        # here, before it ever reaches the hash check.
+        if not isinstance(step, str):
+            skipped.append(step)
+            continue
         if step in seen:
             continue
         seen.add(step)
         to_add.append(step)
     if not to_add:
-        return run_config, [], []
+        return run_config, [], skipped
 
     new_tasks: list[dict[str, Any]] = []
-    skipped: list[str] = []
     for step in to_add:
         try:
             new_tasks.append(build_adopted_phase_task(step, now=now))

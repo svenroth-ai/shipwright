@@ -185,3 +185,34 @@ asymptote reached, boundary calibrated. Edge cases not probed: deeply
 nested/pathological JSON structures (not applicable — this config's shape
 is small and flat), filesystem permission errors on write (not
 format-boundary-specific, out of this gate's scope).
+
+## Delegated-Review-Findings (3f-bis)
+
+Campaign orchestrator delegated review cascade (ADR-029), against the
+merge-base diff (`origin/main`..HEAD, 759 loc, risk flags
+`touches_io_boundary` + `touches_migrations`).
+
+**Stage 1 (spec-reviewer): PASS.** Verified AC1/AC2/AC3 against the diff
+directly — including reading the real `C:\01_Development\leadwright\shipwright_run_config.json`
+on disk and confirming it is byte-identical to the committed fixture and
+still lacks `phase_tasks[]`, corroborating the ADR's dry-run claim rather
+than merely trusting it. No spec citations; no scope creep found.
+
+**Stage 2 (code-reviewer): PASS**, 2 non-blocking low findings — both
+already true of the pre-existing `config_writer.py` write pattern this
+tool mirrored (non-atomic write; ADR-prose-only live-repo verification
+evidence), not new divergences. See Delegated-Doubt-Review below: the
+write-safety finding was independently re-raised at HIGH severity by
+Stage 3 with a concrete clobber scenario this stage's framing (generic
+crash-safety) had not identified, and is fixed there.
+
+## Delegated-Doubt-Review (3f-bis, Stage 3)
+
+Stage 3 (doubt-reviewer), adversarial, biased to disprove. Verdict:
+"blocking doubt" (2 doubts) — both fixed before merge, per the
+advisory-must-address gate.
+
+| Doubt (severity) | Resolution |
+|---|---|
+| The tool's unlocked, non-atomic, whole-document read-modify-write reintroduces a specific, previously-audited clobber hazard: `shipwright_run_config.json` already has dedicated lock+atomic-write infrastructure (`plugins/shipwright-run/scripts/lib/run_config_store.py`'s `run_config_lock`/`atomic_write_json`, honored by `phase_task_lifecycle.py`) that this tool participated in none of — and its own stated trigger scenario ("picked up by `/shipwright-run` for a new feature") is exactly when a live, lock-holding orchestrator session could be concurrently writing the same file, so a backfill run in that window would silently revert every field the orchestrator had just advanced, not merely fail to add `phase_tasks[]` (HIGH) | accepted-and-fixed — the CLI now acquires the SAME advisory lock (same lock-file PATH as `run_config_store.py`, not the same imported module: importing it directly would collide with this plugin's own `lib` namespace under ADR-045, so the fix imports `atomic_write`/`file_lock` straight from `shared/scripts/lib`, the identical pattern `run_config_store.py` itself uses) around the ENTIRE read-modify-write, not just the write — reading first and locking only the replace would still leave the clobber window open. Writes go through `durable_atomic_write` (tmp+fsync+os.replace) instead of `Path.write_text`. A lock that cannot be acquired within 30s (module constant `LOCK_TIMEOUT_SECONDS`, monkeypatchable) fails loudly (`SystemExit`) rather than racing past it. Proven with a real concurrency test, `test_a_held_lock_blocks_the_backfill_instead_of_racing_it`: an external holder acquires the identical lock-file path via `file_lock` directly, the CLI's own run fails with the expected `SystemExit` while it is held, and succeeds once released — proving both that the CLI contends for the real lock path (not a no-op) and that contention fails safe. |
+| A non-string `completed_steps` entry (a nested dict/list from a hand-edited or corrupted config — the ADR's own "old configs never validated this list" caveat) is UNHASHABLE, so the `step in seen` / `seen.add(step)` dedup check raises `TypeError` before ever reaching `build_adopted_phase_task`'s enum validation, crashing the whole CLI instead of the "skipped, not fatal" behaviour the docstring promises for garbage entries — contradicting Confidence Calibration's dismissal of "nested/pathological structures" as not applicable to this exact boundary (MEDIUM) | accepted-and-fixed — a non-`str` entry is now caught and routed to `skipped_phases` BEFORE the hash-membership check, in `backfill_missing_phase_tasks` itself (`adopted_phase_tasks.py`). Pinned by `test_an_unhashable_completed_step_entry_is_skipped_not_a_crash` (a dict entry alongside two valid phases: the valid ones still backfill, the garbage one is reported, nothing crashes). |

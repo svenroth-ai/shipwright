@@ -181,6 +181,21 @@ def test_an_out_of_vocabulary_completed_step_is_skipped_not_fatal() -> None:
     assert {t["phase"] for t in updated["phase_tasks"]} == {"project"}
 
 
+def test_an_unhashable_completed_step_entry_is_skipped_not_a_crash() -> None:
+    """Doubt-reviewer, s2b: completed_steps is unvalidated on old configs, so
+    a hand-edited or corrupted one could carry a non-string entry (a nested
+    dict or list). `step in seen` / `seen.add(step)` on such a value would
+    raise TypeError (unhashable type) instead of the "skipped, not fatal"
+    behaviour this function promises for garbage entries."""
+    cfg = _adopted_config(completed_steps=["project", {"nested": "garbage"}, "plan"])
+
+    updated, added, skipped = backfill_missing_phase_tasks(cfg, now=_NOW)
+
+    assert added == ["project", "plan"]
+    assert skipped == [{"nested": "garbage"}]
+    assert {t["phase"] for t in updated["phase_tasks"]} == {"project", "plan"}
+
+
 def test_a_config_with_no_completed_steps_list_is_left_untouched() -> None:
     cfg = _adopted_config()
     cfg["completed_steps"] = None

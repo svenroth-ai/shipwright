@@ -19,7 +19,9 @@ from pathlib import Path
 
 import pytest
 
+import tools.backfill_phase_tasks as backfill_cli
 from tools.backfill_phase_tasks import RUN_CONFIG_NAME, run
+from file_lock import file_lock
 
 _FIXTURES = Path(__file__).resolve().parent / "fixtures" / "backfill_phase_tasks"
 
@@ -202,6 +204,41 @@ def test_dry_run_reports_without_writing(tmp_path: Path) -> None:
     assert result["written"] is False
     assert sorted(result["added_phases"]) == sorted(["project", "plan", "build", "test"])
     assert "phase_tasks" not in json.loads(config_path.read_text(encoding="utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# Doubt-reviewer, s2b: the read-modify-write must be held under the same
+# advisory lock every other run-config writer honours -- a bare read-then-
+# write would let this tool's full-document write clobber whatever a live
+# /shipwright-run session committed in between (the tool's own stated
+# trigger scenario: a repo "later picked up by /shipwright-run for a new
+# feature").
+# ---------------------------------------------------------------------------
+
+
+def test_a_held_lock_blocks_the_backfill_instead_of_racing_it(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Simulates a concurrent orchestrator session already holding the
+    run-config lock. Proves two things at once: the CLI actually contends
+    for the SAME lock-file path a real writer would hold (not a no-op), and
+    a lock it cannot acquire fails loudly (SystemExit) rather than racing
+    past it and clobbering whatever the other holder is writing."""
+    monkeypatch.setattr(backfill_cli, "LOCK_TIMEOUT_SECONDS", 0.2)
+    project = tmp_path / "leadwright"
+    config_path = _copy_config("leadwright_run_config.json", project)
+    lock_path = project / (RUN_CONFIG_NAME + backfill_cli.LOCK_SUFFIX)
+
+    with file_lock(lock_path, timeout_seconds=5.0):
+        with pytest.raises(SystemExit, match="could not acquire the run-config lock"):
+            run(project, dry_run=False)
+
+    # The lock is released again once the simulated holder's `with` exits --
+    # a normal run now succeeds, proving the failure above was contention,
+    # not a broken lock path.
+    result = run(project, dry_run=False)
+    assert result["written"] is True
+    assert "phase_tasks" in json.loads(config_path.read_text(encoding="utf-8"))
 
 
 def test_seeded_entries_use_the_original_adoption_timestamp(tmp_path: Path) -> None:
