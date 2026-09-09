@@ -53,13 +53,24 @@ and read an unrelated bullet list anywhere in the document as that FR's
 "acceptance". Today it is "luck, not scope" that nothing there matches
 (``test_requirements_catalog_parsers.py``); the gate makes it scope.
 
+**``strip_ac_marker`` (default ``True``, threaded from ``criteria_texts`` in
+``lib._criteria_text``).** ``lib.ac_identity`` mints a ``[ACnn]`` marker onto
+a criterion bullet; every reader here treated it as literal prose (P3.4
+doubt review, #689), so it is now stripped as ordinary leading decoration —
+one seam, not nine taught callers. ``ac_identity.read()`` is the one caller
+that must still see it; it passes ``strip_ac_marker=False``.
+
 Pure: no I/O, greenfield-safe (empty input yields empty output).
 """
 
 from __future__ import annotations
 
 import re
-from typing import Iterable, Iterator
+from typing import Iterator
+
+from lib._criteria_text import BULLET_RE as _BULLET_RE
+from lib._criteria_text import LEADING_ATTRIBUTION_RE as _LEADING_ATTRIBUTION_RE
+from lib._criteria_text import criteria_texts
 
 #: An FR id in either separator style: ``FR-01.02``, ``FR 7``, ``FR-7``.
 _FR_ID = r"FR[-\s]?\d+(?:\.\d+)*"
@@ -75,76 +86,10 @@ _BOLD_ANCHOR_RE = re.compile(rf"^\s*\*\*\s*(?P<id>{_FR_ID})\b[^*]*\*\*\s*$")
 _ANY_HEADING = re.compile(r"^(#{1,6})\s+")
 _ANY_BOLD_ANCHOR = re.compile(r"^\s*\*\*\s*FR[-\s]?\d")
 
-#: A criterion bullet: ``-``/``*``/``+`` or ``1.``/``1)``, incl. the ``- [ ]``
-#: checkbox form ``fr-authoring.md`` §3's worked example uses.
-_BULLET_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(?P<text>.*\S)\s*$")
-
-#: Leading decoration stripped before a bullet's text is judged: a task
-#: checkbox (``[ ]``/``[x]``) and the assertion marker (``(E)``) the house
-#: style puts in front of "Given … when … then …".
-_CHECKBOX = re.compile(r"^\[[ xX]\]\s*")
-_ASSERTION_MARKER = re.compile(r"^\([A-Za-z]\)\s*")
-
-#: Placeholder bodies meaning "not written yet", compared after stripping all
-#: non-alphanumerics so ``TBD``, ``- [ ] TBA`` and ``N/A`` land on one token.
-#: A bullet reduced to nothing (a bare ``- [ ]``) is likewise not a criterion.
-_PLACEHOLDERS = frozenset({"tbd", "todo", "tba", "na", "none", "tbc"})
-
-#: A single whole-line italic attribution, e.g. ``_Source: tests._`` —
-#: `/shipwright-adopt`'s real per-FR shape (``spec_document.py:181-184``,
-#: ``generate_adoption_artifacts.py:308``/``:376``). Tolerated as the ONE
-#: exception to "first non-blank line must be a bullet" — narrower than
-#: ``strict=False``'s whole-block scan, only one syntactically-marked line,
-#: not arbitrary prose (Stage-3 doubt review, high, 2026-08-25: without
-#: this, real adopt output read ZERO criteria under the shared default
-#: while ``strict=False`` callers still saw them — AC-1's divergence,
-#: reintroduced on real producer bytes).
-_LEADING_ATTRIBUTION_RE = re.compile(r"^_[^_\n]+_\.?\s*$")
-
 
 def normalise_fr_id(raw: str) -> str:
     """``FR 7`` -> ``FR-7``. Dotted ids keep their dots."""
     return raw.strip().replace(" ", "-")
-
-
-def _flush(out: list[str], current: list[str]) -> None:
-    joined = " ".join(" ".join(current).split())
-    core = re.sub(r"[^0-9a-z]+", "", joined.lower())
-    if core and core not in _PLACEHOLDERS:
-        out.append(joined)
-
-
-def criteria_texts(lines: Iterable[str]) -> list[str]:
-    """The criteria in ``lines``, whitespace-normalised, continuation lines
-    joined onto the bullet that opened them, placeholders dropped.
-
-    A line indented under an open bullet extends it; a blank line or a line
-    starting in column 0 ends it. Non-bullet lines before/between bullets are
-    skipped, not treated as terminators — a body may carry prose (a
-    ``**Description:**`` paragraph, an old ``**Acceptance Criteria:**``
-    label) ahead of its bullets and still yield them.
-    """
-    out: list[str] = []
-    current: list[str] | None = None
-    for line in lines:
-        bullet = _BULLET_RE.match(line)
-        if bullet:
-            if current is not None:
-                _flush(out, current)
-            text = _CHECKBOX.sub("", bullet.group("text")).strip()
-            text = _ASSERTION_MARKER.sub("", text).strip()
-            current = [text]
-            continue
-        if current is None:
-            continue
-        if not line.strip() or not line[:1].isspace():
-            _flush(out, current)
-            current = None
-            continue
-        current.append(line.strip())
-    if current is not None:
-        _flush(out, current)
-    return out
 
 
 def iter_anchored_blocks(content: str) -> Iterator[tuple[str, list[str]]]:
@@ -251,42 +196,51 @@ def _leading_bullet_run(lines: list[str]) -> list[str]:
     return lines[i:j]
 
 
-def block_criteria(lines: list[str], *, strict: bool = True) -> list[str]:
+def block_criteria(
+    lines: list[str], *, strict: bool = True, strip_ac_marker: bool = True,
+) -> list[str]:
     """The criteria within an already-isolated anchor block or heading body.
 
     ``strict`` (default ``True``) applies the adjacency gate: only the
     CONTIGUOUS leading bullet run counts. ``strict=False`` is the narrow,
     documented exception — see the module docstring's "One default
     semantics" section for exactly which two call sites need it and why.
+    ``strip_ac_marker`` — see module docstring; ``ac_identity.read()`` is the
+    one caller that passes ``False``.
     """
-    return criteria_texts(_leading_bullet_run(lines) if strict else lines)
+    lines = _leading_bullet_run(lines) if strict else lines
+    return criteria_texts(lines, strip_ac_marker=strip_ac_marker)
 
 
-def criteria_for(content: str, fr_id: str, *, strict: bool = True) -> list[str]:
+def criteria_for(
+    content: str, fr_id: str, *, strict: bool = True, strip_ac_marker: bool = True,
+) -> list[str]:
     """Every criterion text anchored to ``fr_id`` in ``content``, pooled
     across every occurrence of its anchor. See ``block_criteria`` for
-    ``strict``."""
+    ``strict``/``strip_ac_marker``."""
     target = normalise_fr_id(fr_id)
     out: list[str] = []
     for anchored_id, block in iter_anchored_blocks(content):
         if anchored_id == target:
-            out.extend(block_criteria(block, strict=strict))
+            out.extend(block_criteria(block, strict=strict, strip_ac_marker=strip_ac_marker))
     return out
 
 
-def has_criteria(content: str, fr_id: str, *, strict: bool = True) -> bool:
+def has_criteria(
+    content: str, fr_id: str, *, strict: bool = True, strip_ac_marker: bool = True,
+) -> bool:
     """True when ``fr_id`` has at least one real acceptance criterion. See
-    ``block_criteria`` for ``strict``."""
-    return bool(criteria_for(content, fr_id, strict=strict))
+    ``block_criteria`` for ``strict``/``strip_ac_marker``."""
+    return bool(criteria_for(content, fr_id, strict=strict, strip_ac_marker=strip_ac_marker))
 
 
-def leading_criteria(body_lines: list[str]) -> list[str]:
+def leading_criteria(body_lines: list[str], *, strip_ac_marker: bool = True) -> list[str]:
     """The bullet list that starts a heading's body, or ``[]``.
 
     spec_parser's S5 fallback — always ``strict`` (see ``block_criteria``);
     a thin, stably-named wrapper kept for that one caller's readability.
     """
-    return block_criteria(body_lines, strict=True)
+    return block_criteria(body_lines, strict=True, strip_ac_marker=strip_ac_marker)
 
 
 __all__ = [

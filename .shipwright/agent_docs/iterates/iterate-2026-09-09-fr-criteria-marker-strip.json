@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-09-fr-criteria-marker-strip",
+  "date": "2026-09-09T15:23:25.824414Z",
+  "event_at": "2026-09-09T00:07:49.278705+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/fr-criteria-marker-strip",
+  "spec": ".shipwright/planning/iterate/iterate-2026-09-09-fr-criteria-marker-strip/directive.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-09-fr-criteria-marker-strip"
+}
