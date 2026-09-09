@@ -132,27 +132,67 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py",
+          "line": 111,
+          "finding": "Direct Path.write_text() over the existing shipwright_run_config.json, not write-to-temp-then-rename. A crash/disk-full/kill mid-write could leave the file truncated for a touches_io_boundary-flagged tool. Matches the pre-existing non-atomic pattern already used by config_writer.py:33 (s2), not a new divergence introduced here. Non-blocking, out of s2b's stated scope.",
+          "suggestion": "Worth a follow-up if this write pattern is ever hardened repo-wide.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/adr/iterate-2026-09-09-s2b-backfill-existing-adopted-config-backfill-phase-tasks.md",
+          "line": 403,
+          "finding": "AC3's claim that --dry-run was run against the live leadwright checkout is documented only as ADR prose, not a committed artifact (log/hash/transcript) a reviewer can mechanically verify. Non-blocking; the fixture-based test suite is the actually-verifiable part of AC3 and is solid.",
+          "suggestion": "Consider committing --dry-run output as evidence if live-repo backfills become routine.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T21:36:11.772311+00:00",
-      "disposition": "delegated_to_orchestrator: the sub-iterate runner has no Agent tool and cannot spawn code-reviewer; the orchestrator runs this cascade at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T22:22:51.543076+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency & ordering / boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The non-atomic write.write_text on shipwright_run_config.json is an acceptable, cosmetic risk. — shipwright_run_config.json already has dedicated, audited lock+atomic-write infrastructure (run_config_store.py's run_config_lock/atomic_write_json, honored by phase_task_lifecycle.py). backfill_phase_tasks.py participated in none of it and did a bare whole-document read-then-write, so a live /shipwright-run session concurrently advancing the same file (the tool's own stated trigger scenario) could have its state silently clobbered.",
+          "suggestion": "Acquire the same advisory lock (same lock-file path, imported from shared/scripts/lib to avoid the ADR-045 lib-namespace collision) around the ENTIRE read-modify-write, and write via durable_atomic_write. Done; proven with test_a_held_lock_blocks_the_backfill_instead_of_racing_it (a real external lock holder blocks the CLI, which fails loudly with SystemExit).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A phase name outside the schema's Phase enum is skipped and reported, not fatal to the rest of the backfill -- and 'deeply nested/pathological JSON structures' are not applicable as an edge case here. — A non-string completed_steps entry (a nested dict/list) is unhashable, so `step in seen` / `seen.add(step)` raised TypeError before ever reaching build_adopted_phase_task's enum validation -- crashing the whole CLI instead of the promised graceful skip.",
+          "suggestion": "Guard for non-str entries before the hash-membership check, routing them to skipped_phases. Done; pinned by test_an_unhashable_completed_step_entry_is_skipped_not_a_crash.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T21:36:11.894267+00:00",
-      "disposition": "delegated_to_orchestrator: the sub-iterate runner has no Agent tool and cannot spawn doubt-reviewer; the orchestrator runs this cascade at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T22:32:28.340904+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -254,15 +294,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-09T21:36:11.627381+00:00",
-      "disposition": "delegated_to_orchestrator: the sub-iterate runner has no Agent tool and cannot spawn spec-reviewer; the orchestrator runs this cascade at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T22:20:05.756581+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
