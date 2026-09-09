@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-fr-criteria-marker-strip",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:27:34.555411+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:27:43.743141+00:00",
+      "disposition": "medium+ only per SKILL.md phase matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/_ac_markers.py",
+          "line": 59,
+          "finding": "strip_leading_ac_marker uses .sub(count=1); a stacked-marker bullet is unreachable through mint()/read() (both raise MalformedAcMarkerError), so this is defensive-only, not a live bug.",
+          "suggestion": "Add a one-line comment noting count=1 is deliberate.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_fr_criteria_parsing.py",
+          "line": null,
+          "finding": "has_criteria's strip_ac_marker=False path was not directly asserted in the threading test.",
+          "suggestion": "Add one has_criteria(strip_ac_marker=False) assertion.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T14:34:36.357360+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:37:32.031047+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "diff (whole change)",
+          "line": null,
+          "finding": "The spec's one explicit verification instruction — \"Verify, do not assume, that the nine consumers are still nine\" — is not evidenced anywhere. `ac_identity.py`'s new docstring asserts \"nine call sites total, none of them this module\" but nothing in the diff (no audit note, no test enumerating them) demonstrates that count was verified, and only two consumer entry points (`_layer_coverage_ac.criteria_digests`, `_fr_hygiene_touched._whole_doc_criteria_digests`) are exercised. If a tenth consumer exists that calls `criteria_texts`/`block_criteria` directly, or one of the nine calls something other than the four threaded entry points, the fix silently misses it.",
+          "suggestion": "Add a short verification artifact (or test listing the consumer call sites) pinning the count, and cover the remaining consumers (fr_criterion_shape, spec_parser) at least once.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/_ac_markers.py (strip_leading_ac_marker)",
+          "line": null,
+          "finding": "AC_MARKER_RE.sub(\"\", text, count=1)` is only \"leading\" if `AC_MARKER_RE` is start-anchored. The diff doesn't show the regex's pattern; if it is unanchored (e.g. `\\[\\sAC\\s(\\d+)\\s\\]`), `sub` will remove the first occurrence anywhere in the text, mangling prose like \"See [AC03] above\" into \"See  above\" for every default caller. `parse_marker`'s safety doesn't transfer because it validates position via `match`.",
+          "suggestion": "Make the strip function positionally safe itself — e.g. `m = AC_MARKER_RE.match(text); return text[m.end():].lstrip() if m else text` — rather than relying on `sub` semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/_criteria_text.py (criteria_texts)",
+          "line": null,
+          "finding": "Marker stripping happens only on the bullet's opening line; a continuation line beginning with `[AC02]` (e.g. a marker wrapped onto its own indented line, plausible under whitespace normalisation after mint) is appended verbatim and becomes part of the \"plain prose\" text every consumer sees. Same class of leakage the card is fixing.",
+          "suggestion": "Apply `_strip_leading_ac_marker` to continuation lines as well when `strip_ac_marker` is set, or document the limitation explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_fr_criteria_parsing.py (test_block_criteria_criteria_for_and_leading_criteria_thread_the_flag)",
+          "line": null,
+          "finding": "Despite its name, the test never calls `block_criteria`, which is the entry point `ac_identity.read()` actually uses (with `strip_ac_marker=False`). If someone later flips the default handling or drops the kwarg threading inside `block_criteria` only, this test still passes while the opt-out path regresses (the ac_identity test would catch the read() side, but not the default path through `block_criteria`).",
+          "suggestion": "Add one direct `block_criteria(lines, strip_ac_marker=False)` assertion.  Test quality otherwise is good: the digest tests compare real minted output pre/post, so a non-stripping implementation would fail them; both effects named in the spec are pinned at consumer entry points, and the `read()` regression test is meaningful.  Overall: the core seam fix is correct and well-tested, but the spec's explicit \"verify the nine\" criterion is unmet and the strip helper has a positional-safety question. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T14:34:36.494040+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec | Severity: medium\n  File: diff (whole change)\n  Finding: The spec's one explicit verification instruction — \"Verify, do not assume, that the nine consumers are still nine\" — is not evidenced anywhere. `ac_identity.py`'s new docstring asserts \"nine call sites total, none of them this module\" but nothing in the diff (no audit note, no test enumerating them) demonstrates that count was verified, and only two consumer entry points (`_layer_coverage_ac.criteria_digests`, `_fr_hygiene_touched._whole_doc_criteria_digests`) are exercised. If a tenth consumer exists that calls `criteria_texts`/`block_criteria` directly, or one of the nine calls something other than the four threaded entry points, the fix silently misses it.\n  Suggestion: Add a short verification artifact (or test listing the consumer call sites) pinning the count, and cover the remaining consumers (fr_criterion_shape, spec_parser) at least once.\n\n- Category: edge-case | Severity: medium\n  File: shared/scripts/lib/_ac_markers.py (strip_leading_ac_marker)\n  Finding: `AC_MARKER_RE.sub(\"\", text, count=1)` is only \"leading\" if `AC_MARKER_RE` is start-anchored. The diff doesn't show the regex's pattern; if it is unanchored (e.g. `\\[\\s*AC\\s*(\\d+)\\s*\\]`), `sub` will remove the *first* occurrence anywhere in the text, mangling prose like \"See [AC03] above\" into \"See  above\" for every default caller. `parse_marker`'s safety doesn't transfer because it validates position via `match`.\n  Suggestion: Make the strip function positionally safe itself — e.g. `m = AC_MARKER_RE.match(text); return text[m.end():].lstrip() if m else text` — rather than relying on `sub` semantics.\n\n- Category: edge-case | Severity: low\n  File: shared/scripts/lib/_criteria_text.py (criteria_texts)\n  Finding: Marker stripping happens only on the bullet's opening line; a continuation line beginning with `[AC02]` (e.g. a marker wrapped onto its own indented line, plausible under whitespace normalisation after […truncated]\n\n[openai] No concrete defects found. The marker is stripped at the shared criterion-text seam by default, placeholder collapse is restored, and `ac_identity.read()` explicitly preserves markers for ID parsing. The tests cover parser behavior, the opt-out, placeholders, and both named digest consumers.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:29:53.640062+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T14:27:43.918987+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
