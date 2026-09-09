@@ -6,7 +6,9 @@ requires the result land in ``CONTEXT.md`` **the moment it is resolved** —
 not batched after the interview ends. This is that producer: the ONE code
 path that writes ``CONTEXT.md``, following ``shared/context-format.md``'s
 schema exactly (Language / Relationships / Flagged ambiguities — this tool
-only writes ``Language`` entries, the ones a sharpened term produces).
+only writes ``Language`` entries, the ones a sharpened term produces). The
+document-format parse/render internals live in the sibling
+``_context_md_format.py``.
 
 Usage:
 
@@ -17,15 +19,16 @@ Usage:
 
 **Idempotent + contract (external plan+code review, P4.1):** an unchanged
 term set re-runs byte-identical, incl. CRLF/LF convention. Re-sharpening a
-term overwrites in place (never a second entry); every other entry and
-section round-trips untouched. All free-text fields (``--term``,
-``--definition``, ``--avoid``, ``--project-name``, ``--summary``) are
+term overwrites in place (never a second entry); every other entry/section
+round-trips untouched. **Omitting ``--avoid`` on a re-sharpen KEEPS the
+existing ``_Avoid_`` line** (not "clear it"); ``--clear-avoid`` deletes it
+explicitly (mutually exclusive with ``--avoid``). Free-text fields are
 sanitized to single-line prose (a stray newline would otherwise mis-parse
 as a new entry/heading); a blank term/definition is rejected, ``--term``
 may not contain ``**`` (the entry delimiter), a duplicate ``## heading`` in
 an existing file is rejected rather than silently dropping the first
-occurrence, and ``--project-root``/``--context-path``'s parent must already
-exist (never silently created).
+occurrence, and ``--project-root``/``--context-path``'s parent must
+already exist (never silently created).
 
 Exit codes: 0 on success (created/appended/updated/unchanged); 1 on a lock
 timeout, I/O error, or any rejected input above.
@@ -35,7 +38,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -47,132 +49,17 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 
-# Canonical section order, per shared/context-format.md §2.
-CANONICAL_SECTIONS = ("Language", "Relationships", "Flagged ambiguities")
-
-DEFAULT_SUMMARY = "_(one-line project summary not yet recorded)_"
-
-_TERM_RE = re.compile(r"^\*\*(.+?)\*\* — (.*)$")
-_AVOID_RE = re.compile(r"^_Avoid_ (.*)$")
-_H2_RE = re.compile(r"^## (.+?)\s*$")
-
-
-def _sanitize_field(value: str) -> str:
-    """Collapse embedded newlines/whitespace to single spaces and strip —
-    a stray newline would mis-parse as a new entry/heading next run."""
-    return " ".join(value.split())
-
-
-def _detect_eol(content: str) -> str:
-    """The file's own line-ending convention (never rewrite CRLF to LF)."""
-    return "\r\n" if "\r\n" in content else "\n"
-
-
-def find_context_file(project_root: Path) -> Path:
-    """``CONTEXT.md`` for ``project_root`` (single-domain layout only)."""
-    return project_root / "CONTEXT.md"
-
-
-def _parse_document(lines: list[str]) -> tuple[list[str], dict[str, list[str]], list[str]]:
-    """``(header, sections, order)``: text before the first ``## `` heading,
-    each heading's trimmed body, and heading names in file order (an
-    unrecognized/hand-added section is preserved, not dropped)."""
-    headers: list[tuple[int, str]] = []
-    for i, line in enumerate(lines):
-        m = _H2_RE.match(line)
-        if m:
-            headers.append((i, m.group(1)))
-
-    header_end = headers[0][0] if headers else len(lines)
-    header = list(lines[:header_end])
-    while header and not header[-1].strip():
-        header.pop()
-
-    sections: dict[str, list[str]] = {}
-    order: list[str] = []
-    for idx, (i, name) in enumerate(headers):
-        if name in sections:
-            raise ValueError(f"CONTEXT.md has a duplicate '## {name}' heading "
-                              "— fix by hand first (a 2nd occurrence would drop the 1st)")
-        body_start = i + 1
-        body_end = headers[idx + 1][0] if idx + 1 < len(headers) else len(lines)
-        body = list(lines[body_start:body_end])
-        while body and not body[0].strip():
-            body.pop(0)
-        while body and not body[-1].strip():
-            body.pop()
-        sections[name] = body
-        order.append(name)
-
-    return header, sections, order
-
-
-def _parse_language_entries(body: list[str]) -> list[dict]:
-    """Ordered term entries (``{"term", "definition", "avoid"}``); unparseable
-    hand-written prose is kept as ``{"term": None, "raw": [...]}`` and
-    stitched back verbatim — never destroyed."""
-    entries: list[dict] = []
-    i = 0
-    n = len(body)
-    while i < n:
-        line = body[i]
-        if not line.strip():
-            i += 1
-            continue
-        m = _TERM_RE.match(line)
-        if not m:
-            block = [line]
-            i += 1
-            while i < n and body[i].strip():
-                block.append(body[i])
-                i += 1
-            entries.append({"term": None, "raw": block})
-            continue
-        term, definition = m.group(1), m.group(2)
-        avoid = None
-        i += 1
-        if i < n:
-            am = _AVOID_RE.match(body[i])
-            if am:
-                avoid = am.group(1)
-                i += 1
-        entries.append({"term": term, "definition": definition, "avoid": avoid})
-    return entries
-
-
-def _serialize_language_entries(entries: list[dict]) -> list[str]:
-    out: list[str] = []
-    for idx, e in enumerate(entries):
-        if idx:
-            out.append("")
-        if e.get("term") is None:
-            out.extend(e["raw"])
-        else:
-            out.append(f"**{e['term']}** — {e['definition']}")
-            if e.get("avoid"):
-                out.append(f"_Avoid_ {e['avoid']}")
-    return out
-
-
-def _render_document(
-    header: list[str], sections: dict[str, list[str]], order: list[str], eol: str = "\n",
-) -> str:
-    out = list(header)
-    out.append("")
-    for name in order:
-        out.append(f"## {name}")
-        body = sections.get(name, [])
-        if body:
-            out.append("")
-            out.extend(body)
-        out.append("")
-    while out and not out[-1].strip():
-        out.pop()
-    return eol.join(out) + eol
-
-
-def _default_header(project_name: str, summary: str) -> list[str]:
-    return [f"# CONTEXT.md — {project_name} domain glossary", "", summary]
+from tools._context_md_format import (  # noqa: E402
+    CANONICAL_SECTIONS,
+    DEFAULT_SUMMARY,
+    default_header,
+    detect_eol,
+    parse_document,
+    parse_language_entries,
+    render_document,
+    sanitize_field,
+    serialize_language_entries,
+)
 
 
 def upsert_term(
@@ -181,37 +68,41 @@ def upsert_term(
     term: str,
     definition: str,
     avoid: str | None = None,
+    clear_avoid: bool = False,
     project_name: str = "",
     summary: str = "",
 ) -> dict[str, object]:
     """Create/update ``context_path`` with one sharpened ``Language`` term
-    (caller holds the lock — see ``main()``)."""
-    term = _sanitize_field(term)
-    definition = _sanitize_field(definition)
-    avoid = _sanitize_field(avoid) if avoid else None
+    (caller holds the lock — see ``main()``). ``avoid=None`` keeps the
+    existing ``_Avoid_`` line; ``clear_avoid=True`` deletes it."""
+    term = sanitize_field(term)
+    definition = sanitize_field(definition)
+    avoid = sanitize_field(avoid) if avoid else None
     if not term:
         raise ValueError("--term must not be blank")
     if not definition:
         raise ValueError("--definition must not be blank")
     if "**" in term:
         raise ValueError("--term must not contain '**' — it is the entry delimiter")
+    if clear_avoid and avoid:
+        raise ValueError("--avoid and --clear-avoid are mutually exclusive")
 
     existed = context_path.exists()
     eol = "\n"
     if existed:
-        # newline="" preserves the file's own CRLF/LF; read_text() only grew
-        # that kwarg in 3.13, so .open() is used (CI is pinned to 3.11).
+        # newline="" preserves CRLF/LF; read_text() only grew that kwarg in
+        # 3.13, so .open() is used (CI is pinned to 3.11).
         with context_path.open("r", encoding="utf-8", newline="") as fh:
             content = fh.read()
-        eol = _detect_eol(content)
+        eol = detect_eol(content)
         lines = content.splitlines()  # newline-aware regardless of "newline="
-        header, sections, order = _parse_document(lines)
+        header, sections, order = parse_document(lines, context_path)
     else:
-        # Sanitized like the term fields: an unsanitized --project-name/--summary
-        # could inject a heading/entry line into the header and corrupt the schema.
-        name = _sanitize_field(project_name) or context_path.parent.name or "project"
-        clean_summary = _sanitize_field(summary) or DEFAULT_SUMMARY
-        header = _default_header(name, clean_summary)
+        # Sanitized like the term fields — an unsanitized value could inject
+        # a heading/entry line into the header.
+        name = sanitize_field(project_name) or context_path.parent.name or "project"
+        clean_summary = sanitize_field(summary) or DEFAULT_SUMMARY
+        header = default_header(name, clean_summary)
         sections = {}
         order = []
 
@@ -220,15 +111,23 @@ def upsert_term(
             order.append(name)
         sections.setdefault(name, [])
 
-    entries = _parse_language_entries(sections["Language"])
+    entries = parse_language_entries(sections["Language"])
 
     status = "created" if not existed else None
     found = False
     for e in entries:
         if e.get("term") == term:
-            changed = e.get("definition") != definition or e.get("avoid") != avoid
+            # avoid=None keeps the existing line; only an EXPLICIT --avoid
+            # or --clear-avoid changes it.
+            if clear_avoid:
+                new_avoid = None
+            elif avoid is not None:
+                new_avoid = avoid
+            else:
+                new_avoid = e.get("avoid")
+            changed = e.get("definition") != definition or e.get("avoid") != new_avoid
             e["definition"] = definition
-            e["avoid"] = avoid
+            e["avoid"] = new_avoid
             found = True
             status = status or ("updated" if changed else "unchanged")
             break
@@ -236,9 +135,9 @@ def upsert_term(
         entries.append({"term": term, "definition": definition, "avoid": avoid})
         status = status or "appended"
 
-    sections["Language"] = _serialize_language_entries(entries)
+    sections["Language"] = serialize_language_entries(entries)
 
-    new_content = _render_document(header, sections, order, eol=eol)
+    new_content = render_document(header, sections, order, eol=eol)
 
     old_content = content if existed else None
     if new_content != old_content:
@@ -255,14 +154,22 @@ def upsert_term(
 
 
 def main() -> int:
+    # Windows console stderr defaults to strict-mode cp1252; without this a
+    # non-ASCII error (e.g. a duplicate-heading path) raises UnicodeEncodeError
+    # instead of a clean exit 1.
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(errors="replace")
+
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--term", required=True)
     parser.add_argument("--definition", required=True)
     parser.add_argument("--avoid", default=None)
-    parser.add_argument("--project-name", default="", help="Only used if CONTEXT.md is new")
-    parser.add_argument("--summary", default="", help="One-liner; only used if CONTEXT.md is new")
-    parser.add_argument("--context-path", default="", help="Explicit path override")
+    parser.add_argument("--clear-avoid", action="store_true",
+                         help="delete an existing --avoid line (omitting --avoid keeps it)")
+    parser.add_argument("--project-name", default="", help="only used if CONTEXT.md is new")
+    parser.add_argument("--summary", default="", help="only used if CONTEXT.md is new")
+    parser.add_argument("--context-path", default="", help="explicit path override")
     parser.add_argument("--lock-timeout", type=float, default=5.0)
     args = parser.parse_args()
 
@@ -277,7 +184,7 @@ def main() -> int:
         if not project_root.is_dir():
             print(f"ERROR: --project-root does not exist: {project_root}", file=sys.stderr)
             return 1
-        context_path = find_context_file(project_root)
+        context_path = project_root / "CONTEXT.md"  # single-domain layout only
     lock_path = context_path.with_suffix(context_path.suffix + ".lock")
 
     try:
@@ -287,6 +194,7 @@ def main() -> int:
                 term=args.term,
                 definition=args.definition,
                 avoid=args.avoid,
+                clear_avoid=args.clear_avoid,
                 project_name=args.project_name,
                 summary=args.summary,
             )

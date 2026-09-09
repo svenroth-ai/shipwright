@@ -89,6 +89,20 @@ returned `revise` with two real findings, both fixed:
 | A malformed hand-edited `CONTEXT.md` with a duplicate `## Language` heading silently overwrote the first occurrence's body while `order` still listed it twice, corrupting rendering on the next write | Medium (edge-case) | accepted-and-fixed — `_parse_document` now raises `ValueError` on a duplicate heading name instead of silently discarding data; regression test `test_duplicate_heading_in_existing_file_is_rejected` |
 | The wired-path CLI test asserts only substrings, not context-format.md's full schema shape | Low (test-quality) | rejected-with-reason — the unit-level tests already assert full-document structure (heading presence/absence, ordering, byte-identical round-trips); the CLI test's job is proving the wired invocation shape works, not re-deriving schema coverage already owned elsewhere |
 
+## Stage-2 code review (delegated, PR #699) — third round
+
+The orchestrator-run Stage-2 cascade returned REQUEST CHANGES against the
+merged commit. Three blocking findings plus two low-severity ones, all
+fixed:
+
+| Finding | Severity | Disposition |
+|---|---|---|
+| `write_context_term.py` was 302 lines, over the 300-line source limit, with no `shipwright_bloat_baseline.json` entry | High | accepted-and-fixed — split the pure parse/render internals into a new sibling module `shared/scripts/tools/_context_md_format.py` (139 lines), leaving `write_context_term.py` at 210 lines; a baseline-entry workaround was explicitly rejected (a cap at exactly `current` leaves zero headroom) |
+| `docs/hooks-and-pipeline.md`'s Artifact Write Matrix had no row for `CONTEXT.md` | Medium | accepted-and-fixed — added a row after `CLAUDE.md` naming the producer, the idempotent-upsert-on-every-resharpen behavior, the format SSoT, and that nothing currently reads it back |
+| Re-sharpening a term WITHOUT repeating `--avoid` silently deleted its existing `_Avoid_` line (`e["avoid"] = avoid` unconditionally overwrote with `None`), contradicting interview-protocol.md's own "safe to call once per sharpened term... just updates in place" wording | Medium (real bug) | accepted-and-fixed — `avoid=None` (flag omitted) now keeps the existing line; added an explicit `--clear-avoid` flag (mutually exclusive with `--avoid`) for deletion; documented in both the module's Contract docstring and interview-protocol.md; regression test `test_reupsert_without_avoid_keeps_existing_avoid_line` (plus `test_clear_avoid_deletes_the_existing_avoid_line` and `test_avoid_and_clear_avoid_together_is_rejected`) in the new `shared/tests/test_write_context_term_avoid.py` |
+| interview-protocol.md's wired snippet didn't state that `--term`/`--definition`/`--avoid` are passed verbatim and never shell-evaluated | Low | accepted-and-fixed — added the sentence and wrapped the example's placeholders in single quotes |
+| The duplicate-heading error hardcoded the literal string `"CONTEXT.md"` even when `--context-path` pointed elsewhere, and the stderr print was not UTF-8-safe on a Windows console | Low | accepted-and-fixed — threaded the real `context_path` into the duplicate-heading `ValueError` message; added `sys.stderr.reconfigure(errors="replace")` at the top of `main()` |
+
 ## F0 CI-parity note
 
 An initial fresh-verification pass ran under a hand-rolled serialized

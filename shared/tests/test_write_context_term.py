@@ -11,19 +11,16 @@ from pathlib import Path
 
 import pytest
 
-from tools.write_context_term import find_context_file, upsert_term
+from tools.write_context_term import upsert_term
 
 
 def read(p: Path) -> str:
     return p.read_text(encoding="utf-8")
 
 
-# ---------------------------------------------------------------------------
-# find_context_file
-# ---------------------------------------------------------------------------
-
-def test_find_context_file_is_project_root_context_md(tmp_path):
-    assert find_context_file(tmp_path) == tmp_path / "CONTEXT.md"
+# find_context_file() was inlined into main() (code review, P4.1); its
+# --project-root -> CONTEXT.md resolution is now covered end-to-end by
+# test_write_context_term_cli.py::test_wired_cli_sharpens_a_term_into_context_md.
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +123,9 @@ def test_update_preserves_other_terms(tmp_path):
     assert "**Order** — v2" in content
     assert "**Order** — v1" not in content
 
+
+# avoid-preservation / --clear-avoid tests live in the sibling
+# test_write_context_term_avoid.py.
 
 # ---------------------------------------------------------------------------
 # upsert_term — idempotency (AC1)

@@ -62,14 +62,21 @@ the same turn in which you write it — before the next `AskUserQuestion`:
 ```bash
 uv run "{shared_root}/scripts/tools/write_context_term.py" \
   --project-root "{project_root}" \
-  --term "<Term>" \
-  --definition "<the settled definition, plain prose>" \
-  [--avoid "<rejected synonym — why it's wrong>"]
+  --term '<Term>' \
+  --definition '<the settled definition, plain prose>' \
+  [--avoid '<rejected synonym — why it's wrong>']
 ```
+
+`--term`/`--definition`/`--avoid` are passed **verbatim and never shell-
+evaluated** — wrap user-dictated text in single quotes as shown, so nothing
+the user says is interpreted by the shell.
 
 This is the one producer for `CONTEXT.md` (format: `shared/context-format.md`)
 — idempotent (re-running with the same term is a no-op) and safe to call once
-per sharpened term, so a term revisited later just updates in place. It is a
+per sharpened term, so a term revisited later just updates in place.
+**Omitting `--avoid` on a re-sharpen keeps the existing `_Avoid_` line** — it
+does not clear it; pass `--clear-avoid` explicitly if the rejected-synonym
+note itself needs to be removed (mutually exclusive with `--avoid`). It is a
 plain write, not an `AskUserQuestion`: it does not block the interview and it
 never substitutes for the confirm-before-acting step (§9). The
 `{planning_dir}/shipwright_project_interview.md` transcript (Checkpoints,
