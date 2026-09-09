@@ -1,0 +1,150 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 17314,
+      "total": 17372
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 156,
+      "exit_code": 0,
+      "justification": "CLI/library-only change: ci_execution_evidence.py + promote_required_layers.py + ci_execution_evidence_check.py add a gh-API-backed execution-tier evidence resolver, a per-FR promotion CLI, and a read-only diagnostic CLI -- no web UI, API server, or SSE/WS surface to drive. The surface run above is the CLI-facing pytest suite for the new/changed shared/tests modules; the canonical F0 run (all 18 monorepo test roots, this run-id, GREEN) is the broader unit/integration evidence."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC-R1: resolve_execution_evidence returns confirmed with a per-FR map only when verification is verified AND the artifact is listed/unexpired/downloads/parses AND passes both content-binding checks; unavailable and error are each their own distinct closed set of causes",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_execution_evidence.py::test_confirmed_when_everything_lines_up, ::test_unavailable_when_verification_is_not_verified, ::test_unavailable_when_verification_is_no_record, ::test_unavailable_when_no_artifact_matches_name, ::test_unavailable_when_matching_artifact_is_expired, ::test_error_when_verification_itself_errors, ::test_error_when_artifacts_list_query_fails, ::test_error_when_listed_artifact_fails_to_download ALL PASSED"
+        },
+        {
+          "behavior": "AC-R2 (the forgery test): hand-edited committed coverage with no CI confirmation available never promotes",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_forgery_hand_edited_coverage_with_no_ci_confirmation_never_promotes PASSED"
+        },
+        {
+          "behavior": "AC-R3: confirmed evidence not containing the FR being evaluated is a decided skip, never a crash or escalation",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_confirmed_evidence_not_containing_this_fr_is_a_decided_skip_not_a_crash PASSED"
+        },
+        {
+          "behavior": "AC-R4: a demoted-ledger FR stays a clean skip when CI evidence is unavailable, both on unchanged and worse-drifted evidence, never spuriously escalates",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_demoted_fr_with_unchanged_evidence_is_a_clean_skip_writes_nothing, ::test_demoted_fr_with_evidence_drifted_toward_worse_is_a_clean_exit_zero_skip PASSED"
+        },
+        {
+          "behavior": "AC-R6: main() never reads the working-tree manifest file for evaluation by default (commit-pinned single read); --manifest forces dry-run and never writes the ledger or spec.md regardless of computed decisions",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_default_run_never_reads_the_working_tree_manifest_file, ::test_manifest_override_is_dry_run_only_never_writes PASSED"
+        },
+        {
+          "behavior": "AC-R8: the new ci.yml artifact-upload step's if:/continue-on-error/retention-days/if-no-files-found are pinned exactly, positioned immediately after the drift-check step, and the python-checks job carries no strategy.matrix key today",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_yml_execution_evidence_step_shape.py (8 tests) ALL PASSED"
+        },
+        {
+          "behavior": "AC-R10 (content binding): an artifact whose source_commit mismatches the resolved commit, or whose structural shape disagrees with the committed manifest, resolves error and never falls through to confirmed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_execution_evidence.py::test_error_when_source_commit_mismatches, ::test_error_when_structural_shape_disagrees PASSED"
+        },
+        {
+          "behavior": "AC-R11: a poisoned acs field on an FR node never changes evaluate_fr's decision, ledger fingerprint, or spec.md write versus the same node with acs removed",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_stale_manifest_never_narrows_a_hand_declared_multi_layer_cell PASSED"
+        },
+        {
+          "behavior": "AC-R13 (realistic-shape escalation): a bound test recorded as enabled/not_run (not empty, not failing) for a required layer escalates via REASON_BOUND_TEST_ABSENT, matching the spec's named case exactly",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_undecidable_case_exits_three_and_reports_reason_code PASSED"
+        },
+        {
+          "behavior": "AC-R14 (fingerprint-noise regression pin): two CI-sourced evidence snapshots for the same demoted FR that differ in raw content but agree predicate_holds stays False both stay a clean skip, neither re-escalates",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_demoted_fr_with_unchanged_evidence_is_a_clean_skip_writes_nothing PASSED"
+        },
+        {
+          "behavior": "AC-R15: evidence.status==error is an operational failure -- exit 2 with an {error:...} JSON body, plan_promotions never called, no ledger/spec.md write of any kind, distinct from the 0/3 decided-outcome exits",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_evidence_error_is_an_operational_failure_never_a_silent_skip_all PASSED"
+        },
+        {
+          "behavior": "AC-R16: the standalone diagnostic CLI (ci_execution_evidence_check.py) always exits 0 regardless of resolved status, including an unresolvable --commit, and never touches spec.md or the ledger under any input",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_ci_execution_evidence_check.py (11 tests, incl. a real subprocess invocation) ALL PASSED"
+        },
+        {
+          "behavior": "round-3 external-review fix: the selected newest-by-created_at artifact's own numeric id is what actually reaches the download call -- not silently re-resolved by name to a different attempt",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_execution_evidence.py::test_download_is_called_with_the_selected_artifacts_own_id, ::test_multiple_matching_artifacts_select_the_newest_id_by_created_at PASSED"
+        },
+        {
+          "behavior": "round-3 external-review fix: a structurally-matching artifact with a deleted (not merely falsy) coverage/tests key on the RAW node is rejected as error before normalization, never silently resolved confirmed with empty requirements",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_execution_evidence.py::test_error_when_execution_tier_coverage_key_is_deleted_not_merely_falsy, ::test_error_when_execution_tier_coverage_is_not_an_object, ::test_error_when_execution_tier_tests_layer_is_not_a_list PASSED"
+        },
+        {
+          "behavior": "round-3 external-review fix: promote_required_layers.py's --manifest dry-run branch wraps load_ledger/plan_promotions in the same error shape as the real-write path -- a corrupted ledger or an escaping spec_path is a clean {error:...} exit 2, never a raw traceback",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_dry_run_with_a_corrupted_ledger_is_a_clean_operational_failure_not_a_traceback, ::test_dry_run_with_a_spec_path_escaping_the_project_root_is_a_clean_operational_failure PASSED"
+        },
+        {
+          "behavior": "the real GitHub Actions artifact-download-by-id mechanism (subprocess stdout=fh + zipfile extraction) matches production against a real artifact from this repo's own CI history -- empirical, non-mocked confidence-calibration probe, two consecutive no-finding runs, asymptote reached",
+          "disposition": "tested",
+          "evidence": "Step 3.8 Confidence Calibration probes (design doc `## Confidence Calibration`) against gh api repos/svenroth-ai/shipwright/actions/artifacts/10090708144/zip, cross-checked by shared/tests/test_ci_execution_evidence.py::test_download_extracts_and_parses_the_real_zip, ::test_download_reports_a_zip_missing_the_expected_file, ::test_download_reports_a_corrupt_zip (real zipfile construction, no mocked zip internals) ALL PASSED",
+          "category": "integration"
+        },
+        {
+          "behavior": "the whole mechanism end-to-end against a real, unmodified repo commit: structural_diff(real HEAD manifest, real HEAD manifest) == '' and the shape validator accepts all real requirement nodes with zero false-rejects (Self-Review item 7, ADR-024 round-trip probe)",
+          "disposition": "tested",
+          "evidence": "Self-Review Affected Boundaries probe (design doc `## Self-Review` item 7) run against this repo's actual .shipwright/compliance/test-traceability.json at HEAD",
+          "category": "integration"
+        }
+      ],
+      "counts": {
+        "testable": 17,
+        "tested": 17,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 16,
+        "covered_acs": 16
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+    "commit": "093162664cd3e9c6e623e2e9010c61b6015cbf6e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

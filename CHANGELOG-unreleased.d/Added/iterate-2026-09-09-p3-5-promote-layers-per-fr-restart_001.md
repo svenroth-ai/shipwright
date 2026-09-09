@@ -1,0 +1,1 @@
+compliance: promote a requirement's Layers binding from legacy to explicit per-FR, evidence-bound to a specific CI run's own execution output (never the committed manifest's own claims) via a content-bound artifact download, a durable ledger, and a human-only override CLI for the rare undecidable case
