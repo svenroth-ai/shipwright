@@ -98,7 +98,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 import github_api  # noqa: E402
-from ci_provenance import _gh_api, resolve_ci_verification  # noqa: E402
+from ci_provenance import _COMMIT_RE, _gh_api, resolve_ci_verification  # noqa: E402
 
 # Cross-directory import (shared/scripts -> shared/scripts/tools), the SAME
 # precedent `lib/layer_promotion.py` already uses for
@@ -126,6 +126,18 @@ _MANIFEST_FILENAME = "test-traceability.json"
 #: module docstring in the design doc for why this is a small, disclosed,
 #: local duplication rather than an extension of that file).
 _DOWNLOAD_TIMEOUT_SECONDS = 60
+
+#: The plugin collector's own zero-SHA fallback sentinel (round-4 post-push
+#: doubt-review fix, medium) — `plugins/shipwright-compliance/scripts/lib/
+#: collectors/_test_links_io.py::git_head` returns exactly this when its own
+#: `git rev-parse HEAD` subprocess call fails or returns empty output. A
+#: VALID-looking 40-char hex string (all zeros are valid hex digits), so it
+#: is checked separately from — not caught by — the hex-shape check below.
+#: Own local copy rather than an import: that module lives under a PLUGIN's
+#: own `scripts/` tree, which `shared/scripts` must never import across
+#: (ADR-044/045) — a one-line literal is cheaper and safer than a cross-tree
+#: dependency for a single sentinel value.
+_ZERO_SHA = "0" * 40
 
 
 @dataclass(frozen=True)
@@ -283,6 +295,15 @@ def resolve_execution_evidence(
     `committed_manifest` is the ALREADY-PARSED, commit-pinned manifest the
     caller read (never re-read here) — used only for the content-binding
     structural comparison against the downloaded artifact."""
+    # Round-4 post-push doubt-review fix, low: `resolve_ci_verification`
+    # already lowercases `commit` internally (`ci_provenance.py`) before
+    # comparing it against anything -- this function compares the SAME
+    # caller-supplied string against the downloaded artifact's own
+    # `source_commit` below and previously did so in the caller's original
+    # case, so an upper/mixed-case caller (unlikely in practice -- `git
+    # rev-parse HEAD` is always lowercase -- but not contractually
+    # guaranteed) could mismatch two names for the identical commit.
+    commit = commit.lower()
     verification = resolve_ci_verification(commit, project_root=project_root, workflow_file=workflow_file)
     if verification.status in ("no_record", "not_verified"):
         return ExecutionEvidence(
@@ -326,10 +347,36 @@ def resolve_execution_evidence(
     if not isinstance(artifact, dict):
         return ExecutionEvidence("error", "downloaded artifact is not a JSON object", run_id, None)
 
-    if artifact.get("source_commit") != commit:
+    source_commit = artifact.get("source_commit")
+    # Round-4 post-push doubt-review fix, medium: a `source_commit` that is
+    # either the plugin collector's own documented zero-SHA fallback
+    # (`_ZERO_SHA`, `"0" * 40` -- a VALID-looking hex string, so the format
+    # check below alone would not catch it) or does not even look like a
+    # real 40-char hex SHA at all is a PRODUCER-SIDE degradation signal --
+    # `git_head` returns one when ITS OWN `git rev-parse HEAD` subprocess
+    # call fails or returns empty -- not a content-binding violation an
+    # attacker crafted. Treating it as `error` (as a genuine mismatch
+    # correctly is, below) makes it a hard, self-repeating operational
+    # exit-2 for every run against that commit until an operator
+    # intervenes; `unavailable` is the honest "no usable evidence yet"
+    # outcome the design intends for this case, matching the existing
+    # `no_record`-vs-`error` discipline this module already applies
+    # elsewhere. Checked BEFORE the equality comparison so a degraded value
+    # never reaches it under either name.
+    if source_commit == _ZERO_SHA or not (
+        isinstance(source_commit, str) and _COMMIT_RE.fullmatch(source_commit)
+    ):
+        return ExecutionEvidence(
+            "unavailable",
+            f"downloaded artifact's source_commit {source_commit!r} is not a usable commit SHA "
+            "-- the manifest-regen step could not determine its own commit "
+            "(producer-side degradation), not a content-binding violation",
+            run_id, None,
+        )
+    if source_commit != commit:
         return ExecutionEvidence(
             "error",
-            f"downloaded artifact's source_commit {artifact.get('source_commit')!r} does not "
+            f"downloaded artifact's source_commit {source_commit!r} does not "
             f"match the resolved commit {commit!r} -- refusing to trust a possible cross-attempt "
             "artifact mismatch",
             run_id, None,

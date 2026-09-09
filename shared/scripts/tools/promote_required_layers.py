@@ -28,7 +28,12 @@ spec, "How an escalation is implemented"): ``0`` — the run decided everything
 it looked at (some may still be promoted, most typically skipped, none
 escalated). ``3`` — at least one FR hit one of the three named undecidable
 cases; this is a valid hand-back, not a failure, and every FR that DID decide
-cleanly this run is still written. Any other non-zero is an OPERATIONAL
+cleanly this run is still written. **Except under ``--manifest`` dry-run
+mode** (round-4 post-push doubt-review fix, low): that mode never writes
+ANYTHING, by design, regardless of what any FR decides (see the ``--manifest``
+paragraph below) — so a ``3`` there means only "this WOULD escalate against
+the given manifest," not that some other FR's decision was durably recorded.
+Any other non-zero is an OPERATIONAL
 failure (bad manifest, an unwritable spec, a ledger that fails to parse, OR
 — round 2 — execution evidence itself could not be resolved at all
 (``ExecutionEvidence.status == "error"``); this is deliberately distinct from
@@ -163,10 +168,21 @@ def _read_committed_manifest(project_root: Path) -> tuple[str, dict]:
 
 
 def _active_requirements(manifest: dict) -> dict[str, dict]:
+    # `isinstance(node.get("id"), str)` (round-4 post-push doubt-review fix,
+    # low): `plan_promotions` dereferences `node["id"]` unguarded twice
+    # further down (once to build `live_layers`/`live_explicit`/etc., once
+    # as `fr_id`) -- an id-less or non-string-id committed manifest node
+    # (a hand-corrupted commit, not something this tool ever writes) would
+    # otherwise escape as a raw `KeyError`/`AttributeError` traceback
+    # instead of `main()`'s documented `{"error": ...}` exit-2 shape.
+    # Filtered out here, at the single point every caller already reads
+    # "active requirements" through, rather than guarding each dereference
+    # site separately.
     return {
         key: node
         for key, node in (manifest.get("requirements") or {}).items()
         if isinstance(node, dict) and node.get("status") == "active"
+        and isinstance(node.get("id"), str)
     }
 
 

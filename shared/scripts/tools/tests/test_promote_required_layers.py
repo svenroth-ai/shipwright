@@ -188,6 +188,28 @@ def test_no_eligible_fr_exits_zero_and_writes_nothing(tmp_path, monkeypatch):
     assert not ledger_path(project).exists()
 
 
+def test_an_id_less_active_node_is_excluded_not_a_raw_traceback(tmp_path, monkeypatch):
+    # Round-4 post-push doubt-review fix, low: `plan_promotions` dereferences
+    # `node["id"]` unguarded -- a hand-corrupted committed manifest (never
+    # something this tool itself writes) carrying an ACTIVE requirement node
+    # with no `id` field, or a non-string one, must not escape as a raw
+    # KeyError/AttributeError. `_active_requirements` now excludes it, the
+    # same treatment a structurally-invalid (non-dict) node already gets --
+    # the run completes cleanly and the OTHER, well-formed FR is unaffected.
+    clean = _node("FR-01.01")
+    corrupted = _node("FR-01.02")
+    del corrupted["id"]
+    requirements = {"01::FR-01.01": clean, "01::FR-01.02": corrupted}
+    row = "| FR-01.01 | Adopted | x | Must | y. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    _mock_evidence_from(monkeypatch, requirements)
+
+    rc = mod.main(["--project-root", str(project)])
+    assert rc == 0
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "| FR-01.01 | Adopted | x | Must | y. | code | unit |" in spec
+
+
 def test_undecidable_case_exits_three_and_reports_reason_code(tmp_path, monkeypatch, capsys):
     # Two nodes sharing the SAME display id -> collision -> undeterminable.
     requirements = {
@@ -340,6 +362,55 @@ def test_demoted_fr_with_evidence_drifted_toward_worse_is_a_clean_exit_zero_skip
 
     demoted_against = _node("FR-01.01", coverage={"unit": "ok"})
     requirements = {"01::FR-01.01": _node("FR-01.01", coverage={"unit": "MISSING"})}
+    row = "| FR-01.01 | Adopted | x | Must | y. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    _mock_evidence_from(monkeypatch, requirements)
+
+    ledger = ledger_mod.default_ledger()
+    ledger_mod.append_decision(
+        ledger, "FR-01.01", action="demoted", decided_by="operator",
+        reason="evidence is misleading for a reason the manifest can't show",
+        evidence_fingerprint=ledger_mod.evidence_fingerprint(demoted_against),
+    )
+    ledger_mod.write_ledger(ledger_mod.ledger_path(project), ledger)
+    ledger_before = json.loads(ledger_mod.ledger_path(project).read_text(encoding="utf-8"))
+
+    rc = mod.main(["--project-root", str(project)])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec
+    ledger_after = json.loads(ledger_mod.ledger_path(project).read_text(encoding="utf-8"))
+    assert ledger_after == ledger_before
+
+
+def test_demoted_fr_with_raw_evidence_noise_but_same_derived_facts_stays_a_clean_skip(tmp_path, monkeypatch):
+    # Round-4 post-push doubt-review fix, HIGH regression pin -- composed
+    # through the REAL seam (both writers, not two separate mocks): the
+    # operator demoted against one RAW evidence snapshot; a later automated
+    # run's CI evidence carries DIFFERENT raw `tests` link content
+    # (simulating OS/marker-selection variance -- a different test collected
+    # this run) but the SAME derived facts (still exactly one "ok" unit
+    # layer, nothing bound-but-absent). Before the fix the two writers'
+    # fingerprints were built from structurally different bases (committed
+    # manifest vs. CI-sourced) and so NEVER agreed regardless of whether the
+    # evidence had genuinely moved, re-escalating REASON_CONTRADICTS_DECISION
+    # on every single run. After the fix, unchanged derived facts stay a
+    # clean, exitable skip.
+    import scripts.lib.layer_promotion_ledger as ledger_mod
+
+    demoted_against = _node("FR-01.01")  # tests: [t::unit], coverage: unit=ok
+    noisy_now = _node("FR-01.01", tests={"unit": [
+        _link(layer="unit"),
+        {"id": "t::unit-2", "path": "t::unit-2", "layer": "unit", "status": "enabled", "executed": "pass"},
+    ]})
+    # Sanity check the fixture actually exercises "different raw content,
+    # same derived facts" -- if this ever stopped holding the test below
+    # would pass for the wrong reason (no real drift to distinguish).
+    assert demoted_against["tests"] != noisy_now["tests"]
+    assert ledger_mod.evidence_fingerprint(demoted_against) == ledger_mod.evidence_fingerprint(noisy_now)
+
+    requirements = {"01::FR-01.01": noisy_now}
     row = "| FR-01.01 | Adopted | x | Must | y. | code | unit (inferred) |"
     project = _write_project(tmp_path, requirements, spec_rows=row)
     _mock_evidence_from(monkeypatch, requirements)
@@ -669,6 +740,20 @@ def test_end_to_end_seam_between_the_real_resolver_and_plan_promotions(tmp_path,
     key-mismatch defect immediately -- every other test in this file (and in
     ``test_ci_execution_evidence.py``) mocks one side or the other of this
     exact seam."""
+    # DELIBERATELY the bare-named module object, not `scripts.ci_execution_
+    # evidence` (this file's own top-level import) -- round-4 post-push
+    # doubt-review fix, low, ADR-045-class hazard. `mod` (`promote_required_
+    # layers.py`) does its OWN `sys.path.insert` + bare `from
+    # ci_execution_evidence import ...`, which registers a SEPARATE
+    # `sys.modules["ci_execution_evidence"]` entry from this test file's
+    # package-qualified `sys.modules["scripts.ci_execution_evidence"]` --
+    # two distinct module objects for the same source file. A monkeypatch
+    # on the package-qualified one (the "normal", more obvious way to write
+    # this) would silently never reach `mod`'s own calls into it, and this
+    # seam test would pass for the wrong reason (or not exercise the real
+    # code path at all). Do not "simplify" this back to a normal
+    # `monkeypatch.setattr(m, ...)` shape without re-verifying which module
+    # object `mod` itself actually holds a reference to.
     cee = sys.modules["ci_execution_evidence"]
     from ci_provenance import CIVerification  # noqa: PLC0415 - same bare-name module `cee` itself imports
 

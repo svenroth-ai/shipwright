@@ -169,9 +169,13 @@ def test_fingerprint_drifted_false_when_there_is_no_entry_or_no_recorded_fingerp
 
 
 def test_evidence_fingerprint_is_stable_under_link_list_reordering():
-    # Stage-2 code-review finding (P3.5 post-push round): the collector's
-    # link ORDER (set iteration, filesystem walk, parallel collection) is
-    # not evidence -- reordering must never move the digest.
+    # Stage-2 code-review finding (P3.5 post-push round). Originally pinned a
+    # dedicated link-sort step (`_link_sort_key`); since the round-4 post-push
+    # doubt-review fix, `evidence_fingerprint` hashes only the two AGGREGATE
+    # derived facts (`highest_ok_layer`, `bound_but_absent_layers`), which
+    # never examine link identity or order at all -- so this invariant now
+    # holds unconditionally, a strictly stronger guarantee than the sort-key
+    # this test originally exercised. Kept as a regression pin either way.
     link_a = {"id": "t::a", "path": "t::a", "ac_id": "AC01"}
     link_b = {"id": "t::b", "path": "t::b", "ac_id": "AC02"}
     node_forward = {"coverage": {"unit": "ok"}, "tests": {"unit": [link_a, link_b]}}
@@ -180,18 +184,56 @@ def test_evidence_fingerprint_is_stable_under_link_list_reordering():
 
 
 def test_evidence_fingerprint_is_stable_under_reordering_of_links_sharing_id_path_and_ac_id():
-    # Low finding, Stage-3 doubt-review round 3, P3.5 post-push round: one
-    # test carrying both a @pytest.mark tag and a # @covers comment for the
-    # same FR files two links with identical id/path/ac_id, differing only
-    # in tag_source -- (id, path, ac_id) alone is not a total order over
-    # that pair, so `sorted`'s stability let their relative order (and the
-    # digest) depend on collector emission order rather than content.
-    # `_link_sort_key` now also carries tag_source, closing the gap.
+    # Low finding, Stage-3 doubt-review round 3, P3.5 post-push round. Same
+    # note as the test above: the round-4 post-push doubt-review fix removed
+    # `_link_sort_key` entirely -- link order/identity no longer participates
+    # in the fingerprint at all, so this now holds unconditionally rather
+    # than because of a specific tie-break key. Kept as a regression pin.
     link_marker = {"id": "t::a", "path": "t::a", "ac_id": "AC01", "tag_source": "marker"}
     link_comment = {"id": "t::a", "path": "t::a", "ac_id": "AC01", "tag_source": "comment"}
     node_forward = {"coverage": {"unit": "ok"}, "tests": {"unit": [link_marker, link_comment]}}
     node_reversed = {"coverage": {"unit": "ok"}, "tests": {"unit": [link_comment, link_marker]}}
     assert evidence_fingerprint(node_forward) == evidence_fingerprint(node_reversed)
+
+
+def test_evidence_fingerprint_agrees_across_raw_content_that_differs_but_derives_the_same_facts():
+    # Round-4 post-push doubt-review fix, HIGH (the core regression this
+    # fingerprint change exists to close): two nodes whose RAW `tests` link
+    # content differs (simulating the OS/marker-selection variance
+    # `compare_traceability_manifest.py` documents as inherent) but whose
+    # DERIVED facts (highest_ok_layer, bound_but_absent_layers) agree must
+    # fingerprint IDENTICALLY -- this is what makes an operator's demoted
+    # veto exitable only on a genuinely new evidence state, not on every run.
+    node_then = {
+        "coverage": {"unit": "ok"},
+        "tests": {"unit": [{"id": "t::a", "path": "t::a", "ac_id": "AC01", "status": "enabled", "executed": "pass"}]},
+    }
+    node_now = {
+        "coverage": {"unit": "ok"},
+        # Different link identity/count (a different test collected this
+        # run), same derived facts: still one "ok" unit layer, nothing
+        # bound-but-absent.
+        "tests": {"unit": [
+            {"id": "t::b", "path": "t::b", "ac_id": "AC01", "status": "enabled", "executed": "pass"},
+            {"id": "t::c", "path": "t::c", "ac_id": "AC01", "status": "enabled", "executed": "pass"},
+        ]},
+    }
+    assert evidence_fingerprint(node_then) == evidence_fingerprint(node_now)
+
+
+def test_evidence_fingerprint_disagrees_when_a_bound_test_actually_goes_absent():
+    # Inverse of the test above: a REAL change to the derived facts (a bound
+    # test that was previously decided now shows no decided outcome at all)
+    # must still move the digest.
+    node_then = {
+        "coverage": {"unit": "ok"},
+        "tests": {"unit": [{"id": "t::a", "path": "t::a", "ac_id": "AC01", "status": "enabled", "executed": "pass"}]},
+    }
+    node_now = {
+        "coverage": {"unit": "ok"},
+        "tests": {"unit": [{"id": "t::a", "path": "t::a", "ac_id": "AC01", "status": "enabled", "executed": "not_run"}]},
+    }
+    assert evidence_fingerprint(node_then) != evidence_fingerprint(node_now)
 
 
 def test_evidence_fingerprint_agrees_across_a_shallow_copy_that_only_touches_required_layers():

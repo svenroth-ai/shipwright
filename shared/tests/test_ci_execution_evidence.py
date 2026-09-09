@@ -201,6 +201,67 @@ def test_error_when_source_commit_mismatches(monkeypatch, tmp_path):
     assert result.status == "error"
 
 
+def test_unavailable_when_source_commit_is_the_zero_sha_producer_degradation(monkeypatch, tmp_path):
+    # Round-4 post-push doubt-review fix, medium: the plugin collector's own
+    # `git_head` returns the documented zero-SHA sentinel ("0" * 40) when ITS
+    # OWN `git rev-parse HEAD` subprocess call fails or returns empty output
+    # -- a producer-side degradation signal, not an attacker-crafted mismatch.
+    # Must resolve `unavailable` (a graceful "no usable evidence yet"), never
+    # the hard, self-repeating `error` a genuine forgery attempt gets.
+    committed = _committed_manifest()
+    artifact = _artifact_from(committed, source_commit="0" * 40)
+    monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
+    monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
+    monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
+    result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
+    assert result.status == "unavailable"
+
+
+def test_unavailable_when_source_commit_does_not_look_like_a_hex_sha_at_all(monkeypatch, tmp_path):
+    # Same fix, the more general case the zero-SHA sentinel is one instance
+    # of: any non-40-char-hex value is a malformed/degraded producer signal,
+    # not a content-binding violation worth a hard operational failure.
+    committed = _committed_manifest()
+    artifact = _artifact_from(committed, source_commit="not-a-real-sha")
+    monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
+    monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
+    monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
+    result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
+    assert result.status == "unavailable"
+
+
+def test_a_genuinely_mismatched_but_well_formed_source_commit_still_errors(monkeypatch, tmp_path):
+    # The zero-SHA/malformed carve-out must not swallow the real forgery
+    # case: a well-formed 40-char hex SHA that simply names a DIFFERENT
+    # commit is still a hard `error`, exactly as
+    # `test_error_when_source_commit_mismatches` already pins -- this test
+    # exists only to make the boundary between the two paths explicit in one
+    # place, right next to the two new `unavailable` cases above.
+    committed = _committed_manifest()
+    artifact = _artifact_from(committed, source_commit="c" * 40)
+    monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
+    monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
+    monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
+    result = m.resolve_execution_evidence(_COMMIT, committed_manifest=committed, project_root=tmp_path)
+    assert result.status == "error"
+
+
+def test_resolve_execution_evidence_lowercases_the_caller_supplied_commit(monkeypatch, tmp_path):
+    # Round-4 post-push doubt-review fix, low: `resolve_ci_verification`
+    # already lowercases internally; this function previously compared the
+    # CALLER's original-case `commit` against the artifact's `source_commit`
+    # (which `git rev-parse HEAD` always returns lowercase), so an
+    # upper/mixed-case caller could spuriously mismatch two names for the
+    # identical commit.
+    committed = _committed_manifest()
+    artifact = _artifact_from(committed, source_commit=_COMMIT)  # lowercase, as git always returns
+    monkeypatch.setattr(m, "resolve_ci_verification", lambda *a, **k: _verified())
+    monkeypatch.setattr(m, "_gh_api", lambda path, *, cwd: {"artifacts": [_listed()]})
+    monkeypatch.setattr(m, "_download_and_parse_artifact", lambda *a, **k: (artifact, None))
+    result = m.resolve_execution_evidence(_COMMIT.upper(), committed_manifest=committed, project_root=tmp_path)
+    assert result.status == "confirmed"
+
+
 def test_error_when_structural_shape_disagrees(monkeypatch, tmp_path):
     """The content-binding forgery test's other half: same source_commit, but
     the artifact's STRUCTURE (a renamed/added requirement) disagrees with the

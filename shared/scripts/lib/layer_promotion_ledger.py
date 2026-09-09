@@ -60,50 +60,48 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
-def _link_sort_key(link: object) -> tuple[str, str, str, str]:
-    """Total over every link ``_test_links_requirements`` can produce, not
-    merely over the common case (Stage-3 doubt-review round 3, P3.5
-    post-push round): one test carrying both a ``@pytest.mark`` tag and a
-    ``# @covers`` comment for the same FR files two links with identical
-    ``id``/``path``/``ac_id``, differing only in ``tag_source`` — without it
-    in the key, ``sorted``'s stability means their relative order (and so
-    the digest) depends on collector emission order, not content. Adding it
-    closes that gap outright rather than merely documenting it as
-    deterministic-by-construction today."""
-    if not isinstance(link, dict):
-        return ("", "", "", "")
-    return (
-        str(link.get("id", "")), str(link.get("path", "")),
-        str(link.get("ac_id", "")), str(link.get("tag_source", "")),
-    )
-
-
-def _canonical_tests(tests: dict) -> dict:
-    """``tests`` with each layer's link list sorted by a stable key (Stage-2
-    code-review finding, P3.5 post-push round): the collector's link order
-    (set iteration / filesystem walk / parallel collection) is not evidence
-    — reordering with no real outcome change must never move the digest."""
-    return {
-        layer: sorted(links, key=_link_sort_key) if isinstance(links, list) else links
-        for layer, links in tests.items()
-    }
-
-
 def evidence_fingerprint(node: dict) -> str:
-    """A content fingerprint over the manifest evidence a decision responds to.
+    """A content fingerprint over the DERIVED evidence facts a decision
+    responds to — NOT the raw ``coverage``/``tests`` manifest fields (round-4
+    post-push doubt-review fix, HIGH). Hashes exactly the two derived facts
+    ``lib.layer_promotion.evaluate_fr``'s own ``predicate_holds`` is built
+    from: :func:`~lib.layer_promotion.highest_ok_layer` and
+    :func:`~lib.layer_promotion.bound_but_absent_layers`.
 
-    Scoped to ``coverage`` + ``tests`` only (never ``title``/``priority``/etc.
-    — those do not bear on layer evidence) so an entry can be checked for
-    staleness later: if the FR's evidence has moved on since this fingerprint
-    was recorded, a decision made against the OLD state is not silently
-    treated as still current. Canonical (sorted keys) JSON, so key order in
-    the source manifest never changes the digest — and each layer's test-link
-    list is also sorted (:func:`_canonical_tests`), so link ORDER never does
-    either.
+    **Why raw fields were wrong.** The tool-side writer
+    (``promote_required_layers.plan_promotions``) and the operator-side
+    writer (``record_layer_promotion_decision.py``) fingerprint structurally
+    DIFFERENT ``coverage``/``tests`` bases by construction — CI-sourced vs.
+    the committed manifest's own claim — which is exactly why
+    ``compare_traceability_manifest.py`` excludes both fields from
+    structural drift comparison ("which tests a run *collected* depends on
+    OS/marker selection"). Hashing the raw dicts made the two writers'
+    fingerprints permanently incomparable: an operator's ``demoted`` veto
+    could never exit once the CI-evidence path started returning real
+    values, because ``fingerprint_drifted`` was ALWAYS true (the two raw
+    bases never agreed in the first place) regardless of whether the
+    evidence had genuinely moved — re-escalating
+    ``REASON_CONTRADICTS_DECISION`` on every single run. Hashing only the
+    derived facts both writers' bases reduce to makes the two comparable,
+    and as a side effect makes round-2's "OS/marker-selection raw-tests
+    noise" concern inert by construction rather than merely disclosed.
+
+    Deliberately NOT scoped to ``required_layers`` (the binding itself, not
+    evidence — a live-cell narrowing is already covered by
+    ``_narrowed_since_promotion``) or every layer's ``coverage``/``tests``
+    entry verbatim — only the two facts the demoted-branch drift check
+    actually needs to agree on.
     """
+    try:  # Package context (shared/tests: `shared/scripts` on sys.path).
+        from .layer_promotion import bound_but_absent_layers, highest_ok_layer
+    except ImportError:  # Loaded by file path; deferred to break the import
+        # cycle -- `layer_promotion` imports `fingerprint_drifted` FROM this
+        # module at ITS top level, so a top-level import here in the other
+        # direction would fail on whichever module loads first.
+        from layer_promotion import bound_but_absent_layers, highest_ok_layer  # type: ignore
     payload = {
-        "coverage": node.get("coverage") or {},
-        "tests": _canonical_tests(node.get("tests") or {}),
+        "highest_ok_layer": highest_ok_layer(node.get("coverage") or {}),
+        "bound_but_absent_layers": sorted(bound_but_absent_layers(node.get("tests") or {})),
     }
     digest = hashlib.sha256(
         json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")

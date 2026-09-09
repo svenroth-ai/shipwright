@@ -254,24 +254,80 @@
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-09T12:40:22.593115+00:00",
+      "completed_at": "2026-09-09T13:35:22.100099+00:00",
       "disposition": null,
-      "recorded_by": "orchestrator",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/tools/record_layer_promotion_decision.py:324 + shared/scripts/lib/layer_promotion.py:283",
+          "line": null,
+          "finding": "Claim under doubt: the rebuilt escalation is faithful to diff_risk_recheck's 'exitable re-run' clause of AC-5 — record_layer_promotion_decision.py fingerprints the working-tree/committed manifest node; the automated tool fingerprints the CI-sourced eval_node. These bases differ by construction (compare_traceability_manifest.py strips exactly these two fields from structural comparison because collection depends on OS/marker selection). A demoted FR with predicate_holds=True at veto time re-escalates REASON_CONTRADICTS_DECISION on every subsequent automated run regardless of whether evidence actually changed, because fingerprint_drifted is essentially always True. The operator's veto is permanently non-exitable except by abandoning it. No test catches this because the demoted tests derive both bases from the same fixture node.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": ".shipwright/planning/iterate/2026-09-09-p3-5-promote-layers-per-fr-restart.md (disposition table) vs shared/scripts/tools/ci_manifest_drift_check.py + _test_links_io.py",
+          "line": null,
+          "finding": "Claim under doubt: design doc External-Plan-Review-Findings #6 disposition correctly traces the source_commit producer chain — The disposition cites regenerate_base_head/_build, which are never called by ci_manifest_drift_check.py. The real chain is generate_file -> io.git_head(project_root), which swallows failures and returns 40 zeros -- a real, undocumented failure mode mapping to a hard operational error instead of the graceful unavailable the design intends.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/ci_execution_evidence.py:329",
+          "line": null,
+          "finding": "Claim under doubt: commit string casing is normalized consistently across resolve_ci_verification and resolve_execution_evidence — resolve_ci_verification lowercases commit; resolve_execution_evidence compares source_commit against the caller's original-case string, producing a spurious content-binding error for an uppercase-but-legal SHA.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/promote_required_layers.py:252,262",
+          "line": null,
+          "finding": "Claim under doubt: every operational failure in promote_required_layers surfaces as the documented error/exit-2 JSON shape — An id-less committed manifest node causes an unguarded KeyError on node['id'] that escapes as a raw traceback rather than the documented error shape.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py:49 vs promote_required_layers.py:71",
+          "line": null,
+          "finding": "Claim under doubt: tests exercise one module object per source file so a monkeypatch reaches the code under test — ci_execution_evidence.py is loaded under two different module names in the tools/tests root (scripts.ci_execution_evidence vs bare ci_execution_evidence), an ADR-045-class hazard; the current seam test works around it but undocumented.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/promote_required_layers.py:511",
+          "line": null,
+          "finding": "Claim under doubt: exit 3 always means every FR that DID decide cleanly this run is still written — The --manifest dry-run branch returns 3 on an escalation while having written nothing at all, contradicting the module's own docstring promise about exit 3.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-09T11:18:37.308631+00:00",
-      "disposition": "Sub-iterate runner has no Agent/Task tool (cannot spawn spec-reviewer/code-reviewer/doubt-reviewer); orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge and promotes this row with --force.",
-      "recorded_by": "none",
+      "completed_at": "2026-09-09T13:48:03.838514+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -404,9 +460,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-09T12:31:21.312940+00:00",
+      "completed_at": "2026-09-09T13:35:21.989553+00:00",
       "disposition": null,
-      "recorded_by": "orchestrator",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null,
       "model_tier": "opus"

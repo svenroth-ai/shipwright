@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
-  "date": "2026-09-09T13:26:23.254807Z",
+  "date": "2026-09-09T14:54:31.216189Z",
   "event_at": "2026-09-09T12:15:21.694076+00:00",
   "type": "feature",
   "complexity": "medium",
@@ -44,7 +44,7 @@
       {
         "behavior": "AC-R10 (content binding): an artifact whose source_commit mismatches the resolved commit, or whose structural shape disagrees with the committed manifest, resolves error and never falls through to confirmed",
         "disposition": "tested",
-        "evidence": "shared/tests/test_ci_execution_evidence.py::test_error_when_source_commit_mismatches, ::test_error_when_structural_shape_disagrees PASSED"
+        "evidence": "shared/tests/test_ci_execution_evidence.py::test_error_when_source_commit_mismatches, ::test_error_when_structural_shape_disagrees, ::test_a_genuinely_mismatched_but_well_formed_source_commit_still_errors PASSED"
       },
       {
         "behavior": "AC-R11: a poisoned acs field on an FR node never changes evaluate_fr's decision, ledger fingerprint, or spec.md write versus the same node with acs removed",
@@ -103,6 +103,27 @@
         "evidence": "shared/tests/test_ci_execution_evidence.py::test_error_when_top_level_requirements_is_not_an_object PASSED -- verified RED (real AttributeError traceback reproduced) against the pre-fix guard ordering before being confirmed GREEN"
       },
       {
+        "behavior": "round-5 post-push doubt-review fix (HIGH): evidence_fingerprint hashes DERIVED facts (highest_ok_layer, bound_but_absent_layers) instead of raw coverage/tests -- the two writers' bases (committed-manifest node vs. CI-sourced eval_node) now agree whenever the FR's actual promotability-relevant state agrees, so an operator's demoted veto stays a clean skip across raw OS/marker-selection noise but genuinely re-escalates when the derived facts actually move",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_promotion_ledger.py::test_evidence_fingerprint_agrees_across_raw_content_that_differs_but_derives_the_same_facts, ::test_evidence_fingerprint_disagrees_when_a_bound_test_actually_goes_absent, shared/scripts/tools/tests/test_promote_required_layers.py::test_demoted_fr_with_raw_evidence_noise_but_same_derived_facts_stays_a_clean_skip (composed through the REAL seam, both writers) ALL PASSED -- verified RED against the pre-fix raw-hash fingerprint before being confirmed GREEN",
+        "category": "integration"
+      },
+      {
+        "behavior": "round-5 post-push doubt-review fix (medium): a downloaded artifact's source_commit that is the zero-SHA producer-degradation sentinel, or does not look like a real 40-char hex SHA at all, resolves unavailable (not a hard error) -- distinct from a well-formed but genuinely mismatched source_commit, which still errors",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ci_execution_evidence.py::test_unavailable_when_source_commit_is_the_zero_sha_producer_degradation, ::test_unavailable_when_source_commit_does_not_look_like_a_hex_sha_at_all, ::test_a_genuinely_mismatched_but_well_formed_source_commit_still_errors ALL PASSED -- both unavailable cases verified RED (returned error pre-fix) before being confirmed GREEN; the zero-SHA case caught a real defect in the first draft of the fix (all-zeros is valid-looking hex, so a format-only check alone did not catch it)"
+      },
+      {
+        "behavior": "round-5 post-push doubt-review fix (low): resolve_execution_evidence lowercases the caller-supplied commit before comparing it against source_commit, matching resolve_ci_verification's own normalization",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ci_execution_evidence.py::test_resolve_execution_evidence_lowercases_the_caller_supplied_commit PASSED -- verified RED (upper-case caller commit spuriously mismatched) before being confirmed GREEN"
+      },
+      {
+        "behavior": "round-5 post-push doubt-review fix (low): an active committed-manifest node with no id (or a non-string one) is excluded from evaluation rather than escaping as a raw KeyError traceback; the other, well-formed FR in the same run is unaffected",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_an_id_less_active_node_is_excluded_not_a_raw_traceback PASSED -- verified RED (real KeyError: 'id' reproduced) before being confirmed GREEN"
+      },
+      {
         "behavior": "the real GitHub Actions artifact-download-by-id mechanism (subprocess stdout=fh + zipfile extraction) matches production against a real artifact from this repo's own CI history -- empirical, non-mocked confidence-calibration probe, two consecutive no-finding runs, asymptote reached",
         "disposition": "tested",
         "evidence": "Step 3.8 Confidence Calibration probes (design doc `## Confidence Calibration`) against gh api repos/svenroth-ai/shipwright/actions/artifacts/10090708144/zip, cross-checked by shared/tests/test_ci_execution_evidence.py::test_download_extracts_and_parses_the_real_zip, ::test_download_reports_a_zip_missing_the_expected_file, ::test_download_reports_a_corrupt_zip (real zipfile construction, no mocked zip internals) ALL PASSED",
@@ -116,8 +137,8 @@
       }
     ],
     "counts": {
-      "testable": 19,
-      "tested": 19,
+      "testable": 23,
+      "tested": 23,
       "untestable": 0,
       "untested_testable": 0
     },
@@ -128,9 +149,9 @@
   },
   "surface_verification": {
     "surface": "cli",
-    "tests_run": 157,
+    "tests_run": 227,
     "exit_code": 0,
-    "justification": "CLI/library-only change: ci_execution_evidence.py + promote_required_layers.py + ci_execution_evidence_check.py add a gh-API-backed execution-tier evidence resolver, a per-FR promotion CLI, and a read-only diagnostic CLI -- no web UI, API server, or SSE/WS surface to drive. The surface run above is the CLI-facing pytest suite for the new/changed shared/tests modules; the canonical F0 run (all 18 monorepo test roots, this run-id, GREEN) is the broader unit/integration evidence."
+    "justification": "CLI/library-only change: ci_execution_evidence.py + promote_required_layers.py + ci_execution_evidence_check.py add a gh-API-backed execution-tier evidence resolver, a per-FR promotion CLI, and a read-only diagnostic CLI -- no web UI, API server, or SSE/WS surface to drive. The surface run above is the CLI-facing pytest suite for the new/changed shared/tests + shared/scripts/tools/tests modules for this mechanism (test_ci_execution_evidence.py, test_layer_promotion_ledger.py, test_layer_promotion.py, test_layer_promotion_apply.py, test_fr_layer_cell_writer.py, test_ci_yml_execution_evidence_step_shape.py, test_promote_required_layers.py, test_ci_execution_evidence_check.py, test_record_layer_promotion_decision.py); the canonical F0 run (all 18 monorepo test roots, this run-id, GREEN) is the broader unit/integration evidence."
   },
   "declared_removals": []
 }
