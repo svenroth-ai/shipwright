@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-s2-adopted-config-shape",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T19:06:49.752696+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan contains no implementation content at all. It restates the acceptance criteria but says nothing about how phase_tasks[] entries are seeded or marked: no schema change (new field? e.g. `origin: \"adopted\" | \"executed\"`, or a boolean, or a status enum?), no code path (adoption handler, migration for previously adopted repos), and no definition of what \"marked\" means. A reviewer cannot evaluate soundness of an approach that hasn't been described.",
+          "suggestion": "Specify the concrete mechanism: the exact field(s) added to phase_tasks[] entries, where seeding happens in the adoption flow, and how existing/legacy adopted repos are handled (backfill migration vs. read-time default).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Existing repos already adopted before this change are unaddressed. The acceptance criterion \"a newly adopted repo does not render as having skipped phases\" is future-tense only; if the renderer distinguishes adopted-in vs. executed phases, previously adopted repos (with no marking) will presumably render as executed or skipped incorrectly.",
+          "suggestion": "Decide explicitly whether the marking is backfilled for existing adopted repos, or whether unmarked entries have a defined default rendering. State which and verify it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Does not render as having skipped phases\" depends on the renderer/consumer, but no consumer-side change is mentioned. If the skip-detection logic keys off task counts or completion status rather than the new marking, seeding entries alone may not fix the rendering — and if it keys off the marking, that consumer logic change is a missing dependency.",
+          "suggestion": "Identify where \"skipped phases\" rendering is computed and confirm seeding + marking actually satisfies it; include that consumer change in scope if needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Seeding phase_tasks[] entries at adoption may break existing consumers that assume phase_tasks[] entries correspond to actually-executed work (e.g., completion metrics, audit trails, s4 verifiers). Fabricated-looking task entries could inflate progress stats or fail validation elsewhere.",
+          "suggestion": "Audit all readers of phase_tasks[] for assumptions about provenance; the marking field should be checked anywhere entries are counted or validated.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The s4 dependency is stated but not decomposed: \"blocks the verifiers in s4\" implies the marking format must be exactly what s4 expects. Without specifying the field shape now, s4 risks rework.",
+          "suggestion": "Confirm the marking representation with the s4 verifier design before committing to a schema.  Overall assessment: The change is likely small and directionally sound, but the \"implementation approach\" contains no approach — it's a scope statement with no mechanism, no schema, and no handling of already-adopted repos. Revise to include the concrete data-model change and consumer impact before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan contains no implementation steps beyond restating the scope and acceptance criteria. It does not specify where adoption seeding occurs, the `phase_tasks[]` shape, the proposed marker/value, or how rendering will interpret it.",
+          "suggestion": "Define the concrete data contract (for example, an explicit `status`/`origin` field), the adoption-time seeding path, and the renderer behavior for established phases versus genuinely skipped or executed phases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "This change necessarily affects every consumer of `phase_tasks[]`—renderers, validators, serializers, migrations, and the s4 verifiers—but none are identified. Adding a marker only at write time will not meet the rendering criterion unless readers are updated.",
+          "suggestion": "Inventory all reads and writes of `phase_tasks[]`; update schemas/types and validation, rendering/status logic, and s4 verifier expectations together. Specify backward compatibility for records created before this field exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Without a defined distinction between “established at adoption,” “executed,” and “skipped,” existing completion/progress calculations could incorrectly count adopted phases as completed, or still display them as skipped.",
+          "suggestion": "Use mutually unambiguous states or separate provenance from completion status, and explicitly state how each state affects progress, ordering, and UI labels.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not address partial or repeat adoption. A repository may already contain some tracked tasks, be adopted again after interruption, or have phases that are genuinely absent rather than already established.",
+          "suggestion": "Make seeding idempotent, avoid overwriting existing execution history, and define eligibility rules per phase so only phases actually established before adoption receive the adoption marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "No migration/read-default behavior is specified for existing repositories whose `phase_tasks[]` entries lack the new marker.",
+          "suggestion": "Decide whether legacy entries are migrated or interpreted with a conservative default, and add fixtures/tests for both legacy and newly adopted records.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criteria are outcome-oriented but not testable as written; “does not render as having skipped phases” leaves the expected rendered state ambiguous.",
+          "suggestion": "Add targeted tests asserting the persisted adopted marker, the displayed label/state for a newly adopted repo, and a contrasting executed-phase example.  Overall, the intended direction is sound, but the submitted approach is not yet an implementation plan: it needs a concrete state contract and coordinated reader/writer/verifier changes before work starts. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T19:05:45.005872+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: approach — Severity: high\n  Finding: The mini-plan contains no implementation content at all. It restates the acceptance criteria but says nothing about *how* phase_tasks[] entries are seeded or marked: no schema change (new field? e.g. `origin: \"adopted\" | \"executed\"`, or a boolean, or a status enum?), no code path (adoption handler, migration for previously adopted repos), and no definition of what \"marked\" means. A reviewer cannot evaluate soundness of an approach that hasn't been described.\n  Suggestion: Specify the concrete mechanism: the exact field(s) added to phase_tasks[] entries, where seeding happens in the adoption flow, and how existing/legacy adopted repos are handled (backfill migration vs. read-time default).\n\n- Category: edge-case — Severity: medium\n  Finding: Existing repos already adopted before this change are unaddressed. The acceptance criterion \"a newly adopted repo does not render as having skipped phases\" is future-tense only; if the renderer distinguishes adopted-in vs. executed phases, previously adopted repos (with no marking) will presumably render as executed or skipped incorrectly.\n  Suggestion: Decide explicitly whether the marking is backfilled for existing adopted repos, or whether unmarked entries have a defined default rendering. State which and verify it.\n\n- Category: edge-case — Severity: medium\n  Finding: \"Does not render as having skipped phases\" depends on the renderer/consumer, but no consumer-side change is mentioned. If the skip-detection logic keys off task counts or completion status rather than the new marking, seeding entries alone may not fix the rendering — and if it keys off the marking, that consumer logic change is a missing dependency.\n  Suggestion: Identify where \"skipped phases\" rendering is computed and confirm seeding + marking actually satisfies it; include that consumer change in scope if needed.\n\n- Category: risk — Severity: medium\n  Finding: Seeding phase_tasks[] entries at adopti […truncated]\n\n[openai] 1. Category: approach  \n   Severity: high  \n   Finding: The mini-plan contains no implementation steps beyond restating the scope and acceptance criteria. It does not specify where adoption seeding occurs, the `phase_tasks[]` shape, the proposed marker/value, or how rendering will interpret it.  \n   Suggestion: Define the concrete data contract (for example, an explicit `status`/`origin` field), the adoption-time seeding path, and the renderer behavior for established phases versus genuinely skipped or executed phases.\n\n2. Category: dependency  \n   Severity: high  \n   Finding: This change necessarily affects every consumer of `phase_tasks[]`—renderers, validators, serializers, migrations, and the s4 verifiers—but none are identified. Adding a marker only at write time will not meet the rendering criterion unless readers are updated.  \n   Suggestion: Inventory all reads and writes of `phase_tasks[]`; update schemas/types and validation, rendering/status logic, and s4 verifier expectations together. Specify backward compatibility for records created before this field exists.\n\n3. Category: risk  \n   Severity: medium  \n   Finding: Without a defined distinction between “established at adoption,” “executed,” and “skipped,” existing completion/progress calculations could incorrectly count adopted phases as completed, or still display them as skipped.  \n   Suggestion: Use mutually unambiguous states or separate provenance from completion status, and explicitly state how each state affects progress, ordering, and UI labels.\n\n4. Category: edge-case  \n   Severity: medium  \n   Finding: The plan does not address partial or repeat adoption. A repository may already contain some tracked tasks, be adopted again after interruption, or have phases that are genuinely absent rather than already established.  \n   Suggestion: Make seeding idempotent, avoid overwriting existing execution history, and define eligibility rules per phase so only phases actually established befor […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T19:05:53.267737+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T19:05:53.383159+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-adopt/scripts/lib/config_writer.py (`_adopted_phase_task`)",
+          "line": null,
+          "finding": "sessionUuid` is a freshly minted UUID pointing to a session that doesn't exist, and `phaseTaskId` uses only 8 hex chars (`uuid4().hex[:8]`). Both are cosmetic/lifecycle-mismatch risks (e.g., any consumer that joins `phase_tasks[].sessionUuid` against a session store will get a dangling reference), but they mirror the schema's shape requirements and no such consumer is visible in the diff.",
+          "suggestion": "acceptable as-is; if a session-join consumer appears, revisit. No change required for s2.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-adopt/tests/test_config_writer.py (`test_writes_all_configs_in_order`)",
+          "line": null,
+          "finding": "The schema-boundary test hardcodes the `required` field list and regexes rather than loading `shared/schemas/run_config.v2.schema.json` — if the real schema tightens (e.g., requires `completedAt` or changes the id pattern), this test keeps passing while production entries become invalid.",
+          "suggestion": "load the actual schema file and validate the seeded entries against it; it's one `json.loads` away and removes the drift risk the test's own docstring claims to guard.  Checks that came up clean  - The `skipped` status for `test` is directly asserted to render as `complete` through the real mermaid reader (the AC1-critical case — if `_phase_tasks_status` treated `skipped` as unfinished, this test would fail). - `uuid.uuid4().hex[:8]` satisfies `^ptk-[0-9a-f]{4,}$`; collision risk within a single adoption's handful of entries is negligible. - No regression: `completed_steps`/`phase_history` emission is untouched, so all existing readers (v1 fallback path, `generate_handoff_on_stop`, etc.) are unaffected; `phase_tasks` is purely additive. - No security surface: no user input flows into the new fields beyond the phase-name list already trusted. - Cross-plugin import avoidance is deliberate and tested around via `spec_from_file_location`, matching the repo's stated ADR-045 workaround.  Overall assessment: ship-as-is; the two low-severity findings are refinements, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[config_writer.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-wvrellv6\\plugins\\shipwright-adopt\\scripts\\lib\\config_writer.py:249)",
+          "line": null,
+          "finding": "phase_tasks` is seeded only for `completed_steps`, but the adopted config’s pipeline includes `design` while the tested/default adopted steps are `project`, `plan`, `build`, and `test`. The phase-task-only dashboard reader will therefore have no established task for `design`, so a newly adopted repo will still display that pipeline phase as non-complete (and potentially skipped), violating AC1.",
+          "suggestion": "Seed an established-at-adoption task for every pipeline phase that adoption considers pre-existing, including `design`, or change the adopted pipeline to exclude phases that must not be represented as completed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_config_writer.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-wvrellv6\\plugins\\shipwright-adopt\\tests\\test_config_writer.py:318)",
+          "line": null,
+          "finding": "The consumer boundary probe only checks the four emitted tasks and omits the `design` phase that exists in the generated pipeline. It therefore passes despite the AC1 failure above.",
+          "suggestion": "Assert dashboard status for every configured pipeline phase, especially `design`, and require each to render complete for a newly adopted repo.  Ship-with-fixes: the adopted-task marker is implemented, but the new data shape leaves a pipeline phase unaccounted for and the tests do not detect it. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T19:10:03.466453+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] I reviewed the diff against the s2 spec (adopt seeds `phase_tasks[]` entries marked `establishedAtAdoption`; future adoptions only).\n\n**Spec compliance**\n\n- AC1 (adopted repo doesn't render as having skipped phases): implemented via terminal `done`/`skipped` statuses in `config_writer.py` (`_adopted_phase_task`), and directly exercised by `test_phase_tasks_read_as_complete_by_dashboard_phase_strip`, which loads the real s1 reader (`mermaid._get_phase_status`) — a genuinely weak-point-covering test, including the non-complete run-status branch that avoids the short-circuit.\n- AC2 (adopted-in vs executed distinguishable): additive top-level `establishedAtAdoption: true` plus the `result` marker, asserted in tests.\n- Future-adoptions-only scope respected; no backfill logic leaked into this sub-iterate (s2b is explicitly deferred in the doc change).\n\n**Findings**\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-adopt/scripts/lib/config_writer.py (`_adopted_phase_task`)\n  Finding: `sessionUuid` is a freshly minted UUID pointing to a session that doesn't exist, and `phaseTaskId` uses only 8 hex chars (`uuid4().hex[:8]`). Both are cosmetic/lifecycle-mismatch risks (e.g., any consumer that joins `phase_tasks[].sessionUuid` against a session store will get a dangling reference), but they mirror the schema's shape requirements and no such consumer is visible in the diff.\n  Suggestion: acceptable as-is; if a session-join consumer appears, revisit. No change required for s2.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-adopt/tests/test_config_writer.py (`test_writes_all_configs_in_order`)\n  Finding: The schema-boundary test hardcodes the `required` field list and regexes rather than loading `shared/schemas/run_config.v2.schema.json` — if the real schema tightens (e.g., requires `completedAt` or changes the id pattern), this test keeps passing while production entries become invalid.\n  Suggestion: load the actual schema file and vali […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: [config_writer.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-wvrellv6\\plugins\\shipwright-adopt\\scripts\\lib\\config_writer.py:249)\n- Finding: `phase_tasks` is seeded only for `completed_steps`, but the adopted config’s pipeline includes `design` while the tested/default adopted steps are `project`, `plan`, `build`, and `test`. The phase-task-only dashboard reader will therefore have no established task for `design`, so a newly adopted repo will still display that pipeline phase as non-complete (and potentially skipped), violating AC1.\n- Suggestion: Seed an established-at-adoption task for every pipeline phase that adoption considers pre-existing, including `design`, or change the adopted pipeline to exclude phases that must not be represented as completed.\n\n- Category: test\n- Severity: medium\n- File: [test_config_writer.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-wvrellv6\\plugins\\shipwright-adopt\\tests\\test_config_writer.py:318)\n- Finding: The consumer boundary probe only checks the four emitted tasks and omits the `design` phase that exists in the generated pipeline. It therefore passes despite the AC1 failure above.\n- Suggestion: Assert dashboard status for every configured pipeline phase, especially `design`, and require each to render complete for a newly adopted repo.\n\nShip-with-fixes: the adopted-task marker is implemented, but the new data shape leaves a pipeline phase unaccounted for and the tests do not detect it.\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T19:05:53.148007+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T19:05:53.493021+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

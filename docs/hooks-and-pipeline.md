@@ -1161,7 +1161,13 @@ in `phase_tasks[]`:
 > repo does not look like it skipped phases), and by that v1 path; and they are still read
 > by `generate_handoff_on_stop`, `suggest_iterate`, `update_build_dashboard`,
 > `state.detect_current_phase`, `convert_configs_to_events`, and the `design` /
-> `compliance` verifiers.
+> `compliance` verifiers. **Since sub-iterate s2 of that campaign, `shipwright-adopt`
+> ALSO seeds a `phase_tasks[]` entry per completed step** — status `done` (`skipped` for
+> `test`, mirroring `phase_history`'s existing `adopted`/`adopted-skipped` split) plus an
+> additive `establishedAtAdoption: true` marker, so a reader migrated to `phase_tasks[]`
+> keeps seeing the phase as not-outstanding while still being able to tell an adopted-in
+> entry from one an actual phase-runner executed. This is FUTURE adoptions only — the
+> already-adopted repo's on-disk config is backfilled separately (sub-iterate s2b).
 >
 > **The rule for a not-yet-migrated reader is therefore: consult `phase_tasks[]` first,
 > and fall back to the v1 fields — do not read either one alone.** `phase_quality.resolve_source`

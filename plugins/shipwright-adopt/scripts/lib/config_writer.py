@@ -10,9 +10,18 @@ Configs (in write order):
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+# Importable both via package-relative path (when called from
+# generate_adoption_artifacts.py which adds scripts/lib to sys.path) and via
+# direct test imports (`from lib.adopted_phase_tasks import ...`). Add
+# scripts/ so `lib.adopted_phase_tasks` resolves either way (see
+# artifact_writer.py for the same pattern).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.adopted_phase_tasks import build_adopted_phase_task  # noqa: E402
 
 
 def _utc_now_iso() -> str:
@@ -103,27 +112,14 @@ def write_build_config(
 
 
 def write_iterate_config(project_root: Path) -> Path:
-    """Write shipwright_iterate_config.json with the documented review schema.
+    """Write shipwright_iterate_config.json with the documented review schema
+    (per iteration-reviews.md / sub-iterate-runner.md).
 
-    Schema (per plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md
-    and plugins/shipwright-iterate/agents/sub-iterate-runner.md):
-
-      - external_review.feedback_iterations: controls plan/iterate-mode external
-        LLM review. Seeded to 1 — consistent with the shared default in
-        shared/config/external_review.json and with what /shipwright-project
-        seeds for greenfield projects (External Review on by default). Adopt
-        does NOT pre-emptively opt out: when no API key is set, the shared
-        resolver (get_external_review_status) returns "missing_keys", which
-        triggers an interactive prompt — the no-key case is already handled
-        correctly without a silent opt-out. A seed of 0 would instead resolve
-        to "user_disabled", a disguised opt-out the operator never chose.
-      - external_code_review.enabled: controls the code-review CASCADE (an
-        independent gate per iteration-reviews.md:191-194). Default true so
-        the cascade runs by default; user flips to false at project level
-        to opt out of diff exfiltration.
-      - events_context.mode: compact is the normal bounded LLM startup mode.
-        Shadow diagnoses selection without expanding prompt context; full is
-        an explicit rollback/forensic selection.
+    feedback_iterations seeds to 1 (shared default; no silent opt-out — a
+    missing key already resolves to an interactive "missing_keys" prompt, not
+    a disguised "user_disabled"). external_code_review.enabled defaults true
+    (independent cascade gate). events_context.mode "compact" is the normal
+    bounded startup mode.
     """
     config = {
         "external_review": {
@@ -187,6 +183,7 @@ def write_run_config(
             "run_id": f"adopt-{now[:19].replace(':', '')}",
             "at": now,
         }]
+    phase_tasks = [build_adopted_phase_task(step, now=now) for step in completed_steps]
     config = {
         "pipeline": [
             "project", "design", "plan", "build",
@@ -195,6 +192,7 @@ def write_run_config(
         "status": "complete",
         "current_step": None,
         "completed_steps": completed_steps,
+        "phase_tasks": phase_tasks,
         "profile": profile,
         "scope": scope,
         "autonomy": "supervised",
