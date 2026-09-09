@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+  "date": "2026-09-09",
+  "section": "Iterate — feature: per-FR Layers promotion, execution-tier evidence binding (restart)",
+  "title": "CI-artifact-bound execution evidence for per-FR Layers promotion (P3.5 restart)",
+  "context": "PR #690 (first P3.5 attempt) hit 12 BLOCK verdicts across 10 CI cycles, 9 restating the same root finding: it trusted coverage/tests straight out of the committed manifest, never verified as bound to a real CI run. ci_provenance.resolve_ci_verification (P3.4c) proves manifest STRUCTURE was not fabricated, but deliberately excludes tests/coverage from its comparison -- leaving the exact execution-tier trust gap PR #690 fell into.",
+  "decision": "Add shared/scripts/ci_execution_evidence.py (peer of ci_provenance.py): composes with resolve_ci_verification, then content-binds (source_commit + structural_diff) a newly CI-uploaded artifact (ci_manifest_drift_check.py's own regen, previously discarded), downloaded by its own artifact ID (never by name -- closes an external-review-caught cross-attempt gap). promote_required_layers.py REPLACES a node's coverage/tests with this CI-sourced evidence; ci.yml gains one artifact-upload step.",
+  "consequences": "A per-FR Layers promotion is now bound to a specific, unforgeable CI run's own execution output, never a self-reported manifest claim. Rebuilt (not copied) evaluator/ledger/writer/CLI shape from 13e3dbad7, zero evaluate_fr code changes needed. Review rounds found and fixed 6 real defects; one asymmetry (human-CLI fingerprint basis) is disclosed, not fixed. Details: see spec_ref ADR.",
+  "rationale": "Round-2 plan review's empirical feasibility check confirmed main's tip has genuine pre-existing structural drift today, so the mechanism correctly reports zero promotions until a drift-clean verified push run exists (Rollout validation, tracked). Content-binding (not a second unforgeability predicate) was chosen per the restart brief's explicit constraint against inventing one.",
+  "rejected": "Treating resolve_ci_verification's verified as sufficient for execution-tier fields too (the exact trap PR #690 fell into). Making the drift-check comparison blocking (forbidden by P3.4c's mandate/issue #449). A single aggregate CI step conclusion instead of an artifact (cannot be FR-scoped, and is itself a second unforgeability predicate).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-09-p3-5-promote-layers-per-fr-restart.md"
+}

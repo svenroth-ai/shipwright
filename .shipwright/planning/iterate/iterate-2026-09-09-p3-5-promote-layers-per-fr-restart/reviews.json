@@ -1,0 +1,483 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T11:18:22.958361+00:00",
+      "disposition": "All 7 checklist items pass; see design doc's Self-Review section.",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Before building, run the regen locally for a real commit and confirm the field exists and equals `git rev-parse HEAD` in a push context. If it doesn't exist or is a merge SHA, the binding must be derived some other way (e.g. via the run's own `head_sha` from the Artifacts/runs API), and that decision belongs in this plan, not discovered at review round 3.  2. Category: risk — Severity: medium Escalation volume (Case A). The plan's own analysis says bound-but-`not_run` tests (cross_plugin-marked, plugin-root-scoped) are a \"real, non-trivial source\" of escalations. If, post-merge, the first real run escalates 10+ of 20 FRs, that violates the sub-iterate spec's own \"zero to a handful\" line and the autonomy predicate — even though each individual escalation is spec-conformant. The plan defers this to rollout validation, which is defensible, but the CI job's test-selection exclusions are knowable now.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "During build, enumerate which of the 20 FRs' bound tests are excluded by `ci.yml`'s current marker/root selection and state the expected escalate count in the plan. If it's already most of the set, the predicate needs revision before merge, not after.  3. Category: dependency — Severity: medium The end-to-end mechanism (upload step, resolver, content binding) is unvalidated until (a) `main`'s tip is drift-clean and (b) one `verified` push run with a populated artifact exists. The housekeeping step that produces (a) is marked \"recommended, not blocking\" — but the rollout-validation AC cannot execute without it, and nothing in this plan tracks who/when. This is how the mechanism ships permanently unproven.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Make the drift-clean/regen housekeeping an explicit tracked prerequisite (even a filed issue referenced here), and gate \"considered done\" on the rollout check, as the plan already words it — just make the tracking artifact real rather than recommended.  4. Category: edge-case — Severity: low `gh run download` extracts a zip into a temp dir. Malformed/adversarial zip content from a compromised Actions artifact is a low-probability path (own repo, own API), but the parsed JSON is treated as trusted input to the promotion predicate once it passes structural binding. The `try/except` around `structural_diff` covers shape surprises, which is most of it.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "None required; optionally assert the downloaded file is the single expected JSON and reject any unexpected archive layout (already partially done via the literal-path location).  5. Category: risk — Severity: low `decision[\"_node\"] = eval_node` changes the fingerprint basis for promoted entries relative to any hypothetical prior ledger. Since PR #690 never merged, there are no production ledger entries to contradict — but if any operator hand-created entries via the human CLI during the aborted attempt on that branch, rebase + reuse could collide. The plan should confirm the ledger is empty of `p3.5`-era entries before first run.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "One-line check during rollout validation; note it in the run instructions.  Overall assessment: The core design is sound and directly answers the 12-round objection — one trust boundary via `ci_provenance`, execution-tier values sourced from a run-bound artifact with content binding, REPLACE-not-merge, and honest error/`unavailable`/exit-2 separation. The one genuinely load-bearing unknown is whether `source_commit` actually exists in the regenerated manifest with the expected semantics (finding 1); verify that empirically before build and the rest of the plan holds together.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The resolver selects an artifact by static name and downloads it with `gh run download {run_id} --name …`. Re-run attempts can leave multiple artifacts with that name under the same workflow run. The proposed structural/source-commit checks prove the artifact belongs to the commit, but not that it is from the verified attempt whose jobs API results established success. A prior attempt’s passing execution snapshot could therefore be used after a later attempt.",
+          "suggestion": "Make the artifact identity attempt-specific (for example include `github.run_attempt` in its name) and have the resolver identify the exact artifact deterministically. Alternatively, reject duplicate matching artifacts and fetch/download by the selected artifact ID, with an explicit attempt-binding check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The artifact parser’s schema contract is underspecified. Successful JSON plus a structural match does not ensure every requirement has valid `tests` and `coverage` shapes; structural comparison deliberately ignores those fields. Missing or malformed execution-tier fields could cause uncaught `KeyError`/type errors, or be normalized to `{}` and turn corrupted evidence into an ordinary skip.",
+          "suggestion": "Validate the execution-tier schema before constructing `requirements`: unique string requirement IDs, mapping-shaped coverage, list-shaped tests, and the expected per-link fields/types. Map any violation to `ExecutionEvidence(status=\"error\")`, and add malformed-but-structurally-matching artifact tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes a precise download layout for a single-file `actions/upload-artifact` archive but does not define the exact expected relative path or test it against the actual GitHub Actions/`gh` behavior. `gh run download --dir` extraction layout is part of this trust path; a mismatch will make all otherwise valid evidence unavailable after merge.",
+          "suggestion": "Define one exact archive member name and enforce it. Prefer downloading the selected artifact archive by ID and checking that it contains exactly the expected member, or add an integration/fixture test that verifies the upload/download layout used by the resolver.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "unavailable` is treated as a normal decided skip-all outcome, including when the required verified CI run cannot be found because main has structural drift. That is conservative for writes, but it conflicts with the stated operational contract that undecidable predicates halt and identify the exception; an exit-0 run can otherwise look equivalent to a genuine “no promotable FRs” run.",
+          "suggestion": "Keep promotion blocked, but emit a distinct aggregate outcome/reason and exit according to the existing hand-back contract when no execution evidence can be resolved for the target commit, or explicitly amend the sub-iterate contract to classify CI-unavailability as a non-escalating prerequisite failure. In either case, make it impossible to mistake this state for evidence-backed skips.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The post-merge rollout validation depends on separate drift-remediation work, yet that prerequisite is only recommended. Until it is owned and completed, the delivered feature has no path to validate a positive production promotion and will silently remain skip-only.",
+          "suggestion": "Create and link the housekeeping task before merge, with an owner and acceptance condition of a drift-clean verified push run followed by the stated real promotion report.  Overall, the core design correctly moves execution-tier decisions off the mutable committed manifest and reuses the existing provenance boundary well. It needs deterministic artifact-attempt binding and clearer failure/schema handling before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T11:17:07.812399+00:00",
+      "disposition": "GLM approve / OpenAI revise, 10 findings total -- see design doc's External-Plan-Review-Findings table: #1 (openai/high, cross-attempt artifact selection) and #2 (openai/medium, malformed execution-tier shape) accepted-and-fixed with new code + tests; remainder rejected-with-reason (already correct or already-disclosed known limitations).",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**1. Category: dependency — Severity: high**\nThe content-binding check (design §3 step 5) asserts `artifact[\"source_commit\"] == commit`, which presumes the CI-regenerated manifest contains a `source_commit` field naming the commit the run built. The plan never verifies this field exists or that CI populates it with the workflow's commit SHA (vs. e.g. a merge-sha for push events, or an absent/renamed field). If it's absent or a different value, **every** `verified` run resolves to `error` → exit 2, and the mechanism is dead on arrival — this is exactly the class of 13th-block failure the restart brief warns about.\n*Suggestion:* Before building, run the regen locally for a real commit and confirm the field exists and equals `git rev-parse HEAD` in a push context. If it doesn't exist or is a merge SHA, the binding must be derived some other way (e.g. via the run's own `head_sha` from the Artifacts/runs API), and that decision belongs in this plan, not discovered at review round 3.\n\n**2. Category: risk — Severity: medium**\nEscalation volume (Case A). The plan's own analysis says bound-but-`not_run` tests (cross_plugin-marked, plugin-root-scoped) are a \"real, non-trivial source\" of escalations. If, post-merge, the first real run escalates 10+ of 20 FRs, that violates the sub-iterate spec's own \"zero to a handful\" line and the autonomy predicate — even though each individual escalation is spec-conformant. The plan defers this to rollout validation, which is defensible, but the CI job's test-selection exclusions are knowable now.\n*Suggestion:* During build, enumerate which of the 20 FRs' bound tests are excluded by `ci.yml`'s current marker/root selection and state the expected escalate count in the plan. If it's already most of the set, the predicate needs revision *before* merge, not after.\n\n**3. Category: dependency — Severity: medium**\nThe end-to-end mechanism (upload step, resolver, content binding) is unvalidated until (a) `main`'s ti […truncated]\n\n[openai] 1. Category: security  \n   Severity: high  \n   Finding: The resolver selects an artifact by static name and downloads it with `gh run download {run_id} --name …`. Re-run attempts can leave multiple artifacts with that name under the same workflow run. The proposed structural/source-commit checks prove the artifact belongs to the commit, but not that it is from the verified attempt whose jobs API results established success. A prior attempt’s passing execution snapshot could therefore be used after a later attempt.  \n   Suggestion: Make the artifact identity attempt-specific (for example include `github.run_attempt` in its name) and have the resolver identify the exact artifact deterministically. Alternatively, reject duplicate matching artifacts and fetch/download by the selected artifact ID, with an explicit attempt-binding check.\n\n2. Category: edge-case  \n   Severity: medium  \n   Finding: The artifact parser’s schema contract is underspecified. Successful JSON plus a structural match does not ensure every requirement has valid `tests` and `coverage` shapes; structural comparison deliberately ignores those fields. Missing or malformed execution-tier fields could cause uncaught `KeyError`/type errors, or be normalized to `{}` and turn corrupted evidence into an ordinary skip.  \n   Suggestion: Validate the execution-tier schema before constructing `requirements`: unique string requirement IDs, mapping-shaped coverage, list-shaped tests, and the expected per-link fields/types. Map any violation to `ExecutionEvidence(status=\"error\")`, and add malformed-but-structurally-matching artifact tests.\n\n3. Category: dependency  \n   Severity: medium  \n   Finding: The plan assumes a precise download layout for a single-file `actions/upload-artifact` archive but does not define the exact expected relative path or test it against the actual GitHub Actions/`gh` behavior. `gh run download --dir` extraction layout is part of this trust path; a mismatch will make all other […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/promote_required_layers.py",
+          "line": 273,
+          "finding": "Key-namespace mismatch makes the whole CI-evidence path dead in production. resolve_execution_evidence builds ExecutionEvidence.requirements keyed by the COMMITTED MANIFEST KEY (expected_ids = committed_manifest['requirements'].keys(), ci_execution_evidence.py:344/351), which in every real manifest is the namespaced \"01::FR-01.01\" form (verified: .shipwright/compliance/test-traceability.json:8, and _test_links_requirements.py:8 states the key is <group digits>::<FR id> by construction). plan_promotions then looks that map up by the BARE display id (fr_id = node['id'] -> ci_by_fr.get(fr_id)). The lookup can never hit, so eval_node['coverage']/['tests'] are always {} and every FR resolves to SKIP_NO_EVIDENCE_YET even when evidence.status == 'confirmed'. Fails SILENTLY as exit 0 / 'skipped' -- indistinguishable from the honest 'unavailable' steady state, and camouflaged by the spec's own 'zero promotions today' operating-context prediction.",
+          "suggestion": "Key the lookup by the manifest key: iterate for manifest_key, node in active.items(): and use ci_by_fr.get(manifest_key). Tighten ExecutionEvidence.requirements's comment to 'manifest key (NN::FR-XX.YY) -> ...'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": 92,
+          "finding": "The orchestration tests validate a mock whose contract contradicts the real producer. _mock_evidence_from builds ci_map = {node['id']: ...} (display id), while the real resolve_execution_evidence emits manifest keys; test_ci_execution_evidence.py's _committed_manifest fixture likewise uses \"FR-01.01\" as both key and id. No test in the diff composes the real resolver's output shape with plan_promotions.",
+          "suggestion": "Change both fixtures to realistic namespaced keys (01::FR-01.01 with id: FR-01.01). Add one seam test that calls the REAL resolve_execution_evidence (faking only _gh_api and _download_and_parse_artifact) and feeds its returned ExecutionEvidence straight into plan_promotions, asserting a promotion actually happens.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 329,
+          "finding": "A malformed downloaded artifact can escape as a raw traceback instead of error. structural_diff -> _structural_view does data['requirements'].items() and node.items(); an artifact with \"requirements\": [] or a non-dict requirement node raises AttributeError, caught only as (KeyError, TypeError). The isinstance(raw_requirements, dict) guard runs AFTER this call.",
+          "suggestion": "Move the requirements-is-dict check (and a per-node dict check) above the structural_diff call; add AttributeError to the except tuple as belt-and-braces.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": 1,
+          "finding": "Twelve new .py files cross the 300-LOC source limit with no bloat-baseline entry in the diff.",
+          "suggestion": "Refresh the baseline as the last finalization step, or trim review-round provenance comments (next finding) to drop several files back under the ceiling for free.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 1,
+          "finding": "Large volume of review-round provenance narration inside source docstrings/comments (reviewer identity, round number, description of superseded implementations) rather than WHY. Est ~100-130 LOC removable across ci_execution_evidence.py, promote_required_layers.py, layer_promotion_ledger.py without touching any assertion.",
+          "suggestion": "Keep one sentence of WHY per non-obvious decision; move review-round history to the ADR/decision-drop.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": 1,
+          "finding": "Missing the sharpest 'REPLACE, never merge' test -- no test where CI evidence is CONFIRMED and CONTRADICTS the committed manifest.",
+          "suggestion": "Add test_ci_confirmed_evidence_overrides_a_greener_committed_claim (committed ok / CI MISSING -> skip) and its mirror (committed MISSING / CI ok -> promotes).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 101,
+          "finding": "Imports ci_provenance's private _gh_api despite an adjacent comment justifying the sibling import for the module's PUBLIC structural_diff only.",
+          "suggestion": "Promote _gh_api to public, or state why the private is deliberately shared.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 321,
+          "finding": "Case-normalisation asymmetry: resolve_ci_verification lowercases commit, resolve_execution_evidence compares source_commit against the caller's original-case string.",
+          "suggestion": "Normalise once at entry (commit.lower()).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/ci_execution_evidence.py",
+          "line": 279,
+          "finding": "Fail-open on an unrecognised verification status: anything other than no_record/not_verified/error falls through to the download path as if verified.",
+          "suggestion": "Invert the last branch to require status == 'verified' explicitly.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/ci_execution_evidence_check.py",
+          "line": 47,
+          "finding": "The manifest relpath literal is duplicated across 4 places (this file, promote_required_layers.py, record_layer_promotion_decision.py, ci.yml, plus churn_merge.py's existing TEST_TRACEABILITY constant).",
+          "suggestion": "Import one shared constant for the relpath.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/record_layer_promotion_decision.py",
+          "line": 326,
+          "finding": "Asymmetric error handling on the ledger write: catches only ConcurrentLedgerEditError, unlike the automated tool's matching call site which also catches OSError.",
+          "suggestion": "Add except OSError handling matching the automated tool's shape.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/ci_execution_evidence_check.py",
+          "line": 57,
+          "finding": "--commit interpolated into git rev-parse with no --end-of-options separator; a value beginning with '-' is parsed as an option. Low impact (read-only, fails clean) but new untrusted-input subprocess call.",
+          "suggestion": "Insert --end-of-options before the revision argument.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/layer_promotion_ledger.py",
+          "line": 295,
+          "finding": "append_decision's evidence_fingerprint parameter shadows the module-level evidence_fingerprint() function.",
+          "suggestion": "Rename the parameter.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": 599,
+          "finding": "Two clarity nits: a generator-throw trick used to raise from a lambda; an assertion that exists only to keep a variable referenced.",
+          "suggestion": "Use a plain def for the raising helper; drop the unused-variable-placating assertion.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T13:35:22.100099+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary",
+          "file": "shared/scripts/tools/record_layer_promotion_decision.py:324 + shared/scripts/lib/layer_promotion.py:283",
+          "line": null,
+          "finding": "Claim under doubt: the rebuilt escalation is faithful to diff_risk_recheck's 'exitable re-run' clause of AC-5 — record_layer_promotion_decision.py fingerprints the working-tree/committed manifest node; the automated tool fingerprints the CI-sourced eval_node. These bases differ by construction (compare_traceability_manifest.py strips exactly these two fields from structural comparison because collection depends on OS/marker selection). A demoted FR with predicate_holds=True at veto time re-escalates REASON_CONTRADICTS_DECISION on every subsequent automated run regardless of whether evidence actually changed, because fingerprint_drifted is essentially always True. The operator's veto is permanently non-exitable except by abandoning it. No test catches this because the demoted tests derive both bases from the same fixture node.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary",
+          "file": ".shipwright/planning/iterate/2026-09-09-p3-5-promote-layers-per-fr-restart.md (disposition table) vs shared/scripts/tools/ci_manifest_drift_check.py + _test_links_io.py",
+          "line": null,
+          "finding": "Claim under doubt: design doc External-Plan-Review-Findings #6 disposition correctly traces the source_commit producer chain — The disposition cites regenerate_base_head/_build, which are never called by ci_manifest_drift_check.py. The real chain is generate_file -> io.git_head(project_root), which swallows failures and returns 40 zeros -- a real, undocumented failure mode mapping to a hard operational error instead of the graceful unavailable the design intends.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary",
+          "file": "shared/scripts/ci_execution_evidence.py:329",
+          "line": null,
+          "finding": "Claim under doubt: commit string casing is normalized consistently across resolve_ci_verification and resolve_execution_evidence — resolve_ci_verification lowercases commit; resolve_execution_evidence compares source_commit against the caller's original-case string, producing a spurious content-binding error for an uppercase-but-legal SHA.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/promote_required_layers.py:252,262",
+          "line": null,
+          "finding": "Claim under doubt: every operational failure in promote_required_layers surfaces as the documented error/exit-2 JSON shape — An id-less committed manifest node causes an unguarded KeyError on node['id'] that escapes as a raw traceback rather than the documented error shape.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py:49 vs promote_required_layers.py:71",
+          "line": null,
+          "finding": "Claim under doubt: tests exercise one module object per source file so a monkeypatch reaches the code under test — ci_execution_evidence.py is loaded under two different module names in the tools/tests root (scripts.ci_execution_evidence vs bare ci_execution_evidence), an ADR-045-class hazard; the current seam test works around it but undocumented.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/promote_required_layers.py:511",
+          "line": null,
+          "finding": "Claim under doubt: exit 3 always means every FR that DID decide cleanly this run is still written — The --manifest dry-run branch returns 3 on an escalation while having written nothing at all, contradicting the module's own docstring promise about exit 3.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-09T13:48:03.838514+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/ci_execution_evidence.py (~`resolve_execution_evidence`, the `_find_unexpired_artifact` + `_download_and_parse_artifact` interaction)",
+          "line": null,
+          "finding": "The \"newest unexpired match by `created_at`\" selection is not actually enforced on the download path. `_find_unexpired_artifact` picks an artifact, but its ID is discarded; the download is done by name via `gh run download {run_id} --name …`, which applies GitHub's/gh's own (last-writer-wins) selection across attempts. So the external-review fix the design doc records as \"accepted-and-fixed\" (cross-attempt artifact selection) is only half-implemented: selection affects the existence/expiry gate, not which bytes are fetched. If gh resolves the name to an older attempt's artifact, the newest-by-`created_at` logic is silently bypassed.",
+          "suggestion": "Download by the selected artifact's ID (e.g. `gh api .../artifacts/{id}/zip` into the tempdir), or at minimum record the picked artifact's `id`/`created_at` in the confirmed result's detail so a mismatch is observable; alternatively downgrade the design-doc claim from \"fixed\" to \"narrowed\" honestly (the Known Limitations text already half-does this).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_ci_execution_evidence.py — `test_multiple_matching_artifacts_pick_the_newest_by_created_at",
+          "line": null,
+          "finding": "The test's fake `_download_and_parse_artifact` returns the \"newer\" payload unconditionally, regardless of which artifact was selected — so it cannot detect the defect above. A broken implementation that ignores the selection entirely (which is what the real code does at download time) passes this test. It validates the mock, not the behavior.",
+          "suggestion": "Assert the download is invoked with (or keyed on) the selected artifact's identity, or use a fake that returns different payloads per artifact ID and assert the newest one's content comes back.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/promote_required_layers.py — `main()`, the `if dry_run:` block",
+          "line": null,
+          "finding": "The dry-run path calls `load_ledger(...)` and `plan_promotions(...)` with no error wrapping, unlike `_plan_and_apply_locked` which catches `(OSError, ValueError)` on the ledger load and `(OSError, LayerCellWriteError)` on planning. A corrupted ledger (`ValueError` from `_parse_ledger`) or an unreadable/malformed spec.md in `--manifest` mode escapes as a raw traceback instead of the CLI's documented `{\"error\": ...}` exit-2 shape. The very tests that pin this shape (`test_a_corrupted_ledger_required_layers_is_an_operational_failure`, etc.) only exercise the non-dry-run path.",
+          "suggestion": "Wrap the dry-run ledger load and `plan_promotions` in the same try/except used by `_plan_and_apply_locked`, returning exit 2 with the JSON error body.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/record_layer_promotion_decision.py — `_decide_and_write_locked` / manifest read in `main()",
+          "line": null,
+          "finding": "Fingerprint-basis inconsistency across the two CLIs: the automated tool compares `fingerprint_drifted` against the CI-sourced `eval_node` (coverage/tests replaced by `ci_execution_evidence` output), but the human CLI records `evidence_fingerprint(node)` from the working-tree manifest's raw, unverified `coverage`/`tests` (and reads the working tree, not `git show HEAD`, unlike its sibling). Any state where working-tree values differ from CI-confirmed values (a local edit, a stale committed file, or simply a future divergence) makes every subsequent automated run see \"drift\" on a demoted FR; combined with `predicate_holds` this re-escalates `contradicts_recorded_decision` against a veto that was in fact recorded against the same green state.",
+          "suggestion": "Have the human CLI read the manifest commit-pinned (`git show HEAD:...`, same as `promote_required_layers._read_committed_manifest`) and, ideally, fingerprint the same CI-sourced basis the evaluator will later compare against — or document the divergence and its re-escalation consequence explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/ci_execution_evidence.py — `resolve_execution_evidence`, artifacts query",
+          "line": null,
+          "finding": "?per_page=100` with no pagination: a run with more than 100 artifacts (long-lived re-run histories, matrix-adjacent noise) can push the named artifact past the first page, yielding a false `unavailable`. Not disclosed in Known Limitations.",
+          "suggestion": "Follow the `Link` header / `page` parameter until exhausted or the name is found, or at minimum document the cap.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/ci_execution_evidence.py — content binding + `_execution_shape_error",
+          "line": null,
+          "finding": "structural_diff` strips `tests`/`coverage` per requirement, and the shape check normalizes missing/malformed values via `node.get(\"tests\") or {}`. So an artifact that is structurally identical to the committed manifest but with execution-tier fields deleted or emptied passes every check and resolves `confirmed` with empty `requirements` — a silent skip-all from a degraded/partial artifact rather than an `error`. Within the \"forging GitHub\" threat model this is mostly moot, but a truncated/partial upload (the very thing `continue-on-error: true` makes possible) degrades to \"everything decided as skip,\" which the round-2 design elsewhere works hard to distinguish from real negatives.",
+          "suggestion": "Require that each requirement present in the committed manifest also carries a `tests`/`coverage` key in the artifact (presence, not shape) and map absence to `error`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-09-p3-5-promote-layers-per-fr-restart/reviews.json — `doubt` row",
+          "line": null,
+          "finding": "The restart brief states \"The Stage-3 doubt review is mandatory here\" (the first attempt recorded `doubt: not_run`). This diff also records `doubt: not_run`, with a disposition deferring to an orchestrator-run cascade \"before merge.\" Unlike the prior attempt, no fresh-context adversarial review of this code is in evidence — and the one genuinely load-bearing trust-boundary subtlety (the download-by-name vs. selection-by-`created_at` mismatch above) is exactly the class of defect that review existed to catch.",
+          "suggestion": "Run the doubt review (or an equivalent fresh-context adversarial pass) against the built implementation before merge, per the brief.  Everything else holds up well: the per-FR never-a-sweep evaluator, the closed three-case escalation list, ledger-before-spec.md ordering, never-self-ack, the `error`-vs-`unavailable` exit-2 distinction, and the TOCTOU/concurrency guards are all implemented and pinned by genuinely behavioral tests (the collision, drift, narrowing, and forgery tests would fail on plausible broken implementations).  Overall: ship-with-fixes — the core mechanism is sound, but the claimed cross-attempt artifact fix is not real on the download path, the dry-run path lacks the error shape every other path guarantees, and the mandatory doubt review was skipped.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "[shared/scripts/ci_execution_evidence.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/ci_execution_evidence.py:256)",
+          "line": null,
+          "finding": "The resolver chooses a specific newest artifact in `match`, but then downloads by artifact name only. `gh run download --name` can retrieve a different same-named artifact from another attempt, so the selected artifact is never actually bound to the bytes evaluated.",
+          "suggestion": "Download the selected artifact by its artifact ID, and make artifact identity attempt-specific (or reject duplicates) so the artifact is deterministically tied to the verified attempt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[shared/scripts/lib/layer_promotion_ledger.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/lib/layer_promotion_ledger.py:1)",
+          "line": null,
+          "finding": "The change creates a separate promotion ledger and human override path instead of reusing `diff_risk_recheck`’s acknowledgement contract. The operator decision is accepted as a ledger entry without the required content/fingerprint/run-binding acknowledgement validation, so this does not implement the specified exitable `exit 3 + operator ack` mechanism.",
+          "suggestion": "Route escalations through the existing `diff_risk_recheck` acknowledgement and revalidation flow, including its binding/fingerprint checks; do not treat a new ledger entry as a substitute acknowledgement channel.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/scripts/tools/promote_required_layers.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/tools/promote_required_layers.py:456)",
+          "line": null,
+          "finding": "unavailable` execution evidence is allowed to continue, then every FR receives empty tests/coverage and exits as an ordinary skip. This silently converts the named undecidable case “binding exists but the test did not run in CI evidence” into exit 0 whenever the CI evidence is absent wholesale.",
+          "suggestion": "Produce the existing exit-3 hand-back for affected bound FRs when their CI execution evidence is absent, with `bound_test_absent_from_ci` named in the report.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[shared/scripts/ci_execution_evidence.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/ci_execution_evidence.py:278)",
+          "line": null,
+          "finding": "The purported execution-shape validation runs only after missing/falsy `coverage` and `tests` values have been normalized to `{}` and non-dict requirement nodes have been discarded. A structurally matching corrupted artifact can therefore return `confirmed` and become a normal skip rather than the required `error`.",
+          "suggestion": "Validate the raw artifact requirement mapping before normalization; require each node, `coverage`, and `tests` to have the expected object shape, and reject missing values rather than replacing them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/tests/test_ci_execution_evidence.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/tests/test_ci_execution_evidence.py:185)",
+          "line": null,
+          "finding": "The multiple-artifact test does not verify that the chosen artifact is downloaded: its fake downloader always returns the “newer” payload regardless of which artifact production code selected, while production code does not pass an artifact ID to the downloader. The test would pass if artifact selection were removed entirely.",
+          "suggestion": "Assert the selected artifact ID is passed to the download operation and have the fake downloader return data based on that ID.  Ship-with-fixes: the execution-evidence trust boundary remains bypassable across artifact attempts, and the escalation path does not follow the specified acknowledgement contract. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-09T11:28:54.691879+00:00",
+      "disposition": "GLM revise (7 findings) / OpenAI revise (5 findings), several overlapping -- see design doc's External-Code-Review-Findings table: #1-4 (artifact-selection/download split HIGH, malformed-shape-after-normalization, dry-run error wrapping) accepted-and-fixed with new code + tests; #5 (fingerprint-basis asymmetry) disclosed not fixed; #6/#7 rejected-with-reason (cited AC + duplicate of plan-review finding); #8 deferred low-severity; #9 doubt-not-run tool-grant limitation explicitly flagged.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/ci_execution_evidence.py (~`resolve_execution_evidence`, the `_find_unexpired_artifact` + `_download_and_parse_artifact` interaction)\n  Finding: The \"newest unexpired match by `created_at`\" selection is not actually enforced on the download path. `_find_unexpired_artifact` picks an artifact, but its ID is discarded; the download is done by *name* via `gh run download {run_id} --name …`, which applies GitHub's/gh's own (last-writer-wins) selection across attempts. So the external-review fix the design doc records as \"accepted-and-fixed\" (cross-attempt artifact selection) is only half-implemented: selection affects the existence/expiry gate, not which bytes are fetched. If gh resolves the name to an older attempt's artifact, the newest-by-`created_at` logic is silently bypassed.\n  Suggestion: Download by the selected artifact's ID (e.g. `gh api .../artifacts/{id}/zip` into the tempdir), or at minimum record the picked artifact's `id`/`created_at` in the confirmed result's detail so a mismatch is observable; alternatively downgrade the design-doc claim from \"fixed\" to \"narrowed\" honestly (the Known Limitations text already half-does this).\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_ci_execution_evidence.py — `test_multiple_matching_artifacts_pick_the_newest_by_created_at`\n  Finding: The test's fake `_download_and_parse_artifact` returns the \"newer\" payload unconditionally, regardless of which artifact was selected — so it cannot detect the defect above. A broken implementation that ignores the selection entirely (which is what the real code does at download time) passes this test. It validates the mock, not the behavior.\n  Suggestion: Assert the download is invoked with (or keyed on) the selected artifact's identity, or use a fake that returns different payloads per artifact ID and assert the newest one's content comes back.\n\n- Category: bug\n  Severity: medium\n  File […truncated]\n\n[openai] - Category: security  \n  Severity: high  \n  File: [shared/scripts/ci_execution_evidence.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/ci_execution_evidence.py:256)  \n  Finding: The resolver chooses a specific newest artifact in `match`, but then downloads by artifact *name* only. `gh run download --name` can retrieve a different same-named artifact from another attempt, so the selected artifact is never actually bound to the bytes evaluated.  \n  Suggestion: Download the selected artifact by its artifact ID, and make artifact identity attempt-specific (or reject duplicates) so the artifact is deterministically tied to the verified attempt.\n\n- Category: spec  \n  Severity: high  \n  File: [shared/scripts/lib/layer_promotion_ledger.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/lib/layer_promotion_ledger.py:1)  \n  Finding: The change creates a separate promotion ledger and human override path instead of reusing `diff_risk_recheck`’s acknowledgement contract. The operator decision is accepted as a ledger entry without the required content/fingerprint/run-binding acknowledgement validation, so this does not implement the specified exitable `exit 3 + operator ack` mechanism.  \n  Suggestion: Route escalations through the existing `diff_risk_recheck` acknowledgement and revalidation flow, including its binding/fingerprint checks; do not treat a new ledger entry as a substitute acknowledgement channel.\n\n- Category: spec  \n  Severity: medium  \n  File: [shared/scripts/tools/promote_required_layers.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-wxx9vr8b/shared/scripts/tools/promote_required_layers.py:456)  \n  Finding: `unavailable` execution evidence is allowed to continue, then every FR receives empty tests/coverage and exits as an ordinary skip. This silently converts the named undecidable case “binding exists but the test did not run in CI evidence” into exit  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T13:35:21.989553+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-09T11:17:12.392574+00:00",
+      "disposition": "The runner has no internal-plan-review arm (project_plan_review_has_no_internal_arm) -- this row is permanently not_run for a sub-iterate runner and is never promoted, documented gap.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-s1-dashboard-phase-strip",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 17102,
+      "total": 17160
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest plugins/shipwright-compliance/tests/test_mermaid.py -v",
+      "exit_code": 0,
+      "tests_run": 11,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-p4-04-retire-write-once-steps\\.shipwright\\runs\\iterate-2026-09-09-s1-dashboard-phase-strip\\surface_verification.log",
+      "timestamp": "2026-09-09T14:43:07.206Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the dashboard phase strip renders identically from phase_tasks[] on a driven run",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_mermaid.py::TestPipelineStatusDiagram::test_in_progress_pipeline PASSED"
+        },
+        {
+          "behavior": "a test pins the rendered strip against a fixture config",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_mermaid.py::TestPipelineStatusDiagram::test_pins_the_rendered_strip_against_a_fixture_config PASSED (fixture: tests/fixtures/sample_run_config_phase_tasks.json)"
+        },
+        {
+          "behavior": "the old current_step/completed_steps fields are still present on the config but ignored by this reader, even when they conflict with phase_tasks[]",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_mermaid.py::TestPipelineStatusDiagram::test_the_write_once_fields_are_present_but_ignored PASSED"
+        },
+        {
+          "behavior": "a split phase (multiple phase_tasks[] entries for one phase) reads complete only once every entry is done/skipped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-compliance/tests/test_mermaid.py::TestPipelineStatusDiagram::test_a_split_phase_is_complete_only_once_every_split_is PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-s1-dashboard-phase-strip",
+    "commit": "093162664cd3e9c6e623e2e9010c61b6015cbf6e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "- Category: regression\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/mermaid.py:100-113 (`_get_phase_status`)\n  Finding: The diff removes not only the `current_step` write-once reads but also the positional inference (\"phases before current are complete\"). For a run config with no `phase_tasks[]` (a pre-v2 config or a run created before the orchestrator planned any tasks) but with `current_step`/per-phase configs that were previously used to infer progress, the strip now renders everything PENDING until the per-phase config fallback fires. The spec targets driven runs (which always carry phase_tasks), so this is within scope, but it is a behavior change for the undriven-config path that isn't covered by any test.\n  Suggestion: Either add a test asserting the intended behavior for a config with no `phase_tasks[]`, or document that this fallback-removal is intentional for that path.\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-compliance/scripts/lib/mermaid.py:85-98 (`_phase_tasks_status`)\n  Finding: Unknown statuses (e.g. a status added to the schema later, or `None` from a malformed entry) fall through to `\"pending\"`. A `failed` task reads as `in_progress` (yellow) with no distinct visual; the docstring says \"live or dead\" but the rendering gives no failure signal.\n  Suggestion: Acceptable for this sub-iterate's scope, but consider an explicit `_COLORS`/status mapping for `failed` in a follow-up so a dead phase is visible on the strip.\n\nPositive notes: the fixture test is byte-for-byte (strong against wrong implementations), the write-once-fields-ignored test uses contradicting signals so it can't pass accidentally, and the split-phase test covers multi-entry aggregation. The fixture deliberately retains `current_step`/`completed_steps`, satisfying the \"old fields still present and still ignored\" AC. Acceptance criteria all appear met.\n\nOverall: sound implementation with strong tests; the only findings are low-severity behavior notes on the undriven-config fallback. Ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "No defects found. The renderer now derives phase progress from `phase_tasks[]`, explicitly ignores the stale write-once fields, and the fixture test pins the complete rendered output.\n\nShip-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

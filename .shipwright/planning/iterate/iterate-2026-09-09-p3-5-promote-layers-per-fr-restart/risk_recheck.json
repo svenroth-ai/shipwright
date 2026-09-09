@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+  "risk_recheck": {
+    "changed_file_count": 21,
+    "diff_loc": 6238,
+    "risk_flags": [
+      "touches_ci_supplychain",
+      "touches_shared_infra"
+    ],
+    "diff_risk_flags": [
+      "touches_ci_supplychain"
+    ],
+    "complexity_floor": "small",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": true,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": [
+        ".github/workflows/ci.yml"
+      ]
+    }
+  }
+}
