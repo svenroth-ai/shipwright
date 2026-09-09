@@ -133,29 +133,20 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 1,
       "findings": [
         {
-          "severity": "low",
-          "category": "correctness",
-          "file": "plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py",
-          "line": 111,
-          "finding": "Direct Path.write_text() over the existing shipwright_run_config.json, not write-to-temp-then-rename. A crash/disk-full/kill mid-write could leave the file truncated for a touches_io_boundary-flagged tool. Matches the pre-existing non-atomic pattern already used by config_writer.py:33 (s2), not a new divergence introduced here. Non-blocking, out of s2b's stated scope.",
-          "suggestion": "Worth a follow-up if this write pattern is ever hardened repo-wide.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": ".shipwright/planning/adr/iterate-2026-09-09-s2b-backfill-existing-adopted-config-backfill-phase-tasks.md",
-          "line": 403,
-          "finding": "AC3's claim that --dry-run was run against the live leadwright checkout is documented only as ADR prose, not a committed artifact (log/hash/transcript) a reviewer can mechanically verify. Non-blocking; the fixture-based test suite is the actually-verifiable part of AC3 and is solid.",
-          "suggestion": "Consider committing --dry-run output as evidence if live-repo backfills become routine.",
+          "severity": "medium",
+          "category": "readability",
+          "file": "plugins/shipwright-adopt/tests/test_backfill_phase_tasks_cli.py",
+          "line": 158,
+          "finding": "test_a_second_run_never_calls_write_text_at_all monkeypatched pathlib.Path.write_text, but the write path was switched to durable_atomic_write by the doubt-review's own earlier fix in this same sub-iterate -- Path.write_text is never called by the current implementation on ANY run (write or no-op), so the monkeypatch never triggers either way. The test passed vacuously, silently defeating the exact class of regression (a no-op run that writes anyway) it was added to catch.",
+          "suggestion": "Repoint the monkeypatch at the primitive actually used for writing (backfill_cli.durable_atomic_write) so the assertion is exercised against real code.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-09T22:22:51.543076+00:00",
+      "completed_at": "2026-09-09T22:56:56.746838+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,

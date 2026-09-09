@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+import tools.backfill_phase_tasks as backfill_cli
 from tools.backfill_phase_tasks import RUN_CONFIG_NAME, run
 
 _FIXTURES = Path(__file__).resolve().parent / "fixtures" / "backfill_phase_tasks"
@@ -155,23 +156,28 @@ def test_backfilling_the_real_leadwright_config_twice_is_a_no_op(tmp_path: Path)
     assert config_path.stat().st_mtime_ns == mtime_after_first
 
 
-def test_a_second_run_never_calls_write_text_at_all(tmp_path: Path, monkeypatch) -> None:
+def test_a_second_run_never_calls_the_write_primitive_at_all(
+    tmp_path: Path, monkeypatch
+) -> None:
     """External code review, s2b: an mtime check alone can pass spuriously
     on coarse-mtime filesystems even if the implementation rewrites the
     file. This proves the structural guarantee directly -- ``run()``
-    returns before ever reaching ``Path.write_text`` when there is
-    nothing to add."""
-    import pathlib
-
+    returns before ever reaching the actual write call when there is
+    nothing to add. Monkeypatches ``durable_atomic_write`` (the primitive
+    the doubt-review's lock fix switched writes to), not ``Path.write_text``
+    -- the original version of this test targeted ``write_text``, which the
+    code no longer calls on ANY run once that switch landed, making the
+    monkeypatch never trigger either way (re-verification code review,
+    s2b PR #701 gate)."""
     project = tmp_path / "leadwright"
     _copy_config("leadwright_run_config.json", project)
 
     run(project, dry_run=False)  # first run: real backfill, real write
 
-    def _forbidden_write_text(self, *args, **kwargs):
-        raise AssertionError(f"write_text called on {self} during a no-op run")
+    def _forbidden_write(*args, **kwargs):
+        raise AssertionError("durable_atomic_write called during a no-op run")
 
-    monkeypatch.setattr(pathlib.Path, "write_text", _forbidden_write_text)
+    monkeypatch.setattr(backfill_cli, "durable_atomic_write", _forbidden_write)
     second = run(project, dry_run=False)  # second run: must not write
     assert second["written"] is False
 

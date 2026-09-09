@@ -228,3 +228,12 @@ hazard on the existing-`phase_tasks[]`-side: the automated PR-review gate
 | `seen = {t.get("phase") for t in existing_list if isinstance(t, dict)}` raises `TypeError` when an ALREADY-PRESENT `phase_tasks[]` entry has an unhashable `phase` value (a list or dict from a hand-edited/corrupted config) — the mirror image of the doubt-review's `completed_steps` finding, on the other side of the same set (BLOCKING) | accepted-and-fixed — the comprehension now only admits `isinstance(t.get("phase"), str)` entries into `seen`; a malformed existing entry is simply not represented there (and is left untouched in `phase_tasks[]`, same as every other malformed-data case this function treats as "stop, don't guess"). Pinned by `test_an_existing_entry_with_an_unhashable_phase_value_is_not_a_crash`. |
 | (comment) The docstring says the pure function returns a NEW dict, but a no-op path returns the original `run_config` object itself (LOW) | accepted-and-fixed — docstring clarified: "never mutated" is about in-place writes, not identity on every return path; a no-op has nothing to protect a copy from. |
 | (comment) `adoption.adopted_at` is used as `now` without validating it is a string; a malformed human-edited value would propagate into every generated task record's `createdAt`/`completedAt` (schema `format: date-time`) (LOW) | accepted-and-fixed — a non-string `adopted_at` now falls back to `_utc_now_iso()` instead of propagating. Pinned by `test_a_non_string_adopted_at_falls_back_to_now_instead_of_propagating`. |
+
+## Delegated-Re-Verification (3f-bis, code re-verify after PR #701 gate)
+
+Orchestrator re-ran code-reviewer against the updated diff (a fresh set of
+eyes, not just confirming the three fixes above). One finding:
+
+| Finding (severity) | Disposition |
+|---|---|
+| `test_a_second_run_never_calls_write_text_at_all` monkeypatched `pathlib.Path.write_text`, but the doubt-review's own earlier fix (lock + `durable_atomic_write`) already stopped the code from ever calling `Path.write_text` on ANY run — the monkeypatch never triggers either way, so the "structural no-op-write proof" this test's docstring claims was vacuous (MEDIUM) | accepted-and-fixed — repointed the monkeypatch at `backfill_cli.durable_atomic_write` (the primitive actually used), renamed to `test_a_second_run_never_calls_the_write_primitive_at_all`. |
