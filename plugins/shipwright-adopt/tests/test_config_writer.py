@@ -60,6 +60,24 @@ def test_writes_all_configs_in_order(tmp_path: Path) -> None:
     assert run_config["phase_history"]["test"][0]["outcome"] == "adopted-skipped"
     assert run_config["phase_history"]["build"][0]["outcome"] == "adopted"
 
+    # phase_tasks[] — the shape readers are migrating to (s2). Seeded
+    # alongside completed_steps/phase_history, not instead of them.
+    phase_tasks = run_config["phase_tasks"]
+    assert [t["phase"] for t in phase_tasks] == ["project", "plan", "build", "test"]
+    for task in phase_tasks:
+        # AC1: a TERMINAL status so readers moving off completed_steps
+        # (e.g. compliance mermaid.py) render the phase as finished, not
+        # pending/skipped-looking.
+        assert task["status"] in ("done", "skipped")
+        # AC2: adopted-in vs executed must be distinguishable in the data.
+        assert task["establishedAtAdoption"] is True
+        assert task["result"] == {"ok": True, "establishedAtAdoption": True}
+    # test never ran during adoption -> skipped, matching phase_history's
+    # existing adopted-skipped/adopted split.
+    by_phase = {t["phase"]: t for t in phase_tasks}
+    assert by_phase["test"]["status"] == "skipped"
+    assert by_phase["build"]["status"] == "done"
+
     # Iterate-history file-per-iterate refactor: fresh adopted projects
     # start with the new store + a migration-state stamp that tells the
     # append tool no first-touch migration is needed.
@@ -244,3 +262,10 @@ def test_custom_completed_steps(tmp_path: Path) -> None:
     run_config = json.loads((tmp_path / "shipwright_run_config.json").read_text())
     assert run_config["completed_steps"] == ["project", "plan", "build"]
     assert "test" not in run_config["phase_history"]
+    assert [t["phase"] for t in run_config["phase_tasks"]] == ["project", "plan", "build"]
+    assert all(t["status"] == "done" for t in run_config["phase_tasks"])
+
+
+# phase_tasks[]-specific tests (schema-shape probe, real-consumer boundary
+# probe) live in test_config_writer_phase_tasks.py — split out to keep this
+# file under its 300-line bloat ceiling (campaign p4-04-retire-write-once-steps s2).

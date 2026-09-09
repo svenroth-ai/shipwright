@@ -231,6 +231,10 @@
         "errors": {
           "type": "array",
           "items": { "type": "string" }
+        },
+        "establishedAtAdoption": {
+          "type": "boolean",
+          "description": "Present + true ONLY on entries shipwright-adopt seeds for a phase already completed before adoption (campaign p4-04-retire-write-once-steps sub-iterate s2) -- never set by phase_task_lifecycle, the only writer of an actually-executed entry. Provenance, not drivenness: a non-empty phase_tasks[] no longer by itself means an orchestrator-driven run -- use schemaVersion == 2 for that, and exclude an array where every entry carries this flag before treating phase_tasks[] presence as v2 evidence."
         }
       },
       "allOf": [

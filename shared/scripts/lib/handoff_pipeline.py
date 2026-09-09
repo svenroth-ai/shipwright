@@ -188,14 +188,27 @@ def render_pipeline_phases(
     """Render the authoritative per-phase pipeline status, or ``[]``.
 
     Returns an empty list — no heading, no placeholder rows — when the config has
-    no ``phase_tasks[]``, which is every legacy / standalone / adopted run. The
-    handoff for those projects is byte-identical to before.
+    no ``phase_tasks[]``, which is every legacy / standalone run. The handoff for
+    those projects is byte-identical to before.
+
+    Also returns ``[]`` when every entry is ``establishedAtAdoption: true``
+    (campaign p4-04-retire-write-once-steps sub-iterate s2): shipwright-adopt
+    seeds those entries to keep OTHER phase_tasks[]-driven readers (the s1
+    dashboard phase strip) from rendering an adopted repo as having skipped
+    phases, but they are not evidence of a driven run in progress — none of
+    them were ever "planned incrementally" the way a real phase task is, so
+    denominating this block against the full pipeline would show e.g.
+    "Finished: 4 of 7" for a repo whose `status` is already `complete`, the
+    exact "looks like phases are outstanding" impression this block exists to
+    prevent (caught in review at 3f-bis, campaign p4-04-retire-write-once-steps).
     """
     raw = (run_config or {}).get("phase_tasks")
     if not isinstance(raw, list):
         return []
     tasks = [t for t in raw if isinstance(t, dict)]
     if not tasks:
+        return []
+    if all(t.get("establishedAtAdoption") for t in tasks):
         return []
 
     finished = [t for t in tasks if _status_of(t) in FINISHED_STATUSES]

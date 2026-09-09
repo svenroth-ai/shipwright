@@ -103,3 +103,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [CONTEXT.md producer wired into the interview protocol](iterate-2026-09-09-p4-1-glossary-generator-context-md-producer.md)
 - [Non-converging PR-review halt (exit 8)](iterate-2026-09-09-pr-review-nonconverging-halt-terminal-exit-code.md)
 - [ADR: compliance mermaid.py dashboard phase strip reads phase_tasks\[\]](iterate-2026-09-09-s1-dashboard-phase-strip-phase-tasks-reader.md)
+- [ADR: shipwright-adopt seeds phase_tasks\[\] entries marked established-at-adoption](iterate-2026-09-09-s2-adopted-config-shape-phase-tasks-writer.md)

@@ -1,0 +1,77 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-s2-adopted-config-shape",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 17163,
+      "total": 17221
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a newly adopted repo's phase_tasks[] entries render as complete via the dashboard phase strip reader (AC1: does not render as having skipped phases)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_config_writer.py::test_phase_tasks_read_as_complete_by_dashboard_phase_strip PASSED"
+        },
+        {
+          "behavior": "seeded phase_tasks[] entries carry establishedAtAdoption: true, distinguishing an adopted-in entry from one an actual phase-runner executed (AC2)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_config_writer.py::test_writes_all_configs_in_order PASSED"
+        },
+        {
+          "behavior": "seeded phase_tasks[] entries satisfy the schema's PhaseTask required-field shape (phaseTaskId, phase, splitId, sessionUuid, version, status, title, slashCommand, prerequisites, executionCount, createdAt)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_config_writer.py::test_phase_tasks_entries_satisfy_schema_required_fields PASSED"
+        },
+        {
+          "behavior": "a custom completed_steps list (e.g. no test) produces a matching phase_tasks[] subset, never inventing an entry for a step not claimed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_config_writer.py::test_custom_completed_steps PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-s2-adopted-config-shape",
+    "commit": "4d88b57f1af4d6eade5e9488810dd3fa51f0b0ba",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

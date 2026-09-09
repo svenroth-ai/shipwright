@@ -1,0 +1,1 @@
+/shipwright-adopt now seeds a phase_tasks[] entry per pre-existing phase (marked establishedAtAdoption) alongside the existing completed_steps/phase_history fields, for future adoptions (campaign p4-04-retire-write-once-steps, s2)
