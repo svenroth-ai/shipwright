@@ -79,10 +79,12 @@ def pipeline_status_diagram(configs: dict[str, dict]) -> str:
 
 def _phase_tasks_status(phase: str, run_config: dict) -> str | None:
     """Aggregate status of *phase* from ``phase_tasks[]``, or ``None`` if there
-    is no phase_tasks evidence for it (no ``phase_tasks[]`` at all — a config
-    that has never been driven by the orchestrator — or the phase has not been
-    planned yet; phase tasks are planned incrementally). ``None`` tells the
-    caller to fall through to its other signals.
+    is no CONFIDENT phase_tasks evidence for it: no ``phase_tasks[]`` at all (a
+    config that has never been driven by the orchestrator), the phase has not
+    been planned yet (phase tasks are planned incrementally), or every matching
+    entry is neither finished nor active (e.g. still ``backlog`` /
+    ``awaiting_launch``, or a malformed/non-string status). ``None`` tells the
+    caller to fall through to its other signals rather than assert PENDING.
 
     A phase can hold MULTIPLE entries when it is split (``plan``/``build``
     under ``splits_frozen``): it counts as ``complete`` only once every one of
@@ -95,12 +97,19 @@ def _phase_tasks_status(phase: str, run_config: dict) -> str | None:
     matching = [t for t in tasks if isinstance(t, dict) and t.get("phase") == phase]
     if not matching:
         return None
-    statuses = [t.get("status") for t in matching]
+    # A malformed producer can put a list or dict here (mirrors
+    # shared/scripts/lib/handoff_phase_status.status_of()'s guard) — `x in
+    # frozenset` raises TypeError on an unhashable value, so normalize first.
+    statuses = [s if isinstance(s, str) else None for s in (t.get("status") for t in matching)]
     if all(s in _FINISHED_TASK_STATUSES for s in statuses):
         return "complete"
     if any(s in _ACTIVE_TASK_STATUSES for s in statuses):
         return "in_progress"
-    return "pending"
+    # Neither finished nor active for any matching entry (e.g. all still
+    # "backlog"/"awaiting_launch", or malformed) — no confident phase_tasks[]
+    # signal. Fall through to the caller's other signals rather than assert
+    # PENDING outright.
+    return None
 
 
 def _get_phase_status(

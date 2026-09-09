@@ -1127,19 +1127,24 @@ in `phase_tasks[]`:
 > merely inert on a driven run (the drivability guard). They are still written by
 > `shipwright-project`, by `shipwright-adopt` (which seeds `completed_steps` so an adopted
 > repo does not look like it skipped phases), and by that v1 path; and they are still read
-> by `compliance/mermaid.py` (dashboard phase strip), `generate_handoff_on_stop`,
-> `suggest_iterate`, `update_build_dashboard`, `state.detect_current_phase`,
-> `convert_configs_to_events`, and the `design` / `compliance` verifiers.
+> by `generate_handoff_on_stop`, `suggest_iterate`, `update_build_dashboard`,
+> `state.detect_current_phase`, `convert_configs_to_events`, and the `design` /
+> `compliance` verifiers.
 >
-> **The rule for a reader is therefore: consult `phase_tasks[]` first, and fall back to
-> the v1 fields — do not read either one alone.** `phase_quality.resolve_source` and
-> `phase_quality.phase_is_engaged` were migrated to exactly that shape in
+> **The rule for a not-yet-migrated reader is therefore: consult `phase_tasks[]` first,
+> and fall back to the v1 fields — do not read either one alone.** `phase_quality.resolve_source`
+> and `phase_quality.phase_is_engaged` were migrated to exactly that shape in
 > `iterate-2026-08-01-drop-write-once-step-fields`. They OR the two sources rather than
 > replacing v1, because `config_factory` marks a phase completed *standalone* as
 > `skipped` in `phase_tasks[]` while still listing it in `completed_steps` — so a
 > v2-only read would engage FEWER phases, and phase-quality's contract is "audit MORE,
-> never silently fewer". Dropping the fields is a campaign blocked on the readers above,
-> not a cleanup — owned by triage `trg-8d52a965` (successor to `trg-be24ff6f`).
+> never silently fewer". **A reader migrated by campaign `p4-04-retire-write-once-steps`
+> reads `phase_tasks[]` only, per that campaign's 2026-09-06 architecture review** — the
+> fall-back-and-OR shape above is for readers that campaign has not reached yet, not a
+> standing requirement. `compliance/mermaid.py` (dashboard phase strip) was the first
+> reader migrated (sub-iterate s1); the remaining readers above are the campaign's queue.
+> Dropping the fields entirely is the campaign's last step, once every reader above is
+> migrated — not a cleanup.
 >
 > The phase skills used to derive "pipeline vs standalone" from
 > `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every

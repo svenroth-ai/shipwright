@@ -102,6 +102,35 @@ class TestPipelineStatusDiagram:
         result = pipeline_status_diagram(configs)
         assert 'BUILD["Build<br/>IN PROGRESS"]' in result
 
+    def test_falls_through_to_the_phase_config_when_phase_tasks_gives_no_confident_signal(self):
+        """A phase whose only phase_tasks[] entry is neither finished nor
+        active (e.g. still queued after a re-plan) must not assert PENDING
+        outright — it falls through to that phase's own config, exactly as a
+        phase with no phase_tasks[] entry at all does."""
+        configs = {
+            "run": {
+                "status": "in_progress",
+                "phase_tasks": [_task("plan", "backlog")],
+            },
+            "plan": {"status": "complete"},
+        }
+        result = pipeline_status_diagram(configs)
+        assert 'PLAN["Plan<br/>COMPLETE"]' in result
+
+    def test_a_malformed_task_status_does_not_crash_the_render(self):
+        """A producer that writes a non-string ``status`` (list/dict) must not
+        raise — ``x in frozenset`` on an unhashable value is exactly the
+        hazard shared/scripts/lib/handoff_phase_status.status_of() guards
+        against, and this reader mirrors that guard."""
+        configs = {
+            "run": {
+                "status": "in_progress",
+                "phase_tasks": [{"phase": "build", "splitId": None, "status": ["done"]}],
+            },
+        }
+        result = pipeline_status_diagram(configs)
+        assert 'BUILD["Build<br/>PENDING"]' in result
+
     def test_pins_the_rendered_strip_against_a_fixture_config(self):
         """A fixture config recorded on disk, rendered byte-for-byte, so a
         future change to the phase_tasks[] reading path is caught here."""
