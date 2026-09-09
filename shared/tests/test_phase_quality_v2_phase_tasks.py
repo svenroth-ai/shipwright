@@ -22,7 +22,6 @@ would drop engagement the v1 read grants. This module's contract is
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -210,86 +209,6 @@ def test_engaged_statuses_are_exactly_the_three_that_ran() -> None:
     assert ENGAGED_TASK_STATUSES == frozenset({"in_progress", "done", "failed"})
 
 
-# --- resolve_source: the audit-source stamp -------------------------------
-
-def _write_cfg(project: Path, cfg: dict) -> None:
-    (project / "shipwright_run_config.json").write_text(
-        json.dumps(cfg), encoding="utf-8")
-
-
-def test_resolve_source_v2_is_orchestrator_without_current_step(tmp_path: Path) -> None:
-    """A driven run whose pipeline was fully pre-completed has current_step
-    None, so the v1 read called it standalone. phase_tasks[] says otherwise."""
-    cfg = _v2_cfg(_task("project", "done"), status="complete")
-    cfg["current_step"] = None
-    _write_cfg(tmp_path, cfg)
-    assert pq.resolve_source(tmp_path, "build") == "orchestrator"
-
-
-def test_resolve_source_v1_current_step_still_orchestrator(tmp_path: Path) -> None:
-    _write_cfg(tmp_path, {"status": "in_progress", "current_step": "build"})
-    assert pq.resolve_source(tmp_path, "build") == "orchestrator"
-
-
-def test_resolve_source_explicit_standalone_flag_wins(tmp_path: Path) -> None:
-    """An explicit standalone marker outranks phase_tasks[]."""
-    cfg = _v2_cfg(_task("project", "done"))
-    cfg["standalone"] = True
-    _write_cfg(tmp_path, cfg)
-    assert pq.resolve_source(tmp_path, "build") == "standalone"
-
-
-def test_resolve_source_no_pipeline_evidence_is_standalone(tmp_path: Path) -> None:
-    _write_cfg(tmp_path, {"status": "complete", "phase_tasks": [], "current_step": None})
-    assert pq.resolve_source(tmp_path, "build") == "standalone"
-
-
-def test_resolve_source_missing_config_is_standalone(tmp_path: Path) -> None:
-    assert pq.resolve_source(tmp_path, "build") == "standalone"
-
-
-def test_resolve_source_unreadable_config_is_standalone(tmp_path: Path) -> None:
-    (tmp_path / "shipwright_run_config.json").write_text("{not json", encoding="utf-8")
-    assert pq.resolve_source(tmp_path, "build") == "standalone"
-
-
-def test_resolve_source_iterate_short_circuits(tmp_path: Path) -> None:
-    _write_cfg(tmp_path, _v2_cfg(_task("project", "done")))
-    assert pq.resolve_source(tmp_path, "iterate") == "iterate"
-
-
-def test_resolve_source_malformed_phase_tasks_does_not_raise(tmp_path: Path) -> None:
-    _write_cfg(tmp_path, {"status": "in_progress", "phase_tasks": {"a": 1}})
-    assert pq.resolve_source(tmp_path, "build") == "standalone"
-
-
-@pytest.mark.parametrize("body", ["[1, 2]", "null", '"a string"', "7"])
-def test_resolve_source_non_dict_config_is_standalone(tmp_path: Path, body: str) -> None:
-    """Valid JSON that is not an object used to reach ``data.get`` and raise
-    AttributeError."""
-    (tmp_path / "shipwright_run_config.json").write_text(body, encoding="utf-8")
-    assert pq.resolve_source(tmp_path, "build") == "standalone"
-
-
-@pytest.mark.parametrize("body", ["[1, 2]", "null", '"a string"', "7"])
-def test_resolve_run_id_survives_a_non_dict_config(tmp_path: Path, body: str) -> None:
-    """The Stop hook calls resolve_run_id FIRST, outside its per-phase try and
-    AFTER the once-per-Stop claim is taken. A raise here killed the audit for
-    EVERY phase and left the sibling plugin invocations no-oping on the burned
-    claim — so resolve_source's own guard was never even reached."""
-    (tmp_path / "shipwright_run_config.json").write_text(body, encoding="utf-8")
-    assert pq.resolve_run_id(tmp_path, "session-abc") == "session-abc"
-
-
-def test_engagement_reads_two_events_sharing_one_physical_line(tmp_path: Path) -> None:
-    """A merge=union merge can leave two records on one line. A per-line
-    json.loads drops BOTH — here that would un-engage a phase whose
-    phase_completed event was its only evidence, i.e. audit FEWER."""
-    (tmp_path / "shipwright_run_config.json").write_text(
-        json.dumps({"status": "complete"}), encoding="utf-8")
-    a = json.dumps({"type": "phase_completed", "source": "design"})
-    b = json.dumps({"type": "phase_completed", "source": "deploy"})
-    (tmp_path / "shipwright_events.jsonl").write_text(a + b + "\n", encoding="utf-8")
-    _cfg, events = pq.load_engagement_inputs(tmp_path)
-    assert pq.phase_is_engaged("design", _cfg, events) is True
-    assert pq.phase_is_engaged("deploy", _cfg, events) is True
+# resolve_source / has_phase_tasks tests live in
+# test_phase_quality_resolve_source.py — split out to keep this file under
+# its 300-line bloat ceiling (campaign p4-04-retire-write-once-steps s2).

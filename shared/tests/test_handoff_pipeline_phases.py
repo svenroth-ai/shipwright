@@ -242,6 +242,39 @@ def test_a_legacy_project_handoff_gains_no_pipeline_block(tmp_project):
     assert "## Pipeline Phases" not in generate_handoff(tmp_project)
 
 
+def test_an_all_adopted_phase_tasks_config_renders_no_pipeline_block():
+    """shipwright-adopt (campaign p4-04-retire-write-once-steps s2) seeds
+    phase_tasks[] entries marked establishedAtAdoption: true so OTHER
+    readers (the s1 dashboard phase strip) don't render an adopted repo as
+    having skipped phases. Those entries are not "planned incrementally"
+    the way a real phase task is, so denominating this block against the
+    full pipeline would read e.g. "Finished: 4 of 7" for a repo whose
+    top-level status is already complete — the self-contradictory block
+    this function's own contract (see its docstring) says adopted runs must
+    not gain."""
+    cfg = {
+        "status": "complete",
+        "phase_tasks": [
+            {**_task("project", "done"), "establishedAtAdoption": True},
+            {**_task("test", "skipped"), "establishedAtAdoption": True},
+        ],
+    }
+    assert render_pipeline_phases(Path("."), cfg) == []
+
+
+def test_a_mix_of_adopted_and_real_tasks_still_renders_the_block():
+    """A real phase_task alongside adopted-only ones is genuine v2 evidence —
+    the block must still render."""
+    cfg = {
+        "status": "in_progress",
+        "phase_tasks": [
+            {**_task("project", "done"), "establishedAtAdoption": True},
+            _task("build", "in_progress"),
+        ],
+    }
+    assert render_pipeline_phases(Path("."), cfg) != []
+
+
 # --------------------------------------------------------------------------- #
 # End-to-end through the real handoff document
 # --------------------------------------------------------------------------- #

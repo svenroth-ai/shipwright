@@ -79,12 +79,20 @@ def _task_has_run(task: dict) -> bool:
 
 
 def has_phase_tasks(cfg: dict | None) -> bool:
-    """``True`` iff *cfg* carries a ``phase_tasks[]`` holding at least one entry.
+    """``True`` iff *cfg* carries a ``phase_tasks[]`` holding at least one entry
+    that is not merely ``establishedAtAdoption: true``.
 
     Presence of the array is what identifies an orchestrator-DRIVEN run:
     ``config_factory`` materializes it at run creation and ``phase_task_lifecycle``
     is its only writer thereafter. Never raises — a malformed array is simply
     "no v2 evidence".
+
+    shipwright-adopt is a second writer of this array (campaign
+    p4-04-retire-write-once-steps sub-iterate s2), seeding entries marked
+    ``establishedAtAdoption: true`` so OTHER phase_tasks[]-driven readers don't
+    render an adopted repo as having skipped phases. Those entries are not
+    evidence of an orchestrator-driven run — an all-adopted array is excluded
+    here so a freshly adopted repo still resolves as ``standalone``.
 
     Deliberately laxer than ``phase_invocation_mode.read_run_config``, which
     REJECTS the whole config when any entry is a non-dict. That resolver is an
@@ -95,7 +103,12 @@ def has_phase_tasks(cfg: dict | None) -> bool:
     if not isinstance(cfg, dict):
         return False
     tasks = cfg.get("phase_tasks")
-    return isinstance(tasks, list) and any(isinstance(t, dict) for t in tasks)
+    if not isinstance(tasks, list):
+        return False
+    dict_tasks = [t for t in tasks if isinstance(t, dict)]
+    if not dict_tasks:
+        return False
+    return not all(t.get("establishedAtAdoption") for t in dict_tasks)
 
 
 def engaged_via_phase_tasks(phase: str, cfg: dict) -> bool:

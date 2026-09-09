@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-s2-adopted-config-shape",
+  "date": "2026-09-09",
+  "section": "shipwright-adopt/config_writer",
+  "title": "Adopt seeds phase_tasks[] entries marked established-at-adoption",
+  "context": "Campaign p4-04-retire-write-once-steps decision (1), made concrete: for FUTURE adoptions, shipwright-adopt should express the same not-outstanding claim completed_steps carries today in the phase_tasks[] shape readers are migrating to (s1 already migrated the dashboard-phase-strip reader). Already-adopted repos on disk are s2b's separate scope.",
+  "decision": "write_run_config gains a new phase_tasks entry per completed_steps phase (status done, or skipped for test, mirroring phase_history's existing adopted/adopted-skipped split) carrying an additive establishedAtAdoption: true marker, written alongside (not instead of) the existing completed_steps/phase_history fields.",
+  "consequences": "A newly adopted repo's dashboard phase strip renders every completed_steps phase as complete (proven by a real producer-to-consumer boundary probe against mermaid.py). design is in the pipeline but was never in completed_steps and gets no entry either -- inert in practice since write_run_config always stamps run-level status complete, which short-circuits mermaid's phase_tasks read entirely (also proven in the same test). Unblocks the s4 verifiers migration.",
+  "rationale": "Architecture-review-approved per-writer migration (2026-09-06, GPT+GLM APPROVE): nothing invented, the existing seed expressed in the new shape.",
+  "rejected": "Seeding design too: completed_steps never claimed it either, so seeding it now would invent a claim this sub-iterate has no basis for; also empirically moot given the status short-circuit.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-09-s2-adopted-config-shape-phase-tasks-writer.md"
+}

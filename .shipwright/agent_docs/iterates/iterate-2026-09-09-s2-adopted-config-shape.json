@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-09-09-s2-adopted-config-shape",
+  "date": "2026-09-09T19:34:47.243437Z",
+  "event_at": "2026-09-09T19:34:31.251500+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-p4-04-retire-write-once-steps-s2-adopted-config-shape",
+  "spec": ".shipwright/planning/iterate/campaigns/p4-04-retire-write-once-steps/sub-iterates/s2-adopted-config-shape.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-09-s2-adopted-config-shape"
+}
