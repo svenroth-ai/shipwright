@@ -177,6 +177,20 @@ def test_a_non_canonical_marker_shape_is_still_stripped():
     assert fr_criteria.criteria_texts(lines) == ["Given x, when y, then z."]
 
 
+def test_a_mid_prose_ac_reference_is_not_stripped():
+    """``AC_MARKER_RE`` is start-anchored (``^``, no ``re.MULTILINE``), so
+    ``.sub()`` can only ever match position 0 of the string handed to it — a
+    criterion that legitimately mentions another AC by id mid-sentence (e.g.
+    "Given [AC03] is referenced, when ...") must survive unchanged (external
+    PR review, gpt-5.6-luna, 2026-09-09: raised the same shape of concern
+    GLM raised internally and verified false at the time; pinned here as a
+    regression test rather than re-argued from the regex alone)."""
+    lines = ["- (E) Given [AC03] is referenced, when it runs, then it works."]
+    assert fr_criteria.criteria_texts(lines) == [
+        "Given [AC03] is referenced, when it runs, then it works.",
+    ]
+
+
 def test_block_criteria_criteria_for_and_leading_criteria_thread_the_flag():
     """The kwarg reaches every public entry point the nine downstream
     callers use, not just ``criteria_texts`` itself — including
