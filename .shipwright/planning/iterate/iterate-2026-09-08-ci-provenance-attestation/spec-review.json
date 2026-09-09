@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Prior REJECT citation (jobs-query failure conflated with step-absent, falling through to not_verified instead of error) closed by the _JOBS_QUERY_FAILED sentinel fix plus a regression test. All ACs (2, 4, 5, 6, 8, 9) present, faithful, in scope. Re-review after fix: PASS."
+}

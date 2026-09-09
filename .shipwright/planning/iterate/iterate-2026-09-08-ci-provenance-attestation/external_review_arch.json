@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **The question, answered in one sentence.** Yes: an automated promotion decision needs CI-originated evidence, and a small GitHub Actions artifact is the smallest mechanism that preserves the existing advisory gate.\n\n2. **The smallest thing that would do** \u2014 Option A: emit the digest record only after the existing no-drift result, and resolve it from qualifying default-branch GitHub Actions runs.\n\n3. **What it costs to keep** \u2014 an artifact schema, retention policy, and GitHub Actions/API retrieval contract that promotion consumers must continue to understand.\n\n4. **What it forecloses** \u2014 none identified.\n\n5. **Findings**\n\nNo findings.\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** An automated \"was this actually verified by CI\" predicate is justified \u2014 but the proposed shape builds a publication channel for a fact GitHub already records, and the smaller thing is to read that fact back instead of minting a new artifact.\n\n2. **The smallest thing that would do.** Keep the entire consumer-side trust model (query `gh api` for push-event, default-branch, conclusion=success runs for the commit) and drop the artifact machinery: the drift-check step's own outcome, recorded as a step conclusion, *is* the verdict. If the drift script's exit code is currently swallowed by an always-zero wrapper, the one CI-side change needed is to expose the drift check as its own step with `continue-on-error: true` \u2014 job still succeeds (advisory posture preserved, exit codes 0/1/2 untouched), and its step conclusion becomes queryable via `gh api .../actions/runs/{run_id}/jobs`, whose `steps[].conclusion` field GitHub already stores. The consumer checks that step's conclusion == success in a qualifying run. That eliminates: `write_ci_provenance.py`, `manifest_digest()`, the two new workflow steps, the artifact, `PROVENANCE_ARTIFACT_NAME` cross-file pinning, the multi-run artifact download-and-search loop, and AC1/AC3/AC4/AC9 wholesale. The binding the digest provides (\"this run verified *this* manifest\") is already delivered by run `head_sha` \u2192 commit \u2192 the manifest at that commit; a push run of the drift check passing on commit X means exactly \"the manifest at X was verified by real CI,\" which is P3.5's question verbatim.\n\n3. **What it costs to keep.** As proposed: a new artifact on every green push (90-day retention), two workflow steps whose names/conditions/gate-keyword avoidance must be maintained, a digest function that both sides must forever keep semantically aligned to the drift check's exclusions, and a network-facing predicate whose correctness depends on `gh` behavior, API shapes, and a trust filter \u2014 all of which every future promotion/CI change must reason about. The smaller shape keeps only the predicate, coupled to a step name instead of an artifact name (same class of string coupling, one field instead of a whole channel).\n\n4. **What it forecloses.** The artifact approach forecloses cheap evolution of the drift check itself \u2014 any change to which manifest gets captured, or to the structural-digest exclusions, must be mirrored through writer and consumer or `no_record` silently results. The step-conclusion approach makes workflow restructuring (merging/renaming steps) slightly more delicate. Neither is severe.\n\n5. **Findings**\n\n- Category: simpler-alternative\n- Severity: high\n- Finding: The CI-side artifact publication is a new standing channel for a fact GitHub already persists \u2014 the drift-check step's conclusion on a push run is queryable from the jobs API, and run head_sha already binds run to commit to manifest, making the digest layer redundant binding.\n- Suggestion: Read the qualifying run's step conclusions via `gh api .../runs/{run_id}/jobs`; if the drift exit code is currently masked by an always-zero wrapper, make the drift check its own `continue-on-error: true` step so its conclusion is recorded. Drop the writer script, digest function, upload step, and artifact name constant.\n\n- Category: proportionality\n- Severity: medium\n- Finding: Four files, two workflow steps, an ADR, a structural-digest single-source-of-truth contract, and multi-run artifact search logic constitute a large permanent surface to answer one boolean about a commit, where the boolean already exists in recorded CI state.\n- Suggestion: If the step-conclusion route proves blocked by something real (e.g. step conclusions are genuinely not exposed in the repo's setup), that failure \u2014 not more machinery \u2014 should be the trigger for the artifact channel; document it in the ADR if you build it.\n\n- Category: existence\n- Severity: low\n- Finding: Whatever shape is chosen, the evidence is non-durable (both artifacts and run/step history expire on ~90-day retention), so this mechanism cannot serve as a compliance *ledger* \u2014 only as a near-merge-time check. P3.5 should be named as its only consumer, so nobody later treats `verified` as permanent historical record.\n- Suggestion: State the consumption window in the ADR explicitly and mark the predicate as a promotion-time check, not an evidence store.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

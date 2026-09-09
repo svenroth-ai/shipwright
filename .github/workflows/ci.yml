@@ -351,6 +351,7 @@ jobs:
         # until proven reliable over several consecutive green PRs — see the
         # iterate spec's AC4 design note for what has to be true before this
         # becomes a real gate.
+        id: manifest_drift
         shell: bash
         run: |
           set +e
@@ -358,12 +359,28 @@ jobs:
             --project-root . --run-id "${{ github.run_id }}" \
             --head-commit "${{ github.sha }}" --plan .ci-junit/plan.json
           code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
           set -e
           if [ "$code" -eq 1 ]; then
             echo "::warning::Traceability manifest structural drift detected against the committed one (advisory, not blocking) - see the step log above."
           elif [ "$code" -ne 0 ]; then
             exit "$code"
           fi
+
+      - name: Confirm traceability manifest verified (no drift)
+        # P3.4c (iterate-2026-09-08-ci-provenance-attestation): the ONLY
+        # purpose of this step is to exist as a queryable STEP CONCLUSION.
+        # `shared/scripts/ci_provenance.py` asks GitHub's Actions Jobs API
+        # for a step named exactly PROVENANCE_STEP_NAME (that constant, not
+        # a hand-copied literal, is what a CI-YAML-shape test pins this
+        # `name:` against) on a qualifying (push, default-branch,
+        # conclusion=success) run — its conclusion is `success` if and only
+        # if the drift check above found no drift (`code == '0'`), `skipped`
+        # otherwise. No fallible logic, so no `continue-on-error` is needed:
+        # a bare echo cannot fail, and this step adds no new failure
+        # condition to the job.
+        if: steps.manifest_drift.outputs.code == '0'
+        run: echo "manifest verified clean at ${{ github.sha }}"
 
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml

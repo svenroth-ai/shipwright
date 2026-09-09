@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-08-ci-provenance-attestation",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-08-ci-provenance-attestation",
+    "paths_fingerprint": "ec6f3b30382acc7e96762c401ec04ffb9ee4b323ba02c853589f11d69032c0eb",
+    "consistent_with": "iterate-2026-08-26-r1b-ci-manifest-regen-gate",
+    "statement": "Adds one bare echo confirmation step to ci.yml, gated on the existing ci_manifest_drift_check step's already-captured exit code; the drift check's own step, body, and exit-code contract are unchanged except one narrowly-scoped GITHUB_OUTPUT emission line. The new step has no fallible logic (no artifact upload, no writer script) so it adds no new failure condition to CI. Consistent with the standing posture that ci_manifest_drift_check stays advisory-only.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ]
+  }
+}

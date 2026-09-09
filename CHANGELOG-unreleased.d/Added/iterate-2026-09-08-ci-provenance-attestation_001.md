@@ -1,0 +1,1 @@
+a durable, non-forgeable predicate (`shared/scripts/ci_provenance.py` + CLI `ci_provenance_check.py`) that resolves whether a commit's traceability manifest was CI-verified, reading GitHub's own Actions Jobs API rather than any self-reported claim
