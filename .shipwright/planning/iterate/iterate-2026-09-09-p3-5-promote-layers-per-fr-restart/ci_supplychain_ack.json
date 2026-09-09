@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+    "paths_fingerprint": "d9762ab606dba95fe87868e69dab3b66945db307165baf7888b1d9cbb04855bd",
+    "consistent_with": "iterate-2026-09-08-ci-provenance-attestation",
+    "statement": "Adds one new artifact-upload step to the EXISTING python-checks job in ci.yml, gated on the manifest-drift step's already-captured exit code (code=='0' only) plus github.event_name=='push'. Uses actions/upload-artifact@v4, already present in this file (the pre-existing 'Upload coverage artifacts' step at line 266) -- no new third-party action, no new token permission, no new trigger. continue-on-error:true is scoped so a swallowed upload failure surfaces downstream as the resolver's own honest 'unavailable' status, never a false-positive verified/confirmed result -- matches the standing posture that this CI-derived evidence stays advisory-observed, never a build-blocking gate. Consistent with the lineage: ADR-118 (GitHub-owned actions stay on mutable tags) -> r1b-ci-manifest-regen-gate (added the underlying drift-check steps this reuses) -> ci-provenance-attestation (added the queryable step-conclusion this restart composes with, never duplicates).",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ]
+  }
+}
