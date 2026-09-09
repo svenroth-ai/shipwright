@@ -42,22 +42,34 @@ def _finding_text(item) -> str:
     turns an object into its Python repr, truncating mid-value and feeding the
     next remediation round a mangled instruction — so both shapes are
     normalized to prose here, never stringified as-is.
+
+    A finding's own text is model output, but the model can be steered by the
+    PR's own untrusted content (paths, diff lines) — reviewed and blocked on
+    PR #694, whose CI Tier-3 round caught this very module inserting such a
+    value straight into the Markdown it renders. Every value that reaches the
+    return is therefore sanitised: `location` through `safe_path` (the same
+    chokepoint every other PR-controlled path in this module goes through, so
+    it also gets a length bound), everything else through `_UNSAFE_IN_DISPLAY`
+    (control/invisible + backtick/brace, uncapped — finding prose is free text
+    that must not be truncated the way a path is).
     """
     if isinstance(item, dict):
-        location = str(
+        location = safe_path(str(
             item.get("file") or item.get("path") or item.get("location") or ""
-        ).strip()
-        text = str(
+        ).strip())
+        text = _UNSAFE_IN_DISPLAY.sub("?", str(
             item.get("issue") or item.get("description") or item.get("message")
             or item.get("detail") or item.get("text") or ""
-        ).strip()
+        ).strip())
         if location and text:
             return f"{location} - {text}"
         if location or text:
             return location or text
         # Unknown object shape: still never a raw dict repr.
-        return "; ".join(f"{k}: {v}" for k, v in item.items())
-    return str(item)
+        return "; ".join(
+            f"{k}: {_UNSAFE_IN_DISPLAY.sub('?', str(v))}" for k, v in item.items()
+        )
+    return _UNSAFE_IN_DISPLAY.sub("?", str(item))
 
 
 def render_comment(
