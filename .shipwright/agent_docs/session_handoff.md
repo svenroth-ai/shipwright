@@ -8,39 +8,30 @@ timestamp: "2026-09-07T18:52:32.383226+00:00"
 
 # Session Handoff
 
-> Auto-generated 2026-09-07 18:52:32 UTC
+> Auto-generated 2026-09-09 15:45:04 UTC
 
 ## Session Info
 
-- **Session ID**: cbb6ea59-7579-4cb2-ad36-22c85e4a8aaa
-- **Timestamp**: 2026-09-07 18:52:32 UTC
-- **Reason**: iterate completion: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
+- **Session ID**: 499bc3c2-139e-4c87-8ec9-1865fc998f5c
+- **Timestamp**: 2026-09-09 15:45:04 UTC
+- **Reason**: iterate completion: iterate-2026-09-09-s1-dashboard-phase-strip
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
-- **Date**: 2026-09-07T18:53:48.664453Z
-- **Type**: bug
+- **Run ID**: iterate-2026-09-09-s1-dashboard-phase-strip
+- **Date**: 2026-09-09T15:42:51.448210Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/bloat-gate-subagent-marker-isolation
-- **ADR**: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
+- **Branch**: iterate/campaign-p4-04-retire-write-once-steps-s1-dashboard-phase-strip
+- **ADR**: iterate-2026-09-09-s1-dashboard-phase-strip
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-09-07-bloat-gate-subagent-marker-isolation.md
+- **Spec**: .shipwright/planning/iterate/campaigns/p4-04-retire-write-once-steps/sub-iterates/s1-dashboard-phase-strip.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/bloat-gate-subagent-marker-isolation
-- **Run ID**: iterate-2026-09-07-bloat-gate-subagent-marker-isolation
-- **Spec**: .shipwright/planning/iterate/iterate-2026-09-07-bloat-gate-subagent-marker-isolation.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-09-07T12:31:12))
-- **Review Cascade**: complete
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/campaign-p4-04-retire-write-once-steps-s1-dashboard-phase-strip
+- **External Review Marker**: completed (external_review_state.json @ 2026-09-09T14:38:35)
+- **Review Cascade**: no run_id resolved
 
 ## Legacy build state
 
@@ -53,9 +44,9 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/bloat-gate-subagent-marker-isolation
-- **Last Commit**: 416eb7daa Merge remote-tracking branch 'origin/main' into iterate/bloat-gate-subagent-marker-isolation
-- **Uncommitted Changes**: Yes
+- **Branch**: iterate/campaign-p4-04-retire-write-once-steps-s1-dashboard-phase-strip
+- **Last Commit**: 38728cb00 fix(compliance): address code-review findings on s1 dashboard-phase-strip
+- **Uncommitted Changes**: None
 
 ## Config Files to Read
 
@@ -70,17 +61,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-1fd34813 | work_completed | iterate (F11 binding-completeness gate (P3.3): reject a behaviour-changed FR's binding when it names a lower test layer than its own executed-passing evidence proves; reconcile the evidence ledger's row numbering against spec.md's (E) bullets) | 2026-09-07 |
-| evt-9aa05ae6 | work_completed | iterate (AC-scoped @covers tag grammar + test-traceability manifest v4) | 2026-09-07 |
-| evt-82f2a2c5 | work_completed | iterate (Fix bloat-gate Stop hook blocking an orchestrator's own turn completion on a background subagent's in-flight, uncommitted oversize edit when they share a git worktree and session id.) | 2026-09-07 |
-| evt-ef91cff7 | work_completed | iterate (Fold sibling-worktree triage decisions into a main tree's own read) | 2026-09-07 |
-| evt-b186118f | work_completed | iterate (JS/TS-aware test-weakening detector for the main-repair safety gate) | 2026-09-07 |
+| evt-d8117db9 | work_completed | iterate (compliance dashboard mermaid.py phase strip reads phase_tasks[] instead of write-once current_step/completed_steps) | 2026-09-09 |
+| evt-6d033d44 | work_completed | iterate (CI-provenance attestation predicate for traceability-manifest verification (P3.4c)) | 2026-09-09 |
+| evt-295abc96 | grade_snapshot | — | 2026-09-07 |
+| evt-9a0bf475 | work_completed | iterate (Wire P3.1-P3.3's dormant AC-identity infrastructure into the real monorepo spec.md: mint [ACnn] ids on every existing criterion, then mechanically derive and hand-map @covers(FR/AC) test tags from provenance-footnote-to-commit joins (13 files, 137 mechanical + 20 hand-mapped tags), regenerating the v4 traceability manifest with real per-AC coverage data. WebUI repo's own backfill is a separate, sibling unit (w4) in a different repo -- untouched here.) | 2026-09-07 |
+| evt-f03dd2bc | grade_snapshot | — | 2026-09-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 580
-- **Last iterate**: feature — F11 binding-completeness gate (P3.3): reject a behaviour-changed FR's binding when it names a lower test layer than its own executed-passing evidence proves; reconcile the evidence ledger's row numbering against spec.md's (E) bullets (2026-09-07)
+- **Total work events**: 583
+- **Last iterate**: change — compliance dashboard mermaid.py phase strip reads phase_tasks[] instead of write-once current_step/completed_steps (2026-09-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
