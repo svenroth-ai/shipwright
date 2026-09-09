@@ -73,6 +73,25 @@ def test_extract_blocking_findings_empty_on_approve():
     assert extract_blocking_findings(APPROVE_BODY) == []
 
 
+def test_extract_blocking_findings_tolerates_the_backtick_wrapped_render_shape():
+    """`pr_review_render.render_comment` (PR #694, iterate-2026-09-09-pr-review-dict-finding-render)
+    now wraps every blocking item's rendered text in a code span — `- {bullet}`
+    became `` - `{bullet}` `` — after this predicate's own canary was written
+    against the older, unwrapped shape (main-repair of 106c01c69986). `_BULLET_RE`
+    captures the whole rest of the line including the wrapping backticks, and
+    `_FILE_RE`'s optional leading backtick still finds the path inside it, so
+    parsing must be unaffected — this is the proof, not an assumption."""
+    body = (
+        "## \U0001F916 Shipwright PR Review\n\n**Decision: \U0001F534 BLOCK**\n\nSummary.\n\n"
+        "### \U0001F6AB Blocking issues\n"
+        "- `foo/bar.py:10 — missing null check on x, add a guard`\n"
+    )
+    findings = extract_blocking_findings(body)
+    assert len(findings) == 1
+    assert findings[0]["files"] == frozenset({"foo/bar.py"})
+    assert "guard" in findings[0]["tokens"]
+
+
 def test_normalized_tokens_strips_file_paths_digits_and_stopwords():
     tokens = normalized_tokens(
         "shared/scripts/tools/foo.py:12-19 — the fingerprint is not bound to the "
