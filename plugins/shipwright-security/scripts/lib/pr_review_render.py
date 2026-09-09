@@ -46,34 +46,49 @@ def _finding_text(item) -> str:
     A finding's own text is model output, but the model can be steered by the
     PR's own untrusted content (paths, diff lines) — reviewed and blocked on
     PR #694, whose CI Tier-3 round caught this very module inserting such a
-    value straight into the Markdown it renders. Every value that reaches the
-    return is therefore sanitised: `location` through `safe_path` (the same
-    chokepoint every other PR-controlled path in this module goes through, so
-    it also gets a length bound), everything else through `_UNSAFE_IN_DISPLAY`
-    (control/invisible + backtick/brace, uncapped — finding prose is free text
-    that must not be truncated the way a path is).
+    value straight into the Markdown it renders (round 1: no sanitisation at
+    all; round 2: the unrecognised-key fallback sanitised only the value, not
+    the key; round 3: `safe_path` strips control chars/backticks/braces but,
+    same as `nothing_reviewed_summary` next door, does not neutralise Markdown
+    LINK syntax, so a sanitised-but-unspanned `[trusted](evil)` still renders
+    as a clickable link). Every piece is therefore both sanitised (`location`
+    through `safe_path`; everything else through `_UNSAFE_IN_DISPLAY`,
+    uncapped since finding prose must not be truncated the way a path is) AND
+    code-spanned with `_finding_span`, so nothing rendered here can be read as
+    Markdown at all -- the same code-span chokepoint `_path_list` already uses
+    for every other untrusted name in this module.
     """
     if isinstance(item, dict):
-        location = safe_path(str(
+        location = str(
             item.get("file") or item.get("path") or item.get("location") or ""
-        ).strip())
-        text = _UNSAFE_IN_DISPLAY.sub("?", str(
+        ).strip()
+        text = str(
             item.get("issue") or item.get("description") or item.get("message")
             or item.get("detail") or item.get("text") or ""
-        ).strip())
+        ).strip()
         if location and text:
-            return f"{location} - {text}"
+            return f"{_finding_span(safe_path(location))} - {_finding_span(text)}"
         if location or text:
-            return location or text
+            return _finding_span(safe_path(location) if location else text)
         # Unknown object shape: still never a raw dict repr. The key is just as
         # attacker-influenced as the value here (PR #694 CI review, round 2) --
         # a dict shaped {"a.py`x`\ninjected": "..."} must not smuggle either
         # half of the pair past this fallback unsanitised.
         return "; ".join(
-            f"{_UNSAFE_IN_DISPLAY.sub('?', str(k))}: {_UNSAFE_IN_DISPLAY.sub('?', str(v))}"
-            for k, v in item.items()
+            f"{_finding_span(k)}: {_finding_span(v)}" for k, v in item.items()
         )
-    return _UNSAFE_IN_DISPLAY.sub("?", str(item))
+    return _finding_span(str(item))
+
+
+def _finding_span(text: str) -> str:
+    """Sanitise then code-span a piece of finding text.
+
+    A code span is what actually stops `[trusted](evil)` from becoming a
+    clickable link -- `_UNSAFE_IN_DISPLAY` strips the backtick that would let
+    the value break OUT of the span, but stripping it is also what makes
+    wrapping it safe: the sanitised text can no longer contain one of its own.
+    """
+    return f"`{_UNSAFE_IN_DISPLAY.sub('?', str(text))}`"
 
 
 def render_comment(

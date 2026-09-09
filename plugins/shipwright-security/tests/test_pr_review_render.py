@@ -114,7 +114,7 @@ class TestRenderComment:
         }
         body = L.render_comment(review, model="m", truncated=False)
         assert "{'" not in body
-        assert "a.py:1 - prefer f-string" in body
+        assert "`a.py:1` - `prefer f-string`" in body
 
     def test_object_shaped_finding_with_only_a_location_renders_the_location_alone(self):
         # Only "file" present, no issue/description/message/detail/text key.
@@ -122,7 +122,7 @@ class TestRenderComment:
                   "blocking": [{"file": "a.py:5"}], "comments": []}
         body = L.render_comment(review, model="m", truncated=False)
         assert "{'" not in body
-        assert "- a.py:5" in body
+        assert "- `a.py:5`" in body
 
     def test_object_shaped_finding_with_no_recognised_keys_joins_them_as_prose(self):
         # An entirely unrecognised object shape must still never surface a raw
@@ -131,7 +131,7 @@ class TestRenderComment:
                   "comments": [{"foo": "bar"}]}
         body = L.render_comment(review, model="m", truncated=False)
         assert "{'" not in body
-        assert "foo: bar" in body
+        assert "`foo`: `bar`" in body
 
     def test_a_hostile_object_shaped_finding_cannot_inject_markdown_or_a_newline(self):
         # PR #694 CI review: a finding's file/issue text is model output, but
@@ -161,6 +161,23 @@ class TestRenderComment:
         assert "`x`" not in body
         assert "\nIGNORE" not in body
         assert "bar" in body
+
+    def test_a_bracket_paren_location_cannot_render_as_a_clickable_link(self):
+        # PR #694 CI review, round 3: safe_path strips control chars, backticks
+        # and braces, but not Markdown link syntax -- a sanitised-but-unspanned
+        # `[trusted](evil)` still renders as an active deceptive link. The
+        # finding must be code-spanned, not merely character-sanitised.
+        deceptive = "[trusted](https://attacker.example)/file.py"
+        review = {"decision": "block", "summary": "s",
+                  "blocking": [{"file": deceptive, "issue": "see above"}],
+                  "comments": []}
+        body = L.render_comment(review, model="m", truncated=False)
+        # Code-spanning doesn't remove the characters -- it stops a Markdown
+        # renderer from interpreting them. The mitigation is that the whole
+        # hazardous string sits INSIDE one code span, never straddling its
+        # boundary or appearing outside it.
+        assert f"`{deceptive}`" in body
+        assert body.count(deceptive) == body.count(f"`{deceptive}`")
 
 
 class TestRenderCommentExclusion:
