@@ -1140,7 +1140,10 @@ in `phase_tasks[]`:
       "claimAttemptedAt": null,
       "executionCount": 0,
       "result": {"ok": true},
-      "errors": []
+      "errors": [],
+      "establishedAtAdoption": true   // present + true ONLY on shipwright-adopt-seeded
+                                       // entries (see below) — absent on every entry a
+                                       // phase-runner actually executed
     }
   ],
   "status": "in_progress | complete | failed | needs_validation",
@@ -1168,6 +1171,17 @@ in `phase_tasks[]`:
 > keeps seeing the phase as not-outstanding while still being able to tell an adopted-in
 > entry from one an actual phase-runner executed. This is FUTURE adoptions only — the
 > already-adopted repo's on-disk config is backfilled separately (sub-iterate s2b).
+>
+> **A non-empty `phase_tasks[]` no longer, by itself, means an orchestrator-driven run.**
+> Before s2, presence of the array WAS that signal (`config_factory` materializes it at
+> run creation, `phase_task_lifecycle` was its only writer). shipwright-adopt is now a
+> SECOND writer, seeding `establishedAtAdoption: true` entries for a repo that was never
+> orchestrator-driven. Any reader that keys on mere presence — the way
+> `phase_quality._engagement.has_phase_tasks` did until this campaign's own delegated
+> review caught it — will mislabel a freshly adopted repo. **Use `schemaVersion == 2` to
+> ask "is this a driven run", and check `establishedAtAdoption` to ask "is this entry
+> provenance, not execution"; a reader that only checks array presence must also exclude
+> an array where every entry is `establishedAtAdoption: true`.**
 >
 > **The rule for a not-yet-migrated reader is therefore: consult `phase_tasks[]` first,
 > and fall back to the v1 fields — do not read either one alone.** `phase_quality.resolve_source`

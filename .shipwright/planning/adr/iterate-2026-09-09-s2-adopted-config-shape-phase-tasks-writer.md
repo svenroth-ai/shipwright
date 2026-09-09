@@ -143,6 +143,27 @@ lower-severity findings surfaced from the fix commit itself:
 | A MIXED `phase_tasks[]` array (adopted entries alongside a real one) still renders the pipeline-phases block, and the adopted entries count toward the "Finished" numerator as if a phase-runner had executed them (LOW — likely unreachable today; `config_factory` always materializes a fresh config) | rejected-with-reason — correct behavior as-is (adopted entries genuinely are not outstanding); revisit only if s4's verifiers migration makes the mixed shape reachable, by excluding `establishedAtAdoption` entries from the finished/total arithmetic rather than from the block as a whole |
 | `write_iterate_config`'s restored cross-reference explains `external_code_review.enabled` as "an independent cascade gate" but dropped the one line with a security consequence — "flip false to opt out of diff exfiltration" (LOW) | rejected-with-reason — `config_writer.py` is at 304 of its 305-line ceiling, no headroom for the extra line without a further extraction; the rationale remains recoverable from `iteration-reviews.md` |
 
+## Delegated-Doubt-Review (3f-bis, Stage 3)
+
+Fired because this diff touches cross-plugin-shared reader modules
+(`handoff_pipeline.py`, `phase_quality/_engagement.py`). Adversarial pass:
+tried to disprove the reader inventory was complete, the guards were applied
+correctly, and the hybrid v1/v2 shape was safe. All three survived the
+attack — it independently read every non-test `phase_tasks` reader in the
+repo and confirmed each is gated on `schemaVersion == 2` or `mode:
+"single_session"` and so unaffected, and confirmed the mixed-array case is
+*structurally* unreachable via `/shipwright-run` (two independent reasons in
+`config_factory`), stronger than the "likely unreachable" the re-verification
+pass had claimed. Advisory-must-address, not a hard gate; all four doubts
+addressed:
+
+| Doubt (severity) | Disposition |
+|---|---|
+| The two shared-reader guards are proven only by unit tests that hand-type the `establishedAtAdoption` literal into synthetic dicts — neither touches the real producer, so producer and consumer could drift silently past both suites (the exact failure class the HIGH finding was) (MEDIUM) | accepted-and-fixed — new `integration-tests/test_adopt_phase_tasks_read_by_shared_readers.py`, following the identical ADR-045-collision pattern already used by `test_handoff_reads_real_loop_state.py` for the same module: drives adopt's real `write_all()` via subprocess, feeds the real on-disk output through both real shared readers |
+| `docs/hooks-and-pipeline.md` — the file CLAUDE.md mandates as first-read for plugin work, and one this diff already edits — gained the marker's existence but not the presence-vs-provenance discriminator rule; a future sub-iterate (s3/s4) reading only that doc could reintroduce the HIGH finding on the next reader (MEDIUM) | accepted-and-fixed — the discriminator rule (`schemaVersion == 2` for drivenness, `establishedAtAdoption` for provenance) added to the paragraph this diff already touches, plus the field added to the example `phase_tasks[]` entry shape |
+| `shared/schemas/run_config.v2.schema.json`'s `PhaseTask` definition doesn't declare `establishedAtAdoption`, even though `additionalProperties: true` doesn't require it and repo precedent (ADR iterate-2026-07-27-phase-gate-override-evidence, finding O3) declares fields explicitly anyway; the schema's own description names it the contract layer for the shipwright-webui repo's `sdk-sessions.json` mirror, a cross-repo consumer outside this repo's search surface (MEDIUM) | accepted-and-fixed — `establishedAtAdoption` (boolean) declared in `$defs.PhaseTask.properties` with the provenance semantics in its description |
+| `config_writer._write_json` is a plain `path.write_text`, not atomic; four seeded entries roughly double `shipwright_run_config.json`'s size, widening the pre-existing torn-read window for concurrent readers (LOW — not a new failure class, all readers already fail-open) | accepted-with-reason, no code change — pre-existing non-atomicity predates this sub-iterate and every affected reader (`load_engagement_inputs`, `resolve_source`, `mermaid`) already tolerates a torn/partial read by design; switching `_write_json` to an atomic write is a `config_writer.py`-wide change out of this sub-iterate's scope |
+
 ## Self-Review
 
 1. Spec Compliance: pass — AC1 (does not render as skipped) and AC2
