@@ -27,7 +27,7 @@ import check_keystone_ac_gate as gate  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests dir (helper)
 
-from _keystone_repo import BASE_SPEC, MANIFEST_RELPATH  # noqa: E402
+from _keystone_repo import BASE_SPEC, MANIFEST_RELPATH, SPEC_REL  # noqa: E402
 from _keystone_repo import bound_manifest as _manifest_with_binding  # noqa: E402
 from _keystone_repo import commit_all as _commit_all  # noqa: E402
 from _keystone_repo import commit_spec as _commit_spec  # noqa: E402
@@ -80,10 +80,25 @@ def test_an_unparseable_base_manifest_is_an_infra_fault_not_an_absent_one(repo, 
     assert "not valid JSON" in payload["error"]
 
 
+def _nested(**node_extra) -> dict:
+    """A structurally plausible manifest whose ONE requirement carries ``node_extra``."""
+    return {"requirements": {"ns::FR-01.01": {
+        "id": "FR-01.01", "status": "active", "spec_path": SPEC_REL,
+        "required_layers": ["unit"], "required_layers_source": "inferred_legacy",
+        **node_extra,
+    }}}
+
+
 @pytest.mark.parametrize(("bad", "expected"), [
     ({"requirements": []}, "not an object"),
     ({"requirements": "ns::FR-01.01"}, "not an object"),
     ({"generated_at": "2026-09-09"}, "no 'requirements' key"),
+    # Tier-3 PR review (BLOCKING) — the first fix stopped at the top level, and so
+    # did its tests. `_links_for` spells the same fragile idiom twice more, so
+    # these two crashed one and two levels down with the top-level guard in place.
+    (_nested(acs=[]), "acs is of type list"),
+    (_nested(acs={"AC01": {"tests": []}}), "acs['AC01'].tests is of type list"),
+    (_nested(acs={"AC01": {"tests": "unit"}}), "acs['AC01'].tests is of type str"),
 ])
 def test_a_valid_json_but_malformed_head_manifest_exits_two_with_json(repo, capsys, bad, expected):
     """External code review (openai, medium) — the crash path.
@@ -106,20 +121,46 @@ def test_a_valid_json_but_malformed_head_manifest_exits_two_with_json(repo, caps
     assert expected in payload["error"]
 
 
+def test_a_non_mapping_node_or_ac_node_is_SKIPPED_not_rejected(repo, capsys):
+    """The deliberate asymmetry, pinned so it is not "tidied" into symmetry.
+
+    Validation covers exactly what the readers do NOT guard. Every reader already
+    spells `isinstance(node, dict)` / `isinstance(ac_node, dict)`, so rejecting
+    those here would make this function a second copy of the manifest schema —
+    free to drift from the one the readers actually enforce. `acs` and `tests`
+    are validated because nothing guards them.
+    """
+    manifest = _nested(acs={"AC01": "not a mapping"})
+    manifest["requirements"]["ns::garbage"] = ["not", "a", "mapping"]
+    _edit_ac01(repo)
+    write_manifest(repo, manifest)
+    head = _git("rev-parse", "HEAD", cwd=repo)
+    code, payload = _run(repo, head, capsys=capsys)
+    # Not exit 2: the gate REACHED a verdict on the merits. The fixture repo's base
+    # binds AC01, and this head does not, so the verdict is the ordinary one.
+    assert code == gate.EXIT_BLOCKED
+    assert [f["kind"] for f in payload["findings"]] == ["binding_removed"]
+
+
 def test_a_malformed_BASE_manifest_is_an_infra_fault_too(repo, capsys):
     """The same validation at the other trust boundary. A base whose
     ``requirements`` is a list would otherwise read as "zero links at base" for
     every AC — silently disarming ``binding_removed``, the one finding the base
-    read exists to make possible."""
+    read exists to make possible. The nested case matters for the same reason and
+    is the one the Tier-3 PR review named: a base whose ``acs`` is a list is
+    ``base_links == 0`` everywhere."""
     write_manifest(repo, {"requirements": []})
-    base = _commit_all(repo, "a base with a list-shaped requirements")
+    base_flat = _commit_all(repo, "a base with a list-shaped requirements")
+    write_manifest(repo, _nested(acs=[]))
+    base_nested = _commit_all(repo, "a base with a list-shaped acs")
     write_manifest(repo, _manifest_with_binding())
     head = _commit_spec(
         repo, BASE_SPEC.replace("The widget must fizz.", "fizz TWICE."), "edit")
-    code = gate.main(["--project-root", str(repo), "--head-sha", head, "--base-sha", base])
-    payload = json.loads(capsys.readouterr().out)
-    assert code == gate.EXIT_INFRA
-    assert "not an object" in payload["error"]
+    for base, expected in ((base_flat, "not an object"), (base_nested, "acs is of type list")):
+        code = gate.main(["--project-root", str(repo), "--head-sha", head, "--base-sha", base])
+        payload = json.loads(capsys.readouterr().out)
+        assert code == gate.EXIT_INFRA
+        assert expected in payload["error"]
 
 
 def test_a_base_ref_git_cannot_resolve_is_an_infra_fault(repo, capsys):

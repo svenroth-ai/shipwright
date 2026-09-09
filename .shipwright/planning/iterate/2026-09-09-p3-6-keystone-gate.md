@@ -1084,6 +1084,25 @@ corrected diff: **glm approve, openai reject** — a real contradiction, resolve
 | 7 | glm · low | `not_selected` is a catch-all for any `executed` value other than `pass`/`fail` (e.g. `"error"`). | **rejected-with-reason.** The message already interpolates the observed value (`executed={executed!r}`), so the operator sees the real cause rather than only the label, and the outcome blocks either way. Splitting `"error"` into the `failed` remedy would encode a value the manifest schema does not currently emit — a speculative branch with no producer. |
 | 8 | glm · low (test) | The CLI harness (`_manifest_with_binding`, `_run`, `_edit_ac01`) is copy-pasted verbatim into the second test module rather than living in `_keystone_repo.py`. | **accepted-and-fixed.** Hoisted to `_keystone_repo.bound_manifest` / `run_gate` / `edit_ac01`, with the reason recorded in that module's docstring: two copies of "the manifest the gate is graded against" can diverge silently, and the module asserting the *weaker* shape would still be green. |
 
+### 12.1a Tier-3 PR review (`ci.yml`'s own gate, first push of PR #702)
+
+The sensitive-path PR-review gate fired on `.github/workflows/` and returned **BLOCK** with two
+issues. Recorded here rather than only in the PR thread, because one of them is a defect in the
+fix for finding 3 above — and the shape of that defect is the point.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| A | blocking | Adding a CI workflow gate is a supply-chain-sensitive change requiring manual maintainer approval before merge. | **Accepted, and not resolvable by this run.** The operator's CI supply-chain acknowledgement for this run id is already recorded and committed (`ci_supplychain_ack.json`, consistent-with `iterate-2026-09-09-p3-5-promote-layers-per-fr-restart`); the merge decision itself is the maintainer's. |
+| B | blocking | `require_manifest_shape` validated only the TOP-LEVEL `requirements`, while `_links_for` also assumes `node["acs"]` and `ac_node["tests"]` are mappings — so `{"acs": []}` or `{"tests": []}` still raised an uncaught `AttributeError`, exit 1 with no JSON. The tests stopped at the same level and missed it. | **Accepted-and-fixed.** The walk now goes three levels deep. Six malformed shapes are asserted through `main()` at BOTH boundaries (exit 2 **and** JSON), plus a companion pinning the deliberate asymmetry: a non-mapping *node* or *AC node* is SKIPPED, not rejected, because every reader already guards those with `isinstance(..., dict)` — validating only what the readers do not guard is what keeps this function from becoming a second, drifting copy of the manifest schema. |
+
+**What finding B is really evidence of, and it is not "one more edge case".** Finding 3 named the
+crash class correctly and I fixed *the instance I had been shown* rather than the class — the same
+error the build self-review made when it caught `EmptyLinkWalk` escaping `main()` and did not go
+looking for the other boundary that produced a bare exit 1. Three reviewers in a row have now found
+the same failure shape at a level I had not walked. The correct generalisation was available each
+time: **when a fix is "validate at the boundary", enumerate every dereference the readers perform,
+not the one in the report.**
+
 **Contradiction resolution (glm approve vs openai reject).** The reject rests on findings 1 and 2,
 which are the two ratified rulings — the reviewer is grading the implementation against the
 sub-iterate spec's unscoped sentence, and the scope was narrowed on the record at the plan-review
@@ -1096,7 +1115,7 @@ requirement is authoritative, and that question was already decided.
 | # | Item | Verdict | Note |
 |---|---|---|---|
 | 1 | Spec Compliance | **pass, two named deviations** | Q1 and Q1b, both ratified and both stated in the shipped module docstring so they survive the merge (§11 item 1). |
-| 2 | Error Handling | **fail → fixed** | Found here first: `EmptyLinkWalk` escaping `main()` is a Python exit 1 — indistinguishable in a CI log from a real hard finding, so a gate defect would send an author to edit a spec that is fine. Now caught → exit 2 with JSON. External review then found the *same shape* at a different boundary (finding 3), which is the honest reading of this row: the class was identified, one instance of it was not. |
+| 2 | Error Handling | **fail → fixed twice, and the second time is the finding** | Found here first: `EmptyLinkWalk` escaping `main()` is a Python exit 1 — indistinguishable in a CI log from a real hard finding, so a gate defect would send an author to edit a spec that is fine. Now caught → exit 2 with JSON. External review then found the *same shape* at a different boundary (finding 3), and the Tier-3 PR review found it again two levels deeper (§12.1a finding B). The honest reading of this row: the class was identified early and then fixed **instance by instance** rather than enumerated. |
 | 3 | Security Basics | **pass** | No new trust artifact, no new persisted state, no network. `github.sha` is interpolated as a SHA (no injection surface). The base read is fail-closed three ways and its one permissive branch is surfaced under its own JSON key. |
 | 4 | Test Quality | **pass** | 46 + 43 cases; the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
 | 5 | Performance Basics | **pass** | Two spec parses and one extra `git show` per PR; no regeneration, no extra test execution. |
@@ -1105,9 +1124,11 @@ requirement is authoritative, and that question was already decided.
 
 ### 12.3 Confidence Calibration (Step 3.8)
 
-Probes run: **8**. Findings: **4**. Asymptote: **reached for the base-manifest boundary, NOT
+Probes run: **10**. Findings: **5**. Asymptote: **reached for the base-manifest boundary, NOT
 reached for the gate as a whole** — and the second half is the honest answer, so it is stated
-rather than rounded up.
+rather than rounded up. Probe H is the direct evidence for that second half: a probe written to
+close a boundary found the same defect one level deeper, *after* the boundary had been declared
+validated.
 
 | Probe | Boundary | Finding |
 |---|---|---|
@@ -1119,6 +1140,8 @@ rather than rounded up.
 | D | malformed-but-valid-JSON manifest (post-review) | **found**: `AttributeError` → exit 1 without JSON. Fixed, then re-probed across three malformed shapes at both boundaries → no finding. |
 | E (F0.5) | the SHIPPED CLI over a REAL merged PR (`0348b887` → `5d76efcd`, PR #700) | **no false red**: exit 0, `status: clean`, empty change set — the gate is silent on a PR that changed no criterion, which is AC-3's whole claim, measured rather than asserted. |
 | F (F0.5) | the same CLI invoked with no `--base-sha` at a commit that is its own merge-base | **found**: exit 2 with a fetch-depth remedy that does not apply. Structurally unreachable in CI; disclosed in §7 rather than fixed, with the reason. |
+| G (CI) | the shipped gate on the REAL PR that adds it (#702) — the first live firing | **no finding, and it closes the one boundary §11 item 7 (iv) called "not probeable pre-merge".** On run 34413699911 the step resolved `base_sha = 5d76efcd` through `_merge_base`'s own chain with no `--base-sha`, read `github.sha` (`c1d9f104`, the merge commit) as head, and returned exit 0 / `status: clean` with an empty change set. The `pull_request` trigger, the base resolution, the merge-commit head and the regenerated-manifest read are all now observed rather than pinned by shape. |
+| H | malformed manifest at the NESTED levels (`acs`, `tests`), after the Tier-3 PR review found probe D's fix stopped one level short | **found**: `AttributeError` → exit 1 without JSON, at two more dereferences. Fixed, then re-probed across six malformed shapes at both boundaries plus the skip-vs-reject asymmetry → no finding. |
 
 **Two consecutive no-finding probes on the base-manifest boundary** (B.2 then B.3) after B.2's
 predecessor — the round-3 review's "first place to look" — is the asymptote condition for *that*
@@ -1130,8 +1153,10 @@ where self-review found 1, 1, 0 defects while review found 0, 3, 6. This round: 
 objections. That is an improvement in the ratio but not a convergence, and one of the three
 external findings was *the same failure class* self-review had just named at a different boundary.
 
-**Edge cases NOT probed, and why that is acceptable:** (i) the `ci.yml` step's real behaviour on a
-`pull_request` event — not probeable before merge by construction, pinned by eleven shape
-assertions and observable on this very PR; (ii) the fuller regeneration-integration probe (finding
+**Edge cases NOT probed, and why that is acceptable:** (i) *was* the `ci.yml` step's real behaviour
+on a `pull_request` event — **no longer un-probed**: probe G observed it live on PR #702's own CI
+run (base resolved through `_merge_base`, `github.sha` as the merge-commit head, exit 0 clean).
+The eleven shape assertions remain, now as the regression net rather than as the only evidence;
+(ii) the fuller regeneration-integration probe (finding
 4) — deferred with a card, with the specific bypass pinned structurally; (iii) a merge-queue
 `merge_group` event — this repo has none, and a tripwire test fails the moment one is enabled.

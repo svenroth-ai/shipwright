@@ -56,20 +56,49 @@ def require_manifest_shape(manifest: dict, where: str) -> dict:
     :func:`read_base_manifest`, which returns ``{}`` with a warning under its own
     JSON key — it is a truncated or wrong file, and reading it as "no requirements
     exist" disarms ``binding_removed`` for every AC in the PR.
+
+    **The walk goes THREE levels deep, not one** (Tier-3 PR review, blocking —
+    the first version of this function stopped at the top level and the tests
+    stopped with it). ``_links_for`` spells the same fragile idiom twice more:
+    ``(node.get("acs") or {}).get(ac_id)`` and
+    ``(ac_node.get("tests") or {}).values()``. So ``{"acs": []}`` or
+    ``{"tests": []}`` reproduced the exact crash one and two levels down. A
+    NON-MAPPING node or AC node is skipped rather than rejected, because every
+    reader already guards those with ``isinstance(..., dict)`` — validating what
+    the readers do not guard, and only that, is what keeps this from becoming a
+    second, drifting copy of the manifest schema.
     """
     requirements = manifest.get("requirements")
-    if isinstance(requirements, dict):
-        return manifest
-    if requirements is None and "requirements" not in manifest:
+    if not isinstance(requirements, dict):
+        if requirements is None and "requirements" not in manifest:
+            raise ReadError(
+                f"{MANIFEST_RELPATH} {where} has no 'requirements' key -- it parses as JSON but "
+                "is not a traceability manifest. Reading it as 'no requirements exist' would "
+                "silently zero every base link count, so this is an infrastructure fault."
+            )
         raise ReadError(
-            f"{MANIFEST_RELPATH} {where} has no 'requirements' key -- it parses as JSON but is "
-            "not a traceability manifest. Reading it as 'no requirements exist' would silently "
-            "zero every base link count, so this is an infrastructure fault."
+            f"{MANIFEST_RELPATH} {where} has a 'requirements' value of type "
+            f"{type(requirements).__name__}, not an object."
         )
-    raise ReadError(
-        f"{MANIFEST_RELPATH} {where} has a 'requirements' value of type "
-        f"{type(requirements).__name__}, not an object."
-    )
+    for key, node in requirements.items():
+        if not isinstance(node, dict):
+            continue  # every reader skips a non-mapping node already
+        acs = node.get("acs")
+        if acs is not None and not isinstance(acs, dict):
+            raise ReadError(
+                f"{MANIFEST_RELPATH} {where}: requirements[{key!r}].acs is of type "
+                f"{type(acs).__name__}, not an object."
+            )
+        for ac_id, ac_node in (acs or {}).items():
+            if not isinstance(ac_node, dict):
+                continue  # _links_for skips a non-mapping AC node already
+            tests = ac_node.get("tests")
+            if tests is not None and not isinstance(tests, dict):
+                raise ReadError(
+                    f"{MANIFEST_RELPATH} {where}: requirements[{key!r}].acs[{ac_id!r}].tests is "
+                    f"of type {type(tests).__name__}, not an object."
+                )
+    return manifest
 
 
 def read_base_manifest(project_root: Path, base_sha: str) -> tuple[dict, str]:

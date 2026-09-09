@@ -4,13 +4,13 @@
     "date": "2026-09-10",
     "unit": {
       "status": "passed",
-      "passed": 11000,
-      "total": 11042
+      "passed": 11008,
+      "total": 11051
     },
     "integration": {
       "status": "passed",
-      "passed": 530,
-      "total": 530
+      "passed": 532,
+      "total": 532
     },
     "pgtap": {
       "status": "not_run"
@@ -88,9 +88,9 @@
           "evidence": "shared/scripts/tools/tests/test_check_keystone_ac_gate.py::test_a_hand_edited_committed_manifest_cannot_flip_the_verdict PASSED"
         },
         {
-          "behavior": "the base- and head-manifest reads are fail-closed: absent degrades under its own JSON key, unparseable or structurally malformed or unresolvable is exit 2 WITH a JSON verdict (AC-K9e)",
+          "behavior": "the base- and head-manifest reads are fail-closed at ALL THREE levels (requirements, acs, tests): absent degrades under its own JSON key; unparseable, structurally malformed or unresolvable is exit 2 WITH a JSON verdict; a non-mapping node or AC node is skipped, not rejected (AC-K9e)",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_keystone_gate_infra.py::test_an_absent_base_manifest_degrades_loudly_with_its_own_json_key PASSED; ::test_an_unparseable_base_manifest_is_an_infra_fault_not_an_absent_one PASSED; ::test_a_valid_json_but_malformed_head_manifest_exits_two_with_json[3 params] PASSED; ::test_a_malformed_BASE_manifest_is_an_infra_fault_too PASSED"
+          "evidence": "shared/scripts/tools/tests/test_keystone_gate_infra.py::test_an_absent_base_manifest_degrades_loudly_with_its_own_json_key PASSED; ::test_an_unparseable_base_manifest_is_an_infra_fault_not_an_absent_one PASSED; ::test_a_valid_json_but_malformed_head_manifest_exits_two_with_json[6 params] PASSED; ::test_a_malformed_BASE_manifest_is_an_infra_fault_too PASSED; ::test_a_non_mapping_node_or_ac_node_is_SKIPPED_not_rejected PASSED"
         },
         {
           "behavior": "base resolution goes through _merge_base's own verdict, so a master-default repo exits on the merits and an unresolvable base exits 2 naming a remedy that applies (AC-K11)",
@@ -115,16 +115,16 @@
           "evidence": "shared/scripts/tools/tests/test_keystone_ac_digest.py 16 tests PASSED; test_keystone_readers.py 8 tests PASSED; design doc SS6 Probe B measured 268 added / 0 changed over 680f46f0b9cb..545a4f32043b"
         },
         {
-          "behavior": "the gate's real behaviour on a GitHub pull_request event (github.sha as the merge commit, actions/checkout fetch-depth 0)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "the pull_request event payload and its refs/pull/N/merge ref are synthesized by GitHub Actions and exist nowhere else; the step is pinned by 11 ci.yml shape assertions and is directly observable on this very PR"
+          "behavior": "the gate's real behaviour on a GitHub pull_request event (github.sha as the merge commit, base resolved by _merge_base with no --base-sha)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "OBSERVED LIVE: PR #702 CI run 34413699911, step 'Keystone AC gate (gate)' resolved base_sha=5d76efcd from head c1d9f104 and returned exit 0 status=clean; plus shared/tests/test_ci_yml_keystone_step_shape.py 11 tests PASSED"
         }
       ],
       "counts": {
-        "testable": 15,
-        "tested": 15,
-        "untestable": 1,
+        "testable": 16,
+        "tested": 16,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
@@ -141,7 +141,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
-    "commit": "b346770261b69725699a7be9179441e4dc6ddb3d",
+    "commit": "424839812afa1bfeee61ede76e65cf8d3c0a23bf",
     "dirty": true,
     "base": null,
     "release": null
