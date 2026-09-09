@@ -1,0 +1,133 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-pr-review-nonconverging-halt",
+    "date": "2026-09-09",
+    "unit": {
+      "status": "passed",
+      "passed": 17130,
+      "total": 17189
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "a CLI delivery tool's internal decision logic (deliver_pr.py's exit-code ladder) plus a documentation reference file; no dev_url, no UI, no running service this diff affects -- verification is the unit/integration test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "extract_blocking_findings reads only the ### Blocking issues section, ignoring ### Comments",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_convergence.py::test_extract_blocking_findings_reads_only_the_blocking_section PASSED"
+        },
+        {
+          "behavior": "findings_recur is strict on file path (exact) and loose on claim vocabulary (overlap past threshold)",
+          "disposition": "tested",
+          "evidence": "test_findings_recur_requires_the_same_file, test_findings_recur_tolerates_reworded_claims_on_the_same_file, test_findings_recur_none_when_vocabulary_genuinely_differs ALL PASSED"
+        },
+        {
+          "behavior": "PR #690's real round-1/round-2 BLOCK bytes recur on the shared file (acceptance case, not invented text)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_convergence.py::test_pr690_round1_and_round2_recur PASSED"
+        },
+        {
+          "behavior": "two real-shaped BLOCK verdicts with genuinely distinct findings do NOT recur (the count-vs-sameness acceptance counterpart)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_convergence.py::test_two_genuinely_different_blocks_do_not_recur PASSED"
+        },
+        {
+          "behavior": "a forged non-bot comment, and an edited real-bot comment, are never treated as authentic verdicts",
+          "disposition": "tested",
+          "evidence": "test_non_converging_ignores_forged_non_bot_comments, test_non_converging_ignores_edited_comments_even_from_the_real_bot PASSED"
+        },
+        {
+          "behavior": "PR #690's real reviews bind round-1/round-2 via GitHub's own commit.oid (the primary, doubt-review-driven binding path)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_verdict_provenance.py::test_real_pr690_pair_binds_via_review_commit_oid_not_committed_date PASSED"
+        },
+        {
+          "behavior": "a BLOCK-shaped comment with the real bot login, unedited, but no sibling review near its timestamp does not bind -- closes the login-only forgery gap (doubt-review HIGH #1)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_verdict_provenance.py::test_forged_comment_with_no_sibling_review_does_not_bind PASSED"
+        },
+        {
+          "behavior": "once reviews was fetched at all, an unmatched comment does not silently fall back to the commits[] guess",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_verdict_provenance.py::test_reviews_present_but_empty_match_does_not_fall_back_to_commits PASSED"
+        },
+        {
+          "behavior": "reviews=() (fetch came back empty) still binds via the original committedDate approximation -- fallback regression guard",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_verdict_provenance.py::test_empty_reviews_falls_back_to_committed_date_binding PASSED"
+        },
+        {
+          "behavior": "_commit_as_of ties resolve by array/chronological order, not oid lexical text",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_pr_review_verdict_provenance.py::test_committed_date_ties_break_by_array_order_not_oid_text PASSED"
+        },
+        {
+          "behavior": "end-to-end: two recurring PR-Review BLOCKs (PR #690 bytes) escalate to non_converging/exit 8 through the full delivery ladder, and the new gh fetch is repo-pinned",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_deliver_pr_non_converging.py::test_two_recurring_pr_review_blocks_escalate_to_non_converging PASSED"
+        },
+        {
+          "behavior": "a same-commit stage-1 re-run, a failing check that isn't PR Review, and an unreadable comments payload all leave the ordinary checks_failed/exit-2 path unchanged",
+          "disposition": "tested",
+          "evidence": "test_a_same_commit_rerun_does_not_escalate, test_a_failing_check_other_than_pr_review_never_asks_for_comments, test_an_unreadable_comments_list_fails_open_to_checks_failed ALL PASSED"
+        },
+        {
+          "behavior": "summary() renders both verdicts side by side with a STOP instruction for non_converging",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_deliver_pr_summary.py::test_non_converging_summary_quotes_both_verdicts_side_by_side PASSED"
+        },
+        {
+          "behavior": "every pre-existing deliver_pr/pr_delivery/pr_self_merge/pr_readiness/watch_pr_delivery behavior is unaffected",
+          "disposition": "tested",
+          "evidence": "full shared/tests suite re-run, 0 regressions (F0 GREEN, 9926/9954 shared/tests passed + 28 skipped, authoritative serial verdict)"
+        }
+      ],
+      "counts": {
+        "testable": 33,
+        "tested": 33,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 33,
+        "covered_acs": 33
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-pr-review-nonconverging-halt",
+    "commit": "b4f39816aad262fbfe138a03beab7c946b9ac81c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

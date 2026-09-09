@@ -937,7 +937,7 @@
     {
       "path": "shared/scripts/tools/deliver_pr.py",
       "limit": 300,
-      "current": 331,
+      "current": 340,
       "state": "exception",
       "adr": "ADR-122"
     },

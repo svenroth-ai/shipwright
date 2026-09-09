@@ -61,3 +61,15 @@ def test_no_summary_ever_claims_done_on_a_pending_verdict():
     for status in ("pending", "checks_failed", "closed", "refused", "host_error"):
         line = summary({"status": status, "reason": "x"})
         assert line.startswith("NOT DELIVERED"), status
+
+
+def test_non_converging_summary_quotes_both_verdicts_side_by_side():
+    line = summary({
+        "status": "non_converging",
+        "previous_verdict": {"posted_at": "t1", "url": "https://x/1", "blocking_finding": "finding A"},
+        "current_verdict": {"posted_at": "t2", "url": "https://x/2", "blocking_finding": "finding B"},
+    })
+    assert line.startswith("NOT DELIVERED — NON-CONVERGING")
+    assert "STOP" in line
+    assert "t1" in line and "https://x/1" in line and "finding A" in line
+    assert "t2" in line and "https://x/2" in line and "finding B" in line
