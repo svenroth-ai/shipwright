@@ -115,27 +115,31 @@ def test_discovery_finds_at_least_the_known_citing_docs():
     )
 
 
-def test_discovery_has_no_unexpected_extra_matches_today():
-    """A snapshot check distinct from the AC1 subset check above: proves
-    discovery does not ALSO sweep in some unrelated doc today (a marker
-    false-positive) alongside the known 4.
+def test_discovery_marker_is_not_absurdly_broad():
+    """Marker-sanity guard, distinct from the AC1 subset check above: catches
+    a marker gone generic (e.g. edited down to a common word/phrase that now
+    sweeps in unrelated docs) WITHOUT reintroducing a per-file allowlist a
+    contributor must extend for every legitimate new surface.
 
-    Unlike the subset check (which must tolerate a legitimate NEW surface
-    without editing this file), this one is EXPECTED to need a
-    `KNOWN_CITING_DOCS` update when a legitimate 5th surface is intentionally
-    added — that friction is a feature here, not a regression: it forces a
-    human to confirm a newly-swept-in match is real elicitation prose and not
-    an incidental "recommended answer" occurrence elsewhere (external code
-    review, round 2, GLM low finding #2).
+    An earlier version of this test asserted the discovered set was exactly
+    `KNOWN_CITING_DOCS` (a snapshot equality). PR-review gate (round 3,
+    openai/gpt-5.6-luna) correctly flagged that as making a legitimate new
+    elicitation-surface doc fail CI until a human manually extended the
+    tuple — precisely the "consulting a list someone must remember to
+    extend" burden FR-01.16 AC09 exists to remove, just relocated from the
+    enforcement path (the reverse citation-check) to this test. Removed in
+    favor of a generous count ceiling: it still fails loudly if the marker
+    degrades into something that matches broadly across the ~190
+    `references/*.md` docs in the repo, but tolerates any number of
+    genuinely new, individually-marked elicitation surfaces.
     """
-    expected = {REPO_ROOT / rel for rel in KNOWN_CITING_DOCS}
-    extra = set(DISCOVERED_ELICITATION_DOCS) - expected
-    assert not extra, (
-        f"discovery found unexpected doc(s) not in KNOWN_CITING_DOCS: "
-        f"{sorted(p.relative_to(REPO_ROOT).as_posix() for p in extra)} — if "
-        f"this is a genuine new elicitation surface, add it to "
-        f"KNOWN_CITING_DOCS; if it is a marker false-positive, tighten "
-        f"ELICITATION_SURFACE_MARKER"
+    count = len(DISCOVERED_ELICITATION_DOCS)
+    assert count <= 20, (
+        f"discover_elicitation_reference_docs(REPO_ROOT) found {count} docs "
+        f"(today's known count is {len(KNOWN_CITING_DOCS)}) — this many "
+        f"matches suggests ELICITATION_SURFACE_MARKER has become too broad "
+        f"and is sweeping in unrelated docs; tighten the marker rather than "
+        f"raising this ceiling"
     )
 
 

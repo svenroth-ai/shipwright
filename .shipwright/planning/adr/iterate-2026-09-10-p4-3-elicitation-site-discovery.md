@@ -166,3 +166,37 @@ Built in campaign mode (interleaved-serial, shared branch). Spec, code, and
 doubt review rows are recorded `not_run` / `delegated_to_orchestrator` per
 this campaign's contract — the orchestrator runs that cascade at 3f-bis
 before merge, not this runner.
+
+## Orchestrator review cascade (post-build)
+
+Spec-reviewer: PASS, clean, no divergence — all 4 ACs independently verified
+against the live repo tree (re-grepped `plugins/**/references/*.md` for the
+marker and got back exactly the 4 known docs). Code-reviewer: APPROVE WITH 2
+low findings — `read_text()` only caught `UnicodeDecodeError`, not a TOCTOU
+`OSError` between `glob()` and read (fixed: widened both exception guards in
+`_elicitation_discovery.py`); the marker contract lived only in the
+test-helper docstring, invisible to a future doc author (fixed: pointer
+added to `shared/requirement-elicitation.md` §2). Doubt-review: recorded
+`not_applicable` — test-only infrastructure change, none of the Stage-3
+triggers (migrations, async/concurrency, cross-plugin imports, irreversible
+ops) apply.
+
+## PR-review gate, round 3 (openai/gpt-5.6-luna) — BLOCK, fixed
+
+`test_discovery_has_no_unexpected_extra_matches_today` (added round 2, GLM
+low finding #2, as a deliberate "friction is a feature" snapshot check)
+asserted the discovered set was exactly `KNOWN_CITING_DOCS`. The gate
+correctly identified this as self-contradicting: a legitimate 5th
+elicitation-surface doc, correctly marked and correctly citing the module,
+would fail this test until a human manually extended the tuple — exactly the
+"consulting a list someone must remember to extend" burden FR-01.16 AC09
+exists to eliminate, just relocated from the enforcement path onto a
+secondary snapshot test. Independently verified the claim before fixing:
+`test_elicitation_surface_cites_the_module` (the actual reverse-check
+enforcement) is unaffected — it is parametrized dynamically over
+`DISCOVERED_ELICITATION_DOCS` and needs no list update for a new surface —
+so the fix could safely remove only the offending snapshot assertion.
+Replaced with `test_discovery_marker_is_not_absurdly_broad`: a generous
+count ceiling (20, against today's 4 and ~190 total `references/*.md` docs
+repo-wide) that still catches a marker gone generic without blocking any
+single legitimate new addition.
