@@ -3385,8 +3385,9 @@ This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog
 ## Merge gates in this repo's own CI
 
 `ci.yml`'s `Python (lint + test)` job is a Required Check, so every step in it
-blocks the merge. Besides lint, the test tiers and the diff-coverage gate, it
-runs four guards:
+blocks the merge. Besides lint and the test tiers, it runs seven guards — four
+tabulated here in full, the other three (deliberately unmirrored) described
+just below the table:
 
 | Step | Script | What it proves |
 |---|---|---|

@@ -1348,11 +1348,12 @@ direct code reading before disposition:
 
 No second Stage-3 pass was run after the Doubt 1/2 fixes — outside this cascade's established pattern (doubt review runs once, after Stage 1+2 pass), and the fixes are narrow, each independently traced by hand and pinned by a test written to fail against the prior phrasing, per this build's standing discipline. Stage 1 and Stage 2 both re-run fresh against the resulting diff before merge, which is where a fix that broke something else would surface.
 
-### 12.1h Stage-1 rounds 8 and 9 (both fresh) — REJECT, REJECT
+### 12.1h Stage-1 rounds 8, 9 and 10 (each fresh) — REJECT, REJECT, REJECT
 
-The §12.1g doubt-review fix (round 8's diff) itself REJECTED twice before Stage 1 passed again, both
-times for the exact class this whole cascade keeps finding: a behavioural change landing in the code
-without every passage that describes the rule being updated to match.
+The §12.1g doubt-review fix (round 8's diff) has not yet re-PASSED Stage 1 as of round 10 — three
+consecutive REJECTs, each for the same class this whole cascade keeps finding: a behavioural change
+(or a build-record edit correcting one) landing without every passage that describes it being
+updated to match, including — round 10 shows — passages the FIX ITSELF just added.
 
 **Round 8 — REJECT (2 hard, 6 medium/low).**
 
@@ -1379,6 +1380,14 @@ the outcome table but missed the identical table carried a second time, verbatim
 | 4 | low | The F11 test-completeness ledger's evidence strings understated real test counts (16/8 vs. the actual 17/11) and had no behavior row for either Stage-3 fix. | **Fixed** — counts corrected, a new behavior row added, `counts.testable`/`tested` bumped 17→18. |
 
 **After round 9's fix, a repo-wide sweep for the same emptiness-only phrasing** (every `binding_removed`/`BINDING_REMOVED`/`keystone` mention across the worktree) found no further survivors — the remaining "base >= 1, head 0" phrasings describe specific scenarios (the retired-duplicate case, base-side disarming) correctly, not the general rule.
+
+**Round 10 — REJECT (3 medium/low, all documentation echoes of round 9's own fix).**
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | `.shipwright/agent_docs/architecture.md`'s always-loaded Layer-1 entry still said "five `verifiers/_keystone_*` modules" — correct before the Doubt-1/2 extraction, stale after it. | **Fixed** — updated to seven. |
+| 2 | medium | §7 and §12.1e each cited `_keystone_core.py`'s line count as 228 — correct after the Doubt-1/2 extraction, stale after round 9's own docstring-table fix added two more lines (230). | **Fixed** — both updated to 230. |
+| 3 | low | §12.1 had no section for Stage-1 rounds 8 and 9, though every prior round has one (including round 9's own REJECT, whose four fixes ship in the same diff as this omission); §12.3's rejection tally undercounted accordingly ("six times, across rounds 1-8"). | **Fixed** — this section (§12.1h) added; §12.3 updated to reflect every round through this one. |
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
@@ -1423,8 +1432,8 @@ boundary, and it is met.
 where self-review found 1, 1, 0 defects while review found 0, 3, 6. This round: self-review found
 1 (the `EmptyLinkWalk` exit code), external review found 3 real ones and 2 correct scope
 objections, the Tier-3 PR review found 1 more, the **Stage-1 spec review rejected the build
-outright** for a code/document divergence none of the earlier passes looked for (six times, across
-rounds 1-9 of this same PR — §12.1b through §12.1h), and the **Stage-3 doubt review found two more
+outright** for a code/document divergence none of the earlier passes looked for (seven times, across
+rounds 1-10 of this same PR — §12.1b through §12.1h), and the **Stage-3 doubt review found two more
 real defects in the shipped evaluator itself** — one **high** (a partial binding-count reduction
 silently passing the gate, §12.1g Doubt 1) and one **medium** (a cross-spec-file digest collision
 capable of erasing a genuine `changed` verdict, §12.1g Doubt 2) — after Stage 1 and Stage 2 had

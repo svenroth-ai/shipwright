@@ -1,6 +1,6 @@
 """P3.6 THE KEYSTONE GATE — the pure evaluator's LINK VOCABULARY.
 
-Covers AC-K5, AC-K6, AC-K7, AC-K8 (a/b/c) and AC-K16 of
+Covers AC-K5, AC-K6, AC-K7, AC-K8 (a/b/c/d) and AC-K16 of
 ``.shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md``. The FR-scoped
 arms (AC-K4's added-AC arm, AC-K10's layer gap, AC-1's two arms, the divergence rule) are
 in ``test_keystone_core_arms.py``.

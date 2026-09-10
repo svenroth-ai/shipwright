@@ -1,9 +1,10 @@
 """P3.6 THE KEYSTONE GATE — the evaluator's FR-scoped arms.
 
 Second half of ``test_keystone_core.py`` (split to keep both modules under the
-300-line source limit rather than baselining a brand-new file). Covers AC-K10
-(highest-layer-mandatory: reused ranking + routing, new predicate) and AC-1's
-two arms plus the reader-divergence precedence rule.
+300-line source limit rather than baselining a brand-new file). Covers AC-K4
+(the ADDED-AC arm, deviation 3), AC-K10 (highest-layer-mandatory: reused
+ranking + routing, new predicate) and AC-1's two arms plus the
+reader-divergence precedence rule.
 
 Fixture builders are shared via ``_keystone_fixtures`` so the two halves cannot
 drift into testing different manifest shapes.
