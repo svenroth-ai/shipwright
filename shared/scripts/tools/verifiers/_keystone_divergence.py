@@ -106,9 +106,12 @@ def resolve_new_frs_without_criteria(
     minter).
     """
     if not spec_text_was_read:
-        # The top-level "neither manifest names a spec_path" warning already
-        # explains why the change set is trivially empty; a second warning here
-        # would only repeat it.
+        # `ac_change_set` has already emitted a warning explaining why the
+        # change set is trivially empty -- the "no spec_path named" warning
+        # for the first disjunct, or its sibling "named but resolved to no
+        # content" warning for the second (Stage-1 spec review, round 19,
+        # medium: this comment used to name only the first warning, which does
+        # NOT fire in the second disjunct -- see the docstring above).
         return
     diverged = set(result.reader_divergence)
     unminted_frs = {fr for fr, _ in result.unminted_changed}

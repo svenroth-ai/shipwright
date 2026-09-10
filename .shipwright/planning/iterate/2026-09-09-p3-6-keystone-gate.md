@@ -567,7 +567,7 @@ resolving to no content) covers the second. Without this exclusion, a base manif
 active requirements makes every head-only active FR read as `new_frs_without_criteria` — "states no
 acceptance criterion" asserted from a document nobody read, the same blast-radius mistake the
 empty-base-manifest amendment already exists to prevent, one call away. A warning is emitted for
-BOTH halves: §5.1's first bullet's warning covers the "no path named" half; the second half — which
+BOTH halves: §5.1's fourth (`_spec_paths`-empty) bullet's warning covers the "no path named" half; the second half — which
 does NOT trigger that warning, since a path WAS named — carries its own warning, added specifically
 so this branch is not silent (round 18's rejection). Pinned by
 `test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base` (first half) and
@@ -1610,6 +1610,21 @@ and explicitly flagged by the reviewer as outside this REJECT) — was deliberat
 that file is this run's frozen F5 evidence snapshot, not a live document, and revising it after the
 fact to match later counts would misrepresent what F5 actually observed at the time it ran.
 
+### 12.1p Stage-1 round 19 (fresh) — REJECT (1 medium) → fixed
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | `resolve_new_frs_without_criteria`'s `if not spec_text_was_read: return` in `_keystone_divergence.py` kept an inline comment claiming "the top-level 'neither manifest names a spec_path' warning already explains why the change set is trivially empty" — true for the FIRST disjunct only. The SECOND disjunct (a path named but resolving to no content) is covered by the NEW warning `ac_change_set` added for round 18, not by the one this comment names, so the code's own inline documentation of the rule stated the exact false claim §12.1o rejected in the design doc, unfixed in the code that motivated it. Behaviour, the docstring twelve lines above, the design doc, and the test were all already correct — only this one inline comment lagged. | **Fixed.** Comment reworded to name both warnings and which disjunct each covers, cross-referencing the docstring above it rather than repeating a stale summary of it. A related low, non-blocking observation from the same round (§5.2's "§5.1's first bullet" should read "§5.1's fourth bullet") was fixed in the same pass since it was a one-word-range edit. |
+
+The reviewer traced the mutual exclusivity of the two warning conditions by hand (`not spec_paths` vs.
+`spec_paths and not spec_text_was_read`), confirmed no double-warn and no silent branch exists, hand-
+verified the new test's warning-substring assertion is not vacuous by tracing `spec_text_at`'s
+three-way contract for the test's specific scenario, and re-confirmed the "57 + 48" case count needs
+no revision (no new test function was added this round, only an assertion). The defect was narrowly
+the one stale comment, not a wider drift — the fourth time in this cascade a fix's own explanatory
+prose (as opposed to its behavior) lagged one step behind a change it made, after §12.1j, §12.1l and
+§12.1m each hit a version of the same pattern in the design doc rather than in code.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1717,6 +1732,16 @@ instead of the narrower one that shipped in round 17. Three rejections on one pa
 data point: a normative statement that keeps drifting behind its own implementation is a sign the
 implementation is still moving faster than the design section can be trusted to track it by hand,
 not evidence that any individual round's fix was careless.
+
+**Round 19 (§12.1p) rejected round 18's own fix — a thirteenth rejection, across rounds 1-19 now** —
+1 medium finding, and a genuinely new shape for this cascade: not a design-doc citation lagging
+behind code, but an INLINE CODE COMMENT lagging behind the very docstring twelve lines above it in
+the same file. Round 18 corrected the design doc's claim about warning coverage and added the
+missing warning in code, but left the short-form inline comment at the return statement repeating
+the pre-round-18 false claim it had just disproved everywhere else. Nothing behavioral was wrong —
+the docstring, the design doc, the test, and the runtime behavior all already agreed — which is
+itself the most reassuring reading of thirteen rounds this far in: the remaining defect class is
+prose echoing stale prose, not logic diverging from either.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
