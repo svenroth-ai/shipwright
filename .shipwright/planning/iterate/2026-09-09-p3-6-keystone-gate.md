@@ -1705,7 +1705,7 @@ nothing above low, which is itself informative after 21+4 rounds of scrutiny on 
 | 1 | low | The base-side digest maps (`base_minted`, `base_fr_digests`) have no collision guard of their own — the head-side guard (§12.1g Doubt 2's fix) protects them only TRANSITIVELY, by forbidding a gated PR from creating the colliding base state, an invariant that does not hold for an ungated push or pre-gate history. | **Disclosed, not fixed.** New §7 bullet: dormant today (one `spec_path` per requirement, repo-wide), and a symmetric guard is real work for a hazard that requires a second `spec_path` to exist at all. Recorded as the reason to add the guard if that ever changes, not ruled out. |
 | 2 | low | `spec_text_at` (this PR's primary git-read input) has no regular-file/mode check, unlike its sibling `git_blob_read.read_committed_text` (used for the base manifest) — a `spec_path` resolving to a symlink or tree would read as that link's target/listing rather than as absent or unreadable. Pre-existing, but this PR promotes the weaker reader to a blocking gate's primary input. | **Disclosed, not fixed.** New §7 bullet: no `spec_path` in this repo has ever named anything but a regular file; routing through the safer reader is a larger change than warranted this late in an already-long review chain. |
 | 3 | low | §7's existing "invoked locally at its own merge-base" bullet covers only a full-SHA `--head-sha`; a SYMBOLIC one (e.g. `HEAD`) bypasses `_merge_base`'s string-comparison self-base guard, producing a silent false green (not the documented exit 2) for the most natural local-reproduction command. `github.sha` in CI is always a full SHA, so CI is unaffected. | **Fixed via disclosure.** The existing §7 bullet extended in place to state the symbolic-ref case and its opposite failure mode, so the bullet is no longer partial. |
-| 4 | low | `evaluate_keystone`'s docstring advertised the evaluator as a clean, stub-testable seam without stating that it only re-applies ONE of arm 2's five suppressions (the reader-divergence exclusion) — a second `AcChangeSet` producer (an F11 adapter, a test stub) populating `new_frs_without_criteria` directly would silently inherit none of the other four, reproducing exactly the false-HARD-block class this cascade spent rounds 12-21 closing. | **Fixed, then corrected.** A paragraph was added to the docstring stating the contract, but its first cut undercounted the other suppressions to two (Stage-1 spec review, round 22, medium) — `resolve_new_frs_without_criteria` also excludes an FR whose heading already existed at base (design §5.2's third precedence rule) and suppresses the whole arm when the base manifest names no active requirement (§5.2's fourth precedence rule and the empty-base-manifest amendment), neither named in the first cut. Corrected to enumerate all four, by reference to that function's own docstring rather than restating it. |
+| 4 | low | `evaluate_keystone`'s docstring advertised the evaluator as a clean, stub-testable seam without stating that it only re-applies ONE of arm 2's five suppressions (the reader-divergence exclusion) — a second `AcChangeSet` producer (an F11 adapter, a test stub) populating `new_frs_without_criteria` directly would silently inherit none of the other four, reproducing exactly the false-HARD-block class this cascade spent rounds 12-21 closing. | **Fixed, then corrected.** A paragraph was added to the docstring stating the contract, but its first cut undercounted the other suppressions to two (Stage-1 spec review, round 22, medium) — `resolve_new_frs_without_criteria` also excludes an FR whose heading already existed at base (design §5.2's third precedence rule) and suppresses the whole arm when the base manifest names no active requirement (§5.2's empty-base-manifest amendment — a distinct suppression from the fourth precedence rule, which is the no-spec-text-read one), neither named in the first cut. Corrected to enumerate all four, by reference to that function's own docstring rather than restating it. |
 
 Four specific angles the reviewer was asked to attack came back clean, and are worth recording since a
 negative result is real evidence here, not merely an absence of positive findings: the two arm-call
@@ -1726,15 +1726,32 @@ that caused it rather than discovered by a later review round.
 
 | # | Severity | Finding | Disposition |
 |---|---|---|---|
-| 1 | medium | §12.1r's new `evaluate_keystone` docstring paragraph claimed `resolve_new_frs_without_criteria` has "its own two suppressions" beyond the reader-divergence exclusion, naming only the unminted-FR exclusion and the no-spec-text-read suppression. The function has FOUR: those two, PLUS the base-drift exclusion (§5.2's Third precedence rule) and the empty-base-manifest whole-arm suppression (§5.2's Fourth precedence rule and its amendment) — both omitted, and both are the BROADER, repo-wide-blast-radius guards the paragraph exists to protect a second `AcChangeSet` producer from losing. §12.1r row 4 repeated the undercount as "three" against the design's own five-suppression enumeration (divergence + Second/Third/Fourth precedence rules + the amendment). | **Fixed.** Docstring rewritten to enumerate all four non-divergence suppressions by name, cross-referencing `resolve_new_frs_without_criteria`'s own docstring rather than restating it in full. §12.1r row 4 corrected from "three" to "five" (total, divergence included) and its own disposition cell updated to record the correction rather than silently replacing the wrong text. |
+| 1 | medium | §12.1r's new `evaluate_keystone` docstring paragraph claimed `resolve_new_frs_without_criteria` has "its own two suppressions" beyond the reader-divergence exclusion, naming only the unminted-FR exclusion and the no-spec-text-read suppression. The function has FOUR: those two, PLUS the base-drift exclusion (§5.2's Third precedence rule) and the empty-base-manifest whole-arm suppression (§5.2's own amendment, a distinct suppression from the Fourth precedence rule) — both omitted, and both are the BROADER, repo-wide-blast-radius guards the paragraph exists to protect a second `AcChangeSet` producer from losing. §12.1r row 4 repeated the undercount as "three" against the design's own five-suppression enumeration (divergence + Second/Third/Fourth precedence rules + the amendment). | **Fixed.** Docstring rewritten to enumerate all four non-divergence suppressions by name, cross-referencing `resolve_new_frs_without_criteria`'s own docstring rather than restating it in full. §12.1r row 4 corrected from "three" to "five" (total, divergence included) and its own disposition cell updated to record the correction rather than silently replacing the wrong text. |
 
 The reviewer independently verified five of the commit's six claims as accurate before finding this
 one — a docstring stating a false exhaustiveness claim about the very code it was added to protect,
 the one place in this entire cascade where a disclosure's own arithmetic, not its prose, was the
 defect. Fixed in the same pass; the fix itself grew `_keystone_core.py` from 249 to 255 lines, and
 that citation was corrected in this SAME commit (§7's retirement-while-editing bullet) rather than
-left for a round 23 to catch — breaking, for the second time running (after round 20's fourth-pass
-commit), the pattern where a fix's own line-count growth needed a LATER round to notice.
+left for a round 23 to catch — breaking, for the second time running (after §12.1r's own doubt-review
+fix commit, which first moved the citation from 239 to 249 in its own commit), the pattern where a
+fix's own line-count growth needed a LATER round to notice.
+
+### 12.1t Stage-1 round 23 (fresh) — REJECT (1 medium, 1 low) → fixed
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | §12.1r row 4's disposition and §12.1s row 1 both attributed the empty-base-manifest whole-arm suppression to "§5.2's Fourth precedence rule and its amendment" — but the Fourth precedence rule (§5.2:559-562) IS the no-spec-text-read suppression, and its own text says so explicitly ("a SECOND, independent null case **beyond** the empty-base-manifest amendment above"). The two are distinct; conflating them left the row internally contradictory, since the same sentence already counted the no-spec-text-read suppression among "those two" named in the first cut. | **Fixed.** Both cells reworded to cite the empty-base-manifest suppression by its own name (the amendment alone), with the Fourth precedence rule kept attached only to the no-spec-text-read suppression. |
+| 2 | low | §12.1s's own closing paragraph attributed the prior same-commit line-count self-catch to "round 20's fourth-pass commit" — but that commit (§12.1q) touched neither `_keystone_core.py` nor any line-count citation; the actual prior instance was §12.1r's doubt-review fix commit, 16 lines above §12.1s's own misattribution, in the same document. | **Fixed.** Reworded to name §12.1r's commit directly rather than round 20's. |
+
+The reviewer independently verified the rewritten docstring's four-suppression enumeration is
+accurate not merely present — matching every code branch in `resolve_new_frs_without_criteria`
+against a docstring claim by hand — and confirmed the "five total" count, the corrected line count
+(255), and the absence of any other collateral drift. Both defects found this round were entirely in
+the REVIEW RECORD's own prose about the fix, not in the fix itself: the shipped code and the
+normative §5.2 text were both already correct. A genuinely new failure shape for this cascade — not
+a fix lagging behind a citation, but a citation ABOUT a fix mis-citing the very design section the
+fix was verified against.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
@@ -1873,6 +1890,17 @@ repo-wide-blast-radius guards the paragraph was written to protect against losin
 enumerating all four; the fix's own line-count growth (249 → 255) was corrected in the SAME commit
 rather than left for a later round — the second time running a fix-commit caught its own collateral
 drift rather than needing a subsequent round to.
+
+**Round 23 (§12.1t) rejected round 22's own fix — a fifteenth rejection, across rounds 1-23 now** —
+1 medium and 1 low, and both were in the REVIEW RECORD's prose about the fix rather than in the fix
+itself: the code and the normative §5.2 text were both already correct, but the disposition cells
+recording round 22's correction conflated two distinct suppressions (the Fourth precedence rule and
+the empty-base-manifest amendment) that §5.2's own text explicitly distinguishes, and a separate
+sentence mis-attributed a prior same-commit self-catch to the wrong earlier round. Fixed by citing
+each suppression by its own name and correcting the attribution. A new failure shape for this
+cascade's fifteen rejections: not a fix lagging behind a citation, and not a fix's own collateral
+drift, but a citation ABOUT a fix mis-describing the design section the fix had already been
+verified against.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
