@@ -17,6 +17,7 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
+from lib.handoff_phase_status import completed_phases_with_fallback  # noqa: E402
 from lib.phase_quality import (  # noqa: E402
     STATUS_FAIL,
     STATUS_PASS,
@@ -48,7 +49,8 @@ _COVERAGE_RE = re.compile(r"Traceability coverage\s*\|\s*(\d+)%")
 
 def check_cmp1_dashboard_covers_phases(project_root: Path) -> dict[str, Any]:
     """Tier-2 heuristic: ``.shipwright/compliance/dashboard.md`` mentions every
-    phase listed in ``shipwright_run_config.json.completed_steps``."""
+    completed phase — ``phase_tasks[]``-first, ``completed_steps`` fallback,
+    see ``completed_phases_with_fallback``."""
     dashboard = project_root / COMPLIANCE_DIR / "dashboard.md"
     if not dashboard.exists():
         return make_finding(
@@ -58,11 +60,11 @@ def check_cmp1_dashboard_covers_phases(project_root: Path) -> dict[str, Any]:
             remediation=CMP1_REMEDIATION,
         )
     data = read_run_config(project_root)
-    completed = data.get("completed_steps") if data else None
-    if not isinstance(completed, list) or not completed:
+    completed = sorted(completed_phases_with_fallback(data)) if data else []
+    if not completed:
         return make_finding(
             "Cmp1", STATUS_SKIP,
-            "no completed_steps in run_config — nothing to compare",
+            "no completed phases in run_config — nothing to compare",
             name=CMP1_NAME,
         )
     try:

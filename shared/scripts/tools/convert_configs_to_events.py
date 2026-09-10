@@ -18,6 +18,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.handoff_phase_status import completed_phases_with_fallback  # noqa: E402
+
 SCHEMA_VERSION = 1
 
 
@@ -105,15 +108,16 @@ def convert(project_root: Path) -> list[dict]:
         if prefix:
             split_by_prefix[prefix] = name
 
-    # Phase events from completed_steps
-    completed_steps = run_config.get("completed_steps", [])
+    # Phase events — phase_tasks[]-first, completed_steps fallback (see
+    # completed_phases_with_fallback).
+    completed_phases = completed_phases_with_fallback(run_config)
     pipeline = run_config.get("pipeline", [])
 
     # We don't have exact timestamps for phase transitions, use updated_at as fallback
     base_ts = run_config.get("updated_at", datetime.now(timezone.utc).isoformat())
 
     for step in pipeline:
-        if step in completed_steps:
+        if step in completed_phases:
             events.append({
                 "v": SCHEMA_VERSION, "id": _eid(), "ts": base_ts,
                 "type": "phase_completed", "phase": step,

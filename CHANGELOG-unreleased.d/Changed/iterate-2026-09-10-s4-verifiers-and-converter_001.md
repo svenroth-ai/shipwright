@@ -1,0 +1,1 @@
+The design and compliance phase verifiers plus the one-time config->events migration tool now read run_config.phase_tasks[] as their primary progress signal instead of the write-once current_step/completed_steps fields (P4.04 s4)

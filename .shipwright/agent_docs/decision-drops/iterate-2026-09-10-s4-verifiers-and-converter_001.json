@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-s4-verifiers-and-converter",
+  "date": "2026-09-10",
+  "section": "Iterate — feature: phase_tasks[] readers (verifiers + converter)",
+  "title": "design_checks/compliance_compliance/convert_configs_to_events move to phase_tasks[]",
+  "context": "Three readers (design adopted-repo skip, Cmp1, config->events migration) still key on write-once completed_steps, inert on a driven run since s1/s3 migrated the other five readers.",
+  "decision": "All three read phase_tasks[] first via new shared completed_phases_with_fallback, falling back to completed_steps only when phase_tasks[] is absent/malformed -- never merely on an empty completed set (external-review fix).",
+  "consequences": "Adopted-repo design skip fires from phase_tasks[] alone; Cmp1 and the migration tool stop under-reporting a driven run's real progress against a stale completed_steps snapshot.",
+  "rationale": "Same per-reader migration already architecture-approved for s1/s3; consolidates 3 near-duplicate fallback helpers into one shared function per external plan+code review.",
+  "rejected": "See spec-ref ADR: literal terminal-design-entry skip condition; adopted-fixture built via cross-plugin import (ADR-045 collision).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md"
+}
