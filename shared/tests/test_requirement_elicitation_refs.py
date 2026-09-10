@@ -45,6 +45,11 @@ REQUIRED_SECTIONS = (
     "## 10. Where the output lands",
     "## 11. The shared question bank",
     "## 12. How each plugin applies it",
+    # Sec.0 precedes Sec.1 in the document and is load-bearing by the module's
+    # own text (see `test_module_pins_the_execution_order_rule_by_sentence`
+    # below) — appended at the END per the P4.4 card's own instruction, not
+    # inserted at position 0, so the existing 12 entries keep their order.
+    "## 0. The order — do it in this sequence",
 )
 
 #: Sections the CONTEXT.md format doc must keep.
@@ -150,6 +155,60 @@ def test_module_pins_the_load_bearing_rules_by_sentence():
     assert "not finished" in body, (
         "the coverage stop-condition ('a requirement is not finished until …') "
         "must survive verbatim, not just its section heading"
+    )
+
+
+def test_module_pins_the_execution_order_rule_by_sentence():
+    """Sec.0 precedes Sec.1 and is the module's own load-bearing claim about
+    itself ("the order is load-bearing") — yet `REQUIRED_SECTIONS` had no
+    entry for it until P4.4, so Sec.0 could be deleted whole without any test
+    turning red. Pin the RULE sentence, not just the heading (mirrors
+    `test_module_pins_the_load_bearing_rules_by_sentence` above), so a reword
+    that quietly dropped the claim would still be caught.
+    """
+    body = MODULE.read_text(encoding="utf-8")
+    assert "the order is load-bearing" in body, (
+        "Sec.0's own claim that the execution order is load-bearing must "
+        "survive verbatim — it is why Sec.0 exists as a separate, numbered "
+        "step before Sec.1 rather than as informal framing prose"
+    )
+
+
+def test_module_pins_the_minimum_two_scenarios_rule_by_sentence():
+    """FR-01.16 AC05: Sec.5's stress-test minimum ("two per requirement, put
+    to the person") is a concrete, falsifiable number the module derived from
+    its own acceptance round (zero scenarios volunteered vs. three found more
+    than code-reading had) — a rewrite that softened it back to "as many as
+    feels useful" would reintroduce the exact failure it fixes.
+    """
+    body = MODULE.read_text(encoding="utf-8")
+    assert "The minimum is two per requirement, put to the person" in body, (
+        "Sec.5's minimum-two-scenarios rule must survive verbatim, not just "
+        "the section heading — it is the number that stopped scenario count "
+        "from silently collapsing to zero"
+    )
+
+
+def test_module_pins_the_glossary_cross_check_trigger_by_sentence():
+    """FR-01.16 AC04: Sec.4's glossary cross-check has a concrete TRIGGER
+    ("every time a term is captured, check it against the terms already
+    there"), added specifically because "the moment fuzzy language appears"
+    is not something anyone notices about their own writing. The sentence
+    soft-wraps across a markdown source line in the raw file, so whitespace
+    is normalized (collapsed to single spaces) before the substring check —
+    the same substance-over-layout concern as the other pinning assertions
+    in this file, just made explicit here because this is the one sentence
+    that actually wraps.
+    """
+    body = MODULE.read_text(encoding="utf-8")
+    normalized = " ".join(body.split())
+    assert (
+        "Trigger: every time a term is captured, check it against the terms "
+        "already there" in normalized
+    ), (
+        "Sec.4's glossary cross-check trigger must survive verbatim — "
+        "without a concrete trigger, sharpening a term against CONTEXT.md "
+        "stops happening because nobody notices the moment to do it"
     )
 
 

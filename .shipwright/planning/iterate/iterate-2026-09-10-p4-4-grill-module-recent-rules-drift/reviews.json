@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p4-4-grill-module-recent-rules-drift",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:51:18.433551+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:50:49.325261+00:00",
+      "disposition": "skipped_complexity_below_threshold -- Step 3.4 diff-risk-recheck: effective_complexity=small (not upgraded), risk_flags=[], diff_loc=59 (<100); Step 3.5 trigger (medium+ OR risk flag OR diff>100 LOC) not met",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:51:27.050987+00:00",
+      "disposition": "Step 3.7 cascade trigger not met (effective_complexity=small, risk_flags=[], diff_loc=59<100); had it fired, the runner has no Agent tool and would delegate to the orchestrator's 3f-bis cascade (not run here)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:51:27.189604+00:00",
+      "disposition": "same as code -- Step 3.7 cascade trigger not met; doubt-reviewer is conditional within that cascade and was never reached",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:51:27.331048+00:00",
+      "disposition": "skipped_diff_below_threshold -- Step 3.7 external code-review trigger (medium+ OR risk flag OR diff>100 LOC) not met: effective_complexity=small, risk_flags=[], diff_loc=59",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:51:27.467607+00:00",
+      "disposition": "Stage-1 spec-reviewer is never run by this runner (no Agent tool); orchestrator's 3f-bis cascade did not fire because Step 3.7's trigger was not met",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:50:49.486367+00:00",
+      "disposition": "no internal arm for plan review exists in this repo's review-cascade contract (project_plan_has_no_internal_arm) -- plan_internal is permanently not_run, documented gap",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
