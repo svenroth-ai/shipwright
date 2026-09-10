@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-09-10T07:37:15.967899+00:00
-Source-State: run=iterate-2026-09-10-p4-2-grill-trace-gate base=4a37d59474dc
+Generated: 2026-09-10T15:55:24.914600+00:00
+Source-State: run=iterate-2026-09-10-pr-review-generated-only
 Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
 
 ## Requirements Coverage
@@ -35,6 +35,7 @@ Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
+| <a id="evt-da3d4ab9"></a>When every file changed in a pull request is just an auto-generated report (like a compliance doc or a log), the review check now passes automatically instead of blocking the merge for no reason. | iterate | change |  | 10384/10385 | — | 2026-09-10 |
 | <a id="evt-2c233d6a"></a>When /shipwright-project runs an interview, it now actually saves a checkable record proving each requirement was fully questioned, and refuses to finish the project phase if a requirement's record is missing or incomplete -- instead of only promising this in a prompt. | iterate | feature | [FR-01.16](#rtm-fr-0116) | 10840/10872 | — | 2026-09-10 |
 | <a id="evt-8605eff6"></a>The old-style run-progress fields current_step and completed_steps are retired; every writer and reader now uses only phase_tasks[] to track pipeline progress. | iterate | change |  | 14977/15027 | — | 2026-09-10 |
 | <a id="evt-bc1fb0a6"></a>Three more parts of the tool that check a build's progress now trust the live, up-to-date progress record instead of an old field that stopped being updated, so they stay correct even when that old field is stale. | iterate | change |  | 11488/11488 | — | 2026-09-10 |
@@ -637,7 +638,7 @@ Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 595 |
+| Iterate changes | 596 |
 | Requirements total | 20 |
 | Requirements verified | 19/20 |
 | Must-have verified | 14/14 |

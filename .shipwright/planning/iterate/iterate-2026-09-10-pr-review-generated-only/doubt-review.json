@@ -1,0 +1,29 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "doubts": [
+    {
+      "severity": "high",
+      "claim_under_doubt": "classify_generated_only's reuse of is_generated_path is a safe carve-out for any combination of changed paths that classifier accepts",
+      "finding": "The classifier reused is_generated_path wholesale, which includes _GENERATED_AGENT_DOCS (build_dashboard.md, session_handoff.md, triage_inbox.md) -- files this repo's own agent-instruction surface, read back as agent context in later sessions. A PR touching only those would have skipped review entirely, converting a pre-existing forced-human-review case into a fully automated green for exactly the files most in need of eyes.",
+      "status": "fixed",
+      "fix": "Added pr_review_generated.is_safe_to_skip_review, a strictly narrower function excluding _GENERATED_AGENT_DOCS; classify_generated_only now calls it instead of is_generated_path. Regression tests in test_pr_review_generated_skip_review.py."
+    },
+    {
+      "severity": "medium",
+      "claim_under_doubt": "the basename-only matches (triage.jsonl, shipwright_events.jsonl, etc.) are an acceptable input to a full review-skip decision",
+      "finding": "Those matches were directory-agnostic, so a brand-new file merely named e.g. triage.jsonl at an attacker-chosen path would classify as skip-safe.",
+      "status": "fixed",
+      "fix": "is_safe_to_skip_review anchors the four basenames to their one canonical repo-root path via _SKIP_REVIEW_CANONICAL_BASENAME_PATHS. Regression test: test_an_off_canonical_path_with_a_generated_basename_is_NOT_safe_to_skip."
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "decide_gate's test/docstring treat 'timed_out' as a real GitHub Actions step outcome value",
+      "finding": "GitHub Actions step outcomes are exactly success/failure/cancelled/skipped; there is no timed_out (a step timeout surfaces as cancelled).",
+      "status": "fixed",
+      "fix": "Replaced 'timed_out' in the test parametrization with an explicitly-labeled placeholder and a comment explaining the real outcome vocabulary."
+    }
+  ],
+  "concurrency_and_reversibility": "attacked (force-push race, step-output timing, crash-then-silent-success) and came up clean -- the existing stale-head/impostor-check-run guards and the fail-open-only-on-crash design hold.",
+  "verification": "Full shipwright-security plugin suite re-run after all three fixes: 1015 passed, 7 pre-existing skips. Lint clean. Test hygiene probe: no findings."
+}

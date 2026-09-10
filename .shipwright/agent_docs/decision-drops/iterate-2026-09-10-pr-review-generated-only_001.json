@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-pr-review-generated-only",
+  "date": "2026-09-10",
+  "section": "Iterate — bug: PR-review gate fails closed on all-generated PRs",
+  "title": "Nothing-to-review carve-out for the PR-review gate",
+  "context": "PRs #707/#708 posted PR Review=failure on all-generated-artifact diffs, forcing admin-override merges. Full rationale in the ADR spec file.",
+  "decision": "Stage 2 derives all_generated from trusted API-read changed paths via a new, strictly narrower classifier; a new pure decide_gate() composes the final verdict, never masking a sensitive path or a real review/waiver failure.",
+  "consequences": "All-generated PRs post success with a self-explaining description; verdict logic moved into two tested pure functions instead of inline workflow bash.",
+  "rationale": "Keeps FR-01.17 (E)7's trust boundary (stage-2 default-branch code, never stage-1's artifact); a narrower classifier avoids reusing a policy tuned for a different, lower-stakes decision.",
+  "rejected": "Reading the signal from stage 1's artifact (forbidden self-exemption); reusing is_generated_path directly (too broad); a catch-all generated-looking-diff pass (violates hard constraint 4).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-pr-review-generated-only-carveout.md"
+}

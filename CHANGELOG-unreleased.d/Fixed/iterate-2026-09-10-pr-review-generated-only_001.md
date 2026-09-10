@@ -1,0 +1,1 @@
+PR-review gate no longer fails closed on PRs whose changed paths are entirely producer-generated artifacts — it now posts a self-explaining success instead of forcing an admin-override merge, while a sensitive path or a real review failure still blocks as before
