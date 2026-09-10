@@ -1161,11 +1161,12 @@ in `phase_tasks[]`:
 > They are NOT dead fields, and the v1 `update_step` path *does* advance them — it is
 > merely inert on a driven run (the drivability guard). They are still written by
 > `shipwright-project`, by `shipwright-adopt` (which seeds `completed_steps` so an adopted
-> repo does not look like it skipped phases), and by that v1 path; and they are still read
-> by `convert_configs_to_events` and the `design` / `compliance` verifiers.
+> repo does not look like it skipped phases), and by that v1 path.
 > `generate_handoff_on_stop`, `suggest_iterate`, `update_build_dashboard`, and
-> `state.detect_current_phase` were migrated off them in sub-iterate s3 of that campaign —
-> see the note on the two migration shapes below. **Since sub-iterate s2 of that campaign, `shipwright-adopt`
+> `state.detect_current_phase` were migrated off reading them alone in sub-iterate s3 of
+> that campaign; `convert_configs_to_events`, `design_checks.py`, and
+> `compliance_compliance.py` (Cmp1) followed in sub-iterate s4 — see the note on the
+> migration shapes below. **Since sub-iterate s2 of that campaign, `shipwright-adopt`
 > ALSO seeds a `phase_tasks[]` entry per completed step** — status `done` (`skipped` for
 > `test`, mirroring `phase_history`'s existing `adopted`/`adopted-skipped` split) plus an
 > additive `establishedAtAdoption: true` marker, so a reader migrated to `phase_tasks[]`
@@ -1191,33 +1192,35 @@ in `phase_tasks[]`:
 > replacing v1, because `config_factory` marks a phase completed *standalone* as
 > `skipped` in `phase_tasks[]` while still listing it in `completed_steps` — so a
 > v2-only read would engage FEWER phases, and phase-quality's contract is "audit MORE,
-> never silently fewer". **A reader migrated by campaign `p4-04-retire-write-once-steps`
-> reads `phase_tasks[]` only, per that campaign's 2026-09-06 architecture review** — the
-> fall-back-and-OR shape above is for readers that campaign has not reached yet, not a
-> standing requirement. `compliance/mermaid.py` (dashboard phase strip) was the first
-> reader migrated (sub-iterate s1); `convert_configs_to_events` and the `design`/
-> `compliance` verifiers are the campaign's remaining queue. Dropping the fields entirely
-> is the campaign's last step, once every reader above is migrated — not a cleanup.
+> never silently fewer". **Migration by campaign `p4-04-retire-write-once-steps` does NOT
+> mean "reads `phase_tasks[]` only"** — that stronger shape (no v1 fallback of any kind)
+> is reserved for a reader whose only job is rendering, where a standalone/pre-v2 config
+> simply shows every phase "pending" and nothing downstream depends on the answer.
+> `compliance/mermaid.py` (dashboard phase strip, sub-iterate s1) and
+> `update_build_dashboard` (sub-iterate s3) are the only two readers in that category.
+> Dropping the fields entirely is the campaign's last step, once every reader below is
+> migrated — not a cleanup.
 >
-> **Sub-iterate s3 migrated the other three readers, and split into two shapes, not
-> one.** `update_build_dashboard` (the legacy config-based Pipeline-table render) mirrors
-> mermaid.py exactly: `phase_tasks[]` only, no v1 fallback of any kind — it is a pure
-> display reader like the dashboard phase strip, so a standalone/pre-v2 config with no
-> `phase_tasks[]` simply renders every phase "pending". `state.detect_current_phase`,
+> **Sub-iterate s3 migrated three readers, sub-iterate s4 three more, all to the SAME
+> phase_tasks[]-primary + v1-fallback shape** (order, not OR — the OR shape above is
+> `phase_quality`'s own, and different). s3: `state.detect_current_phase`,
 > `generate_handoff_on_stop`'s phase-completion fallback detector, and
-> `suggest_iterate`'s in-progress router instead consult `phase_tasks[]` FIRST and fall
-> back to `current_step`/`completed_steps` only when `phase_tasks[]` gives no confident
-> signal at all (empty/absent) — because for THESE three readers, unlike the dashboard,
-> the v1 fields are not stale display data to ignore: for a genuinely standalone
-> (non-driven, no `schemaVersion: 2`) config such as `write_run_config.py`'s shape, the v1
-> `update_step` path is the ONLY thing that ever advances `current_step`, and
-> `generate_handoff_on_stop`'s fallback detector is what TRIGGERS that path (it calls
-> `orchestrator.py update-step` on a detected-but-unmarked phase completion). Dropping the
-> v1 read there would not just change a display — it would silently stop `current_step`
-> from ever advancing for every standalone user, which `design_checks.py` and others still
-> read. So this shape is phase_tasks[]-primary + v1-fallback (order, not OR — the OR shape
-> above is `phase_quality`'s own, and different), not "reads phase_tasks[] only"; that
-> stronger shape is reserved for a reader whose only job is rendering.
+> `suggest_iterate`'s in-progress router. s4: `design_checks.py`'s adopted-repo
+> design-skip gate, `compliance_compliance.py`'s Cmp1 dashboard-coverage heuristic, and
+> `convert_configs_to_events`'s one-time migration tool — all three now route through one
+> shared accessor, `shared/scripts/lib/handoff_phase_status.py::completed_phases_with_fallback`,
+> after s4's external plan review independently caught the same defect in three
+> separately-drafted copies of the rule (GLM + OpenAI, same finding): **the fallback must
+> trigger on `phase_tasks[]` being absent/malformed, never merely on its completed set
+> being empty.** A driven run mid-flight (`phase_tasks[]` present, nothing terminal yet)
+> has an authoritative EMPTY completed set — falling back to `completed_steps` there would
+> resurrect exactly the stale-field problem this campaign exists to retire. For a
+> genuinely standalone (non-driven, no `schemaVersion: 2`) config such as
+> `write_run_config.py`'s shape, the v1 `update_step` path is the ONLY thing that ever
+> advances `current_step`, and `generate_handoff_on_stop`'s fallback detector is what
+> TRIGGERS that path (it calls `orchestrator.py update-step` on a detected-but-unmarked
+> phase completion) — dropping the v1 read there would silently stop `current_step` from
+> ever advancing for every standalone user.
 >
 > The phase skills used to derive "pipeline vs standalone" from
 > `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every

@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-s4-verifiers-and-converter",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T02:38:57.107326+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The design-skip logic `\"design\" not in completed` conflates \"design was skipped\" with \"design hasn't run yet.\" On a driven run that is mid-flight — `phase_tasks[]` populated with all phases still `pending`/in-progress — `phase_tasks_progress()`'s completed set is empty, so you'd fall back to `completed_steps` (fine). But a run where, say, `project` is `done` and `design` is still `pending` yields a non-empty, \"confident\" completed set that does not contain `design`, and `design_checks.py` would skip design verification for a run where design may still run later.",
+          "suggestion": "Make the skip condition terminal-state-aware: skip only when `phase_tasks[]` contains a terminal `design` entry with status `skipped` (the adopted-repo shape never includes design at all, so also skip when phase_tasks[] is confident and design is absent and other phases are terminal — i.e., the run has progressed past design). At minimum, document and test the \"design pending, other phases done\" case explicitly. This is the biggest correctness risk in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach (redundancy)",
+          "file": null,
+          "line": null,
+          "finding": "Two new private `_completed_phases()` helpers with identical semantics, one each in `compliance_compliance.py` and `convert_configs_to_events.py`, plus the fallback logic already living in `phase_tasks_progress()`. That's three copies of the phase_tasks[]-first / completed_steps-fallback rule.",
+          "suggestion": "Add one shared function (e.g., `completed_phases_with_fallback()`) to `handoff_phase_status.py` and call it from all three sites. Otherwise a future change to the fallback rule (e.g., the \"confident\" definition) has to be made in three places and the two verifiers can silently diverge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan doesn't state how `skipped` phases are treated in `convert_configs_to_events.py`. If `_completed_phases()` includes `skipped` phases in the completed set, `convert()` would emit `phase_completed` events for phases that never ran. If it excludes them, that's worth stating, since `phase_tasks_progress()`'s completed set may or may not fold `skipped` in.",
+          "suggestion": "Specify and test the `skipped`-phase behavior for event emission; `skipped` should almost certainly not produce a `phase_completed` event.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The fallback path uses `completed_steps` \"stamped once at run creation\" — for a driven run with zero finished tasks, `completed_steps` may already claim phases (stamped from adoption or template) that haven't actually run. In `compliance_compliance.py` this could make Cmp1 pass against a dashboard covering phases that never ran; in `convert()` it could emit spurious `phase_completed` events.",
+          "suggestion": "Check what v2 actually stamps into `completed_steps` at run creation for a driven run. If it can be non-empty and stale, consider whether the fallback should apply to the event emitter at all, or only to read-only display logic (Cmp1). Add a test for \"driven run, nothing finished, non-empty stale completed_steps.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "phase_tasks[]` present but malformed (e.g., entries missing `phase`/`status` keys, or unknown statuses) isn't addressed. Does `phase_tasks_progress()` already tolerate that, and does \"malformed\" count as \"confident\"?",
+          "suggestion": "Confirm `phase_tasks_progress()` handles malformed input defensively and note its behavior in the plan; a malformed array silently falling through to completed_steps is acceptable, but should be a conscious, tested choice.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes s2's adopted-repo seeding shape (terminal entries for project/plan/build/test, never design). If an adopted repo was created before s2 shipped, its `phase_tasks[]` may be absent — that's the covered fallback — but if s2 changes shape again, this gate breaks silently.",
+          "suggestion": "The new adopted-repo test (AC2) covers this; just make sure it constructs the shape from the actual adopt code path (or a fixture mirroring it), not a hand-rolled approximation that can drift.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Treating an empty `completed` set as “no confident signal” conflates two different states: no usable `phase_tasks[]` data, and a valid driven run whose tasks are all pending/in-progress. In the latter case, falling back to `completed_steps` can reintroduce stale phase completions and emit incorrect dashboard/compliance results or `phase_completed` events.",
+          "suggestion": "Base fallback on whether `phase_tasks[]` is absent/empty/invalid, not whether its completed set is empty. If a non-empty, valid task list contains no terminal tasks, treat that as an authoritative empty completion set.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan proposes separate `_completed_phases()` helpers in the compliance verifier and converter despite the shared progress helper already owning the source interpretation. That risks the fallback and phase-name filtering rules drifting across the three call sites.",
+          "suggestion": "Add a small shared accessor alongside `phase_tasks_progress()` that returns the authoritative completed-phase set and explicit source/confidence state; have all three consumers use it. Keep consumer-specific filtering, such as pipeline-only event emission, local.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes every terminal task corresponds directly to a phase name and that `done` and `skipped` should both count as completed everywhere. This is likely correct for the adopted-repo design gate, but may not be correct for dashboard coverage or `phase_completed` event semantics—especially if skipped pipeline phases historically should not yield completion events.",
+          "suggestion": "Confirm the helper’s terminal-status and phase-name contract against existing event and compliance behavior. Add tests for `skipped` tasks in each consumer, not only the adopted-repo case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Migration may change behavior for malformed or partially written `phase_tasks[]` configurations. The stated fallback covers empty/absent data but not invalid task records, unknown statuses, duplicate phase tasks, or a mixture of valid and invalid entries.",
+          "suggestion": "Define confidence explicitly in the shared helper and test malformed/unknown entries. Prefer authoritative valid task state when present; only use legacy fallback when the task field itself is unavailable rather than silently combining sources.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The approach relies on s2/s2b adoption seeding and s3 helper behavior, but does not explicitly verify that all relevant imports/package paths are available to `shared/scripts/tools/convert_configs_to_events.py`. Tool scripts can have different import bootstrapping from verifier scripts.",
+          "suggestion": "Add an import-level test or run the converter from its normal CLI entry point in addition to unit tests, ensuring the shared helper resolves in the production invocation environment.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The design verifier tests cover an adopted-repo skip and design drift, but not the complementary valid `phase_tasks[]` case where `design` is terminal and the normal design checks must run.",
+          "suggestion": "Add a test with a terminal `design` task that asserts the skip gate is false, independently of any stale legacy `completed_steps` value.  Overall, the direction is sound and preserves the important legacy standalone fallback, but the fallback must distinguish valid zero progress from missing task data before implementation. Consolidating that rule in the shared status layer will prevent the three migrations from diverging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T02:37:51.232962+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: edge-case — Severity: high**\n**Finding:** The design-skip logic `\"design\" not in completed` conflates \"design was skipped\" with \"design hasn't run yet.\" On a driven run that is mid-flight — `phase_tasks[]` populated with all phases still `pending`/in-progress — `phase_tasks_progress()`'s completed set is empty, so you'd fall back to `completed_steps` (fine). But a run where, say, `project` is `done` and `design` is still `pending` yields a non-empty, \"confident\" completed set that does not contain `design`, and `design_checks.py` would skip design verification for a run where design may still run later.\n**Suggestion:** Make the skip condition terminal-state-aware: skip only when `phase_tasks[]` contains a terminal `design` entry with status `skipped` (the adopted-repo shape never includes design at all, so also skip when phase_tasks[] is confident and design is absent *and* other phases are terminal — i.e., the run has progressed past design). At minimum, document and test the \"design pending, other phases done\" case explicitly. This is the biggest correctness risk in the plan.\n\n**Category: approach (redundancy) — Severity: medium**\n**Finding:** Two new private `_completed_phases()` helpers with identical semantics, one each in `compliance_compliance.py` and `convert_configs_to_events.py`, plus the fallback logic already living in `phase_tasks_progress()`. That's three copies of the phase_tasks[]-first / completed_steps-fallback rule.\n**Suggestion:** Add one shared function (e.g., `completed_phases_with_fallback()`) to `handoff_phase_status.py` and call it from all three sites. Otherwise a future change to the fallback rule (e.g., the \"confident\" definition) has to be made in three places and the two verifiers can silently diverge.\n\n**Category: edge-case — Severity: medium**\n**Finding:** The plan doesn't state how `skipped` phases are treated in `convert_configs_to_events.py`. If `_completed_phases()` includes `skipped` phases i […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Treating an empty `completed` set as “no confident signal” conflates two different states: no usable `phase_tasks[]` data, and a valid driven run whose tasks are all pending/in-progress. In the latter case, falling back to `completed_steps` can reintroduce stale phase completions and emit incorrect dashboard/compliance results or `phase_completed` events.  \n   **Suggestion:** Base fallback on whether `phase_tasks[]` is absent/empty/invalid, not whether its completed set is empty. If a non-empty, valid task list contains no terminal tasks, treat that as an authoritative empty completion set.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The mini-plan proposes separate `_completed_phases()` helpers in the compliance verifier and converter despite the shared progress helper already owning the source interpretation. That risks the fallback and phase-name filtering rules drifting across the three call sites.  \n   **Suggestion:** Add a small shared accessor alongside `phase_tasks_progress()` that returns the authoritative completed-phase set and explicit source/confidence state; have all three consumers use it. Keep consumer-specific filtering, such as pipeline-only event emission, local.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan assumes every terminal task corresponds directly to a phase name and that `done` and `skipped` should both count as completed everywhere. This is likely correct for the adopted-repo design gate, but may not be correct for dashboard coverage or `phase_completed` event semantics—especially if skipped pipeline phases historically should not yield completion events.  \n   **Suggestion:** Confirm the helper’s terminal-status and phase-name contract against existing event and compliance behavior. Add tests for `skipped` tasks in each consumer, not only the adopted-repo case.\n\n4. **Category:** risk  \n   **Sever […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": 1575,
+          "finding": "Two already-grandfathered baseline entries had their current value increased upward (test_verifiers_design.py 405->479, test_workflow_checks.py 563->607) while still state:grandfathered with adr:null -- an undocumented ratchet per the repo's Anti-Ratchet rule.",
+          "suggestion": "Set state:exception with an adr reference documenting the growth.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/design_checks.py",
+          "line": 228,
+          "finding": "Stale wording: SKIP message and docstring said \"no 'design' in completed_steps\" even though the actual check now reads phase_tasks[] first via completed_phases_with_fallback().",
+          "suggestion": "Reword to source-agnostic language matching _design_phase_ran's own updated docstring.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T03:22:42.596926+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling and blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The campaign's two sibling helpers -- phase_tasks_progress() (s3, 4 callers) and completed_phases_with_fallback() (s4, 3 callers) -- share one coherent 'when is phase_tasks[] confident' contract. — For phase_tasks: [] (a bare empty list), s3's callers (via phase_tasks_progress's current-is-None trigger) fall back to completed_steps/current_step, while s4's helper (checking only isinstance(tasks, list)) treated the same shape as confident zero-completions -- same on-disk config, two different answers across the campaign's own two 'one contract' helpers.",
+          "suggestion": "completed_phases_with_fallback now requires tasks to be a non-empty list before trusting it (isinstance(tasks, list) and tasks), matching phase_tasks_progress's existing threshold. Does not reopen the mid-flight bug this sub-iterate's external review fixed (a mid-flight run always has >=1 materialized task; config_factory seeds every v2 run with one at creation). Test renamed test_falls_back_when_phase_tasks_is_a_bare_empty_list, assertion inverted to match.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: convert_configs_to_events.py's one-time, irreversible nature means trusting phase_tasks[] over completed_steps risks a permanently under-reported event count. — Traced the converter's pre-existing 'refuse if shipwright_events.jsonl already exists' guard (untouched by this diff) and the live orchestrator's own record_event/_emit_phase_end path.",
+          "suggestion": "No gap found -- the live orchestrator independently re-records every phase it actually completes going forward via its own event-recording path, so an under-reported one-time snapshot does not lose that information permanently.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary and contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The adopted-repo design-skip fix has a gap for a repo adopted before s2/s2b existed (no phase_tasks[] at all, or an older shape predating establishedAtAdoption). — Traced _design_phase_ran's isinstance(..., list) gate and confirmed it falls through unchanged to the pre-migration completed_steps branch when phase_tasks is absent; confirmed the skip decision never reads establishedAtAdoption.",
+          "suggestion": "No gap found -- a pre-s2 repo (completed_steps only) is unaffected by this diff, and any older phase_tasks shape lacking the establishedAtAdoption marker is still read correctly since the skip logic never inspects that field.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T03:43:51.457619+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "[handoff_phase_status.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-_ciolsk8\\shared\\scripts\\lib\\handoff_phase_status.py:218)",
+          "line": null,
+          "finding": "set(steps)` raises `TypeError` when a legacy `completed_steps` JSON list contains an unhashable item such as an object or nested list. Previously, the converter’s `step in completed_steps` path safely handled such malformed entries, and the verifier could proceed; now conversion/compliance can crash for configs without usable `phase_tasks`.",
+          "suggestion": "Filter to string phase names before constructing the set, e.g. `{step for step in steps if isinstance(step, str)}`. Add a test using `completed_steps: [{\"phase\": \"project\"}]`.  The phase-tasks-first behavior and adopted-repository design skip are otherwise implemented and meaningfully tested. Ship with the robustness fix above.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T02:44:10.535673+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] Review of the diff against the s4 spec:\n\n**Spec compliance**\n- \"All three read phase_tasks[]\": design_checks.py (`_design_phase_ran`), compliance_compliance.py (`check_cmp1_dashboard_covers_phases`), and convert_configs_to_events.py all route through the shared `completed_phases_with_fallback`, which reads `phase_tasks` first. ✅\n- \"The adopted-repo design skip still skips for an adopted repo\": s2/s2b adoption seeds `phase_tasks` without a `design` entry, so `\"design\" in completed` is False and the skip fires — verified by `test_fr_coverage_skips_for_adopted_repo_via_phase_tasks`. ✅\n\n**Correctness**\n- The fallback trigger (only when `phase_tasks` is not a list, never on empty completed set) is implemented exactly as documented and is the right semantics: a mid-flight driven run with nothing terminal yet correctly yields an empty set rather than resurrecting a stale `completed_steps`. Covered by dedicated tests in all three consumers.\n- `design_checks._design_phase_ran` preserves the fail-loud path: non-dict payload → True; non-list `phase_tasks` falls through to the old `completed_steps` logic, which still returns True on malformed `completed_steps`. No silent-free-pass regression.\n- `compliance_compliance`: previously a malformed `completed_steps` returned SKIP; now the fallback yields an empty set → also SKIP. Behavior preserved.\n\n**Security** — no new input handling, no injection/secrets surface. Config files are still read locally; nothing new flows into sensitive sinks.\n\n**Test quality** — the tests are genuinely behavioral: `test_trusts_an_empty_completed_set...`, `test_trusts_an_explicitly_empty_phase_tasks_list`, and the phase-tasks-wins-over-stale-steps tests would all fail under a wrong \"fallback on empty\" implementation. Both happy paths and the drift/fail-loud paths are covered.\n\n**Regressions** — the only behavioral change for standalone/v1 configs is that `skipped` statuses now count as completed for design_checks/compliance/convert — but t […truncated]\n\n[openai] - Category: regression\n- Severity: medium\n- File: [handoff_phase_status.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-_ciolsk8\\shared\\scripts\\lib\\handoff_phase_status.py:218)\n- Finding: `set(steps)` raises `TypeError` when a legacy `completed_steps` JSON list contains an unhashable item such as an object or nested list. Previously, the converter’s `step in completed_steps` path safely handled such malformed entries, and the verifier could proceed; now conversion/compliance can crash for configs without usable `phase_tasks`.\n- Suggestion: Filter to string phase names before constructing the set, e.g. `{step for step in steps if isinstance(step, str)}`. Add a test using `completed_steps: [{\"phase\": \"project\"}]`.\n\nThe phase-tasks-first behavior and adopted-repository design skip are otherwise implemented and meaningfully tested. Ship with the robustness fix above.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T03:12:59.769287+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T02:37:55.756366+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

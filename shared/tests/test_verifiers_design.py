@@ -248,6 +248,35 @@ def test_fr_coverage_skips_when_design_phase_never_ran(tmp_path):
     assert "design phase" in r.detail.lower()
 
 
+def test_fr_coverage_skips_for_adopted_repo_via_phase_tasks(tmp_path):
+    # Campaign p4-04-retire-write-once-steps, sub-iterate s4: since s2/s2b,
+    # shipwright-adopt ALSO seeds phase_tasks[] — one terminal
+    # (done/skipped) entry per completed_steps phase, marked
+    # establishedAtAdoption, and NEVER one for "design" (adopt only seeds
+    # project/plan/build/test). The lifecycle skip must still fire from
+    # phase_tasks[] alone, without completed_steps even being read for this
+    # decision.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    _write_run_config(
+        tmp_path, scope="full_app",
+        completed_steps=["project", "plan", "build", "test"],
+        phase_tasks=[
+            {"phase": "project", "status": "done", "establishedAtAdoption": True},
+            {"phase": "plan", "status": "done", "establishedAtAdoption": True},
+            {"phase": "build", "status": "done", "establishedAtAdoption": True},
+            {"phase": "test", "status": "skipped", "establishedAtAdoption": True},
+        ],
+    )
+    # No .shipwright/designs tree at all — the design phase never ran.
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+    assert "design phase" in r.detail.lower()
+
+
 def test_fr_coverage_fails_when_manifest_missing_but_design_ran(tmp_path):
     # Real drift: the design phase DID run ("design" in completed_steps) but the
     # manifest is gone. That is a genuine regression, not a structural skip.
@@ -259,6 +288,70 @@ def test_fr_coverage_fails_when_manifest_missing_but_design_ran(tmp_path):
         tmp_path, scope="full_app",
         completed_steps=["project", "design", "plan", "build", "test"],
     )
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "missing" in r.detail.lower()
+
+
+def test_fr_coverage_fails_when_manifest_missing_but_design_ran_per_phase_tasks(tmp_path):
+    # Same real-drift scenario as above, but the confident signal comes from
+    # phase_tasks[] (a driven run) rather than completed_steps — the
+    # driven-run source phase_tasks[]-first design must still fail loud, not
+    # just the completed_steps-only path.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    _write_run_config(
+        tmp_path, scope="full_app",
+        completed_steps=["project"],  # stale — never advanced on a driven run
+        phase_tasks=[
+            {"phase": "project", "status": "done"},
+            {"phase": "design", "status": "done"},
+        ],
+    )
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "missing" in r.detail.lower()
+
+
+def test_fr_coverage_skips_mid_flight_driven_run_despite_stale_completed_steps(tmp_path):
+    # External review (GLM + OpenAI, independently, sub-iterate s4): a driven
+    # run mid-flight has phase_tasks[] PRESENT with nothing terminal yet
+    # (only "project", still in_progress) — that empty-but-present signal is
+    # itself authoritative and must NOT fall back to completed_steps, even
+    # when completed_steps claims "design" is already done.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    _write_run_config(
+        tmp_path, scope="full_app",
+        completed_steps=["project", "design"],  # stale/wrong for a driven run
+        phase_tasks=[{"phase": "project", "status": "in_progress"}],
+    )
+    # No .shipwright/designs tree at all — design hasn't run yet.
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+    assert "design phase" in r.detail.lower()
+
+
+def test_fr_coverage_fails_loud_when_neither_source_has_confident_data(tmp_path):
+    # External Tier-3 review, sub-iterate s4: phase_tasks[] with NO usable
+    # entries (here, a bare empty list) and completed_steps absent entirely
+    # is zero evidence from EITHER source — _design_phase_ran must fail loud
+    # (assume design ran, so a missing manifest is real drift), not silently
+    # read this as "design never ran" via completed_phases_with_fallback's
+    # own empty-set answer (which is indistinguishable from "confidently
+    # zero" by value alone).
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
+    )
+    _write_run_config(tmp_path, scope="full_app", phase_tasks=[])
     r = check_design_fr_coverage(tmp_path)
     assert r.ok is False
     assert not r.is_skipped

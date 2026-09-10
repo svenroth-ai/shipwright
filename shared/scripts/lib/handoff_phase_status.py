@@ -174,3 +174,62 @@ def phase_tasks_progress(run_config: dict[str, Any]) -> tuple[str | None, set[st
     if current is None and by_phase and run_config.get("schemaVersion"):
         current = next((phase for phase in pipeline_order if phase not in completed), None)
     return current, completed
+
+
+def phase_tasks_has_usable_entries(run_config: dict[str, Any]) -> bool:
+    """True iff EVERY entry in a non-empty ``phase_tasks[]`` is one
+    :func:`phase_tasks_progress` can classify — a dict carrying a string
+    ``phase`` and a recognized ``status`` (:data:`KNOWN_STATUSES`, via
+    :func:`status_of`).
+
+    ``all``, not ``any``: a list mixing one valid entry with one malformed
+    entry (e.g. ``{"phase": "design"}`` with no ``status``) is NOT usable —
+    trusting it would silently drop the malformed phase's real state rather
+    than falling back to ``completed_steps`` for it. Full rationale for this
+    predicate (including why it exists as a standalone export, not just
+    inlined in :func:`completed_phases_with_fallback`) and its review
+    history: campaign p4-04-retire-write-once-steps, sub-iterate s4 ADR.
+    """
+    tasks = run_config.get("phase_tasks")
+    return isinstance(tasks, list) and bool(tasks) and all(
+        isinstance(task, dict)
+        and isinstance(task.get("phase"), str)
+        and status_of(task) in KNOWN_STATUSES
+        for task in tasks
+    )
+
+
+def completed_phases_with_fallback(run_config: dict[str, Any]) -> set[str]:
+    """Completed phase names — ``phase_tasks[]`` when
+    :func:`phase_tasks_has_usable_entries` trusts it, falling back to the
+    write-once ``completed_steps`` otherwise (absent, malformed, empty, or
+    partially malformed ``phase_tasks[]`` — no confident evidence at all).
+
+    Deliberately does **not** fall back merely because a trusted
+    ``phase_tasks[]``'s completed set is empty — a driven run mid-flight
+    (nothing finished YET) is itself an authoritative empty answer, not a
+    signal to consult the inert, possibly-stale ``completed_steps``.
+
+    A phase counted here folds ``done`` AND ``skipped`` together (via
+    ``FINISHED_STATUSES``), matching ``completed_steps``'s own pre-migration
+    semantics.
+
+    Shared by design_checks.py / compliance_compliance.py /
+    convert_configs_to_events.py — one function, one contract, instead of
+    three call sites re-deriving the same rule. Full rationale and review
+    history: campaign p4-04-retire-write-once-steps, sub-iterate s4 ADR.
+    """
+    if phase_tasks_has_usable_entries(run_config):
+        _, completed = phase_tasks_progress(run_config)
+        return completed
+    steps = run_config.get("completed_steps")
+    if not isinstance(steps, list):
+        return set()
+    # A non-string entry (a stray dict/list from a hand-edited or corrupted
+    # config — old configs never validated this list) is UNHASHABLE; a bare
+    # `set(steps)` would raise TypeError here instead of the "skip the
+    # malformed entry" behaviour every other reader of this list gives it
+    # (external code review, OpenAI: this call site is new, the hazard is
+    # not — mirrors adopted_phase_tasks.backfill_missing_phase_tasks's own
+    # guard for the identical shape).
+    return {step for step in steps if isinstance(step, str)}

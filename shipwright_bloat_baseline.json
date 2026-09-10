@@ -1574,9 +1574,9 @@
     {
       "path": "shared/tests/test_verifiers_design.py",
       "limit": 300,
-      "current": 405,
-      "state": "grandfathered",
-      "adr": null
+      "current": 498,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md"
     },
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",
@@ -1595,9 +1595,9 @@
     {
       "path": "shared/tests/test_workflow_checks.py",
       "limit": 300,
-      "current": 563,
-      "state": "grandfathered",
-      "adr": null
+      "current": 607,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md"
     },
     {
       "path": "shared/tests/test_wp5_hook_resolvers.py",

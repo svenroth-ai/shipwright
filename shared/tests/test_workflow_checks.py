@@ -438,6 +438,50 @@ def test_cmp1_passes_when_all_phases_mentioned(proj: Path):
     assert f["status"] == pq.STATUS_PASS
 
 
+def test_cmp1_skips_mid_flight_driven_run_despite_stale_completed_steps(proj: Path):
+    # External review (GLM + OpenAI, independently, sub-iterate s4): a driven
+    # run mid-flight has phase_tasks[] PRESENT with nothing terminal yet — that
+    # empty-but-present signal is authoritative and must not fall back to a
+    # stale completed_steps just because nothing has finished YET.
+    _write_run_config(
+        proj,
+        completed_steps=["project", "design"],
+        phase_tasks=[{"phase": "project", "status": "in_progress"}],
+    )
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
+        "# Dashboard\n\n(nothing yet)\n",
+        encoding="utf-8",
+    )
+    f = compliance_compliance.check_cmp1_dashboard_covers_phases(proj)
+    assert f["status"] == pq.STATUS_SKIP
+
+
+def test_cmp1_reads_phase_tasks_over_stale_completed_steps(proj: Path):
+    # Campaign p4-04-retire-write-once-steps, sub-iterate s4: on a driven run
+    # `completed_steps` is inert (stamped once at creation, never advanced) —
+    # `phase_tasks[]` must be authoritative whenever it has a confident
+    # (finished) signal. Here `completed_steps` only lists "project" (stale),
+    # but `phase_tasks[]` shows design + build are ALSO finished — Cmp1 must
+    # follow phase_tasks[], not fail on the stale completed_steps snapshot.
+    _write_run_config(
+        proj,
+        completed_steps=["project"],
+        phase_tasks=[
+            {"phase": "project", "status": "done"},
+            {"phase": "design", "status": "done"},
+            {"phase": "build", "status": "skipped"},
+        ],
+    )
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
+        "# Dashboard\n\n- project\n- design\n- build\n",
+        encoding="utf-8",
+    )
+    f = compliance_compliance.check_cmp1_dashboard_covers_phases(proj)
+    assert f["status"] == pq.STATUS_PASS
+
+
 def test_cmp2_skips_without_rtm(proj: Path):
     f = compliance_compliance.check_cmp2_rtm_coverage(proj)
     assert f["status"] == pq.STATUS_SKIP
