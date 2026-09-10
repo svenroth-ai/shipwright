@@ -132,6 +132,16 @@ def ac_change_set(
     # from git at either sha -- must not count as read, on pain of arm 2
     # (below) firing from a document nobody actually read.
     spec_text_was_read = False
+    # Per-path counterpart to the aggregate flag above (found during build,
+    # code review). With MULTIPLE spec paths, `spec_text_was_read` goes True
+    # the moment ANY one of them has content -- correct for arm 2's own
+    # suppression (design scopes it to the aggregate, unchanged below), but it
+    # means a path that individually resolved to no content at either commit
+    # gets no warning of its own once a sibling path was read: the aggregate
+    # warning at the end of this function is keyed on `not spec_text_was_read`
+    # and cannot fire once one path succeeds. Collected here, warned on below,
+    # regardless of the aggregate outcome.
+    unread_paths: list[str] = []
 
     spec_paths = _spec_paths(head_manifest, base_manifest)
     if not spec_paths:
@@ -155,6 +165,8 @@ def ac_change_set(
             raise ReadError(f"could not read {rel_path} at the {side} commit")
         if base_text or head_text:
             spec_text_was_read = True
+        else:
+            unread_paths.append(rel_path)
 
         h_minted, h_unminted = ac_criteria_digests(head_text)
         for key in h_minted:
@@ -215,6 +227,22 @@ def ac_change_set(
             f"{len(spec_paths)} spec_path(s) named ({', '.join(spec_paths)}) but none resolved "
             "to any content at either commit; the per-AC change set is trivially empty because "
             "there is nothing to compare, not because nothing changed."
+        )
+    elif unread_paths:
+        # A SIBLING spec path was read (else the branch above would have fired
+        # instead), so `spec_text_was_read` is True and arm 2's suppression --
+        # correctly, per design -- does NOT apply: any FR anchored to one of
+        # THESE paths is still judged against text nobody actually read. That
+        # is not a suppression bug (the flag is deliberately aggregate, per
+        # design's scope), but it must not be silent either -- naming the
+        # stale path(s) here is what lets an operator connect a later
+        # `new_frs_without_criteria` finding back to "was this path even
+        # read?" instead of taking the finding at face value.
+        result.warnings.append(
+            f"{len(unread_paths)} of {len(spec_paths)} spec_path(s) resolved to no content at "
+            f"either commit ({', '.join(unread_paths)}) even though another named spec_path was "
+            "read; any FR anchored to the unread path(s) is judged against text that was never "
+            "actually scanned."
         )
 
     for key, head_digest in head_minted.items():
