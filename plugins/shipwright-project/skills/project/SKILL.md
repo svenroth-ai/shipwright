@@ -225,6 +225,13 @@ canon, and the final summary banner.
 5. **Spec Completeness Gate** — Scope + FRs + NFRs in each spec.md
 6. **Manifest-Spec Consistency** — bijection between manifest and
    spec.md files
+7. **Grill-Trace Completeness Gate (P4.2)** — runs
+   `verify_grill_trace_completeness.py` over every grill-trace record
+   the interview wrote (see interview-protocol.md → "Capturing the
+   grill-trace"). **Blocks phase completion on any red result** — a
+   missing trace, a blank dimension, an `assumed` value (no exceptions
+   in this surface), an undefined term, or an outcome with no fit
+   criterion. Never judges prose quality, only structural completeness.
 
 **Phase complete — update pipeline state** by running the
 C1/C2/C3/C5 + phase_history block from

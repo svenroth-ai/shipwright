@@ -14,6 +14,41 @@
    - Non-Functional Requirements section
    - If any spec.md is missing these sections → fix before proceeding
 6. **Manifest-Spec Consistency** — no split in manifest without spec.md, no spec.md without split in manifest
+7. **Grill-Trace Completeness Gate (P4.2, `shared/grill-trace-format.md`)** —
+   run the completeness gate over every grill-trace record this interview
+   wrote (see interview-protocol.md → "Capturing the grill-trace"):
+
+   ```bash
+   uv run "{shared_root}/scripts/tools/verify_grill_trace_completeness.py" \
+     --project-root "$(pwd)"
+   ```
+
+   **This BLOCKS phase completion — not advisory.** A non-zero exit means at
+   least one requirement's grill-trace is missing entirely (an interview ran
+   but nothing was written), has a blank dimension, carries an `assumed`
+   value (this surface permits no exceptions), declares a term that resolves
+   in neither `shared/glossary.md` nor `CONTEXT.md`, answers `outcome`
+   with no `fit_criterion`, or (now that spec.md files exist) has a live FR
+   row whose `Name` cell has no matching grill-trace at all
+   (`fr_trace_coverage` — catches a partially recorded interview, not just a
+   fully skipped one). **Do not mark the project phase complete while this
+   gate is red** — go back to the interview, resolve the named gap (grill
+   the missing dimension, ask instead of assuming, sharpen the undefined
+   term into `CONTEXT.md`, add the fit criterion, or write the missing
+   requirement's trace), re-run the producer, and re-run this gate. It never
+   judges prose quality — only structural completeness
+   (`shared/grill-trace-format.md` §3) — so fixing a red result is always a
+   completeness fix, never a rewrite for tone.
+
+   **A project whose interview began before this gate shipped** will
+   correctly show `grill_trace_coverage` (or `fr_trace_coverage`) red at
+   Step 8 — the transcript exists but pre-dates the trace producer. That is
+   not a false block: the evidence this gate exists to require genuinely
+   was not captured. Remediate by writing a trace per already-confirmed
+   requirement (a short retroactive pass, using the same producer) before
+   completing the phase — there is no separate "grandfather" path, by
+   design (the design's own thesis: a prompt-only guarantee that reads
+   "should have happened" is exactly what this gate replaces).
 
 ## Phase complete — update pipeline state
 
