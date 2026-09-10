@@ -108,6 +108,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Grill-trace evidence record + completeness gate (P4.2)](iterate-2026-09-10-p4-2-grill-trace-gate-completeness.md)
 - [Dynamic discovery of requirement-elicitation citing docs](iterate-2026-09-10-p4-3-elicitation-site-discovery.md)
 - [Pin Sec.0/Sec.4/Sec.5's most recent rules against drift](iterate-2026-09-10-p4-4-grill-module-recent-rules-drift.md)
+- [Nothing-to-review carve-out for the PR-review gate](iterate-2026-09-10-pr-review-generated-only-carveout.md)
 - [ADR: the two stop-hooks, update_build_dashboard.py and state.py move to phase_tasks\[\]](iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md)
 - [ADR: design_checks.py, compliance_compliance.py, and convert_configs_to_events.py move to phase_tasks\[\]](iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md)
 - [Retarget the v1 update_step path onto phase_tasks\[\], then drop current_step/completed_steps](iterate-2026-09-10-s5-retarget-v1-then-drop.md)

@@ -1,9 +1,9 @@
 # Commit Change Log
 
-Generated: 2026-09-10T15:55:24.914600+00:00
-Source-State: run=iterate-2026-09-10-pr-review-generated-only
+Generated: 2026-09-10T07:37:15.967899+00:00
+Source-State: run=iterate-2026-09-10-p4-2-grill-trace-gate base=4a37d59474dc
 Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
-Total commits: 1488
+Total commits: 1485
 
 ## Commit Distribution
 
@@ -11,8 +11,8 @@ Total commits: 1488
 pie title Commit Types
     "fix" : 509
     "feat" : 400
-    "chore" : 267
-    "docs" : 157
+    "chore" : 265
+    "docs" : 156
     "refactor" : 89
     "test" : 37
     "ci" : 18
@@ -942,12 +942,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 267 commits
+### Chores (chore) — 265 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-10 | triage | sweep 6 outbox append(s) into branch | e3d5e54bb49e |
-| 2026-09-10 | compliance | refresh evidence documents as of 4a37d59474dc (#707) | ac0b998c722f |
 | 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
 | 2026-09-01 | release | v0.33.1 (#667) | 77d10de1c32a |
 | 2026-08-29 | docs | sync guide.md with grade plugin, compliance groups A-I, traceability tagging (#663) | 31517fe72604 |
@@ -1214,11 +1212,10 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 157 commits
+### Documentation (docs) — 156 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-10 | triage | file three deferred follow-up cards from PR #702 (P3.6) (#708) | 8f78b93be251 |
 | 2026-08-10 | — | remove expired refactoring-churn warning from README (#626) | 005f7bfe5843 |
 | 2026-08-09 | — | add threshold-based guide to keeping token cost controllable (#621) | 58cda771438f |
 | 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
@@ -1565,7 +1562,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1488 |
+| Total commits | 1485 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1488 |
+| Human-authored commits | 1485 |
 
