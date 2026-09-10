@@ -183,6 +183,53 @@ def test_a_verified_link_missing_status_or_executed_is_treated_as_absent():
     assert link["status"] == "enabled"
 
 
+def test_a_verified_link_missing_status_specifically_is_treated_as_absent():
+    """AC-D11 (adjacent, PR review Tier-3, comment): the sibling case of the
+    test above — missing/non-string `status` specifically (not `executed`) —
+    gets its own case rather than relying on the other field's coverage to
+    imply it."""
+    manifest = bound_manifest(executed="pass")
+    evidence = _evidence(
+        "confirmed", run_id=9,
+        requirements={"ns::FR-01.01": {"tests": {"unit": [{"id": SHARED_LINK_ID, "executed": "pass"}]}}},
+    )
+
+    verified = dc.build_verified_manifest(manifest, evidence)
+
+    link = verified["requirements"]["ns::FR-01.01"]["acs"]["AC01"]["tests"]["unit"][0]
+    assert link["executed"] == "not_run"
+    assert link["status"] == "enabled"
+
+
+def test_a_non_mapping_requirement_node_is_treated_as_no_verified_evidence():
+    """A malformed requirement node in the verified evidence (not a mapping at
+    all) must not raise `AttributeError` from `.get`/`.items()` -- it is
+    treated the same as the requirement being absent, so every link under it
+    falls through to the fail-closed `not_run` an unmatched id already gets
+    (PR review, Tier-3, blocking)."""
+    manifest = bound_manifest(executed="pass")
+    evidence = _evidence("confirmed", run_id=9, requirements={"ns::FR-01.01": ["not", "a", "mapping"]})
+
+    verified = dc.build_verified_manifest(manifest, evidence)
+
+    link = verified["requirements"]["ns::FR-01.01"]["acs"]["AC01"]["tests"]["unit"][0]
+    assert link["executed"] == "not_run"
+    assert link["status"] == "enabled"
+
+
+def test_a_non_mapping_tests_value_is_treated_as_no_verified_evidence():
+    """Same as above, one level deeper: the requirement node IS a mapping but
+    its `tests` value is not (PR review, Tier-3, blocking)."""
+    manifest = bound_manifest(executed="pass")
+    evidence = _evidence("confirmed", run_id=9, requirements={"ns::FR-01.01": {"tests": ["not", "a", "mapping"]}})
+
+    verified = dc.build_verified_manifest(manifest, evidence)
+
+    link = verified["requirements"]["ns::FR-01.01"]["acs"]["AC01"]["tests"]["unit"][0]
+    assert link["executed"] == "not_run"
+    assert link["status"] == "enabled"
+
+
 # --------------------------------------------------------------------------
 # Mutation contract — build_verified_manifest must not share mutable state
 # with its input

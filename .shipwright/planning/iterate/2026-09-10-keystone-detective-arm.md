@@ -315,6 +315,19 @@ id-only matching, not overridden by review authority alone. No third round was r
 finding above was either fixed or dispositioned with a traced justification, the same bar
 Round 2's own plan review used.
 
+### 3.5.5 Post-push Tier-3 PR Review (`openai/gpt-5.6-luna`, PR #716) — `BLOCK`, one blocking finding
+
+Runs automatically as a Required Check once the PR is opened (sensitive-path PR, per B4.5) — after
+F6/F11, not part of the pre-push review cascade above. One blocking finding:
+
+| Finding (condensed) | Severity | Disposition |
+|---|---|---|
+| `build_verified_manifest`'s `node.get("tests")` / `.items()` assumed every `evidence.requirements` value is a mapping and that `tests` is itself a mapping; a malformed confirmed-evidence structure raised an uncaught `AttributeError` instead of the module's own documented fail-closed behavior | blocking | Fixed — a non-mapping requirement node, or a non-mapping `tests` value, is now treated the same as the requirement carrying no verified evidence at all (the same ABSENT-not-error posture every other malformed-input case in this function already takes), never dereferenced. Two regression tests added (`test_a_non_mapping_requirement_node_is_treated_as_no_verified_evidence`, `test_a_non_mapping_tests_value_is_treated_as_no_verified_evidence`) |
+
+Non-blocking comment: the existing missing-field test covered `executed` but not `status`
+specifically — added `test_a_verified_link_missing_status_specifically_is_treated_as_absent` as its
+sibling case.
+
 ### 4.3 Where it runs, and where it deliberately does not (yet)
 
 - **No CLI, no script entry point** (§3.5). `classify_commit(commit, *, project_root)` is called
@@ -463,6 +476,7 @@ Round 2's own plan review used.
   | AC-D14 | `test_a_mutable_ref_is_canonicalized_to_a_full_sha_before_any_resolver_call`, `test_an_unresolvable_commit_raises_read_error`, `test_the_canonical_sha_reaches_execution_evidence_and_both_manifest_reads` | `test_keystone_detective_core.py` | tested |
   | AC-D15 | `test_an_unrecognized_verification_status_raises_read_error`, `test_an_unrecognized_evidence_status_raises_read_error` | `test_keystone_detective_core.py` | tested |
   | (mutation contract, `build_verified_manifest`) | `test_build_verified_manifest_does_not_mutate_or_share_state_with_the_input` | `test_keystone_detective_greenness.py` | tested |
+  | (fail-closed malformed evidence, PR review Tier-3) | `test_a_non_mapping_requirement_node_is_treated_as_no_verified_evidence`, `test_a_non_mapping_tests_value_is_treated_as_no_verified_evidence`, `test_a_verified_link_missing_status_specifically_is_treated_as_absent` | `test_keystone_detective_greenness.py` | tested |
 
   None `untestable`. The two files split at build time (346 lines, crossing the 300-LOC
   guideline) along the natural seam: classification/short-circuit vs. greenness-recomputation —

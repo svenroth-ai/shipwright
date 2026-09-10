@@ -61,7 +61,11 @@ def build_verified_manifest(committed_manifest: dict, evidence: ExecutionEvidenc
     (external code review round 2, glm, low) — the same fail-closed
     ``not_run`` fallback an unmatched id already gets, rather than writing a
     non-string sentinel into the manifest that ``evaluate_keystone`` was
-    never contracted to handle.
+    never contracted to handle. The same ABSENT treatment applies one level
+    up: a requirement node that is not a mapping, or whose ``tests`` value is
+    not a mapping, is treated as if that requirement carried no verified
+    evidence at all, rather than raising ``AttributeError`` from ``.items()``
+    on a non-mapping (PR review, Tier-3, blocking).
 
     Returns a full, independent deep copy — no shared mutable state with
     ``committed_manifest`` ANYWHERE in the returned tree, not merely on the
@@ -73,7 +77,13 @@ def build_verified_manifest(committed_manifest: dict, evidence: ExecutionEvidenc
     verified_by_req: dict[str, dict[str, tuple[str, str]]] = {}
     for req_key, node in (evidence.requirements or {}).items():
         by_id: dict[str, tuple[str, str]] = {}
-        for layer, links in (node.get("tests") or {}).items():
+        tests = node.get("tests") if isinstance(node, dict) else None
+        # A non-mapping requirement node, or a non-mapping `tests` value, is
+        # treated the same as the requirement being absent from the evidence
+        # entirely -- every link under it falls through to the fail-closed
+        # `not_run` an unmatched id already gets, rather than an uncaught
+        # AttributeError from `.items()` on a non-mapping (PR review, Tier-3).
+        for layer, links in (tests if isinstance(tests, dict) else {}).items():
             if not isinstance(links, list):
                 continue
             for link in links:
