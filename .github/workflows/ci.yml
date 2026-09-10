@@ -414,6 +414,33 @@ jobs:
         if: steps.manifest_drift.outputs.code == '0'
         run: echo "manifest verified clean at ${{ github.sha }}"
 
+      - name: Keystone AC gate (gate)
+        # P3.6 (campaign req3-04c-ac-identity-wave2, design
+        # .shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md). SPEC 1.4: a
+        # behaviour-changing PR must not merge without naming its changed acceptance
+        # criteria and re-running the tests bound to them, green, in THIS run.
+        #
+        # MUST come after "Check traceability manifest against a fresh regeneration":
+        # that step regenerates .shipwright/compliance/test-traceability.json IN PLACE
+        # from this run's real JUnit output, so the committed file's own claims are
+        # already overwritten before this gate reads them. Regeneration happens BEFORE
+        # that step's own comparison, so this holds even while `main` carries the
+        # advisory structural drift (code '1'); code '2' FAILS that step and — with the
+        # default `if: success()` — this one never runs. Fail-closed, no extra `if:`.
+        #
+        # No ordering assertion against "Diff coverage (gate)": that step is conditional
+        # on hashFiles('coverage.xml'), so depending on it would pin a hard precondition
+        # on a soft dependency.
+        #
+        # pull_request only: the keystone gate is a MERGE condition. A push run has no PR
+        # to block and no base branch to diff against.
+        #
+        # The name ends in "(gate)" so check_ci_gate_coverage.GATE_NAME_KEYWORDS enrols
+        # it — a future `continue-on-error` here is then caught as a loose gate rather
+        # than silently disarming the campaign's keystone.
+        if: github.event_name == 'pull_request'
+        run: uv run shared/scripts/tools/check_keystone_ac_gate.py --project-root . --head-sha "${{ github.sha }}"
+
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml
   # when the WebUI was extracted into its own repo (v0.4.0, 2026-04-24).

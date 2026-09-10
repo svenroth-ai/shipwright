@@ -184,7 +184,11 @@ wired into the pipeline.
 
 - `ci.yml` — the hard lint gate (`uvx ruff@0.15.15 check .`, no `|| true`) + the
   Python test suites + the **diff-coverage gate** (`.github/actions/diff-coverage-gate`;
-  <80% of changed lines vs `origin/main` fails closed).
+  <80% of changed lines vs `origin/main` fails closed) + the **keystone AC gate**
+  (`shared/scripts/tools/check_keystone_ac_gate.py`, `pull_request` only): an
+  acceptance criterion this PR changed must still be bound to a test, and that
+  test must have run green *in this run*. It reads the manifest the preceding
+  drift step regenerated in place, never the committed bytes.
 - `security.yml` — the scanner chain (Semgrep/Trivy/gitleaks) → `findings.json`
   + SARIF; the critical-gate fails **closed** on a degraded or critical scan.
 - `pr-review.yml` — the Tier-3 external-LLM PR review; it is the 6th Required
@@ -241,6 +245,7 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 
 
 > **One line per change** — always-loaded Layer-1 context, so every line costs tokens on every future iterate. Format: `- **<run_id|ADR-NNN>** (YYYY-MM-DD): <Impact> — <one sentence: what + key surface>. → decision_log (Run-ID/ADR)`. **Budget ≤ 600 chars; detail goes in the ADR / `.shipwright/planning/adr/`, not here.** Enforced repo-agnostically (incl. adopted repos) by the F11 verifier + `shared/scripts/tools/check_agent_doc_budget.py` (SSoT `lib.agent_doc_budget`); see `references/F2.md`. Bullet **shape** (a `run_id`|`ADR-NNN` anchor, an `<Impact> —` lead, and a `→` pointer — no `Campaign`/`sub_iterate`/free-text) is enforced from 2026-06-28 by `check_agent_doc_shape` (SSoT `lib.agent_doc_shape`); the release aggregator writes no duplicate `ADR-NNN` bullet — the run_id line is the single canonical entry. Full verbatim prose for compacted entries lives in [`../planning/adr/_archive-agent-doc-updates.md`](../planning/adr/_archive-agent-doc-updates.md). Routing (`lib.architecture_doc.IMPACT_TARGETS`): `convention`-impact → [`conventions.md`](conventions.md) `## Convention Updates`; only `component` / `data-flow` live here.
+- **iterate-2026-09-09-p3-6-keystone-gate** (2026-09-10): Component — new `shared/scripts/tools/check_keystone_ac_gate.py` + eight `verifiers/_keystone_*` modules add a `pull_request`-only `ci.yml` gate: an acceptance criterion changed in the PR must still be bound to a test that ran green in THIS run, judged from the REGENERATED manifest and the base-commit manifest (link counts, never node presence). Deliberately does not call `resolve_execution_evidence`. → decision_log (Run-ID).
 - **iterate-2026-09-09-s1-dashboard-phase-strip** (2026-09-09): Data-flow — `plugins/shipwright-compliance/scripts/lib/mermaid.py` `_get_phase_status` gains a new read surface, `run_config.phase_tasks[]` (via new `_phase_tasks_status`), and stops reading the write-once `current_step`/`completed_steps` fields for the dashboard phase strip (campaign p4-04-retire-write-once-steps, s1 of 6). → decision_log (Run-ID).
 - **iterate-2026-09-09-s2-adopted-config-shape** (2026-09-09): Data-flow — `plugins/shipwright-adopt/scripts/lib/config_writer.py` `write_run_config` gains a new write surface, a `phase_tasks[]` entry per `completed_steps` phase (`done`/`skipped`, additive `establishedAtAdoption: true` marker), alongside the existing `completed_steps`/`phase_history` writes (campaign p4-04-retire-write-once-steps, s2 of 6, future adoptions only). → decision_log (Run-ID).
 - **iterate-2026-09-08-ci-provenance-attestation** (2026-09-08): Component — new top-level (ADR-045) `shared/scripts/ci_provenance.py` + CLI `tools/ci_provenance_check.py` resolve whether a commit's traceability manifest was CI-verified, reading GitHub's own Actions Jobs API for a `push`+default-branch+success run (never a local file); `.github/workflows/ci.yml` gains one infallible confirmation step gated on the existing drift-check's captured exit code. Structural-only scope (not execution-tier); future consumer is P3.5. → decision_log (Run-ID).

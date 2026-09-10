@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
+    "paths_fingerprint": "7154d188c498746d918e260533b8f18903ce5e30f3dec3144914a781f8e7c37e",
+    "consistent_with": "iterate-2026-09-09-p3-5-promote-layers-per-fr-restart",
+    "statement": "Adds one new step ('Keystone AC gate (gate)') to the EXISTING python-checks job in ci.yml. No new third-party action, no new token permission, no new trigger -- it runs a repo-owned script (check_keystone_ac_gate.py) on the existing pull_request event only. Ordered after 'Check traceability manifest against a fresh regeneration' (that step already overwrites test-traceability.json in place from this run's real JUnit output before this gate reads it) and relies on the workflow default if:success() for fail-closed behaviour rather than reading the diff-coverage gate's conditional output, per this run's own plan-review finding that a hard precondition must never be pinned on a soft (hashFiles-conditional) dependency. Named with the '(gate)' suffix so check_ci_gate_coverage.GATE_NAME_KEYWORDS enrolls it -- a future continue-on-error is then caught as a loose gate, not a silent disarm. Consistent with the lineage: ADR-118 (GitHub-owned actions stay on mutable tags) -> the manifest-drift-check step this reuses -> ci-provenance-attestation/p3.5-restart's precedent of adding one narrowly-scoped, repo-owned step onto the same job rather than a new job or a new external action.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ]
+  }
+}

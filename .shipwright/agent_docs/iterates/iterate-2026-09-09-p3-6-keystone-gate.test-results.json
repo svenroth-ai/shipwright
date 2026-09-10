@@ -1,0 +1,154 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
+    "date": "2026-09-10",
+    "unit": {
+      "status": "passed",
+      "passed": 11010,
+      "total": 11053
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 532,
+      "total": 532
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run shared/scripts/tools/check_keystone_ac_gate.py --project-root . --base-sha 0348b88710860bdaf2a4bee51bd25f5a60241748 --head-sha 5d76efcd498cf1dbfaa0572412b4bea1d204091c",
+      "exit_code": 0,
+      "tests_run": 1,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\campaign-req3-04c-ac-identity-wave2\\.shipwright\\runs\\iterate-2026-09-09-p3-6-keystone-gate\\surface_verification.log",
+      "timestamp": "2026-09-09T22:18:58.579Z",
+      "attempts": 1
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a changed AC whose bound test ran green exits 0; one whose bound test FAILED, was SKIPPED, or was NOT SELECTED blocks with its own reason code (AC-K5/AC-K7)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core.py::test_all_bound_links_green_passes PASSED; ::test_non_green_outcomes_carry_distinct_reason_codes[3 params] PASSED"
+        },
+        {
+          "behavior": "one green and one red link at the SAME layer must block - D10 is forall, not the manifest reader's exists-rule (AC-K6)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core.py::test_one_pass_one_fail_at_the_same_layer_blocks_forall_not_exists PASSED"
+        },
+        {
+          "behavior": "editing a criterion while dropping the /ACnn suffix from its @covers tag is binding_removed, and the SAME input exits 0 under head-manifest-only resolution (AC-K14 / Probe C)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_keystone_ac_gate.py::test_dropping_the_ac_suffix_while_editing_the_criterion_is_binding_removed PASSED; ::test_the_same_input_would_exit_zero_under_head_manifest_only_resolution PASSED"
+        },
+        {
+          "behavior": "a head node present with an EMPTY tests map is still binding_removed - the one input on which the node-presence and link-count vocabularies disagree (AC-K8b)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core.py::test_head_node_present_with_empty_tests_map_is_still_binding_removed PASSED"
+        },
+        {
+          "behavior": "the greenness walk RAISES on an empty link set and no evaluate_keystone path can reach it (AC-K16)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core.py::test_the_greenness_walk_raises_on_an_empty_link_set PASSED; ::test_no_evaluate_keystone_path_can_reach_the_empty_walk PASSED"
+        },
+        {
+          "behavior": "an unminted changed criterion and a new FR stating no criterion each block, with reader-divergence taking precedence over the new-FR arm for the same FR (AC-K2/AC-K3/AC-K9d)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core_arms.py::test_unminted_changed_criterion_blocks_and_names_the_real_minter_command PASSED; ::test_a_new_fr_without_criteria_blocks PASSED; ::test_reader_divergence_suppresses_the_new_fr_arm_for_the_same_fr PASSED"
+        },
+        {
+          "behavior": "DEVIATION 3: an added AC with head_links>=1 takes AC-2's greenness walk; with head_links==0 it stays report-only; and NO layer-gap check applies to the added arm in either case (AC-K4)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core_arms.py::test_added_minted_ac_that_HAS_a_binding_is_greenness_walked[3 params] PASSED; ::test_added_minted_ac_without_a_binding_is_reported_not_blocked PASSED; ::test_an_added_ac_is_NOT_layer_gap_checked_even_with_explicit_provenance PASSED; ::test_a_removed_ac_that_had_a_binding_is_reported_under_its_own_key PASSED"
+        },
+        {
+          "behavior": "the highest required layer is mandatory at AC granularity, routed hard for explicit provenance and advisory for a legacy one, reusing the shared ranking and routing (AC-K10/AC-K15)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_keystone_core_arms.py::test_layer_gap_is_hard_when_required_layers_source_is_explicit PASSED; ::test_layer_gap_is_advisory_for_a_legacy_required_layers_source PASSED; ::test_layer_ranking_and_routing_come_from_the_shared_helpers_not_local_copies PASSED"
+        },
+        {
+          "behavior": "a docs-only commit exits 0 with an empty change set (AC-K1)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_keystone_ac_gate.py::test_a_docs_only_commit_exits_zero_with_an_empty_change_set PASSED"
+        },
+        {
+          "behavior": "a hand-edited COMMITTED manifest claiming green cannot flip the verdict, because the gate reads the regenerated file (AC-K13 / Probe A)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_check_keystone_ac_gate.py::test_a_hand_edited_committed_manifest_cannot_flip_the_verdict PASSED"
+        },
+        {
+          "behavior": "the base- and head-manifest reads are fail-closed at ALL THREE levels (requirements, acs, tests): absent degrades under its own JSON key; unparseable, structurally malformed or unresolvable is exit 2 WITH a JSON verdict; a non-mapping node or AC node is skipped, not rejected (AC-K9e)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_keystone_gate_infra.py::test_an_absent_base_manifest_degrades_loudly_with_its_own_json_key PASSED; ::test_an_unparseable_base_manifest_is_an_infra_fault_not_an_absent_one PASSED; ::test_a_valid_json_but_malformed_head_manifest_exits_two_with_json[6 params] PASSED; ::test_a_malformed_BASE_manifest_is_an_infra_fault_too PASSED; ::test_a_non_mapping_node_or_ac_node_is_SKIPPED_not_rejected PASSED"
+        },
+        {
+          "behavior": "base resolution goes through _merge_base's own verdict, so a master-default repo exits on the merits and an unresolvable base exits 2 naming a remedy that applies (AC-K11)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_keystone_gate_infra.py::test_merge_base_is_the_resolver_and_no_origin_main_is_required PASSED; ::test_an_unresolvable_merge_base_exits_two_naming_the_fetch_remedy PASSED"
+        },
+        {
+          "behavior": "the ci.yml step wiring - pull_request-only, no continue-on-error, same job as AND after the regeneration step, no conditional dependency on another step, and the regeneration step overwrites the very file the gate reads (AC-K12)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/tests/test_ci_yml_keystone_step_shape.py 11 tests PASSED, incl. ::test_the_step_and_the_regeneration_step_share_one_job and ::test_the_regeneration_step_overwrites_the_very_file_the_gate_reads"
+        },
+        {
+          "behavior": "the module starts and exits cleanly as a real subprocess CLI, and the SHIPPED CLI returns exit 0 / status clean over a REAL merged PR range (no false red)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "shared/scripts/tools/tests/test_keystone_gate_infra.py::test_the_cli_starts_and_exits_cleanly_as_a_real_subprocess PASSED; F0.5 surface_verification cli run over 0348b887..5d76efcd exit_code 0, status clean"
+        },
+        {
+          "behavior": "per-AC change detection over REAL git and the real 268-criterion spec.md, including the reader-divergence scoping and the empty-criteria-digest discriminator",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_keystone_ac_digest.py 16 tests PASSED; test_keystone_readers.py 8 tests PASSED; design doc SS6 Probe B measured 268 added / 0 changed over 680f46f0b9cb..545a4f32043b"
+        },
+        {
+          "behavior": "the gate's real behaviour on a GitHub pull_request event (github.sha as the merge commit, base resolved by _merge_base with no --base-sha)",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "OBSERVED LIVE: PR #702 CI run 34413699911, step 'Keystone AC gate (gate)' resolved base_sha=5d76efcd from head c1d9f104 and returned exit 0 status=clean; plus shared/tests/test_ci_yml_keystone_step_shape.py 11 tests PASSED"
+        },
+        {
+          "behavior": "the reader-divergence guard is scoped to ACTIVE FRs, like every sibling predicate: a retired FR with the intro-sentence shape is exempt while the identical spec diff still fires for an active one (AC-K9(d))",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_keystone_readers.py::test_a_RETIRED_fr_with_the_divergent_shape_is_exempt PASSED; ::test_a_brand_new_divergent_fr_does_not_raise_on_the_base_lookup PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 17,
+        "tested": 17,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 16,
+        "covered_acs": 16
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
+    "commit": "922034a8a028c8ccbe186206b2cfbd4ae9e14eee",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

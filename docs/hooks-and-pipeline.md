@@ -3391,8 +3391,9 @@ This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog
 ## Merge gates in this repo's own CI
 
 `ci.yml`'s `Python (lint + test)` job is a Required Check, so every step in it
-blocks the merge. Besides lint, the test tiers and the diff-coverage gate, it
-runs four guards:
+blocks the merge. Besides lint and the test tiers, it runs seven guards — four
+tabulated here in full (three of those four mirrored locally, the fourth not),
+plus three more (also deliberately unmirrored) described just below the table:
 
 | Step | Script | What it proves |
 |---|---|---|
@@ -3415,19 +3416,22 @@ importing it would bind `lib` for the whole interpreter and resolve differently
 under the plugin-vs-shared root split (ADR-045): green locally, red in CI. A
 lazy import only defers *which* `lib` binds; it does not make it safe.
 
-Three of `ci.yml`'s six guards are deliberately **not** mirrored, each recorded
+Four of `ci.yml`'s seven guards are deliberately **not** mirrored, each recorded
 with its reason in `CI_ONLY_GATES`: `Repair-PR safety (gate)` materialises its
 checker from the PR's *base* revision precisely so a branch cannot vouch for
 itself, `Diff coverage (gate)` belongs in the F0 suite runner that already
-produces coverage (tracked as `trg-392dc923`), and `Verify test-root JUnit
+produces coverage (tracked as `trg-392dc923`), `Verify test-root JUnit
 coverage (gate)` checks the files ci.yml's own `.ci-junit/plan.json` scheme
 produced this run — there is no local equivalent of the layout to mirror,
-only CI's own per-root file placement.
+only CI's own per-root file placement — and `Keystone AC gate (gate)` reads a
+manifest an *earlier ci.yml step* regenerated from this run's own JUnit, so a
+local invocation would grade the PR against execution claims nobody re-verified
+(below).
 `shared/tests/test_verify_local_ci_drift.py` pins both drift directions across
 every workflow and job — a bespoke guard that lands in neither registry fails
 there, and a local command that stops matching CI's fails per-gate.
 
-**A fourth, deliberately non-blocking, step follows it: `Check traceability
+**A fifth, deliberately non-blocking, step follows it: `Check traceability
 manifest against a fresh regeneration`** (`shared/scripts/tools/
 ci_manifest_drift_check.py`, SPEC D8's second half). It regenerates
 `.shipwright/compliance/test-traceability.json` from this run's real, staged
@@ -3443,6 +3447,41 @@ carries no `LOOSE_GATE_ALLOWLIST` entry: its `run:` body matches no
 allowlist entry for it would itself fail `stale_allowlist_entries()`, since
 the guard would find nothing loose to match it against. Advisory until proven
 reliable over several consecutive green PRs.
+
+**A sixth step closes the job — `Keystone AC gate (gate)`**
+(`shared/scripts/tools/check_keystone_ac_gate.py`, campaign REQ3.04c P3.6). It
+enforces one sentence: *a behaviour-changing PR must not merge without naming
+its changed acceptance criteria and re-running the tests bound to them, green,
+in this run.* It derives the changed ACs from `spec.md` itself — per-`[ACnn]`
+digests via `lib.ac_identity.read_all`, diffed between the merge base and the
+head commit — then requires **every** link bound to each changed AC to be
+`status: enabled` and `executed: pass` in the manifest. That is a **∀, not the
+∃** `_test_links_requirements._cov_status` applies, so one green sibling test
+does not satisfy it. Exit `0` clean (advisory findings and report-only
+`unbound` ACs included) / `1` a hard finding / `2` a genuine infrastructure
+fault; a JSON verdict goes to stdout on every path.
+
+Three properties are load-bearing and each is pinned by
+`shared/tests/test_ci_yml_keystone_step_shape.py`. **Ordering:** it must follow
+the regeneration step above, whose in-place rewrite of
+`test-traceability.json` is what makes the execution claims this gate reads
+non-forgeable — a hand-edited committed manifest is inert. **Trigger:**
+`pull_request` only, because it is a merge condition and a push run has neither
+a PR to block nor a base to diff. **Name:** ending in `(gate)` enrols it in
+`check_ci_gate_coverage.GATE_NAME_KEYWORDS`, so a future `continue-on-error`
+on it is caught as a loose gate. It adds **no** new Required Check — it sits
+inside `python-checks`, which is already one.
+
+It deliberately does **not** call `resolve_execution_evidence`. That resolver
+answers "can I trust evidence I did not produce, for a commit that is not
+mine?" — a post-merge question, and `ci_provenance._qualifying_runs` accepts
+only `push` runs on the default branch, so on a `pull_request` event it would
+resolve `unavailable` on 100 % of PRs and the gate would be permanently inert.
+This gate asks the *other* question — "did test T run green in this run?" —
+and reads the producer directly. The gate is therefore exactly as strong as
+`ci.yml`, which is disclosed rather than hidden. Its reach is likewise narrow
+and stated: it protects the ACs that are *bound*, prevents a bound AC from
+being quietly unbound, and grows automatically as binding does.
 
 Two limits to keep in view. **A local pass is never a substitute for the host's
 re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which
