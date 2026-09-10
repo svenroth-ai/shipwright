@@ -225,6 +225,20 @@ canon, and the final summary banner.
 5. **Spec Completeness Gate** — Scope + FRs + NFRs in each spec.md
 6. **Manifest-Spec Consistency** — bijection between manifest and
    spec.md files
+7. **Grill-Trace Completeness Gate (P4.2)** — runs
+   `verify_grill_trace_completeness.py` over every grill-trace record
+   the interview wrote (see interview-protocol.md → "Capturing the
+   grill-trace"). **Code-enforced, the same way C1-C5 are**: it is
+   registered in `project_checks.run_project_checks()` and re-runs
+   automatically when the orchestrator's `update-step --step project`
+   call below evaluates `validate_phase()` — a missing trace, a blank
+   dimension, an `assumed` value (no exceptions in this surface), an
+   undefined term, or an outcome with no fit criterion becomes an
+   ask-level issue that genuinely blocks completion, not a result the
+   agent alone decides how to act on. Running the CLI yourself first
+   (as below) surfaces the same gap earlier, before the update-step
+   call, so you fix it in the same turn instead of hitting the block.
+   Never judges prose quality, only structural completeness.
 
 **Phase complete — update pipeline state** by running the
 C1/C2/C3/C5 + phase_history block from

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p4-2-grill-trace-gate",
+  "date": "2026-09-10",
+  "section": "Iterate — feature: grill-trace evidence record + completeness gate (P4.2)",
+  "title": "Grill-trace evidence record + completeness gate",
+  "context": "Grilling method (requirement-elicitation.md §8/§9) is prompt-only; nothing checks it happened. See spec for full context.",
+  "decision": "Write one grill-trace JSON per requirement live during interview; gate enforces DESIGN.md's four STOPs, wired into project Step 8.",
+  "consequences": "Step 8 blocks on incomplete/undefined/assumed traces or FR rows with no matching trace. Gate never judges prose quality.",
+  "rationale": "Mirrors verify_iterate_finalization.py's check_* shape; reuses P4.1's context_md_format.read_terms(), never forks the parser.",
+  "rejected": "Scanning text for undefined terms (judgment call, rejected); per-FR-id join at interview time (FR ids don't exist yet).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-p4-2-grill-trace-gate-completeness.md"
+}

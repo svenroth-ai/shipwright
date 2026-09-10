@@ -125,6 +125,61 @@ require a hand-edit — do that hand-edit **after** the interview's
 `write_context_term.py` calls are done for the session, never interleaved
 with them.
 
+## Capturing the grill-trace — write it per requirement, at confirmation
+
+`shared/requirement-elicitation.md` §9 ("Confirm before acting") is the
+moment a requirement's shared understanding hands off from the person's
+mental model to the recorded one. **That confirmation turn is also the turn
+you write the requirement's grill-trace** — the structured record
+(`shared/grill-trace-format.md`) that a completeness gate checks before this
+phase can complete (Step 8). Do not batch these until the interview ends,
+for the same reason `CONTEXT.md` capture isn't batched: the resolution is
+freshest the moment it happens.
+
+Two steps, the same shell-injection discipline as "Capturing sharpened
+terms" above — **never hand-assemble a shell argument from interview text**:
+
+1. **Use the Write tool** (never a shell command) to write the full record
+   as JSON to a scratch file at
+   `{project_root}/.shipwright/agent_docs/runtime/grill-trace-payload.json`
+   (overwrite it each time). The shape is documented in full in
+   `shared/grill-trace-format.md` §2 — in short: `requirement_key` (a
+   lower-kebab-case slug matching the words that will become the FR row's
+   `Name` column), `requirement_text`, `surface` (always `"project"` here),
+   `evidence` (which interview turns established each dimension),
+   `dimensions` (all seven of `outcome`/`purpose`/`boundaries`/`failure`/
+   `glossary`/`rationale`/`out_of_scope`, each `"answered"` \|
+   `"assumed:<reason>"` \| `"n/a:<reason>"` — **`assumed` is never available
+   in this phase for anything the person could answer**, per the coverage
+   checklist's own rule (§8) — the gate enforces this with no exceptions),
+   `fit_criterion` (required once `outcome` is `"answered"`), `glossary_delta`
+   (terms sharpened for this requirement, cross-referencing the `CONTEXT.md`
+   writes above), `confirmed_by` (the sign-off you just received), and
+   `terms_used` (the domain terms this requirement's text depends on — a
+   declared list, not something to derive by scanning; see the honesty guard
+   in `shared/grill-trace-format.md` §3).
+
+2. Then run the producer against that file:
+
+   ```bash
+   uv run "{shared_root}/scripts/tools/write_grill_trace.py" \
+     --project-root "{project_root}" \
+     --payload-file "{project_root}/.shipwright/agent_docs/runtime/grill-trace-payload.json"
+   ```
+
+This is the ONE producer for a grill-trace record — idempotent per
+`requirement_key`, safe to re-run if a requirement is revisited later in the
+same interview. **Unlike `write_context_term.py` above, this producer does
+not merge with the existing record** — each call replaces the entire file
+for that `requirement_key` wholesale. On a revisit, re-send the **complete**
+record (every dimension, `evidence`, `glossary_delta`, `terms_used`, not
+just the field that changed) — a partial payload silently drops any
+previously-recorded field it omits. **Step 8's completeness gate blocks phase completion** if
+any requirement's trace is missing, blank in a dimension, carries an
+`assumed` value in this surface, declares a used term that resolves nowhere,
+or answers `outcome` without a `fit_criterion` — see
+`references/step-8-completion.md`.
+
 ## Scope-Aware Depth
 
 ### Full Application (deep interview)

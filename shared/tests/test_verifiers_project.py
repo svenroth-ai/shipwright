@@ -260,3 +260,95 @@ def test_run_project_checks_with_empty_run_id_skips_phase_history(tmp_path):
     phase_history_results = [r for r in results if "phase_history" in r.name]
     assert len(phase_history_results) == 1
     assert phase_history_results[0].ok is True  # skipped → neutral pass
+
+
+# ---------------------------------------------------------------------------
+# Grill-trace completeness gate (P4.2) — genuinely wired, not prose-only.
+#
+# Spec-reviewer REJECTed the first P4.2.2 round on AC2: the gate existed
+# (verify_grill_trace_completeness.py) but was reachable only via Step-8
+# prose telling the agent to run it and decide for itself — never through
+# `run_project_checks()`, the actual code-level dispatcher C1-C5 use to
+# genuinely block `update-step --step project`. These tests prove the fix:
+# a failing grill-trace surfaces as an ERROR-severity CheckResult INSIDE
+# `run_project_checks()` itself, the same list `_run_canon_checks`
+# (`phase_validators.py`) already iterates for every other canon check.
+# ---------------------------------------------------------------------------
+
+def _write_grill_trace(root: Path, *, requirement_key: str, **dimension_overrides: str) -> None:
+    """Write one valid-shaped grill-trace record, applying dimension
+    overrides so an individual test can push exactly one dimension into
+    STOP territory while keeping the other six/seven fields shape-valid."""
+    dimensions = {
+        "outcome": "answered",
+        "purpose": "answered",
+        "boundaries": "answered",
+        "failure": "answered",
+        "glossary": "answered",
+        "rationale": "answered",
+        "out_of_scope": "answered",
+    }
+    dimensions.update(dimension_overrides)
+    trace_dir = root / ".shipwright" / "planning" / "grill-traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    (trace_dir / f"{requirement_key}.json").write_text(
+        json.dumps({
+            "requirement_key": requirement_key,
+            "requirement_text": "Users can export their data",
+            "surface": "project",
+            "evidence": ["interview transcript line 42"],
+            "dimensions": dimensions,
+            "fit_criterion": "export completes in < 5s for a 10k-row account",
+            "glossary_delta": [],
+            "confirmed_by": "user",
+            "terms_used": [],
+        }),
+        encoding="utf-8",
+    )
+
+
+def test_run_project_checks_detects_grill_trace_greenfield_assumed(tmp_path):
+    """AC2 fix: an 'assumed' dimension in the project surface (no
+    exceptions permitted there) surfaces as an ERROR-severity result
+    inside run_project_checks() itself — genuinely code-enforced, not
+    merely described in Step-8 prose."""
+    seed_canon_project(tmp_path, run_id="project-happy")
+    _write_grill_trace(
+        tmp_path, requirement_key="export-data",
+        boundaries="assumed:only CSV export was discussed",
+    )
+    results = run_project_checks(tmp_path, run_id="project-happy")
+    red = [r for r in results if not r.is_skipped and not r.ok
+           and r.severity == Severity.ERROR.value]
+    assert any("greenfield_assumed" in r.name for r in red), [
+        f"{r.name}: {r.detail}" for r in results
+    ]
+
+
+def test_run_project_checks_detects_grill_trace_blank_dimension(tmp_path):
+    """A second, independently-triggerable STOP condition — proves the
+    wiring carries every one of the four closed-vocabulary STOPs, not
+    just the first one a hand-rolled fixture happens to hit."""
+    seed_canon_project(tmp_path, run_id="project-happy")
+    _write_grill_trace(
+        tmp_path, requirement_key="export-data",
+        failure="not answered, not assumed, not n/a",
+    )
+    results = run_project_checks(tmp_path, run_id="project-happy")
+    red = [r for r in results if not r.is_skipped and not r.ok
+           and r.severity == Severity.ERROR.value]
+    assert any("blank_dimension" in r.name for r in red), [
+        f"{r.name}: {r.detail}" for r in results
+    ]
+
+
+def test_run_project_checks_passes_with_a_clean_grill_trace(tmp_path):
+    """A fully-answered, no-'assumed' trace must not itself turn the
+    canon suite red — the gate blocks bad traces, not the mere presence
+    of a trace."""
+    seed_canon_project(tmp_path, run_id="project-happy")
+    _write_grill_trace(tmp_path, requirement_key="export-data")
+    results = run_project_checks(tmp_path, run_id="project-happy")
+    red = [r for r in results if not r.is_skipped and not r.ok
+           and r.severity == Severity.ERROR.value]
+    assert red == [], [f"{r.name}: {r.detail}" for r in red]
