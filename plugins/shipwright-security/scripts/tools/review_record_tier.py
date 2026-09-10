@@ -38,6 +38,19 @@ SENSITIVE_PATH_RE = re.compile(
     # provider allowlist the code expects — same trust class as the lib code
     # it configures, so a config-only edit here must be reviewed too.
     r"|shared/config/external_review\.json"
+    # The keystone AC gate (`.github/workflows/` step below) is "exactly as strong
+    # as ci.yml itself" by design (`.shipwright/planning/iterate/2026-09-09-p3-6-
+    # keystone-gate.md` §4/§7) — but its own verifier logic lives in separate
+    # source modules that weren't named here, so an edit to the logic alone (not
+    # the ci.yml step invoking it) escaped the scrutiny an edit to ci.yml gets.
+    # Closes triage trg-9967000f. Named by FILE, so a shared helper these modules
+    # import (e.g. under `verifiers/_layer_coverage_*`) that also carries
+    # keystone-specific logic is NOT covered — those helpers also back an
+    # unrelated non-keystone gate, so widening this match to their directory
+    # would force mandatory review onto that gate's unrelated maintenance PRs
+    # too. Known, deliberately deferred residual gap: trg-a719e3b7.
+    r"|shared/scripts/tools/check_keystone_ac_gate\.py"
+    r"|shared/scripts/tools/verifiers/_keystone_"
     r"|\.github/workflows/"
     r"|\.github/actions/"
     r"|shared/templates/github-actions/"

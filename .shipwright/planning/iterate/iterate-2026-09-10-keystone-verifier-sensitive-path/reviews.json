@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-keystone-verifier-sensitive-path",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:17:21.010231+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:17:29.877222+00:00",
+      "disposition": "mini-plan / external plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:21:15.663024+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract / hidden-coupling",
+          "file": "plugins/shipwright-security/scripts/tools/review_record_tier.py",
+          "line": null,
+          "finding": "Claim under doubt: Adding the 8 _keystone_*.py files + their entry point to SENSITIVE_PATH_RE fully closes trg-9967000f's parity gap for the keystone gate's verifier logic. — Traced the import graph: check_keystone_ac_gate.py and the _keystone_*.py modules import several shared verifiers/ helpers (e.g. layer-coverage severity and merge-base resolution logic) that are NOT _keystone_-prefixed, so an edit to those shared helpers is not caught by the new patterns even though the logic they carry is keystone-specific in effect. Those same helpers also back a separate, unrelated non-keystone gate, so widening the match to their directory would over-broaden mandatory review onto that other gate's unrelated maintenance PRs -- a real trade-off, not a drop-in fix.",
+          "suggestion": "Addressed: documented the residual gap directly in the SENSITIVE_PATH_RE comment and filed follow-up triage card trg-a719e3b7 naming the two remediation directions (split the keystone-specific call paths into _keystone_-prefixed wrappers, or formally accept the structural limit of a file-path-only detector). Deliberately deferred rather than folded into this run, matching how the original keystone-gate design doc deferred this whole family of follow-ups.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/tools/review_record_tier.py",
+          "line": null,
+          "finding": "Claim under doubt: The two new SENSITIVE_PATH_RE alternatives could be under-inclusive (miss files they should cover) due to lacking a trailing anchor. — Neither is end-anchored, but re.match only pins the start -- the effect is over-inclusive (e.g. a stray non-.py file under the matched prefix would also trigger review), never under-inclusive. Forces more review, never less, and matches this file's pre-existing style for every other directory-style alternative. No action needed.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "runtime-reachability",
+          "file": ".github/workflows/pr-review-run.yml",
+          "line": null,
+          "finding": "Claim under doubt: The fix could silently fail to match at runtime due to Windows path separators, git core.quotePath, or encoding differences between how paths are diffed locally vs. how CI evaluates them. — Read pr-review-run.yml directly: changed paths come from `gh api .../pulls/$PR_NUMBER/files`, always forward-slash and case-exact to the stored repo path -- the PR head is never locally checked out, so there is no core.quotePath step and no Windows separator in this pipeline. Disproven.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": ".github/workflows/ci.yml",
+          "line": null,
+          "finding": "Claim under doubt: check_keystone_ac_gate.py is correctly identified as the file ci.yml's keystone step actually invokes. — Read .github/workflows/ci.yml directly rather than trusting the description: the 'Keystone AC gate (gate)' step runs `uv run shared/scripts/tools/check_keystone_ac_gate.py --project-root . --head-sha ...`, matching the new pattern exactly. Confirmed correct.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "runtime-reachability",
+          "file": "plugins/shipwright-security/scripts/tools/review_record_tier.py",
+          "line": null,
+          "finding": "Claim under doubt: GitHub's changed-file-list truncation could be exploited to hide one of the new keystone paths from SENSITIVE_PATH_RE. — decide() checks the `sensitive_path_list_truncated` sentinel unconditionally before ever reaching SENSITIVE_PATH_RE, and that fail-closed behavior is pre-existing and generic -- the new alternatives introduce no new manipulation surface here. Disproven.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T16:25:16.982858+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:17:30.099221+00:00",
+      "disposition": "external LLM code review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:18:54.844497+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:17:29.988817+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
