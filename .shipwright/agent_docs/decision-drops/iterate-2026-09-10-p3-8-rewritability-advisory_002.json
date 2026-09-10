@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p3-8-rewritability-advisory",
+  "date": "2026-09-11",
+  "section": "Iterate - feature: test-body-suspects advisory CI check (bundled from a P3.7 deferred item)",
+  "title": "Bundle P3.7's deferred test-body-suspects advisory check into p3.8, advisory only",
+  "context": "P3.7's own sub-iterate spec named a third, lower-priority check (an AC whose own text is unchanged but whose bound test body was edited) and explicitly deferred it. This run bundles that deferred item alongside M7 rewritability rather than leaving it as a dangling deferral, since both are small, advisory-only, non-gate additions to the same CI job and the same Group-of-checks family (P3.6 section 7 / P3.7's own checks).",
+  "decision": "Add check_test_body_suspects.py (+ verifiers._test_body_suspects) as a new pull_request-only CI step after P3.7's two feeder checks. Its CLI returns exit 0 UNCONDITIONALLY -- clean/advisory/infra-fault all report via the JSON payload's status field, never the exit code -- so it can never block a merge even by accident. Provenance: trg-d03a239d (filed this run after the original citation could not be found in the tracked store).",
+  "consequences": "A human reviewing a PR gets an extra, purely informational signal (refactor vs. quiet weakening of a test bound to an unchanged AC) with zero risk of a new false-positive CI failure, since the step cannot fail its own job step. docs/hooks-and-pipeline.md documents the new step alongside its two P3.7 siblings. Known gap: the provenance trail for the original bundling decision was not fully preserved before this run's finalization; trg-d03a239d is the corrected record.",
+  "rationale": "",
+  "rejected": "Leaving the item deferred/unbuilt with only a prose TBD (rejected: this task's own hard constraints forbid a vague TBD once a concrete mechanism/shape is known -- the check was already designed in P3.7's own spec). Making it a hard gate (rejected: explicitly against the class-level 'mechanics raise a flag, a human decides' rule P3.6/P3.7/P3.8 all restate).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-10-p3-8-rewritability-advisory.md"
+}

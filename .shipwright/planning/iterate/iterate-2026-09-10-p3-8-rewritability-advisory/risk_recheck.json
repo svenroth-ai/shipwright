@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p3-8-rewritability-advisory",
+  "risk_recheck": {
+    "changed_file_count": 47,
+    "diff_loc": 4301,
+    "risk_flags": [
+      "touches_ci_supplychain"
+    ],
+    "diff_risk_flags": [
+      "touches_ci_supplychain"
+    ],
+    "complexity_floor": "small",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": true,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": [
+        ".github/workflows/ci.yml"
+      ]
+    }
+  }
+}

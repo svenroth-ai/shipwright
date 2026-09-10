@@ -3515,6 +3515,31 @@ does not close the two-PR sequence.
 Neither feeder check is mirrored by `scripts/verify_local.py`, for the same
 structural reason as the Keystone gate (`CI_ONLY_GATES` in that script).
 
+**A third step closes the job — advisory-only, never a hard gate.**
+`Check-body suspects (advisory, non-blocking)`
+(`shared/scripts/tools/check_test_body_suspects.py`) is the third, lower-priority
+item P3.7's own sub-iterate spec named and explicitly deferred, delivered
+bundled with P3.8 (provenance: `trg-d03a239d`, filed at p3.8's own
+finalization after the original bundling-authorization card id could not be
+found in the tracked triage store). Same class of check P3.6's own
+design doc names in §7 and P3.8's own sub-iterate spec restates: "mechanics
+raise a flag, a human decides." It flags an acceptance criterion whose own
+text is UNCHANGED between base and head, that has a test bound to it whose
+BODY was edited in this diff — a signal a human should judge (a refactor vs. a
+quiet weakening), never a verdict this check renders itself. Reuses the same
+base/head criterion-digest reader the Orphan AC binding gate's arm 2 already
+built (`_ac_binding_regression.head_and_base_minted`), plus an AST walk to
+locate and digest the bound test's own function source at each commit.
+
+Deliberately not named `...(gate)` and carries no `check_ci_gate_coverage
+.GATE_NAME_KEYWORDS` word other than what any prose step might incidentally
+share — its own CLI returns exit `0` **unconditionally**: a clean run, an
+advisory finding, and an infrastructure fault are all reported through the
+JSON payload's `status` field (`clean` / `advisory` / `not_evaluated`), never
+through the process exit code. That guarantee lives in the script itself, not
+in a `continue-on-error` the YAML could later lose. Same ordering + trigger
+reasoning as the two feeder checks above.
+
 Two limits to keep in view. **A local pass is never a substitute for the host's
 re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which
 is a different question, and it vets the commit you *push* where this vets your

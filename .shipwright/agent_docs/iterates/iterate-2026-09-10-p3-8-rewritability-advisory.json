@@ -1,0 +1,58 @@
+{
+  "run_id": "iterate-2026-09-10-p3-8-rewritability-advisory",
+  "date": "2026-09-10T23:16:39.600136Z",
+  "event_at": "2026-09-10T23:15:51.923580+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-p3.8-rewritability-advisory",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.8-rewritability-advisory.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-p3-8-rewritability-advisory",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "reports a requirement whose recorded change never co-occurs with a decision-drop/ADR run_id as unlinked",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_rewritability_links.py::test_a_requirement_with_changes_but_no_rationale_run_is_unlinked PASSED; plugins/shipwright-compliance/tests/test_audit_group_i_rewritability.py::test_never_fails_even_when_everything_is_unlinked PASSED"
+      },
+      {
+        "behavior": "does not conflate 'no recorded change at all' with 'confirmed unlinked' (three-outcome discipline)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_rewritability_links.py::test_a_requirement_with_no_recorded_changes_is_could_not_determine_not_unlinked PASSED; plugins/shipwright-compliance/tests/test_audit_group_i_rewritability.py::test_no_recorded_changes_reports_could_not_determine_not_unlinked PASSED"
+      },
+      {
+        "behavior": "I9 never fails a build, including when the event log itself is unreadable",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_rewritability_links.py::test_event_log_unreadable_propagates_rather_than_degrading_to_empty PASSED; plugins/shipwright-compliance/tests/test_audit_group_i_rewritability.py::test_event_log_unreadable_at_the_group_i_wiring_level_never_fails PASSED; test_never_reddens_the_other_checks PASSED"
+      },
+      {
+        "behavior": "the Run-ID bullet regex does not false-positive on prose/fenced mentions of the literal string (Step 3.7 external code-review finding, two independent providers)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_rewritability_links.py::test_run_id_bullet_regex_ignores_prose_and_fenced_mentions PASSED"
+      },
+      {
+        "behavior": "a work_completed event naming an FR but carrying no usable run_id is classified unlinked, not could_not_determine (Step 3.7 finding)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_rewritability_links.py::test_a_change_with_no_usable_run_id_is_unlinked_not_could_not_determine PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "detective-only compliance audit addition (new advisory Group I check I9 + its supporting lib.rewritability_links classifier); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0)."
+  }
+}
