@@ -3484,6 +3484,35 @@ and reads the producer directly. The gate is therefore exactly as strong as
 and stated: it protects the ACs that are *bound*, prevents a bound AC from
 being quietly unbound, and grows automatically as binding does.
 
+**Two more steps close the job — P3.7's feeder checks, ASYMMETRIC BY
+DESIGN (SPEC §8 E2).** Both read the same regenerated traceability manifest
+the Keystone gate does, so both share its ordering requirement (after the
+regeneration step) and its `pull_request`-only trigger.
+
+`AC coverage ratchet (gate)` (`shared/scripts/tools/check_ac_coverage_ratchet.py`)
+answers *"AC without a test"* — **anti-ratcheted**, because a real legacy
+backlog exists (259 of 268 minted ACs have no binding today, per the
+Keystone gate's own §2.1 measurement). It compares the currently-unbound AC
+population against `shipwright_ac_coverage_baseline.json` (regenerate via
+`--write`) and blocks only on a NEW unbound AC outside that grandfathered
+set — never on the existing backlog.
+
+`Orphan AC binding (gate)` (`shared/scripts/tools/check_orphan_ac_binding.py`)
+answers the opposite case — *"a test whose AC vanished"* — **hard from day
+one, no baseline**: nothing has ever validated that a `@covers` tag's AC id
+still exists, so there is no backlog to grandfather. It runs two arms: (1) a
+current-state scan for a manifest binding recorded under an AC id the spec
+no longer mints (catches outright deletion and id rotation directly); (2) a
+base-vs-head comparison catching a binding dropped on an AC whose criterion
+TEXT this PR never touched (closes the "two-PR unbind sequence" — drop a
+`@covers` tag's `/ACnn` suffix in one PR, edit the now-unbound criterion in
+a later one — at its origin, the first PR, rather than waiting for the
+second). Both arms are documented in the script's own module docstring,
+including why arm 1 alone does not close the two-PR sequence.
+
+Neither feeder check is mirrored by `scripts/verify_local.py`, for the same
+structural reason as the Keystone gate (`CI_ONLY_GATES` in that script).
+
 Two limits to keep in view. **A local pass is never a substitute for the host's
 re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which
 is a different question, and it vets the commit you *push* where this vets your

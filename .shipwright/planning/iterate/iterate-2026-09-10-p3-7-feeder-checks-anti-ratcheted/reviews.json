@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:44.963425+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security / approach",
+          "file": null,
+          "line": null,
+          "finding": "§7 discloses that a PR can unbind an AC and re-baseline in the same PR, but the actual surface is larger: the gate reads `shipwright_ac_coverage_baseline.json` from the working tree, so any PR that touches the baseline (via `--write` or hand-editing) grades its own head against its own updated grandfather set. The disclosed \"review is the control\" answer is consistent with repo convention, but the plan doesn't give reviewers the signal they'd need to exercise that control — nothing in the gate output calls out that the baseline grew.",
+          "suggestion": "Either (a) in CI mode, read the baseline blob from the merge-base commit (the same `spec_text_at`/git-blob pattern arm 2 already uses for the base manifest) so a PR cannot edit its own grandfather set; or, minimally, (b) make the gate emit a loud, explicit \"baseline grew by N entries in this PR: [...]\" section in its output so a reviewer sees it without diffing the JSON by hand. Option (a) is ~a few lines given the primitives already reused in §2 and materially closes the hole.  2. \"Resolved then re-unbound\" escapes the ratchet",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "An AC in the baseline that later gains a binding is reported as `resolved_since_baseline` (informational), but the baseline entry persists. If that AC is subsequently unbound again, it is still grandfathered — a genuine regression passes. This is arguably a miss against AC (a) (\"blocks only on a ratchet\"): this is a ratchet and doesn't block.",
+          "suggestion": "Compute the effective grandfather set as `baseline − resolved_since_baseline` at check time (you already compute `resolved_since_baseline`). An AC that demonstrably recovered coverage loses its grandfather status; re-unbinding it then blocks. This needs no provenance tracking and doesn't touch the `--write` flow.  3. No remediation path documented for a legitimate arm-2 hit",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Arm 2 is hard from day one with no baseline and no acknowledge mechanism. A developer who intentionally removes a `@covers` suffix while the AC text is unchanged (e.g., the tag was wrong, or the test is being retired) has no sanctioned escape: re-editing the AC text to route through P3.6's `changed` semantics may itself be flagged there. The first legitimate hit will produce a blocked PR with no documented \"correct\" resolution.",
+          "suggestion": "Document (in the gate's failure output and `hooks-and-gipeline.md`/`guide.md`, where the asymmetry is already being documented) the two sanctioned remedies: rebind the test to the correct AC, or explicitly remove/renumber the criterion so the removal is reviewed as a removal. If neither is acceptable to the team, an explicit opt-out mechanism needs to be a named follow-up triage card rather than an implicit \"edit the AC text to dodge the gate.\"  4. Confirm binding derivation is tag-derived, not execution-derived",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "§5 states both gates run after the manifest regeneration step, which \"rewrites in place from this run's own JUnit.\" If a manifest binding requires the test to have executed and reported, then a skipped/errored/infra-failed test job in the same run could yield a missing binding → false \"newly unbound\" (feeder a) or false regression (arm 2) block, making the gate hostage to flaky infra.",
+          "suggestion": "Verify and state explicitly that `acs_by_key` hits are derived from parsing `@covers` tags in the test source (or from JUnit regardless of pass/skip status), and add a fixture pinning \"test failed but tag present → still bound.\" If execution status does matter, add a manifest-completeness precondition before either gate runs.  5. Coordinated FR removal may pass silently",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "If a PR removes an FR and its tests and its criteria together: arm 1 sees no manifest key at head (no orphan), arm 2 stays silent by design (AC is in the `removed` set), and feeder (a) sees nothing (AC no longer minted). Whether P3.6's own `removed`/`binding_removed` walk catches the deleted-criterion-with-deleted-binding case determines whether this is covered at all — the plan doesn't trace it.",
+          "suggestion": "Add one fixture (or a one-line trace in the design notes) confirming which layer flags a removed FR with its bindings removed in the same PR. If nothing does, that's a fine named limitation, but it should be disclosed rather than unexamined.  6. Baseline schema has no version marker",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "{\"unbound\": [...]}` has no schema/version field. Future format changes (e.g., adopting finding 2's effective-set semantics, or adding provenance) will need a migration story, and a stale/foreign-shape file currently fails closed into a 259-entry wall of red.",
+          "suggestion": "Add a `\"schema\": 1` (or `\"version\"`) key now and validate it in `require`-style fashion alongside the corrupt-baseline fail-closed path. One line of cost today.  7. Rollout communication for the first hard-gate hits",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Feeder (b) is the repo's first hard-from-day-one AC gate. Even with clean current state (§6), the first contributor to trip arm 2 on a legitimate refactor will hit a red PR with no institutional memory of why.",
+          "suggestion": "Ensure the failure output includes the FR/AC id, the offending test file, and a pointer to the asymmetry documentation; consider a short advisory-only burn-in (report-but-pass) for arm 2 only, or at minimum a CONTRIBUTING note. Optional given the family's exit-contract conventions, but cheap insurance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Treating unreadable spec paths as warnings and excluding them makes the “hard from day one” orphan check fail open. In particular, a spec file deleted or made unparsable at head can remove its minted AC set from comparison and conceal bindings that should now be orphaned.",
+          "suggestion": "Distinguish an expected head-side deletion from a read/parse failure. Treat deletion as an empty current minted set and report affected bindings as orphaned; treat any unexpected read/parse failure as an infra fault (exit 2), not a warning-and-green result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Arm 2 is intended to close the two-PR unbind sequence, but its only evidence of the old binding is the base manifest, explicitly acknowledged to be stale-by-construction. If that artifact omitted or lagged the binding, PR1 can still remove the suffix without a regression finding, undermining the stated closure of the sequence.",
+          "suggestion": "Make the base-side binding signal authoritative: either validate the base manifest’s provenance/completeness before relying on it, or derive base bindings from the base revision’s test metadata using the existing link-extraction primitive. If retaining the stale-manifest tradeoff, narrow the claim from “closes” to “detects when the base artifact contains the binding.”",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan depends on a committed, correctly located, canonical baseline seed, but does not explicitly include it as an implementation/wiring deliverable or specify key normalization. A mismatch between emitted identifiers and `FR-xx/ACnn` baseline entries would either block the entire legacy backlog or silently grandfather the wrong ACs.",
+          "suggestion": "Add the seeded baseline file to the change deliverables, define the canonical key constructor shared by producer and reader, and test malformed, duplicate, unknown, and normalized-equivalent entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new hard checks run after manifest regeneration, so their correctness depends on that regeneration covering the same test scope as the PR. If CI uses sharding, filters, conditional suites, or partial JUnit collection, valid bindings can disappear from the regenerated manifest and produce false blocks.",
+          "suggestion": "Assert or document that the manifest-generation step is a complete repository-wide collection for pull requests. If it is intentionally partial, preserve unaffected manifest entries or run the coverage gates only after a complete collection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan calls both arms a shared mission, but Arm 2 detects removal of an AC binding while the AC still exists; that is an AC-without-test regression, not literally “a test whose AC vanished.” This can confuse future maintainers about why it is hard while feeder (a) is anti-ratcheted.",
+          "suggestion": "Document Arm 2 as a hard anti-evasion rule for newly removed existing bindings, explicitly tied to the anti-ratchet’s same-PR-baseline loophole, rather than describing it as part of vanished-AC detection.  Overall, the split between current orphan detection and binding-regression detection is sensible, and reuse of the existing readers is appropriately restrained. It needs fail-closed spec-read handling and a reliable base-binding source before the hard-gate claims are dependable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T15:16:52.597710+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Baseline self-grandfathering window is wider than disclosed**\n- Category: security / approach\n- Severity: medium\n- Finding: §7 discloses that a PR can unbind an AC and re-baseline in the same PR, but the actual surface is larger: the gate reads `shipwright_ac_coverage_baseline.json` from the working tree, so *any* PR that touches the baseline (via `--write` or hand-editing) grades its own head against its own updated grandfather set. The disclosed \"review is the control\" answer is consistent with repo convention, but the plan doesn't give reviewers the signal they'd need to exercise that control — nothing in the gate output calls out that the baseline grew.\n- Suggestion: Either (a) in CI mode, read the baseline blob from the merge-base commit (the same `spec_text_at`/git-blob pattern arm 2 already uses for the base manifest) so a PR cannot edit its own grandfather set; or, minimally, (b) make the gate emit a loud, explicit \"baseline grew by N entries in this PR: [...]\" section in its output so a reviewer sees it without diffing the JSON by hand. Option (a) is ~a few lines given the primitives already reused in §2 and materially closes the hole.\n\n**2. \"Resolved then re-unbound\" escapes the ratchet**\n- Category: edge-case\n- Severity: medium\n- Finding: An AC in the baseline that later gains a binding is reported as `resolved_since_baseline` (informational), but the baseline entry persists. If that AC is subsequently unbound again, it is still grandfathered — a genuine regression passes. This is arguably a miss against AC (a) (\"blocks only on a ratchet\"): this *is* a ratchet and doesn't block.\n- Suggestion: Compute the effective grandfather set as `baseline − resolved_since_baseline` at check time (you already compute `resolved_since_baseline`). An AC that demonstrably recovered coverage loses its grandfather status; re-unbinding it then blocks. This needs no provenance tracking and doesn't touch the `--write` flow.\n\n**3. No remediation pa […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Treating unreadable spec paths as warnings and excluding them makes the “hard from day one” orphan check fail open. In particular, a spec file deleted or made unparsable at head can remove its minted AC set from comparison and conceal bindings that should now be orphaned.  \n   **Suggestion:** Distinguish an expected head-side deletion from a read/parse failure. Treat deletion as an empty current minted set and report affected bindings as orphaned; treat any unexpected read/parse failure as an infra fault (exit 2), not a warning-and-green result.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** Arm 2 is intended to close the two-PR unbind sequence, but its only evidence of the old binding is the base manifest, explicitly acknowledged to be stale-by-construction. If that artifact omitted or lagged the binding, PR1 can still remove the suffix without a regression finding, undermining the stated closure of the sequence.  \n   **Suggestion:** Make the base-side binding signal authoritative: either validate the base manifest’s provenance/completeness before relying on it, or derive base bindings from the base revision’s test metadata using the existing link-extraction primitive. If retaining the stale-manifest tradeoff, narrow the claim from “closes” to “detects when the base artifact contains the binding.”\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan depends on a committed, correctly located, canonical baseline seed, but does not explicitly include it as an implementation/wiring deliverable or specify key normalization. A mismatch between emitted identifiers and `FR-xx/ACnn` baseline entries would either block the entire legacy backlog or silently grandfather the wrong ACs.  \n   **Suggestion:** Add the seeded baseline file to the change deliverables, define the canonical key constructor shared by producer and reader, and test malformed […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:53.183194+00:00",
+      "disposition": "sub-iterate runner has no Agent tool and cannot spawn spec-reviewer/code-reviewer/doubt-reviewer; the orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge (runner contract Step 3.7)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:53.304097+00:00",
+      "disposition": "sub-iterate runner has no Agent tool and cannot spawn spec-reviewer/code-reviewer/doubt-reviewer; the orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge (runner contract Step 3.7)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "pending",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": null,
+      "disposition": null,
+      "recorded_by": null,
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:52.971987+00:00",
+      "disposition": "sub-iterate runner has no Agent tool and cannot spawn spec-reviewer/code-reviewer/doubt-reviewer; the orchestrator runs the internal cascade at campaign-mode.md 3f-bis before merge (runner contract Step 3.7)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:32.145467+00:00",
+      "disposition": "runner has no Agent tool; plan_internal is permanently not_run for a sub-iterate runner, never promoted (runner contract Step 3.5 table)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
