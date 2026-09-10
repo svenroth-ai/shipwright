@@ -90,12 +90,18 @@ def evaluate_keystone(change_set, head_manifest: dict, base_manifest: dict) -> K
 
     ``change_set.new_frs_without_criteria`` is assumed ALREADY suppressed for
     everything except the reader-divergence exclusion this function re-applies
-    below (Stage-3 doubt review, second pass, low; found during build): a
-    caller populating it directly must ALSO withhold an FR whose new criteria
-    are unminted (``unminted_changed`` already covers it under a different
-    key) and withhold the whole arm when no spec text was read at all
-    (``_keystone_divergence.resolve_new_frs_without_criteria``'s own two
-    suppressions) -- this evaluator does not, and cannot, re-derive either
+    below (Stage-3 doubt review, second pass, low; found during build; count
+    corrected Stage-1 spec review, round 22, medium -- the first cut of this
+    paragraph undercounted its own claim to two). A caller populating it
+    directly must ALSO withhold: an FR whose new criteria are unminted
+    (``unminted_changed`` already covers it under a different key); an FR
+    whose heading already existed at base, even if a stale base manifest
+    never carried it (base/head manifest drift, ruling Q1b); and the WHOLE
+    arm when either no spec text was read at all, or the base manifest names
+    no active requirement (design 5.2's second, third and fourth precedence
+    rules plus the empty-base-manifest amendment -- see
+    ``_keystone_divergence.resolve_new_frs_without_criteria``'s own
+    docstring). This evaluator does not, and cannot, re-derive any of them
     from the change set alone.
     """
     verdict = KeystoneVerdict(warnings=list(getattr(change_set, "warnings", []) or []))
