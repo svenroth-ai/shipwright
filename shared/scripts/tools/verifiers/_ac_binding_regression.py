@@ -84,7 +84,11 @@ def head_and_base_minted(
     a genuine infra fault, matching every sibling reader in this family. The
     BASE side is lenient (warning, treated as empty) for the same reason
     ``_keystone_ac_digest.ac_change_set`` is lenient there: a base commit is
-    already merged and cannot be authored by this PR.
+    already merged and cannot be authored by this PR. This applies to BOTH a
+    ``None`` (real git/IO fault) and an unparseable base text alike (external
+    code review, glm, medium — an earlier version raised on ``None`` here,
+    contradicting this very docstring and turning any base-side read fault
+    into a hard infra exit that blocks every PR touching that path).
     """
     warnings: list[str] = []
     head_minted: dict[tuple[str, str], str] = {}
@@ -98,7 +102,11 @@ def head_and_base_minted(
 
         base_text = spec_text_at(project_root, base_sha, rel_path)
         if base_text is None:
-            raise ReadError(f"could not read {rel_path} at the base commit")
+            warnings.append(
+                f"{rel_path}: base commit's text could not be read; treating base as having "
+                "no acceptance criteria there."
+            )
+            continue
         try:
             b_minted, _ = ac_criteria_digests(base_text)
         except ReadError as exc:

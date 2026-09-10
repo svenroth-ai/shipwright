@@ -110,16 +110,25 @@ BASELINE_SCHEMA_VERSION = 1
 
 
 def _load_baseline(path: Path) -> tuple[set[str], str | None]:
-    """``(baselined ac-strings, error)``. Absent -> ``(set(), None)`` (fail
-    open, matching ``anti_ratchet.load_baseline_override``'s documented
-    absent-baseline behaviour); present-but-corrupt -> a non-None error
-    (fail CLOSED — a corrupt baseline must not silently disable the gate,
-    same rule).
+    """``(baselined ac-strings, error)``. Absent -> ``(set(), None)`` — an
+    EMPTY grandfathered set, which blocks EVERY unbound AC: fail CLOSED,
+    deliberately the OPPOSITE default from ``anti_ratchet.load_baseline_
+    override``'s absent-baseline behaviour (design doc §4 — a coverage
+    baseline this gate itself owns and was never committed means "check
+    against nothing grandfathered", not "nothing to check"). Present-but-
+    corrupt -> a non-None error (also fail CLOSED — a corrupt baseline must
+    not silently disable the gate).
 
     ``schema_version`` (external plan review, glm, low): tolerated absent
     (pre-dates this key) but rejected if PRESENT and not the version this
     reader understands — a future format change (e.g. per-entry provenance)
-    must not be silently misread as today's flat string list."""
+    must not be silently misread as today's flat string list.
+
+    Every entry in ``unbound`` must be a string (external code review, glm,
+    medium): a non-string entry — a hand-edited or half-migrated baseline —
+    used to be silently filtered out, which could silently shrink the
+    grandfathered set (false NEW blocks) or mask real corruption. Now it is
+    a non-None error, same as any other malformed-shape case."""
     if not path.is_file():
         return set(), None
     try:
@@ -134,7 +143,10 @@ def _load_baseline(path: Path) -> tuple[set[str], str | None]:
             f"{path} declares schema_version {version!r}; this reader only understands "
             f"{BASELINE_SCHEMA_VERSION!r}"
         )
-    return {x for x in doc["unbound"] if isinstance(x, str)}, None
+    entries = doc["unbound"]
+    if not all(isinstance(x, str) for x in entries):
+        return set(), f"{path}'s 'unbound' list contains a non-string entry"
+    return set(entries), None
 
 
 def _write_baseline(path: Path, unbound: set[str]) -> None:

@@ -135,6 +135,24 @@ addressed above). Both HIGH findings fixed; all MEDIUM findings fixed or rejecte
 verifiable reason (a house precedent, an existing sibling gate, or a bootstrapping paradox for
 this introducing PR specifically); all LOW findings fixed or rejected with a reason.
 
+## 5b. External Code-Review Findings (Step 3.7 — glm + openai, 2026-09-10, against `HEAD~1`)
+
+| # | Provider | Severity | Finding | Disposition |
+|---|---|---|---|---|
+| 1 | glm | medium | `_ac_binding_regression.head_and_base_minted`'s docstring claimed the BASE side is lenient (warning, treated as empty) on an unreadable base commit, but the code RAISED `ReadError` on `base_text is None` — the opposite of what it documented, turning any base-side read fault into a hard infra exit that blocks every PR touching that path. | **Fixed.** `base_text is None` now appends a warning and treats base as empty, matching both the docstring and the already-lenient handling of an unparseable (but readable) base text a few lines below. Pinned by `test_an_unreadable_base_text_is_lenient_not_a_readerror` (a real bogus `base_sha` against a real repo, not a mock). |
+| 2 | glm | medium | `check_ac_coverage_ratchet._load_baseline` silently dropped any non-string entry from the baseline's `unbound` list (`{x for x in doc["unbound"] if isinstance(x, str)}`) instead of failing closed — a hand-edited/half-migrated baseline with a malformed entry could silently shrink the grandfathered set (false NEW blocks) or mask real corruption. | **Fixed.** Any non-string entry now returns a non-None error, same as any other malformed baseline shape (fail CLOSED, matching the design's own "corrupt baseline must not silently disable the gate" rule). Pinned by `test_a_baseline_with_a_non_string_entry_fails_closed`. |
+| 3 | glm | low | `_load_baseline`'s own docstring called the absent-baseline case "fail open," but an empty grandfathered set means EVERY unbound AC blocks — that is fail CLOSED, the opposite of what the sentence said, and the opposite of the bloat baseline's own default (which §4 already argues for correctly in code). | **Fixed (wording).** Docstring reworded to state the absent case is fail CLOSED and explicitly named as the deliberate opposite of `anti_ratchet.load_baseline_override`'s absent-baseline default, cross-referenced to design doc §4. |
+| 4 | glm | low | `_ac_binding_regression.binding_regressions`'s two boundary conditions the function's own docstring pins (an AC absent at base; an AC whose digest changed at base) had no DIRECT test, only indirect coverage through `check_orphan_ac_binding`'s CLI tests. | **Fixed.** New `test_ac_binding_regression.py` adds direct unit tests for both negative boundary conditions plus the positive case and the leniency fix (finding #1), plus one real-git happy-path test — five tests total, none through the CLI. |
+| 5 | glm | low | Arm 1 (`check_orphan_ac_binding.py`) reads HEAD spec text via a git-blob read (`spec_text_at`) bound to `--head-sha`, but compares it against the WORKTREE's regenerated manifest, which is never itself bound to that sha — if the regeneration step were skipped or stale, the two arms would silently compare different head states. | **Rejected-with-reason.** Same assumption every sibling gate in this family already makes (the Keystone gate's own manifest read is worktree-only too): the workflow step invoking this gate runs AFTER the manifest-regeneration step in the SAME job, at the checked-out `head_sha` commit, so the worktree IS that commit by construction — not re-verified per-gate, same as P3.6 never re-verifies it either. |
+| 6 | openai | HIGH | Both arms scope to `active_requirements(manifest)` only (mirroring `_keystone_links.links_for`'s own precedent). If a PR retires an FR while a test still carries an old `@covers` tag naming one of its ACs, the retired node is excluded from the scan entirely and the stale binding is never reported as orphaned — an exception to "hard from day one" for exactly this shape. | **Rejected-with-reason, tracked at `trg-00b11bd7`** (HIGH severity is not silently dropped). Consistent with the SAME scope boundary `_keystone_links.links_for` already commits to for the sibling keystone gate (that function's own docstring names the identical restriction) — not a new hole this sub-iterate introduces, but the second known instance of the family's retired-FR blind spot (P3.6 design §7 discloses a related one for its own `binding_removed`). A real fix needs a considered decision about what "vanished" means for a retired FR's surviving bindings, made once for the whole P3.6/P3.7 family, not patched into one arm here. |
+| 7 | openai | medium | A PR can unbind an AC and regenerate/commit the ratchet baseline via `--write` in the SAME PR, grading itself against its own updated grandfather set. | **Rejected-with-reason — duplicate of §5a finding 6**, tracked at the same `trg-91532c29`. |
+| 8 | openai | medium | The CLI test suites simulate regenerated evidence by directly writing `test-traceability.json` fixtures rather than running the real `@covers`-tag parser / manifest generator, so a regression in that producer's shape (e.g. dropping unknown/removed AC keys differently) would not be caught by these tests. | **Rejected-with-reason.** Same house convention every P3.6 CLI test module already follows (`test_keystone_gate_infra.py` and siblings: a fixture manifest + real git commits + a real subprocess CLI invocation, never the full producer chain) — these feeder checks are graded consumers of the manifest, not the manifest generator itself, and a producer-to-gate integration suite spanning the whole family is a separate, cross-cutting testing investment out of this sub-iterate's scope. |
+
+Verdicts: glm `revise`, openai `revise` — both HIGH findings addressed (one fixed, one
+tracked with a stated reason); all MEDIUM findings fixed or rejected with a stated,
+verifiable reason; all LOW findings fixed or rejected with a reason. No finding was
+silently dropped.
+
 ## 6. Empirical probes (Step 3.8 boundary — real repo, real git)
 
 ```
@@ -176,6 +194,12 @@ regresses (arm 2) while an in-PR criterion edit does not double-report against P
 * **Arm 1 and arm 2 both stop at the AC layer, never AC coverage *breadth*.** Neither checks
   whether a bound test satisfies the FR's `required_layers` — that is `cross_layer_coverage` /
   P3.6's own scope boundary (design §7), not this sub-iterate's.
+* **A retired FR's surviving `@covers` bindings are invisible to both arms** (external code
+  review, openai, HIGH; §5b finding 6), tracked at `trg-00b11bd7`. Both arms scope to
+  `active_requirements(manifest)`, the SAME restriction `_keystone_links.links_for` already
+  commits to for the sibling keystone gate — not a new hole, but the second known instance of
+  the family's retired-FR blind spot. Needs a considered decision for the whole P3.6/P3.7 family
+  together, not a one-off patch here.
 * **The advisory item — "a changed test body suspects its AC" — is deferred**, per the
   sub-iterate spec's own explicit permission ("implement if time/complexity allow ... do not
   let it block"). Named explicitly, not left as a silent TBD (the `trg-875104ac` lesson this
@@ -188,6 +212,17 @@ regresses (arm 2) while an in-PR criterion edit does not double-report against P
   review (openai, HIGH; §5a finding 2) is why §3/§4's own claim that arm 2 "closes" the two-PR
   sequence is now worded narrower everywhere it appears: it detects PR1 whenever the base
   manifest's own record of the binding is trustworthy, not unconditionally.
+
+## 7a. Confidence Calibration (Step 3.8)
+
+Step 3.4's re-check (`risk_recheck.json`) records `effective_complexity: small` and risk flags
+`["touches_ci_supplychain"]` only — neither the `medium`+ nor the `touches_io_boundary` trigger
+fires, and no explicit calibration probe was invoked. **Skipped per the strict trigger**
+(`skipped_complexity_and_no_io_boundary`) — Self-Review (§8) is the review of record for this
+run. Recorded honestly as skipped rather than backfilled as "completed" merely because §6 already
+ran real empirical probes against the actual repo for the design's own sake (259/268-matching
+baseline count, zero pre-existing orphan/regression violations) — those probes anchor §4/§6's own
+claims, they are not a substitute for a Step-3.8 pass the trigger never asked for.
 
 ## 8. Self-Review (Step 3.6 — 7-item checklist)
 

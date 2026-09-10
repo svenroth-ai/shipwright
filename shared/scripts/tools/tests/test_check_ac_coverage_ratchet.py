@@ -155,6 +155,21 @@ def test_an_unreadable_manifest_is_an_infra_fault(capsys, tmp_path):
     assert payload["status"] == "infra_fault"
 
 
+def test_a_baseline_with_a_non_string_entry_fails_closed(capsys, tmp_path):
+    """External code review (glm, medium): a hand-edited/half-migrated
+    baseline containing a non-string entry used to be silently filtered out
+    of the grandfathered set (a false NEW block, or worse, masked
+    corruption). Now it is a non-None error, same as any other malformed
+    shape."""
+    root = make_repo(tmp_path, manifest_obj=_manifest_with_binding())
+    (root / ratchet.BASELINE_RELPATH).write_text(json.dumps({
+        "schema_version": 1, "unbound": ["FR-01.01/AC01", 42],
+    }), encoding="utf-8")
+    code, payload = _run(root, [], capsys)
+    assert code == ratchet.EXIT_INFRA
+    assert payload["status"] == "infra_fault"
+
+
 def test_the_cli_starts_and_exits_cleanly_as_a_real_subprocess(tmp_path):
     """Deliberately the ONLY subprocess case in this module (house convention,
     ``test_keystone_gate_infra.py``): proves the module's own ``sys.path``
