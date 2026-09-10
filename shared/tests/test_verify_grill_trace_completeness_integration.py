@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from tools.grill_trace_format import parse_trace
+from tools.verifiers.common import Severity
 from tools.verify_grill_trace_completeness import (
     check_greenfield_assumed,
     run_all_checks,
@@ -177,6 +178,42 @@ def test_cli_exits_non_zero_cleanly_on_a_malformed_context_md_instead_of_a_trace
     assert "malformed_context" in proc.stdout
 
 
+def test_cli_exit_code_contract_red_tree_exits_1_green_tree_exits_0(tmp_path):
+    """PR #705 Tier-3 review (Comments item): the standalone CLI's
+    documented exit-code contract (module docstring: "Exit code 0 = all
+    green ... Exit code 1 = one or more hard failures") was only exercised
+    by the malformed-CONTEXT.md crash-avoidance test above, never by an
+    ordinary red/green result. Two trees, same fixture shape as the
+    run_all_checks-level ``test_run_all_checks_reports_the_one_failure...``
+    and ``test_run_all_checks_all_green_for_a_well_formed_trace`` tests
+    above, but exercised through the real subprocess CLI boundary."""
+    # Red tree: one dimension outside the closed vocabulary (same fixture as
+    # test_run_all_checks_reports_the_one_failure_when_a_trace_has_a_blank_dimension).
+    red_planning_dir = tmp_path / "red" / ".shipwright" / "planning"
+    red_payload = _payload()
+    red_payload["dimensions"]["glossary"] = "maybe"
+    _write_trace(red_planning_dir, red_payload)
+
+    red_proc = subprocess.run(
+        [sys.executable, str(_SCRIPT), "--project-root", str(tmp_path / "red"),
+         "--planning-dir", str(red_planning_dir)],
+        capture_output=True, text=True, check=False,
+    )
+    assert red_proc.returncode == 1, red_proc.stdout
+    assert "blank_dimension" in red_proc.stdout
+
+    # Green tree: a well-formed trace, no FR rows to join against yet.
+    green_planning_dir = tmp_path / "green" / ".shipwright" / "planning"
+    _write_trace(green_planning_dir, _payload())
+
+    green_proc = subprocess.run(
+        [sys.executable, str(_SCRIPT), "--project-root", str(tmp_path / "green"),
+         "--planning-dir", str(green_planning_dir)],
+        capture_output=True, text=True, check=False,
+    )
+    assert green_proc.returncode == 0, green_proc.stdout
+
+
 def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist(tmp_path):
     """The gap external plan review found: a PARTIALLY recorded interview
     (some requirements traced, one not) passes the plain grill_trace_coverage
@@ -202,6 +239,12 @@ def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist
     assert by_name["grill_trace_coverage"].ok is True  # at least one trace exists
     assert by_name["fr_trace_coverage"].ok is False
     assert "FR-01.02" in by_name["fr_trace_coverage"].detail
+    # PR #705 Tier-3 review: the Name-cell-slug join is brittle, so a mismatch
+    # is a visible WARNING, not an ERROR that hard-blocks Step 8. The sibling
+    # grill_trace_coverage guard above (structural presence, not a fragile
+    # cross-artifact join) stays at its default ERROR severity.
+    assert by_name["fr_trace_coverage"].severity == Severity.WARNING.value
+    assert by_name["grill_trace_coverage"].severity == Severity.ERROR.value
 
 
 # ---------------------------------------------------------------------------

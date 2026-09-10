@@ -82,8 +82,18 @@ def check_fr_trace_coverage(spec_paths: list[Path], trace_keys: set[str]) -> Che
         if slugify(name_) not in trace_keys
     )
     if missing:
+        # WARNING, not the ERROR default: the join key (a Name-cell slug picked at
+        # interview time vs. an FR id minted independently at spec-generation time,
+        # PR #705 review) has no stable identity contract — a rename, a punctuation/
+        # Unicode difference, or two Names colliding on one slug all produce a false
+        # "missing" here. This check's own module docstring says it is NOT one of the
+        # four closed-vocabulary STOPs; ERROR severity made it behave like a fifth one
+        # and hard-block Step 8 for projects that did the elicitation work correctly.
+        # Stays visible (still a real signal for a genuinely skipped/partial interview)
+        # without gating completion on a brittle heuristic.
         return CheckResult(
             name, False,
             f"FR row(s) with no matching grill-trace requirement_key: {missing}",
+            severity=Severity.WARNING.value,
         )
     return CheckResult(name, True, f"{len(fr_names)} FR row(s), every one has a matching grill-trace")

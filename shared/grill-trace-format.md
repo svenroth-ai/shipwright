@@ -132,7 +132,11 @@ confused with the four closed-vocabulary STOPs above:
   (slugified with the same rule as `requirement_key`, §1) must match some
   grill-trace file. Catches a PARTIALLY recorded interview the coverage
   check above cannot see (some requirements traced, one silently skipped).
-  SKIPPED entirely before any spec.md exists.
+  SKIPPED entirely before any spec.md exists. **WARNING severity, not
+  blocking** (PR #705 Tier-3 review) — see the "Known limitation" note
+  below for why; `grill_trace_coverage` above stays at the default ERROR
+  severity, since it is a structural presence check, not a fragile
+  cross-artifact identity join.
 - **`glossary_source_available`** (`grill_trace_glossary.py`) — the
   framework's own `shared/glossary.md` is missing. Unlike an absent
   `CONTEXT.md` (§4, a legitimate fresh-project state), this means the
@@ -167,6 +171,21 @@ Neither produces a false PASS on the four closed-vocabulary STOPs
 (§ this section is deliberately not one of them) — the failure mode is a
 missed or ambiguous coverage signal, not a silently-accepted incomplete
 trace. Follow-up tracked as a triage card rather than blocking P4.2.
+
+**Severity (PR #705, Tier-3 automated review):** because the join has no
+stable identity contract, a mismatch defaulting to the same ERROR severity
+as the four real STOPs made it hard-block `update-step --step project` for
+a project that did the elicitation work correctly — exactly the
+over-gating failure mode this section already documented as a risk, now
+also enforced. `check_fr_trace_coverage()`'s failure branch is WARNING
+severity: still surfaced in every report (`verify_grill_trace_completeness.py`'s
+CLI, `run_project_checks`), still a real signal worth reading, but routed
+to `phase_validators._run_canon_checks`'s `inform` bucket instead of `ask`,
+so it no longer blocks completion on its own. The larger, correct fix — a
+stable trace key carried from interview output into the generated FR row,
+with uniqueness/orphan validation — remains out of scope here and is the
+real resolution of the collision/orphan gaps above; this is the narrow,
+pragmatic mitigation until that identity contract exists.
 
 ---
 

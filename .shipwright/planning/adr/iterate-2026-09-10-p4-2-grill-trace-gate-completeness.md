@@ -214,3 +214,34 @@ the fix landed, green after; `..._integration.py::test_cli_exits_non_zero_cleanl
 proves the standalone `uv run verify_grill_trace_completeness.py` invocation
 exits 1 cleanly (`"Traceback" not in stderr`) instead of printing a raw
 traceback.
+
+## Round 4 — PR #705 Tier-3 automated review (`openai/gpt-5.6-luna`) — fix
+
+The required Tier-3 PR reviewer posted a fresh BLOCK verdict on the
+finalized commit, with one blocking finding and one Comments-level item.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | high (blocking) | `check_fr_trace_coverage()`'s failure branch returned a `CheckResult` with no explicit `severity`, so it defaulted to `Severity.ERROR` — the same hard-blocking severity as the four closed-vocabulary STOPs, even though the module's own docstring says it is not one of them. Because the `Name`-cell-slug ↔ `requirement_key` join (already documented as a known limitation, §5 "Known limitation", `trg-da67adbd`) has no stable identity contract, a rename, a punctuation/Unicode difference, or a slug collision can produce a false "missing coverage" — which, at ERROR severity, hard-blocks Step 8 for a project that did the elicitation work correctly. | accepted-and-fixed — `check_fr_trace_coverage()`'s failure `CheckResult` now sets `severity=Severity.WARNING.value` explicitly. Reviewer offered two fixes: a real producer-side identity contract (bigger, out of scope) vs. removing the heuristic from the blocking path until that contract exists (pragmatic). Took the pragmatic one — the check keeps running and stays visible (still catches a genuinely skipped/partial interview), it just no longer hard-blocks on its own. `grill_trace_coverage` (structural presence, not a fragile cross-artifact join) and the four real STOPs are unchanged — still ERROR. |
+| 2 | low (Comments) | `verify_grill_trace_completeness.py`'s standalone CLI had subprocess-level coverage for the malformed-`CONTEXT.md` crash-avoidance path only (`test_cli_exits_non_zero_cleanly_on_a_malformed_context_md_instead_of_a_traceback`), not for the documented ordinary exit-code contract itself ("Exit code 0 = all green... Exit code 1 = one or more hard failures") | accepted-and-fixed — new `test_cli_exit_code_contract_red_tree_exits_1_green_tree_exits_0` (a red tree via `subprocess.run` on the real CLI, and a green tree, same fixture shapes as the existing `run_all_checks`-level tests) |
+
+**"Sensitive skill documents... maintainer must manually confirm before
+merge" bullet:** re-checked against the existing test suite rather than
+building a new integration test. The full documented producer-to-Step-8
+flow is already proven end-to-end across two existing test files together:
+`shared/tests/test_write_grill_trace.py` / `test_write_grill_trace_direct.py`
+prove `write_grill_trace.py`'s `write_trace()` writes exactly the JSON
+shape `GrillTrace`/`parse_trace()` reads (the producer's own contract);
+`plugins/shipwright-run/tests/test_phase_validators_project.py::test_grill_trace_stop_blocks_validation_same_path_as_c1_c5`
+/ `test_clean_grill_trace_does_not_block_validation` feed that same shape
+into `validate_phase("project", ...)` — the exact function `update-step
+--step project` calls — and prove it genuinely blocks/passes at the real
+Step-8 boundary, not a parallel mechanism. No new test added for this
+bullet; the concern resolves once the severity fix above lands, consistent
+with this campaign's P4.1 precedent.
+
+**Fix commit:** severity downgrade in `shared/scripts/tools/grill_trace_fr_coverage.py`;
+new tests in `shared/tests/test_grill_trace_fr_coverage.py`,
+`shared/tests/test_verify_grill_trace_completeness_integration.py`, and
+`plugins/shipwright-run/tests/test_phase_validators_project.py`; doc update
+in `shared/grill-trace-format.md` §5.

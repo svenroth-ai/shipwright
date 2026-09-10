@@ -163,13 +163,41 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: run_all_checks()'s own stated contract is that a malformed record must report as a red CheckResult like every other STOP -- never crash the CLI with a raw traceback. — The try/except only wrapped read_trace_dir(); the next data source, collect_known_terms(glossary_path, context_path), had no exception guard. context_md_format.read_terms() raises ValueError on a duplicate '## heading' (a malformed hand-edit) and does not swallow it -- interview-protocol.md explicitly sanctions the agent hand-editing CONTEXT.md for Relationships/Flagged-ambiguities after the producer's calls finish, exactly the failure mode that raises. Uncaught in run_all_checks and uncaught in the standalone CLI's main(), so `uv run verify_grill_trace_completeness.py` (the exact command step-8-completion.md tells the agent to run as a first convenience check) crashed with a raw traceback instead of a red CheckResult. The phase-BLOCKING code path (project_checks.py's outer except Exception) was already safe -- only the standalone-CLI convenience invocation was exposed. Addressed: collect_known_terms() wrapped in the same try/except pattern as the existing read_trace_dir guard, reporting a new red 'malformed_context' CheckResult; regression test confirmed red-before/green-after by reverting the fix and reproducing the raw crash, then restoring it.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A requirement revisited later during the same interview just updates its trace, safely, the same way write_context_term.py's CONTEXT.md producer merges on re-sharpen. — write_trace() does a full durable_atomic_write of the ENTIRE new payload on every call -- no merge with the on-disk record, unlike write_context_term.py's documented _Avoid_-preserving upsert referenced directly above it in the same interview-protocol.md file. Resending only changed fields on a revisit silently drops any previously-recorded evidence bullet or glossary_delta entry not re-included. Intentional/documented in the module docstring, but the skill prose's 'safe to re-run if a requirement is revisited' wording didn't carry the 'resend the FULL record' caveat, inviting a false expectation of merge semantics. Addressed: one clarifying sentence added to interview-protocol.md's grill-trace section making the wholesale-overwrite (not merge) behavior explicit, contrasted against the CONTEXT.md producer's different behavior right above it.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: requirement_key (chosen at interview time) and the FR row's Name cell (written independently at a later spec-generation step) are guaranteed to slugify to the same string, so fr_trace_coverage's join is airtight. — Confirmed there is no shared file, producer-carried identity, or code path forcing spec-generation's Name cell to reuse the interview's chosen slug -- both sides independently derive a short capability name from the same convention phrase, dependent only on the same LLM agent's within-session consistency. This is real (the join is not airtight), but it is already documented as a known, accepted limitation in shared/grill-trace-format.md Section 1/Section 5 (collision and orphan-trace cases named explicitly) with a triage-card follow-up already scoped out of P4.2. No action taken in this round -- already resolved in writing.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-10T07:08:33.781513+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T09:09:17.476381+00:00",
+      "disposition": null,
+      "recorded_by": "campaign orchestrator, session 7de9842e",
       "parse_status": null,
       "raw_excerpt": null
     },

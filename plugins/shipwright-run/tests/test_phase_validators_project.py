@@ -241,3 +241,52 @@ def test_clean_grill_trace_does_not_block_validation(tmp_path, monkeypatch):
     ask = [i for i in issues if i["severity"] == "ask"]
     assert ask == [], ask
     assert valid is True
+
+
+def test_fr_trace_coverage_mismatch_does_not_block_validation(tmp_path, monkeypatch):
+    """PR #705 Tier-3 review: the Name-cell-slug <-> requirement_key join has
+    no stable identity contract, so a mismatch must not hard-block Step 8 the
+    way a real STOP condition does — it rides the WARNING/'inform' path, not
+    the ERROR/'ask' path C1-C5 and the four closed-vocabulary STOPs use. A
+    full-canon project with one traced requirement but two FR rows (a
+    genuinely legitimate state: the FR-join heuristic just can't confirm the
+    second one) must still validate."""
+    _seed_basic_project(tmp_path)
+    _seed_canon_artifacts(tmp_path, run_id="project-fr-join-mismatch")
+    trace_dir = tmp_path / ".shipwright" / "planning" / "grill-traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    (trace_dir / "user-login.json").write_text(json.dumps({
+        "requirement_key": "user-login",
+        "requirement_text": "Users can log in",
+        "surface": "project",
+        "evidence": ["interview transcript line 12"],
+        "dimensions": {
+            "outcome": "answered",
+            "purpose": "answered",
+            "boundaries": "answered",
+            "failure": "answered",
+            "glossary": "answered",
+            "rationale": "answered",
+            "out_of_scope": "answered",
+        },
+        "fit_criterion": "a valid email/password pair returns a session token",
+        "glossary_delta": [],
+        "confirmed_by": "user",
+        "terms_used": [],
+    }))
+    # 01-auth/spec.md already exists (seeded by _seed_basic_project) — give it
+    # an FR table with a second row that has no matching grill-trace.
+    (tmp_path / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text(
+        "# spec\n\n## 2. Functional Requirements\n\n"
+        "| ID | Area | Name | Priority | Description | Basis | Layers |\n"
+        "|---|---|---|---|---|---|---|\n"
+        "| FR-01.01 | Auth | User login | Must | ... | interview | unit |\n"
+        "| FR-01.02 | Auth | Password reset | Must | ... | interview | unit |\n",
+    )
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "project-fr-join-mismatch")
+    valid, issues = validate_phase("project", tmp_path)
+    ask = [i["message"] for i in issues if i["severity"] == "ask"]
+    inform = [i["message"] for i in issues if i["severity"] == "inform"]
+    assert not any("fr_trace_coverage" in m for m in ask), ask
+    assert any("fr_trace_coverage" in m for m in inform), inform
+    assert valid is True, issues
