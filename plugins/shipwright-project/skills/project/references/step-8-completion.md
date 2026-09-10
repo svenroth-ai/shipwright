@@ -23,22 +23,35 @@
      --project-root "$(pwd)"
    ```
 
-   **This BLOCKS phase completion — not advisory.** A non-zero exit means at
-   least one requirement's grill-trace is missing entirely (an interview ran
-   but nothing was written), has a blank dimension, carries an `assumed`
-   value (this surface permits no exceptions), declares a term that resolves
-   in neither `shared/glossary.md` nor `CONTEXT.md`, answers `outcome`
-   with no `fit_criterion`, or (now that spec.md files exist) has a live FR
-   row whose `Name` cell has no matching grill-trace at all
+   **This BLOCKS phase completion at the code level — not advisory, and not
+   something the agent decides on its own.** The same check is registered as
+   `check_grill_trace_completeness` inside
+   `shared/scripts/tools/verifiers/project_checks.py::run_project_checks()`
+   — the SAME dispatcher C1-C5 use — so the orchestrator's `update-step
+   --step project` call at the end of this phase (below) genuinely re-runs
+   it via `phase_validators.validate_phase()` and refuses completion on a
+   red result, exactly like a missing C1/C4/C5 artifact does today. Running
+   the CLI here first is a convenience — it surfaces the same failing
+   trace/dimension earlier, in this turn, instead of discovering it only
+   when `update-step` blocks.
+
+   A non-zero exit means at least one requirement's grill-trace is missing
+   entirely (an interview ran but nothing was written), has a blank
+   dimension, carries an `assumed` value (this surface permits no
+   exceptions), declares a term that resolves in neither
+   `shared/glossary.md` nor `CONTEXT.md`, answers `outcome` with no
+   `fit_criterion`, or (now that spec.md files exist) has a live FR row
+   whose `Name` cell has no matching grill-trace at all
    (`fr_trace_coverage` — catches a partially recorded interview, not just a
-   fully skipped one). **Do not mark the project phase complete while this
-   gate is red** — go back to the interview, resolve the named gap (grill
-   the missing dimension, ask instead of assuming, sharpen the undefined
-   term into `CONTEXT.md`, add the fit criterion, or write the missing
-   requirement's trace), re-run the producer, and re-run this gate. It never
-   judges prose quality — only structural completeness
-   (`shared/grill-trace-format.md` §3) — so fixing a red result is always a
-   completeness fix, never a rewrite for tone.
+   fully skipped one). **Do not attempt to mark the project phase complete
+   while this gate is red — the `update-step` call will be blocked anyway.**
+   Go back to the interview, resolve the named gap (grill the missing
+   dimension, ask instead of assuming, sharpen the undefined term into
+   `CONTEXT.md`, add the fit criterion, or write the missing requirement's
+   trace), re-run the producer, and re-run this gate. It never judges prose
+   quality — only structural completeness (`shared/grill-trace-format.md`
+   §3) — so fixing a red result is always a completeness fix, never a
+   rewrite for tone.
 
    **A project whose interview began before this gate shipped** will
    correctly show `grill_trace_coverage` (or `fr_trace_coverage`) red at
@@ -93,8 +106,9 @@ uv run "{shared_root}/scripts/tools/append_phase_history.py" \
 
 # Mark project phase complete (triggers compliance update automatically).
 # The orchestrator's phase validator now runs the modular project_checks
-# verifier — if C1/C2/C3/C5 or phase_history is missing, this call blocks
-# on an ask-level issue rather than silently advancing.
+# verifier — if C1/C2/C3/C5, phase_history, OR the grill-trace
+# completeness gate (P4.2) is red, this call blocks on an ask-level
+# issue rather than silently advancing.
 uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step project --status complete
 ```

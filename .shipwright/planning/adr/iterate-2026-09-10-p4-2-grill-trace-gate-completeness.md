@@ -118,3 +118,56 @@ code (not documentation-only), low findings fixed or, where a code fix
 would be scope creep beyond this sub-iterate's stated ACs (finding #8 in
 the plan-review round-2 table), documented and triage-tracked
 (`trg-da67adbd`).
+
+## Stage-1 Spec Review (campaign, P4.2.2 round) — REJECT and fix
+
+The campaign orchestrator's `spec-reviewer` HARD-GATE ran against the
+sub-iterate spec after the commit above and **REJECTed on AC2**: the spec's
+own wording ("A gate script enforces all four STOP conditions... and is
+wired into shipwright-project so it actually blocks completion, **not just
+advisory**") and the design's stated mechanism
+(`2026-07-24-req3-grill-trace-enforcement-DESIGN.md:37-39` — "a required
+output section + a finalization verifier... mirror of iterate's... F11
+`check_*` verifiers") were not met by what shipped: the only Step 8 wiring
+was prose in `step-8-completion.md`/`SKILL.md` instructing the agent to run
+`verify_grill_trace_completeness.py` and decide for itself whether to stop.
+`run_project_checks()` — the actual code-level dispatcher this repository
+already uses to hard-block Step 8 for C1-C5 via
+`phase_validators._run_canon_checks` → `validate_phase()` → `update_step()`
+— never called into the gate. **This directly contradicts round 2 finding
+#10's "accepted-with-reason" disposition above** — that disposition treated
+prose-level wiring as pattern-consistent with Step 8's pre-existing,
+also-prose items 1-6; the spec-reviewer's judgment is that the AC's plain
+"not just advisory" language cannot be satisfied by a mechanism the
+project's own review record already called "prose-level... not scripted",
+regardless of that precedent. Finding #10's disposition is superseded by
+this round, not retracted from the historical record above.
+
+**Fix (this round):** added `check_grill_trace_completeness()` to
+`shared/scripts/tools/verifiers/project_checks.py`, delegating to the
+already-built `verify_grill_trace_completeness.run_all_checks()` and
+returning its `CheckResult` list unchanged (same names/detail/severity) into
+`run_project_checks()`'s own flat list — registered alongside C1-C5, in the
+same file, the same way. No new severity classification was introduced: the
+delegate's own STOP conditions are already ERROR-severity; `_run_canon_checks`
+now turns each into a genuine ask-level, `update-step`-blocking issue for
+`/shipwright-project`, exactly as it already does for a missing C1/C4/C5
+artifact. `step-8-completion.md` and `SKILL.md` item 7 were reworded from
+"this blocks... [implicitly, if you follow it]" to state explicitly that the
+gate is code-enforced via the same dispatcher, and that running the CLI in
+Step 8 surfaces the same gap earlier rather than being the enforcement
+itself. `docs/hooks-and-pipeline.md`'s grill-traces artifact-write row was
+corrected to name the actual call chain
+(`run_project_checks` → `_validate_project` → `update-step`) instead of
+implying the Step 8 prose alone was the block.
+
+**Proof (new tests, not narrative):**
+`shared/tests/test_verifiers_project.py::test_run_project_checks_detects_grill_trace_greenfield_assumed`
+/ `..._blank_dimension` / `..._passes_with_a_clean_grill_trace` prove the
+check participates in `run_project_checks()`'s own result list;
+`plugins/shipwright-run/tests/test_phase_validators_project.py::test_grill_trace_stop_blocks_validation_same_path_as_c1_c5`
+/ `test_clean_grill_trace_does_not_block_validation` call `validate_phase("project", ...)`
+directly — the exact function `update-step --step project` calls — proving
+a failing grill-trace produces the same ask-level, `valid=False` block the
+existing C5/`phase_history` tests in that file already prove for C1-C5, at
+the same integration boundary, not a parallel one.

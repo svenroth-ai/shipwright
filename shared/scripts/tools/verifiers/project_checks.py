@@ -9,10 +9,23 @@ that every canon step actually ran, plus phase-own invariants
 (project_config status, manifest-vs-dirs alignment) and ADR integrity
 (F1/F2/F3 from the shipwright-check plan).
 
+P4.2 adds the grill-trace completeness gate (``check_grill_trace_completeness``)
+as a phase-own check. Its Step-8 prose companion
+(``step-8-completion.md`` item 7) told the agent to run
+``verify_grill_trace_completeness.py`` and decide for itself whether to
+stop — a REJECTed spec-reviewer round found that "not just advisory" (the
+sub-iterate spec's own AC2 wording) cannot be satisfied by an
+LLM-followed instruction alone, so it is registered here too: the same
+code-level dispatcher C1-C5 already use to genuinely block
+``update-step --step project`` via ``phase_validators._run_canon_checks``.
+
 Severity strategy:
 
 - Phase-own ``project_config_status_complete`` → ERROR (blocks next phase)
 - Phase-own ``manifest_splits_match_dirs`` → WARNING (cosmetic drift)
+- Phase-own ``check_grill_trace_completeness`` → ERROR for every hard
+  STOP (severities are those ``verify_grill_trace_completeness.py``'s own
+  ``CheckResult``s already carry — unchanged, not re-classified here)
 - C1/C4/C5 → ERROR (required artifacts)
 - C2/C3 → WARNING (advisory but visible)
 - Phase history (``run_id`` match) → ERROR only when a run id was given
@@ -131,6 +144,43 @@ def check_manifest_splits_match_dirs(project_root: Path) -> CheckResult:
     return CheckResult(name, True, f"{len(declared)} split(s) match .shipwright/planning/ layout")
 
 
+def check_grill_trace_completeness(project_root: Path) -> list[CheckResult]:
+    """P4.2 — the grill-trace completeness gate, wired as a genuine
+    code-level block (not the Step-8 prose that preceded it).
+
+    Delegates to ``verify_grill_trace_completeness.run_all_checks`` — the
+    single source of truth for the four closed-vocabulary STOP conditions
+    (blank dimension, greenfield ``assumed``, undefined term, outcome
+    without fit_criterion) plus its structural guards
+    (``grill_trace_coverage``, ``fr_trace_coverage``,
+    ``glossary_source_available``, ``glossary_delta_declared``,
+    ``malformed_trace``) — and returns its ``CheckResult`` list UNCHANGED:
+    same names, same detail text (which names the specific failing
+    trace/dimension/term), same severities. ``run_project_checks`` below
+    extends its own flat result list with these rather than wrapping them
+    in one summary result, so a red result still names the exact gap the
+    way the standalone CLI already does, and ``_run_canon_checks``
+    (``phase_validators.py``) turns each ERROR-severity one into a genuine
+    ask-level, ``update-step``-blocking issue — the same path C1-C5 use.
+
+    A raised exception from the delegate (never expected — the delegate's
+    own ``run_all_checks`` already turns a malformed trace into a
+    ``malformed_trace`` CheckResult instead of raising) is still caught
+    here so a bug in the gate blocks the phase with a visible message
+    instead of crashing ``update-step`` outright.
+    """
+    from tools.verify_grill_trace_completeness import run_all_checks as _run_grill_checks
+    try:
+        return _run_grill_checks(project_root)
+    except Exception as exc:  # noqa: BLE001 — surface, don't crash update-step
+        return [CheckResult(
+            "grill_trace_completeness",
+            False,
+            f"verify_grill_trace_completeness.run_all_checks raised "
+            f"{type(exc).__name__}: {exc}",
+        )]
+
+
 # ---------------------------------------------------------------------------
 # Canon dispatcher (C1-C5 + phase history + ADR integrity)
 # ---------------------------------------------------------------------------
@@ -152,6 +202,7 @@ def run_project_checks(
     # Phase-own
     results.append(check_project_config_status_complete(project_root))
     results.append(check_manifest_splits_match_dirs(project_root))
+    results.extend(check_grill_trace_completeness(project_root))
 
     # Canon (generic helpers from common.py)
     results.append(check_c1_phase_event_recorded(project_root, "project"))

@@ -147,3 +147,97 @@ def test_legacy_pre_12_1_gate_still_fires(tmp_path, monkeypatch):
     valid, issues = validate_phase("project", tmp_path)
     assert valid is False
     assert any("No splits" in i["message"] for i in issues)
+
+
+# ---------------------------------------------------------------------------
+# Grill-trace completeness gate (P4.2) — proves the gate is CODE-ENFORCED
+# at the SAME boundary as C1-C5, not merely documented in Step-8 prose.
+#
+# The spec-reviewer's REJECT on the first P4.2.2 round: the gate existed
+# (verify_grill_trace_completeness.py) but its only registration was prose
+# in step-8-completion.md/SKILL.md telling the agent to run it and decide
+# for itself — never through `run_project_checks()`, the actual
+# `_run_canon_checks` dispatcher this test module exists to exercise. These
+# tests call `validate_phase("project", ...)` — the exact function
+# `update-step --step project` calls to decide whether completion is
+# blocked — with a project whose grill-trace fails a STOP condition, and
+# assert it participates in the SAME ask-level block C1-C5 already prove
+# here, not a parallel mechanism that merely looks wired up.
+# ---------------------------------------------------------------------------
+
+def _write_failing_grill_trace(root: Path) -> None:
+    """A shape-valid grill-trace with one dimension in STOP territory
+    (greenfield 'assumed' — no exceptions permitted in the project
+    surface, ``verify_grill_trace_completeness.check_greenfield_assumed``)."""
+    trace_dir = root / ".shipwright" / "planning" / "grill-traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    (trace_dir / "export-data.json").write_text(json.dumps({
+        "requirement_key": "export-data",
+        "requirement_text": "Users can export their data",
+        "surface": "project",
+        "evidence": ["interview transcript line 42"],
+        "dimensions": {
+            "outcome": "answered",
+            "purpose": "answered",
+            "boundaries": "assumed:only CSV export was discussed",
+            "failure": "answered",
+            "glossary": "answered",
+            "rationale": "answered",
+            "out_of_scope": "answered",
+        },
+        "fit_criterion": "export completes in < 5s for a 10k-row account",
+        "glossary_delta": [],
+        "confirmed_by": "user",
+        "terms_used": [],
+    }))
+
+
+def test_grill_trace_stop_blocks_validation_same_path_as_c1_c5(tmp_path, monkeypatch):
+    """A full-canon project (would otherwise pass, per
+    ``test_full_canon_project_passes``) with ONE failing grill-trace
+    dimension must genuinely block ``validate_phase`` — proving the P4.2
+    gate rides the same ``_run_canon_checks`` -> ask-level-issue ->
+    ``valid=False`` path C1-C5 use, not a mechanism that only looks
+    wired up."""
+    _seed_basic_project(tmp_path)
+    _seed_canon_artifacts(tmp_path, run_id="project-grill-fail")
+    _write_failing_grill_trace(tmp_path)
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "project-grill-fail")
+    valid, issues = validate_phase("project", tmp_path)
+    assert valid is False
+    ask_messages = [i["message"] for i in issues if i["severity"] == "ask"]
+    assert any("[canon]" in m and "greenfield_assumed" in m for m in ask_messages), issues
+
+
+def test_clean_grill_trace_does_not_block_validation(tmp_path, monkeypatch):
+    """A grill-trace with no STOP condition must not itself turn a
+    full-canon project red — the gate blocks bad traces, not the mere
+    presence of one."""
+    _seed_basic_project(tmp_path)
+    _seed_canon_artifacts(tmp_path, run_id="project-grill-clean")
+    trace_dir = tmp_path / ".shipwright" / "planning" / "grill-traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    (trace_dir / "export-data.json").write_text(json.dumps({
+        "requirement_key": "export-data",
+        "requirement_text": "Users can export their data",
+        "surface": "project",
+        "evidence": ["interview transcript line 42"],
+        "dimensions": {
+            "outcome": "answered",
+            "purpose": "answered",
+            "boundaries": "answered",
+            "failure": "answered",
+            "glossary": "answered",
+            "rationale": "answered",
+            "out_of_scope": "answered",
+        },
+        "fit_criterion": "export completes in < 5s for a 10k-row account",
+        "glossary_delta": [],
+        "confirmed_by": "user",
+        "terms_used": [],
+    }))
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "project-grill-clean")
+    valid, issues = validate_phase("project", tmp_path)
+    ask = [i for i in issues if i["severity"] == "ask"]
+    assert ask == [], ask
+    assert valid is True
