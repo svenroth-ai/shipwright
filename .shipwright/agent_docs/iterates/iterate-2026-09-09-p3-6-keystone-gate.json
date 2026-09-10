@@ -112,7 +112,7 @@
       {
         "behavior": "per-AC change detection over REAL git and the real 268-criterion spec.md, including the reader-divergence scoping and the empty-criteria-digest discriminator",
         "disposition": "tested",
-        "evidence": "shared/scripts/tools/tests/test_keystone_ac_digest.py 17 tests PASSED; test_keystone_readers.py 11 tests PASSED; design doc SS6 Probe B measured 268 added / 0 changed over 680f46f0b9cb..545a4f32043b"
+        "evidence": "shared/scripts/tools/tests/test_keystone_ac_digest.py 12 tests PASSED; test_keystone_ac_digest_never_silent.py 7 tests PASSED; test_keystone_readers.py 11 tests PASSED; design doc SS6 Probe B measured 268 added / 0 changed over 680f46f0b9cb..545a4f32043b"
       },
       {
         "behavior": "the gate's real behaviour on a GitHub pull_request event (github.sha as the merge commit, base resolved by _merge_base with no --base-sha)",
@@ -128,7 +128,7 @@
       {
         "behavior": "a changed AC's binding REDUCED (not just removed) blocks as binding_removed, and a second spec path re-anchoring an already-edited (fr_id, ac_id) or fr_id at head raises rather than silently overwriting the digest (Stage-3 doubt review, AC-K8(d))",
         "disposition": "tested",
-        "evidence": "shared/tests/test_keystone_core.py::test_a_partial_binding_reduction_on_a_changed_ac_is_also_binding_removed PASSED; shared/scripts/tools/tests/test_keystone_ac_digest.py::test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error PASSED; shared/scripts/tools/tests/test_check_keystone_ac_gate.py::test_removing_a_bound_ac_outright_is_reported_but_does_not_block PASSED"
+        "evidence": "shared/tests/test_keystone_core.py::test_a_partial_binding_reduction_on_a_changed_ac_is_also_binding_removed PASSED; shared/scripts/tools/tests/test_keystone_ac_digest_never_silent.py::test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error PASSED; shared/scripts/tools/tests/test_check_keystone_ac_gate.py::test_removing_a_bound_ac_outright_is_reported_but_does_not_block PASSED"
       }
     ],
     "counts": {

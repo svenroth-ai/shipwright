@@ -969,10 +969,10 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   still exists. The outcome **blocks**, so nothing is let through; only the message misroutes, and
   a reviewer reading the JSON sees the retirement in the same diff. Not fixed because the fix costs
   a fourth reason code and a fourth arm, for a flow this repo has never performed — a cost
-  independent of `_keystone_core.py`'s current line count (230 after the Stage-3 doubt-review
-  extraction, no longer at the 300-line limit that was the stated reason when this was first
-  written). Recorded so that the first real occurrence is a two-line follow-up rather than a
-  mystery.
+  independent of `_keystone_core.py`'s current line count (239 after the Stage-2 code-review fix
+  named the reduction's missing link ids, §12.1i finding 6; no longer at the 300-line limit that
+  was the stated reason when this was first written). Recorded so that the first real occurrence
+  is a two-line follow-up rather than a mystery.
 - **The `failed` HARD arm is practically unreachable from `ci.yml` itself, only from the unit-test
   fixtures that exercise the pure evaluator directly** (Stage-3 doubt review, informational).
   `ci.yml`'s test steps run under `set -e`: a real test
@@ -1469,6 +1469,26 @@ tests); `_keystone_ac_digest.py` (finding 7's fix) split its reader-divergence a
 new-FR-without-criteria arms into a new eighth verifier module, `_keystone_divergence.py`. Neither
 extraction changed behavior — both are pinned by the unchanged test suite passing before and after.
 
+### 12.1j Stage-1 round 13 (fresh) — REJECT (4 medium)
+
+**Not one-round lag** — every finding was created BY the §12.1i fix commit itself and contradicted
+that same commit's own new text, the exact shape §12.1h round-9/round-10 findings kept catching:
+a fix's collateral effect (a line-count growth, a test moving files) left uncorrected in a passage
+the fix commit did not think to touch.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | `architecture.md`'s always-loaded Layer-1 entry still said "seven `verifiers/_keystone_*` modules" while this same commit's §12.1i and §12.2 item 6 both already said "eight" — the eighth module (`_keystone_divergence`) is created in this commit. Recurrence of round-10 finding 1. | **Fixed** — updated to eight. |
+| 2 | medium | §7's retire-while-editing bullet cited `_keystone_core.py`'s "current line count (230…)"; finding 6's own fix (naming missing link ids via a set difference) grew the file to 239 in this same commit. Recurrence of round-10 finding 2. | **Fixed** — updated to 239, with an explicit reason (finding 6, not the Stage-3 doubt-review extraction this was last true of). |
+| 3 | medium | The F11 ledger's evidence string claimed "`test_keystone_ac_digest.py` 17 tests PASSED"; this commit's own test-file split left it with 12, moving 7 to a file the ledger never names. | **Fixed** — evidence string updated to name both files with their real counts (12 + 7). |
+| 4 | medium | The F11 ledger cited a node id, `test_keystone_ac_digest.py::test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error`, that the same split moved to `test_keystone_ac_digest_never_silent.py`. The test module's own docstring routed it correctly; the ledger did not. | **Fixed** — node id corrected to its new file. |
+
+The reviewer additionally re-verified as clean and did not flag: the hooks-and-pipeline.md finding-13
+rewording (matches `CI_ONLY_GATES` exactly), §12.1i's 14-row table against the actual diff, §12.2
+item 6's "eight", and §12.3's addendum — plus one non-blocking observation (§12.2 item 4's "52 + 48
+cases" understating the tools root by 3 after findings 1/3/5's new tests), fixed here as part of the
+same pass since it was a real, checkable drift rather than a judgment call.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1476,7 +1496,7 @@ extraction changed behavior — both are pinned by the unchanged test suite pass
 | 1 | Spec Compliance | **FAIL → fixed, and this row is the one that was wrong** | Claimed "two named deviations" (Q1, Q1b) while the build had already taken a **third** — greenness-walking a bound `added` AC — reversing a rule ratified across four plan rounds and still asserted in three passages of this document. A **Stage-1 spec review rejected the build for it**; self-review had marked this row `pass`. Now: three deviations, the third named in §7, §8 row D3, §5.1's table and AC-K4's title, with its misattribution corrected in code and test. Q1/Q1b remain in the shipped module docstring. |
 | 2 | Error Handling | **fail → fixed twice, and the second time is the finding** | Found here first: `EmptyLinkWalk` escaping `main()` is a Python exit 1 — indistinguishable in a CI log from a real hard finding, so a gate defect would send an author to edit a spec that is fine. Now caught → exit 2 with JSON. External review then found the *same shape* at a different boundary (finding 3), and the Tier-3 PR review found it again two levels deeper (§12.1a finding B). The honest reading of this row: the class was identified early and then fixed **instance by instance** rather than enumerated. |
 | 3 | Security Basics | **pass** | No new trust artifact, no new persisted state, no network. `github.sha` is interpolated as a SHA (no injection surface). The base read is fail-closed three ways and its one permissive branch is surfaced under its own JSON key. |
-| 4 | Test Quality | **pass** | 52 + 48 cases (grew by two per root over the Stage-3 doubt-review fix); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
+| 4 | Test Quality | **pass** | 55 + 48 cases (grew by three in the tools root over the Stage-2 code-review fix — findings 1, 3 and 5, §12.1i); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
 | 5 | Performance Basics | **pass** | Two spec parses and one extra `git show` per PR; no regeneration, no extra test execution. |
 | 6 | Naming & Structure | **pass** | Eight verifier modules plus the CLI, six extracted from the two the gate is built around (`_keystone_finding`, `_keystone_layer_gap`, `_keystone_base_manifest` from round 1-4; `_keystone_links`, `_keystone_criteria` added by the Stage-3 doubt-review fix, §12.1g; `_keystone_divergence` added by the Stage-2 code-review fix, §12.1i) — each under 300 lines by *extraction*, never by baselining. No new abstraction with one caller. |
 | 7 | Affected Boundaries (ADR-024) | **pass** | See §12.3 — all four boundaries probed or pinned, and (iii) moved from *reasoned* to *measured* this round. |
@@ -1526,6 +1546,13 @@ after it started. Stage-2's first pass on the Doubt-1/2 fixes then found 14 more
 findings (5 medium, 9 low; §12.1i) — none of which round 12's spec-compliance pass was positioned
 to catch, since none is a spec/document divergence. The two review stages keep finding disjoint
 classes of defect, which is the argument for running both, not for either alone.
+
+**Round 13 (§12.1j) rejected the Stage-2 fix commit itself — a ninth rejection, across rounds
+1-13 now** — four medium findings, every one a collateral effect of that commit's own fixes
+(a module-count growth, a line-count growth, a test-file split) left uncorrected in a passage the
+fix commit did not think to touch. This is the class §12.1h named at rounds 9 and 10 recurring a
+third time, one extraction round later: a fix's side effects on unrelated bookkeeping (architecture
+snapshots, the F11 ledger) are as easy to miss as the fix's own direct documentation.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
