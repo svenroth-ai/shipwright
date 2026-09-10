@@ -88,10 +88,11 @@ def test_non_green_outcomes_carry_distinct_reason_codes(status, executed, expect
 
 
 def test_a_disabled_and_failing_link_reports_skipped_not_failed():
-    """External code review (glm, medium) — outcome PRECEDENCE, pinned because it
-    is operator-facing. A disabled test's ``executed`` is stale by construction,
-    so reporting ``failed`` ("fix the code") sends the author to debug a result
-    nothing produced this run. Status first; the actionable fact is the disabling.
+    """No reviewer asked for this — found during build (same honesty rule as
+    deviation 3). Outcome PRECEDENCE, pinned because it is operator-facing. A
+    disabled test's ``executed`` is stale by construction, so reporting
+    ``failed`` ("fix the code") sends the author to debug a result nothing
+    produced this run. Status first; the actionable fact is the disabling.
     """
     head = _acs_for("FR-01.01", "AC01", [_link("t1", status="disabled", executed="fail")])
     verdict = kc.evaluate_keystone(

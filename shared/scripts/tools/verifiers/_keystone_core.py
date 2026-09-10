@@ -89,14 +89,16 @@ def _links_for(manifest: dict, fr_id: str, ac_id: str) -> list[dict]:
     namespaced top-level key: the change set comes from spec.md, which knows only
     display ids.
 
-    **ACTIVE nodes only** (external code review, glm low). This used to pool every
-    node carrying the id, including RETIRED ones, while ``_keystone_layer_gap``
-    restricted itself to ``_active_nodes`` — and the asymmetry was fail-OPEN, not
-    fail-closed as its docstring claimed: a retired duplicate silently ADDS to the
-    head count, which is exactly what turns a `base >= 1, head 0`
-    ``binding_removed`` into an ordinary greenness walk. Two active nodes sharing
-    a display id still pool (a real collision, and pooling is fail-closed there);
-    ``_keystone_layer_gap`` routes that case ADVISORY as the sibling gates do.
+    **ACTIVE nodes only** — no reviewer asked for this, found during build (NOT
+    the same as the separate glm-low finding at §7 about retiring an FR while
+    editing its criterion). This used to pool every node carrying the id,
+    including RETIRED ones, while ``_keystone_layer_gap`` restricted itself to
+    ``_active_nodes`` — an asymmetry that was fail-OPEN, not fail-closed as its
+    docstring claimed: a retired duplicate silently ADDS to the head count,
+    turning a `base >= 1, head 0` ``binding_removed`` into an ordinary greenness
+    walk. Two active nodes sharing a display id still pool (a real collision,
+    fail-closed there); ``_keystone_layer_gap`` routes that ADVISORY like its
+    siblings.
     """
     out: list[dict] = []
     for node in (manifest.get("requirements") or {}).values():
@@ -134,13 +136,11 @@ def _walk_links(links: list[dict], fr_id: str, ac_id: str) -> list[Finding]:
         executed = link.get("executed")
         if status == "enabled" and executed == "pass":
             continue
-        # STATUS FIRST (external code review, glm medium). A link that is both
-        # `disabled` AND `executed: fail` used to report `failed`, whose remedy is
-        # "fix the code" -- but a disabled test's `executed` is stale by
-        # construction, so that remedy sends the author to debug a result nothing
-        # produced this run. The actionable fact is that it is disabled. The
-        # ordering is operator-facing, so it is pinned by a test rather than left
-        # to whichever branch happens to come first.
+        # STATUS FIRST -- no reviewer asked for this, found during build (same
+        # honesty rule as deviation 3). A link that is `disabled` AND
+        # `executed: fail` used to report `failed` ("fix the code"), but a
+        # disabled test's `executed` is stale by construction; the actionable
+        # fact is that it is disabled. Operator-facing, so pinned by a test.
         if status != "enabled":
             findings.append(Finding(
                 SKIPPED, fr_id, ac_id,

@@ -498,6 +498,17 @@ one whose digest is absent at base, which fires arm 1.
 no acceptance criterion is the purest instance of "behaviour-changing without named ACs". All 20
 active FRs carry criteria today (min 6, max 29) — zero pre-existing violations.
 
+**Second precedence rule (found during build, Stage-2 code review, medium):** arm 2 is ALSO
+suppressed for any FR already reported by arm 1 (`unminted_changed`). A brand-new FR hand-authored
+with bullets but no `[ACnn]` markers yet has zero MINTED criteria, but it is not silent — it states
+criteria, just unminted ones, and arm 1 already reports exactly that. Without this exclusion, that
+shape (the single most likely first real-world encounter with this gate: authoring an FR before
+running the minter) fires both arms at once, and arm 2's message ("states no acceptance criterion")
+is then false. Distinct from the divergence-guard precedence above: divergence fires when the FR-
+level reader sees criteria the AC-level reader cannot; this fires when the AC-level reader sees
+them too, just unminted. Pinned by
+`test_a_new_fr_with_unminted_bullets_is_not_ALSO_reported_as_stating_none`.
+
 > **BUILD-TIME AMENDMENT (external plan review, glm low) — state the set operation, because
 > stating it exposed a repo-wide false red.** "NEW active FR" was left undefined; it is
 > `active_display_ids(head_manifest) - active_display_ids(base_manifest)`, where *active* means
@@ -1182,6 +1193,23 @@ requirement is authoritative, and that question was already decided.
 |---|---|---|---|
 | A | reject (hard gate) | The build greenness-walks an `added` AC with a binding — reversing a rule ratified across all four plan rounds and still asserted in three passages of this document (§5.1's table, §7's bullet, AC-K4's title), while §11/§12.2 claimed "exactly two deviations". Compounded by two attribution errors: the code and its test credited "external code review (openai, high)", which is actually the Track R / Q2 finding that §12.1 **rejects**, and the plan review's AC-id-rotation finding is dispositioned "reported, **not** blocked". | **Accepted; decided rather than reverted, and narrowed.** Kept, because AC-2 names *any* named AC and the design's exemption rests on an assumption that fails when the criterion arrives tagged — full four-step reasoning in §7. **Narrowed** by removing the `layer_gap` call from the added arm: greenness is AC-2, layer breadth is coverage (p3.7's) and the arm most likely to false-red once p3.5 promotes an FR. Recorded as **deviation 3** in §5.1, §7, §8 row D3, AC-K4, §11 item 1 and §12.2 item 1, all in this diff. Attribution corrected in both the code comment and the test docstring to state plainly that **no reviewer asked for it — it was found during build**. |
 | B | minor | The reader-divergence guard dropped the "**active** FR" qualifier the design states twice (§5.1, AC-K9(d)), while every sibling predicate in the diff filters to active nodes. | **Accepted-and-fixed.** `ac_change_set` now filters `head_fr_digests` through `_active_display_ids(head_manifest)`. Verified safe before applying: `build_requirement_index` parses requirements from the **spec text**, not from `@covers` tags (20/20 spec FR headings have active nodes today), so a genuinely new FR still gets a node from the regeneration step and the guard cannot be blinded to it. One existing test failed on the change — its fixture modelled a spec-FR with no manifest node, a state CI cannot emit; corrected, with a new test pinning that a **retired** FR is exempt while the identical spec diff still fires for an active one. |
+
+### 12.1c Stage-1 round 2 (fresh, PASS) → Stage-2 code review → Stage-1 round 3 — REJECT
+
+Stage-1 round 2, run fresh (not diff-based) against A/B's fixes, **PASSED**. The orchestrator then
+personally ratified deviation 3. Stage-2 (code-reviewer) ran next and returned no blocking finding
+but one **medium** correctness finding, plus two doc-precision notes it forwarded rather than
+required. Fixed, then Stage-1 ran a third time, fresh, and **REJECTED again** — on the fix itself,
+not on anything Stage-1 rounds 1-2 had already covered:
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| C | reject (hard gate) | Stage-2's fix added a second, undocumented suppressor of arm 2 — an FR already reported by arm 1 (`unminted_changed`) is now also skipped — while §5.1 names the divergence guard as **the** suppressor and §5.2 states arm 2's predicate without the exception. The fix is correct on the merits (the reasoning mirrors §5.1's own precedence rule for a sibling case) but no passage of the design doc was edited to say so, in the same commit that DID edit two peripheral passages (§2.2, the decision drop). | **Accepted-and-documented.** New precedence paragraph added directly after §5.2's arm-2 definition, naming the rule, the shape it prevents, and the pinning test explicitly, so a reader of §5.2 is no longer wrong about the shipped behaviour. |
+| D | reject (hard gate) | Two fabricated attributions in `_keystone_core.py`, unrelated to the fix under review: `_walk_links`'s STATUS-FIRST precedence credited "external code review, glm medium", and `_links_for`'s ACTIVE-nodes-only credited "external code review, glm low" — neither matches any of the 8 recorded `external_code` findings (verified against `reviews.json` directly: the nearest real glm-low findings are the retire+edit misrouted-message finding, already recorded honestly at §7, and the `not_selected` catch-all — neither is either of these). Repeated in `test_keystone_core.py`'s docstring for the first. | **Accepted-and-fixed.** Both attributions corrected to "no reviewer asked for this — found during build" (the same honest form deviation 3 already uses), in the source comment, the module's ACTIVE-nodes-only paragraph (with a note distinguishing it from the real §7 finding it is adjacent to but not the same as), and the test docstring. |
+
+**Pattern across all three Stage-1 rounds:** every REJECT has been a code/document disagreement or
+an attribution error, never a wrong verdict from the evaluator itself — source AC-1/AC-2/AC-3 and
+the link-count vocabulary have re-derived as compliant fresh, three times running.
 
 **Why finding A is the most serious of the run.** Every other finding this iterate collected was a
 defect in code. This one is a divergence between the code and the document that ships beside it —
