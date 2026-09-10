@@ -36,6 +36,9 @@ _PLUGIN_HOOKS_JSON = (
 _SUGGEST_ITERATE = (
     _REPO_ROOT / "shared" / "scripts" / "hooks" / "suggest_iterate.py"
 )
+_HANDOFF_PHASE_STATUS = (
+    _REPO_ROOT / "shared" / "scripts" / "lib" / "handoff_phase_status.py"
+)
 _CLASSIFY_INTENT = (
     _REPO_ROOT
     / "plugins"
@@ -165,15 +168,19 @@ def fake_plugin_cache(tmp_path: Path) -> Path:
     cache = tmp_path / "shipwright-cache"
     plugin_root = cache / "shipwright-iterate" / "0.0.0-test"
     shared_hooks = cache / "shared" / "scripts" / "hooks"
+    shared_lib = cache / "shared" / "scripts" / "lib"
     plugins_iterate_lib = (
         cache / "plugins" / "shipwright-iterate" / "scripts" / "lib"
     )
     shared_hooks.mkdir(parents=True)
+    shared_lib.mkdir(parents=True)
     plugin_root.mkdir(parents=True)
     plugins_iterate_lib.mkdir(parents=True)
 
     # Copy the script we want to invoke.
     shutil.copy2(_SUGGEST_ITERATE, shared_hooks / "suggest_iterate.py")
+    # Copy the shared-tree dependency the script imports via sys.path arithmetic.
+    shutil.copy2(_HANDOFF_PHASE_STATUS, shared_lib / _HANDOFF_PHASE_STATUS.name)
     # Copy the dependency the script imports via path arithmetic.
     classify_intent_dir = _CLASSIFY_INTENT.parent
     for f in classify_intent_dir.glob("*.py"):

@@ -33,6 +33,13 @@ def project_with_sections(tmp_project):
     return tmp_project
 
 
+def _task(phase: str, status: str) -> dict:
+    """A minimal phase_tasks[] entry — this reader only looks at `phase` and
+    `status`, so the other schema-required fields are omitted (mirrors
+    plugins/shipwright-compliance/tests/test_mermaid.py's `_task` helper)."""
+    return {"phase": phase, "status": status}
+
+
 @pytest.fixture
 def project_with_pipeline(tmp_project):
     """Project with run config (pipeline status)."""
@@ -40,6 +47,12 @@ def project_with_pipeline(tmp_project):
         "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
         "completed_steps": ["project", "design", "plan"],
         "current_step": "build",
+        "phase_tasks": [
+            _task("project", "done"),
+            _task("design", "done"),
+            _task("plan", "done"),
+            _task("build", "in_progress"),
+        ],
     }
     build_config = {
         "sections": [
@@ -157,6 +170,66 @@ class TestPipelineTable:
         )
         assert "## Pipeline" in content
 
+    def test_pipeline_status_ignores_stale_completed_steps_and_current_step(
+        self, tmp_project
+    ):
+        """current_step/completed_steps (write-once) claim 'build' is
+        current and nothing is complete; phase_tasks[] says build/plan/design/
+        project already finished and test is now running. The Pipeline table
+        must follow phase_tasks[] (campaign p4-04-retire-write-once-steps,
+        sub-iterate s3)."""
+        run_config = {
+            "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
+            "completed_steps": [],
+            "current_step": "build",
+            "phase_tasks": [
+                _task("project", "done"),
+                _task("design", "done"),
+                _task("plan", "done"),
+                _task("build", "done"),
+                _task("test", "in_progress"),
+            ],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        # BUILD would read "pending" (never complete) if completed_steps were
+        # still consulted — they are not.
+        assert "| Build | complete |" in content
+        assert "| Test | **in progress** |" in content
+        assert "| Changelog | pending |" in content
+
+    def test_pipeline_status_falls_through_when_phase_tasks_gives_no_confident_signal(
+        self, tmp_project
+    ):
+        """A phase whose only phase_tasks[] entry is neither finished nor
+        active (e.g. still queued) reads "pending", same as a phase with no
+        entry at all — it must not raise or assert something else."""
+        run_config = {
+            "pipeline": ["project", "design", "plan", "build"],
+            "phase_tasks": [_task("build", "backlog")],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "| Build | pending |" in content
+
+    def test_pipeline_status_malformed_task_status_does_not_crash(self, tmp_project):
+        """A producer that writes a non-string status (list/dict) must not
+        raise — mirrors shared/scripts/lib/handoff_phase_status.status_of()'s
+        guard against an unhashable `x in frozenset` check."""
+        run_config = {
+            "pipeline": ["project", "build"],
+            "phase_tasks": [{"phase": "build", "status": ["done"]}],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "| Build | pending |" in content
+
     def test_pipeline_multi_split_shows_latest_end_ts(self, tmp_project):
         """A multi-split phase records one phase_completed per split; the Pipeline
         'Completed' column must show the LATEST split's date (the phase's true
@@ -181,6 +254,11 @@ class TestMultiSplit:
             "pipeline": ["project", "plan", "build", "test"],
             "completed_steps": ["project", "plan"],
             "current_step": "build",
+            "phase_tasks": [
+                _task("project", "done"),
+                _task("plan", "done"),
+                _task("build", "in_progress"),
+            ],
         }
         build_config = {
             "current_split": "02-dashboard",
@@ -213,6 +291,151 @@ class TestMultiSplit:
         assert "3/4 sections" in content  # total across all splits
         assert "02-dashboard" in content  # split label shown
         assert "01-login" not in content  # archived sections NOT in table
+
+
+class TestPhaseTasksLegacyReadSites:
+    """generate_dashboard()'s config-based (no-events) path picks the Build
+    Summary vs per-split Build Sections table, and shows/hides Test Results,
+    off phase_tasks[] — NOT completed_steps (campaign
+    p4-04-retire-write-once-steps, sub-iterate s3)."""
+
+    def _two_split_project(self, tmp_project) -> None:
+        project_config = {
+            "splits": [
+                {"name": "01-auth", "status": "complete"},
+                {"name": "02-dashboard", "status": "complete"},
+            ],
+        }
+        build_config = {
+            "current_split": "02-dashboard",
+            "completed_splits": ["01-auth"],
+            "split_01_sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa"},
+            ],
+            "sections": [
+                {"name": "01-widgets", "status": "complete", "commit": "ccc"},
+            ],
+        }
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps(project_config), encoding="utf-8"
+        )
+        (tmp_project / "shipwright_build_config.json").write_text(
+            json.dumps(build_config), encoding="utf-8"
+        )
+
+    def test_build_summary_shown_when_phase_tasks_says_build_complete(self, tmp_project):
+        self._two_split_project(tmp_project)
+        run_config = {
+            "pipeline": ["project", "build"],
+            "completed_steps": [],  # stale write-once field says NOT complete
+            "phase_tasks": [_task("build", "done")],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Build Summary" in content
+        assert "## Build Sections" not in content
+
+    def test_build_summary_hidden_when_phase_tasks_disagrees_with_stale_completed_steps(
+        self, tmp_project
+    ):
+        """completed_steps (write-once) claims 'build' is complete;
+        phase_tasks[] says it is still in flight — phase_tasks[] wins, so the
+        per-split Build Sections table renders instead of Build Summary."""
+        self._two_split_project(tmp_project)
+        run_config = {
+            "pipeline": ["project", "build"],
+            "completed_steps": ["project", "build"],
+            "phase_tasks": [_task("build", "in_progress")],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Build Summary" not in content
+
+    def test_build_summary_not_shown_while_a_later_split_still_awaits_build(
+        self, tmp_project
+    ):
+        """Doubt review, sub-iterate s3: phase_state_machine.next_phase_task
+        plans only ONE split ahead (build/A done -> plans plan/B, not
+        build/B) -- mid-way through split B's plan phase, phase_tasks[] can
+        legitimately hold only split A's finished `build` entry while split
+        B's build has not started. That must NOT read as "build complete"
+        (which would flip to the all-splits-done Build Summary view) --
+        `splits_frozen` names 2 splits but only 1 has a `build` entry, so the
+        phase stays `in_progress` and the per-split Build Sections table
+        renders instead."""
+        self._two_split_project(tmp_project)
+        run_config = {
+            "pipeline": ["project", "build"],
+            "splits_frozen": ["01-auth", "02-dashboard"],
+            "phase_tasks": [
+                {"phase": "plan", "status": "done", "splitId": "01-auth"},
+                {"phase": "build", "status": "done", "splitId": "01-auth"},
+                {"phase": "plan", "status": "in_progress", "splitId": "02-dashboard"},
+            ],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Build Summary" not in content
+        assert "## Build Sections" in content
+
+    def test_build_summary_shown_once_every_frozen_split_has_a_build_entry(
+        self, tmp_project
+    ):
+        """Same shape as above, but split B's build is ALSO done -- every
+        name in splits_frozen now has a finished build entry, so this DOES
+        read as complete."""
+        self._two_split_project(tmp_project)
+        run_config = {
+            "pipeline": ["project", "build"],
+            "splits_frozen": ["01-auth", "02-dashboard"],
+            "phase_tasks": [
+                {"phase": "build", "status": "done", "splitId": "01-auth"},
+                {"phase": "build", "status": "done", "splitId": "02-dashboard"},
+            ],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Build Summary" in content
+
+    def test_test_results_shown_when_phase_tasks_says_test_complete(self, tmp_project):
+        (tmp_project / "shipwright_test_results.json").write_text(
+            json.dumps({"unit": {"passed": 5, "total": 5}}), encoding="utf-8",
+        )
+        run_config = {
+            "pipeline": ["project", "test"],
+            "completed_steps": [],  # stale write-once field says NOT complete
+            "phase_tasks": [_task("test", "done")],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Results" in content
+
+    def test_test_results_hidden_when_phase_tasks_disagrees_with_stale_completed_steps(
+        self, tmp_project
+    ):
+        (tmp_project / "shipwright_test_results.json").write_text(
+            json.dumps({"unit": {"passed": 5, "total": 5}}), encoding="utf-8",
+        )
+        run_config = {
+            "pipeline": ["project", "test"],
+            "completed_steps": ["project", "test"],  # stale claim
+            "phase_tasks": [_task("test", "in_progress")],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Results" not in content
 
     def test_dashboard_split_complete_not_build_complete(self, tmp_project):
         """Split done but more splits remain — shows 'Split complete'."""

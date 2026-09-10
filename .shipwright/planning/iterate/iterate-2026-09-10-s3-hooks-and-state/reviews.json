@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-s3-hooks-and-state",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T00:06:45.101713+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The \"v2 first, v1 only as last resort\" fallback for `state.py`, `generate_handoff_on_stop.py`, and `suggest_iterate.py` can produce stale-phase behavior on a driven run where `phase_tasks[]` exists but every entry is still `backlog`/`awaiting_launch` (the aggregator returns `None`). In that state, the reader falls back to `current_step`/`completed_steps`, which — per the whole premise of this campaign — are write-once and never advance. So mid-phase, the fallback returns a stale but confident-looking answer identical to the pre-change behavior. That's deliberate for standalone configs, but the plan doesn't distinguish \"no `phase_tasks[]` at all\" (standalone, fallback correct) from \"`phase_tasks[]` exists but nothing launched yet\" (driven, fallback wrong).",
+          "suggestion": "Gate the v1 fallback on `phase_tasks[]` being absent/empty for that phase, not merely on \"no confident signal.\" If entries exist but are all pre-launch, prefer an explicit in_progress/pending answer over falling back to the stale v1 fields — or at minimum document that this window returns stale data and confirm it's no worse than today.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "generate_handoff_on_stop.py`'s phase-completion detection is timing-sensitive (runs at Stop). With the new ordered read, if `phase_tasks[]` says \"in_progress\" (one task not FINISHED) but the v1 heuristic previously said \"complete,\" the hook no longer fires `update-step`. The plan treats v1 as pure fallback, but the aggregation semantics (e.g., does INTERRUPTED count against completion?) may differ from the old per-phase heuristic. `status_of()` bucketing choices will silently change hook firing behavior.",
+          "suggestion": "Enumerate, in the plan or tests, the cross-product of `status_of()` outcomes vs. the old heuristic for the completion case — specifically INTERRUPTED and FAILED entries — and pin expected hook behavior for each. A dedicated test where old-logic says complete and new-logic says in_progress (and vice versa) is needed, not just \"old fields ignored.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "update_build_dashboard.py` getting the pure no-fallback shape (v2-only, everything pending when absent) diverges from the other three readers. This is defensible (display-only, matches mermaid.py) but means the same repo has two migration shapes for readers added in one sub-iterate; future readers will have to decide which shape applies.",
+          "suggestion": "Fine to keep, but the docs paragraph promised in the plan should state the decision rule for which shape a reader gets (display-only vs. behavioral), not just describe the two shapes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Removing the v1 read from `update_build_dashboard.py` changes rendered output for existing configs without `phase_tasks[]` — phases that previously showed \"in progress\"/\"complete\" via `completed_steps` will now show \"pending.\" The plan acknowledges this (\"same as mermaid.py\") but the test strategy keeps legacy-path fixtures only for the two named ones; other dashboard fixtures asserting on phase status may break unnoticed.",
+          "suggestion": "Audit all `update_build_dashboard` fixtures/tests for phase-status assertions before the change; note which ones change expectation and update in the same diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Malformed `phase_tasks[]` (bad status strings, non-dict entries) returns `None` → fallback to v1 fields. For `suggest_iterate.py`'s intent-mismatch router this means malformed data silently reverts to the old (incorrect on driven runs) routing. Acceptable, but untested per the plan's test list (the malformed guard test is mentioned only generically).",
+          "suggestion": "Ensure the malformed-data test exists per-reader for at least one of the fallback readers, not just the dashboard/mermaid shape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Depends on `handoff_phase_status.py`'s bucket vocabulary and s1's `mermaid.py` pattern being stable. No issue if s1 is merged; if s3 lands concurrently, ordering matters. The plan doesn't state sequencing.",
+          "suggestion": "Confirm s1 is merged first, or note the dependency explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed three-value aggregation (`complete` / `in_progress` / `None`) does not state how `FAILED_STATUSES` and `INTERRUPTED_STATUSES` affect completion. The stop-hook must never treat a failed or interrupted phase as complete and issue `update-step`.",
+          "suggestion": "Define the truth table explicitly: return `complete` only when every relevant task is in `FINISHED_STATUSES`; failed/interrupted/mixed active states must be non-complete. Add direct tests for each bucket in the stop-hook path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Every matching `phase_tasks[]` entry” may be unsafe if the lifecycle retains retry, superseded, or duplicate task records. A prior completed attempt plus a currently active retry could incorrectly aggregate to complete unless records are scoped to the active task/attempt.",
+          "suggestion": "Confirm the `phase_tasks[]` schema’s uniqueness and attempt semantics. If multiple records per logical task are possible, aggregate only the current/latest applicable record and add a retry/conflicting-record regression test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The proposed fallback boundary is ambiguous. A config can contain `phase_tasks[]` with only backlog/unlaunched tasks while stale v1 fields claim a later step; falling back per phase could reintroduce the exact false-progress behavior being retired.",
+          "suggestion": "Specify whether “no confident signal” is determined globally for the run or per queried phase, and ensure the presence of a v2 lifecycle for that phase/run prevents stale v1 progress from advancing it. Test partial lifecycle initialization and mixed known/unknown phases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Stop hooks run at a timing-sensitive boundary. If task-status persistence lags behind hook execution, the fallback may perform an unnecessary legacy `update-step`, or concurrent hook executions may act on the same phase.",
+          "suggestion": "Preserve or add idempotence around `update-step`, and test the transition where a task is just completed versus not yet persisted. The hook should make no legacy advancement whenever v2 has a non-complete active/terminal signal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes all four readers can import and interpret `handoff_phase_status.py`, but does not call out import-path/runtime compatibility for scripts and hooks invoked outside the normal package context.",
+          "suggestion": "Verify each executable’s bootstrap/import setup and add at least one invocation-level test for a hook and the dashboard script, not only unit tests of helper logic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Dashboard behavior intentionally changes for configurations without `phase_tasks[]`: all phases become pending. Only two named fixtures are updated, which may leave other dashboard tests—or real legacy projects—silently changing meaning.",
+          "suggestion": "Inventory all dashboard fixtures and explicitly update expectations or fixtures for each legacy configuration. Add a dedicated test asserting the intended all-pending legacy rendering so the no-fallback policy is deliberate and stable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Reusing the existing shared status vocabulary is sound, but the plan should avoid duplicating aggregation logic across the four readers.",
+          "suggestion": "Extract or reuse one narrowly scoped shared phase-status function, then keep each reader responsible only for its own fallback policy.  Overall, the migration direction is sound and appropriately preserves standalone behavior, but it needs explicit terminal-status, duplicate-task, and fallback-boundary semantics before implementation—especially for the stop hook.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T00:06:07.536625+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: medium**\n**Finding:** The \"v2 first, v1 only as last resort\" fallback for `state.py`, `generate_handoff_on_stop.py`, and `suggest_iterate.py` can produce *stale-phase* behavior on a driven run where `phase_tasks[]` exists but every entry is still `backlog`/`awaiting_launch` (the aggregator returns `None`). In that state, the reader falls back to `current_step`/`completed_steps`, which — per the whole premise of this campaign — are write-once and never advance. So mid-phase, the fallback returns a *stale but confident-looking* answer identical to the pre-change behavior. That's deliberate for standalone configs, but the plan doesn't distinguish \"no `phase_tasks[]` at all\" (standalone, fallback correct) from \"`phase_tasks[]` exists but nothing launched yet\" (driven, fallback wrong).\n**Suggestion:** Gate the v1 fallback on `phase_tasks[]` being absent/empty for that phase, not merely on \"no confident signal.\" If entries exist but are all pre-launch, prefer an explicit in_progress/pending answer over falling back to the stale v1 fields — or at minimum document that this window returns stale data and confirm it's no worse than today.\n\n**Category: edge-case — Severity: medium**\n**Finding:** `generate_handoff_on_stop.py`'s phase-completion detection is timing-sensitive (runs at Stop). With the new ordered read, if `phase_tasks[]` says \"in_progress\" (one task not FINISHED) but the v1 heuristic previously said \"complete,\" the hook no longer fires `update-step`. The plan treats v1 as pure fallback, but the *aggregation semantics* (e.g., does INTERRUPTED count against completion?) may differ from the old per-phase heuristic. `status_of()` bucketing choices will silently change hook firing behavior.\n**Suggestion:** Enumerate, in the plan or tests, the cross-product of `status_of()` outcomes vs. the old heuristic for the completion case — specifically INTERRUPTED and FAILED entries — and pin expected hook behavior for each.  […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed three-value aggregation (`complete` / `in_progress` / `None`) does not state how `FAILED_STATUSES` and `INTERRUPTED_STATUSES` affect completion. The stop-hook must never treat a failed or interrupted phase as complete and issue `update-step`.  \n   **Suggestion:** Define the truth table explicitly: return `complete` only when every relevant task is in `FINISHED_STATUSES`; failed/interrupted/mixed active states must be non-complete. Add direct tests for each bucket in the stop-hook path.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** “Every matching `phase_tasks[]` entry” may be unsafe if the lifecycle retains retry, superseded, or duplicate task records. A prior completed attempt plus a currently active retry could incorrectly aggregate to complete unless records are scoped to the active task/attempt.  \n   **Suggestion:** Confirm the `phase_tasks[]` schema’s uniqueness and attempt semantics. If multiple records per logical task are possible, aggregate only the current/latest applicable record and add a retry/conflicting-record regression test.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The proposed fallback boundary is ambiguous. A config can contain `phase_tasks[]` with only backlog/unlaunched tasks while stale v1 fields claim a later step; falling back per phase could reintroduce the exact false-progress behavior being retired.  \n   **Suggestion:** Specify whether “no confident signal” is determined globally for the run or per queried phase, and ensure the presence of a v2 lifecycle for that phase/run prevents stale v1 progress from advancing it. Test partial lifecycle initialization and mixed known/unknown phases.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Stop hooks run at a timing-sensitive boundary. If task-status persistence lags behind hook execution, the fallback may perform an unnecessary l […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/state.py",
+          "line": 101,
+          "finding": "Regression for every standalone (v1-only) run: detect_current_phase no longer reads the LIVE current_step that update_step maintains for non-driven configs, and the config heuristic it falls to cannot express test/changelog/deploy at all. A standalone run that has finished test (current_step: changelog) now reports build.",
+          "suggestion": "Mirror the two hooks: after the phase_tasks[] miss, fall back to run.get(\"current_step\") when truthy, before the config heuristic.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_generate_handoff_on_stop.py",
+          "line": 22,
+          "finding": "Test coverage gap: no v1-only test past build in test_state.py, and no test of generate_handoff_on_stop.py main()'s wiring/ordering.",
+          "suggestion": "Add a v1-only regression test in test_state.py and a main()-wiring test in test_generate_handoff_on_stop.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/scripts/hooks/suggest_iterate.py",
+          "line": 103,
+          "finding": "_phase_tasks_progress is triplicated verbatim across state.py, generate_handoff_on_stop.py, suggest_iterate.py.",
+          "suggestion": "Factor into shared/scripts/lib/handoff_phase_status.py and import from all three.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/adr/iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md",
+          "line": 67,
+          "finding": "ADR Consequences section overstates the change to the Stop hook's fallback behavior.",
+          "suggestion": "Reword to describe the narrowed-but-not-eliminated inert update-step call.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T00:50:46.018457+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency and ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A driven run mid-flight always has a confident phase_tasks[] signal for its true current phase, so the v1 current_step fallback is only reached once the whole pipeline is done. — recover_phase_task(force_status='skipped') terminalizes the frontier task WITHOUT planning a successor (unlike complete_phase_task, which always plans one under the same lock). A driven config can persist with every present phase_tasks[] entry finished, pipeline not fully covered, no entry yet for the true next phase -- indistinguishable by shape from the already-accepted s1 hybrid/standalone case.",
+          "suggestion": "Gated the derivation on schemaVersion (written on every driven v2 run, never on v1-only configs): when phase_tasks[] evidence exists but no frontier entry is found AND schemaVersion is present, derive current as the first pipeline-order phase not yet completed, even without its own phase_tasks[] entry. The untagged hybrid-config case (no schemaVersion) is unaffected and still falls through, preserving s1's existing test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling and blast radius",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: update_build_dashboard.py's dropped in_split_loop guard is safe because 'a phase with no matching phase_tasks[] entries yet for the current split already reads pending here, so the same staleness cannot occur'. — phase_state_machine.next_phase_task plans only ONE split ahead (build/A done -> plans plan/B, not build/B). Mid-way through split B's plan phase, phase_tasks[] holds only split A's finished build entry, all in FINISHED_STATUSES -- _phase_tasks_status('build', ...) returns 'complete' even though split B's build has not started, flipping generate_dashboard to the all-splits-done Build Summary view prematurely. The docstring's 'cannot occur' claim was false.",
+          "suggestion": "_phase_tasks_status now requires, for plan/build specifically, that every name in splits_frozen has a matching finished entry before returning 'complete' -- otherwise 'in_progress'. Two regression tests added confirming Build Sections (not Build Summary) renders while a later split's build is still ahead, and Build Summary correctly renders once every frozen split has a finished build entry.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary and contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: state.py's fallback gate mirrors the two hooks' identical fallback gate. — state.py checks the phase_tasks-derived 'complete' condition BEFORE reading the v1 current_step fallback; the two hooks read the v1 fallback immediately when current is None, with no equivalent 'complete' pre-check (they have no terminal 'complete' return value to protect). This is not actually a behavioral divergence that produces wrong answers -- state.py's ordering exists because IT alone has a 'complete' return value to protect from a stale v1 read; the hooks have no such value.",
+          "suggestion": "Docstring language software already describes each reader's own contract accurately (not literally identical wording); no code change warranted. Treated as a documentation-precision note, not a functional gap.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary and contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: test_detect_phase_falls_back_to_heuristic_when_next_phase_not_yet_planned proves the partial-phase_tasks[] case falls through to the config heuristic. — After the code-review fix restored the v1 fallback, the fixture's stale current_step='build' is returned before the heuristic is ever consulted, and happens to agree with the heuristic's own answer -- the test cannot distinguish the two paths.",
+          "suggestion": "Not fixed in this pass -- the fixture's current_step and the heuristic answer coincidentally agree ('build') in every variant tried; distinguishing them would require diverging the fixture from its own documented intent (a standalone build in progress). Left as a known test-precision gap, not a functional one -- the new test_untagged_run_with_same_shape_does_not_derive_next_phase in test_state.py directly pins the schemaVersion-gated boundary this doubt was really probing.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T01:19:30.938513+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/lib/state.py` (~line 100, `detect_current_phase` primary block)",
+          "line": null,
+          "finding": "The spec and the diff's own documentation (`docs/hooks-and-pipeline.md`, new \"Sub-iterate s3\" note) state that `state.detect_current_phase` follows the phase_tasks[]-primary + v1-fallback shape — \"fall back to `current_step`/`completed_steps` only when `phase_tasks[]` gives no confident signal\". But the code does not fall back to `current_step`/`completed_steps` at all: when `_phase_tasks_progress` returns `None`, it goes straight to the build-config heuristic. The old `current = run.get(\"current_step\")` read was deleted rather than demoted to a fallback. The diff's own docstring for `detect_current_phase` even still says the fallback covers \"a driven run with no confident phase_tasks[] signal\" — but a standalone run's live `current_step` (advanced by `orchestrator.py update-step`, which this same diff's doc text explicitly calls \"the ONLY thing that ever advances `current_step`\" for standalone users) is silently ignored. Note the two hooks (`generate_handoff_on_stop.py`, `suggest_iterate.py`) implement the fallback correctly — only `state.py` dropped it.",
+          "suggestion": "In `detect_current_phase`, after the phase_tasks miss, restore `current = run.get(\"current_step\")` (and the completed-steps read for the \"complete\" check) before falling to the config heuristic, matching the two hooks.  2. Category: regression | Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/lib/state.py` (the `pipeline and completed and set(pipeline).issubset(completed)` line)",
+          "line": null,
+          "finding": "For a v1-only standalone config whose `completed_steps` covers the whole pipeline (the old `test_detect_phase_complete` case, rewritten in this diff), `detect_current_phase` can now never return `\"complete\"` — `completed` comes only from `phase_tasks[]`, which is absent, so the run falls through to the section heuristics and returns a phase name like `\"build\"` instead. The diff rewrote that test to only exercise the phase_tasks variant, hiding the regression. This is a direct consequence of finding 1.",
+          "suggestion": "Restore the `completed_steps`-based complete check as the v1 fallback path.  3. Category: edge-case | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/update_build_dashboard.py`, `_phase_tasks_status",
+          "line": null,
+          "finding": "\"in_progress\"` is returned only when a status lands in `FAILED_STATUSES | INTERRUPTED_STATUSES`. If `handoff_phase_status` does not include a plain `in_progress` status in those sets (naming strongly suggests it may not), a genuinely running phase renders as \"pending\". The new tests (`\"| Test | in progress |\"`) would catch this if the sets are wrong, so this is contingent — but the aggregation logic is asymmetric with the other three readers (which treat any non-finished entry as live) and deserves an explicit assertion that `in_progress` maps into the \"live\" branch.",
+          "suggestion": "Either add `in_progress` to the explicit check or add a unit test on the set contents pinning `status_of`/`FAILED_STATUSES` semantics.  4. Category: regression | Severity: low (spec-acknowledged)",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/update_build_dashboard.py`, `build_phase_complete` / `test_phase_complete",
+          "line": null,
+          "finding": "For standalone/v1 configs with no `phase_tasks[]`, Build Summary and Test Results sections now never render, where `completed_steps` previously drove them. The doc note explicitly declares this intentional (\"renders every phase pending\"), so it's flagged here only so the behavioral break for pre-v2 users is a conscious decision, not an accident.",
+          "suggestion": "Confirm this display regression is accepted; if not, treat \"no phase_tasks at all\" as a fall-through to `completed_steps` for these two booleans.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[update_build_dashboard.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/scripts/tools/update_build_dashboard.py:113)",
+          "line": null,
+          "finding": "_phase_tasks_status()` never recognizes a normal `in_progress` task as in progress. It only returns `\"in_progress\"` for failed or interrupted statuses, so active phases render as `pending`; the new dashboard tests expecting `in progress` would fail.",
+          "suggestion": "Include the active status set (or explicitly `status == \"in_progress\"`) in this condition before falling back to `None`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[generate_handoff_on_stop.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/scripts/hooks/generate_handoff_on_stop.py:317)",
+          "line": null,
+          "finding": "The v1 fallback runs whenever `current_step` is `None`, even if `phase_tasks[]` provided evidence such as completed phases. This contradicts the stated “only when ... no confident signal at all” rule. During the interval after a phase task is marked done and before its successor task is materialized, it can use stale `current_step`/`completed_steps` and incorrectly invoke phase completion again.",
+          "suggestion": "Have the helper expose whether any valid phase-task evidence exists, and use v1 fields only when there is none—not merely when no incomplete task is present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[suggest_iterate.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/scripts/hooks/suggest_iterate.py:167)",
+          "line": null,
+          "finding": "The same `current_step is None` fallback reintroduces stale v1 routing when `phase_tasks[]` contains only completed, already-materialized phases. A prompt in that lifecycle transition can be evaluated against the wrong phase.",
+          "suggestion": "Apply the same explicit “no phase-task evidence” guard as the handoff hook.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "[test_generate_handoff_on_stop.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/tests/test_generate_handoff_on_stop.py:21)",
+          "line": null,
+          "finding": "The added tests exercise `_phase_tasks_progress()` only; none verifies the hook’s fallback decision when phase tasks contain completed evidence but no current task. Thus the stale-v1 fallback defect passes the new tests.",
+          "suggestion": "Add integration tests for both hooks with a done-only `phase_tasks[]` set plus contradictory v1 fields, asserting those fields are not used.  Overall: ship-with-fixes. The phase-task migration is mostly in place, but dashboard active-status rendering and the hooks’ fallback condition need correction first.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T00:06:50.904416+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: spec | Severity: high**\nFile: `shared/scripts/lib/state.py` (~line 100, `detect_current_phase` primary block)\nFinding: The spec and the diff's own documentation (`docs/hooks-and-pipeline.md`, new \"Sub-iterate s3\" note) state that `state.detect_current_phase` follows the *phase_tasks[]-primary + v1-fallback* shape — \"fall back to `current_step`/`completed_steps` only when `phase_tasks[]` gives no confident signal\". But the code does **not** fall back to `current_step`/`completed_steps` at all: when `_phase_tasks_progress` returns `None`, it goes straight to the build-config heuristic. The old `current = run.get(\"current_step\")` read was deleted rather than demoted to a fallback. The diff's own docstring for `detect_current_phase` even still says the fallback covers \"a driven run with no confident phase_tasks[] signal\" — but a standalone run's live `current_step` (advanced by `orchestrator.py update-step`, which this same diff's doc text explicitly calls \"the ONLY thing that ever advances `current_step`\" for standalone users) is silently ignored. Note the two hooks (`generate_handoff_on_stop.py`, `suggest_iterate.py`) implement the fallback correctly — only `state.py` dropped it.\nSuggestion: In `detect_current_phase`, after the phase_tasks miss, restore `current = run.get(\"current_step\")` (and the completed-steps read for the \"complete\" check) before falling to the config heuristic, matching the two hooks.\n\n**2. Category: regression | Severity: medium**\nFile: `shared/scripts/lib/state.py` (the `pipeline and completed and set(pipeline).issubset(completed)` line)\nFinding: For a v1-only standalone config whose `completed_steps` covers the whole pipeline (the old `test_detect_phase_complete` case, rewritten in this diff), `detect_current_phase` can now never return `\"complete\"` — `completed` comes only from `phase_tasks[]`, which is absent, so the run falls through to the section heuristics and returns a phase name like `\"build\"` i […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: [update_build_dashboard.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/scripts/tools/update_build_dashboard.py:113)\n- Finding: `_phase_tasks_status()` never recognizes a normal `in_progress` task as in progress. It only returns `\"in_progress\"` for failed or interrupted statuses, so active phases render as `pending`; the new dashboard tests expecting `**in progress**` would fail.\n- Suggestion: Include the active status set (or explicitly `status == \"in_progress\"`) in this condition before falling back to `None`.\n\n- Category: bug\n- Severity: medium\n- File: [generate_handoff_on_stop.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/scripts/hooks/generate_handoff_on_stop.py:317)\n- Finding: The v1 fallback runs whenever `current_step` is `None`, even if `phase_tasks[]` provided evidence such as completed phases. This contradicts the stated “only when ... no confident signal at all” rule. During the interval after a phase task is marked done and before its successor task is materialized, it can use stale `current_step`/`completed_steps` and incorrectly invoke phase completion again.\n- Suggestion: Have the helper expose whether any valid phase-task evidence exists, and use v1 fields only when there is none—not merely when no incomplete task is present.\n\n- Category: bug\n- Severity: medium\n- File: [suggest_iterate.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-bpp5hkg2/shared/scripts/hooks/suggest_iterate.py:167)\n- Finding: The same `current_step is None` fallback reintroduces stale v1 routing when `phase_tasks[]` contains only completed, already-materialized phases. A prompt in that lifecycle transition can be evaluated against the wrong phase.\n- Suggestion: Apply the same explicit “no phase-task evidence” guard as the handoff hook.\n\n- Category: test\n- Severity: low\n- File: [test_generate_handoff_on_stop.py](/C:/Users/SvenRoth/AppData […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "out-of-scope",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-08-16-fr-gate-test-evidence.json (s3-merge-base.diff L45-154, file deleted)",
+          "line": null,
+          "finding": "Diff deletes an unrelated iterate's evidence file that the s3 spec does not call for; does not affect any AC or the four-reader contract, so non-blocking, but it should be dropped from the s3 commit rather than merged as part of this sub-iterate — spec: .shipwright/planning/iterate/campaigns/p4-04-retire-write-once-steps/sub-iterates/s3-hooks-and-state.md:L3-5 (Scope: the four named readers)",
+          "suggestion": ".shipwright/planning/iterate/campaigns/p4-04-retire-write-once-steps/sub-iterates/s3-hooks-and-state.md:L3-5 (Scope: the four named readers)",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T00:50:42.576034+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T00:06:14.255045+00:00",
+      "disposition": "No internal arm for plan review exists (campaign-mode.md documented gap); external plan review covers this pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

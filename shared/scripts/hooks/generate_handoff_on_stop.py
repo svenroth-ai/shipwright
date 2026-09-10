@@ -26,6 +26,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 # Canonical greenfield/foreign predicate — single SSoT every hook shares.
 from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
+from lib.handoff_phase_status import phase_tasks_progress as _phase_tasks_progress  # noqa: E402
 from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
 
 
@@ -257,8 +258,18 @@ def main() -> int:
             run_config_path = project_root / "shipwright_run_config.json"
             if run_config_path.exists():
                 run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
-                current_step = run_config.get("current_step")
-                completed_steps = set(run_config.get("completed_steps", []))
+
+                # Primary: phase_tasks[] (v2) is authoritative for progress
+                # on a driven run — current_step/completed_steps are
+                # write-once at run creation and the v2 lifecycle never
+                # advances them (campaign p4-04-retire-write-once-steps,
+                # sub-iterate s3). Fall back to the v1 fields only when
+                # phase_tasks[] gives no confident signal (a standalone /
+                # non-driven config).
+                current_step, completed_steps = _phase_tasks_progress(run_config)
+                if current_step is None:
+                    current_step = run_config.get("current_step")
+                    completed_steps = set(run_config.get("completed_steps", []))
 
                 if current_step and _detect_phase_complete(current_step, project_root, completed_steps):
                     _run_phase_completion(project_root, current_step)

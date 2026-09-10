@@ -18,6 +18,11 @@ import re
 import sys
 from pathlib import Path
 
+_SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+from lib.handoff_phase_status import phase_tasks_progress as _phase_tasks_progress  # noqa: E402
+
 # Multilingual pattern registry — en + de now, extensible for fr/it later
 PHASE_PATTERNS: dict[str, dict[str, str]] = {
     "test": {
@@ -103,9 +108,17 @@ def handle_in_progress_pipeline(
     After test completion, non-phase prompts fall through to iterate so
     code-change requests don't get dropped while changelog/deploy/compliance
     remain pending.
+
+    Primary signal is ``phase_tasks[]`` (v2) — not the write-once
+    ``current_step``/``completed_steps`` fields, which never advance past
+    run creation on a driven run (campaign p4-04-retire-write-once-steps,
+    sub-iterate s3). Falls back to the v1 fields only when ``phase_tasks[]``
+    gives no confident signal (a standalone / non-driven config).
     """
-    current_step = run_config.get("current_step", "unknown")
-    completed_steps = set(run_config.get("completed_steps", []))
+    current_step, completed_steps = _phase_tasks_progress(run_config)
+    if current_step is None:
+        current_step = run_config.get("current_step", "unknown")
+        completed_steps = set(run_config.get("completed_steps", []))
     phase = detect_phase_intent(prompt)
 
     if phase and phase != current_step:

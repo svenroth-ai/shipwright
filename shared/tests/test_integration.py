@@ -18,6 +18,19 @@ def test_full_workflow(tmp_project):
         "completed_steps": ["project", "design", "plan"],
         "completed_splits": ["01-auth"],
         "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
+        # phase_tasks[] is the primary signal for detect_current_phase since
+        # campaign p4-04-retire-write-once-steps, sub-iterate s3 —
+        # current_step/completed_steps above are write-once and never advance
+        # on a driven run, so a real driven-run fixture needs this to still
+        # read "build" (the build_config below has its only section already
+        # "complete", so the OLD fields-are-gone heuristic fallback alone
+        # would derive "design" instead).
+        "phase_tasks": [
+            {"phase": "project", "status": "done"},
+            {"phase": "design", "status": "done"},
+            {"phase": "plan", "status": "done"},
+            {"phase": "build", "status": "in_progress"},
+        ],
     })
 
     # 2. Write project config with splits

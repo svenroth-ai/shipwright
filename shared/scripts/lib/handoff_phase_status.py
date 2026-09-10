@@ -16,6 +16,8 @@ import rather than a wrong sentence in someone's handoff.
 """
 from __future__ import annotations
 
+from typing import Any
+
 # How each status renders once bucketed. A bucket name with no entry here is a
 # KeyError at import — see _STATUS_BUCKETS.
 _BUCKET_VERDICTS: dict[str, str] = {
@@ -88,3 +90,87 @@ def finished_verdict(status: str | None) -> str:
     if status is None:
         return "unknown"
     return _STATUS_VERDICTS.get(status, "no")
+
+
+def phase_tasks_progress(run_config: dict[str, Any]) -> tuple[str | None, set[str]]:
+    """``(current_phase, completed_phases)`` derived from ``phase_tasks[]``.
+
+    The single implementation shared by ``shared/scripts/lib/state.py``,
+    ``shared/scripts/hooks/generate_handoff_on_stop.py`` and
+    ``shared/scripts/hooks/suggest_iterate.py`` (campaign
+    p4-04-retire-write-once-steps, sub-iterate s3 code review — the three
+    callers had each carried a byte-for-byte copy).
+
+    ``phase_tasks[]`` is authority for progress on a driven (v2) run, not
+    the write-once ``current_step``/``completed_steps`` fields, which
+    ``config_factory`` stamps once at run creation and the v2 lifecycle
+    never advances. ``None`` current + an empty completed set mean "no
+    confident phase_tasks[] evidence AT ALL" (e.g. a v1-only standalone
+    config) — every caller falls back to ``current_step``/``completed_steps``
+    in that case, and ONLY that case: a phase counts as "current" the moment
+    it has ANY ``phase_tasks[]`` entry that isn't finished yet — including
+    one still ``backlog``/``awaiting_launch`` (queued, not yet claimed), not
+    only an active (``in_progress``/``failed``) one. External plan review
+    flagged an earlier version that required an ACTIVE status: a run
+    mid-transition (previous phase done, successor task materialized but not
+    yet claimed) would then read as "no confident signal" and fall back to
+    the very write-once fields this campaign retires, for what is otherwise
+    a perfectly healthy driven run.
+
+    A phase can hold MULTIPLE entries when it is split (``plan``/``build``
+    under ``splits_frozen``): it counts as complete only once every one of
+    them is ``done``/``skipped`` — mirrors
+    ``plugins/shipwright-compliance/scripts/lib/mermaid.py``'s
+    ``_phase_tasks_status`` per-phase aggregation for the completed-phases
+    half (that module duplicates rather than imports this one: it is
+    plugin-side and importing a shared-tree module from there would be the
+    ADR-045 cross-plugin ``lib``-namespace collision this module's own
+    callers are not subject to, since they already live under
+    ``shared/scripts/``).
+
+    Doubt review, sub-iterate s3: on a genuinely driven (v2) run,
+    ``recover_phase_task(force_status="skipped")`` — the operator's manual
+    escape hatch, ``plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py``
+    — can terminalize the frontier task WITHOUT planning a successor (unlike
+    the normal ``complete_phase_task`` path, which always plans one under the
+    same lock). That persists a state where every PRESENT ``phase_tasks[]``
+    entry is finished but the pipeline is not fully covered and no entry
+    exists yet for the true next phase — indistinguishable, by shape alone,
+    from a hybrid/standalone config where a later phase is being run
+    ad hoc, uncorrelated with pipeline order (an already-accepted,
+    already-tested contract from sub-iterate s1 that must fall through to
+    each caller's own heuristic/v1 fallback, not assume pipeline order).
+    ``schemaVersion`` is the discriminator: ``config_factory`` writes it on
+    EVERY driven v2 run and never on a v1-only/standalone config, so it is
+    only when ``schemaVersion`` is present that "first pipeline phase not
+    yet completed" is derived as ``current`` even without its own
+    ``phase_tasks[]`` entry — closing the operator-recovery gap without
+    touching the untagged hybrid-config case sub-iterate s1's own tests pin.
+    """
+    tasks = run_config.get("phase_tasks")
+    if not isinstance(tasks, list):
+        return None, set()
+
+    by_phase: dict[str, list[str | None]] = {}
+    for task in tasks:
+        if not isinstance(task, dict):
+            continue
+        phase = task.get("phase")
+        if isinstance(phase, str):
+            by_phase.setdefault(phase, []).append(status_of(task))
+
+    completed = {
+        phase for phase, statuses in by_phase.items() if all(s in FINISHED_STATUSES for s in statuses)
+    }
+    pipeline_order = run_config.get("pipeline") or list(by_phase)
+    current = next(
+        (
+            phase
+            for phase in pipeline_order
+            if phase in by_phase and phase not in completed
+        ),
+        None,
+    )
+    if current is None and by_phase and run_config.get("schemaVersion"):
+        current = next((phase for phase in pipeline_order if phase not in completed), None)
+    return current, completed

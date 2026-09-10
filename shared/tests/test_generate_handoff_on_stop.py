@@ -7,11 +7,168 @@ exclusively by iterate-finalize. Tests use ``runtime_handoff_path`` to
 target the live-state path.
 """
 
+import io
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
+
+# The hook script path (declared here too so the direct-import unit tests
+# below don't depend on definition order with the subprocess-based ones).
+_HOOK_SCRIPT_DIR = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
+sys.path.insert(0, str(_HOOK_SCRIPT_DIR))
+import generate_handoff_on_stop as _ghs  # noqa: E402
+from generate_handoff_on_stop import _phase_tasks_progress  # noqa: E402
+
+
+class TestPhaseTasksProgress:
+    """``_phase_tasks_progress`` is the phase-completion fallback detector's
+    primary signal (campaign p4-04-retire-write-once-steps, sub-iterate s3) —
+    NOT the write-once ``current_step``/``completed_steps`` fields, which
+    ``config_factory`` stamps once at run creation and the v2 lifecycle
+    never advances."""
+
+    def test_no_phase_tasks_returns_none_and_empty(self):
+        assert _phase_tasks_progress({}) == (None, set())
+
+    def test_derives_current_and_completed_from_phase_tasks(self):
+        run_config = {
+            "pipeline": ["project", "design", "plan", "build", "test"],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "design", "status": "done"},
+                {"phase": "build", "status": "in_progress"},
+            ],
+        }
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "build"
+        assert completed == {"project", "design"}
+
+    def test_a_split_phase_is_complete_only_once_every_split_is(self):
+        run_config = {
+            "phase_tasks": [
+                {"phase": "build", "status": "done"},
+                {"phase": "build", "status": "in_progress"},
+            ],
+        }
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "build"
+        assert "build" not in completed
+
+    def test_ignores_stale_current_step_and_completed_steps(self):
+        """current_step/completed_steps claim something DIFFERENT from
+        phase_tasks[] here; this helper must not read them at all."""
+        run_config = {
+            "current_step": "project",
+            "completed_steps": [],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "test", "status": "in_progress"},
+            ],
+        }
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "test"
+        assert completed == {"project"}
+
+    def test_malformed_status_does_not_crash(self):
+        """A producer that writes a non-string status (list/dict) must not
+        raise — mirrors shared/scripts/lib/handoff_phase_status.status_of()'s
+        guard against an unhashable `x in frozenset` check. A malformed
+        status is neither finished nor absent, so the phase reads as
+        CURRENT (not confidently complete) rather than vanishing silently."""
+        run_config = {"phase_tasks": [{"phase": "build", "status": ["done"]}]}
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "build"
+        assert completed == set()
+
+    def test_backlog_only_phase_counts_as_current(self):
+        """A phase whose only phase_tasks[] entry is still queued
+        (backlog/awaiting_launch — materialized but not yet claimed) counts
+        as CURRENT, not merely 'no confident signal'. External plan review
+        (campaign p4-04-retire-write-once-steps, sub-iterate s3) flagged an
+        earlier version that required an ACTIVE status here: a run
+        mid-transition (previous phase done, successor task planned but not
+        yet claimed) would then fall back to the very write-once fields this
+        campaign retires, for an otherwise healthy driven run."""
+        run_config = {
+            "pipeline": ["project", "build"],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "build", "status": "backlog"},
+            ],
+        }
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "build"
+        assert completed == {"project"}
+
+
+class TestMainPhaseCompletionWiring:
+    """``main()``'s ordering (code review, campaign p4-04-retire-write-once-steps,
+    sub-iterate s3): a driven config's phase_tasks[]-derived current phase must
+    win over a stale ``current_step``, and the v1 fallback must still fire for a
+    standalone (no phase_tasks[]) config. Calls ``main()`` in-process (not via
+    the subprocess-based ``run_hook`` helper other tests in this file use) so
+    ``_run_phase_completion`` — the real producer, which shells out to
+    ``orchestrator.py update-step`` — can be stubbed at the module object rather
+    than actually invoked."""
+
+    @staticmethod
+    def _call_main(tmp_project: Path, monkeypatch, run_config: dict) -> list[tuple]:
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8",
+        )
+        calls: list[tuple] = []
+        monkeypatch.setattr(
+            _ghs, "_run_phase_completion",
+            lambda project_root, step: calls.append((project_root, step)),
+        )
+        monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(tmp_project))
+        monkeypatch.delenv("SHIPWRIGHT_RUN_ID", raising=False)
+        monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+        assert _ghs.main() == 0
+        return calls
+
+    def test_driven_config_uses_phase_tasks_current_not_stale_current_step(
+        self, tmp_project, monkeypatch,
+    ):
+        """A driven config whose write-once current_step still claims
+        'project' (config_factory's original stamp) must dispatch on the
+        phase_tasks[]-derived current phase ('build') instead. The build
+        config here has no sections yet, so _detect_phase_complete('build',
+        ...) is False and _run_phase_completion must NOT be called at all —
+        whereas the OLD current_step ('project') would have fired it, since
+        shipwright_project_config.json below reports status=complete."""
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps({"status": "complete"}), encoding="utf-8",
+        )
+        calls = self._call_main(tmp_project, monkeypatch, {
+            "pipeline": ["project", "design", "plan", "build", "test"],
+            "current_step": "project",
+            "completed_steps": [],
+            "status": "in_progress",
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "design", "status": "done"},
+                {"phase": "plan", "status": "done"},
+                {"phase": "build", "status": "in_progress"},
+            ],
+        })
+        assert calls == []
+
+    def test_v1_only_config_still_falls_back_and_fires(self, tmp_project, monkeypatch):
+        """No phase_tasks[] at all (standalone / pre-v2 config) — the v1
+        current_step fallback must still fire, exactly as before this
+        sub-iterate's migration."""
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps({"status": "complete"}), encoding="utf-8",
+        )
+        calls = self._call_main(tmp_project, monkeypatch, {
+            "current_step": "project",
+            "completed_steps": [],
+            "status": "in_progress",
+        })
+        assert calls == [(tmp_project, "project")]
 
 
 def _agent_docs_root(tmp: Path) -> Path:

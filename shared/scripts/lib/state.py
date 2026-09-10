@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import read_all_configs
+from .handoff_phase_status import phase_tasks_progress as _phase_tasks_progress
 
 
 def detect_current_phase(project_root: str | Path) -> str:
@@ -17,27 +18,48 @@ def detect_current_phase(project_root: str | Path) -> str:
     Returns one of: 'not_started', 'project', 'design', 'plan', 'build',
     'test', 'changelog', 'deploy', 'complete'.
 
-    Two detection paths:
-    1. Primary: orchestrator's current_step (when /shipwright-run is used)
-    2. Fallback: heuristic from phase-specific configs (standalone invocation)
+    Three detection paths, in order:
+    1. Primary: phase_tasks[] (v2) — the orchestrator's per-phase task
+       list, authoritative for progress within a driven (/shipwright-run)
+       run.
+    2. Secondary: the write-once ``current_step`` field, ONLY when
+       phase_tasks[] gave no confident signal at all (a standalone/v1-only
+       run, or an adopted-then-standalone repo whose established-at-
+       adoption entries are all finished). ``current_step`` is stamped
+       once at run creation (config_factory) and the v2 lifecycle never
+       advances it, so a driven run always has a confident phase_tasks[]
+       answer before this is reached — code review, campaign
+       p4-04-retire-write-once-steps, sub-iterate s3: an earlier version of
+       this migration dropped this path entirely, regressing every
+       standalone run past ``build`` (whose config heuristic below cannot
+       express test/changelog/deploy) to misreporting "build". Mirrors
+       ``shared/scripts/hooks/generate_handoff_on_stop.py`` and
+       ``suggest_iterate.py``'s identical fallback gate.
+    3. Tertiary: heuristic from phase-specific configs (only when the run
+       config itself has no usable ``current_step`` either, or there is no
+       run_config at all).
     """
     configs = read_all_configs(project_root)
 
-    # Primary: use orchestrator's current_step (authoritative when present)
     run = configs["run"]
     if run:
-        current = run.get("current_step")
+        current, completed = _phase_tasks_progress(run)
         if current:
             return current
-        # All pipeline steps completed
         pipeline = run.get("pipeline", [])
-        completed = run.get("completed_steps", [])
-        if pipeline and set(pipeline).issubset(set(completed)):
+        if pipeline and completed and set(pipeline).issubset(completed):
             return "complete"
 
-    # Fallback: heuristic for standalone invocation (no run_config or
-    # run_config without current_step). Check in-progress phases first,
-    # then derive next step from completed phases.
+        current_step = run.get("current_step")
+        if current_step:
+            return current_step
+        completed_steps = set(run.get("completed_steps", []))
+        if pipeline and set(pipeline).issubset(completed_steps):
+            return "complete"
+
+    # Tertiary fallback: heuristic for a run_config with no usable
+    # current_step either, or no run_config at all. Check in-progress
+    # phases first, then derive next step from completed phases.
     build = configs["build"]
     if build.get("sections"):
         sections = build["sections"]
