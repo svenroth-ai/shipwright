@@ -63,7 +63,7 @@ def resolve_reader_divergence(
 
 def resolve_new_frs_without_criteria(
     result, *, head_active_ids: set[str], base_active_ids: set[str],
-    base_fr_digests: dict[str, str], head_minted,
+    base_fr_digests: dict[str, str], head_minted, no_spec_was_read: bool = False,
 ) -> None:
     """Populate ``result.new_frs_without_criteria`` (arm 2 — appends in place).
 
@@ -80,6 +80,16 @@ def resolve_new_frs_without_criteria(
     blast-radius mistake round 3 fixed for the divergence guard. "New" is not
     answerable without a base to be new relative to, so it is not answered.
 
+    ``no_spec_was_read`` is the SAME suppression for a second, independent null
+    case (Stage-2 code review, medium; found during build): neither manifest
+    naming a `spec_path` means `base_fr_digests` and `head_minted` are empty
+    NOT because the base genuinely has no criteria, but because no spec text
+    was ever scanned. Without this guard, a base manifest that DOES carry
+    active requirements makes every head-only active FR read as
+    `new_frs_without_criteria` -- "states no acceptance criterion" asserted
+    from a document nobody read, the exact blast-radius mistake this
+    suppression already exists for one call up.
+
     Same precedence as ``result.reader_divergence``: an FR already reported by
     arm 1 (`unminted_changed`) is NOT "states no acceptance criterion" -- it
     states one or more, unminted. Without this exclusion a brand-new FR
@@ -89,6 +99,11 @@ def resolve_new_frs_without_criteria(
     this gate is exactly this shape -- an FR hand-authored before running the
     minter).
     """
+    if no_spec_was_read:
+        # The top-level "neither manifest names a spec_path" warning already
+        # explains why the change set is trivially empty; a second warning here
+        # would only repeat it.
+        return
     diverged = set(result.reader_divergence)
     unminted_frs = {fr for fr, _ in result.unminted_changed}
     if base_active_ids:

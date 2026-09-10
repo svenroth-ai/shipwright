@@ -1489,6 +1489,31 @@ item 6's "eight", and §12.3's addendum — plus one non-blocking observation (�
 cases" understating the tools root by 3 after findings 1/3/5's new tests), fixed here as part of the
 same pass since it was a real, checkable drift rather than a judgment call.
 
+### 12.1k Stage-1 round 14 (fresh, PASS) → Stage-2 code review (fresh, second pass) — PASS-WITH-FINDINGS
+
+**Round 14 PASSED** — independently re-verified all four round-13 corrections against the live tree
+(module count, `_keystone_core.py`'s line count, both F11-ledger evidence strings) and found no new
+drift from that commit's own edits.
+
+**Stage-2's second pass then ran against the same diff — PASS-WITH-FINDINGS, 1 medium + 6 low + 2
+nits, nothing blocking.** All prior-round fixes (findings 1, 3, 5-10, 13-14 of §12.1i) were
+independently re-derived as genuinely correct, not just plausible — including that finding 5's new
+test reaches the intended branch (an FR-heading-only collision with zero `[ACnn]` markers, so only
+`head_fr_digest_from` can fire) and that both extractions are clean (no leftover imports, no broken
+re-exports, no orphaned code).
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | The empty-`spec_paths` degraded mode (finding 3, §12.1i) warns but did not suppress arm 2 (`new_frs_without_criteria`): with a NON-empty base manifest and no spec read at all, every head-only active FR HARD-blocked as "states no acceptance criterion" from a document nobody read — the same blast-radius mistake the existing `base_manifest_absent` suppression already exists to prevent, one call away. | **Fixed.** `resolve_new_frs_without_criteria` gained a `no_spec_was_read` parameter, short-circuiting the arm exactly like the empty-base-manifest case (no second warning — the existing top-level one already explains why). New regression test uses a base manifest with a real active requirement plus a head-only new one, both with no spec_path, to exercise the risky combination the finding-3 test never touched. |
+| 2 | low | The `::warning::` line for `removed_with_bindings` contained `§` (design §7); `ensure_utf8_stdout()` pins stdout only, and Windows stderr on a codepage that cannot encode it would turn a legitimate clean exit 0 into a bogus `unexpected gate fault` exit 2 via this same round's own catch-all (finding 1, §12.1i). | **Fixed.** Reworded to "design doc section 7" — ASCII throughout, no codepage dependency. |
+| 3 | low | `UNBOUND` is declared as a `Finding`-reason-code constant but never appears on a `Finding`; its only use is as a JSON payload key, alongside sibling literal keys. | **Not fixed** — `_keystone_finding.py`'s own docstring already documents this dual role ("a consumer... matches on these exact strings" against the JSON, not just `Finding.kind`), so the wiring is consistent with the module's stated purpose, not a new coupling. |
+| 4 | low | The divergence→arm-2 precedence rule is implemented in both `_keystone_divergence.py` and (independently) `_keystone_core.py`. | **Not fixed**, per the reviewer's own explicit framing ("raise as advisory, not a required reduction") — both halves are already independently tested. |
+| 5 | low | The extracted `resolve_*` functions mutate their caller's `AcChangeSet` in place with an unstated call-order dependency. | **Not fixed** — cosmetic, no correctness risk; deferred for the same reason as findings 11/12 of the prior round. |
+| 6 | low | `test_the_step_name_ends_in_gate_so_the_ci_gate_guard_enrols_it` asserted a local constant against itself, never touching `check_ci_gate_coverage.is_gate_step` — deleting `"(gate)"` from `GATE_NAME_KEYWORDS` would leave it green while its own docstring's claim went false. | **Fixed.** Rewritten to build a real `Step` from the parsed `ci.yml` entry and assert `is_gate_step` classifies it true, plus that its `run` body alone matches no `GATE_COMMAND` — pinning that the `(gate)` suffix is genuinely load-bearing. |
+| 7 | low | `hooks-and-pipeline.md`'s ordinal callouts ("**A fourth**... step follows it", "**A fifth** step closes the job") went stale when finding 13's fix (§12.1i) grew the intro from three tabulated guards to four, without shifting these two later ordinals by one. | **Fixed** — "fourth" → "fifth", "fifth" → "sixth". |
+| 8 | nit | `Path(args.project_root).resolve()` re-wraps a value argparse's `type=Path` already produced. | **Not fixed** — cosmetic. |
+| 9 | nit | `_read_head_manifest`'s `except ValueError` also silently catches `UnicodeDecodeError`, mislabeling a byte-corrupt manifest as "not valid JSON". Already fail-closed; only the message is imprecise. | **Not fixed** — cosmetic, no behavior change; the outcome (exit 2, `ReadError`) is correct either way. |
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1496,7 +1521,7 @@ same pass since it was a real, checkable drift rather than a judgment call.
 | 1 | Spec Compliance | **FAIL → fixed, and this row is the one that was wrong** | Claimed "two named deviations" (Q1, Q1b) while the build had already taken a **third** — greenness-walking a bound `added` AC — reversing a rule ratified across four plan rounds and still asserted in three passages of this document. A **Stage-1 spec review rejected the build for it**; self-review had marked this row `pass`. Now: three deviations, the third named in §7, §8 row D3, §5.1's table and AC-K4's title, with its misattribution corrected in code and test. Q1/Q1b remain in the shipped module docstring. |
 | 2 | Error Handling | **fail → fixed twice, and the second time is the finding** | Found here first: `EmptyLinkWalk` escaping `main()` is a Python exit 1 — indistinguishable in a CI log from a real hard finding, so a gate defect would send an author to edit a spec that is fine. Now caught → exit 2 with JSON. External review then found the *same shape* at a different boundary (finding 3), and the Tier-3 PR review found it again two levels deeper (§12.1a finding B). The honest reading of this row: the class was identified early and then fixed **instance by instance** rather than enumerated. |
 | 3 | Security Basics | **pass** | No new trust artifact, no new persisted state, no network. `github.sha` is interpolated as a SHA (no injection surface). The base read is fail-closed three ways and its one permissive branch is surfaced under its own JSON key. |
-| 4 | Test Quality | **pass** | 55 + 48 cases (grew by three in the tools root over the Stage-2 code-review fix — findings 1, 3 and 5, §12.1i); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
+| 4 | Test Quality | **pass** | 56 + 48 cases (grew by four in the tools root over the two Stage-2 code-review passes — findings 1, 3 and 5 at §12.1i, finding 1 at §12.1k); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
 | 5 | Performance Basics | **pass** | Two spec parses and one extra `git show` per PR; no regeneration, no extra test execution. |
 | 6 | Naming & Structure | **pass** | Eight verifier modules plus the CLI, six extracted from the two the gate is built around (`_keystone_finding`, `_keystone_layer_gap`, `_keystone_base_manifest` from round 1-4; `_keystone_links`, `_keystone_criteria` added by the Stage-3 doubt-review fix, §12.1g; `_keystone_divergence` added by the Stage-2 code-review fix, §12.1i) — each under 300 lines by *extraction*, never by baselining. No new abstraction with one caller. |
 | 7 | Affected Boundaries (ADR-024) | **pass** | See §12.3 — all four boundaries probed or pinned, and (iii) moved from *reasoned* to *measured* this round. |
@@ -1553,6 +1578,13 @@ classes of defect, which is the argument for running both, not for either alone.
 fix commit did not think to touch. This is the class §12.1h named at rounds 9 and 10 recurring a
 third time, one extraction round later: a fix's side effects on unrelated bookkeeping (architecture
 snapshots, the F11 ledger) are as easy to miss as the fix's own direct documentation.
+
+**Round 14 (§12.1k) passed**, confirming round 13's four corrections held. Stage-2's SECOND pass —
+this time over code that had already survived one full spec/code/spec cycle — still found a genuine
+medium correctness bug (arm 2 firing from a document nobody read, in the very degraded mode the
+PRIOR Stage-2 pass's own finding 3 introduced the warning for) alongside six low findings and two
+nits. The pattern holds across seven rounds of alternating review now: Stage 1 and Stage 2 keep
+finding disjoint defect classes in the SAME code, including in fixes only one round old.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 

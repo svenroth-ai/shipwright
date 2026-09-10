@@ -3425,7 +3425,7 @@ local invocation would grade the PR against execution claims nobody re-verified
 every workflow and job — a bespoke guard that lands in neither registry fails
 there, and a local command that stops matching CI's fails per-gate.
 
-**A fourth, deliberately non-blocking, step follows it: `Check traceability
+**A fifth, deliberately non-blocking, step follows it: `Check traceability
 manifest against a fresh regeneration`** (`shared/scripts/tools/
 ci_manifest_drift_check.py`, SPEC D8's second half). It regenerates
 `.shipwright/compliance/test-traceability.json` from this run's real, staged
@@ -3442,7 +3442,7 @@ allowlist entry for it would itself fail `stale_allowlist_entries()`, since
 the guard would find nothing loose to match it against. Advisory until proven
 reliable over several consecutive green PRs.
 
-**A fifth step closes the job — `Keystone AC gate (gate)`**
+**A sixth step closes the job — `Keystone AC gate (gate)`**
 (`shared/scripts/tools/check_keystone_ac_gate.py`, campaign REQ3.04c P3.6). It
 enforces one sentence: *a behaviour-changing PR must not merge without naming
 its changed acceptance criteria and re-running the tests bound to them, green,

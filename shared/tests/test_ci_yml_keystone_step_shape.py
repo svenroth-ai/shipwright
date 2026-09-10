@@ -18,6 +18,9 @@ from pathlib import Path
 
 import yaml
 
+from tools.check_ci_gate_coverage import GATE_COMMANDS, is_gate_step
+from tools.check_ci_gate_coverage import Step as _GateStep
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CI_YML = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
@@ -49,10 +52,20 @@ def test_the_step_exists_and_runs_the_real_gate_script():
 
 
 def test_the_step_name_ends_in_gate_so_the_ci_gate_guard_enrols_it():
-    """`check_ci_gate_coverage.GATE_NAME_KEYWORDS` contains "(gate)". Enrolment
-    is what makes a future `continue-on-error` on this step fail the CI-gate
-    guard instead of silently disarming the campaign's keystone."""
-    assert KEYSTONE_STEP_NAME.endswith("(gate)")
+    """Stage-2 code review, low: asserting the local ``KEYSTONE_STEP_NAME``
+    constant against its own literal never touches the real guard, so deleting
+    ``"(gate)"`` from ``GATE_NAME_KEYWORDS`` would leave this green while the
+    docstring's claim goes false. Drive the REAL classifier over the REAL
+    parsed step instead — and confirm the ``run`` body alone would not have
+    enrolled it, so the "(gate)" suffix is genuinely load-bearing here."""
+    step_dict = _keystone()
+    step = _GateStep(
+        workflow="ci.yml", job="python-checks", name=step_dict["name"],
+        run=step_dict.get("run", ""), uses=step_dict.get("uses", ""),
+        continue_on_error=bool(step_dict.get("continue-on-error", False)),
+    )
+    assert is_gate_step(step)
+    assert not any(cmd in step.run.lower() for cmd in GATE_COMMANDS)
 
 
 def test_the_step_has_no_continue_on_error():

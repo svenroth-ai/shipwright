@@ -241,8 +241,8 @@ def _run_gate(project_root: Path, args: argparse.Namespace) -> int:
             f"::warning::THE KEYSTONE GATE: {len(verdict.removed_with_bindings)} AC(s) with a "
             "test binding at base were removed in this PR: "
             f"{', '.join(f'{fr}/{ac}' for fr, ac in sorted(verdict.removed_with_bindings))}. "
-            "This does not block (see design §7); p3.7(b) is the hard gate for an orphaned "
-            "@covers tag.",
+            "This does not block (see design doc section 7); p3.7(b) is the hard gate for an "
+            "orphaned @covers tag.",
             file=sys.stderr,
         )
     if verdict.any_hard:

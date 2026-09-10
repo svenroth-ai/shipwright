@@ -119,6 +119,26 @@ def test_no_spec_path_in_either_manifest_warns_rather_than_reading_as_clean(repo
     assert any("spec_path" in w for w in cs.warnings)
 
 
+def test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base(repo):
+    """Stage-2 code review, medium. The prior test passes the SAME manifest as
+    head and base, which never exercises arm 2's risky combination: a base
+    manifest that DOES carry an active requirement, alongside a head-only
+    active FR, with NEITHER manifest naming a spec_path. Without the
+    ``no_spec_was_read`` suppression, `base_fr_digests` and `head_minted` are
+    empty because no spec text was ever scanned -- not because the base
+    genuinely has no criteria -- so the head-only FR would read as
+    `new_frs_without_criteria` (a HARD block) from a document nobody read."""
+    head = _git("rev-parse", "HEAD", cwd=repo)
+    base_manifest = {"requirements": {"ns::FR-01.01": {"id": "FR-01.01", "status": "active"}}}
+    head_manifest = {"requirements": {
+        "ns::FR-01.01": {"id": "FR-01.01", "status": "active"},
+        "ns::FR-02.01": {"id": "FR-02.01", "status": "active"},  # new at head, no spec_path
+    }}
+    cs = kd.ac_change_set(repo, head, head, head_manifest, base_manifest)
+    assert cs.is_empty
+    assert cs.new_frs_without_criteria == []
+
+
 # --------------------------------------------------------------------------
 # Cross-spec-path collision (Stage-3 doubt review, medium)
 # --------------------------------------------------------------------------

@@ -224,6 +224,7 @@ def ac_change_set(
         result, head_active_ids=_active_display_ids(head_manifest),
         base_active_ids=_active_display_ids(base_manifest),
         base_fr_digests=base_fr_digests, head_minted=head_minted,
+        no_spec_was_read=not spec_paths,
     )
     return result
 
