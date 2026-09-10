@@ -1348,12 +1348,12 @@ direct code reading before disposition:
 
 No second Stage-3 pass was run after the Doubt 1/2 fixes — outside this cascade's established pattern (doubt review runs once, after Stage 1+2 pass), and the fixes are narrow, each independently traced by hand and pinned by a test written to fail against the prior phrasing, per this build's standing discipline. Stage 1 and Stage 2 both re-run fresh against the resulting diff before merge, which is where a fix that broke something else would surface.
 
-### 12.1h Stage-1 rounds 8, 9 and 10 (each fresh) — REJECT, REJECT, REJECT
+### 12.1h Stage-1 rounds 8, 9, 10 and 11 (each fresh) — REJECT, REJECT, REJECT, REJECT
 
-The §12.1g doubt-review fix (round 8's diff) has not yet re-PASSED Stage 1 as of round 10 — three
+The §12.1g doubt-review fix (round 8's diff) has not yet re-PASSED Stage 1 as of round 11 — four
 consecutive REJECTs, each for the same class this whole cascade keeps finding: a behavioural change
 (or a build-record edit correcting one) landing without every passage that describes it being
-updated to match, including — round 10 shows — passages the FIX ITSELF just added.
+updated to match, including — rounds 10 and 11 both show — passages the FIX ITSELF just added.
 
 **Round 8 — REJECT (2 hard, 6 medium/low).**
 
@@ -1388,6 +1388,19 @@ the outcome table but missed the identical table carried a second time, verbatim
 | 1 | medium | `.shipwright/agent_docs/architecture.md`'s always-loaded Layer-1 entry still said "five `verifiers/_keystone_*` modules" — correct before the Doubt-1/2 extraction, stale after it. | **Fixed** — updated to seven. |
 | 2 | medium | §7 and §12.1e each cited `_keystone_core.py`'s line count as 228 — correct after the Doubt-1/2 extraction, stale after round 9's own docstring-table fix added two more lines (230). | **Fixed** — both updated to 230. |
 | 3 | low | §12.1 had no section for Stage-1 rounds 8 and 9, though every prior round has one (including round 9's own REJECT, whose four fixes ship in the same diff as this omission); §12.3's rejection tally undercounted accordingly ("six times, across rounds 1-8"). | **Fixed** — this section (§12.1h) added; §12.3 updated to reflect every round through this one. |
+
+**Round 11 — REJECT (2 medium, both documentation echoes again — one a sibling-docstring
+disagreement, one this section's own tally lagging the round it was written to close).**
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | `test_keystone_ac_digest.py`'s sibling map routed AC-K9(e) and AC-K11 to `test_check_keystone_ac_gate.py`; both actually live in `test_keystone_gate_infra.py`, which its own docstring and `test_check_keystone_ac_gate.py`'s docstring both already stated correctly — three shipped docstrings, one of the three wrong. | **Fixed** — `test_keystone_ac_digest.py`'s sibling map corrected to route AC-K9(e)/AC-K11 to `test_keystone_gate_infra.py`, keeping AC-K13/K14 on `test_check_keystone_ac_gate.py`. |
+| 2 | medium | This section still ended at round 10 while round 10's own three fixes (this diff) constitute a fourth round with no record, and §12.3's tally still read "seven times, across rounds 1-10" — the verbatim recurrence of round 10's own finding 3, one round later. | **Fixed** — this row and the heading/opening paragraph above extended to cover round 11; §12.3 updated to "eight times, across rounds 1-11". |
+
+**Note for whoever reviews round 12: this section will need extending again if round 11 itself
+does not PASS — the same self-referential lag every prior round in this table has hit once. Check
+§12.3's tally against the ACTUAL count of REJECT rows in this table before accepting either as
+current.**
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
@@ -1432,8 +1445,8 @@ boundary, and it is met.
 where self-review found 1, 1, 0 defects while review found 0, 3, 6. This round: self-review found
 1 (the `EmptyLinkWalk` exit code), external review found 3 real ones and 2 correct scope
 objections, the Tier-3 PR review found 1 more, the **Stage-1 spec review rejected the build
-outright** for a code/document divergence none of the earlier passes looked for (seven times, across
-rounds 1-10 of this same PR — §12.1b through §12.1h), and the **Stage-3 doubt review found two more
+outright** for a code/document divergence none of the earlier passes looked for (eight times, across
+rounds 1-11 of this same PR — §12.1b through §12.1h), and the **Stage-3 doubt review found two more
 real defects in the shipped evaluator itself** — one **high** (a partial binding-count reduction
 silently passing the gate, §12.1g Doubt 1) and one **medium** (a cross-spec-file digest collision
 capable of erasing a genuine `changed` verdict, §12.1g Doubt 2) — after Stage 1 and Stage 2 had

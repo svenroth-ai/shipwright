@@ -9,8 +9,9 @@ wrong invocation here fails in the one direction the design forbids: silently,
 as "no ACs changed". Mocking the reader would test the mock.
 
 Its siblings: AC-K9(d)'s reader-divergence guard and AC-K15's drift pin are in
-``test_keystone_readers.py``; AC-K9(e)'s base-manifest three-way read, the exit
-codes and AC-K11/K13/K14 are in ``test_check_keystone_ac_gate.py``; the pure
+``test_keystone_readers.py``; AC-K13/K14 and the exit codes are in
+``test_check_keystone_ac_gate.py``; AC-K9(e)'s base-manifest three-way read and
+AC-K11's base resolution are in ``test_keystone_gate_infra.py``; the pure
 evaluator is in ``shared/tests/test_keystone_core*.py``.
 """
 
