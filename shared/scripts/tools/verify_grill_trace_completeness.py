@@ -44,6 +44,9 @@ prose judgment, same honesty guard as the four):
   guard's residual under-declaration bypass.
 - ``malformed_trace`` — a grill-trace JSON file could not be parsed/
   validated at all; reported as a red result instead of crashing the CLI.
+- ``malformed_context`` — the target project's ``CONTEXT.md`` could not be
+  read (e.g. a duplicate ``## Language`` heading from a hand-edit); reported
+  as a red result instead of crashing the CLI (doubt-reviewer, P4.2).
 
 **Honesty guard:** none of these checks read ``evidence``, ``fit_criterion``,
 or ``confirmed_by`` for *quality* — only for presence/shape. See
@@ -239,7 +242,20 @@ def run_all_checks(
     if not traces:
         return results
 
-    known_terms = collect_known_terms(glossary_path, context_path)
+    # A malformed CONTEXT.md (bad UTF-8, a duplicate '## Language' heading
+    # from a sanctioned post-interview hand-edit) must report as a red
+    # CheckResult too, not crash the CLI — same discipline as the
+    # read_trace_dir guard above (doubt-reviewer, P4.2 Stage-3 review).
+    try:
+        known_terms = collect_known_terms(glossary_path, context_path)
+    except (GrillTraceError, OSError, ValueError) as exc:
+        results.append(CheckResult(
+            "malformed_context", False,
+            f"could not read known terms from {context_path}: "
+            f"{type(exc).__name__}: {exc}",
+        ))
+        return results
+
     for trace in traces:
         results.append(check_blank_dimension(trace))
         results.append(check_greenfield_assumed(trace))

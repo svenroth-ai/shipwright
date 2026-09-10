@@ -195,3 +195,22 @@ precedent exactly. Result: `write_grill_trace.py` diff coverage 82%→97.9%
 (only the `if __name__ == "__main__":` guard remains uncovered, same as the
 P4.1 precedent), `_write_grill_trace_cli.py` at 100%; full-diff diff-coverage
 gate (`origin/main`→HEAD) now measures 91%, above the 80% CI gate.
+
+## Stage-3 Doubt Review (campaign, P4.2 round) — 2 real findings, fixed
+
+The campaign orchestrator's fresh-context, adversarial `doubt-reviewer` ran
+against the finalized sub-iterate (PR #705) and reported three findings.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | high | `run_all_checks()`'s own stated contract ("a malformed record must report as a red `CheckResult`... never crash the CLI") was met for `read_trace_dir()` but not for `collect_known_terms()` — `context_md_format.read_terms()` raises `ValueError` on a duplicate `## heading`, a state `interview-protocol.md` explicitly sanctions reaching via a post-interview hand-edit of `Relationships`/`Flagged ambiguities`, and the call was unguarded, uncaught in both `run_all_checks()` and the standalone CLI's `main()` | accepted-and-fixed — wrapped in `try`/`except (GrillTraceError, OSError, ValueError)`, mirroring the existing `read_trace_dir()` guard, reporting a new red `malformed_context` `CheckResult` instead of propagating. Fixed at the root layer even though `verifiers/project_checks.py`'s outer `except Exception` already protected the code-level `update-step` path — the standalone CLI convenience invocation (`step-8-completion.md`'s first check) was still exposed |
+| 2 | low/medium | `write_trace()` does a full wholesale overwrite of the record on every call (no merge, unlike `write_context_term.py`'s documented `_Avoid_`-preserving upsert referenced in the same doc) — `interview-protocol.md`'s "safe to re-run if a requirement is revisited" wording did not carry the "resend the full record" caveat, inviting the same false expectation the `CONTEXT.md` producer's actual merging behavior would create | accepted-and-fixed — one clarifying sentence added to `interview-protocol.md`'s grill-trace section, explicit about the asymmetry with the `CONTEXT.md` producer directly above it |
+| 3 | — | FR-Name/`requirement_key` slug-join identity gap | no action — already documented as a known, accepted limitation in `shared/grill-trace-format.md` §1/§5 with triage card `trg-da67adbd` already scoped |
+
+**Proof (new tests, not narrative):**
+`shared/tests/test_verify_grill_trace_completeness_integration.py::test_run_all_checks_reports_a_malformed_context_md_instead_of_crashing`
+confirmed red (raised `ValueError`, uncaught) against the pre-fix code before
+the fix landed, green after; `..._integration.py::test_cli_exits_non_zero_cleanly_on_a_malformed_context_md_instead_of_a_traceback`
+proves the standalone `uv run verify_grill_trace_completeness.py` invocation
+exits 1 cleanly (`"Traceback" not in stderr`) instead of printing a raw
+traceback.

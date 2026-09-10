@@ -9,6 +9,8 @@ guideline; the per-check unit tests live there.
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from tools.grill_trace_format import parse_trace
@@ -16,6 +18,8 @@ from tools.verify_grill_trace_completeness import (
     check_greenfield_assumed,
     run_all_checks,
 )
+
+_SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "tools" / "verify_grill_trace_completeness.py"
 
 
 def _payload(**overrides) -> dict:
@@ -112,6 +116,65 @@ def test_run_all_checks_reports_a_malformed_trace_file_instead_of_crashing(tmp_p
     assert len(results) == 1
     assert results[0].name == "malformed_trace"
     assert results[0].ok is False
+
+
+def test_run_all_checks_reports_a_malformed_context_md_instead_of_crashing(tmp_path):
+    """A hand-edited CONTEXT.md with a duplicate '## Language' heading makes
+    context_md_format.read_terms() raise ValueError (its own documented
+    failure contract) — interview-protocol.md sanctions hand-editing
+    CONTEXT.md's Relationships/Flagged-ambiguities sections after an
+    interview session, so this is a reachable state, not a theoretical one.
+    run_all_checks() must surface it as a red CheckResult, never let it
+    propagate out of the standalone CLI as a raw traceback (doubt-reviewer,
+    P4.2 Stage-3 review)."""
+    planning_dir = tmp_path / ".shipwright" / "planning"
+    _write_trace(planning_dir, _payload())
+    glossary = tmp_path / "glossary.md"
+    glossary.write_text("", encoding="utf-8")
+    context_path = tmp_path / "CONTEXT.md"
+    context_path.write_text(
+        "# CONTEXT.md — demo domain glossary\n\n"
+        "## Language\n\n**Order** — a confirmed purchase.\n\n"
+        "## Language\n\n**Widget** — a duplicate-heading hand-edit mistake.\n",
+        encoding="utf-8",
+    )
+
+    results = run_all_checks(
+        tmp_path, planning_dir=planning_dir, glossary_path=glossary, context_path=context_path,
+    )
+
+    by_name = {r.name: r for r in results}
+    assert by_name["malformed_context"].ok is False
+    assert "malformed_context" in by_name
+    # The remaining per-trace checks (blank_dimension, undefined_term, ...)
+    # never ran — known_terms couldn't be computed, so run_all_checks()
+    # returns early rather than guessing at a partial term set.
+    assert not any("undefined_term" in name for name in by_name)
+
+
+def test_cli_exits_non_zero_cleanly_on_a_malformed_context_md_instead_of_a_traceback(tmp_path):
+    """The exact command step-8-completion.md tells the agent to run as a
+    first convenience check (`uv run verify_grill_trace_completeness.py`)
+    must degrade to a clean non-zero exit, never a raw Python traceback,
+    when CONTEXT.md is malformed (doubt-reviewer, P4.2 Stage-3 review)."""
+    planning_dir = tmp_path / ".shipwright" / "planning"
+    _write_trace(planning_dir, _payload())
+    (tmp_path / "CONTEXT.md").write_text(
+        "# CONTEXT.md — demo domain glossary\n\n"
+        "## Language\n\n**Order** — a confirmed purchase.\n\n"
+        "## Language\n\n**Widget** — a duplicate-heading hand-edit mistake.\n",
+        encoding="utf-8",
+    )
+
+    proc = subprocess.run(
+        [sys.executable, str(_SCRIPT), "--project-root", str(tmp_path),
+         "--planning-dir", str(planning_dir)],
+        capture_output=True, text=True, check=False,
+    )
+
+    assert proc.returncode == 1
+    assert "Traceback" not in proc.stderr
+    assert "malformed_context" in proc.stdout
 
 
 def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist(tmp_path):

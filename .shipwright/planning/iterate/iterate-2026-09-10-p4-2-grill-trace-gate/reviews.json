@@ -141,13 +141,23 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": "shared/scripts/tools/write_grill_trace.py",
+          "line": 84,
+          "finding": "main() and _write_grill_trace_cli.py's CLI helpers had no direct/in-process test coverage, only subprocess-invoked tests invisible to the diff-coverage gate -- RESOLVED in round 2 by adding test_write_grill_trace_direct.py and test_write_grill_trace_cli_direct.py, verified at 91% diff coverage.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-10T07:08:33.670845+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T08:46:05.178404+00:00",
+      "disposition": null,
+      "recorded_by": "campaign orchestrator, session 7de9842e",
       "parse_status": null,
       "raw_excerpt": null
     },

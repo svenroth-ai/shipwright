@@ -169,7 +169,12 @@ terms" above — **never hand-assemble a shell argument from interview text**:
 
 This is the ONE producer for a grill-trace record — idempotent per
 `requirement_key`, safe to re-run if a requirement is revisited later in the
-same interview. **Step 8's completeness gate blocks phase completion** if
+same interview. **Unlike `write_context_term.py` above, this producer does
+not merge with the existing record** — each call replaces the entire file
+for that `requirement_key` wholesale. On a revisit, re-send the **complete**
+record (every dimension, `evidence`, `glossary_delta`, `terms_used`, not
+just the field that changed) — a partial payload silently drops any
+previously-recorded field it omits. **Step 8's completeness gate blocks phase completion** if
 any requirement's trace is missing, blank in a dimension, carries an
 `assumed` value in this surface, declares a used term that resolves nowhere,
 or answers `outcome` without a `fit_criterion` — see
