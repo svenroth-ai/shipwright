@@ -1,0 +1,83 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-10-keystone-verifier-sensitive-path",
+    "date": "2026-09-10",
+    "unit": {
+      "status": "passed",
+      "passed": 17791,
+      "total": 17850
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Pure Python regex/logic change to review_record_tier.SENSITIVE_PATH_RE, a backend PR-gate decision helper with no UI, API route, or startable stack surface. Covered by unit tests (16 in test_review_record_tier.py, 993 passed in the full shipwright-security suite) and F0's diff-coverage gate. No client/** or server-consumed-by-UI code touched."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an edit to the keystone AC gate's ci.yml-invoked entry point (check_keystone_ac_gate.py) forces mandatory review, matching an edit to ci.yml itself",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED (assertion added for shared/scripts/tools/check_keystone_ac_gate.py)"
+        },
+        {
+          "behavior": "an edit to any of the keystone gate's own _keystone_*.py verifier modules forces mandatory review",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED (assertions added for verifiers/_keystone_core.py and verifiers/_keystone_ac_digest.py)"
+        },
+        {
+          "behavior": "an unrelated verifier file outside the _keystone_ family (e.g. verifiers/common.py) stays waivable via skip-pr-review -- the new patterns are not over-broad",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED (negative assertion for verifiers/common.py)"
+        },
+        {
+          "behavior": "no existing SENSITIVE_PATH_RE alternative regressed (anchoring, other sensitive paths, waiver flow, CLI)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py -- all 16 tests PASSED; full plugin suite 993 passed, 7 skipped"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 1,
+        "covered_acs": 1
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-10-keystone-verifier-sensitive-path",
+    "commit": "66d57790d8a23fa0f4600e12241fa7542f23e172",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
