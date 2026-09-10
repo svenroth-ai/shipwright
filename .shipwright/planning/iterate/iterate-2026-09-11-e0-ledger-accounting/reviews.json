@@ -123,24 +123,89 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 144,
+          "finding": "An explicit --project-root can be silently overridden by the DEFAULT_LEDGER_RELPATH fallback when the resolved path is not a file, reporting a confident measurement of the wrong ledger.",
+          "suggestion": "Only fall back when --project-root was not explicitly passed; add coverage for both arms.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py",
+          "line": 88,
+          "finding": "test_backlog_line_excludes_enforced_and_no_oracle re-implements production filtering logic inline, making the backlog dict assertion tautological.",
+          "suggestion": "Drive the assertion through measure_mod.measure(text) on a small fixture ledger instead of re-deriving the expected dict.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 116,
+          "finding": "New '19 judgement' count sits two paragraphs above pre-existing 'six genuine judgement rows' text with no bridging clause.",
+          "suggestion": "Add one sentence reconciling 19 vs six.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 113,
+          "finding": "Header doesn't point to the test that enforces it staying accurate.",
+          "suggestion": "Add a pointer sentence naming test_real_ledger_header_matches_the_live_measurement.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-09-11-e0-ledger-accounting.test-results.json",
+          "line": 80,
+          "finding": "Behavior #10 disposition is 'tested' but its evidence string says it was only a confidence-calibration probe, not a committed test.",
+          "suggestion": "Either commit the probe as a real test or re-record the disposition as untested_testable.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 133,
+          "finding": "--help description is truncated mid-sentence and --project-root lacks a help string / Usage:: mention.",
+          "suggestion": "Add an explicit description= and help= text.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 18,
+          "finding": "Docstring paragraphs 2-3 restate the ledger header's rationale nearly verbatim (reducibility D, advisory, downgraded under G5 - different audiences).",
+          "suggestion": "Optional: trim to a pointer at the ledger paragraph.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-10T23:24:27.267679+00:00",
-      "disposition": "sub-iterate runner has no Agent tool and cannot spawn the spec/code/doubt reviewer cascade; the orchestrator runs it at campaign-mode.md 3f-bis before merge and promotes this row with --force",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T23:51:12.214746+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-10T23:24:27.382421+00:00",
-      "disposition": "sub-iterate runner has no Agent tool and cannot spawn the spec/code/doubt reviewer cascade; the orchestrator runs it at campaign-mode.md 3f-bis before merge and promotes this row with --force",
+      "completed_at": "2026-09-10T23:51:12.363875+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (no migrations/async/cross-plugin-imports/irreversible-ops surface); Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
@@ -236,15 +301,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-10T23:24:27.548308+00:00",
-      "disposition": "spec-reviewer is Stage-1 of the orchestrator-run cascade, not the runner's job; the orchestrator runs it at campaign-mode.md 3f-bis before merge and promotes this row with --force",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T23:45:08.869246+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
