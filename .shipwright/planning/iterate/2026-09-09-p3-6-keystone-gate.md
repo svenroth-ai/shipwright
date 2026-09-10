@@ -454,6 +454,12 @@ states this rule for its own reader; it binds here too):
   with a trivially-empty change set **and** a warning saying so (Stage-2 code review, medium),
   because a freshly regenerated head manifest naming zero spec paths is a wiring signal, not
   evidence of a clean PR.
+- Every named `spec_path` resolving to no content at either commit (a stale or mistyped path,
+  distinct from the case above — a path IS named, it just never reads as anything) → proceed with a
+  trivially-empty change set **and its own warning** (Stage-1 spec review, round 18, hard), because
+  the bullet above's warning is keyed on `not spec_paths` and does not fire here; without a warning
+  of its own this branch would suppress silently, the same failure mode this whole list exists to
+  close.
 
 ### 5.2 AC-1 — "a behaviour-changing PR without named ACs is blocked"
 
@@ -550,18 +556,22 @@ Spec-derived, per ruling Q1b's own principle. Pinned by
 > rather than silently inferred. Pinned by
 > `test_an_absent_base_manifest_suppresses_the_new_fr_arm_entirely`.
 
-**Fourth precedence rule (Stage-2 code review, medium; found during build) — arm 2 is ALSO
-suppressed when neither manifest names a `spec_path` for any requirement.** This is a SECOND,
-independent null case beyond the empty-base-manifest amendment above: `base_fr_digests` and
-`head_minted` are empty not because the base genuinely states no criteria, but because no spec text
-was ever scanned (§5.1's own "neither manifest names a `spec_path`" warning covers exactly this
-state). Without this exclusion, a base
-manifest that DOES carry active requirements makes every head-only active FR read as
-`new_frs_without_criteria` — "states no acceptance criterion" asserted from a document nobody read,
-the same blast-radius mistake the empty-base-manifest amendment already exists to prevent, one call
-away. No second warning is emitted; §5.1's existing one already explains why the change set is
-trivially empty. Pinned by
-`test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base`.
+**Fourth precedence rule (Stage-2 code review, medium; found during build; broadened Stage-1 spec
+review round 18, hard) — arm 2 is ALSO suppressed whenever no spec text was actually read: neither
+manifest names a `spec_path` for any requirement, OR every named `spec_path` resolved to no content
+at either commit.** This is a SECOND, independent null case beyond the empty-base-manifest amendment
+above: `base_fr_digests` and `head_minted` are empty not because the base genuinely states no
+criteria, but because no spec text was ever scanned — §5.1's own "neither manifest names a
+`spec_path`" bullet covers the first half of this state, and its sibling bullet (every named path
+resolving to no content) covers the second. Without this exclusion, a base manifest that DOES carry
+active requirements makes every head-only active FR read as `new_frs_without_criteria` — "states no
+acceptance criterion" asserted from a document nobody read, the same blast-radius mistake the
+empty-base-manifest amendment already exists to prevent, one call away. A warning is emitted for
+BOTH halves: §5.1's first bullet's warning covers the "no path named" half; the second half — which
+does NOT trigger that warning, since a path WAS named — carries its own warning, added specifically
+so this branch is not silent (round 18's rejection). Pinned by
+`test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base` (first half) and
+`test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_2` (second half).
 
 **Deliberately NOT an arm:**
 
@@ -1584,6 +1594,22 @@ is genuinely reachable, and `ci_gate_scan.parse_workflows`'s `continue_on_error`
 to confirm finding 4's claimed divergence from the test's naive `bool()` coercion. All five were fixed
 in one pass, none deferred: this is the first Stage-2 pass with nothing left to disclose-and-skip.
 
+### 12.1o Stage-1 round 18 (fresh) — REJECT (1 hard) → fixed
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | hard | §12.1n's fix broadened arm 2's fourth suppressor from "no `spec_path` named" to "no spec text actually read" (also covering a named `spec_path` resolving to no content at either commit), but §5.2's Fourth precedence rule paragraph still stated only the narrower original trigger. Worse, its closing claim — "no second warning is emitted; §5.1's existing one already explains why" — became FALSE by this same broadening: in the newly-covered branch a `spec_path` IS named, so §5.1's `not spec_paths` warning never fires, and arm 2 was suppressed with an entirely empty `warnings` list. A silent suppression, contradicting §5.1's own governing rule the paragraph itself cites. Third recurrence of this exact class (§12.1l finding 1, §12.1m finding 1), now on the same paragraph a third time. | **Fixed two ways, matching each half of the defect.** (1) Code: `_keystone_ac_digest.py` now emits its own warning when `spec_paths` is non-empty but `spec_text_was_read` is False, closing the silence the reviewer found. (2) Doc: §5.1 gained a fifth never-silent bullet for this branch; §5.2's Fourth precedence rule paragraph restated to the actual two-disjunct trigger, with the "no second warning" claim corrected to describe which warning covers which half. The new test in `test_keystone_ac_digest_never_silent.py` now asserts the warning is present, rather than only asserting the arm is suppressed. |
+
+The reviewer's own reasoning was adopted directly rather than re-derived from scratch: the finding
+named both the exact defect (a false claim about warning coverage) and the exact remedy (emit a
+second warning, which is what §5.1's "silence is worse than over-firing" principle already argues
+for) in the same report, so the fix is the reviewer's own suggested alternative, not an independent
+invention. A non-blocking observation from the same round — a stale test-count evidence string in
+`iterate-2026-09-09-p3-6-keystone-gate.test-results.json` (pre-existing, not caused by this commit,
+and explicitly flagged by the reviewer as outside this REJECT) — was deliberately left untouched:
+that file is this run's frozen F5 evidence snapshot, not a live document, and revising it after the
+fact to match later counts would misrepresent what F5 actually observed at the time it ran.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1680,6 +1706,17 @@ rewrite and a missing regression test for round-14's own stderr-ASCII fix. That 
 pass over already-twice-reviewed code still found a genuine (if low-likelihood) false-block gap is
 this cascade's clearest evidence yet that "no blocking findings" is a property of a specific diff at
 a specific round, never a property the code earns once and keeps.
+
+**Round 18 (§12.1o) rejected the fix that closed round 17's own gap — a twelfth rejection, across
+rounds 1-18 now** — 1 hard defect, the THIRD time this exact class (a behavioural broadening landing
+without its §5.2 normative statement following) has hit the SAME paragraph (§12.1l finding 1,
+§12.1m finding 1, now this). Fixed by adopting the reviewer's own diagnosis and suggested remedy
+directly: the newly-broadened suppression branch was silent because it fell outside both existing
+warnings, so it now carries its own, and §5.2's paragraph states the real two-disjunct trigger
+instead of the narrower one that shipped in round 17. Three rejections on one paragraph is itself a
+data point: a normative statement that keeps drifting behind its own implementation is a sign the
+implementation is still moving faster than the design section can be trusted to track it by hand,
+not evidence that any individual round's fix was careless.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 

@@ -204,6 +204,20 @@ def ac_change_set(
         base_unminted |= b_unminted
         base_fr_digests.update(criteria_digests(base_text))
 
+    if spec_paths and not spec_text_was_read:
+        # Named, but every one of them resolved to no content at either commit
+        # (a stale or mistyped `spec_path`) -- the same null case as the empty
+        # `spec_paths` warning above, one layer deeper, and just as silent
+        # without a warning of its own (Stage-1 spec review, round 18, hard;
+        # found during build): the top warning is keyed on `not spec_paths` and
+        # does not fire here, so this branch was suppressing arm 2 with an
+        # otherwise-empty `warnings` list.
+        result.warnings.append(
+            f"{len(spec_paths)} spec_path(s) named ({', '.join(spec_paths)}) but none resolved "
+            "to any content at either commit; the per-AC change set is trivially empty because "
+            "there is nothing to compare, not because nothing changed."
+        )
+
     for key, head_digest in head_minted.items():
         base_digest = base_minted.get(key)
         if base_digest is None:

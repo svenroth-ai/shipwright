@@ -146,7 +146,11 @@ def test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_
     commits (a stale or mistyped path, so `spec_text_at` returns `""` for
     each side, same as the no-path-named case) must suppress arm 2 exactly
     like the test above, not fall through to a false HARD block asserted
-    from a document that was never actually read."""
+    from a document that was never actually read. Unlike the test above, this
+    branch does NOT hit the top-of-function `not spec_paths` warning (a path
+    WAS named), so it needs -- and, since Stage-1 round 18 (hard), now has --
+    its OWN warning: silently suppressing here would repeat the exact defect
+    this suppression exists to prevent, one layer removed."""
     head = _git("rev-parse", "HEAD", cwd=repo)
     stale_path = "Spec/design/does-not-exist.md"
     base_manifest = {"requirements": {
@@ -159,6 +163,7 @@ def test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_
     cs = kd.ac_change_set(repo, head, head, head_manifest, base_manifest)
     assert cs.is_empty
     assert cs.new_frs_without_criteria == []
+    assert any("none resolved to any content" in w for w in cs.warnings)
 
 
 # --------------------------------------------------------------------------
