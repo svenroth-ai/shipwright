@@ -63,7 +63,7 @@ def discover_elicitation_reference_docs(root: Path) -> tuple[Path, ...]:
             continue
         try:
             body = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, OSError):
             continue
         if ELICITATION_SURFACE_MARKER in body:
             matches.append(path)
@@ -88,6 +88,6 @@ def doc_cites_the_module(doc: Path) -> bool:
     """
     try:
         body = doc.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
+    except (UnicodeDecodeError, OSError):
         return False
     return "requirement-elicitation.md" in body
