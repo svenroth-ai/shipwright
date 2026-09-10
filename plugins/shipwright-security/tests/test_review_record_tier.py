@@ -78,6 +78,13 @@ def test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths():
     # Load-bearing for THIS gate since iterate-2026-08-31-pr-review-deepseek-model:
     # a config-only drift here reds the required check the same as a lib edit.
     assert tier.decide([PATH, "shared/config/external_review.json"], ["skip-pr-review"], record, True)[0] is True
+    # The keystone AC gate's own verifier logic (trg-9967000f): an edit here must
+    # get the same scrutiny an edit to the ci.yml step invoking it gets.
+    assert tier.decide([PATH, "shared/scripts/tools/check_keystone_ac_gate.py"], ["skip-pr-review"], record, True)[0] is True
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/_keystone_core.py"], ["skip-pr-review"], record, True)[0] is True
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/_keystone_ac_digest.py"], ["skip-pr-review"], record, True)[0] is True
+    # A near-miss: a verifier file outside the `_keystone_` family stays waivable.
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/common.py"], ["skip-pr-review"], record, True)[0] is False
 
 
 def test_waiver_cannot_cover_a_change_to_a_suppression_or_hook_channel():
