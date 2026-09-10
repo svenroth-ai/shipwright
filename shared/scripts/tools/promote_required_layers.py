@@ -65,7 +65,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -74,6 +73,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from ci_execution_evidence import ExecutionEvidence, resolve_execution_evidence  # noqa: E402
+from ci_verified_anchor import resolve_verified_anchor  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from lib.fr_layer_cell_writer import (  # noqa: E402
     LayerCellWriteError,
@@ -99,16 +99,23 @@ from lib.layer_promotion_ledger import (  # noqa: E402
     load_ledger_with_snapshot,
     write_ledger,
 )
+from lib.manifest_at_commit import (  # noqa: E402
+    DEFAULT_MANIFEST_RELPATH,
+    ManifestReadError,
+    read_manifest_at_commit,
+    resolve_head_sha,
+)
+from lib.promotion_evidence_staleness import (  # noqa: E402
+    REASON_EVIDENCE_STALE_SINCE_ANCHOR,
+    changed_paths_between,
+    evidence_stale_since_anchor,
+)
 from tools.verifiers._layer_coverage_core import collision_display_ids  # noqa: E402
-
-DEFAULT_MANIFEST_RELPATH = ".shipwright/compliance/test-traceability.json"
 
 #: Named, not inlined, and monkeypatchable by tests -- longer than
 #: `file_lock`'s other short-append callers because this hold spans a full
 #: load-decide-write span.
 _LOCK_TIMEOUT_SECONDS = 10.0
-
-_GIT_TIMEOUT_SECONDS = 15
 
 
 class CommittedManifestReadError(Exception):
@@ -131,39 +138,19 @@ def _read_committed_manifest(project_root: Path) -> tuple[str, dict]:
     capture_committed_manifest`` — that function hardcodes the literal
     ``HEAD:`` ref with no commit parameter, so it cannot be pinned to the SHA
     this call already resolved.
+
+    Delegates the actual git plumbing to ``lib.manifest_at_commit`` (P3.4c) —
+    the SAME commit-pinned read this tool now also needs for a verified
+    ANCESTOR commit, never a second, independent implementation of "read a
+    manifest at an exact SHA." ``ManifestReadError`` is re-raised as this
+    module's own long-established ``CommittedManifestReadError`` so every
+    existing caller/catch site here is unaffected.
     """
     try:
-        rev = subprocess.run(  # nosec B603,B607 - fixed argv, shell=False
-            ["git", "-C", str(project_root), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=_GIT_TIMEOUT_SECONDS,
-            encoding="utf-8", errors="replace", check=False, shell=False,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise CommittedManifestReadError(f"could not run 'git rev-parse HEAD': {exc}") from exc
-    if rev.returncode != 0:
-        raise CommittedManifestReadError(f"'git rev-parse HEAD' failed: {rev.stderr.strip()}")
-    sha = rev.stdout.strip()
-    if not sha:
-        raise CommittedManifestReadError("'git rev-parse HEAD' returned an empty SHA")
-
-    try:
-        show = subprocess.run(  # nosec B603,B607 - fixed argv, shell=False
-            ["git", "-C", str(project_root), "show", f"{sha}:{DEFAULT_MANIFEST_RELPATH}"],
-            capture_output=True, text=True, timeout=_GIT_TIMEOUT_SECONDS,
-            encoding="utf-8", errors="replace", check=False, shell=False,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise CommittedManifestReadError(f"could not run 'git show {sha}:...': {exc}") from exc
-    if show.returncode != 0:
-        raise CommittedManifestReadError(
-            f"could not read {DEFAULT_MANIFEST_RELPATH!r} at {sha}: {show.stderr.strip()}"
-        )
-    try:
-        manifest = json.loads(show.stdout)
-    except ValueError as exc:
-        raise CommittedManifestReadError(f"manifest at {sha} is not valid JSON: {exc}") from exc
-    if not isinstance(manifest, dict):
-        raise CommittedManifestReadError(f"manifest at {sha} is not a JSON object")
+        sha = resolve_head_sha(project_root)
+        manifest = read_manifest_at_commit(project_root, sha, relpath=DEFAULT_MANIFEST_RELPATH)
+    except ManifestReadError as exc:
+        raise CommittedManifestReadError(str(exc)) from exc
     return sha, manifest
 
 
@@ -188,9 +175,37 @@ def _active_requirements(manifest: dict) -> dict[str, dict]:
 
 def plan_promotions(
     manifest: dict, ledger: dict, project_root: Path, evidence: ExecutionEvidence,
+    *, anchor_commit: str | None = None, anchor_manifest: dict | None = None,
+    changed_paths: set[str] | None = None,
 ) -> tuple[list[dict], dict[str, str]]:
     """One decision per active requirement, plus the exact spec.md content
     each decision was made against.
+
+    ``anchor_commit``/``anchor_manifest``/``changed_paths`` (P3.4c, additive
+    — every existing caller/test that omits them is unaffected): NOT
+    symmetric (code-reviewer, low). ``anchor_commit`` defaults to ``None``
+    here but the caller (``main()``) always passes a value — the commit
+    ``evidence`` was actually resolved against, which is ``manifest``'s own
+    commit unless the anchor fallback fired. ``anchor_manifest`` and
+    ``changed_paths`` default to (and, from the caller, stay) ``None``
+    unless that fallback fired — they are set together, ONLY when
+    ``evidence`` was resolved against a verified ANCESTOR of ``manifest``'s
+    own commit rather than that commit directly
+    (``ci_verified_anchor.resolve_verified_anchor`` fell back and found one).
+    ``anchor_manifest`` is the manifest as it existed AT the anchor commit
+    (never ``manifest``, which is HEAD's) — used to read each FR's bound
+    test files as CI actually exercised them. ``changed_paths`` is the ONE
+    ``git diff --name-only`` result between anchor and HEAD, computed ONCE by
+    the caller and reused for every FR here (never a second git call per
+    FR — see ``lib.promotion_evidence_staleness``'s own module docstring).
+    When set, a decision that would otherwise ``promote`` is downgraded to a
+    named ``skip`` if anything that could invalidate THIS FR's anchor
+    evidence changed since the anchor: its own bound test files, or its own
+    spec.md. ``anchor_commit`` is recorded on every decision's ``ci_evidence``
+    regardless (even when no anchor fallback happened — it is then simply
+    the same commit ``evidence`` was already resolved against), so the
+    ledger can always name the commit a promotion's evidence came from, not
+    only the CI run.
 
     ``evidence`` (round 2, restart): CI-confirmed per-FR ``tests``/
     ``coverage``, resolved ONCE by the caller for the whole run (never
@@ -315,6 +330,37 @@ def plan_promotions(
             live_required_layers=live_layers.get(fr_id),
             live_cell_has_non_canonical_content=live_has_residual.get(fr_id, False),
         )
+        # P3.4c: a `promote` decided from a verified ANCESTOR's evidence is
+        # only trustworthy if nothing that could invalidate THIS FR's
+        # evidence changed between the anchor and HEAD. Checked here, as a
+        # post-hoc override on `evaluate_fr`'s own output, deliberately —
+        # `evaluate_fr` stays the pure per-requirement evaluator its module
+        # docstring already commits to; staleness is a fact about the git
+        # history between two commits, not about the manifest node itself,
+        # so it belongs at this (impure) call site, not threaded into that
+        # function's branching. Downgrades `promote` to a named `skip` only
+        # — every OTHER outcome (skip/escalate) already reflects "this run's
+        # evidence did not clear the bar" regardless of whose commit it came
+        # from, so there is nothing to downgrade there.
+        if decision["action"] == "promote" and anchor_manifest is not None:
+            anchor_node = (anchor_manifest.get("requirements") or {}).get(manifest_key)
+            # Fail closed on every "cannot fully determine" case: see
+            # changed_paths_between's and evidence_stale_since_anchor's own
+            # docstrings for why (changed_paths is None, anchor_node is
+            # None, spec_paths is a union of anchor+HEAD, ci_node is passed
+            # alongside anchor_node so the guard checks what the anchor's CI
+            # evidence actually bound, not only the committed manifest).
+            spec_paths = {node.get("spec_path", "")}
+            if anchor_node is not None:
+                spec_paths.add(anchor_node.get("spec_path", ""))
+            stale = (
+                anchor_node is None or changed_paths is None
+                or evidence_stale_since_anchor(
+                    anchor_node, ci_node or {}, node, spec_paths, changed_paths,
+                )
+            )
+            if stale:
+                decision = {"fr": fr_id, "action": "skip", "reason_code": REASON_EVIDENCE_STALE_SINCE_ANCHOR}
         decision["spec_path"] = node.get("spec_path", "")
         # CHANGED (round 2): was `node` (the raw committed node, whose
         # coverage/tests are exactly the untrusted claim this restart exists
@@ -328,9 +374,13 @@ def plan_promotions(
         # "evidence exists locally but CI hasn't confirmed it yet" without
         # either becoming a different action/reason_code (p3.4c's own
         # "Honesty rule": reported, never asserted).
+        # `anchor_commit` (P3.4c, additive): the commit `evidence` was
+        # actually resolved against — a promotion whose provenance cannot be
+        # reconstructed is not evidence (see `layer_promotion_apply.
+        # record_ledger_entries`, which reads this back for the ledger).
         decision["ci_evidence"] = {
             "status": evidence.status, "run_id": evidence.run_id,
-            "fr_confirmed": ci_node is not None,
+            "fr_confirmed": ci_node is not None, "anchor_commit": anchor_commit,
         }
         # "Validated on content, not presence" (diff_risk_recheck) made real:
         # any FR with a prior ledger entry gets a report of whether today's
@@ -355,6 +405,8 @@ def _strip_internal(decision: dict) -> dict:
 
 def _plan_and_apply_locked(
     manifest: dict, project_root: Path, l_path: Path, run_id: str | None, evidence: ExecutionEvidence,
+    *, anchor_commit: str | None = None, anchor_manifest: dict | None = None,
+    changed_paths: set[str] | None = None,
 ) -> dict:
     """Runs inside the ledger's ``file_lock``: ``write_ledger``'s
     ``expected_snapshot`` compare-and-swap alone only narrows the race (its
@@ -381,7 +433,10 @@ def _plan_and_apply_locked(
         return {"exit_code": 2}
 
     try:
-        decisions, contents_by_path = plan_promotions(manifest, ledger, project_root, evidence)
+        decisions, contents_by_path = plan_promotions(
+            manifest, ledger, project_root, evidence,
+            anchor_commit=anchor_commit, anchor_manifest=anchor_manifest, changed_paths=changed_paths,
+        )
     except (OSError, LayerCellWriteError) as exc:
         print(json.dumps({"error": f"could not read a spec.md: {exc}"}))
         return {"exit_code": 2}
@@ -493,6 +548,78 @@ def main(argv: list[str] | None = None) -> int:
     # dry-run inspection is still informative when compared against real
     # committed structure.
     evidence = resolve_execution_evidence(sha, committed_manifest=committed_manifest, project_root=project_root)
+    # `anchor_commit` defaults to `sha` -- even when no anchor fallback ever
+    # runs, this is simply "the commit evidence was resolved against",
+    # recorded on every ledger entry so provenance can always be
+    # reconstructed (see `plan_promotions`'s own docstring).
+    anchor_commit: str | None = sha
+    anchor_manifest: dict | None = None
+    changed_paths: set[str] | None = None
+
+    if evidence.status == "unavailable":
+        # P3.4c ("Build B: anchor to the newest verified ancestor") — HEAD
+        # itself is not verified (the common steady state: any test-adding
+        # merge drifts `main`, closing the "tip is verified" window in about
+        # an hour). Before giving up, walk first-parent ancestors for the
+        # newest one CI DID verify, and see whether ITS execution evidence
+        # is still trustworthy for THIS tree. A query hiccup or an exhausted
+        # bound both degrade to keeping the ORIGINAL "unavailable" evidence
+        # unchanged (`anchor.status in ("unavailable", "error")` — never a
+        # promotion, never an exit-2: this fallback is a best-effort
+        # improvement layered on an already-safe default, not a new load-
+        # bearing check).
+        anchor = resolve_verified_anchor(sha, project_root=project_root)
+        if anchor.status == "found" and anchor.commit != sha:
+            # A local git hiccup on THIS optional path (reading the anchor's
+            # manifest, or diffing anchor..HEAD) degrades to the ORIGINAL
+            # tip "unavailable" (code-reviewer, medium) -- unlike the
+            # unconditionally-fatal committed-manifest-at-HEAD read above,
+            # there is a perfectly good fallback already in hand here: give
+            # up on the anchor, not on the run. Never exit 2 for a git
+            # subprocess fault on a best-effort improvement layered on an
+            # already-safe default.
+            try:
+                found_anchor_manifest = read_manifest_at_commit(project_root, anchor.commit)
+            except ManifestReadError:
+                found_anchor_manifest = None
+            if found_anchor_manifest is not None:
+                anchor_evidence = resolve_execution_evidence(
+                    anchor.commit, committed_manifest=found_anchor_manifest, project_root=project_root,
+                )
+                if anchor_evidence.status == "confirmed":
+                    found_changed_paths = changed_paths_between(anchor.commit, sha, project_root=project_root)
+                    if found_changed_paths is not None:
+                        evidence = anchor_evidence
+                        anchor_commit = anchor.commit
+                        anchor_manifest = found_anchor_manifest
+                        changed_paths = found_changed_paths
+                    # else: could not diff anchor..HEAD -- degrade, same as above.
+                # anchor_evidence.status in ("error", "unavailable") -> `evidence`
+                # stays the original tip "unavailable"; nothing to anchor to
+                # after all. Both degrade the same way (Stage-3 doubt review,
+                # medium — reversed from an earlier round of this same fix):
+                # `resolve_execution_evidence`'s `error` status is NOT
+                # reliably "this evidence actively contradicts itself" --
+                # most of its `error` returns ("could not resolve owner/repo",
+                # "could not list artifacts", "selected artifact could not be
+                # retrieved", "downloaded artifact is not a JSON object") are
+                # plain transient/operational faults on the DOWNLOAD path,
+                # indistinguishable here from a genuine content-binding
+                # mismatch without fragile prose-matching against `.detail`.
+                # Treating them as fatal made a best-effort fallback into a
+                # NEW hard, self-repeating exit-2 -- the SAME anchor commit is
+                # re-selected every run until it ages out of the walk's
+                # bound, so one network blip on an ancestor the operator did
+                # not even choose blocks every run against it, exactly the
+                # shape `ci_execution_evidence.py`'s own `_ZERO_SHA` design
+                # note already rejects elsewhere in this mechanism. Degrading
+                # loses the alarm for a genuine anchor-side integrity
+                # problem, but that anchor is simply abandoned either way --
+                # no promotion follows from a degrade, same as any other
+                # "give up on the anchor, not on the run" case here.
+        # anchor.status in ("unavailable", "error") -> `evidence` stays the
+        # original tip "unavailable".
+
     if evidence.status == "error":
         # OPERATIONAL failure, never a silent skip-all: `ci_by_fr = {}` on
         # ANY non-"confirmed" status would otherwise be indistinguishable
@@ -516,7 +643,10 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"error": str(exc)}))
             return 2
         try:
-            decisions, _contents_by_path = plan_promotions(eval_manifest, ledger, project_root, evidence)
+            decisions, _contents_by_path = plan_promotions(
+                eval_manifest, ledger, project_root, evidence,
+                anchor_commit=anchor_commit, anchor_manifest=anchor_manifest, changed_paths=changed_paths,
+            )
         except (OSError, LayerCellWriteError) as exc:
             print(json.dumps({"error": f"could not read a spec.md: {exc}"}))
             return 2
@@ -539,7 +669,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"error": str(exc)}))
         return 2
     try:
-        outcome = _plan_and_apply_locked(eval_manifest, project_root, l_path, args.run_id, evidence)
+        outcome = _plan_and_apply_locked(
+            eval_manifest, project_root, l_path, args.run_id, evidence,
+            anchor_commit=anchor_commit, anchor_manifest=anchor_manifest, changed_paths=changed_paths,
+        )
     finally:
         # file_lock's cleanup (`_release`) is exception-agnostic -- no need to
         # forward the real exc_info the generator never inspects.

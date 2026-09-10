@@ -131,3 +131,31 @@ def test_record_ledger_entries_names_the_ci_run_and_fingerprints_the_ci_sourced_
     assert entry["ci_run_id"] == 34316980804
     assert entry["evidence_fingerprint"] == evidence_fingerprint(ci_sourced_node)
     assert entry["evidence_fingerprint"] != evidence_fingerprint(committed_node)
+
+
+def test_record_ledger_entries_has_no_anchor_commit_when_decision_carries_none():
+    ledger = default_ledger()
+    node = {"id": "FR-01.01", "coverage": {"unit": "ok"}, "tests": {}}
+    decisions = [_promote_decision("FR-01.01", ["unit"], node)]
+
+    record_ledger_entries(ledger, decisions, run_id="iterate-test")
+
+    entry = ledger["decisions"]["FR-01.01"][-1]
+    assert "anchor_commit" not in entry
+
+
+def test_record_ledger_entries_names_the_anchor_commit_from_ci_evidence():
+    # P3.4c: `promote_required_layers.plan_promotions` sets
+    # `decision["ci_evidence"]["anchor_commit"]` to the commit evidence was
+    # actually resolved against -- this is what lets a later ledger reader
+    # see WHICH commit's tests ran, distinct from `ci_run_id` (which CI run).
+    ledger = default_ledger()
+    node = {"id": "FR-01.01", "coverage": {"unit": "ok"}, "tests": {}}
+    decision = _promote_decision("FR-01.01", ["unit"], node)
+    decision["ci_evidence"] = {"status": "confirmed", "run_id": 999, "fr_confirmed": True,
+                                "anchor_commit": "b" * 40}
+
+    record_ledger_entries(ledger, [decision], run_id="iterate-test")
+
+    entry = ledger["decisions"]["FR-01.01"][-1]
+    assert entry["anchor_commit"] == "b" * 40
