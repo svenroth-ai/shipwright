@@ -450,6 +450,10 @@ states this rule for its own reader; it binds here too):
   P3.4 mint pass cleanly.
 - `spec_text_at` → `None` at either side → **exit 2** (git could not read a side), exactly as
   `changed_criteria_ids`' `ac_error` already does.
+- `_spec_paths` returning empty (no requirement in either manifest names a `spec_path`) → proceed
+  with a trivially-empty change set **and** a warning saying so (Stage-2 code review, medium),
+  because a freshly regenerated head manifest naming zero spec paths is a wiring signal, not
+  evidence of a clean PR.
 
 ### 5.2 AC-1 — "a behaviour-changing PR without named ACs is blocked"
 
@@ -547,11 +551,11 @@ Spec-derived, per ruling Q1b's own principle. Pinned by
 > `test_an_absent_base_manifest_suppresses_the_new_fr_arm_entirely`.
 
 **Fourth precedence rule (Stage-2 code review, medium; found during build) — arm 2 is ALSO
-suppressed when neither manifest names a `spec_path` for any requirement.** This is a THIRD,
-independent null case, distinct from both the empty-base-manifest amendment above and the
-divergence guard's own scoping (§5.1): `base_fr_digests` and `head_minted` are empty not because the
-base genuinely states no criteria, but because no spec text was ever scanned (§5.1's own "neither
-manifest names a `spec_path`" warning covers exactly this state). Without this exclusion, a base
+suppressed when neither manifest names a `spec_path` for any requirement.** This is a SECOND,
+independent null case beyond the empty-base-manifest amendment above: `base_fr_digests` and
+`head_minted` are empty not because the base genuinely states no criteria, but because no spec text
+was ever scanned (§5.1's own "neither manifest names a `spec_path`" warning covers exactly this
+state). Without this exclusion, a base
 manifest that DOES carry active requirements makes every head-only active FR read as
 `new_frs_without_criteria` — "states no acceptance criterion" asserted from a document nobody read,
 the same blast-radius mistake the empty-base-manifest amendment already exists to prevent, one call
@@ -1539,6 +1543,22 @@ the new test genuinely fails without it (a real regression test, not a vacuous o
 every other count and citation in the document as still accurate — nothing else in this round's
 commit had drifted.
 
+### 12.1m Stage-1 round 16 (fresh) — REJECT (1 hard, two faces of one root cause)
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | hard | Round 15's own "Fourth precedence rule" paragraph (§12.1l finding 1's fix) cited "§5.1's own 'neither manifest names a `spec_path`' warning" twice — §5.1 states no such warning. The underlying warning itself (shipped since §12.1i finding 3, tested, now relied on by the Fourth rule) has no normative statement anywhere in §5.1's never-silent list. A wrong citation pointing at a genuine normative gap: fixing the gap makes the citation true. | **Fixed.** A fourth bullet added to §5.1's "Silence is the one failure mode worse than over-firing" list, stating the `_spec_paths`-empty warning directly; no change needed to the §5.2 citations themselves once the target exists. |
+
+The reviewer independently traced the Fourth precedence rule's every clause against the shipped
+`no_spec_was_read` code and confirmed it accurate, re-verified the corrected F11-ledger count (8),
+and re-confirmed every other count and cross-reference in the document — this round's defect was
+narrowly the missing §5.1 bullet, not a wider drift. Two non-blocking observations were raised and
+addressed in the same pass since they were cheap and cost nothing to fix: §5.2's Fourth-rule
+paragraph reworded from "a THIRD, independent null case ... distinct from ... the divergence guard's
+own scoping" (loose — the divergence guard's scoping is a blast-radius rule, not a null case) to "a
+SECOND, independent null case beyond the empty-base-manifest amendment"; §12.1l's own placement
+description was left as-is, since the reviewer judged it harmless boilerplate.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1619,6 +1639,13 @@ the fix's own new test invalidated the F11 ledger's evidence count for the file 
 (the identical class §12.1j finding 3 was rejected for, one commit later). Both classes are now
 recurring a THIRD time each across this cascade — a normative-lag miss and a collateral-count miss,
 each independently confirmed to survive one full extra round after the pattern was first named.
+
+**Round 16 (§12.1m) rejected round 15's own fix — an eleventh rejection, across rounds 1-16 now** —
+1 hard defect, itself created by the fix that closed round 15's normative gap: the new §5.2
+paragraph cited a §5.1 warning that §5.1 never actually states, because the warning it described had
+never been given its own normative sentence. Fixed with one bullet added to §5.1's never-silent
+list, closing the citation and the gap in the same edit — the cheapest possible remedy, once the
+narrower diagnosis (a wrong citation pointing at a genuine hole, not two separate defects) was made.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
