@@ -88,7 +88,11 @@ leaves a requirement that reads fine and means nothing.
   the question, so the person corrects a concrete proposal instead of authoring
   from a blank page. This is exactly the house rule in `CLAUDE.md` ("lead with
   the functional meaning, give a recommendation") — phrase it so a product owner
-  can answer without decoding jargon.
+  can answer without decoding jargon. **If a plugin's reference doc restates
+  this rule for its own surface, keep the exact phrase "recommended answer"
+  somewhere in it** — `shared/tests/_elicitation_discovery.py` keys its
+  discovery of "which docs govern eliciting a requirement from a human" on that
+  literal string, so a paraphrase silently drops the doc from that check.
 
 ## 3. Look it up — facts are found, not asked
 

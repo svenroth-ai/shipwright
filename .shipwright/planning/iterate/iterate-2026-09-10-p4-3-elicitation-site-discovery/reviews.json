@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p4-3-elicitation-site-discovery",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T13:00:36.878899+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The discovery marker `\"recommended answer\"` is a natural-language phrase from a Pocock quote, not a structural signal. It's fragile in both directions: a future elicitation doc may paraphrase the quote (false negative — the exact failure mode FR-01.16 AC09 is about), and an unrelated doc that happens to say \"recommended answer\" in ordinary prose would be swept into the reverse check (false positive). The plan asserts the phrase currently appears in exactly 4 files, but nothing pins that property going forward except the regression pin, which the AC explicitly says shouldn't be the mechanism.",
+          "suggestion": "Make the marker more robust without collapsing it into the citation string — e.g. require the marker inside the blockquote form (e.g. `> one question at a time` or a dedicated HTML comment like `<!-- elicitation-surface -->`). A repo-author-owned comment marker is the standard fix for \"prose phrase as signal\" fragility and keeps discovery independent of the citation check. At minimum, document in the helper why this phrase was chosen and what to do when it drifts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The glob `plugins//skills//references/.md` hard-codes a directory layout. If a plugin nests references deeper (or a skill gains a second references dir), the tmp-fixture test only proves the fixture's own layout, not the real tree's. Also nothing in the plan verifies the 4 known docs actually match this glob — the plan says \"verified\" the phrase appears in 4 docs, but not that all 4 sit at that glob depth. If any live under a different depth, AC1 fails at test time.",
+          "suggestion": "Confirm all 4 paths match the glob exactly (one-off check); consider a `/references/.md` recursive glob or asserting the regression pin is non-empty (a discovery that silently returns zero docs would otherwise make the reverse check vacuously pass).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Vacuous-pass hazard: if discovery ever returns an empty tuple (bad glob, renamed marker), the parametrized reverse check passes trivially. The `test_discovery_finds_exactly_the_known_citing_docs` pin guards against this, but only for the exact-4 case; a partial regression (finds 2 of 4) still passes the pin.",
+          "suggestion": "Make the regression pin assert the full expected set with a set-difference message, and add an explicit `assert discovered` guard in the reverse test so zero matches is a hard failure. The plan implies this; ensure it's explicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Splitting into a helper module plus two new test files is defensible under the stated 300-LOC cap, but the helper module's `MARKER` constant being importable by both files means a rename of the marker touches one place — good. However, three artifacts for one test's mechanics is near the over-production threshold. Given the precedent files apparently live whole, consider whether the cap genuinely forces the split or whether the original file had headroom.",
+          "suggestion": "Only proceed with the 3-way split if the single file genuinely exceeds the cap; otherwise one new test file plus the helper is enough. Not a blocker either way.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "No mention of updating the precedent-following claim: `test_fr_authoring_refs.py` still holds its own hardcoded `CITING_DOCS` (correctly out of scope), but nothing notes the asymmetry for future readers — an identical AC against the authoring guard would fail there.",
+          "suggestion": "Leave a one-line comment in the new discovery test noting the authoring refs test intentionally still uses enumeration, so a future sub-iterate knows it's a separate gap, not an oversight.  Overall assessment: The approach is sound — it follows the repo's established forward/reverse meta-test pattern, correctly avoids keying discovery on the citation string, and the dynamic-discovery proof via tmp fixture is the right test shape. The main refinement needed is hardening the prose-phrase marker into something structurally owned by doc authors, plus guarding against vacuous passes; neither requires changing the architecture.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "\"recommended answer\"` is an incidental prose phrase, not a durable, intentional elicitation-surface marker. A future elicitation doc could use different wording and be missed; an unrelated doc could use the phrase and be incorrectly required to cite the module.",
+          "suggestion": "introduce a small explicit marker in the four governing docs (for example, a consistent HTML comment or front-matter field) and discover that marker. Document its meaning alongside the helper.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "test_discovery_finds_exactly_the_known_citing_docs` preserves a hardcoded list that will fail whenever a correctly marked fifth elicitation surface is added. That reintroduces the “remember to extend a list” maintenance burden the change is meant to remove.",
+          "suggestion": "assert that the four existing paths are a subset of discovery results, rather than asserting exact equality. Keep a separate fixture-based test for exclusion of non-marked docs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed dynamic fixture test proves only that the helper returns the temporary path, not that the reverse citation validation actually processes discovered paths. Discovery could be wired incorrectly into parametrization while this test still passes.",
+          "suggestion": "expose a small citation-validation function or test the shared reverse-check path with a marked fixture lacking the required citation, asserting it is reported as invalid. This demonstrates that dynamically discovered files enter enforcement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not state ordering or repository-boundary behavior for discovered paths. Unsorted glob results can make parametrized test IDs and failure output unstable; followed links could also take discovery outside the intended tree in unusual checkouts.",
+          "suggestion": "return a deterministically sorted tuple and restrict matches to regular files under the supplied root.  Overall, the forward/reverse separation and temporary-fixture strategy are sound, but the discovery criterion needs to become an explicit contract and the static exact-set regression pin should not block legitimate additions. No material security concern is introduced by this test-only change.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T12:57:17.263081+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: risk — Severity: medium**\n  **Finding:** The discovery marker `\"recommended answer\"` is a natural-language phrase from a Pocock quote, not a structural signal. It's fragile in both directions: a future elicitation doc may paraphrase the quote (false negative — the exact failure mode FR-01.16 AC09 is about), and an unrelated doc that happens to say \"recommended answer\" in ordinary prose would be swept into the reverse check (false positive). The plan asserts the phrase currently appears in exactly 4 files, but nothing pins that property going forward except the regression pin, which the AC explicitly says shouldn't be the mechanism.\n  **Suggestion:** Make the marker more robust without collapsing it into the citation string — e.g. require the marker inside the blockquote form (e.g. `> one question at a time` or a dedicated HTML comment like `<!-- elicitation-surface -->`). A repo-author-owned comment marker is the standard fix for \"prose phrase as signal\" fragility and keeps discovery independent of the citation check. At minimum, document in the helper why this phrase was chosen and what to do when it drifts.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** The glob `plugins/*/skills/*/references/*.md` hard-codes a directory layout. If a plugin nests references deeper (or a skill gains a second references dir), the tmp-fixture test only proves the fixture's own layout, not the real tree's. Also nothing in the plan verifies the 4 known docs actually match this glob — the plan says \"verified\" the phrase appears in 4 docs, but not that all 4 sit at that glob depth. If any live under a different depth, AC1 fails at test time.\n  **Suggestion:** Confirm all 4 paths match the glob exactly (one-off check); consider a `**/references/*.md` recursive glob or asserting the regression pin is non-empty (a discovery that silently returns zero docs would otherwise make the reverse check vacuously pass).\n\n- **Category: risk — Severit […truncated]\n\n[openai] 1. Category: approach  \n   Severity: medium  \n   Finding: `\"recommended answer\"` is an incidental prose phrase, not a durable, intentional elicitation-surface marker. A future elicitation doc could use different wording and be missed; an unrelated doc could use the phrase and be incorrectly required to cite the module.  \n   Suggestion: introduce a small explicit marker in the four governing docs (for example, a consistent HTML comment or front-matter field) and discover that marker. Document its meaning alongside the helper.\n\n2. Category: approach  \n   Severity: medium  \n   Finding: `test_discovery_finds_exactly_the_known_citing_docs` preserves a hardcoded list that will fail whenever a correctly marked fifth elicitation surface is added. That reintroduces the “remember to extend a list” maintenance burden the change is meant to remove.  \n   Suggestion: assert that the four existing paths are a subset of discovery results, rather than asserting exact equality. Keep a separate fixture-based test for exclusion of non-marked docs.\n\n3. Category: edge-case  \n   Severity: medium  \n   Finding: The proposed dynamic fixture test proves only that the helper returns the temporary path, not that the reverse citation validation actually processes discovered paths. Discovery could be wired incorrectly into parametrization while this test still passes.  \n   Suggestion: expose a small citation-validation function or test the shared reverse-check path with a marked fixture lacking the required citation, asserting it is reported as invalid. This demonstrates that dynamically discovered files enter enforcement.\n\n4. Category: risk  \n   Severity: low  \n   Finding: The plan does not state ordering or repository-boundary behavior for discovered paths. Unsorted glob results can make parametrized test IDs and failure output unstable; followed links could also take discovery outside the intended tree in unusual checkouts.  \n   Suggestion: return a deterministically sorted tuple  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/tests/_elicitation_discovery.py",
+          "line": 64,
+          "finding": "discover_elicitation_reference_docs() and doc_cites_the_module() only caught UnicodeDecodeError on read_text(), not a TOCTOU OSError -- RESOLVED in round 2 by widening both except clauses to (UnicodeDecodeError, OSError).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/requirement-elicitation.md",
+          "line": 87,
+          "finding": "The 'recommended answer' discovery-marker contract lived only in the test helper's docstring, invisible to a future doc author writing a new elicitation-surface reference doc -- RESOLVED in round 2 by adding a pointer sentence in section 2 of the production SSoT.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T13:39:04.766145+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-campaign-cascade",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T13:39:04.868870+00:00",
+      "disposition": "test-only drift-test infrastructure change, no migrations/async-concurrency/cross-plugin-import/irreversible-ops touch (build Step 6 doubt-reviewer trigger) -- orchestrator judgment, campaign req3-09-p4-grill-glossary P4.3",
+      "recorded_by": "orchestrator-campaign-cascade",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/tests/_elicitation_discovery.py:60 (`ELICITATION_SURFACE_MARKER = \"recommended answer\"`)",
+          "line": null,
+          "finding": "The discovery signal is a generic natural-language phrase, not a repo-author-owned structural marker. The spec asked for \"whatever positive marker reliably identifies 'this doc governs eliciting a requirement from a human'\" and to follow an established repo pattern (e.g. registry-driven discovery). Any unrelated `references/.md` doc that happens to contain the common phrase \"recommended answer\" (troubleshooting guides, testing docs, review checklists — the phrase is ordinary English prose) would be swept into the reverse citation-check and fail it spuriously, or worse, could pass while diluting the signal. The diff itself acknowledges this was flagged and defers it, which is a scope-bounded call, but it does leave a real fragility the spec was trying to eliminate (a paraphrase or a coincidental match).",
+          "suggestion": "If adopting a structural marker (e.g. an HTML comment like `<!-- elicitation-surface -->`) is genuinely out of scope for the adopt plugin, at minimum tighten the signal (e.g. match the full grilling-rule sentence pattern, or exclude known non-surface directories) and add a follow-up item to migrate to a structural marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/tests/_elicitation_discovery.py:66-73",
+          "line": null,
+          "finding": "Substring matching means the marker also matches \"recommended answers\", \"the recommended answer depends\", etc., widening the false-positive surface described above. There is no negative test proving a real-repo doc that merely mentions the phrase incidentally is correctly excluded — the AC3-style test only covers the citation-string confusion, not incidental-phrase confusion.",
+          "suggestion": "Add a test (or an assertion in the vacuous-pass guard) that discovery over the real repo finds no doc outside the intended set without requiring a citation — i.e., pin that today's real-repo result equals exactly the 4 known docs, with subset semantics reserved for future additions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_requirement_elicitation_discovery.py:139-158 (`test_discovery_is_dynamic_...`)",
+          "line": null,
+          "finding": "The AC2 proof asserts exact-set equality against an empty temp tree (`discovered == (fixture_doc,)`), which proves glob+marker over a synthetic root but doesn't prove the real-repo path composes the same way (e.g. that `REPO_ROOT` is the right root when tests are invoked from a different CWD or via an installed runner). This is minor since `parents[2]` from `__file__` is CWD-independent.",
+          "suggestion": "None required; the risk is negligible given `__file__`-based root resolution.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/tests/_elicitation_discovery.py:82 (`doc_cites_the_module`)",
+          "line": null,
+          "finding": "doc_cites_the_module` reads with `encoding=\"utf-8\"` and no decode-error handling, while the discovery function deliberately catches `UnicodeDecodeError`. Asymmetric error handling is safe today (a non-UTF8 file can never enter the discovered set), so this is not a live bug — just note that if `doc_cites_the_module` is ever called on non-discovered paths it will raise rather than report a failure.",
+          "suggestion": "Optional: return False or skip-with-message on decode errors for symmetry.  Spec-compliance check against ACs: AC1 (subset guard on the 4 known docs) ✓; AC2 (temp-fixture dynamic pickup, same enforcement path via `doc_cites_the_module`) ✓; AC3 (discovery signal is not the citation string, with a negative test) ✓; AC4 (existing forward-direction assertions preserved in `test_requirement_elicitation_refs.py`; reverse tests moved, not weakened) ✓. The one deviation from the spec text is the marker choice (finding 1), which is explicitly documented as scope-bounded.  No security issues; no regression risk to callers (the only consumer is the test file itself; `CITING_DOCS` was private to the deleted code).  Overall: sound implementation meeting all four ACs; the notable residual risk is the natural-language marker's false-positive/paraphrase fragility, which is documented and mitigated by the subset guard. Ship with the marker-tightening finding queued as follow-up.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/tests/_elicitation_discovery.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-edg6_ap1\\shared\\tests\\_elicitation_discovery.py:62)",
+          "line": null,
+          "finding": "\"recommended answer\"` is an unstructured, generic prose substring, not a reliable elicitation-surface marker. A genuine new elicitation document phrased differently is silently omitted, while an unrelated reference mentioning that phrase is incorrectly forced to cite the elicitation module. This falls short of the required positive signal that reliably identifies governing elicitation docs.",
+          "suggestion": "Use a stable, repo-owned structural marker already present in the applicable documents, or introduce a dedicated metadata/comment marker consistently across eligible surfaces; add tests for both a non-surface false positive and an elicitation surface that lacks the incidental phrase.  Ship-with-fixes: the dynamic glob and reverse assertion are wired correctly, but the chosen discovery criterion can miss the very drift the test is meant to catch.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T12:59:39.473409+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec | Severity: medium\n  File: shared/tests/_elicitation_discovery.py:60 (`ELICITATION_SURFACE_MARKER = \"recommended answer\"`)\n  Finding: The discovery signal is a generic natural-language phrase, not a repo-author-owned structural marker. The spec asked for \"whatever positive marker reliably identifies 'this doc governs eliciting a requirement from a human'\" and to follow an established repo pattern (e.g. registry-driven discovery). Any unrelated `references/*.md` doc that happens to contain the common phrase \"recommended answer\" (troubleshooting guides, testing docs, review checklists — the phrase is ordinary English prose) would be swept into the reverse citation-check and fail it spuriously, or worse, could pass while diluting the signal. The diff itself acknowledges this was flagged and defers it, which is a scope-bounded call, but it does leave a real fragility the spec was trying to eliminate (a paraphrase or a coincidental match).\n  Suggestion: If adopting a structural marker (e.g. an HTML comment like `<!-- elicitation-surface -->`) is genuinely out of scope for the adopt plugin, at minimum tighten the signal (e.g. match the full grilling-rule sentence pattern, or exclude known non-surface directories) and add a follow-up item to migrate to a structural marker.\n\n- Category: edge-case | Severity: low\n  File: shared/tests/_elicitation_discovery.py:66-73\n  Finding: Substring matching means the marker also matches \"recommended answers\", \"the recommended answer depends\", etc., widening the false-positive surface described above. There is no negative test proving a *real-repo* doc that merely mentions the phrase incidentally is correctly excluded — the AC3-style test only covers the citation-string confusion, not incidental-phrase confusion.\n  Suggestion: Add a test (or an assertion in the vacuous-pass guard) that discovery over the real repo finds no doc outside the intended set without requiring a citation — i.e., pin tha […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: [shared/tests/_elicitation_discovery.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-edg6_ap1\\shared\\tests\\_elicitation_discovery.py:62)\n- Finding: `\"recommended answer\"` is an unstructured, generic prose substring, not a reliable elicitation-surface marker. A genuine new elicitation document phrased differently is silently omitted, while an unrelated reference mentioning that phrase is incorrectly forced to cite the elicitation module. This falls short of the required positive signal that reliably identifies governing elicitation docs.\n- Suggestion: Use a stable, repo-owned structural marker already present in the applicable documents, or introduce a dedicated metadata/comment marker consistently across eligible surfaces; add tests for both a non-surface false positive and an elicitation surface that lacks the incidental phrase.\n\nShip-with-fixes: the dynamic glob and reverse assertion are wired correctly, but the chosen discovery criterion can miss the very drift the test is meant to catch.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "spec-reviewer-subagent",
+      "completed_at": "2026-09-10T13:37:06.190002+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-campaign-cascade",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T12:57:25.726189+00:00",
+      "disposition": "no internal arm for plan review exists in this repo's review-cascade contract (project_plan_has_no_internal_arm) — plan_internal is permanently not_run, documented gap",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
