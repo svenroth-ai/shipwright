@@ -1,19 +1,19 @@
 # Commit Change Log
 
-Generated: 2026-09-07T19:24:15.713726+00:00
-Source-State: run=iterate-2026-09-07-p3-4-tagging-backfill
-Consistency-audit: last run 2026-07-28 (41 days earlier) — FAIL
-Total commits: 1468
+Generated: 2026-09-10T07:37:15.967899+00:00
+Source-State: run=iterate-2026-09-10-p4-2-grill-trace-gate base=4a37d59474dc
+Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
+Total commits: 1485
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 503
-    "feat" : 390
+    "fix" : 509
+    "feat" : 400
     "chore" : 265
     "docs" : 156
-    "refactor" : 88
+    "refactor" : 89
     "test" : 37
     "ci" : 18
     "other" : 9
@@ -23,10 +23,16 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 503 commits
+### Fixes (fix) — 509 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-10 | project | address external review findings on grill-trace gate (P4.2) (#705) | 4a37d59474dc |
+| 2026-09-10 | adopt | backfill phase_tasks[] into already-adopted configs (P4.04 s2b) (#701) | 05b79bb3ddc9 |
+| 2026-09-09 | main | update PR-review canary literal for the new backtick-wrapped render shape (#698) | 40d1e8ce30ff |
+| 2026-09-09 | security | normalize object-shaped PR-review findings before rendering (#690) (#694) | 657f1ea69171 |
+| 2026-09-09 | compliance | H2 must not suggest tightening below what trunk already has (#692) | a188983f3378 |
+| 2026-09-07 | hooks | isolate bloat-gate markers per (session, agent) (#688) | 680f46f0b9cb |
 | 2026-09-07 | safety-gate | analyze JS/TS test files in the main-repair safety gate (#685) | fb0abde2b3dc |
 | 2026-09-07 | triage | fold sibling-worktree decisions into main's own read (#684) | 9c71110a46c8 |
 | 2026-09-06 | compliance | reconcile D1/D3 for FR-01.18 (/shipwright-grade) (#682) | 7e106939fbf8 |
@@ -531,11 +537,21 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 390 commits
+### Features (feat) — 400 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-07 | compliance | wire AC-identity mint + tagging backfill into spec.md (P3.4) | 7063f7b794d7 |
+| 2026-09-10 | compliance | keystone AC gate — a changed criterion must have re-run its tests green (P3.6) (#702) | 7d57df67c184 |
+| 2026-09-10 | run | retarget v1 update_step onto phase_tasks[], drop write-once fields (#706) | 9c445b7f85ce |
+| 2026-09-10 | project | write CONTEXT.md domain glossary as terms are sharpened (P4.1) (#699) | c80ef34047dd |
+| 2026-09-10 | iterate | migrate design/compliance verifiers + config converter to phase_tasks[] (P4.04 s4) (#704) | feb6ebf0f7e3 |
+| 2026-09-10 | iterate | migrate state.py + build dashboard + 2 hooks to phase_tasks[] (P4.04 s3) (#703) | a9ffdf11a719 |
+| 2026-09-09 | adopt | seed phase_tasks[] entries marked established-at-adoption (P4.04 s2) (#700) | 5d76efcd498c |
+| 2026-09-09 | compliance | bind per-FR Layers promotion to CI execution evidence (P3.5 restart) (#693) | 0348b8871086 |
+| 2026-09-09 | compliance | dashboard phase strip reads phase_tasks[] instead of write-once fields (P4.04 s1) (#697) | 4d88b57f1af4 |
+| 2026-09-09 | iterate | halt PR delivery on a non-converging PR-review loop (exit 8) (#696) | 106c01c69986 |
+| 2026-09-09 | compliance | add unforgeable CI-provenance attestation for traceability manifests (P3.4c) | 093162664cd3 |
+| 2026-09-08 | compliance | wire AC-identity mint + tagging backfill into spec.md (P3.4) (#689) | 545a4f32043b |
 | 2026-09-07 | compliance | F11 binding-completeness gate + ledger/(E)-bullet reconciliation (P3.3) (#687) | 263c9197e642 |
 | 2026-09-07 | compliance | AC-scoped @covers tag grammar + test-traceability manifest v4 (P3.2) (#686) | c0d1b38be277 |
 | 2026-09-07 | compliance | mint/read tool-assigned per-criterion AC ids (P3.1) (#683) | 39562119357b |
@@ -1357,10 +1373,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 88 commits
+### Refactoring (refactor) — 89 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-09 | compliance | strip minted [ACnn] marker at lib.fr_criteria's own seam (#695) | 57373430ad09 |
 | 2026-08-31 | security | swap Tier-3 PR-review gate to DeepSeek with reused ZDR routing (#666) | c50bdd7fecd5 |
 | 2026-08-27 | discovery | S2b pass C -- explicit finding, include_iterate convergence, posix separators (#660) | 396067c331f7 |
 | 2026-08-17 | iterate | gate FR-declaring events on real test evidence (#642) | 274be817157e |
@@ -1545,7 +1562,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1468 |
+| Total commits | 1485 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1468 |
+| Human-authored commits | 1485 |
 
