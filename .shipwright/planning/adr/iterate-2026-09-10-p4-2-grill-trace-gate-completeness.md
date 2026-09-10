@@ -281,3 +281,32 @@ passed, 32 skipped, 0 failed), `plugins/shipwright-project/tests` (64
 passed), `plugins/shipwright-run/tests` (564 passed) all green; F11
 (`verify_iterate_finalization.py`) and `scripts/verify_local.py` run before
 push.
+
+## Round 6 — PR #705 Tier-3 review, third pass — glossary read robustness (P4.2, this round)
+
+The required Tier-3 PR reviewer posted another BLOCK verdict with one new
+real technical finding, verified directly before dispatching the fix.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium (blocking) | `grill_trace_glossary.py::check_glossary_source_available()` only checked `glossary_path.exists()` — true for a directory too, and silent about a read failure (permissions, a locked handle, bad encoding). An unreadable/non-file glossary path reproduced exactly the "one of the two required sources was never actually read" failure class this check already exists to catch for the missing-file case (round-1/round-2 finding #7/#11 above): the actual read happened later, inside `collect_known_terms()`, where the failure either surfaced as a misleadingly-named `malformed_context` result (a check meant for a broken `CONTEXT.md`, not a broken glossary) or, with zero grill-traces recorded yet, was never surfaced at all (`run_all_checks()` returns before `collect_known_terms()` runs when `traces` is empty). | accepted-and-fixed — `check_glossary_source_available()` now checks `glossary_path.is_file()` (not just `.exists()`) and attempts an actual read through `atomic_write.durable_read_bytes()` (the same Windows-sharing-violation-tolerant read primitive `context_md_format.read_terms()` already uses, rather than a bare `Path.read_text()`), converting `OSError`/`UnicodeDecodeError` into their own failing `CheckResult` — distinguishing "missing" / "exists but is a directory" / "exists but could not be read" in the detail message. All three branches return before `collect_known_terms()` is ever reached for this path. |
+
+**Proof (new tests, not narrative):**
+`shared/tests/test_grill_trace_glossary.py::test_check_glossary_source_available_fails_when_the_path_is_a_directory`
+(portable across platforms — the primary regression case, since a real
+`os.chmod`-based permission denial is not reliable on Windows CI),
+`..._fails_when_the_file_is_unreadable` (monkeypatches the module's own
+`durable_read_bytes` to raise `PermissionError`, exercising the identical
+except-branch a real denial would take), and
+`..._fails_on_undecodable_content` (non-UTF-8 bytes) — each asserts the
+failing `CheckResult` comes from `check_glossary_source_available()` itself
+with a distinct message, not a downstream crash or a `malformed_context`
+misclassification. The pre-existing missing-file and exists-and-readable
+tests are unchanged and still pass.
+
+**Verification:** `uvx ruff@0.15.15 check .` clean;
+`shared/tests/test_grill_trace_glossary.py` +
+`shared/tests/test_verify_grill_trace_completeness.py` (27 passed);
+full `shared/tests`, F11 (`verify_iterate_finalization.py`), and
+`scripts/verify_local.py` run before push (see commit for the exact
+counts observed).

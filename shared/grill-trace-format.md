@@ -138,9 +138,14 @@ confused with the four closed-vocabulary STOPs above:
   severity, since it is a structural presence check, not a fragile
   cross-artifact identity join.
 - **`glossary_source_available`** (`grill_trace_glossary.py`) — the
-  framework's own `shared/glossary.md` is missing. Unlike an absent
-  `CONTEXT.md` (§4, a legitimate fresh-project state), this means the
-  Shipwright install itself is broken.
+  framework's own `shared/glossary.md` is missing, is not a regular file
+  (e.g. a directory), or exists but could not actually be read (PR #705
+  Tier-3 review, round 3 — a permissions problem or bad encoding reached
+  the same "source never actually read" failure this check exists to
+  catch, just via `collect_known_terms()` afterwards, where it surfaced
+  as a misleading `malformed_context` result instead). Unlike an absent
+  `CONTEXT.md` (§4, a legitimate fresh-project state), any of these mean
+  the Shipwright install itself is broken.
 - **`glossary_delta_declared`** — a term the trace records sharpening
   (`glossary_delta`) but never lists in `terms_used`. A narrow,
   self-consistency slice of the honesty guard's declared-list limit (§3):
