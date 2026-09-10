@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p4-4-grill-module-recent-rules-drift",
+  "date": "2026-09-10",
+  "section": "Iterate — change: pin Sec.0/Sec.4/Sec.5 rules against drift",
+  "title": "Pin Sec.0/Sec.4/Sec.5's most recent rules against drift",
+  "context": "Sec.0, Sec.4's glossary trigger, and Sec.5's minimum-two rule had no drift test; Sec.0 could be deleted whole and nothing would fail.",
+  "decision": "Append Sec.0 heading to REQUIRED_SECTIONS end; add 3 sentence-level pinning tests mirroring the existing load-bearing-rules test.",
+  "consequences": "Deleting/rewording any of the 3 rule sentences now turns exactly its own test red, spot-checked manually.",
+  "rationale": "Matches the file's existing pinning idiom; Sec.4's trigger sentence wraps a markdown line so that one assertion normalizes whitespace.",
+  "rejected": "Inserting the Sec.0 entry at position 0 (card mandates append-at-end); a generic whitespace-normalizer (only 1 of 3 sentences wraps).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-p4-4-grill-module-recent-rules-drift.md"
+}
