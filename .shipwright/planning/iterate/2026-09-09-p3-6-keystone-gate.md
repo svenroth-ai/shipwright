@@ -969,7 +969,7 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   still exists. The outcome **blocks**, so nothing is let through; only the message misroutes, and
   a reviewer reading the JSON sees the retirement in the same diff. Not fixed because the fix costs
   a fourth reason code and a fourth arm, for a flow this repo has never performed — a cost
-  independent of `_keystone_core.py`'s current line count (228 after the Stage-3 doubt-review
+  independent of `_keystone_core.py`'s current line count (230 after the Stage-3 doubt-review
   extraction, no longer at the 300-line limit that was the stated reason when this was first
   written). Recorded so that the first real occurrence is a two-line follow-up rather than a
   mystery.
@@ -1304,7 +1304,7 @@ unreachable `_spec_paths() == []` corner, two attribution comments that were acc
 awkwardly out of context, an asymmetry between the manifest and spec git-read strategies, and one
 untested pooling/collision interaction in `_keystone_layer_gap`) were left as the author's call —
 none changes behaviour, and `_keystone_core.py` sat at exactly its 300-line limit at this round, so
-cosmetic churn there was not free (later extracted to 228 lines by the Stage-3 doubt-review fix —
+cosmetic churn there was not free (later extracted to 230 lines by the Stage-3 doubt-review fix —
 §12.1g — which is a separate round's headroom, not this one's).
 
 ### 12.1f Stage-1 round 6 (fresh) — REJECT
@@ -1347,6 +1347,38 @@ direct code reading before disposition:
 | Doubt 6 | informational (cheap, optional) | The `FAILED` HARD reason code is practically unreachable from real `ci.yml` operation, since `set -e` stops the job before this gate's step runs on a genuine test failure. | **Documented, not fixed** — added a §7 bullet. Not dead code: it is the correct answer for the adversarial input it IS reachable from (a stale/hand-edited manifest claiming `pass` for a test that did not run this invocation), which the regeneration step already forecloses in the honest path. Recorded so a future reader does not "simplify" the arm away. |
 
 No second Stage-3 pass was run after the Doubt 1/2 fixes — outside this cascade's established pattern (doubt review runs once, after Stage 1+2 pass), and the fixes are narrow, each independently traced by hand and pinned by a test written to fail against the prior phrasing, per this build's standing discipline. Stage 1 and Stage 2 both re-run fresh against the resulting diff before merge, which is where a fix that broke something else would surface.
+
+### 12.1h Stage-1 rounds 8 and 9 (both fresh) — REJECT, REJECT
+
+The §12.1g doubt-review fix (round 8's diff) itself REJECTED twice before Stage 1 passed again, both
+times for the exact class this whole cascade keeps finding: a behavioural change landing in the code
+without every passage that describes the rule being updated to match.
+
+**Round 8 — REJECT (2 hard, 6 medium/low).**
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | hard | §5.3's two normative outcome tables still described `binding_removed`'s changed-AC arm as emptiness-only (`head_links == 0`), contradicting the shipped `len(head_links) < len(base_links)` reduction check. AC-K8 and AC-K14 likewise undocumented the reduction case. | **Accepted-and-fixed.** Both §5.3 tables amended with the reduction row; AC-K8 gained companion assertion (d); AC-K14 cross-references it. |
+| 2 | hard | Four new attributions used the self-contradictory form "no reviewer asked for this ... Stage-3 doubt review" — the exact shape §12.1f finding K hard-rejected once already, on Doubt 2 and Doubt 5/6, all three of which the doubt reviewer DID raise. | **Accepted-and-fixed.** All four corrected to "Stage-3 doubt review, `<severity>`" (`check_keystone_ac_gate.py`, `test_check_keystone_ac_gate.py`, `test_keystone_ac_digest.py`, and two design-doc §7 bullets). |
+| 3 | medium | §12.2 item 6 still said "five modules"; seven now ship. | **Fixed** — updated to name all seven and both extraction rounds. |
+| 4 | medium | Two "not fixed because the module is at its 300-line limit" rationales (§7, §12.1 finding 6) rested on a premise the Doubt-1 extraction had already invalidated (`_keystone_core.py` freed to 228 lines at that point). | **Fixed with historical notes** — the live justifications in §7 no longer cite the size constraint; the past-round records in §12.1/§12.1e gained a parenthetical noting the later extraction, without rewriting what was true when each was written. |
+| 5 | medium | The new cross-spec-path collision → `ReadError` had no normative statement in §5.1 (the section that specifies the `_spec_paths` loop it modifies), and its own error message cited "design §7" — the wrong section, describing a different, advisory collision. | **Fixed** — collision rule added to §5.1 directly after the union paragraph; citation retargeted to §5.1. |
+| 6 | low | §12.3's tally ("Findings: 5") didn't count the Stage-3 doubt round's two real defects at all. | **Fixed** — round summary paragraph names both explicitly. |
+| 7 | low | §12.1g's Doubt-3 row cited "§5's blockquote" for the Q5/p3.7(b) follow-up cards; they are named at §10 item 8. | **Fixed** — citation corrected. |
+| 8 | low | A test docstring attributed the removed-outright gap to "Doubt 2's neighbour"; it was disclosed by the external plan review (glm medium + openai high), recorded at §7. | **Fixed** — docstring corrected to the real source. |
+
+**Round 9 — REJECT (1 hard, 3 medium/low).** Round 8's fix corrected the design doc's own copy of
+the outcome table but missed the identical table carried a second time, verbatim, in
+`_keystone_core.py`'s own module docstring — the same document/code divergence, one level deeper.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | hard | `_keystone_core.py`'s "ONE vocabulary: LINK COUNTS" module-docstring table (lines 14-24) still listed only the four original rows, naming `>= 1 / >= 1` as "the greenness walk" with no reduction row — the module the design's §5.3 explicitly says is where this vocabulary lives, describing a rule the module's own code no longer implements. | **Accepted-and-fixed.** Table rewritten to five rows, matching §5.3 and the shipped `if len(head_links) < len(base_links)` branch exactly. |
+| 2 | medium | The run's decision-drop record (`.shipwright/agent_docs/decision-drops/iterate-2026-09-09-p3-6-keystone-gate_001.json`) enumerated only the zero-link case in its `"decision"` field. | **Fixed** — updated to name the reduction too. |
+| 3 | low | §12.3's "Findings: 5" didn't reconcile against its own probe table (3 rows marked found). | **Fixed** — made explicit: 3 from probes + 2 from the Stage-3 doubt review. |
+| 4 | low | The F11 test-completeness ledger's evidence strings understated real test counts (16/8 vs. the actual 17/11) and had no behavior row for either Stage-3 fix. | **Fixed** — counts corrected, a new behavior row added, `counts.testable`/`tested` bumped 17→18. |
+
+**After round 9's fix, a repo-wide sweep for the same emptiness-only phrasing** (every `binding_removed`/`BINDING_REMOVED`/`keystone` mention across the worktree) found no further survivors — the remaining "base >= 1, head 0" phrasings describe specific scenarios (the retired-duplicate case, base-side disarming) correctly, not the general rule.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
@@ -1392,7 +1424,7 @@ where self-review found 1, 1, 0 defects while review found 0, 3, 6. This round: 
 1 (the `EmptyLinkWalk` exit code), external review found 3 real ones and 2 correct scope
 objections, the Tier-3 PR review found 1 more, the **Stage-1 spec review rejected the build
 outright** for a code/document divergence none of the earlier passes looked for (six times, across
-rounds 1-8 of this same PR — §12.1b through §12.1g), and the **Stage-3 doubt review found two more
+rounds 1-9 of this same PR — §12.1b through §12.1h), and the **Stage-3 doubt review found two more
 real defects in the shipped evaluator itself** — one **high** (a partial binding-count reduction
 silently passing the gate, §12.1g Doubt 1) and one **medium** (a cross-spec-file digest collision
 capable of erasing a genuine `changed` verdict, §12.1g Doubt 2) — after Stage 1 and Stage 2 had
