@@ -137,7 +137,14 @@ def record_ledger_entries(ledger: dict, promoted: list[dict], *, run_id: str | N
         # hand-built `decision` dict, as most of this module's own unit tests use,
         # has neither key) names the GitHub Actions run whose execution evidence
         # this promotion was decided against, additive on `append_decision`.
-        ci_run_id = (decision.get("ci_evidence") or {}).get("run_id")
+        ci_evidence = decision.get("ci_evidence") or {}
+        ci_run_id = ci_evidence.get("run_id")
+        # P3.4c, same additive shape: the commit that evidence was actually
+        # decided against -- the promoted commit itself, or an older
+        # first-parent ancestor when the caller fell back to a verified
+        # anchor. Absent (rather than defaulted to something guessed) for
+        # every bare hand-built decision this module's own tests use.
+        anchor_commit = ci_evidence.get("anchor_commit")
         append_decision(
             ledger, decision["fr"], action="promoted", decided_by="tool",
             required_layers=decision["required_layers"], run_id=run_id,
@@ -147,6 +154,7 @@ def record_ledger_entries(ledger: dict, promoted: list[dict], *, run_id: str | N
             ),
             evidence_fingerprint=evidence_fingerprint(node),
             ci_run_id=ci_run_id,
+            anchor_commit=anchor_commit,
         )
 
 

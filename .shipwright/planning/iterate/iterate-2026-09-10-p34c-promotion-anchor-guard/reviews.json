@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p34c-promotion-anchor-guard",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:46:56.910417+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The staleness guard checks the FR's bound test files as the anchor's manifest records them. But the manifest itself (`test-traceability.json`) is committed and can differ between anchor and HEAD — indeed, structural drift is the entire premise of this change. If an FR gained a new bound test file between anchor and HEAD, that file is absent from the anchor's bound set, so it's never checked against the diff, and promotion asserts \"these tests ran green\" for an FR whose evidence set changed. Conversely, a test removed from an FR at HEAD wouldn't block promotion either.",
+          "suggestion": "If the manifest path appears in `changed_paths_between(anchor, head)`, either mark affected FRs stale or (better) compare the FR's bound set between the anchor's manifest and HEAD's manifest and mark stale on any difference. This is cheap — the manifests are already both in hand.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "First-parent-only walk means a verified commit merged via a non-first-parent edge (e.g., a PR whose merge commit is itself verified only via the PR branch) could be skipped. Given `_qualifying_runs` requires `event==push` on the default branch, verified commits should generally lie on the first-parent chain, so this is probably fine — but the rationale isn't stated in the spec.",
+          "suggestion": "One docstring sentence explaining why first-parent-only is sufficient (push-event verdicts land on the default branch's first-parent chain), so a future maintainer doesn't \"fix\" it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Changes to the promotion/trust machinery itself between anchor and HEAD are not staleness-relevant — e.g., if `ci_execution_evidence.py` or the manifest generator changed semantics in A..HEAD, promotion still uses the anchor's evidence verdict computed under old tooling. Also `promote_required_layers.py`'s own `_qualifying_runs` semantics can't drift (it's unmodified), which mitigates most of this.",
+          "suggestion": "Optionally add the `shared/scripts/` tree (or the specific evidence/resolver files) to the staleness set. If skipped, note it as an accepted limitation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Each `resolve_verified_anchor` call issues one API-backed `resolve_ci_verification` per candidate commit, up to 50 per run. In a drifted steady state (the stated norm), every promotion run burns up to 50 GitHub API calls before concluding `unavailable`. Rate limits / latency, not correctness.",
+          "suggestion": "Cache per-run verdicts, or short-circuit when the walk reaches a commit older than the last known-good ledger anchor.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The asymmetry between tip-evidence `error` (fatal, exit 2) and anchor-walk query `error` (degrade to `unavailable`) is deliberate and defensible, but it means a persistent API outage silently suppresses all promotions (via `unavailable`) with rc==0. Operators may not notice the mechanism stopped firing.",
+          "suggestion": "Ensure the `unavailable`-due-to-query-errors path emits a distinguishing log/ledger marker so the operational follow-up can distinguish \"genuinely nothing verified\" from \"we couldn't ask.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The guard does not establish that the requirement’s traceability binding at `HEAD` is the same binding that was verified at the anchor. A test can be removed from/reassigned in the current requirement’s manifest without changing the old bound test file or either `spec.md`; promotion would then rely on evidence for an obsolete test set.",
+          "suggestion": "Before allowing anchored promotion, compare the anchor and `HEAD` requirement nodes: require stable requirement identity and stable bound-test mapping (or conservatively skip with a distinct `traceability_changed_since_anchor` reason). Also skip if the requirement is absent at `HEAD`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Plain `git diff --name-only` paths may not compare safely with manifest paths on Windows or with `./` prefixes, backslashes, or unusual filenames. A representation mismatch produces a false “unchanged” result—the unsafe direction for this guard.",
+          "suggestion": "Canonicalize manifest and Git paths to validated repo-relative POSIX paths before set comparison. Prefer `git diff -z --name-only --no-renames` and parse NUL-delimited results.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Checking only directly bound test files misses common ways test behavior changes: shared fixtures, helpers, test-selection configuration, or runner configuration can weaken/disable a bound test while its file remains untouched. The approach therefore provides narrower protection than the problem statement’s “tests ran green” assertion implies.",
+          "suggestion": "Explicitly define the guarantee as direct-file staleness only, or include the repository’s known test-impacting shared paths/configuration in each guard decision. At minimum, conservatively skip anchored promotion when global test runner/config files change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The documents conflict on boundary validation: the confidence section calls the new Git/JSON boundaries mandatory for probing, while the mini-plan says no additional I/O boundary probe is needed. The newly introduced `git log` and `git diff` failure classification is not covered merely by existing manifest-read tests.",
+          "suggestion": "Keep the real-repository tests, and add/retain a focused boundary probe for subprocess failure and path parsing so `unavailable` versus fatal `error` behavior stays intentional.  Overall, anchoring to a CI-verified first-parent ancestor is a sound, appropriately bounded way to recover usefulness without weakening the CI trust boundary. It needs a current-versus-anchor traceability equivalence check before it can safely promote against a changed `HEAD`.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T17:32:35.373283+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** The staleness guard checks the FR's bound test files *as the anchor's manifest records them*. But the manifest itself (`test-traceability.json`) is committed and can differ between anchor and HEAD — indeed, structural drift is the entire premise of this change. If an FR gained a *new* bound test file between anchor and HEAD, that file is absent from the anchor's bound set, so it's never checked against the diff, and promotion asserts \"these tests ran green\" for an FR whose evidence set changed. Conversely, a test *removed* from an FR at HEAD wouldn't block promotion either.\n**Suggestion:** If the manifest path appears in `changed_paths_between(anchor, head)`, either mark affected FRs stale or (better) compare the FR's bound set between the anchor's manifest and HEAD's manifest and mark stale on any difference. This is cheap — the manifests are already both in hand.\n\n**Category:** edge-case — **Severity:** low\n**Finding:** First-parent-only walk means a verified commit merged via a non-first-parent edge (e.g., a PR whose merge commit is itself verified only via the PR branch) could be skipped. Given `_qualifying_runs` requires `event==push` on the default branch, verified commits should generally lie on the first-parent chain, so this is probably fine — but the rationale isn't stated in the spec.\n**Suggestion:** One docstring sentence explaining why first-parent-only is sufficient (push-event verdicts land on the default branch's first-parent chain), so a future maintainer doesn't \"fix\" it.\n\n**Category:** risk — **Severity:** low\n**Finding:** Changes to the promotion/trust machinery itself between anchor and HEAD are not staleness-relevant — e.g., if `ci_execution_evidence.py` or the manifest generator changed semantics in A..HEAD, promotion still uses the anchor's evidence verdict computed under old tooling. Also `promote_required_layers.py`'s own `_qualifying_runs` semantic […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The guard does not establish that the requirement’s traceability binding at `HEAD` is the same binding that was verified at the anchor. A test can be removed from/reassigned in the current requirement’s manifest without changing the old bound test file or either `spec.md`; promotion would then rely on evidence for an obsolete test set.  \n   **Suggestion:** Before allowing anchored promotion, compare the anchor and `HEAD` requirement nodes: require stable requirement identity and stable bound-test mapping (or conservatively skip with a distinct `traceability_changed_since_anchor` reason). Also skip if the requirement is absent at `HEAD`.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Plain `git diff --name-only` paths may not compare safely with manifest paths on Windows or with `./` prefixes, backslashes, or unusual filenames. A representation mismatch produces a false “unchanged” result—the unsafe direction for this guard.  \n   **Suggestion:** Canonicalize manifest and Git paths to validated repo-relative POSIX paths before set comparison. Prefer `git diff -z --name-only --no-renames` and parse NUL-delimited results.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Checking only directly bound test files misses common ways test behavior changes: shared fixtures, helpers, test-selection configuration, or runner configuration can weaken/disable a bound test while its file remains untouched. The approach therefore provides narrower protection than the problem statement’s “tests ran green” assertion implies.  \n   **Suggestion:** Explicitly define the guarantee as direct-file staleness only, or include the repository’s known test-impacting shared paths/configuration in each guard decision. At minimum, conservatively skip anchored promotion when global test runner/config files change.\n\n4. **Category:** dependency  \n   **Severity:** low  \n   **Findin […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/promotion_evidence_staleness.py",
+          "line": null,
+          "finding": "evidence_stale_since_anchor only checked the anchor's COMMITTED manifest node for bound test files, not what the anchor's CI run actually confirmed. tests/coverage/acs are compare_traceability_manifest._REQUIREMENT_EXECUTION_KEYS, excluded from structural_diff entirely, so resolve_execution_evidence's content-binding check never vouches for the committed manifest's tests block matching the CI artifact's. A test retagged onto an FR between the committed anchor manifest and the anchor's actual CI run was structurally invisible to the staleness guard, silently narrowing the invalidating set.",
+          "suggestion": "Add a third parameter, ci_node_at_anchor, to evidence_stale_since_anchor -- the same CI-evidence node already used to build the promotion decision's own eval_node[\"tests\"] -- and union its bound files into the anchor-side invalidating set.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/promotion_evidence_staleness.py",
+          "line": null,
+          "finding": "bound_test_files raised AttributeError on a non-dict tests block. A committed manifest node's tests is never shape-checked upstream (unlike a CI evidence node's), so a malformed committed manifest reaches this function exactly as often as a well-formed one.",
+          "suggestion": "Guard with isinstance(tests, dict) and return None (unconditionally stale) instead of crashing.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/promote_required_layers.py",
+          "line": null,
+          "finding": "The anchor-fallback path in main() introduced three new exit-2 paths on what is, on inspection, three different failure classes -- collapsing distinct cases (a local git fault vs. a genuine content-binding integrity failure) into one blanket-fatal behavior would be wrong in both directions.",
+          "suggestion": "Resolve asymmetrically: a local git fault reading the anchor's own manifest, and a local git fault diffing anchor..HEAD, both degrade to the tip's original 'unavailable' (a safe fallback is already in hand); the anchor's own CI evidence resolving to 'error' (a content-binding/integrity signal, not a transient fetch failure) stays fatal, symmetric with the tip's pre-existing error handling.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "test-coverage",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py",
+          "line": null,
+          "finding": "Missing test coverage for the three new anchor-fallback branches in main() (local git fault reading anchor manifest, local git fault diffing anchor..HEAD, anchor's own CI evidence resolving to error) and for manifest_at_commit.read_manifest_at_commit's non-dict-JSON rejection branch.",
+          "suggestion": "Add regression tests for each of the five gaps.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/lib/promotion_evidence_staleness.py",
+          "line": null,
+          "finding": "Docstring and the iterate spec's Design section still described the pre-fix 3-arg evidence_stale_since_anchor signature after it grew a fourth/fifth parameter across earlier review rounds.",
+          "suggestion": "Update both the function's own docstring and the iterate spec's Design section to match the shipped signature.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "simplification",
+          "file": "shared/scripts/tools/promote_required_layers.py",
+          "line": null,
+          "finding": "A 24-line redundant inline comment block restated logic already covered by the referenced functions' own docstrings.",
+          "suggestion": "Trim to a short pointer comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/ci_verified_anchor.py, shared/scripts/lib/manifest_at_commit.py, shared/scripts/lib/promotion_evidence_staleness.py",
+          "line": null,
+          "finding": "No commit-SHA injection guard on the three new git-boundary functions (resolve_verified_anchor, read_manifest_at_commit, changed_paths_between): each reaches a git subprocess call with a commit string that, today, always comes from an already-validated source, but nothing enforced that invariant at the function boundary itself. Not currently exploitable, but defense-in-depth is warranted given the existing sibling predicate (ci_provenance) already validates its own commit argument this way.",
+          "suggestion": "Mirror ci_provenance._COMMIT_RE's 40-char-hex validation locally in each of the three modules, failing closed (error/None/ManifestReadError, never running git) on a non-SHA input, with a regression test per function.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T18:11:12.364626+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/promotion_evidence_staleness.py, shared/scripts/tools/promote_required_layers.py",
+          "line": null,
+          "finding": "Claim under doubt: the anchor MOVES; the trust boundary does not — On the anchor path, HEAD's own committed manifest -- which supplies id, spec_path, and node_at_head for the staleness guard -- is verified by NOTHING (unlike the direct path, where 'confirmed' implies CI regenerated the manifest fresh at that exact commit with zero drift). A test newly bound to an FR between the anchor and HEAD, not yet reflected in a re-run manifest regeneration, is invisible to every existing check and would silently promote using evidence that never covered it. Also: nothing compares anchor_node['id'] to node['id'].",
+          "suggestion": "Add a run-level refusal when a changed test-shaped file is unaccounted for in the anchor's own bound set, and an FR-identity equality check between the anchor and HEAD nodes.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "reversibility",
+          "file": "shared/scripts/tools/promote_required_layers.py",
+          "line": null,
+          "finding": "Claim under doubt: keeping anchor_evidence.status == 'error' fatal is symmetric with the tip's error handling — resolve_execution_evidence returns 'error' for plain transient/operational faults too (artifact listing/download failures), not only content-binding mismatches. Treating all of them as fatal turns a best-effort fallback into a self-repeating exit-2 for the same anchor commit on every run.",
+          "suggestion": "Degrade the anchor's error to the tip's original 'unavailable', same as the other anchor-path git-plumbing faults.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/ci_verified_anchor.py",
+          "line": null,
+          "finding": "Claim under doubt: the walk is bounded, so its cost is a disclosed low-severity performance note — The real multiplier is 2-3 gh api subprocess spawns per candidate, and there is no circuit breaker -- a systemic query fault burns the full max_commits worth of calls to reach the same conclusion a handful already establishes.",
+          "suggestion": "Bail out after N consecutive error outcomes; report the reason in VerifiedAnchor.detail.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/promote_required_layers.py, shared/scripts/ci_verified_anchor.py",
+          "line": null,
+          "finding": "Claim under doubt: walking to the newest CI-verified ancestor is what makes the mechanism fire — The walk's stopping predicate is 'verified' (structural provenance), but the caller actually needs 'confirmed' execution evidence -- if the newest verified ancestor's own artifact is missing, the fallback gives up without trying the next verified ancestor.",
+          "suggestion": "Continue the walk past a verified ancestor whose execution evidence resolves unavailable, bounded by the same max_commits.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "shared/scripts/lib/promotion_evidence_staleness.py, shared/scripts/tools/promote_required_layers.py",
+          "line": null,
+          "finding": "Claim under doubt: nothing that could invalidate this FR's anchor evidence changed between the anchor and HEAD — changed_paths_between diffs two COMMITTED trees, but plan_promotions reads spec.md from the WORKING TREE and the promotion decision can be made against uncommitted state no commit ever contained.",
+          "suggestion": "Union in a working-tree diff against the anchor commit, or refuse the anchor path when the working tree is dirty in a bound test file or spec.md.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/promote_required_layers.py",
+          "line": null,
+          "finding": "Claim under doubt: downgrading only 'promote' is right because every other outcome already reflects 'this run's evidence did not clear the bar' — An escalate outcome computed from anchor evidence reaches a human with a detail string that doesn't flag its inputs are anchored, or that the same staleness facts weren't consulted for it.",
+          "suggestion": "Run the staleness computation for escalate outcomes too and annotate the decision, without changing the action.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/ci_verified_anchor.py",
+          "line": null,
+          "finding": "Claim under doubt: the anchor.commit != sha guard prevents re-resolving evidence for HEAD itself — resolve_verified_anchor validates head_commit.lower() but passes the caller's original-case string to git log, while --format=%H always returns lowercase -- an uppercase head_commit could defeat the guard.",
+          "suggestion": "Normalise head_commit to lowercase once at the top of resolve_verified_anchor.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T18:30:52.573387+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/promote_required_layers.py (~line +324–+341, the staleness override block)",
+          "line": null,
+          "finding": "The staleness downgrade replaces the entire decision dict with a minimal `{\"fr\", \"action\", \"reason_code\"}` built from scratch, discarding every other field `evaluate_fr` produced for that FR (e.g. `required_layers`, prior-contradiction info, any reason detail other skips carry). Whatever downstream code or report formatting consumes skip decisions can now see a structurally different skip entry than every other skip this tool emits.",
+          "suggestion": "Mutate the existing decision in place (`decision[\"action\"] = \"skip\"; decision[\"reason_code\"] = REASON_...`) instead of constructing a fresh dict, preserving `evaluate_fr`'s other fields.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/promote_required_layers.py (plan_promotions, `changed_paths or set()`)",
+          "line": null,
+          "finding": "The staleness check fail-opens when `changed_paths is None` but `anchor_manifest` is set — a None diff is treated as \"nothing changed\", exactly the opposite of `changed_paths_between`'s documented contract (\"a caller must fail closed\"). `main()` happens to exit 2 first, but `plan_promotions`' own guard is unsafe for any other caller and contradicts the docstring above it.",
+          "suggestion": "When `anchor_manifest is not None and changed_paths is None`, either raise or force the skip; only use the empty-set default when no anchor manifest is present.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/promote_required_layers.py (staleness override, `anchor_node.get(\"spec_path\", \"\")`)",
+          "line": null,
+          "finding": "The spec.md path checked for staleness is the ANCHOR node's `spec_path`, but the promotion is written into HEAD's spec.md at HEAD's node `spec_path`. If an FR's spec.md moved between anchor and HEAD, a change to the NEW spec.md is invisible to the guard while the promotion still writes there. Same asymmetry exists for bound-test files, but that direction is per-design (\"as the anchor's manifest records them\"); the spec.md the tool actually writes should also be checked.",
+          "suggestion": "Union the anchor node's `spec_path` and the HEAD node's `spec_path` into the invalidating set.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_promotion_evidence_staleness.py (`test_changed_paths_between_no_renames_shows_the_old_path_on_a_pure_rename`)",
+          "line": null,
+          "finding": "The rename test commits an identical-content file at a new path, which git will report as a pure rename even WITH rename detection — but because `--no-renames` is in the implementation, the test would also pass if `--no-renames` were removed only when similarity detection kicks in; since content is unchanged, rename detection WOULD collapse it and the old path would be dropped without `--no-renames`, so the test is actually valid. However, the more dangerous case (moved AND modified) is untested; the docstring specifically calls out \"moved-and-modified\" as the trap.",
+          "suggestion": "Add a case that renames and substantially edits the file between commits and assert the old path still appears — that's the case where rename detection is most likely to hide the old path in a naive implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_promote_required_layers.py (`test_a_query_error_walking_the_anchor_degrades_to_unavailable_not_exit_2`)",
+          "line": null,
+          "finding": "This test mocks `resolve_verified_anchor` to return `status=\"error\"` outright; it validates main()'s handling of an anchor-walk error, not the \"query error on one candidate degrades toward unavailable\" behavior named in AC3's second sentence. That behavior is only covered at the `resolve_verified_anchor` unit level (in test_ci_verified_anchor.py) — acceptable, but the AC wording conflates the two layers.",
+          "suggestion": "No code change needed; optionally note in the test which layer each half of AC3 is proven at.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/promote_required_layers.py (anchor fallback)",
+          "line": null,
+          "finding": "If `resolve_verified_anchor` returns `found` with `anchor.commit == sha` (tip verified but tip execution evidence `unavailable`), the `anchor.commit != sha` condition silently drops the anchor and the run proceeds with `unavailable` evidence — correct outcome, but only by coincidence of the condition; a reader cannot tell intentional from accidental. More substantively, when the fallback manifest read fails (`ManifestReadError`) the tool exits 2, whereas the spec frames query hiccups as degrading — this is an inconsistent strictness (a `git show` failure on an optional best-effort path is fatal).",
+          "suggestion": "Wrap the anchor-manifest read failure to keep the original `unavailable` evidence (log it) rather than exit 2, matching the surrounding degrade-don't-abort policy; or document why this one read is load-bearing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/promote_required_layers.py:330-332",
+          "line": null,
+          "finding": "The staleness guard uses `anchor_node.get(\"spec_path\")`, not the current requirement’s `node.get(\"spec_path\")`. If an FR is moved to a different `spec.md` after the verified anchor while the old spec file remains unchanged, the guard can promote the FR using evidence from the old specification and modify the new/current spec despite that specification never being covered by the anchor run.",
+          "suggestion": "Treat either the anchor or current `spec_path` changing as invalidating—at minimum pass the current node’s `spec_path` to `evidence_stale_since_anchor`, and preferably include both paths in the invalidating set. Add an end-to-end test where `spec_path` changes between anchor and HEAD.  Ship-with-fixes: the anchor approach and test coverage are otherwise aligned with the stated design, but this gap can create an irreversible promotion based on stale specification evidence.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "glm+openai",
+      "completed_at": "2026-09-10T16:51:02.047908+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/promote_required_layers.py (~line +324–+341, the staleness override block)\n  Finding: The staleness downgrade replaces the entire decision dict with a minimal `{\"fr\", \"action\", \"reason_code\"}` built from scratch, discarding every other field `evaluate_fr` produced for that FR (e.g. `required_layers`, prior-contradiction info, any reason detail other skips carry). Whatever downstream code or report formatting consumes skip decisions can now see a structurally different skip entry than every other skip this tool emits.\n  Suggestion: Mutate the existing decision in place (`decision[\"action\"] = \"skip\"; decision[\"reason_code\"] = REASON_...`) instead of constructing a fresh dict, preserving `evaluate_fr`'s other fields.\n\n- Category: bug\n  Severity: medium\n  File: shared/scripts/tools/promote_required_layers.py (plan_promotions, `changed_paths or set()`)\n  Finding: The staleness check fail-opens when `changed_paths is None` but `anchor_manifest` is set — a None diff is treated as \"nothing changed\", exactly the opposite of `changed_paths_between`'s documented contract (\"a caller must fail closed\"). `main()` happens to exit 2 first, but `plan_promotions`' own guard is unsafe for any other caller and contradicts the docstring above it.\n  Suggestion: When `anchor_manifest is not None and changed_paths is None`, either raise or force the skip; only use the empty-set default when no anchor manifest is present.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/promote_required_layers.py (staleness override, `anchor_node.get(\"spec_path\", \"\")`)\n  Finding: The spec.md path checked for staleness is the ANCHOR node's `spec_path`, but the promotion is written into HEAD's spec.md at HEAD's node `spec_path`. If an FR's spec.md moved between anchor and HEAD, a change to the NEW spec.md is invisible to the guard while the promotion still writes there. Same asymmetry exists for bound- […truncated]\n\n[openai] - Category: bug\n- Severity: high\n- File: `shared/scripts/tools/promote_required_layers.py:330-332`\n- Finding: The staleness guard uses `anchor_node.get(\"spec_path\")`, not the current requirement’s `node.get(\"spec_path\")`. If an FR is moved to a different `spec.md` after the verified anchor while the old spec file remains unchanged, the guard can promote the FR using evidence from the old specification and modify the new/current spec despite that specification never being covered by the anchor run.\n- Suggestion: Treat either the anchor or current `spec_path` changing as invalidating—at minimum pass the current node’s `spec_path` to `evidence_stale_since_anchor`, and preferably include both paths in the invalidating set. Add an end-to-end test where `spec_path` changes between anchor and HEAD.\n\nShip-with-fixes: the anchor approach and test coverage are otherwise aligned with the stated design, but this gap can create an irreversible promotion based on stale specification evidence.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:50:56.365448+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T17:32:30.366306+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
