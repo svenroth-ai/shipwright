@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:44.963425+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "security / approach",
+          "file": null,
+          "line": null,
+          "finding": "§7 discloses that a PR can unbind an AC and re-baseline in the same PR, but the actual surface is larger: the gate reads `shipwright_ac_coverage_baseline.json` from the working tree, so any PR that touches the baseline (via `--write` or hand-editing) grades its own head against its own updated grandfather set. The disclosed \"review is the control\" answer is consistent with repo convention, but the plan doesn't give reviewers the signal they'd need to exercise that control — nothing in the gate output calls out that the baseline grew.",
+          "suggestion": "Either (a) in CI mode, read the baseline blob from the merge-base commit (the same `spec_text_at`/git-blob pattern arm 2 already uses for the base manifest) so a PR cannot edit its own grandfather set; or, minimally, (b) make the gate emit a loud, explicit \"baseline grew by N entries in this PR: [...]\" section in its output so a reviewer sees it without diffing the JSON by hand. Option (a) is ~a few lines given the primitives already reused in §2 and materially closes the hole.  2. \"Resolved then re-unbound\" escapes the ratchet",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "An AC in the baseline that later gains a binding is reported as `resolved_since_baseline` (informational), but the baseline entry persists. If that AC is subsequently unbound again, it is still grandfathered — a genuine regression passes. This is arguably a miss against AC (a) (\"blocks only on a ratchet\"): this is a ratchet and doesn't block.",
+          "suggestion": "Compute the effective grandfather set as `baseline − resolved_since_baseline` at check time (you already compute `resolved_since_baseline`). An AC that demonstrably recovered coverage loses its grandfather status; re-unbinding it then blocks. This needs no provenance tracking and doesn't touch the `--write` flow.  3. No remediation path documented for a legitimate arm-2 hit",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Arm 2 is hard from day one with no baseline and no acknowledge mechanism. A developer who intentionally removes a `@covers` suffix while the AC text is unchanged (e.g., the tag was wrong, or the test is being retired) has no sanctioned escape: re-editing the AC text to route through P3.6's `changed` semantics may itself be flagged there. The first legitimate hit will produce a blocked PR with no documented \"correct\" resolution.",
+          "suggestion": "Document (in the gate's failure output and `hooks-and-gipeline.md`/`guide.md`, where the asymmetry is already being documented) the two sanctioned remedies: rebind the test to the correct AC, or explicitly remove/renumber the criterion so the removal is reviewed as a removal. If neither is acceptable to the team, an explicit opt-out mechanism needs to be a named follow-up triage card rather than an implicit \"edit the AC text to dodge the gate.\"  4. Confirm binding derivation is tag-derived, not execution-derived",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "§5 states both gates run after the manifest regeneration step, which \"rewrites in place from this run's own JUnit.\" If a manifest binding requires the test to have executed and reported, then a skipped/errored/infra-failed test job in the same run could yield a missing binding → false \"newly unbound\" (feeder a) or false regression (arm 2) block, making the gate hostage to flaky infra.",
+          "suggestion": "Verify and state explicitly that `acs_by_key` hits are derived from parsing `@covers` tags in the test source (or from JUnit regardless of pass/skip status), and add a fixture pinning \"test failed but tag present → still bound.\" If execution status does matter, add a manifest-completeness precondition before either gate runs.  5. Coordinated FR removal may pass silently",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "If a PR removes an FR and its tests and its criteria together: arm 1 sees no manifest key at head (no orphan), arm 2 stays silent by design (AC is in the `removed` set), and feeder (a) sees nothing (AC no longer minted). Whether P3.6's own `removed`/`binding_removed` walk catches the deleted-criterion-with-deleted-binding case determines whether this is covered at all — the plan doesn't trace it.",
+          "suggestion": "Add one fixture (or a one-line trace in the design notes) confirming which layer flags a removed FR with its bindings removed in the same PR. If nothing does, that's a fine named limitation, but it should be disclosed rather than unexamined.  6. Baseline schema has no version marker",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "{\"unbound\": [...]}` has no schema/version field. Future format changes (e.g., adopting finding 2's effective-set semantics, or adding provenance) will need a migration story, and a stale/foreign-shape file currently fails closed into a 259-entry wall of red.",
+          "suggestion": "Add a `\"schema\": 1` (or `\"version\"`) key now and validate it in `require`-style fashion alongside the corrupt-baseline fail-closed path. One line of cost today.  7. Rollout communication for the first hard-gate hits",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Feeder (b) is the repo's first hard-from-day-one AC gate. Even with clean current state (§6), the first contributor to trip arm 2 on a legitimate refactor will hit a red PR with no institutional memory of why.",
+          "suggestion": "Ensure the failure output includes the FR/AC id, the offending test file, and a pointer to the asymmetry documentation; consider a short advisory-only burn-in (report-but-pass) for arm 2 only, or at minimum a CONTRIBUTING note. Optional given the family's exit-contract conventions, but cheap insurance.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Treating unreadable spec paths as warnings and excluding them makes the “hard from day one” orphan check fail open. In particular, a spec file deleted or made unparsable at head can remove its minted AC set from comparison and conceal bindings that should now be orphaned.",
+          "suggestion": "Distinguish an expected head-side deletion from a read/parse failure. Treat deletion as an empty current minted set and report affected bindings as orphaned; treat any unexpected read/parse failure as an infra fault (exit 2), not a warning-and-green result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Arm 2 is intended to close the two-PR unbind sequence, but its only evidence of the old binding is the base manifest, explicitly acknowledged to be stale-by-construction. If that artifact omitted or lagged the binding, PR1 can still remove the suffix without a regression finding, undermining the stated closure of the sequence.",
+          "suggestion": "Make the base-side binding signal authoritative: either validate the base manifest’s provenance/completeness before relying on it, or derive base bindings from the base revision’s test metadata using the existing link-extraction primitive. If retaining the stale-manifest tradeoff, narrow the claim from “closes” to “detects when the base artifact contains the binding.”",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan depends on a committed, correctly located, canonical baseline seed, but does not explicitly include it as an implementation/wiring deliverable or specify key normalization. A mismatch between emitted identifiers and `FR-xx/ACnn` baseline entries would either block the entire legacy backlog or silently grandfather the wrong ACs.",
+          "suggestion": "Add the seeded baseline file to the change deliverables, define the canonical key constructor shared by producer and reader, and test malformed, duplicate, unknown, and normalized-equivalent entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new hard checks run after manifest regeneration, so their correctness depends on that regeneration covering the same test scope as the PR. If CI uses sharding, filters, conditional suites, or partial JUnit collection, valid bindings can disappear from the regenerated manifest and produce false blocks.",
+          "suggestion": "Assert or document that the manifest-generation step is a complete repository-wide collection for pull requests. If it is intentionally partial, preserve unaffected manifest entries or run the coverage gates only after a complete collection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan calls both arms a shared mission, but Arm 2 detects removal of an AC binding while the AC still exists; that is an AC-without-test regression, not literally “a test whose AC vanished.” This can confuse future maintainers about why it is hard while feeder (a) is anti-ratcheted.",
+          "suggestion": "Document Arm 2 as a hard anti-evasion rule for newly removed existing bindings, explicitly tied to the anti-ratchet’s same-PR-baseline loophole, rather than describing it as part of vanished-AC detection.  Overall, the split between current orphan detection and binding-regression detection is sensible, and reuse of the existing readers is appropriately restrained. It needs fail-closed spec-read handling and a reliable base-binding source before the hard-gate claims are dependable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T15:16:52.597710+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Baseline self-grandfathering window is wider than disclosed**\n- Category: security / approach\n- Severity: medium\n- Finding: §7 discloses that a PR can unbind an AC and re-baseline in the same PR, but the actual surface is larger: the gate reads `shipwright_ac_coverage_baseline.json` from the working tree, so *any* PR that touches the baseline (via `--write` or hand-editing) grades its own head against its own updated grandfather set. The disclosed \"review is the control\" answer is consistent with repo convention, but the plan doesn't give reviewers the signal they'd need to exercise that control — nothing in the gate output calls out that the baseline grew.\n- Suggestion: Either (a) in CI mode, read the baseline blob from the merge-base commit (the same `spec_text_at`/git-blob pattern arm 2 already uses for the base manifest) so a PR cannot edit its own grandfather set; or, minimally, (b) make the gate emit a loud, explicit \"baseline grew by N entries in this PR: [...]\" section in its output so a reviewer sees it without diffing the JSON by hand. Option (a) is ~a few lines given the primitives already reused in §2 and materially closes the hole.\n\n**2. \"Resolved then re-unbound\" escapes the ratchet**\n- Category: edge-case\n- Severity: medium\n- Finding: An AC in the baseline that later gains a binding is reported as `resolved_since_baseline` (informational), but the baseline entry persists. If that AC is subsequently unbound again, it is still grandfathered — a genuine regression passes. This is arguably a miss against AC (a) (\"blocks only on a ratchet\"): this *is* a ratchet and doesn't block.\n- Suggestion: Compute the effective grandfather set as `baseline − resolved_since_baseline` at check time (you already compute `resolved_since_baseline`). An AC that demonstrably recovered coverage loses its grandfather status; re-unbinding it then blocks. This needs no provenance tracking and doesn't touch the `--write` flow.\n\n**3. No remediation pa […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Treating unreadable spec paths as warnings and excluding them makes the “hard from day one” orphan check fail open. In particular, a spec file deleted or made unparsable at head can remove its minted AC set from comparison and conceal bindings that should now be orphaned.  \n   **Suggestion:** Distinguish an expected head-side deletion from a read/parse failure. Treat deletion as an empty current minted set and report affected bindings as orphaned; treat any unexpected read/parse failure as an infra fault (exit 2), not a warning-and-green result.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** Arm 2 is intended to close the two-PR unbind sequence, but its only evidence of the old binding is the base manifest, explicitly acknowledged to be stale-by-construction. If that artifact omitted or lagged the binding, PR1 can still remove the suffix without a regression finding, undermining the stated closure of the sequence.  \n   **Suggestion:** Make the base-side binding signal authoritative: either validate the base manifest’s provenance/completeness before relying on it, or derive base bindings from the base revision’s test metadata using the existing link-extraction primitive. If retaining the stale-manifest tradeoff, narrow the claim from “closes” to “detects when the base artifact contains the binding.”\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan depends on a committed, correctly located, canonical baseline seed, but does not explicitly include it as an implementation/wiring deliverable or specify key normalization. A mismatch between emitted identifiers and `FR-xx/ACnn` baseline entries would either block the entire legacy backlog or silently grandfather the wrong ACs.  \n   **Suggestion:** Add the seeded baseline file to the change deliverables, define the canonical key constructor shared by producer and reader, and test malformed […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:26:56.290667+00:00",
+      "disposition": "Orchestrator-delegated Stage-2 code review (campaign-mode 3f-bis) against PR #711 commit 881d6eb2. REJECTed with 4 blocking + 7 non-blocking findings, including two real bugs in the orchestrator's own Stage-1 fix: check_ac_coverage_ratchet's spec-text reader missed UnicodeDecodeError with no last-resort exception boundary; the Stage-1 warning-emission fix was itself under-scoped (only warned when the excluded FR had bindings). All 4 blocking findings fixed by the orchestrator (commit 246875fa), plus 6 of 7 non-blocking findings fixed, 1 deferred (no direct test for the CLI's default merge-base resolution path, out of scope for this review-fix round). Verified via 39/39 tests green (up from 24), ruff clean, verify_local.py green. Full detail: design doc section 5c.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:26:56.477435+00:00",
+      "disposition": "Orchestrator-delegated Stage-3 doubt review (campaign-mode 3f-bis, advisory) against PR #711 commit 246875fa. Biased to disprove; 3 of 5 named investigation angles came back false alarm after tracing. Surviving findings: 1 HIGH (arm 1's spec_path_by_fr silently picks one path on a display-id collision, hard-blocking on an ambiguity the family already routes advisory elsewhere -- fixed by excluding colliding display ids with a warning, same mechanism as the missing-spec_path case), 3 MEDIUM (a misleading remedy string contradicting this PR's own tag-derived-binding contract, fixed; the coverage-ratchet baseline's pull_request-only trigger means zero post-merge automated observation, rejected-with-reason and filed as trg-e69bf1ba since it is a real CI-trust-boundary decision needing its own review; arm 2 dropped two null-case warnings its own reused reader family earned, fixed), 3 LOW (arm ordering discarding arm 1's orphan finding on an arm-2 fault, fixed; a resolve() call outside the try boundary, rejected as unreachable in CI where --project-root is hardcoded; a third silent-exclusion instance for a non-string id, fixed). While applying the HIGH fix, self-identified and fixed a related gap in binding_regressions (arm 2) that had not consulted the same collision set, making the HIGH fix's own warning claim inaccurate for feeder b until closed. All fixes verified via 45/45 tests green, ruff clean, verify_local.py green. Full detail: design doc section 5d (Stage-3 table) plus the self-identified-fix addendum.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_ac_binding_regression.py` (~line 92, `head_and_base_minted`)",
+          "line": null,
+          "finding": "The docstring states \"The BASE side is lenient (warning, treated as empty) for the same reason `_keystone_ac_digest.ac_change_set` is lenient there: a base commit is already merged and cannot be authored by this PR.\" But the code raises `ReadError(f\"could not read {rel_path} at the base commit\")` when `base_text is None` — the opposite of lenient. This is inconsistent with the sibling P3.6 reader's base-side convention the docstring claims to follow, and turns any base-side read fault (or any case where `spec_text_at` returns `None` rather than `\"\"` for the base) into a hard infra exit (2) that blocks every PR touching that path, rather than proceeding with a warning.",
+          "suggestion": "Either make the base-side `None` case append a warning and treat as empty (matching the docstring and the P3.6 precedent), or fix the docstring to say the base side raises. Given the design doc's own \"base is immutable, be lenient\" argument, the code should warn-and-proceed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/check_ac_coverage_ratchet.py` (`_load_baseline`, the set comprehension)",
+          "line": null,
+          "finding": "Non-string entries in the baseline's `unbound` list are silently dropped (`if isinstance(x, str)`), with no warning and no infra fault. A hand-edited or half-migrated baseline containing malformed entries will be partially accepted: the shape check (`isinstance(doc[\"unbound\"], list)`) passes, but some intended grandfather entries may be discarded → false blocks — or, worse, a corrupted file avoids the \"fail CLOSED on corrupt baseline\" rule the design mandates. External plan review finding 3 explicitly asked for malformed/duplicate/unknown-entry tests; none exist for this case.",
+          "suggestion": "If any entry in `unbound` is not a string, return a non-None error (infra fault) instead of silently filtering; add a test for a baseline containing a non-string entry.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/check_ac_coverage_ratchet.py` (`_load_baseline` docstring)",
+          "line": null,
+          "finding": "The docstring says an absent baseline is \"fail open, matching `anti_ratchet.load_baseline_override`'s documented absent-baseline behaviour,\" but returning an empty grandfathered set means every unbound AC blocks — that is fail-CLOSED, and the design doc §4 explicitly argues this is the opposite default from the bloat baseline. The code is right; the comment contradicts both the code and the design doc, and will mislead the next maintainer.",
+          "suggestion": "Reword the docstring: \"Absent -> empty grandfathered set (deliberately the opposite of the bloat baseline's absent = fail open; see design doc §4).\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/` — no direct tests for `_ac_binding_regression.binding_regressions",
+          "line": null,
+          "finding": "The pure arm-2 function is exercised only through the CLI tests via real-git fixtures. That's real coverage, but the boundary conditions the docstring pins — AC present at head but absent at base (`base_minted.get(key) is None` → skipped, i.e. an added AC that also lost bindings is never flagged), and an AC whose digest changed at base only — have no tests. A regression in the `base_minted.get(key) != head_digest: continue` guard (e.g. someone flips it to `==`) would still pass every existing test except via a contrived fixture.",
+          "suggestion": "Add two direct unit tests on `binding_regressions`: (1) key absent at base → no finding; (2) digest differs → no finding, even with base_links>0 and head_links=0.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "check_orphan_ac_binding.py` `_run_gate`, arm-1 spec text read",
+          "line": null,
+          "finding": "Arm 1 reads HEAD spec text via `spec_text_at(project_root, args.head_sha, path)` — a git-blob read — while the manifest it compares against is the worktree manifest regenerated by the earlier CI step. If the regenerated manifest in the worktree and the committed spec at `head_sha` ever disagree (e.g. the regeneration step failed to run or wrote a stale copy, or the checkout moved on), the two arms compare different head states. The comment justifies this for uncommitted files, but the manifest side is never bound to `head_sha`. Low likelihood in CI as wired, but the same PR's ratchet gate deliberately reads the worktree for both sides.",
+          "suggestion": "Either document this as an accepted inconsistency, or (cheaper) assert in the infra path that the worktree manifest matches the head-sha blob before gating, so a missed regeneration step surfaces as exit 2 with an explicit reason rather than possibly-clean output.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[shared/scripts/tools/verifiers/_ac_binding_state.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-pzjdcnn4\\shared\\scripts\\tools\\verifiers\\_ac_binding_state.py:43)",
+          "line": null,
+          "finding": "The hard orphan check deliberately considers only `active` requirement nodes. If a PR removes or retires an FR while a test still retains its `@covers FR-xx/ACnn` tag, the regenerated head manifest no longer supplies that FR to `read_binding_state`, so no orphan is reported. This is an exception to “a test whose AC vanished” being hard from day one; the included test explicitly locks in that silent behavior.",
+          "suggestion": "Compare current bindings against the base requirement/binding set as well, and report bindings for removed/retired FRs when their tagged tests remain. Add an end-to-end fixture that removes an FR but leaves its tagged test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/scripts/tools/check_ac_coverage_ratchet.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-pzjdcnn4\\shared\\scripts\\tools\\check_ac_coverage_ratchet.py:197)",
+          "line": null,
+          "finding": "The ratchet reads its baseline from the PR worktree and explicitly tells a blocked contributor to regenerate and commit it in the same PR. Consequently, a PR can introduce an unbound AC and add that identifier to the baseline, producing a clean result rather than blocking the new ratchet.",
+          "suggestion": "In CI, compare against the merge-base baseline (with a narrowly scoped bootstrap exception for this initial introduction), or at minimum fail/report when the PR expands the baseline so that expansion receives an explicit approval path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/scripts/tools/tests/test_check_orphan_ac_binding.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-pzjdcnn4\\shared\\scripts\\tools\\tests\\test_check_orphan_ac_binding.py:110)",
+          "line": null,
+          "finding": "The tests labelled as real-git coverage simulate regenerated evidence by directly replacing `test-traceability.json`; they never run the manifest generator from a real `@covers` tag. Thus they would still pass if regeneration drops unknown/removed AC tags or otherwise emits a different `acs` shape, which is the critical producer-to-gate integration needed for the deletion and rotation cases.",
+          "suggestion": "Add integration fixtures that modify actual tagged test source, run the same manifest-regeneration command used by CI, and then invoke the gates.  The gates are thoughtfully documented, but the hard check has a real coverage escape and the anti-ratchet can be self-grandfathered by the PR it evaluates. Ship with fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T15:29:47.308672+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: bug\n  Severity: medium\n  File: `shared/scripts/tools/verifiers/_ac_binding_regression.py` (~line 92, `head_and_base_minted`)\n  Finding: The docstring states \"The BASE side is lenient (warning, treated as empty) for the same reason `_keystone_ac_digest.ac_change_set` is lenient there: a base commit is already merged and cannot be authored by this PR.\" But the code raises `ReadError(f\"could not read {rel_path} at the base commit\")` when `base_text is None` — the opposite of lenient. This is inconsistent with the sibling P3.6 reader's base-side convention the docstring claims to follow, and turns any base-side read fault (or any case where `spec_text_at` returns `None` rather than `\"\"` for the base) into a hard infra exit (2) that blocks every PR touching that path, rather than proceeding with a warning.\n  Suggestion: Either make the base-side `None` case append a warning and treat as empty (matching the docstring and the P3.6 precedent), or fix the docstring to say the base side raises. Given the design doc's own \"base is immutable, be lenient\" argument, the code should warn-and-proceed.\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/check_ac_coverage_ratchet.py` (`_load_baseline`, the set comprehension)\n  Finding: Non-string entries in the baseline's `unbound` list are silently dropped (`if isinstance(x, str)`), with no warning and no infra fault. A hand-edited or half-migrated baseline containing malformed entries will be partially accepted: the shape check (`isinstance(doc[\"unbound\"], list)`) passes, but some intended grandfather entries may be discarded → false blocks — or, worse, a corrupted file avoids the \"fail CLOSED on corrupt baseline\" rule the design mandates. External plan review finding 3 explicitly asked for malformed/duplicate/unknown-entry tests; none exist for this case.\n  Suggestion: If any entry in `unbound` is not a string, return a non-None error (infra fault) instead of silently filt […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: [shared/scripts/tools/verifiers/_ac_binding_state.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-pzjdcnn4\\shared\\scripts\\tools\\verifiers\\_ac_binding_state.py:43)\n- Finding: The hard orphan check deliberately considers only `active` requirement nodes. If a PR removes or retires an FR while a test still retains its `@covers FR-xx/ACnn` tag, the regenerated head manifest no longer supplies that FR to `read_binding_state`, so no orphan is reported. This is an exception to “a test whose AC vanished” being hard from day one; the included test explicitly locks in that silent behavior.\n- Suggestion: Compare current bindings against the base requirement/binding set as well, and report bindings for removed/retired FRs when their tagged tests remain. Add an end-to-end fixture that removes an FR but leaves its tagged test.\n\n- Category: spec\n- Severity: medium\n- File: [shared/scripts/tools/check_ac_coverage_ratchet.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-pzjdcnn4\\shared\\scripts\\tools\\check_ac_coverage_ratchet.py:197)\n- Finding: The ratchet reads its baseline from the PR worktree and explicitly tells a blocked contributor to regenerate and commit it in the same PR. Consequently, a PR can introduce an unbound AC and add that identifier to the baseline, producing a clean result rather than blocking the new ratchet.\n- Suggestion: In CI, compare against the merge-base baseline (with a narrowly scoped bootstrap exception for this initial introduction), or at minimum fail/report when the PR expands the baseline so that expansion receives an explicit approval path.\n\n- Category: test\n- Severity: medium\n- File: [shared/scripts/tools/tests/test_check_orphan_ac_binding.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-pzjdcnn4\\shared\\scripts\\tools\\tests\\test_check_orphan_ac_binding.py:110)\n- Finding: The tests labelled as real-git coverage simulate regenerated evidence by directl […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:26:49.688234+00:00",
+      "disposition": "Orchestrator-delegated Stage-1 spec-compliance review (campaign-mode 3f-bis) against PR #711. Independently re-derived every functional claim from the shipped code; both new gates behave exactly as the design doc specifies. REJECTed once on self-report fidelity only -- design doc's own narrowing of arm 2's claim not propagated to docs/guide.md, docs/hooks-and-pipeline.md, ci.yml comment, plus the design doc's own Self-Review Error Handling row describing pre-fix behavior, plus one silent-exclusion branch's comment pointing at a warning it never emitted. All three fixed by the orchestrator directly (commit 881d6eb2), verified via tests + verify_local.py. Full detail: design doc section 5c.",
+      "recorded_by": "orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T15:17:32.145467+00:00",
+      "disposition": "runner has no Agent tool; plan_internal is permanently not_run for a sub-iterate runner, never promoted (runner contract Step 3.5 table)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

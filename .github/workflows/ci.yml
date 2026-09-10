@@ -441,6 +441,41 @@ jobs:
         if: github.event_name == 'pull_request'
         run: uv run shared/scripts/tools/check_keystone_ac_gate.py --project-root . --head-sha "${{ github.sha }}"
 
+      - name: AC coverage ratchet (gate)
+        # P3.7 feeder (a) (campaign req3-04c-ac-identity-wave2, design
+        # .shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md). SPEC §8
+        # E2: "AC without a test" is ANTI-RATCHETED against
+        # shipwright_ac_coverage_baseline.json — 259 of 268 minted ACs have no
+        # binding today (P3.6 design §2.1), so this only blocks a NEW unbound AC
+        # outside the grandfathered baseline, never the existing backlog. Its
+        # sibling below ("a test whose AC vanished") is the OPPOSITE case — hard
+        # from day one, no baseline — and that asymmetry is deliberate (SPEC §8
+        # E2, restated in the script's own module docstring).
+        #
+        # Same ordering requirement as the Keystone gate above and for the same
+        # reason: must run AFTER the manifest-regeneration step, which overwrites
+        # .shipwright/compliance/test-traceability.json in place from THIS run's
+        # real JUnit output before this gate reads it.
+        #
+        # pull_request only, same trust boundary as the Keystone gate.
+        if: github.event_name == 'pull_request'
+        run: uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root .
+
+      - name: Orphan AC binding (gate)
+        # P3.7 feeder (b) (same campaign, same design doc). SPEC §8 E2: "a test
+        # whose AC vanished" is HARD from day one — no baseline, because nothing
+        # has ever validated a @covers tag's AC id still exists, so there is no
+        # legacy backlog to grandfather. Catches three named shapes (two-PR
+        # unbind sequence -- whenever the base manifest's own record of the
+        # binding is trustworthy, not unconditionally; outright deletion; id
+        # rotation -- P3.6 design doc §7 / §10 item 8b, triage card
+        # trg-f68795d2): see the script's own module docstring for the
+        # two-arm mechanism.
+        #
+        # Same ordering + pull_request-only reasoning as the two gates above.
+        if: github.event_name == 'pull_request'
+        run: uv run shared/scripts/tools/check_orphan_ac_binding.py --project-root . --head-sha "${{ github.sha }}"
+
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml
   # when the WebUI was extracted into its own repo (v0.4.0, 2026-04-24).

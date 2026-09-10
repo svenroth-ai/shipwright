@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+  "date": "2026-09-10",
+  "section": "Spec/design/2026-07-22-req3-campaign-SPEC.md S8 E2",
+  "title": "Two P3.7 feeder AC-binding gates, deliberately asymmetric",
+  "context": "P3.6 built the keystone AC gate but explicitly declined two related checks: \"AC without a test\" and \"a test whose AC vanished\" (design doc S3b/S7/S10 item 8, triage trg-f68795d2). P3.6 measured 259/268 minted ACs unbound today -- a real legacy backlog for the first predicate, none for the second.",
+  "decision": "Build check_ac_coverage_ratchet.py anti-ratcheted against a committed baseline (259 seeded entries) for \"AC without a test\"; build check_orphan_ac_binding.py hard from day one, no baseline, for \"a test whose AC vanished\" -- two arms: an orphaned binding at head (deletion/id-rotation), and a binding dropped on unchanged criterion text between base and head (the two-PR unbind sequence's PR1).",
+  "consequences": "Two new pull_request-only ci.yml gates, CI-only (never mirrored by verify_local.py, same reason as the keystone gate). A retired FR's surviving bindings are invisible to both arms (trg-00b11bd7, same scope boundary as the keystone gate's own links_for). Baseline self-grandfathering in the same PR is an accepted, disclosed risk (trg-91532c29), same as the bloat baseline.",
+  "rationale": "The brief's \"one shared condition closes all three unbind shapes\" claim was traced by hand and found NOT to hold for the two-PR sequence; a second arm was designed and built rather than silently assuming the brief's summary was exact.",
+  "rejected": "Reading the ratchet baseline from the merge-base commit (would fail this introducing PR's own gate, since origin/main has no baseline yet); a persisted cross-run resolution ledger for the baseline's re-unbound-after-resolved gap (real design work, deferred, trg-91532c29).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md"
+}

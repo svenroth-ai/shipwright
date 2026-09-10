@@ -130,6 +130,18 @@ CI_ONLY_GATES = {
         "the self-vouching this campaign exists to remove. It is also pull_request-only "
         "and has no merge base to diff against outside a PR."
     ),
+    "AC coverage ratchet (gate)": (
+        "Same structural reason as the Keystone gate above: it reads which ACs are "
+        "currently bound from the SAME regenerated traceability manifest, so a local "
+        "invocation would ratchet the baseline against execution claims nobody "
+        "re-verified. `check_ac_coverage_ratchet.py` is still runnable directly "
+        "(e.g. to regenerate the baseline via --write); it is only not mirrored here."
+    ),
+    "Orphan AC binding (gate)": (
+        "Same structural reason as the Keystone gate above, plus the same "
+        "pull_request-only trust boundary its arm-2 base/head comparison needs a "
+        "merge base for."
+    ),
 }
 
 

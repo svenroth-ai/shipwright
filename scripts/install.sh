@@ -94,15 +94,10 @@ echo ""
 
 # ── Command Center WebUI (separate repo since v0.4.0) ──
 
-echo "Command Center WebUI:"
-echo "  The WebUI lives in its own repository since v0.4.0:"
-echo "    https://github.com/svenroth-ai/shipwright-webui"
-echo ""
-echo "  To install it alongside Shipwright:"
-echo "    git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui"
-echo "    cd ~/shipwright-webui && make install"
-echo "    make dev-server   # Terminal 1 (Hono :3847)"
-echo "    make dev-client   # Terminal 2 (Vite :5173)"
+echo "Command Center WebUI (optional):"
+echo "  One command installs/updates the plugins AND the WebUI together:"
+echo "    npx @svenroth-ai/shipwright@latest"
+echo "  (Building from source instead? See https://github.com/svenroth-ai/shipwright-webui)"
 echo ""
 
 # ── Create shell alias ──
@@ -202,6 +197,5 @@ echo " Then run:           shipwright"
 echo " Then type:          /shipwright-run"
 echo ""
 echo " WebUI (Command Center):"
-echo "   Lives at https://github.com/svenroth-ai/shipwright-webui"
-echo "   See above for standalone install commands."
+echo "   npx @svenroth-ai/shipwright@latest"
 echo "========================================"

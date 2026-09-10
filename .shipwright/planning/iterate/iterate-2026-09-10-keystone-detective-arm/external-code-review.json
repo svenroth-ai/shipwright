@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "### Findings\n\n- **Category: test | Severity: medium**\n  `shared/scripts/tools/tests/test_keystone_detective_core.py:63-85` \u2014 The AC-D13 test is functionally a duplicate of the AC-D1 test. Both monkeypatch `resolve_ci_verification` to return `no_record`; the only difference is the human-readable `detail` string. The entire push-vs-pull_request-event distinction the spec pins (\"a fixture whose only CI run for a commit is a `pull_request`-event run\") lives inside the frozen resolver, which is mocked away. This test passes even if the real resolver never distinguishes event types at all, so AC-D13 is not meaningfully validated by it. Either point the test at the frozen resolver's own test (and drop the claim from this ledger), or construct a fixture that exercises the actual filtering logic rather than re-asserting AC-D1 with different prose.\n\n- **Category: bug | Severity: medium**\n  `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:47-53` (`build_verified_manifest`, final return) \u2014 The no-shared-mutable-state contract does not hold at the top level: `{**committed_manifest, \"requirements\": out_requirements}` shallow-copies only `requirements`; every other nested structure in the committed manifest (e.g. a `metadata`/`frs` dict, whichever exists in real manifests) is aliased, so a caller mutating `verified[\"<other-key>\"][\"x\"]` corrupts `committed_manifest`. This is the exact bug class the code review round fixed for the pass-through requirements path, and the mutation test only exercises `requirements`, so it would not catch a regression here. Deep-copy the non-`requirements` keys too, or scope the docstring/test accordingly.\n\n- **Category: bug | Severity: medium**\n  `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:41-47` \u2014 The duplicate-id refusal checks `by_id` per **requirement**, so the same test id appearing in two different `tests[layer]` lists under the same requirement (e.g. the same test bound to both `unit` and `integration` layers \u2014 a plausible, legitimate shape) raises `ReadError`. AC-D11 scopes the refusal to duplicates \"within one requirement's verified `tests[layer]` list\"; rejecting across layers is stricter than the spec and turns valid evidence into a hard failure. Either scope `by_id` per `(req_key, layer)` or document/justify the stricter contract.\n\n- **Category: bug | Severity: low**\n  `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:110-112` \u2014 When a verified link exists but its evidence dict lacks `status`/`executed` keys, `verified` is `(None, None)` and `None` is written into the manifest (`new_link[\"executed\"] = None`) rather than fail-closed `not_run`. Depending on `evaluate_keystone`'s handling of `None`, this could behave unexpectedly. Treat a matched link with missing status/executed fields the same as unmatched (`enabled`/`not_run`) or raise.\n\n- **Category: edge-case | Severity: low**\n  `shared/scripts/tools/verifiers/_keystone_detective_core.py:161-163` \u2014 `git rev-parse --verify <ref>` resolves annotated tags to the **tag object's** sha, not the commit sha; the tag sha is then handed to the resolvers and stored as `result.commit`. Using `--verify <ref>^{commit}` (and for the parent, `<sha>^{commit}^1`) guarantees a commit sha, matching AC-D14's \"full SHA\" intent.\n\nEverything else checks out: the seven-way classification is exhaustive and mutually exclusive, the short-circuit (AC-D3/D10) is correctly ordered and asserted via `_boom`, SHA canonicalization precedes every resolver call (AC-D14), both unrecognized-status branches fail closed (AC-D15), `read_base_manifest` at the target commit is read before `resolve_execution_evidence` (the ordering the round-2 review verified), and the first-parent resolution/root-commit behavior matches AC-D12. No new trust logic is added; both resolvers are consumed unedited.\n\nOverall: the composition logic is sound and well-tested, but the AC-D13 test is a hollow duplicate and `build_verified_manifest` has two contract/spec deviations (top-level aliasing, cross-layer duplicate rejection) worth fixing before this becomes the foundation a future consumer builds on. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:122`\n- Finding: `build_verified_manifest` does not meet its required no-shared-mutable-state contract. The top-level `{**committed_manifest}` retains nested mutable values outside `requirements`; ordinary requirement/AC copies also retain unrelated nested fields, while non-dict requirements and non-list test-layer values are directly aliased.\n- Suggestion: Deep-copy `committed_manifest` before applying verified link substitutions, or deep-copy every pass-through and retained nested value consistently.\n\n- Category: test\n- Severity: low\n- File: `shared/scripts/tools/tests/test_keystone_detective_core.py:190`\n- Finding: The AC-D14 test only verifies that `resolve_ci_verification` receives the canonical SHA. It does not verify canonical SHA use for parent resolution, both manifest reads, or `resolve_execution_evidence`, as the acceptance criterion requires.\n- Suggestion: Instrument the git/manifest/evidence dependencies in a confirmed-evidence path and assert every call receives the same resolved SHA/parent values.\n\nOverall assessment: ship-with-fixes. The classifier\u2019s main control flow follows the specification, but the promised isolation guarantee is incomplete and should be corrected before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

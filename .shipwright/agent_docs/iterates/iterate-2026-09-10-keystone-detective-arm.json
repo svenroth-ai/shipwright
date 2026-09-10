@@ -1,0 +1,114 @@
+{
+  "run_id": "iterate-2026-09-10-keystone-detective-arm",
+  "date": "2026-09-10T17:53:56.027763Z",
+  "event_at": "2026-09-10T17:50:53.015941+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/keystone-detective-arm",
+  "spec": ".shipwright/planning/iterate/2026-09-10-keystone-detective-arm.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-keystone-detective-arm",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC-D1: resolve_ci_verification -> no_record classifies as no_qualifying_run, never conflated with run_not_verified",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_no_record_classifies_as_no_qualifying_run PASSED"
+      },
+      {
+        "behavior": "AC-D2: .status == not_verified classifies as run_not_verified",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_not_verified_classifies_as_run_not_verified PASSED"
+      },
+      {
+        "behavior": "AC-D3: .status == error classifies as verification_query_failed, never proceeding to execution evidence",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_verification_error_classifies_as_verification_query_failed PASSED"
+      },
+      {
+        "behavior": "AC-D4: verified structural verification + execution evidence unavailable classifies as execution_evidence_unavailable",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_execution_evidence_unavailable PASSED"
+      },
+      {
+        "behavior": "AC-D5: verified structural verification + execution evidence error classifies as execution_evidence_query_failed",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_execution_evidence_query_failed PASSED"
+      },
+      {
+        "behavior": "AC-D6: confirmed evidence, all bound links green -> gate_confirmed_clean",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_greenness.py::test_confirmed_evidence_all_green_is_gate_confirmed_clean PASSED"
+      },
+      {
+        "behavior": "AC-D7: verified evidence overrides the committed file's own self-reported status",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_greenness.py::test_verified_evidence_overrides_the_committed_files_own_self_report PASSED"
+      },
+      {
+        "behavior": "AC-D8: a link absent from verified evidence is fail-closed not_run, reaching gate_violated",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_greenness.py::test_a_link_absent_from_verified_evidence_is_fail_closed_not_run PASSED"
+      },
+      {
+        "behavior": "AC-D9: link-id matching is scoped per requirement key, not globally",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_greenness.py::test_the_same_link_id_under_two_requirements_resolves_independently PASSED"
+      },
+      {
+        "behavior": "AC-D10: resolve_execution_evidence is never called when verification did not return verified",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_not_verified_classifies_as_run_not_verified, ::test_verification_error_classifies_as_verification_query_failed (both assert via a _boom stub) PASSED"
+      },
+      {
+        "behavior": "AC-D11: duplicate verified link ids within one requirement raise ReadError; a verified link with missing/non-string status/executed is treated as absent, not written as raw None",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_greenness.py::test_duplicate_verified_link_ids_within_one_requirement_fail_closed, ::test_a_verified_link_missing_status_or_executed_is_treated_as_absent PASSED"
+      },
+      {
+        "behavior": "AC-D12: classify_commit resolves the first parent internally (no caller-supplied parent); a root commit raises ReadError",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_classify_commit_takes_no_parent_argument_and_resolves_it_internally, ::test_a_root_commit_raises_read_error PASSED"
+      },
+      {
+        "behavior": "AC-D13: not independently re-tested at this module's boundary -- classify_commit does not branch on WHY no_record was returned, only THAT it was; the pull_request-only scenario is already tested at the resolver boundary",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "shared/tests/test_ci_provenance.py::test_no_record_when_only_pull_request_runs_exist already exercises this scenario at the resolver's own boundary; a duplicate test here would mock the resolver away and be functionally identical to AC-D1's test (external code review round 2, glm, medium -- the original hollow test was removed)."
+      },
+      {
+        "behavior": "AC-D14: commit is canonicalized to a full SHA (via the ^{commit} peel suffix) before any resolver call; the canonical value reaches both resolvers and both manifest reads; an unresolvable ref raises ReadError",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_a_mutable_ref_is_canonicalized_to_a_full_sha_before_any_resolver_call, ::test_an_unresolvable_commit_raises_read_error, ::test_the_canonical_sha_reaches_execution_evidence_and_both_manifest_reads PASSED"
+      },
+      {
+        "behavior": "AC-D15: either resolver returning a status outside its own documented contract raises ReadError rather than falling through to the next branch",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_core.py::test_an_unrecognized_verification_status_raises_read_error, ::test_an_unrecognized_evidence_status_raises_read_error PASSED"
+      },
+      {
+        "behavior": "build_verified_manifest returns a full independent deep copy -- no shared mutable state with the input anywhere in the returned tree",
+        "disposition": "tested",
+        "evidence": "test_keystone_detective_greenness.py::test_build_verified_manifest_does_not_mutate_or_share_state_with_the_input PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 15,
+      "tested": 14,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 15,
+      "covered_acs": 15
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Pure backend library module (classify_commit / build_verified_manifest) with no API routes, store mutations, SSE/WS handlers, or UI-consumed contracts -- consumed only by a future CLI/wiring not yet built (architecture review scope reduction). No startable surface exists to drive."
+  },
+  "declared_removals": []
+}

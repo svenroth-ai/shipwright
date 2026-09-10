@@ -291,6 +291,7 @@ def append_decision(
     required_layers: list[str] | None = None, run_id: str | None = None,
     reason: str = "", escalation_reason_code: str | None = None,
     evidence_fingerprint: str | None = None, ci_run_id: int | None = None,
+    anchor_commit: str | None = None,
 ) -> dict:
     """Append a new decision entry for ``fr_id`` and return it.
 
@@ -308,6 +309,15 @@ def append_decision(
     ``_parse_ledger`` never rejects an unrecognised extra key, only
     validates ``action``'s closed vocabulary and ``required_layers``'s
     type, so an older reader of this file degrades gracefully.
+
+    ``anchor_commit`` (P3.4c, additive, same reasoning as ``ci_run_id``): the
+    commit whose CI run actually produced this promotion's evidence — equal
+    to the promoted commit itself when the tip was directly verified, or an
+    older first-parent ancestor when ``promote_required_layers.py`` fell
+    back to ``ci_verified_anchor.resolve_verified_anchor``. "A promotion
+    whose provenance cannot be reconstructed is not evidence": this is what
+    lets a later reader tell WHICH commit's tests actually ran, distinct
+    from ``ci_run_id`` naming which CI *run* did.
     """
     if action not in ACTIONS:
         raise ValueError(f"action {action!r} not in {ACTIONS}")
@@ -329,6 +339,8 @@ def append_decision(
         entry["evidence_fingerprint"] = evidence_fingerprint
     if ci_run_id is not None:
         entry["ci_run_id"] = ci_run_id
+    if anchor_commit is not None:
+        entry["anchor_commit"] = anchor_commit
     ledger.setdefault("decisions", {}).setdefault(fr_id, []).append(entry)
     return entry
 
