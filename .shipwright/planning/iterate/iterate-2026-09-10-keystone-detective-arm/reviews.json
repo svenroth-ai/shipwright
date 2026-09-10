@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-keystone-detective-arm",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:44:35.305785+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The claim in §4.2 that \"an ordinary PR-merged commit has no `push`-event run of its own\" is likely factually wrong for merge commits. When a PR is merged, GitHub creates a merge commit and pushes it to `main` — that is a `push` event with the merge SHA as `head_sha`, and a qualifying CI run on it would be found by `resolve_ci_verification`. So the predicted dominant steady state (`no_qualifying_run` for every PR-merged commit) may not hold; instead, ordinary merges may flow into the `verified`/`run_not_verified` branch. This doesn't break the classifier's logic (all branches are handled correctly), but §4.2's expectation-setting and the framing of AC-D13's \"dominant population\" rest on this claim.",
+          "suggestion": "Empirically check whether merge SHAs on `main` have push-event CI runs (the same `gh api` probe §2 already demonstrates). If they do, revise §4.2's steady-state narrative and soften AC-D13's framing to \"a commit with no qualifying push run\" without the population prediction. This is a documentation/expectation correction, not a code change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The duplicate-`id` fail-closed check (AC-D11) applies to the verified evidence's `tests[layer]` list, but the committed manifest's own bindings can also contain duplicate ids within a requirement (the spec itself notes \"two requirements could theoretically share a test id in a hand-edited manifest\" — the same hand-edit risk exists within one requirement). Duplicate ids in the committed manifest's binding list would be matched ambiguously when substituting.",
+          "suggestion": "Either extend the `ReadError` to duplicate ids within one requirement's committed bindings too, or document why the committed side is trusted for identity (it flows through `ac_change_set`/`evaluate_keystone` unchanged, same as the preventive gate — acceptable if stated).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The short-circuit ordering means git operations (parent resolution, manifest reads) happen before/interleaved with resolver network calls, so a network-authenticated `verified` verdict can be followed by a local `ReadError` (unreadable manifest at an old commit, e.g., before the manifest file existed). A commit predating the traceability manifest entirely is not named in the seven-way classification — it will surface as an exception rather than a classified outcome.",
+          "suggestion": "Either document that \"commit predates the manifest mechanism\" surfaces as `ReadError` (fail-closed, acceptable), or add a fixture pinning that behavior so it's tested rather than discovered.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The inert steady state is well-disclosed, but the module has no smoke path to catch import/signature drift in the five reused functions until a consumer exists. If `resolve_execution_evidence`'s frozen contract changes (it's explicitly excluded from edits here, but frozen modules do evolve), nothing but the unit tests' mocks would catch a signature mismatch — and mocks pin the assumed signature, not the real one.",
+          "suggestion": "Add one test that imports and calls the real resolvers with clearly-fake inputs asserting a specific error/status (not mocked), or at minimum a test invoking `classify_commit` against a local fixture repo with resolvers monkeypatched at the module boundary (real function objects, stubbed network), so import-time signature drift fails loudly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The P3.6 §2.3 structural-drift fix is named as the precondition but not sequenced — §6 lists it as \"separate card\" with no ordering statement. If the deferred consumer card (§6.1) lands before the drift fix, the consumer ships permanently reporting `run_not_verified`.",
+          "suggestion": "State the ordering constraint explicitly in the deferred-items list (consumer card should not be prioritized above the drift-fix card), so a future planner doesn't accidentally invert it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The claim that ordinary PR-merged commits will predominantly produce `no_qualifying_run` is likely false. A merge, squash merge, or rebase merge that updates `main` normally triggers the workflow’s `push` event for the resulting `main` SHA. The spec’s own empirical probe already found a successful `push` run on `main`. AC-D13 therefore pins an exceptional workflow configuration/outcome as the expected normal case.",
+          "suggestion": "Re-check `ci.yml` triggers and resolver matching against real merge strategies. Define `no_qualifying_run` narrowly as “no qualifying default-branch push run was created/selected,” not as a property of PR merges, and replace AC-D13 with a fixture representing the actual workflow behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The orchestration order is internally inconsistent. `resolve_execution_evidence` requires the target `committed_manifest`, but the mini-plan says it calls that resolver and then reads both manifests. This risks passing the wrong manifest, especially since the target manifest is part of the resolver’s content-binding contract.",
+          "suggestion": "Specify and test the exact order: resolve/canonicalize `C`; resolve `C^1`; run CI verification; read `C`’s manifest; call execution-evidence resolution with that exact manifest; then read `P`, build the change set, and evaluate. Add a mock assertion that the resolver receives the manifest from `C`, not `P`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The seven-way table is only exhaustive for today’s known resolver status values. A new/invalid status from either resolver could otherwise be accidentally treated as a success path or produce an opaque downstream failure.",
+          "suggestion": "Explicitly validate status enums at both boundaries and fail closed with `ReadError` (including the unexpected status and commit). Add unit tests for unknown verification and execution statuses.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "classify_commit` accepts a revision expression but the plan does not require resolving it once to a full object ID before using it across git reads and GitHub evidence queries. Mutable refs such as `main`, tags, or symbolic expressions can change between calls, making the locally-read manifest and remotely-resolved run refer to different commits.",
+          "suggestion": "Resolve and validate `commit` to a full immutable SHA first, use that SHA for `^1`, both resolvers, manifest reads, and change-set construction, and reject non-commit objects with a clear `ReadError`.  Overall, the composition with the existing trust resolvers is sound and appropriately small, but the PR-merge operating assumption and resolver/manifest call ordering need correction before implementation. The module should also make commit identity and unexpected resolver states explicitly fail closed.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-09-10T16:52:12.573904+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category:** edge-case\n**Severity:** medium\n**Finding:** The claim in §4.2 that \"an ordinary PR-merged commit has no `push`-event run of its own\" is likely factually wrong for merge commits. When a PR is merged, GitHub creates a merge commit and pushes it to `main` — that *is* a `push` event with the merge SHA as `head_sha`, and a qualifying CI run on it would be found by `resolve_ci_verification`. So the predicted dominant steady state (`no_qualifying_run` for every PR-merged commit) may not hold; instead, ordinary merges may flow into the `verified`/`run_not_verified` branch. This doesn't break the classifier's logic (all branches are handled correctly), but §4.2's expectation-setting and the framing of AC-D13's \"dominant population\" rest on this claim.\n**Suggestion:** Empirically check whether merge SHAs on `main` have push-event CI runs (the same `gh api` probe §2 already demonstrates). If they do, revise §4.2's steady-state narrative and soften AC-D13's framing to \"a commit with no qualifying push run\" without the population prediction. This is a documentation/expectation correction, not a code change.\n\n**Category:** edge-case\n**Severity:** low\n**Finding:** The duplicate-`id` fail-closed check (AC-D11) applies to the *verified* evidence's `tests[layer]` list, but the committed manifest's own bindings can also contain duplicate ids within a requirement (the spec itself notes \"two requirements could theoretically share a test id in a hand-edited manifest\" — the same hand-edit risk exists within one requirement). Duplicate ids in the committed manifest's binding list would be matched ambiguously when substituting.\n**Suggestion:** Either extend the `ReadError` to duplicate ids within one requirement's committed bindings too, or document why the committed side is trusted for identity (it flows through `ac_change_set`/`evaluate_keystone` unchanged, same as the preventive gate — acceptable if stated).\n\n**Category:** risk\n**Severity:** […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The claim that ordinary PR-merged commits will predominantly produce `no_qualifying_run` is likely false. A merge, squash merge, or rebase merge that updates `main` normally triggers the workflow’s `push` event for the resulting `main` SHA. The spec’s own empirical probe already found a successful `push` run on `main`. AC-D13 therefore pins an exceptional workflow configuration/outcome as the expected normal case.  \n   **Suggestion:** Re-check `ci.yml` triggers and resolver matching against real merge strategies. Define `no_qualifying_run` narrowly as “no qualifying default-branch push run was created/selected,” not as a property of PR merges, and replace AC-D13 with a fixture representing the actual workflow behavior.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The orchestration order is internally inconsistent. `resolve_execution_evidence` requires the target `committed_manifest`, but the mini-plan says it calls that resolver and then reads both manifests. This risks passing the wrong manifest, especially since the target manifest is part of the resolver’s content-binding contract.  \n   **Suggestion:** Specify and test the exact order: resolve/canonicalize `C`; resolve `C^1`; run CI verification; read `C`’s manifest; call execution-evidence resolution with that exact manifest; then read `P`, build the change set, and evaluate. Add a mock assertion that the resolver receives the manifest from `C`, not `P`.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The seven-way table is only exhaustive for today’s known resolver status values. A new/invalid status from either resolver could otherwise be accidentally treated as a success path or produce an opaque downstream failure.  \n   **Suggestion:** Explicitly validate status enums at both boundaries and fail closed with `ReadError` (including the unexpected status and commit). Add unit test […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_keystone_detective_manifest.py",
+          "line": null,
+          "finding": "build_verified_manifest's no-shared-mutable-state docstring claim did not hold for pass-through nodes (a requirement with no/empty acs, or an AC node whose tests isn't a dict, aliased the input directly instead of copying it).",
+          "suggestion": "Fixed: pass-through paths now copy.deepcopy the aliased node; the mutation-contract test was extended to cover the FR-01.02 (empty acs) case that previously went unexercised.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "style",
+          "file": "shared/scripts/tools/verifiers/_keystone_detective_core.py",
+          "line": null,
+          "finding": "EmptyLinkWalk was imported with a bare # noqa: E402,F401 and never referenced in code, unused and inconsistent with the sibling module's own re-export convention; ReadError was also missing from __all__ despite being used internally.",
+          "suggestion": "Fixed: both re-exported per _keystone_ac_digest.py's convention and added to __all__.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "duplication",
+          "file": "shared/scripts/tools/tests/test_keystone_detective_core.py",
+          "line": null,
+          "finding": "_verification/_evidence/_repo_with_ac01_edit were copy-pasted verbatim across both new split test files.",
+          "suggestion": "Fixed: moved into _keystone_repo.py as make_verification/make_evidence/repo_with_ac01_edit, imported (aliased) by both test files.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/tools/verifiers/_keystone_detective_core.py",
+          "line": null,
+          "finding": "resolve_execution_evidence internally re-calls resolve_ci_verification for its own run_id, so a commit reaching a terminal verdict costs two GitHub API round-trips, undocumented here.",
+          "suggestion": "Fixed: one-line note added to the module docstring; no code change (frozen-module behavior).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "robustness",
+          "file": "shared/scripts/tools/verifiers/_keystone_detective_core.py",
+          "line": null,
+          "finding": "The two new _run_git calls (SHA canonicalization, parent resolution) had no timeout, unlike other git-facing callers in git_helpers.py.",
+          "suggestion": "Fixed: both now pass timeout=_GIT_TIMEOUT_SECONDS.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T17:10:21.166896+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T17:09:11.138321+00:00",
+      "disposition": "diff touches no migrations, async/concurrency, cross-plugin imports, or irreversible ops -- a pure/orchestration composition entirely within shared/scripts, advisory-only, no writes. Stage 3's own trigger rule (iteration-reviews.md) does not apply.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_keystone_detective_manifest.py",
+          "line": 122,
+          "finding": "build_verified_manifest` does not meet its required no-shared-mutable-state contract. The top-level `{committed_manifest}` retains nested mutable values outside `requirements`; ordinary requirement/AC copies also retain unrelated nested fields, while non-dict requirements and non-list test-layer values are directly aliased.",
+          "suggestion": "Deep-copy `committed_manifest` before applying verified link substitutions, or deep-copy every pass-through and retained nested value consistently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_keystone_detective_core.py",
+          "line": 190,
+          "finding": "The AC-D14 test only verifies that `resolve_ci_verification` receives the canonical SHA. It does not verify canonical SHA use for parent resolution, both manifest reads, or `resolve_execution_evidence`, as the acceptance criterion requires.",
+          "suggestion": "Instrument the git/manifest/evidence dependencies in a confirmed-evidence path and assert every call receives the same resolved SHA/parent values.  Overall assessment: ship-with-fixes. The classifier’s main control flow follows the specification, but the promised isolation guarantee is incomplete and should be corrected before shipping.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-09-10T17:19:27.350293+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ### Findings\n\n- **Category: test | Severity: medium**\n  `shared/scripts/tools/tests/test_keystone_detective_core.py:63-85` — The AC-D13 test is functionally a duplicate of the AC-D1 test. Both monkeypatch `resolve_ci_verification` to return `no_record`; the only difference is the human-readable `detail` string. The entire push-vs-pull_request-event distinction the spec pins (\"a fixture whose only CI run for a commit is a `pull_request`-event run\") lives inside the frozen resolver, which is mocked away. This test passes even if the real resolver never distinguishes event types at all, so AC-D13 is not meaningfully validated by it. Either point the test at the frozen resolver's own test (and drop the claim from this ledger), or construct a fixture that exercises the actual filtering logic rather than re-asserting AC-D1 with different prose.\n\n- **Category: bug | Severity: medium**\n  `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:47-53` (`build_verified_manifest`, final return) — The no-shared-mutable-state contract does not hold at the top level: `{**committed_manifest, \"requirements\": out_requirements}` shallow-copies only `requirements`; every other nested structure in the committed manifest (e.g. a `metadata`/`frs` dict, whichever exists in real manifests) is aliased, so a caller mutating `verified[\"<other-key>\"][\"x\"]` corrupts `committed_manifest`. This is the exact bug class the code review round fixed for the pass-through requirements path, and the mutation test only exercises `requirements`, so it would not catch a regression here. Deep-copy the non-`requirements` keys too, or scope the docstring/test accordingly.\n\n- **Category: bug | Severity: medium**\n  `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:41-47` — The duplicate-id refusal checks `by_id` per **requirement**, so the same test id appearing in two different `tests[layer]` lists under the same requirement (e.g. the same test bound to both `unit` and `integra […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_keystone_detective_manifest.py:122`\n- Finding: `build_verified_manifest` does not meet its required no-shared-mutable-state contract. The top-level `{**committed_manifest}` retains nested mutable values outside `requirements`; ordinary requirement/AC copies also retain unrelated nested fields, while non-dict requirements and non-list test-layer values are directly aliased.\n- Suggestion: Deep-copy `committed_manifest` before applying verified link substitutions, or deep-copy every pass-through and retained nested value consistently.\n\n- Category: test\n- Severity: low\n- File: `shared/scripts/tools/tests/test_keystone_detective_core.py:190`\n- Finding: The AC-D14 test only verifies that `resolve_ci_verification` receives the canonical SHA. It does not verify canonical SHA use for parent resolution, both manifest reads, or `resolve_execution_evidence`, as the acceptance criterion requires.\n- Suggestion: Instrument the git/manifest/evidence dependencies in a confirmed-evidence path and assert every call receives the same resolved SHA/parent values.\n\nOverall assessment: ship-with-fixes. The classifier’s main control flow follows the specification, but the promised isolation guarantee is incomplete and should be corrected before shipping.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:44:08.843031+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T16:52:40.785180+00:00",
+      "disposition": "opus-plan-reviewer is not wired into /shipwright-iterate's default flow -- it is referenced by no file except its own definition (verified by repo-wide grep, project memory dated 2026-08-07); this is a known, unbuilt framework design gap tracked separately, not something to invent ad hoc in this iterate. External plan review (2 rounds) plus this session's own self-review carried the plan-quality gate instead.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

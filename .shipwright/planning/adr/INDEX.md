@@ -105,6 +105,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR: compliance mermaid.py dashboard phase strip reads phase_tasks\[\]](iterate-2026-09-09-s1-dashboard-phase-strip-phase-tasks-reader.md)
 - [ADR: shipwright-adopt seeds phase_tasks\[\] entries marked established-at-adoption](iterate-2026-09-09-s2-adopted-config-shape-phase-tasks-writer.md)
 - [Backfill phase_tasks\[\] into already-adopted configs](iterate-2026-09-09-s2b-backfill-existing-adopted-config-backfill-phase-tasks.md)
+- [The keystone AC gate's post-merge detective arm](iterate-2026-09-10-keystone-detective-arm.md)
 - [Grill-trace evidence record + completeness gate (P4.2)](iterate-2026-09-10-p4-2-grill-trace-gate-completeness.md)
 - [Dynamic discovery of requirement-elicitation citing docs](iterate-2026-09-10-p4-3-elicitation-site-discovery.md)
 - [Pin Sec.0/Sec.4/Sec.5's most recent rules against drift](iterate-2026-09-10-p4-4-grill-module-recent-rules-drift.md)
