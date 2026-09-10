@@ -1,0 +1,319 @@
+# Iterate Spec: P3.7 — Two feeder checks: AC without a test (anti-ratcheted) and a test whose AC vanished (hard)
+
+- **run_id:** iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted
+- **Campaign:** req3-04c-ac-identity-wave2, sub-iterate p3.7 — the two feeder checks P3.6's own
+  design doc (`.shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md`, §3(b), §7, §10 item 8)
+  named as "not p3.6's" and handed off explicitly.
+- **Affected FRs:** FR-01.11 (AC-identity / evidence-ledger area — same FR as P3.1–P3.6)
+- **Source sub-iterate spec:**
+  `.shipwright/planning/iterate/campaigns/req3-04c-ac-identity-wave2/sub-iterates/p3.7-feeder-checks-anti-ratcheted.md`
+- **Design of record:** `Spec/design/2026-07-22-req3-campaign-SPEC.md` §8 E2; P3.6 design doc §3(b),
+  §7 (the two-PR unbind sequence, `removed_with_bindings`), §10 item 8 (the hand-off card,
+  `trg-f68795d2`).
+
+## 1. Problem, restated from the hand-off
+
+SPEC §8 E2 names two checks P3.6 deliberately does not build, ASYMMETRIC BY DESIGN:
+
+* **(a) "AC without a test."** P3.6's own measurement (design doc §2.1): 259 of 268 minted ACs
+  have no test binding today. A hard block on that population on day one would be a blanket
+  blocker, not a gate — so this is **anti-ratcheted**: only a *newly* unbound AC, not already
+  grandfathered, blocks.
+* **(b) "a test whose AC vanished."** No legacy backlog exists for this predicate — nothing has
+  ever validated that a `@covers` tag's AC id still exists. **Hard from day one, no baseline.**
+
+Three named shapes (P3.6 design §7, §10 item 8b; triage card `trg-f68795d2`) can make a test's
+bound AC effectively vanish without the criterion's own text ever changing in the blocking PR:
+
+  (i)   **two-PR unbind sequence** — PR1 drops a `@covers` tag's `/ACnn` suffix (no AC text
+        changes); PR2, later, edits that AC's text against an already-unbound base.
+  (ii)  **outright deletion** of a minted criterion that still had a binding.
+  (iii) **id rotation** on the same criterion (`[AC01] foo` -> `[AC55] foo`, wording unchanged) —
+        reads as removal-plus-addition, never enters P3.6's `changed` set.
+
+The hand-off states these collapse to one remediable condition: *a binding tag whose AC no
+longer exists in the spec.* §3 below verifies that claim rather than assuming it.
+
+## 2. Reused primitives (no second parser, no second link walk)
+
+* `lib.ac_identity.read_all` — the same minted-criteria reader `_keystone_ac_digest` /
+  `_keystone_criteria` use.
+* `verifiers._keystone_links.links_for` — P3.6's manifest link counter.
+* `verifiers._keystone_criteria.ac_criteria_digests` — P3.6's per-AC digest.
+* `verifiers._layer_coverage_ac._spec_paths` / `spec_text_at` — the union-of-both-sides reader,
+  same §5.1 argument (a spec renamed/removed between base and head must still be compared).
+* `verifiers._keystone_ac_digest.read_base_manifest` / `require_manifest_shape` /
+  `MANIFEST_RELPATH` — the base-manifest three-way reader.
+* `verifiers._layer_coverage_regen._merge_base` — base-sha resolution, fail-closed on no
+  resolvable merge base.
+
+New modules: `verifiers/_ac_binding_state.py` (pure, state-only: minted / bound / unbound /
+orphaned) and `verifiers/_ac_binding_regression.py` (base-vs-head: a binding regression on
+unchanged text).
+
+## 3. Does "one shared condition" actually close all three shapes? — traced, not assumed
+
+Arm 1 (`_ac_binding_state.BindingState.orphaned`): for every active FR, walk the manifest's
+current `acs` keys; any key not in the CURRENT spec's minted set for that FR is an orphan. This
+directly and unconditionally catches:
+
+* **(ii) outright deletion** — the criterion is gone; the manifest (regenerated from a
+  not-yet-updated `@covers` tag) still carries a binding under the old id.
+* **(iii) id rotation** — the old id's binding is now unminted at head.
+
+**Tracing (i) through arm 1 shows it does NOT close it.** PR1 "deletes the `/ACnn` suffix from
+a `@covers` tag" (P3.6 design §7) — the tag becomes a bare, VALID FR-level tag. Nothing about it
+names a vanished AC id. The regenerated manifest's `acs` map simply stops carrying a key for
+that AC at all (`_test_links_requirements.file_hit` only files a hit under `acs_by_key` when the
+tag names an `ac_id`). That state is structurally identical, to arm 1, to an AC that was *never*
+bound — i.e. it is feeder (a)'s anti-ratcheted territory, not an orphan.
+
+This is disclosed rather than left as an unverified assumption (the same honesty the P3.6 design
+doc models throughout: several of its own "closed" claims from an earlier round turned out to
+introduce a new gap, found and named at the next round). **A second arm is needed and built:**
+
+**Arm 2** (`_ac_binding_regression.binding_regressions`): an AC whose criterion digest is
+IDENTICAL at base and head (so it is invisible to every text-diff-keyed check, P3.6's own
+`binding_removed` included), that had `>=1` manifest link at base and has `0` at head. This is
+exactly P3.6's own diagnosis of its blind spot (design doc §7): *"Closing it needs a signal that
+does not depend on the AC's text changing."* Blocking this blocks **PR1 itself** — the commit
+that performs the unbind — at its origin rather than waiting for PR2's exploit of the
+already-unbound state, **whenever the base manifest's own record of the binding is
+trustworthy** (external plan review, openai, HIGH — §5a finding 2 narrows this claim; the base
+manifest is stale-by-construction, the same disclosed limit P3.6's own §7 already accepts).
+
+Deliberately does not fire on a `changed`/`added`/`removed` AC (P3.6's own `binding_removed`/
+`unbound` walk owns those) — only the complement, "nothing about the text moved."
+
+**Verdict: two arms, one shared mission ("a test's binding must still point at something
+real"), not one shared code path.** The module docstrings name this correction explicitly so a
+future reader does not assume the brief's summary was independently re-verified and found exact.
+
+## 4. Feeder (a) — anti-ratchet design
+
+`shipwright_ac_coverage_baseline.json`: `{"unbound": ["FR-xx/ACnn", ...]}`. Rule, modelled on
+`shared/scripts/lib/anti_ratchet.py`'s own block rule adapted from a per-file LOC ceiling to a
+per-AC set membership: **an unbound AC not already in the baseline blocks; an existing baseline
+entry does not, regardless of how long it has been unbound.** Absent baseline -> empty
+grandfathered set (every unbound AC is new — the opposite default from the bloat baseline's
+"fail open", deliberate: the bloat baseline is a *pre-existing repo artifact*; this one is
+introduced by this very PR, so "absent" cannot mean "trust the whole population"). Present-but-
+corrupt baseline -> infra fault (fail CLOSED, same as `anti_ratchet.py`). `--write` regenerates
+it from current state; shrinking (an AC gains a binding) needs no baseline update to stay clean
+— reported as `resolved_since_baseline`, informational only.
+
+**Seeded empirically against the real repo** (§6 below): 259 unbound ACs, matching P3.6's own
+measurement almost exactly (P3.6 measured 259/268 on an earlier commit).
+
+## 5. CI wiring
+
+Two new `(gate)` steps in `.github/workflows/ci.yml`, both `pull_request`-only, both ordered
+after the traceability-manifest regeneration step (same reason as the Keystone gate: they read
+the manifest that step rewrites in place from this run's own JUnit). Neither is mirrored by
+`scripts/verify_local.py` — added to its `CI_ONLY_GATES` registry with the same structural
+reason as the Keystone gate (a local invocation would grade against a committed manifest, not
+one regenerated from a real run).
+
+## 5a. External Plan Review Findings (Step 3.5 — glm + openai, 2026-09-10)
+
+| # | Provider | Severity | Finding | Disposition |
+|---|---|---|---|---|
+| 1 | openai | HIGH | An unreadable/untrustworthy spec path at head was silently EXCLUDED (warning, not blocked) in an earlier version of `_ac_binding_state.read_binding_state`, making the hard-from-day-one orphan check fail OPEN on exactly the input it exists to catch. | **Fixed.** Three-way contract now matches `spec_text_at`'s own: `""` (genuinely absent) proceeds as zero minted criteria + a warning (any still-bound AC correctly orphans); `None` (real read fault) or untrustworthy markers now RAISE `ReadError`, mapped to `infra_fault`/exit 2 by both CLIs — matching P3.6's own HEAD-side convention. Pinned by `test_an_unreadable_spec_path_raises_readerror_not_excludes`, `test_a_genuinely_absent_spec_path_proceeds_as_zero_criteria_with_a_warning`, `test_untrustworthy_markers_raise_readerror`, and a real-git CLI test deleting the whole spec file. |
+| 2 | openai | HIGH | Arm 2's only evidence of "had a binding at base" is the base manifest, stale-by-construction; the module's "closes the two-PR sequence" claim overstates what a stale/incomplete base artifact can prove. | **Fixed (wording).** Narrowed to "detects PR1 whenever the base manifest's own record of the binding is trustworthy" in both the CLI and the pure-module docstrings — the underlying staleness is the SAME disclosed limitation P3.6's own design doc §7 already accepts for `binding_removed`'s reduction check; not independently fixable inside this PR (base is immutable). |
+| 3 | openai | medium | The seeded baseline + a canonical AC-id key constructor should be explicit deliverables/contracts, not implicit. | **Rejected-with-reason, already true.** The seeded baseline (`shipwright_ac_coverage_baseline.json`, 259 entries) is a committed deliverable of this sub-iterate; the key format (`f"{fr_id}/{ac_id}"`) is the SAME string both the producer (`_write_baseline`) and reader (`_load_baseline`) use, generated by one script — no cross-format risk to normalize against yet. |
+| 4 | openai | medium | Both gates depend on the manifest-regeneration step covering the SAME test scope as the PR (sharding/filters could make valid bindings vanish -> false blocks). | **Rejected-with-reason.** `ci.yml` already runs a dedicated `Verify test-root JUnit coverage (gate)` step (in `verify_local.py`'s own `CI_ONLY_GATES` registry) asserting every planned test root produced its JUnit BEFORE the regeneration step this gate depends on — the exact assurance requested already exists as a sibling gate, inherited by P3.7 for free (same as P3.6). |
+| 5 | openai | low | Arm 2 detects an AC-without-test regression on a criterion that still EXISTS, not literally "a test whose AC vanished" (arm 1's predicate) — risks confusing future maintainers. | **Fixed (wording).** Added an explicit "Naming, precisely" paragraph at the top of `_ac_binding_regression.py`'s docstring distinguishing the two arms' actual predicates before the reader reaches the longer trace. |
+| 6 | glm | medium | A PR can unbind an AC and `--write` the ratchet baseline in the SAME PR, grading itself against its own updated grandfather set. | **Rejected-with-reason**, filed as `trg-91532c29`. Same accepted house shape the bloat baseline carries — same-PR-editable, review is the control — but NOT the same strength (Stage-2 code review): the bloat baseline additionally has a pre-commit anti-ratchet hook and the Group H detective audit (H1/H3) flagging new crossings post-merge; this baseline has neither, so nothing detects it growing besides the reviewer's own attention. Reading the baseline from the merge-base was considered and rejected: it would make THIS introducing PR fail its own new gate, since `origin/main` has no baseline file yet. |
+| 7 | glm | medium | An AC reported `resolved_since_baseline` (bound) that later regresses (unbound again in a LATER PR) stays silently grandfathered forever — the suggested single-run fix (`baseline - resolved_since_baseline`) does not actually close it (no cross-run memory). | **Rejected-with-reason**, filed as `trg-91532c29` (same card as #6 — both stem from the baseline being a flat, memory-less snapshot). Real closure needs either periodic `--write` refresh (documented in the baseline file's own `$comment`) or a persisted resolution ledger — real design work, its own follow-up. |
+| 8 | glm | low | `links_for`-derived "bound" should be confirmed tag-derived, not execution-derived (a failed/skipped-but-tagged test should still count as bound). | **Fixed.** Clarified in `BindingState.bound`'s own field docstring; pinned by `test_a_bound_ac_with_a_failed_or_skipped_link_is_still_bound_not_unbound` (already true — `links_for` returns every filed link regardless of `status`/`executed`; this only adds a test and the doc). |
+| 9 | glm | low | Whether a coordinated FR removal (criteria + tests + FR deleted together) is caught by ANY layer was not traced. | **Rejected-with-reason.** Both feeder checks scope to `active_requirements(manifest)` (same as P3.6's own `_keystone_links`) — a fully-removed FR is invisible to both checks by construction, silently, same as it already is to P3.6. Not a new gap this sub-iterate introduces; out of scope to trace exhaustively here. |
+| 10 | glm | low | Baseline schema has no version marker; a future format change risks silent misread. | **Fixed.** Added `schema_version: 1`, tolerated absent (pre-dates the key) but rejected if present and unrecognised. Pinned by `test_a_baseline_missing_schema_version_is_still_accepted` and `test_an_unrecognised_schema_version_is_an_infra_fault`. |
+| 11 | glm | low | The first contributor to trip arm 2 on a legitimate refactor has no rollout guidance. | **Rejected-with-reason, already sufficient.** `orphaned_bindings`/`binding_regressions` already surface the exact `FR-xx/ACnn` id(s) as dedicated JSON keys, and the CLI's own `remedy` field already names both sanctioned resolutions. A burn-in period was considered and rejected — feeder (b) is explicitly SPEC-mandated to be hard from day one (§8 E2), and §6's probe shows zero pre-existing violations to burn in against. |
+
+Verdicts: glm `approve` (with the above findings), openai `revise` (with the above findings, all
+addressed above). Both HIGH findings fixed; all MEDIUM findings fixed or rejected with a stated,
+verifiable reason (a house precedent, an existing sibling gate, or a bootstrapping paradox for
+this introducing PR specifically); all LOW findings fixed or rejected with a reason.
+
+## 5b. External Code-Review Findings (Step 3.7 — glm + openai, 2026-09-10, against `HEAD~1`)
+
+| # | Provider | Severity | Finding | Disposition |
+|---|---|---|---|---|
+| 1 | glm | medium | `_ac_binding_regression.head_and_base_minted`'s docstring claimed the BASE side is lenient (warning, treated as empty) on an unreadable base commit, but the code RAISED `ReadError` on `base_text is None` — the opposite of what it documented, turning any base-side read fault into a hard infra exit that blocks every PR touching that path. | **Fixed.** `base_text is None` now appends a warning and treats base as empty, matching both the docstring and the already-lenient handling of an unparseable (but readable) base text a few lines below. Pinned by `test_an_unreadable_base_text_is_lenient_not_a_readerror` (a real bogus `base_sha` against a real repo, not a mock). |
+| 2 | glm | medium | `check_ac_coverage_ratchet._load_baseline` silently dropped any non-string entry from the baseline's `unbound` list (`{x for x in doc["unbound"] if isinstance(x, str)}`) instead of failing closed — a hand-edited/half-migrated baseline with a malformed entry could silently shrink the grandfathered set (false NEW blocks) or mask real corruption. | **Fixed.** Any non-string entry now returns a non-None error, same as any other malformed baseline shape (fail CLOSED, matching the design's own "corrupt baseline must not silently disable the gate" rule). Pinned by `test_a_baseline_with_a_non_string_entry_fails_closed`. |
+| 3 | glm | low | `_load_baseline`'s own docstring called the absent-baseline case "fail open," but an empty grandfathered set means EVERY unbound AC blocks — that is fail CLOSED, the opposite of what the sentence said, and the opposite of the bloat baseline's own default (which §4 already argues for correctly in code). | **Fixed (wording).** Docstring reworded to state the absent case is fail CLOSED and explicitly named as the deliberate opposite of `anti_ratchet.load_baseline_override`'s absent-baseline default, cross-referenced to design doc §4. |
+| 4 | glm | low | `_ac_binding_regression.binding_regressions`'s two boundary conditions the function's own docstring pins (an AC absent at base; an AC whose digest changed at base) had no DIRECT test, only indirect coverage through `check_orphan_ac_binding`'s CLI tests. | **Fixed.** New `test_ac_binding_regression.py` adds direct unit tests for both negative boundary conditions plus the positive case and the leniency fix (finding #1), plus one real-git happy-path test — five tests total, none through the CLI. |
+| 5 | glm | low | Arm 1 (`check_orphan_ac_binding.py`) reads HEAD spec text via a git-blob read (`spec_text_at`) bound to `--head-sha`, but compares it against the WORKTREE's regenerated manifest, which is never itself bound to that sha — if the regeneration step were skipped or stale, the two arms would silently compare different head states. | **Rejected-with-reason.** Same assumption every sibling gate in this family already makes (the Keystone gate's own manifest read is worktree-only too): the workflow step invoking this gate runs AFTER the manifest-regeneration step in the SAME job, at the checked-out `head_sha` commit, so the worktree IS that commit by construction — not re-verified per-gate, same as P3.6 never re-verifies it either. |
+| 6 | openai | HIGH | Both arms scope to `active_requirements(manifest)` only (mirroring `_keystone_links.links_for`'s own precedent). If a PR retires an FR while a test still carries an old `@covers` tag naming one of its ACs, the retired node is excluded from the scan entirely and the stale binding is never reported as orphaned — an exception to "hard from day one" for exactly this shape. | **Rejected-with-reason, tracked at `trg-00b11bd7`** (HIGH severity is not silently dropped). Consistent with the SAME scope boundary `_keystone_links.links_for` already commits to for the sibling keystone gate (that function's own docstring names the identical restriction) — not a new hole this sub-iterate introduces, but the second known instance of the family's retired-FR blind spot (P3.6 design §7 discloses a related one for its own `binding_removed`). A real fix needs a considered decision about what "vanished" means for a retired FR's surviving bindings, made once for the whole P3.6/P3.7 family, not patched into one arm here. |
+| 7 | openai | medium | A PR can unbind an AC and regenerate/commit the ratchet baseline via `--write` in the SAME PR, grading itself against its own updated grandfather set. | **Rejected-with-reason — duplicate of §5a finding 6**, tracked at the same `trg-91532c29`. |
+| 8 | openai | medium | The CLI test suites simulate regenerated evidence by directly writing `test-traceability.json` fixtures rather than running the real `@covers`-tag parser / manifest generator, so a regression in that producer's shape (e.g. dropping unknown/removed AC keys differently) would not be caught by these tests. | **Rejected-with-reason.** Same house convention every P3.6 CLI test module already follows (`test_keystone_gate_infra.py` and siblings: a fixture manifest + real git commits + a real subprocess CLI invocation, never the full producer chain) — these feeder checks are graded consumers of the manifest, not the manifest generator itself, and a producer-to-gate integration suite spanning the whole family is a separate, cross-cutting testing investment out of this sub-iterate's scope. |
+
+Verdicts: glm `revise`, openai `revise` — both HIGH findings addressed (one fixed, one
+tracked with a stated reason); all MEDIUM findings fixed or rejected with a stated,
+verifiable reason; all LOW findings fixed or rejected with a reason. No finding was
+silently dropped.
+
+## 5c. Orchestrator's Delegated Review Cascade (ADR-029, campaign-mode step 3f-bis,
+against PR #711, 2026-09-10)
+
+This sub-iterate's own review cascade above (§5a plan, §5b code) is the RUNNER's own
+external review, spent while building. The campaign orchestrator additionally runs a
+SEPARATE `spec-reviewer` -> `code-reviewer` -> `doubt-reviewer` cascade over the PR before
+merge (`touches_ci_supplychain` makes it mandatory here) — a substitute for neither.
+
+**Stage 1 (spec-reviewer), commit `f11d4085`: REJECT, self-report fidelity only.**
+Independently re-derived every functional claim from the shipped code (not this doc's
+prose) and confirmed both gates work exactly as specified. Rejected on three places where
+this doc's own §5a-finding-2 narrowing of arm 2's claim ("detects PR1 whenever the base
+manifest's own record is trustworthy, not unconditionally") had not propagated to its
+reader-facing touchpoints — `docs/guide.md`, `docs/hooks-and-pipeline.md`, the `ci.yml`
+step comment still asserted the unconditional "closes" wording — plus this doc's own §8
+Self-Review "Error Handling" row, which still described the PRE-fix fail-open behavior
+§5a finding 1 replaced, and one silent-exclusion branch in `_ac_binding_state.py` (an
+active FR with no `spec_path` recorded) whose comment pointed at a warning that branch
+never emitted. **Fixed** by the orchestrator directly (commit `881d6eb2`): reworded the
+three prose claims, corrected the Self-Review row (now §8 row 2), and added the missing
+warning emission — verified against 24 tests + `verify_local.py`, all green, before
+pushing.
+
+**Stage 2 (code-reviewer), commit `881d6eb2`: REJECT, 4 blocking + 7 non-blocking.**
+Found two real bugs in the orchestrator's own Stage-1 fix (the least-reviewed part of the
+diff), plus two pre-existing gaps neither Stage-1 nor the runner's own review had caught:
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `check_ac_coverage_ratchet._read_worktree_spec_texts` caught `OSError` but not `UnicodeDecodeError` (a `ValueError` subclass) reading a non-UTF-8 spec file; `main()`'s `try` caught only `ReadError`, so the fault escaped as a bare traceback + exit 1 — this CLI's dialect for RATCHET BLOCK, with no JSON. | **Fixed.** `except (OSError, ValueError)` in the reader; `main()` refactored into `main`/`_run_gate` with a last-resort `except Exception` boundary, mirroring `check_orphan_ac_binding.py`'s own pattern verbatim. |
+| 2 | Orchestrator's own Stage-1 fix: the new warning in `_ac_binding_state.py` fired only when the excluded FR carried `acs` bindings, but the SAME exclusion also silently drops the FR's minted ACs from `state.unbound` (feeder a) with no warning at all when it carries none. | **Fixed.** Warning now fires unconditionally for any excluded active FR, naming both consequences (unbound population AND orphan check), with the binding count included either way. |
+| 3 | The new branch (finding 2, above) had no direct test. | **Fixed.** `test_an_active_fr_with_no_spec_path_is_warned_not_silently_excluded` added, covering both the with-bindings and no-bindings shapes. |
+| 4 | Arm 2 (`_ac_binding_regression.head_and_base_minted`) repeats the plain `dict.update`-across-spec-paths pattern P3.6's `_keystone_ac_digest.ac_change_set` explicitly guards (a `head_minted_from` collision check) — an undetected cross-spec-path AC-id collision at HEAD silently reverts to the base digest, reading as "unchanged" and silencing this hard-from-day-one arm. | **Fixed.** Reused the identical `head_minted_from` guard pattern (HEAD only, matching the module's own base/head leniency asymmetry); pinned by `test_head_and_base_minted_raises_on_a_cross_spec_path_collision` (a real second spec file over a real git repo, not a mock). |
+| 5 (non-blocking) | Orchestrator's Stage-1 docstring bullet claimed the missing-`spec_path` case has the "same contract" as the `""` case, when the two verdicts are opposite (one proceeds as zero criteria and still catches an orphan; the other excludes everything). | **Fixed.** Reworded to state the verdicts are opposite and why. |
+| 6 (non-blocking) | `orphaned` keyed on `acs` node presence, contradicting `links_for`'s own stated family convention (count, never presence) that `bound`/`unbound` already follow — false-BLOCK direction on a node with an empty `tests` map. | **Fixed.** Orphan detection now gates on `links_for(...)` truthiness, matching the family convention; pinned by `test_orphaned_keys_on_link_count_not_node_presence`. |
+| 7 (non-blocking) | `resolved_since_baseline`'s inline comment said "an AC gains a binding," but it also fires when a baselined AC is deleted from the spec entirely (removed from `unbound` by no longer being minted). | **Fixed (wording).** Comment now states both cases; the field itself is unchanged (never blocks either way). |
+| 8 (non-blocking) | §5a finding 6's "same accepted house precedent as the bloat baseline" claim overstates: the bloat baseline additionally carries a pre-commit anti-ratchet hook and the Group H detective audit; this baseline has neither. | **Fixed (wording).** §5a finding 6's disposition reworded to state the precedent is same-shape, not same-strength; `trg-91532c29` already tracks the closure. |
+| 9 (non-blocking) | `readable_frs` in `_ac_binding_state.read_binding_state` was provably redundant with `minted_by_fr`'s own keys (every loop iteration either raises or reaches the same `.add`). | **Fixed.** Dropped; the loop now keys on `fr_id not in minted_by_fr` directly (Goal B, bounded to the touched unit). |
+| 10 (non-blocking) | `check_orphan_ac_binding`'s tests always pass an explicit `--base-sha`, so the default `_merge_base` resolution path — the one `ci.yml` actually invokes — has no direct test. | **Deferred, not built here.** Real gap; needs a two-commit repo fixture omitting `--base-sha`. Out of scope for this review-fix round; a candidate for the next sub-iterate that touches this CLI, or a follow-up card if none does before the family's next change. |
+| 11 (non-blocking, sizing) | ~1,270 net lines across two independently-shippable gates plus a 265-line generated baseline; a reviewer's attention is measurably thinner across a diff this size. | **Acknowledged, not actionable retroactively** — the shared `_ac_binding_state` reader and SPEC §8 E2 naming both feeders together are the stated reason not to split; noted for calibration on the NEXT feeder-shaped sub-iterate. |
+
+All fixes verified: 39/39 tests green across the four touched test modules (up from 24),
+`uvx ruff@0.15.15 check` clean, full `verify_local.py` 3/3 mirrored gates green, before
+the orchestrator re-pushed.
+
+**Stage 3 (doubt-reviewer), commit `246875fa`: 1 HIGH, 3 MEDIUM, 3 LOW, advisory.**
+Biased to disprove; three of its five named investigation angles came back FALSE ALARM
+after tracing (over-broad `except Exception`, the missing-`spec_path` warning being dead
+code, and the `readable_frs` removal changing behavior) — recorded below as `checked_and_cleared`,
+not re-litigated. The findings that survived:
+
+| # | Sev | Finding | Disposition |
+|---|---|---|---|
+| 1 | HIGH | Arm 1's `spec_path_by_fr` (a plain dict keyed on display id) silently picks ONE spec_path when >=2 active nodes share a display id with different paths — the exact last-write-wins class Stage 2's `head_minted_from` guard closed on arm 2, but arm 1 is the one that HARD-blocks with no baseline. Any AC minted only in the LOSING document, with a binding, false-orphans. The repo already models display-id collisions as `_layer_coverage_core.collision_display_ids` and routes them ADVISORY everywhere else in the family (`_keystone_layer_gap`, `_layer_coverage_binding`); this sub-iterate silently promoted the same ambiguity to a hard block. | **Fixed.** `read_binding_state` now excludes any display id in `collision_display_ids(manifest)` from `fr_paths` before the main loop (so it never enters `minted`/`bound`/`unbound`/`orphaned`), with a WARNING naming the collision explicitly — reusing the SAME "excluded, not misreported" mechanism the missing-`spec_path` case already had (§5c finding 2), rather than the stricter symmetric-`ReadError` option, because failing closed here would immediately block every PR touching any PRE-EXISTING collision, not just this PR's own change. A non-string `id` gets the identical treatment for the same reason. |
+| 2 | MEDIUM | `check_orphan_ac_binding.py`'s remedy text told the author `binding_regressions` AC(s) "had a passing binding at the base commit" — contradicting this very PR's own `BindingState.bound` field docstring and pinned test (§5a finding 8: binding is TAG-derived, never execution-derived). An author whose base had a FAILING tagged test reads "had a passing binding" and looks in the wrong place, on a hard gate with no baseline, where the remedy string is the whole diagnosis. | **Fixed.** Reworded to "had at least one `@covers` binding at the base commit." |
+| 3 | MEDIUM | The `pull_request`-only trigger on BOTH new gates (matching the Keystone gate's own precedent) means the coverage-ratchet baseline is observed exactly once in its lifecycle — inside the introducing PR — and never again automatically; §5a/§5b/§5c already narrowed the "same precedent as the bloat baseline" claim to same-shape-not-same-strength, but this sharpens it further: zero post-merge automated observation at all, versus the bloat baseline's continuous re-measurement. | **Rejected-with-reason, filed as `trg-e69bf1ba`** (a new, sharper card rather than folding into `trg-91532c29`, per this campaign's own established practice of naming what changed rather than leaving a vaguer TBD). Not fixed here: switching the ratchet step to also run on `push` is a real CI-trust-boundary decision (a NEW trigger surface beyond what this PR's `ci_supplychain_ack.json` already covers) that deserves its own considered review, not a same-PR patch under review pressure. |
+| 4 | MEDIUM | Arm 2's `head_and_base_minted` reused P3.6's `ac_change_set` readers but dropped both of its earned null-case warnings (`_keystone_ac_digest.py`: "neither manifest names a spec_path" and "named, but none resolved to any content at either commit") — a trivially-empty comparison would otherwise be indistinguishable from "nothing changed", the exact silent-arm risk this hard-from-day-one check exists to avoid. | **Fixed.** Both warnings ported verbatim (same wording pattern, same trigger conditions) into `head_and_base_minted`. |
+| 5 | LOW | Arm ordering in `_run_gate`: if arm 2 raises `ReadError` (now reachable via the new collision guard), arm 1's already-computed `state.orphaned` — a possibly real, actionable finding — was discarded from the infra-fault payload. | **Fixed.** The `orphaned_bindings` arm 1 already computed is now carried into the arm-2 infra-fault payload, so an author facing both issues sees both. |
+| 6 | LOW | `ensure_utf8_stdout()`/`parse_args()`/`Path(args.project_root).resolve()` sit outside the `main`/`_run_gate` try boundary Stage 2 added; a pathological `--project-root` could still escape as a bare exit 1 in the ratchet CLI. | **Rejected-with-reason.** `--project-root .` is hardcoded in `ci.yml` (never operator-supplied in the path CI actually runs), so this is unreachable in production; the reviewer's own assessment concurred ("reachability in CI is nil... a nit, not a defect"). |
+
+**Self-identified while applying finding 1 above:** the fix's own warning claims a
+colliding `fr_id`'s bindings are "absent ... from the orphan check (feeder b)" — but that
+claim was FALSE for arm 2 until checked: `binding_regressions` never consulted
+`collision_display_ids`, and `links_for` deliberately POOLS link counts across every
+active node sharing a display id, so a collision could still make arm 2's "0 links at
+head" an artifact of which node's tests happened to be pooled, not a real regression on
+that criterion. **Fixed** the same way, checked against BOTH manifests (a collision
+introduced or resolved between base and head still taints the comparison either way):
+`binding_regressions` now skips any `fr_id` in `collision_display_ids(head_manifest) |
+collision_display_ids(base_manifest)`. Pinned by
+`test_binding_regressions_skips_a_display_id_collision`.
+
+All fixes re-verified before this section was written: full `shared/scripts/tools/tests/`
+suite green, `uvx ruff@0.15.15 check` clean on every touched file, `verify_local.py`
+3/3 mirrored gates green.
+
+## 6. Empirical probes (Step 3.8 boundary — real repo, real git)
+
+```
+$ uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root . --write
+unbound_count: 259   (matches P3.6 design §2.1's 259/268 to within drift since that commit)
+
+$ uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root .
+status: clean (0 new_unbound against the freshly-written baseline)
+
+$ uv run shared/scripts/tools/check_orphan_ac_binding.py --project-root . \
+    --head-sha $(git rev-parse HEAD) --base-sha $(git rev-parse HEAD~1)
+status: clean (orphaned_bindings: [], binding_regressions: [])
+```
+
+Zero pre-existing violations for feeder (b), same reading P3.6's §2.3 reached for the keystone
+gate itself. Real-git test fixtures (`shared/scripts/tools/tests/_keystone_repo.py`, reused —
+not a mock) additionally pin: an outright-deleted bound criterion orphans (arm 1); an id
+rotation orphans the old id (arm 1); a suffix-dropped binding with unchanged criterion text
+regresses (arm 2) while an in-PR criterion edit does not double-report against P3.6's own
+`binding_removed` (arm 2 stays silent when the digest changed).
+
+## 7. Known limitations (disclosed, not fixed)
+
+* **Feeder (a)'s baseline is a snapshot, not live — two related holes, both raised by external
+  plan review (glm, medium x2; §5a findings 6/7), both tracked at `trg-91532c29` rather than
+  fixed here.** (i) An AC that becomes unbound and is immediately re-baselined in the SAME PR
+  that unbound it would pass — the baseline has no "who added this line" provenance. Not fixed:
+  the same trust boundary every anti-ratchet baseline in this repo already carries
+  (`shared/scripts/lib/anti_ratchet.py`'s own docstring: files outside the baseline are
+  advisory), and review is the control, not a technical one — reading the baseline from the
+  merge-base was considered and rejected, since it would make THIS introducing PR fail its own
+  new gate (`origin/main` has no baseline file yet). (ii) An AC that gets bound (reported
+  `resolved_since_baseline`) but whose baseline entry is never removed stays grandfathered even
+  if it regresses again in a LATER PR — the single-run computation this gate does has no memory
+  of the intermediate bound state, so subtracting `resolved_since_baseline` at check time (the
+  reviewer's own suggestion) does not actually close it. Real closure needs either periodic
+  `--write` refresh (now documented in the baseline file's own `$comment`) or a persisted
+  resolution ledger, real design work deserving its own review.
+* **Arm 1 and arm 2 both stop at the AC layer, never AC coverage *breadth*.** Neither checks
+  whether a bound test satisfies the FR's `required_layers` — that is `cross_layer_coverage` /
+  P3.6's own scope boundary (design §7), not this sub-iterate's.
+* **A retired FR's surviving `@covers` bindings are invisible to both arms** (external code
+  review, openai, HIGH; §5b finding 6), tracked at `trg-00b11bd7`. Both arms scope to
+  `active_requirements(manifest)`, the SAME restriction `_keystone_links.links_for` already
+  commits to for the sibling keystone gate — not a new hole, but the second known instance of
+  the family's retired-FR blind spot. Needs a considered decision for the whole P3.6/P3.7 family
+  together, not a one-off patch here.
+* **The advisory item — "a changed test body suspects its AC" — is deferred**, per the
+  sub-iterate spec's own explicit permission ("implement if time/complexity allow ... do not
+  let it block"). Named explicitly, not left as a silent TBD (the `trg-875104ac` lesson this
+  campaign already learned once): triage card `trg-33a474e2` names the mechanism sketch (diff a
+  bound test's body between base/head where the AC's own digest is unchanged; ADVISORY only,
+  human judges whether the edit weakens or merely refactors).
+* **Arm 2 reads the base manifest, which is stale-by-construction** (read from the last commit
+  at base, never regenerated) — the same disclosed gap P3.6's own design doc §7 already accepts
+  for its `binding_removed` reduction check, inherited here rather than re-solved. External plan
+  review (openai, HIGH; §5a finding 2) is why §3/§4's own claim that arm 2 "closes" the two-PR
+  sequence is now worded narrower everywhere it appears: it detects PR1 whenever the base
+  manifest's own record of the binding is trustworthy, not unconditionally.
+
+## 7a. Confidence Calibration (Step 3.8)
+
+Step 3.4's re-check (`risk_recheck.json`) records `effective_complexity: small` and risk flags
+`["touches_ci_supplychain"]` only — neither the `medium`+ nor the `touches_io_boundary` trigger
+fires, and no explicit calibration probe was invoked. **Skipped per the strict trigger**
+(`skipped_complexity_and_no_io_boundary`) — Self-Review (§8) is the review of record for this
+run. Recorded honestly as skipped rather than backfilled as "completed" merely because §6 already
+ran real empirical probes against the actual repo for the design's own sake (259/268-matching
+baseline count, zero pre-existing orphan/regression violations) — those probes anchor §4/§6's own
+claims, they are not a substitute for a Step-3.8 pass the trigger never asked for.
+
+## 8. Self-Review (Step 3.6 — 7-item checklist)
+
+| # | Item | Verdict | Note |
+|---|---|---|---|
+| 1 | Spec Compliance | pass | Both ACs met: (a) blocks only on a ratchet (§4, pinned by `test_check_ac_coverage_ratchet.py`), (b) blocks from day one, no baseline (§3, pinned by `test_check_orphan_ac_binding.py`). Asymmetry documented at every reader touchpoint: both module docstrings, `ci.yml` step comments, `hooks-and-pipeline.md`, `guide.md`. |
+| 2 | Error Handling | pass | Both CLIs follow the family's 0/1/2 exit contract; a manifest/baseline read fault is `infra_fault` (2), never a silent green. Post-fix (§5a finding 1), `_ac_binding_state`'s three-way contract is: a genuinely absent spec path (`""`) proceeds as zero minted criteria with a warning (any still-bound AC correctly orphans); an unreadable/untrustworthy path (`None`/`AcIdentityError`) RAISES `ReadError` -> `infra_fault`, never silently excluded; an active FR with no `spec_path` recorded at all is excluded with a warning, never misreported as unbound/orphaned. |
+| 3 | Security Basics | pass | No new input trust boundary beyond what P3.6 already crosses (git blob reads via the same `spec_text_at`/`read_base_manifest`); the baseline file is read/written under `project_root`, no path traversal (fixed relative filename, `--baseline` override is an operator-supplied path, same trust level as `--project-root`). |
+| 4 | Test Quality | pass | Real-git fixtures (no mocked reader) for both CLIs; pure-unit tests for `_ac_binding_state` cover minted/bound/unbound/orphaned and the "excluded, not misreported" rule; one subprocess smoke per CLI. Empirically probed against the real repo (§6). |
+| 5 | Performance Basics | pass | Per PR: one extra `ac_identity.read_all` pass over each named spec path (already read by the Keystone gate in the same job) and a handful of `links_for` walks — no new test executions, no network calls. |
+| 6 | Naming & Structure | pass | Mirrors the P3.6 family's own module split (`_keystone_links`/`_keystone_ac_digest`/`_keystone_base_manifest`) rather than inventing a new shape; both new source files are well under the 300-LOC limit. |
+| 7 | Affected Boundaries (ADR-024) | pass | Producer: `test_links.generate_file()` (the traceability manifest, unchanged by this sub-iterate). Consumer: these two new CLIs, read-only. Round-trip probed for real in §6 against the actual committed manifest + spec.md — not merely unit-fixture data. |
+
+## 9. Deferred, not built here
+
+* The advisory "changed test body" check — triage `trg-33a474e2`.
+* Any F11 (local) advisory mirror of either check — both are CI-only by the same reasoning
+  P3.6's own Q4 ruling gave (`verify_local.py`'s `CI_ONLY_GATES` entries here).

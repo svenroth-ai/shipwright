@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+    "paths_fingerprint": "711c2d16c9364586bd0a089e7708f9e6b6594cd031f5ad96e57d5a183ef7db91",
+    "consistent_with": "#702",
+    "statement": "Adds two new pull_request-only (gate) steps to ci.yml (AC coverage ratchet, Orphan AC binding), same job and same trust posture as the existing Keystone AC gate step added in #702: exactly as strong as ci.yml itself, gated on the manifest-regeneration step running first.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ]
+  }
+}
