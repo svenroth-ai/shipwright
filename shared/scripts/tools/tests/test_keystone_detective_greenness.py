@@ -230,6 +230,24 @@ def test_a_non_mapping_tests_value_is_treated_as_no_verified_evidence():
     assert link["status"] == "enabled"
 
 
+def test_a_non_mapping_evidence_requirements_is_treated_as_no_verified_evidence():
+    """One level higher still: `evidence.requirements` itself is a truthy
+    non-mapping (a list, not a dict of requirement keys). Must not raise
+    `AttributeError` from `.items()` -- treated as no verified evidence for
+    ANY requirement, so every bound link falls through to `not_run` (PR
+    review, Tier-3, PR #716, second consecutive BLOCK on the same
+    unvalidated-nesting-level defect class the first fix only closed one
+    level down)."""
+    manifest = bound_manifest(executed="pass")
+    evidence = _evidence("confirmed", run_id=9, requirements=["not", "a", "mapping"])
+
+    verified = dc.build_verified_manifest(manifest, evidence)
+
+    link = verified["requirements"]["ns::FR-01.01"]["acs"]["AC01"]["tests"]["unit"][0]
+    assert link["executed"] == "not_run"
+    assert link["status"] == "enabled"
+
+
 # --------------------------------------------------------------------------
 # Mutation contract — build_verified_manifest must not share mutable state
 # with its input

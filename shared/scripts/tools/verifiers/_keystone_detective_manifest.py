@@ -61,11 +61,15 @@ def build_verified_manifest(committed_manifest: dict, evidence: ExecutionEvidenc
     (external code review round 2, glm, low) — the same fail-closed
     ``not_run`` fallback an unmatched id already gets, rather than writing a
     non-string sentinel into the manifest that ``evaluate_keystone`` was
-    never contracted to handle. The same ABSENT treatment applies one level
-    up: a requirement node that is not a mapping, or whose ``tests`` value is
-    not a mapping, is treated as if that requirement carried no verified
-    evidence at all, rather than raising ``AttributeError`` from ``.items()``
-    on a non-mapping (PR review, Tier-3, blocking).
+    never contracted to handle. The same ABSENT treatment applies at every
+    level above: a requirement node that is not a mapping, a ``tests`` value
+    that is not a mapping, or ``evidence.requirements`` itself not being a
+    mapping, are all treated as if the affected requirement (or all of them)
+    carried no verified evidence at all, rather than raising
+    ``AttributeError`` from ``.items()`` on a non-mapping (PR review, Tier-3,
+    PR #716, two consecutive BLOCKs on the same "unvalidated nesting level"
+    defect class — this function now validates every level it dereferences,
+    not one level at a time).
 
     Returns a full, independent deep copy — no shared mutable state with
     ``committed_manifest`` ANYWHERE in the returned tree, not merely on the
@@ -75,7 +79,15 @@ def build_verified_manifest(committed_manifest: dict, evidence: ExecutionEvidenc
     manifest that was read from git.
     """
     verified_by_req: dict[str, dict[str, tuple[str, str]]] = {}
-    for req_key, node in (evidence.requirements or {}).items():
+    verified_requirements = evidence.requirements if isinstance(evidence.requirements, dict) else {}
+    # A non-mapping `evidence.requirements` itself (a truthy list/string/object)
+    # is treated the same as no verified evidence at all, rather than an
+    # uncaught AttributeError from `.items()` on a non-mapping -- the same
+    # ABSENT-not-error posture this function already takes one and two levels
+    # deeper (PR review, Tier-3, PR #716, second consecutive BLOCK: the first
+    # fix validated each requirement node and its `tests` value but left this
+    # top-level dereference unvalidated).
+    for req_key, node in verified_requirements.items():
         by_id: dict[str, tuple[str, str]] = {}
         tests = node.get("tests") if isinstance(node, dict) else None
         # A non-mapping requirement node, or a non-mapping `tests` value, is
