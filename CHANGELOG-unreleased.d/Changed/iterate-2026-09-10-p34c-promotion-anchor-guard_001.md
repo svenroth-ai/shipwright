@@ -1,0 +1,1 @@
+Layers promotion now falls back to the newest CI-verified ancestor commit when HEAD itself is not verified, instead of refusing outright, provided each FR's bound test evidence is provably unstale since that ancestor.

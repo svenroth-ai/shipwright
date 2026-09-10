@@ -1,0 +1,68 @@
+{
+  "run_id": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+  "date": "2026-09-10T15:38:38.478433Z",
+  "event_at": "2026-09-10T15:38:09.504179+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/campaign-p3.7-feeder-checks-anti-ratcheted",
+  "spec": ".shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an unbound AC not in the baseline blocks (feeder a, the ratchet)",
+        "disposition": "tested",
+        "evidence": "test_check_ac_coverage_ratchet.py::test_unbound_ac_with_no_baseline_at_all_is_a_ratchet PASSED"
+      },
+      {
+        "behavior": "a baselined unbound AC does not block; binding it reports resolved_since_baseline",
+        "disposition": "tested",
+        "evidence": "test_check_ac_coverage_ratchet.py::test_a_baselined_unbound_ac_does_not_block, ::test_binding_a_baselined_ac_reports_it_resolved_and_does_not_block PASSED"
+      },
+      {
+        "behavior": "a corrupt or unrecognised-schema-version baseline fails CLOSED (infra fault), never silently open",
+        "disposition": "tested",
+        "evidence": "test_check_ac_coverage_ratchet.py::test_a_corrupt_baseline_fails_closed_not_open, ::test_an_unrecognised_schema_version_is_an_infra_fault, ::test_a_baseline_with_a_non_string_entry_fails_closed PASSED"
+      },
+      {
+        "behavior": "an outright-deleted bound criterion, and an id rotation, both orphan their old binding (feeder b, arm 1)",
+        "disposition": "tested",
+        "evidence": "test_check_orphan_ac_binding.py::test_deleting_a_bound_criterion_outright_orphans_its_binding, ::test_id_rotation_orphans_the_old_id, ::test_deleting_the_whole_spec_file_still_orphans_its_bound_acs PASSED"
+      },
+      {
+        "behavior": "a binding dropped with no criterion-text change is a regression (the two-PR sequence's PR1, feeder b arm 2); an in-PR criterion edit does not double-report",
+        "disposition": "tested",
+        "evidence": "test_check_orphan_ac_binding.py::test_dropping_a_binding_with_no_criterion_text_change_is_a_regression, ::test_editing_the_criterion_in_the_same_pr_is_not_a_regression PASSED"
+      },
+      {
+        "behavior": "an unreadable/untrustworthy head spec path fails CLOSED (ReadError), not silently excluded -- the fail-open bug external plan review found",
+        "disposition": "tested",
+        "evidence": "test_ac_binding_state.py::test_an_unreadable_spec_path_raises_readerror_not_excludes, ::test_untrustworthy_markers_raise_readerror PASSED"
+      },
+      {
+        "behavior": "an unreadable base commit is lenient (warning), never a hard fault -- the docstring/code contradiction external code review found",
+        "disposition": "tested",
+        "evidence": "test_ac_binding_regression.py::test_an_unreadable_base_text_is_lenient_not_a_readerror PASSED"
+      },
+      {
+        "behavior": "binding_regressions never fires on an AC absent at base or one whose digest changed at base",
+        "disposition": "tested",
+        "evidence": "test_ac_binding_regression.py::test_binding_regressions_skips_an_ac_absent_at_base, ::test_binding_regressions_skips_a_changed_digest PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "monorepo tooling change (two new CI-gate CLIs, their shared reader module, and a CI-workflow step) -- no startable web/dev-server/CLI surface of its own to browser-verify; verification is the unit test suite (shared/scripts/tools/tests, 895 passed / 19 pre-existing skips) plus the real-git and real-repo empirical probes recorded in the design doc's Step 3.8 section."
+  }
+}

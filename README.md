@@ -196,7 +196,15 @@ A five-step path from zero to a self-merging pipeline. Each step links to the fu
 
 ### 1. Install the plugins
 
-The recommended, cross-platform path (Windows PowerShell, macOS, Linux, VS Code Extension terminal): register the marketplace, then install all 13 plugins.
+**Want the plugins *and* the [Command Center WebUI](https://github.com/svenroth-ai/shipwright-webui)?** Run one command — it installs/updates both, first run and every run after:
+
+```bash
+npx @svenroth-ai/shipwright@latest
+```
+
+Skip to [Step 2](#2-run-your-first-command) if you used this.
+
+**Plugins only, no WebUI:** register the marketplace, then install all 14 plugins directly with `claude plugin`. The recommended, cross-platform path (Windows PowerShell, macOS, Linux, VS Code Extension terminal):
 
 **bash / zsh / Git Bash:**
 
@@ -226,7 +234,7 @@ foreach ($p in @('shipwright-run','shipwright-project','shipwright-design',
 Verify, then **restart Claude Code** (freshly installed plugins activate only in a new session):
 
 ```bash
-claude plugin list   # all 13 should show ✔ enabled
+claude plugin list   # all 14 should show ✔ enabled
 ```
 
 > **Alternatives:** a bash all-in-one installer (`./scripts/install.sh`, creates a `shipwright` shell alias), see [§2.4](docs/guide.md#24-plugin-install--option-b-scriptsinstallsh-macos-linux-git-bash-on-windows); or a manual `settings.json` edit, see [§2.6](docs/guide.md#26-plugin-install--option-d-manual-settingsjson-edit-advanced).
@@ -242,6 +250,14 @@ claude plugin list   # all 13 should show ✔ enabled
 See [Chapter 3](docs/guide.md#3-your-first-project) (greenfield) and [Chapter 3.5](docs/guide.md#35-adopting-an-existing-repo) (brownfield).
 
 ### 3. Keep Shipwright updated
+
+Installed via `npx`? Re-run the same command — it updates the plugins and the WebUI together:
+
+```bash
+npx @svenroth-ai/shipwright@latest
+```
+
+Installed via marketplace instead:
 
 ```bash
 claude plugin marketplace update shipwright

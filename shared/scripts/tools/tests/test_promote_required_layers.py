@@ -616,8 +616,8 @@ def test_a_concurrent_spec_edit_between_the_decision_read_and_the_fold_is_refuse
 
     real_plan_promotions = mod.plan_promotions
 
-    def _plan_then_concurrently_edit(manifest, ledger, project_root, evidence):
-        decisions, contents_by_path = real_plan_promotions(manifest, ledger, project_root, evidence)
+    def _plan_then_concurrently_edit(manifest, ledger, project_root, evidence, **kwargs):
+        decisions, contents_by_path = real_plan_promotions(manifest, ledger, project_root, evidence, **kwargs)
         current = spec_path.read_text(encoding="utf-8")
         spec_path.write_text(
             current.replace("y.", "y (edited concurrently)."), encoding="utf-8",
@@ -925,3 +925,477 @@ def test_dry_run_with_a_spec_path_escaping_the_project_root_is_a_clean_operation
     assert rc == 2
     out = json.loads(capsys.readouterr().out)
     assert "could not read a spec.md" in out["error"]
+
+
+# --- P3.4c: anchor-to-newest-verified-ancestor fallback --------------------
+#
+# These tests build a REAL two-commit repo (anchor commit, then HEAD) so the
+# `git diff`-based staleness guard runs against real git behavior, but mock
+# both `mod.resolve_verified_anchor` (the `gh`-boundary seam this tool's own
+# `main()` calls directly) and `mod.resolve_execution_evidence` (dispatched
+# by WHICH commit it is asked about, since both the tip's own attempt and
+# the anchor's fall-back attempt call the exact same patched name).
+
+
+def _mock_anchor_and_evidence(monkeypatch, *, anchor_status, anchor_commit=None, anchor_depth=None,
+                               head_evidence_status="unavailable", anchor_requirements=None, anchor_run_id=999,
+                               anchor_evidence_status="confirmed"):
+    """Wires ``mod.resolve_verified_anchor`` to a canned outcome and
+    ``mod.resolve_execution_evidence`` to answer per-commit: ``unavailable``
+    for HEAD (the trigger for the fallback), ``anchor_evidence_status`` (from
+    ``anchor_requirements`` when ``confirmed``) for ``anchor_commit`` —
+    mirroring ``_mock_evidence_from``'s own manifest-key-namespaced shape.
+    ``anchor_evidence_status`` lets a caller exercise the anchor's OWN
+    ``error``/``unavailable`` outcomes distinctly from ``confirmed``."""
+    from scripts.ci_verified_anchor import VerifiedAnchor
+
+    monkeypatch.setattr(
+        mod, "resolve_verified_anchor",
+        lambda head_commit, **kw: VerifiedAnchor(anchor_status, "test", anchor_commit, anchor_depth),
+    )
+
+    def fake_resolve_execution_evidence(commit, *, committed_manifest, project_root):
+        if commit == anchor_commit and anchor_requirements is not None:
+            if anchor_evidence_status != "confirmed":
+                return ExecutionEvidence(anchor_evidence_status, "test", None, None)
+            ci_map = {
+                key: {"tests": node.get("tests") or {}, "coverage": node.get("coverage") or {}}
+                for key, node in anchor_requirements.items()
+            }
+            return ExecutionEvidence("confirmed", "test", anchor_run_id, ci_map)
+        return ExecutionEvidence(head_evidence_status, "test", None, None)
+
+    monkeypatch.setattr(mod, "resolve_execution_evidence", fake_resolve_execution_evidence)
+
+
+def test_anchor_promotion_succeeds_when_nothing_invalidating_changed_since_the_anchor(tmp_path, monkeypatch):
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+
+    # HEAD moves on with an UNRELATED change -- never touching the bound
+    # test file (`t::unit`, per `_link`'s fixed id/path) or spec.md.
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "| unit |" in spec
+    assert "(inferred)" not in spec
+
+    ledger = load_ledger(ledger_path(project))
+    entry = ledger["decisions"]["FR-01.01"][-1]
+    assert entry["action"] == "promoted"
+    assert entry["ci_run_id"] == 999
+    assert entry["anchor_commit"] == anchor_sha
+
+
+def test_anchor_promotion_is_refused_when_a_bound_test_file_is_dirty_but_uncommitted(tmp_path, monkeypatch):
+    # Tier-3 PR review, blocking (this iterate's own PR): this tool is never
+    # invoked from CI, only by a human operator against whatever working
+    # tree they have. Identical to the "succeeds" test above -- HEAD moves
+    # on with an unrelated committed change -- except the bound test file
+    # `t` also has an UNCOMMITTED edit sitting in the working tree at the
+    # moment this runs. `changed_paths_between(anchor..HEAD)` alone would
+    # see nothing (the edit was never committed); the fix
+    # (`dirty_or_untracked_paths`, unioned in by `main()`) must still catch
+    # it and refuse the promotion.
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    (project / "t").write_text("weakened, but never committed", encoding="utf-8")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_anchor_promotion_is_refused_when_a_bound_test_file_changed_since_the_anchor(tmp_path, monkeypatch):
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+
+    # `_link(layer="unit")` binds `t::unit` (both `id` and `path`) -- create
+    # and then MODIFY that exact path between the anchor and HEAD, the
+    # precise "a bound test moved/changed" case the guard exists to catch.
+    (project / "t").write_text("original", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "add bound test file")
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+    (project / "t").write_text("changed", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "touch the bound test file")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # untouched -- never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_anchor_promotion_reports_stale_reason_code_in_the_result(tmp_path, monkeypatch, capsys):
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    (project / "t").write_text("original", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "add bound test file")
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+    (project / "t").write_text("changed", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "touch the bound test file")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert len(out["skipped"]) == 1
+    assert out["skipped"][0]["fr"] == "FR-01.01"
+    assert out["skipped"][0]["action"] == "skip"
+    assert out["skipped"][0]["reason_code"] == "evidence_stale_since_anchor"
+
+
+def test_anchor_promotion_is_refused_when_only_the_head_spec_path_changed(tmp_path, monkeypatch):
+    # Regression pin for external review (openai/high + glm/low): the FR's
+    # spec_path itself moved to a DIFFERENT spec.md between the anchor and
+    # HEAD, while nothing else (the bound test file, the OLD spec.md)
+    # changed at all. Promoting here would write into the NEW spec.md using
+    # evidence from a CI run that only ever covered the OLD one.
+    old_spec_relpath = _SPEC_RELPATH
+    new_spec_relpath = ".shipwright/planning/01-adopted/spec-moved.md"
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+
+    requirements = {"01::FR-01.01": _node("FR-01.01", spec_path=old_spec_relpath)}
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+
+    # HEAD: the FR's spec_path moves to a new file (added, never covered by
+    # the anchor's CI run); the bound test file (`t::unit`) never changes.
+    (project / ".shipwright" / "planning" / "01-adopted" / "spec-moved.md").write_text(
+        "\n".join([
+            "# Spec", "", "## Functional Requirements", "",
+            FR_TABLE_HEADER, FR_TABLE_SEPARATOR, row, "",
+        ]),
+        encoding="utf-8",
+    )
+    manifest_path = project / _MANIFEST_RELPATH
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["requirements"]["01::FR-01.01"]["spec_path"] = new_spec_relpath
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "move FR-01.01 to a new spec.md")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    new_spec = (project / new_spec_relpath).read_text(encoding="utf-8")
+    assert "(inferred)" in new_spec  # never promoted into the NEW spec.md
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_anchor_promotion_is_refused_when_the_bound_test_set_changed_at_head(tmp_path, monkeypatch):
+    # Regression pin for external plan review (glm/medium + openai/high,
+    # both independently): the FR's traceability BINDING itself changed
+    # between the anchor and HEAD -- a second test newly bound to this FR --
+    # without either bound file's own bytes ever changing, so it never shows
+    # up in `git diff --name-only` at all. The guard must catch this via a
+    # direct anchor-vs-HEAD bound-set comparison, not just the file diff.
+    anchor_requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, anchor_requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+
+    # HEAD: FR-01.01 gains a SECOND bound test link -- an unrelated file
+    # never touched on disk, so it is invisible to the git diff.
+    manifest_path = project / _MANIFEST_RELPATH
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["requirements"]["01::FR-01.01"]["tests"]["unit"].append(
+        {"id": "extra::unit", "path": "extra::unit", "layer": "unit", "status": "enabled", "executed": "pass"},
+    )
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "bind a second test to FR-01.01")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=anchor_requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_anchor_promotion_is_refused_when_a_new_test_file_is_unaccounted_for_in_any_manifest(
+    tmp_path, monkeypatch,
+):
+    # Stage-3 doubt review, high: the concrete non-adversarial failure the
+    # doubt reviewer named directly. A new test file is added at HEAD (a
+    # real e2e test for FR-01.01, tagged in the codebase) but the committed
+    # manifest was never regenerated to record it as bound -- the exact
+    # "drifted, unregenerated HEAD manifest" state this whole mechanism
+    # exists to operate in. Without the unaccounted-test-file widening, the
+    # binding-drift check sees no difference (HEAD's stale manifest still
+    # matches the anchor's), and the new file never appears in the
+    # invalidating set (nothing ever recorded it as bound to anything) --
+    # this FR would silently promote on evidence that never covered it.
+    anchor_requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, anchor_requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+
+    # HEAD: a genuinely new test file lands on disk, but nobody re-ran the
+    # manifest regeneration -- the committed manifest is byte-identical to
+    # the anchor's.
+    (project / "tests").mkdir(parents=True, exist_ok=True)
+    (project / "tests" / "test_fr_01_01_e2e.py").write_text(
+        "def test_fr_01_01_covers_the_new_flow():\n    assert True\n", encoding="utf-8",
+    )
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "add a new e2e test (manifest not regenerated)")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=anchor_requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_no_verified_ancestor_within_the_bound_reports_unavailable_not_error(tmp_path, monkeypatch):
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+
+    _mock_anchor_and_evidence(monkeypatch, anchor_status="unavailable")
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0  # never an operational failure
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_a_query_error_walking_the_anchor_degrades_to_unavailable_not_exit_2(tmp_path, monkeypatch):
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+
+    _mock_anchor_and_evidence(monkeypatch, anchor_status="error")
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+
+def test_a_local_git_fault_reading_the_anchors_manifest_degrades_not_exit_2(tmp_path, monkeypatch):
+    # Regression pin for code-reviewer/medium: a `ManifestReadError` on the
+    # anchor's OWN manifest read (pure local git plumbing on an optional,
+    # best-effort path) must degrade to the tip's original `unavailable`,
+    # never exit 2 -- there is a perfectly good fallback already in hand
+    # (give up on the anchor, not on the run).
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+    # `mod.ManifestReadError`, not a fresh `scripts.lib.manifest_at_commit`
+    # import -- ADR-044/045's package-collision gotcha means those are two
+    # DIFFERENT class objects (`mod` imports it via bare `lib.`, this test
+    # module via the `scripts.` prefix), so raising the latter would not be
+    # caught by `mod`'s own `except ManifestReadError`.
+    real_read_manifest_at_commit = mod.read_manifest_at_commit
+
+    def _fail_only_for_the_anchor(project_root, sha, **kw):
+        if sha == anchor_sha:
+            raise mod.ManifestReadError("simulated local git fault reading the anchor's manifest")
+        return real_read_manifest_at_commit(project_root, sha, **kw)
+
+    monkeypatch.setattr(mod, "read_manifest_at_commit", _fail_only_for_the_anchor)
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0  # never an operational failure
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted -- the anchor was abandoned
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_a_local_git_fault_diffing_anchor_to_head_degrades_not_exit_2(tmp_path, monkeypatch):
+    # Regression pin for code-reviewer/medium: `changed_paths_between`
+    # returning `None` (a local `git diff` fault, not a data problem) must
+    # also degrade rather than exit 2, for the same reason as the manifest
+    # read above.
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+    monkeypatch.setattr(mod, "changed_paths_between", lambda *a, **k: None)
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0  # never an operational failure
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted -- the anchor was abandoned
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_the_anchors_own_evidence_erroring_degrades_not_exit_2(tmp_path, monkeypatch):
+    # Stage-3 doubt review, medium (reversed from an earlier round of this
+    # same fix): `resolve_execution_evidence`'s `error` status is not
+    # reliably a content-binding/integrity signal -- most of its `error`
+    # returns are plain transient/operational download faults, and treating
+    # them as fatal made a best-effort fallback into a new, self-repeating
+    # exit-2 for the SAME anchor commit on every run until it ages out of
+    # the walk's bound. Degrades the same way the two git-plumbing faults
+    # above do -- give up on the anchor, not on the run.
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements, anchor_evidence_status="error",
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+
+def test_the_anchors_own_evidence_staying_unavailable_falls_through_cleanly(tmp_path, monkeypatch):
+    # A genuinely found, verified anchor whose OWN execution evidence is
+    # simply not yet available (no artifact, not an error) must fall
+    # through to the tip's original `unavailable` -- never a promotion,
+    # never an exit-2, and `resolve_verified_anchor` must not be consulted
+    # again beyond this one candidate (the walk itself already exhausted
+    # per `anchor_status`, tested separately in test_ci_verified_anchor.py).
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements, anchor_evidence_status="unavailable",
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
+def test_tip_is_verified_never_triggers_the_anchor_fallback_at_all(tmp_path, monkeypatch):
+    # AC4: the existing tip-is-verified path promotes IDENTICALLY -- proven
+    # here by making `resolve_verified_anchor` explode if it is ever called.
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    _mock_evidence_from(monkeypatch, requirements, run_id=34316980804)
+
+    def _boom(*a, **k):
+        raise AssertionError("resolve_verified_anchor must not be called when the tip is verified")
+
+    monkeypatch.setattr(mod, "resolve_verified_anchor", _boom)
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    ledger = load_ledger(ledger_path(project))
+    entry = ledger["decisions"]["FR-01.01"][-1]
+    assert entry["action"] == "promoted"
+    # No anchor fallback ran -- the commit evidence was resolved against IS
+    # the promoted commit itself.
+    head_sha = _git(project, "rev-parse", "HEAD").strip()
+    assert entry["anchor_commit"] == head_sha

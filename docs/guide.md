@@ -217,7 +217,7 @@ The shipwright-webui repo carries its own Acknowledgments block referencing the 
 
 ### 2.1 Fresh-machine baseline
 
-Pick the block matching your OS, paste it into a terminal, then continue with §2.3 (Marketplace install). Each block installs the runtimes Shipwright needs and points you at Anthropic's installer for Claude Code itself.
+Pick the block matching your OS, paste it into a terminal, then continue with §2.3 (installing Shipwright). Each block installs the runtimes Shipwright needs and points you at Anthropic's installer for Claude Code itself.
 
 **Windows 11 (PowerShell, no admin needed):**
 
@@ -279,9 +279,17 @@ The baseline above already installed everything in this table. It stays here as 
 | Supabase CLI | Supabase migrations |
 | Mermaid Preview (VSCode) | Rendering compliance Mermaid diagrams |
 
-### 2.3 Plugin install — Option A: Marketplace via `claude plugin` CLI (recommended, cross-platform)
+### 2.3 Installing Shipwright: npx (recommended) or Marketplace (plugins only)
 
-This is the modern, idiomatic path. It works identically on Windows PowerShell, macOS, Linux, and inside the VSCode Extension's terminal.
+**Want the plugins *and* the [Command Center WebUI](#13-command-center-webui)?** Run one command — it verifies prerequisites, installs/updates every plugin from the marketplace manifest (and syncs the plugin cache so hooks resolve), then boots the Command Center and opens it, first run and every run after:
+
+```bash
+npx @svenroth-ai/shipwright@latest
+```
+
+Always include `@latest` — a bare `npx` can silently reuse a stale cached copy. Flags: `--plugins-only` (skip the Command Center), `--webui-only` (skip the plugin phase), `--no-open`, `--port <n>`. If this is your path, skip ahead to [§2.9](#29-connect-github) — the rest of this chapter (Options B-D, verification) covers the plugins-only Marketplace/manual routes below.
+
+**Plugins only, no Command Center — Marketplace via `claude plugin` CLI:** works identically on Windows PowerShell, macOS, Linux, and inside the VSCode Extension's terminal.
 
 ```bash
 # End-users: install from GitHub
@@ -464,7 +472,9 @@ You should see the SHIPWRIGHT-RUN banner.
 
 ### 2.8 Command Center WebUI
 
-The Command Center WebUI lives in its own repo: [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui). Clone it separately and follow its README:
+The Command Center WebUI lives in its own repo: [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui). If you didn't already install it via §2.3's `npx @svenroth-ai/shipwright@latest`, that same command installs and boots it (add `--webui-only` to skip re-checking the plugins).
+
+Building from source instead (contributors, or an unpublished checkout)?
 
 ```bash
 git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
@@ -2300,6 +2310,8 @@ uv run shared/scripts/tools/verify_iterate_finalization.py \
 
 > **The keystone gate: a changed acceptance criterion must have re-run its tests, green.** `cross_layer_coverage` above answers *which requirement's layers a change should be tested at*. The **Keystone AC gate** answers the sharper question one level down, and it runs in **CI on every pull request**, not at F11: *this PR edited acceptance criterion `FR-01.11/AC17` — did the tests bound to **that criterion** actually run, in this very CI job, and pass?* It reads the criteria out of `spec.md` itself (each carries a permanent `[ACnn]` marker), diffs them against the merge base, and then requires **every** test bound to a changed criterion to have run and passed — not merely one of them. Three consequences worth knowing before you meet it: a PR that changes code but no acceptance criterion passes untouched (it enforces spec-to-test consistency, not code-to-spec consistency); editing prose, a heading, or a README never fires it; and editing a criterion while quietly deleting the `@covers("FR-xx/ACnn")` tag that bound it to a test is a **hard block**, because that is the same thing as deleting the check. Criteria with no test yet are **reported, not blocked** — the gate protects what is bound and grows as binding does. It runs after the traceability-manifest regeneration step for a reason: that step rewrites the evidence from the run's own test output first, so a hand-edited manifest claiming green cannot change the verdict.
 
+> **Two feeder checks, deliberately asymmetric.** Alongside the keystone gate, two more CI-only checks close the same job. `AC coverage ratchet` answers *"AC without a test"* — this is **anti-ratcheted**, not hard: a real legacy backlog exists (most minted acceptance criteria have no test bound to them today), so it only blocks a *newly* unbound criterion that isn't already in the grandfathered baseline (`shipwright_ac_coverage_baseline.json`), never the pre-existing backlog. `Orphan AC binding` answers the opposite case — *"a test whose AC vanished"* — and is **hard from day one, with no baseline at all**, because nothing has ever checked whether a test's binding still points at a real criterion, so there is no backlog to forgive. It catches an outright-deleted or renumbered criterion that still has a test pointing at it, and — separately — a binding quietly dropped in a PR that never touches the criterion's own wording, detecting that first PR of a two-step way to defeat the keystone gate (drop the binding in one PR, edit the now-unbound criterion in a later one) whenever the base commit's own manifest record of the binding is trustworthy — not unconditionally, since that arm's only evidence is a stale-by-construction base artifact.
+
 Full canon definition, skip criteria, and per-plugin coverage matrix live in [docs/hooks-and-pipeline.md § Minimum Phase Completion Canon](hooks-and-pipeline.md#minimum-phase-completion-canon-c1c5).
 
 ### Phase-Quality Audit (Consolidated Stop-Hook)
@@ -2605,6 +2617,15 @@ The Command Center lives in its own repo:
 ### Quick start
 
 ```bash
+npx @svenroth-ai/shipwright@latest
+```
+
+One command installs/updates the `/shipwright-*` plugins **and** the Command Center, then boots it on **:3847** and opens it in your browser — re-running the same command later is how you update. Add `--webui-only` to boot the Command Center without touching the plugins.
+
+<details>
+<summary>Building from source instead (contributors, or an unpublished checkout)</summary>
+
+```bash
 git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
 cd ~/shipwright-webui
 make install       # npm install in server/ + client/
@@ -2612,7 +2633,10 @@ make dev-server    # Terminal 1 — backend on :3847
 make dev-client    # Terminal 2 — frontend on :5173
 ```
 
-Then open <http://localhost:5173>. The full user guide (installation,
+Then open <http://localhost:5173>.
+</details>
+
+The full user guide (installation,
 daily workflow, recommended terminal setup, custom actions for your
 own slash skills, Windows autostart) lives at
 **[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**

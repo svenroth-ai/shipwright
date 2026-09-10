@@ -1,0 +1,150 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-10-p34c-promotion-anchor-guard",
+    "date": "2026-09-10",
+    "unit": {
+      "status": "passed",
+      "passed": 17870,
+      "total": 17929
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests/test_promote_required_layers.py -v",
+      "exit_code": 0,
+      "tests_run": 48,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-10-p34c-promotion-anchor-guard/surface_verification.json",
+      "timestamp": "2026-09-10T20:19:31Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "An FR whose bound test files are untouched since a verified ancestor promotes, and the ledger names that anchor (anchor_commit) beside ci_run_id",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_succeeds_when_nothing_invalidating_changed_since_the_anchor PASSED"
+        },
+        {
+          "behavior": "The same FR does NOT promote once one of its bound test files is touched in A..HEAD -- it skips with reason evidence_stale_since_anchor, spec.md is left untouched, and the ledger gets no new entry",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_anchor_promotion_is_refused_when_a_bound_test_file_changed_since_the_anchor, test_promote_required_layers.py::test_anchor_promotion_reports_stale_reason_code_in_the_result PASSED"
+        },
+        {
+          "behavior": "A HEAD with no verified ancestor inside the bound reports unavailable, not an error and not a promotion (rc==0, nothing promoted); a query error walking candidates degrades the same way, never exit 2",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_no_verified_ancestor_within_the_bound_reports_unavailable_not_error, test_promote_required_layers.py::test_a_query_error_walking_the_anchor_degrades_to_unavailable_not_exit_2 PASSED"
+        },
+        {
+          "behavior": "The existing tip-is-verified path promotes IDENTICALLY when the tip IS verified; all pre-existing test_promote_required_layers.py behaviors are unchanged",
+          "disposition": "tested",
+          "evidence": "test_promote_required_layers.py::test_tip_is_verified_never_triggers_the_anchor_fallback_at_all PASSED, plus 34 pre-existing tests unmodified and green"
+        },
+        {
+          "behavior": "Anchor resolution's four outcomes (found-at-tip, found-at-ancestor, unavailable, error) are each independently exercised",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_verified_anchor.py::test_head_itself_verified_is_found_at_depth_zero, ::test_falls_back_to_a_verified_parent_when_head_is_not_verified, ::test_no_verified_commit_within_bound_reports_unavailable_not_error, ::test_a_query_error_on_one_candidate_does_not_abort_the_search PASSED"
+        },
+        {
+          "behavior": "A run of 5+ consecutive query errors gives up (circuit breaker) rather than walking the full bound; non-consecutive errors never trip it",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_verified_anchor.py::test_five_consecutive_errors_give_up_before_reaching_a_verified_commit_beyond_them, ::test_non_consecutive_errors_never_trip_the_circuit_breaker PASSED"
+        },
+        {
+          "behavior": "head_commit's case is normalised (lowercased) before use in the git log call and in the returned commit/detail",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_verified_anchor.py::test_head_commit_case_is_normalised_before_the_git_log_call PASSED"
+        },
+        {
+          "behavior": "evidence_stale_since_anchor is true when the FR's identity (manifest node id) differs between anchor and head, even with no path-level diff -- closes the doubt-review HIGH finding that only diffed paths, never re-verified identity",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test_evidence_stale_since_anchor_true_when_the_fr_identity_differs_between_anchor_and_head PASSED"
+        },
+        {
+          "behavior": "evidence_stale_since_anchor is true when a NEW test file changed in A..HEAD that looks like a test path but is not yet bound to any FR in either manifest -- catches the anchor-manifest's un-regenerated blind spot",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test_evidence_stale_since_anchor_true_when_a_new_unaccounted_test_file_changed PASSED, and end-to-end via test_promote_required_layers.py::test_anchor_promotion_is_refused_when_a_new_test_file_is_unaccounted_for_in_any_manifest"
+        },
+        {
+          "behavior": "evidence_stale_since_anchor stays false when an unrelated non-test file changes in A..HEAD",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test_evidence_stale_since_anchor_false_when_an_unrelated_non_test_file_changed PASSED"
+        },
+        {
+          "behavior": "_looks_like_test_path recognises pytest conventions (test_*.py, *_test.py, anything under a tests/ dir, both POSIX and Windows separators) and rejects everything else",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test__looks_like_test_path_recognises_pytest_conventions, ::test__looks_like_test_path_rejects_non_test_paths (parametrized, 4+4 cases) PASSED"
+        },
+        {
+          "behavior": "The anchor's own execution evidence erroring or being unavailable degrades gracefully (rc==0, FR skipped) rather than a fatal exit 2 -- reversed from the Stage-2 code-review round after doubt-review disproved the content-binding-vs-transient distinction",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_promote_required_layers.py::test_the_anchors_own_evidence_erroring_degrades_not_exit_2 PASSED"
+        },
+        {
+          "behavior": "bound_test_files extracts the file half of a path/id test link, tolerating malformed links",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py (4 cases) PASSED"
+        },
+        {
+          "behavior": "changed_paths_between lists real changed files, empty on identical commits, None on git failure, and keeps a renamed file's OLD path visible (--no-renames)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test_changed_paths_between_no_renames_shows_the_old_path_on_a_pure_rename (4 cases) PASSED"
+        },
+        {
+          "behavior": "manifest_at_commit reads the exact commit (not the working tree), raises on an unresolvable HEAD/commit/missing-path/invalid-JSON",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_manifest_at_commit.py (5 cases) PASSED"
+        },
+        {
+          "behavior": "append_decision/record_ledger_entries carry anchor_commit when given, omit it when absent",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_promotion_ledger.py, shared/tests/test_layer_promotion_apply.py (4 cases) PASSED"
+        },
+        {
+          "behavior": "An anchored promotion is refused when a bound test file has an UNCOMMITTED or untracked edit at invocation time, even though the committed anchor..HEAD diff shows nothing -- closes the Tier-3 PR review's BLOCKing finding that this tool (never invoked from CI, only run by a human operator) only ever diffed committed history",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test_dirty_or_untracked_paths_reports_an_uncommitted_edit_to_a_tracked_file, ::test_dirty_or_untracked_paths_reports_a_staged_edit, ::test_dirty_or_untracked_paths_reports_a_new_untracked_test_file, ::test_dirty_or_untracked_paths_empty_on_a_clean_tree, ::test_dirty_or_untracked_paths_returns_none_on_git_failure, ::test_anchor_fallback_treats_an_uncommitted_edit_to_a_bound_test_as_invalidating, and end-to-end via shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_a_bound_test_file_is_dirty_but_uncommitted PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 17,
+        "tested": 17,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.85,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-10T20:19:17Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-10-p34c-promotion-anchor-guard",
+    "commit": "0f354c1330cc0c76c9a68fe5e276e67d784989bc",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

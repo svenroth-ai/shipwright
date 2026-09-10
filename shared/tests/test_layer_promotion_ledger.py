@@ -38,6 +38,26 @@ def test_write_then_load_round_trips(tmp_path):
     assert latest_decision(reloaded, "FR-01.01")["action"] == "promoted"
 
 
+def test_append_decision_has_no_anchor_commit_when_not_given():
+    ledger = default_ledger()
+    entry = append_decision(ledger, "FR-01.01", action="promoted", decided_by="tool")
+    assert "anchor_commit" not in entry
+
+
+def test_append_decision_records_the_anchor_commit_when_given():
+    # P3.4c: a promotion decided from a verified ANCESTOR's evidence records
+    # which commit that evidence actually came from, beside `ci_run_id`
+    # (which names the CI run) -- "a promotion whose provenance cannot be
+    # reconstructed is not evidence."
+    ledger = default_ledger()
+    entry = append_decision(
+        ledger, "FR-01.01", action="promoted", decided_by="tool",
+        ci_run_id=999, anchor_commit="a" * 40,
+    )
+    assert entry["anchor_commit"] == "a" * 40
+    assert latest_decision(ledger, "FR-01.01")["anchor_commit"] == "a" * 40
+
+
 def test_write_ledger_is_atomic_no_tmp_file_left_behind(tmp_path):
     path = tmp_path / "ledger.json"
     write_ledger(path, default_ledger())

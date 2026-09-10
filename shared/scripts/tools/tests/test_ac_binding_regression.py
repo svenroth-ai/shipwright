@@ -1,0 +1,201 @@
+"""Direct unit tests for ``verifiers._ac_binding_regression`` (P3.7 feeder b,
+arm 2) — the pure ``head_and_base_minted``/``binding_regressions`` pair, over
+a real git repo (``_keystone_repo.py``, shared with the P3.6 keystone-gate
+tests and ``test_check_orphan_ac_binding.py``, which exercises this module
+only indirectly through the CLI).
+
+External code review (glm, low) found the boundary conditions
+``binding_regressions`` itself pins in its docstring — an AC absent at base,
+and an AC whose digest changed at base — had no DIRECT test, only indirect
+CLI coverage. Added here rather than folded into the CLI test module, so a
+regression in the pure function's own guard is caught without a git
+fixture's incidental behaviour masking it.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # shared/scripts/tools
+
+from verifiers import _ac_binding_regression as arm2  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests dir (helper)
+
+from _keystone_repo import BASE_SPEC  # noqa: E402
+from _keystone_repo import bound_manifest as _manifest_with_binding  # noqa: E402
+from _keystone_repo import commit_all as _commit_all  # noqa: E402
+from _keystone_repo import commit_spec as _commit_spec  # noqa: E402
+from _keystone_repo import make_repo  # noqa: E402
+from _keystone_repo import write_manifest as _write_manifest  # noqa: E402
+
+
+def test_an_unreadable_base_text_is_lenient_not_a_readerror(tmp_path):
+    """External code review (glm, medium): the docstring has always claimed
+    the base side is lenient (warning, treated as empty) — an earlier version
+    of the code raised ``ReadError`` on a ``None`` base read instead,
+    contradicting it. A bogus ``base_sha`` (not a real commit) makes
+    ``spec_text_at`` return ``None`` via a real git failure, not a mock."""
+    root = make_repo(tmp_path, manifest_obj=_manifest_with_binding())
+    head_manifest = _manifest_with_binding()
+    head_minted, base_minted, warnings = arm2.head_and_base_minted(
+        root, "0" * 40, "HEAD", head_manifest, head_manifest,
+    )
+    assert head_minted  # head side read fine
+    assert base_minted == {}  # base treated as empty, not raised
+    assert any("could not be read" in w for w in warnings)
+
+
+def test_binding_regressions_skips_an_ac_absent_at_base():
+    """A key present at head but absent at base (a newly-minted AC) is never
+    a "regression" — nothing to regress FROM."""
+    head_minted = {("FR-01.01", "AC01"): "digest-a"}
+    base_minted: dict[tuple[str, str], str] = {}
+    head_manifest = _manifest_with_binding(bind_ac=False)
+    base_manifest = _manifest_with_binding(bind_ac=True)  # would look like a drop if compared
+    out = arm2.binding_regressions(head_minted, base_minted, head_manifest, base_manifest)
+    assert out == set()
+
+
+def test_binding_regressions_skips_a_changed_digest():
+    """A REAL edit (digest differs base->head) routes through P3.6's own
+    ``binding_removed`` (design §7), not this arm — even with base_links>0
+    and head_links=0, a changed digest must stay silent here."""
+    head_minted = {("FR-01.01", "AC01"): "digest-after-edit"}
+    base_minted = {("FR-01.01", "AC01"): "digest-before-edit"}
+    head_manifest = _manifest_with_binding(bind_ac=False)  # 0 links at head
+    base_manifest = _manifest_with_binding(bind_ac=True)   # >=1 link at base
+    out = arm2.binding_regressions(head_minted, base_minted, head_manifest, base_manifest)
+    assert out == set()
+
+
+def test_binding_regressions_flags_an_unchanged_digest_that_lost_its_links():
+    """Sanity check the positive case alongside the two negatives above: same
+    digest at base and head, links at base, none at head -> a finding."""
+    head_minted = {("FR-01.01", "AC01"): "digest-unchanged"}
+    base_minted = {("FR-01.01", "AC01"): "digest-unchanged"}
+    head_manifest = _manifest_with_binding(bind_ac=False)
+    base_manifest = _manifest_with_binding(bind_ac=True)
+    out = arm2.binding_regressions(head_minted, base_minted, head_manifest, base_manifest)
+    assert out == {("FR-01.01", "AC01")}
+
+
+def test_binding_regressions_skips_a_display_id_collision():
+    """Stage-2 code review: arm 1 (`_ac_binding_state.read_binding_state`)
+    excludes a display-id collision from the orphan check entirely, warning
+    that the FR's binding(s) are "absent from the orphan check (feeder b)"
+    -- but that claim was FALSE for this arm before this guard existed, since
+    `links_for` deliberately POOLS link counts across every active node
+    sharing a display id. Two nodes sharing `FR-01.01`, one losing its only
+    link between base and head with an UNCHANGED digest, must not fire here
+    even though a naive (uncollision-aware) read of `links_for` would see
+    base_links>0 and head_links==0."""
+    base_manifest = {
+        "requirements": {
+            "ns::FR-01.01-a": {
+                "id": "FR-01.01", "status": "active",
+                "acs": {"AC01": {"tests": {"unit": [
+                    {"id": "tests/test_widget.py::test_fizz", "layer": "unit",
+                     "status": "enabled", "executed": "pass"},
+                ]}}},
+            },
+            "ns::FR-01.01-b": {"id": "FR-01.01", "status": "active", "acs": {}},
+        },
+    }
+    head_manifest = {
+        "requirements": {
+            "ns::FR-01.01-a": {"id": "FR-01.01", "status": "active", "acs": {}},
+            "ns::FR-01.01-b": {"id": "FR-01.01", "status": "active", "acs": {}},
+        },
+    }
+    head_minted = {("FR-01.01", "AC01"): "digest-unchanged"}
+    base_minted = {("FR-01.01", "AC01"): "digest-unchanged"}
+    out = arm2.binding_regressions(head_minted, base_minted, head_manifest, base_manifest)
+    assert out == set()
+
+
+def test_head_and_base_minted_reads_real_criteria_over_a_real_commit_pair(tmp_path):
+    """Not a git-failure path: confirms the happy path still reads real spec
+    text at two real commits, unchanged by the leniency fix above."""
+    root = make_repo(tmp_path)
+    base_sha = _commit_head_of(root)
+    head_sha = _commit_spec(
+        root, BASE_SPEC.replace("must whirr.", "must whirr loudly."), "reword AC03",
+    )
+    from _keystone_repo import manifest as _bare_manifest  # noqa: PLC0415
+
+    m = _bare_manifest()
+    head_minted, base_minted, warnings = arm2.head_and_base_minted(
+        root, base_sha, head_sha, m, m,
+    )
+    assert warnings == []
+    assert ("FR-01.01", "AC01") in head_minted
+    assert ("FR-01.01", "AC01") in base_minted
+
+
+def test_head_and_base_minted_raises_on_a_cross_spec_path_collision(tmp_path):
+    """Stage-2 code review, medium: mirrors `_keystone_ac_digest.ac_change_set`'s
+    own `head_minted_from` guard -- plain `dict.update` across spec paths is
+    last-write-wins, so a second path re-anchoring an already-unbound AC under
+    its OLD digest would silently revert `head_minted[key]`, making the digest
+    read "unchanged" and silencing this hard-from-day-one arm. A real second
+    spec file minting the SAME (fr_id, ac_id) as the first must raise, not
+    silently pick one."""
+    root = make_repo(tmp_path)
+    second_rel = "docs/spec2.md"
+    (root / second_rel).write_text(
+        "# Spec 2\n\n## 2. Functional Requirements\n\n### FR-01.01: Widgets\n\n"
+        "- [AC01] A duplicate anchor for the SAME AC id in a second document.\n",
+        encoding="utf-8",
+    )
+    m = {
+        "requirements": {
+            "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": "docs/spec.md"},
+            "ns::FR-01.01-dup": {"id": "FR-01.01", "status": "active", "spec_path": second_rel},
+        },
+    }
+    _write_manifest(root, m)
+    head_sha = _commit_all(root, "add colliding second spec path")
+    from verifiers._ac_binding_regression import ReadError  # noqa: PLC0415
+
+    with pytest.raises(ReadError, match="FR-01.01/AC01"):
+        arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
+
+
+def test_head_and_base_minted_warns_when_no_manifest_names_a_spec_path(tmp_path):
+    """Doubt review, medium: ported from `_keystone_ac_digest.ac_change_set`'s
+    own null-case warning -- a trivially-empty comparison (nothing to compare)
+    must not look identical to "nothing changed" (a real comparison that found
+    no regression)."""
+    root = make_repo(tmp_path)
+    head_sha = _commit_head_of(root)
+    m: dict = {"requirements": {}}
+    head_minted, base_minted, warnings = arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
+    assert head_minted == {} and base_minted == {}
+    assert any("neither manifest names a spec_path" in w for w in warnings)
+
+
+def test_head_and_base_minted_warns_when_named_paths_resolve_to_no_content(tmp_path):
+    """Doubt review, medium: the null case one layer deeper than the one
+    above -- spec_path(s) ARE named, but none resolve to any content at
+    EITHER commit (a stale/mistyped spec_path), which the top-level warning
+    (keyed on `not spec_paths`) does not catch."""
+    root = make_repo(tmp_path)
+    head_sha = _commit_head_of(root)
+    m = {
+        "requirements": {
+            "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": "docs/ghost.md"},
+        },
+    }
+    head_minted, base_minted, warnings = arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
+    assert head_minted == {} and base_minted == {}
+    assert any("none resolved to any content" in w for w in warnings)
+
+
+def _commit_head_of(root: Path) -> str:
+    from _keystone_repo import git as _git  # noqa: PLC0415
+
+    return _git("rev-parse", "HEAD", cwd=root)
