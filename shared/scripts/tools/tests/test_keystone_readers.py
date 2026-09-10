@@ -121,11 +121,53 @@ def test_a_pre_existing_divergence_the_pr_does_not_touch_is_invisible(repo):
 def test_a_brand_new_divergent_fr_does_not_raise_on_the_base_lookup(repo):
     """The ``.get(fr)`` half of the fix: an FR absent at base would make a bare
     subscript raise ``KeyError`` INSIDE the guard — an infra-shaped crash for an
-    ordinary authoring mistake."""
+    ordinary authoring mistake.
+
+    The head manifest carries a node for the new FR because that is what CI
+    produces: ``build_requirement_index`` parses requirements out of the SPEC
+    TEXT, not out of ``@covers`` tags, so every FR declared in ``spec.md`` gets a
+    node whether or not any test names it. The earlier fixture omitted it and so
+    modelled a state the regeneration step cannot emit — which is why adding the
+    active-FR filter below made it fail.
+    """
     head = _commit_spec(repo, BASE_SPEC + "\n" + _DIVERGENT_FR.replace(
         "FR-01.02", "FR-01.03"))
-    cs = _change_set(repo, head)
+    base = _git("rev-parse", "HEAD~1", cwd=repo)
+    cs = kd.ac_change_set(
+        repo, base, head,
+        _manifest(ids=("FR-01.01", "FR-01.02", "FR-01.03")), _manifest(),
+    )
     assert cs.reader_divergence == ["FR-01.03"]
+
+
+def test_a_RETIRED_fr_with_the_divergent_shape_is_exempt(repo):
+    """Stage-1 spec review (minor). The design states the predicate twice as
+    "``read_all`` yields zero criteria for an **ACTIVE** FR" (§5.1, AC-K9(d)), and
+    every sibling predicate in this gate filters to active nodes — ``_links_for``,
+    ``_keystone_layer_gap._fr_node``, ``_active_display_ids``. This guard had
+    dropped the qualifier by omission.
+
+    Unreachable in this repo today, which is precisely the "latent, so leave it"
+    reasoning round 3 already rejected once: an FR's ``spec.md`` heading survives
+    retirement, so the day a retired FR gains an introductory sentence, an
+    unfiltered guard HARD-blocks a PR over a requirement nothing else in the gate
+    enforces.
+    """
+    head = _commit_spec(repo, BASE_SPEC + "\n" + _DIVERGENT_FR.replace(
+        "FR-01.02", "FR-01.03"))
+    base = _git("rev-parse", "HEAD~1", cwd=repo)
+    retired = _manifest(ids=("FR-01.01", "FR-01.02", "FR-01.03"))
+    retired["requirements"]["ns::FR-01.03"]["status"] = "retired"
+
+    cs = kd.ac_change_set(repo, base, head, retired, _manifest())
+    assert cs.reader_divergence == [], "a retired FR is out of scope, as for every sibling"
+
+    active = _manifest(ids=("FR-01.01", "FR-01.02", "FR-01.03"))
+    same_input = kd.ac_change_set(repo, base, head, active, _manifest())
+    assert same_input.reader_divergence == ["FR-01.03"], (
+        "the SAME spec diff must still fire while the FR is active -- otherwise this "
+        "test would pass against a guard that never fires at all"
+    )
 
 
 def test_a_new_fr_stating_no_criterion_at_all_is_reported_separately(repo):

@@ -30,6 +30,13 @@ the moment the PR is merged:**
   rather than read a self-report (``evaluate_cross_layer``: *"never the
   self-reported event ``fr_impact``"*).
 
+A **third** deviation exists, from the ratified DESIGN rather than from the sub-iterate
+spec, and is **not** ratified: an ``added`` AC that already carries a binding takes AC-2's
+greenness walk instead of being report-only. It was taken at build time, no reviewer asked
+for it, and the reasoning + scope live in design §7 and in ``_keystone_core``'s added-arm
+comment. Named here so a reader of this file does not infer from the two above that the
+shipped behaviour matches the design everywhere else.
+
 **Why this gate does NOT call ``resolve_execution_evidence``** — the single most
 important thing to know before "improving" it. That resolver answers *"can I
 trust evidence I did not produce, for a commit that is not mine?"* (P3.5's

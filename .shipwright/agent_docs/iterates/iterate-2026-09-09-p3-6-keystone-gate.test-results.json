@@ -4,8 +4,8 @@
     "date": "2026-09-10",
     "unit": {
       "status": "passed",
-      "passed": 11008,
-      "total": 11051
+      "passed": 11010,
+      "total": 11053
     },
     "integration": {
       "status": "passed",
@@ -68,9 +68,9 @@
           "evidence": "shared/tests/test_keystone_core_arms.py::test_unminted_changed_criterion_blocks_and_names_the_real_minter_command PASSED; ::test_a_new_fr_without_criteria_blocks PASSED; ::test_reader_divergence_suppresses_the_new_fr_arm_for_the_same_fr PASSED"
         },
         {
-          "behavior": "an added AC is greenness-walked when it HAS a binding and report-only when it does not; a removed AC that had a binding is reported under its own key (AC-K4)",
+          "behavior": "DEVIATION 3: an added AC with head_links>=1 takes AC-2's greenness walk; with head_links==0 it stays report-only; and NO layer-gap check applies to the added arm in either case (AC-K4)",
           "disposition": "tested",
-          "evidence": "shared/tests/test_keystone_core_arms.py::test_added_minted_ac_that_HAS_a_binding_is_greenness_walked[3 params] PASSED; ::test_added_minted_ac_without_a_binding_is_reported_not_blocked PASSED; ::test_a_removed_ac_that_had_a_binding_is_reported_under_its_own_key PASSED"
+          "evidence": "shared/tests/test_keystone_core_arms.py::test_added_minted_ac_that_HAS_a_binding_is_greenness_walked[3 params] PASSED; ::test_added_minted_ac_without_a_binding_is_reported_not_blocked PASSED; ::test_an_added_ac_is_NOT_layer_gap_checked_even_with_explicit_provenance PASSED; ::test_a_removed_ac_that_had_a_binding_is_reported_under_its_own_key PASSED"
         },
         {
           "behavior": "the highest required layer is mandatory at AC granularity, routed hard for explicit provenance and advisory for a legacy one, reusing the shared ranking and routing (AC-K10/AC-K15)",
@@ -119,11 +119,16 @@
           "disposition": "tested",
           "category": "integration",
           "evidence": "OBSERVED LIVE: PR #702 CI run 34413699911, step 'Keystone AC gate (gate)' resolved base_sha=5d76efcd from head c1d9f104 and returned exit 0 status=clean; plus shared/tests/test_ci_yml_keystone_step_shape.py 11 tests PASSED"
+        },
+        {
+          "behavior": "the reader-divergence guard is scoped to ACTIVE FRs, like every sibling predicate: a retired FR with the intro-sentence shape is exempt while the identical spec diff still fires for an active one (AC-K9(d))",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_keystone_readers.py::test_a_RETIRED_fr_with_the_divergent_shape_is_exempt PASSED; ::test_a_brand_new_divergent_fr_does_not_raise_on_the_base_lookup PASSED"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 17,
+        "tested": 17,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -141,7 +146,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-09-p3-6-keystone-gate",
-    "commit": "424839812afa1bfeee61ede76e65cf8d3c0a23bf",
+    "commit": "922034a8a028c8ccbe186206b2cfbd4ae9e14eee",
     "dirty": true,
     "base": null,
     "release": null

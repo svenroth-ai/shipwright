@@ -390,7 +390,10 @@ spec.md happens to use 20 heading anchors and 0 bold anchors. **Corrected treatm
 > `criteria_digests` is byte-identical across the very PR that creates the divergence, and the
 > guard never fires on the change that causes it. The consequence is not cosmetic — the AC then
 > vanishes from `read_all`, so the NEXT PR to edit that criterion sees it as `added` rather than
-> `changed` and **never blocks on greenness**. That is the two-PR shape of the dodge the gate
+> `changed`. Under the ratified design that meant it **never blocks on greenness**; under
+> deviation 3 (§7) it blocks *iff* the AC still carries a binding at head, which narrows this hole
+> without closing it — an AC unbound at head still slips through, and arm (a) below is what
+> actually closes it by blocking PR1. That is the two-PR shape of the dodge the gate
 > exists for, arriving through the reader seam. **Shipped rule: three scoping arms, ORed** —
 > (a) the AC reader could see this FR at base and cannot at head (the intro-sentence case);
 > (b) the FR is new at head; (c) its `criteria_digests` value changed. The blast-radius property
@@ -410,7 +413,7 @@ spec.md happens to use 20 heading anchors and 0 bold anchors. **Corrected treatm
 | class | condition | consequence |
 |---|---|---|
 | `changed` | minted id present at both sides, digest differs | **AC-2 arm fires** (§5.3) |
-| `added` | minted id absent at base, present at head | never blocks on greenness (a new criterion has no binding — p3.7's baseline) |
+| `added` | minted id absent at base, present at head | `head_links == 0` → report-only (`unbound` → p3.7's baseline). `head_links >= 1` → **AC-2's greenness walk fires** — **DEVIATION 3**, §7. No layer-gap check either way. |
 | `removed` | minted id present at base, absent at head | report-only → p3.7(b) |
 | `unminted_changed` | see §5.2 — a head criterion with no `[ACnn]` whose normalised digest is absent from the base's unminted set | **AC-1 arm 1 fires — and this DOES cover the added case** |
 
@@ -796,6 +799,51 @@ and is not evidence of a defect; the *false-red* count is the number that matter
 
 ## 7. Known limitations (disclosed, not fixed)
 
+> ### DEVIATION 3 — an `added` AC that ALREADY has a binding is greenness-walked
+>
+> **This reverses a rule ratified across all four plan-review rounds, so it is named here rather
+> than left to be discovered in a diff.** Found by a Stage-1 spec review, which rejected the
+> build for shipping the change while three passages of this document still asserted the opposite.
+>
+> **Attribution, plainly: no reviewer asked for this. It was found during build.** An earlier
+> version of the code comment and its test credited "external code review (openai, high)" — that
+> is wrong, and the correction matters because a fabricated mandate is worse than an undocumented
+> one. The openai-high code-review finding is the Track R / Q2 scope objection, **rejected** in
+> §12.1. The plan review's AC-id-rotation finding is dispositioned **"reported, not blocked"** and
+> remains so.
+>
+> **The rule.** `added` ACs with `head_links == 0` stay report-only, exactly as designed.
+> `head_links >= 1` now takes AC-2's greenness walk. Why, in four steps:
+>
+> 1. **Source AC-2 covers it literally** — "a **named** AC whose bound test did not run green
+>    blocks". A newly added AC is a named AC, so exempting it is an *exception* to AC-2 and owes a
+>    justification of its own.
+> 2. **The design's justification is an assumption, not a property.** §5.1's parenthetical, "a new
+>    criterion has no binding — p3.7's baseline", is the entire stated basis. When the criterion
+>    *does* arrive carrying a `@covers` tag, the premise is false and nothing is left holding the
+>    exemption up.
+> 3. **The empirical basis does not discriminate between the two designs.** P3.4's mint added 268
+>    ACs and every one of them has zero links, so the `head_links >= 1` gate keeps that PR silent
+>    either way. The 268 measurement was never evidence for *this* choice — it is evidence for the
+>    `head_links == 0` branch, which is unchanged.
+> 4. **Remediability — the discriminator this document already uses — points the other way here.**
+>    The `removed_with_bindings` arm stays report-only because "base had links" is *unfixable
+>    inside the PR*: base is immutable. An added AC's red binding is entirely fixable in the same
+>    PR (fix the test, fix the code, or drop the tag). Same test, opposite answer; applying it
+>    consistently means this one blocks.
+>
+> **Scope — greenness ONLY, deliberately narrower than the `changed` arm.** `layer_gap` is *not*
+> called on this arm. Greenness of a binding that exists is what AC-2 says; layer **breadth** for a
+> brand-new criterion is *coverage*, which is p3.7's, and it is the arm that would start
+> false-redding the moment p3.5 promotes an FR to `explicit` — add one criterion with a unit test
+> to an FR requiring e2e and a symmetric implementation blocks the PR for work nothing asked for.
+> A deviation should be exactly as wide as its justification. Pinned by
+> `test_an_added_ac_is_NOT_layer_gap_checked_even_with_explicit_provenance`, which asserts the
+> identical fixture HARD-blocks under `changed` and produces nothing under `added`.
+>
+> **What this does NOT do:** it does not close the id-rotation hole (a rotated id arrives with no
+> binding), and it does not make p3.6 a coverage gate. Both remain p3.7(b)'s.
+
 - **Exactly as strong as `ci.yml`** (§4). Deliberate; not hidden.
 - **Mint before gating.** A repo adopting this gate *before* minting would see every criterion as
   `unminted_changed` on its first spec edit. True precondition; already satisfied here (P3.4
@@ -824,9 +872,10 @@ and is not evidence of a defect; the *false-red* count is the number that matter
 - **`binding_removed` fires only for ACs in the `changed` set — and the SINGLE-PR shape is worse
   than the two-PR one below (external plan review, 2026-09-09: glm medium + openai high, found
   from opposite directions).** Deleting a minted criterion outright, or **rotating its id**
-  (`[AC01] foo` → `[AC55] foo TWICE`), reads as `removed` + `added`. `removed` is report-only and
-  `added` deliberately never blocks on greenness, so **one PR** can discard an AC-to-test
-  obligation without ever entering the `changed` set. **Disposition: reported, not blocked, and
+  (`[AC01] foo` → `[AC55] foo TWICE`), reads as `removed` + `added`. `removed` is report-only, and
+  the `added` side blocks only if the NEW id already carries a binding (deviation 3 below) — which
+  a freshly rotated id does not — so **one PR** can still discard an AC-to-test obligation without
+  ever entering the `changed` set. **Disposition: reported, not blocked, and
   the reason is that no remediable predicate exists at this layer.** Blocking on "base had links"
   is *unfixable inside the PR* — base is immutable, so an author legitimately retiring a criterion
   *and* its test would fail forever with no action available. The predicate that IS remediable —
@@ -876,10 +925,16 @@ and is not evidence of a defect; the *false-red* count is the number that matter
 
 ---
 
-## 8. Rulings adopted — all seven, none open
+## 8. Rulings adopted — all seven, none open; plus one build-time deviation awaiting ratification
+
+**Deviation count: THREE, not two.** Q1 and Q1b were ratified at the plan gate. **Deviation 3**
+(§7) was taken at build time, is *not* ratified, and is flagged here so the coordinator decides it
+rather than inherits it. Any passage of this document claiming "exactly two deviations" without
+naming the third is stale — a Stage-1 spec review rejected the build for exactly that.
 
 | # | Ruling | Where it lands |
 |---|---|---|
+| **D3** | **NOT A RULING — an open ask.** An `added` AC that already carries a binding takes AC-2's greenness walk (`head_links >= 1`); unbound `added` ACs stay report-only, and no layer-gap check applies to this arm at all. Taken during build because AC-2 names *any* named AC and the design's exemption rested on an assumption that fails when the criterion arrives tagged. **No reviewer requested it.** Full four-step reasoning and scope: §7's deviation-3 block. | §5.1 table, §7, AC-K4 |
 | Q1 | **Drop D9's `last_verified_commit` baseline.** ci.yml re-runs every suite on every PR; nothing selective for a ledger to compensate for, and a stored baseline is a self-reported trust artifact — the class that cost PR #690 twelve rounds. **Condition:** record the deviation from the Scope line in **both the PR body and the module docstring**. | §5.8, §11 item 1 |
 | Q2 | **Spec-side-only "behaviour-changing" is correct.** **Conditions:** (i) state verbatim in the PR body — *"a PR that changes behaviour in code and changes no acceptance criterion passes this gate untouched; it enforces spec-to-test consistency, not code-to-spec consistency"*; (ii) paired with finding 1 — spec-side-only means the binding side must not be silently subtractable. | §3(a), §5.3 |
 | Q3 | **`not_selected` HARD; no advisory softening, no forced rerun.** Specific instance (retag `FR-01.07/AC06`?) → **no**, on re-measured evidence. | §5.4, §2.3 |
@@ -903,8 +958,13 @@ The sub-iterate spec's three ACs still apply; these are the testable form.
   names the real `mint_ac_ids.py --write` command and the registry file.
 - **AC-K3 (precision):** reordering two minted criteria within one FR block, and re-wrapping one
   criterion's continuation lines, each produce an **empty** change set.
-- **AC-K4 (added minted AC never blocks on greenness):** a new `[ACnn]` present only at head with
-  no binding → `added` + `unbound`, exit `0`.
+- **AC-K4 (added minted AC: report-only when UNBOUND, greenness-walked when bound — DEVIATION 3,
+  §7):** a new `[ACnn]` present only at head with **no binding** → `added` + `unbound`, exit `0`
+  (this is the 268-AC mint case, and it is what keeps that PR silent). The **same** new `[ACnn]`
+  arriving **with** a `@covers` tag whose link is `fail` / `disabled` / `not_run` → exit `1` with
+  that link's reason code; with every link `enabled` + `pass` → exit `0`. **No layer-gap check on
+  this arm** in either case — the identical fixture that HARD-blocks under `changed` must produce
+  nothing under `added`.
 - **AC-K5 (greenness, AC-2):** a `changed` AC with a bound link `executed: "fail"` → exit `1`; the
   same AC with every bound link `enabled` + `pass` → exit `0`.
 - **AC-K6 (∀ not ∃ — the §2.4 defect):** a `changed` AC with two bound links at one layer, one
@@ -1020,13 +1080,19 @@ monkeypatching collaborators **by module object**, not by import path; keep the 
 
 | # | Item | Verdict | Note |
 |---|---|---|---|
-| 1 | Spec Compliance | **pass, with two named deviations** | All three sub-iterate ACs have a mechanism (§5.2, §5.3, §5.6) and tests (AC-K1/K2/K5/K14). D10's bug-intent gap is closed *by construction*: intent is never consulted anywhere, so `intent=bug` cannot exempt anything. D12 honoured — FR-level `Layers` untouched, AC-level is the index on top. **Two deviations, both explicit and both to be repeated in the PR body: (i) D9's baseline is dropped (ruling Q1); (ii) AC-1's "named" is spec-DERIVED, not author-declared (Q1b).** Round 1 reported only the first and called the rest compliance — corrected. |
+| 1 | Spec Compliance | **pass, with two named deviations** *(as of the plan gate — see the note below this table: the build added a third)* | All three sub-iterate ACs have a mechanism (§5.2, §5.3, §5.6) and tests (AC-K1/K2/K5/K14). D10's bug-intent gap is closed *by construction*: intent is never consulted anywhere, so `intent=bug` cannot exempt anything. D12 honoured — FR-level `Layers` untouched, AC-level is the index on top. **Two deviations, both explicit and both to be repeated in the PR body: (i) D9's baseline is dropped (ruling Q1); (ii) AC-1's "named" is spec-DERIVED, not author-declared (Q1b).** Round 1 reported only the first and called the rest compliance — corrected. |
 | 2 | Error Handling | **fail (round 2) → fixed** | Round 1's worst error-handling defect was in this column: AC-K9(d) made an ordinary authoring choice an exit-2 infra failure. Round 2 fixed the *verdict* (exit 1 + authoring remedy) but **not the scope** — the guard still fired on any FR repo-wide, so one intro sentence anywhere would have redded every later PR including docs-only ones, contradicting AC-K1. Round 3 scopes it to FRs whose `criteria_digests` actually changed in this PR (§5.1), with AC-K9(d)(ii) written to fail against round 2's unscoped form. Lesson recorded: a downgraded severity is not a fixed blast radius. |
 | 3 | Security Basics | **fail (round 2) → fixed, twice over** | Round 1 shipped a **trivially dodgeable gate** (deleting a `/ACnn` suffix turned a HARD block into exit 0). Round 2 added `binding_removed`, but wrote `unbound`'s condition as "no node at base **or** head" — which *is* `binding_removed`'s own input, so AC-K8 and AC-K14 asserted opposite verdicts for identical input and **a builder following AC-K8 would have reinstated the hole**. Round 3 makes the two conditions disjoint (base-yes/head-no vs base-no/head-no) with explicit precedence, and AC-K8 now carries a companion assertion pinning it. Residual, named rather than hidden: the **two-PR unbind sequence** (§7), routed to p3.7(b) as a real card. |
 | 4 | Test Quality | **pass** | AC-K6 targets the `_cov_status` ∃/∀ trap; AC-K14, AC-K9(d)(ii) and AC-K11's `master` case are each written as regressions **against this document's own earlier rounds**, not merely as passes against the current one; AC-K8's companion assertion makes the round-3 precedence unimplementable-as-overlapping; AC-K15 pins reader drift; AC-K7 pins the node-id-space trap; AC-K10 now asserts `evaluate_binding_completeness` is *not* called. The diff-coverage/subprocess constraint is a stated build rule. |
 | 5 | Performance Basics | **pass** | Per PR: two `read_all` parses per spec file, one extra `git show` for the base manifest (no regeneration), zero extra test executions, zero network calls. No measurable addition to an ~11-minute CI run. |
 | 6 | Naming & Structure | **fail (round 2) → fixed** | Follows the family's pure-core / git-layer / adapter split; no new abstraction with one caller; no new severity vocabulary; no new evidence format; no manifest schema change; F11 seam kept but unshipped per Q4. **The round-2 defect was a naming one with teeth:** §5.5's heading claimed "reuse P3.3's rule", but `evaluate_binding_completeness` tests the *inverse* direction (evidence outranking the declared binding, not a binding covering less than required) — a builder reaching for it would have implemented the wrong predicate. §5.5 now states reused (`_LAYER_RANK`, `route_gap_severity`) vs. new (the comparison itself) explicitly. |
 | 7 | Affected Boundaries (ADR-024) | **pass** | (i) **spec.md → `ac_identity.read_all` → digest** — probed against the REAL 268-criterion spec at two real commits; **and the round-2 work found the real hazard here was not the one round 1 named**: it is the divergence from the *other* criteria reader (§5.1), now guarded and drift-pinned. (ii) **JUnit → `test_links.generate_file` → `acs[ac_id]` → gate** — probed against a REAL CI run's 17 443 outcome lines across all 142 bound links, which both falsified §2.3 and surfaced the node-id-space constraint. (iii) **base manifest via `git show`** — new this round; the v3-base degradation is reasoned (no `acs` ⇒ zero links ⇒ outcome cannot fire) but **not yet probed**; Probe C covers the head side only. (iv) **gate → `ci.yml` step contract** — still not probeable pre-merge; pinned by AC-K12. Two boundaries probed against production data, one reasoned, one pinned-by-shape-test and disclosed. |
+
+> **Superseded in part by the build (§7, §8 row D3).** Item 1's "two deviations" was true of the
+> ratified DESIGN and is false of the SHIPPED CODE: the build took a third, greenness-walking an
+> `added` AC that already carries a binding. The row is left standing rather than silently
+> rewritten, because the gap between what a self-review asserted and what the build then did is
+> the finding — a Stage-1 spec review had to catch it, and §12.3's asymptote note counts it.
 
 **Asymptote note.** Counting the two tallies separately, which round 2 failed to do (minor (a)):
 
@@ -1110,11 +1176,26 @@ gate, twice, with the narrowing repeated in the shipped source. Its third and fo
 real and are fixed. So: the contradiction is not about the code, it is about which version of the
 requirement is authoritative, and that question was already decided.
 
+### 12.1b Stage-1 spec-compliance review — REJECT
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| A | reject (hard gate) | The build greenness-walks an `added` AC with a binding — reversing a rule ratified across all four plan rounds and still asserted in three passages of this document (§5.1's table, §7's bullet, AC-K4's title), while §11/§12.2 claimed "exactly two deviations". Compounded by two attribution errors: the code and its test credited "external code review (openai, high)", which is actually the Track R / Q2 finding that §12.1 **rejects**, and the plan review's AC-id-rotation finding is dispositioned "reported, **not** blocked". | **Accepted; decided rather than reverted, and narrowed.** Kept, because AC-2 names *any* named AC and the design's exemption rests on an assumption that fails when the criterion arrives tagged — full four-step reasoning in §7. **Narrowed** by removing the `layer_gap` call from the added arm: greenness is AC-2, layer breadth is coverage (p3.7's) and the arm most likely to false-red once p3.5 promotes an FR. Recorded as **deviation 3** in §5.1, §7, §8 row D3, AC-K4, §11 item 1 and §12.2 item 1, all in this diff. Attribution corrected in both the code comment and the test docstring to state plainly that **no reviewer asked for it — it was found during build**. |
+| B | minor | The reader-divergence guard dropped the "**active** FR" qualifier the design states twice (§5.1, AC-K9(d)), while every sibling predicate in the diff filters to active nodes. | **Accepted-and-fixed.** `ac_change_set` now filters `head_fr_digests` through `_active_display_ids(head_manifest)`. Verified safe before applying: `build_requirement_index` parses requirements from the **spec text**, not from `@covers` tags (20/20 spec FR headings have active nodes today), so a genuinely new FR still gets a node from the regeneration step and the guard cannot be blinded to it. One existing test failed on the change — its fixture modelled a spec-FR with no manifest node, a state CI cannot emit; corrected, with a new test pinning that a **retired** FR is exempt while the identical spec diff still fires for an active one. |
+
+**Why finding A is the most serious of the run.** Every other finding this iterate collected was a
+defect in code. This one is a divergence between the code and the document that ships beside it —
+and the document was still asserting the old rule *three times* while the build asserted the new
+one. A reader trusting §5.1's table would have been wrong about the shipped gate's behaviour. It
+also went the whole way through self-review, external plan review and external code review
+undetected, because each of those looks at the change, not at the agreement between the change and
+its spec. That is precisely the gap the Stage-1 hard gate exists to close, and it earned its place.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
 |---|---|---|---|
-| 1 | Spec Compliance | **pass, two named deviations** | Q1 and Q1b, both ratified and both stated in the shipped module docstring so they survive the merge (§11 item 1). |
+| 1 | Spec Compliance | **FAIL → fixed, and this row is the one that was wrong** | Claimed "two named deviations" (Q1, Q1b) while the build had already taken a **third** — greenness-walking a bound `added` AC — reversing a rule ratified across four plan rounds and still asserted in three passages of this document. A **Stage-1 spec review rejected the build for it**; self-review had marked this row `pass`. Now: three deviations, the third named in §7, §8 row D3, §5.1's table and AC-K4's title, with its misattribution corrected in code and test. Q1/Q1b remain in the shipped module docstring. |
 | 2 | Error Handling | **fail → fixed twice, and the second time is the finding** | Found here first: `EmptyLinkWalk` escaping `main()` is a Python exit 1 — indistinguishable in a CI log from a real hard finding, so a gate defect would send an author to edit a spec that is fine. Now caught → exit 2 with JSON. External review then found the *same shape* at a different boundary (finding 3), and the Tier-3 PR review found it again two levels deeper (§12.1a finding B). The honest reading of this row: the class was identified early and then fixed **instance by instance** rather than enumerated. |
 | 3 | Security Basics | **pass** | No new trust artifact, no new persisted state, no network. `github.sha` is interpolated as a SHA (no injection surface). The base read is fail-closed three ways and its one permissive branch is surfaced under its own JSON key. |
 | 4 | Test Quality | **pass** | 46 + 43 cases; the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
@@ -1150,8 +1231,19 @@ boundary, and it is met.
 **It is not met for the gate as a whole, and the trend says so.** §11's tally recorded rounds
 where self-review found 1, 1, 0 defects while review found 0, 3, 6. This round: self-review found
 1 (the `EmptyLinkWalk` exit code), external review found 3 real ones and 2 correct scope
-objections. That is an improvement in the ratio but not a convergence, and one of the three
-external findings was *the same failure class* self-review had just named at a different boundary.
+objections, the Tier-3 PR review found 1 more, and the **Stage-1 spec review rejected the build
+outright** for a code/document divergence none of the earlier passes looked for.
+
+**The two distinct failure patterns this run produced, both worth more than the individual fixes:**
+
+1. **Fixing the instance instead of the class** — the same `AttributeError`-at-a-dereference shape
+   was found three times, each a level deeper than the last fix (probes D and H, §12.1 finding 3,
+   §12.1a finding B).
+2. **Changing behaviour without changing the document that specifies it** (§12.1b finding A). Every
+   review pass before Stage 1 examines *the change*; only a spec review examines *the agreement
+   between the change and its spec*. A self-review row that reads `pass` while a shipped rule
+   contradicts three passages of its own design doc is not a review, it is a restatement of intent
+   — and that is the honest verdict on §12.2 item 1 as first written.
 
 **Edge cases NOT probed, and why that is acceptable:** (i) *was* the `ci.yml` step's real behaviour
 on a `pull_request` event — **no longer un-probed**: probe G observed it live on PR #702's own CI

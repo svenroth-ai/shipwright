@@ -240,32 +240,32 @@ def evaluate_keystone(change_set, head_manifest: dict, base_manifest: dict) -> K
             # future third severity into an AttributeError at gate time.
             (verdict.hard if gap.severity == "hard" else verdict.advisory).append(gap)
 
-    # --- ADDED ACs: report-only WHEN UNBOUND, greenness-walked when they are not
-    # (external code review, openai high -- and it is right).
+    # --- ADDED ACs: report-only WHEN UNBOUND, greenness-walked when they are not.
     #
-    # The design excluded `added` from the greenness walk on the stated ground
-    # that "a new criterion has no binding -- p3.7's baseline". That parenthetical
-    # is the whole justification, and it is an ASSUMPTION, not a property: when a
-    # new criterion DOES arrive with a `@covers` tag, the premise fails and the
-    # exclusion has no basis left. Source AC-2 says "a named AC whose bound test
-    # did not run green blocks", and a newly added AC is a named AC -- so an added
-    # AC whose binding is `disabled`, or `enabled` but `not_run`, was exiting
-    # clean while being exactly what AC-2 describes.
+    # DEVIATION 3 from the ratified design, whose four-step justification lives in
+    # design §7's third-deviation bullet and §8's ruling row -- NOT repeated here.
+    # In short: AC-2 says "a NAMED AC whose bound test did not run green blocks",
+    # an added AC is named, and the design's only stated ground for exempting it
+    # ("a new criterion has no binding") is an assumption that fails exactly when
+    # the criterion arrives carrying a `@covers` tag.
     #
-    # Gating the walk on `head_links >= 1` is what keeps this from re-opening the
-    # 259-unbound-AC false-red the exclusion existed to avoid: an added AC with no
-    # binding still goes to p3.7's feeder untouched, which is where the baseline
-    # genuinely belongs. `binding_removed` is NOT evaluated here -- an added AC has
-    # no base side to have been removed from, by construction.
+    # ATTRIBUTION, because an earlier version of this comment got it wrong and a
+    # spec review caught it: NO REVIEWER ASKED FOR THIS -- it was found during
+    # build. The code review's openai-high finding is the Track R / Q2 scope
+    # objection that §12.1 REJECTS; the plan review's AC-id-rotation finding stays
+    # "reported, not blocked" (the `removed_with_bindings` arm below).
+    #
+    # SCOPE -- greenness ONLY, deliberately narrower than the `changed` arm:
+    # `layer_gap` is NOT called here. Layer BREADTH for a brand-new criterion is
+    # coverage (p3.7's), and it is the arm that would false-red the moment p3.5
+    # promotes an FR to `explicit`. `binding_removed` is likewise not evaluated --
+    # an added AC has no base side to have been removed from, by construction.
     for fr_id, ac_id in sorted(change_set.added):
         head_links = _links_for(head_manifest, fr_id, ac_id)
         if not head_links:
             verdict.unbound.append((fr_id, ac_id))
             continue
         verdict.hard.extend(_walk_links(head_links, fr_id, ac_id))
-        gap = layer_gap(head_manifest, fr_id, ac_id, head_links)
-        if gap is not None:
-            (verdict.hard if gap.severity == "hard" else verdict.advisory).append(gap)
 
     # --- REMOVED ACs that HAD a binding. Report-only, and deliberately so; the
     # reasoning is worth the paragraph because both external plan reviewers found

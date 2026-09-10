@@ -223,7 +223,20 @@ def ac_change_set(
     # arm (a), that PR passes silently, the AC vanishes from this reader, and the
     # NEXT PR to edit it reads `added` rather than `changed` -- i.e. never blocks
     # on greenness. That is the two-step version of the dodge the gate exists for.
+    #
+    # ACTIVE FRs only. The design states the predicate twice as "read_all yields
+    # zero criteria for an ACTIVE FR" (§5.1, AC-K9(d)), and every sibling predicate
+    # in this gate filters the same way (`_links_for`, `_keystone_layer_gap._fr_node`,
+    # `_active_display_ids`). It was dropped here by omission, not by decision --
+    # found by a Stage-1 spec review. Unreachable today (no retired FR has an
+    # intro-sentence-before-bullets shape), and "latent today" is exactly the
+    # reasoning round 3 rejected once already: a spec.md heading survives
+    # retirement, so the day one retired FR gains an intro sentence this guard
+    # HARD-blocks a PR over a requirement the rest of the gate does not enforce.
+    head_active_frs = _active_display_ids(head_manifest)
     for fr_id, head_fr_digest in sorted(head_fr_digests.items()):
+        if fr_id not in head_active_frs:
+            continue  # retired/absent at head -- out of scope, like every sibling
         if fr_id in head_seen_frs:
             continue  # this reader CAN see it -- no divergence
         if head_fr_digest == _EMPTY_CRITERIA_DIGEST:

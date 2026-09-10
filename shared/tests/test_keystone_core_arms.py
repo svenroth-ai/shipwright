@@ -222,14 +222,22 @@ def test_an_id_rotation_is_visible_as_a_removal_with_a_binding_plus_an_add():
     ("disabled", "pass", kc.SKIPPED),
 ])
 def test_added_minted_ac_that_HAS_a_binding_is_greenness_walked(status, executed, expected):
-    """External code review (openai, high) — and it is right, so this test
-    REPLACES one that asserted the opposite.
+    """**DEVIATION 3** from the ratified design (design §7's third-deviation
+    bullet, §8's ruling row, AC-K4). This test REPLACES one that asserted the
+    opposite, so read the deviation before "fixing" it back.
+
+    Attribution, corrected after a Stage-1 spec review found the first version of
+    this docstring miscited it: **no reviewer asked for this — it was found during
+    build.** The external code review's openai-high finding is the Track R / Q2
+    scope objection, dispositioned REJECTED in §12.1; the plan review's
+    AC-id-rotation finding is dispositioned "reported, not blocked" and still is.
 
     The design excluded ``added`` from the greenness walk on the stated ground
     that "a new criterion has no binding". That is an assumption, not a property:
     when the new criterion arrives WITH a ``@covers`` tag the premise fails and
-    the exclusion has no basis. Source AC-2 — "a named AC whose bound test did not
-    run green blocks" — covers a newly added AC too.
+    the exclusion has no basis left. Source AC-2 — "a named AC whose bound test
+    did not run green blocks" — names a newly added AC too, and unlike a removed
+    AC's binding this one is remediable INSIDE the PR.
     """
     head = _acs_for("FR-01.01", "AC09", [_link("t1", status=status, executed=executed)])
     verdict = kc.evaluate_keystone(
@@ -246,6 +254,36 @@ def test_added_minted_ac_with_a_green_binding_passes():
     )
     assert verdict.hard == []
     assert verdict.unbound == []
+
+
+def test_an_added_ac_is_NOT_layer_gap_checked_even_with_explicit_provenance():
+    """The SCOPE half of deviation 3, and the half most likely to be "tidied" into
+    symmetry with the ``changed`` arm.
+
+    Greenness of a binding that already exists is what AC-2 says. Layer BREADTH
+    for a brand-new criterion is *coverage* — p3.7's — and it is the arm that
+    would start false-redding the moment p3.5 promotes an FR to ``explicit``: add
+    one criterion with a unit test to an FR requiring e2e, and a symmetric
+    implementation blocks the PR for work the design never asked for. A deviation
+    should be exactly as wide as its justification, so the identical fixture that
+    yields a HARD layer gap under ``changed`` must yield NOTHING under ``added``.
+    """
+    head = _acs_for(
+        "FR-01.01", "AC09", [_link("t1", layer="unit")],
+        required_layers=("unit", "e2e"), source="explicit",
+    )
+    changed_verdict = kc.evaluate_keystone(
+        StubChangeSet(changed={("FR-01.01", "AC09")}), head, head,
+    )
+    assert [f.kind for f in changed_verdict.hard] == [kc.LAYER_GAP], (
+        "fixture must be one the changed arm HARD-blocks, or this proves nothing"
+    )
+
+    added_verdict = kc.evaluate_keystone(
+        StubChangeSet(added={("FR-01.01", "AC09")}), head, head,
+    )
+    assert added_verdict.hard == []
+    assert added_verdict.advisory == []
 
 
 def test_an_added_ac_is_never_reported_as_binding_removed():
