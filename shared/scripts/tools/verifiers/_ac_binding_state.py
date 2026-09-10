@@ -104,11 +104,14 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
       ``orphaned`` (there are now zero minted ids to match against).
     * An active FR with NO ``spec_path`` recorded at all (``spec_path_by_fr``
       never enters it into ``spec_text_by_path``, so it has no read outcome
-      to react to) also gets a WARNING, not a silent skip, whenever it still
-      carries an AC binding — same "excluded, not misreported" contract as
-      the ``""`` case above, for a real producer this is currently unreachable
-      (every manifest-generated FR sets ``spec_path``), but the reader does
-      not assume that.
+      to react to) is EXCLUDED entirely, with a WARNING — the opposite verdict
+      from the ``""`` case above (which proceeds as zero minted criteria and
+      so still catches an orphaned binding; this case catches nothing at all,
+      for either feeder, because there is no criteria text to compare
+      against). For a real producer this is currently unreachable (every
+      manifest-generated FR sets ``spec_path``), but the reader does not
+      assume that — it is "excluded, not misreported" the same way the other
+      branches are, never a silent skip.
     * ``None`` (a genuine read fault) or untrustworthy markers
       (``ac_identity.AcIdentityError`` — malformed/duplicate) at this text
       RAISE :class:`ReadError` — matching P3.6's own HEAD-side treatment
@@ -121,7 +124,6 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
     state = BindingState()
     fr_paths = spec_path_by_fr(manifest)
     minted_by_fr: dict[str, set[str]] = {}
-    readable_frs: set[str] = set()
 
     for fr_id, spec_path in fr_paths.items():
         text = spec_text_by_path.get(spec_path)
@@ -140,7 +142,6 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
                 f"{fr_id}: acceptance-criteria markers in {spec_path!r} are not trustworthy "
                 f"({exc})"
             ) from exc
-        readable_frs.add(fr_id)
         ac_ids = {ac_id for ac_id, _criterion in items if ac_id is not None}
         minted_by_fr[fr_id] = ac_ids
         for ac_id in ac_ids:
@@ -150,20 +151,24 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
 
     for node in active_requirements(manifest):
         fr_id = node.get("id")
-        if not isinstance(fr_id, str) or fr_id not in readable_frs:
-            acs = node.get("acs") if isinstance(fr_id, str) else None
-            if isinstance(acs, dict) and acs:
+        if not isinstance(fr_id, str) or fr_id not in minted_by_fr:
+            if isinstance(fr_id, str):
+                acs = node.get("acs")
+                binding_count = len(acs) if isinstance(acs, dict) else 0
                 state.warnings.append(
                     f"{fr_id}: no spec_path recorded for this requirement in the manifest; "
-                    f"{len(acs)} AC binding(s) under it excluded from this run's orphan check "
-                    "(not misreported as orphaned)."
+                    f"excluded from this run entirely — its minted ACs are absent from "
+                    f"'unbound' (feeder a) and its {binding_count} AC binding(s) are absent "
+                    "from the orphan check (feeder b), never misreported as unbound/orphaned."
                 )
             continue
         acs = node.get("acs")
         if not isinstance(acs, dict):
             continue
         for ac_id in acs:
-            if isinstance(ac_id, str) and ac_id not in minted_by_fr[fr_id]:
+            if not isinstance(ac_id, str) or ac_id in minted_by_fr[fr_id]:
+                continue
+            if links_for(manifest, fr_id, ac_id):  # count, never node presence — links_for's own convention
                 state.orphaned.add((fr_id, ac_id))
 
     return state

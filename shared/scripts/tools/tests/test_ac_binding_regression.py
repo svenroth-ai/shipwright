@@ -17,6 +17,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # shared/scripts/tools
 
 from verifiers import _ac_binding_regression as arm2  # noqa: E402
@@ -25,8 +27,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests dir (helper)
 
 from _keystone_repo import BASE_SPEC  # noqa: E402
 from _keystone_repo import bound_manifest as _manifest_with_binding  # noqa: E402
+from _keystone_repo import commit_all as _commit_all  # noqa: E402
 from _keystone_repo import commit_spec as _commit_spec  # noqa: E402
 from _keystone_repo import make_repo  # noqa: E402
+from _keystone_repo import write_manifest as _write_manifest  # noqa: E402
 
 
 def test_an_unreadable_base_text_is_lenient_not_a_readerror(tmp_path):
@@ -96,6 +100,35 @@ def test_head_and_base_minted_reads_real_criteria_over_a_real_commit_pair(tmp_pa
     assert warnings == []
     assert ("FR-01.01", "AC01") in head_minted
     assert ("FR-01.01", "AC01") in base_minted
+
+
+def test_head_and_base_minted_raises_on_a_cross_spec_path_collision(tmp_path):
+    """Stage-2 code review, medium: mirrors `_keystone_ac_digest.ac_change_set`'s
+    own `head_minted_from` guard -- plain `dict.update` across spec paths is
+    last-write-wins, so a second path re-anchoring an already-unbound AC under
+    its OLD digest would silently revert `head_minted[key]`, making the digest
+    read "unchanged" and silencing this hard-from-day-one arm. A real second
+    spec file minting the SAME (fr_id, ac_id) as the first must raise, not
+    silently pick one."""
+    root = make_repo(tmp_path)
+    second_rel = "docs/spec2.md"
+    (root / second_rel).write_text(
+        "# Spec 2\n\n## 2. Functional Requirements\n\n### FR-01.01: Widgets\n\n"
+        "- [AC01] A duplicate anchor for the SAME AC id in a second document.\n",
+        encoding="utf-8",
+    )
+    m = {
+        "requirements": {
+            "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": "docs/spec.md"},
+            "ns::FR-01.01-dup": {"id": "FR-01.01", "status": "active", "spec_path": second_rel},
+        },
+    }
+    _write_manifest(root, m)
+    head_sha = _commit_all(root, "add colliding second spec path")
+    from verifiers._ac_binding_regression import ReadError  # noqa: PLC0415
+
+    with pytest.raises(ReadError, match="FR-01.01/AC01"):
+        arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
 
 
 def _commit_head_of(root: Path) -> str:

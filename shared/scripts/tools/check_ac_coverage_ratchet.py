@@ -88,8 +88,10 @@ def _read_worktree_spec_texts(project_root: Path, manifest: dict) -> dict[str, s
 
     Three-way, matching ``read_binding_state``'s own contract (external code
     review, openai, HIGH): a genuinely absent file reads as ``""`` (proceed,
-    zero criteria), never the same as ``None`` (a real read fault, which
-    ``read_binding_state`` now raises on rather than silently excluding)."""
+    zero criteria), never the same as ``None`` (a real read fault — I/O or a
+    non-UTF-8 spec file, which ``read_text`` raises as ``UnicodeDecodeError``,
+    a ``ValueError`` subclass, not ``OSError`` — which ``read_binding_state``
+    now raises on rather than silently excluding)."""
     out: dict[str, str | None] = {}
     for spec_path in set(spec_path_by_fr(manifest).values()):
         path = project_root / spec_path
@@ -97,7 +99,7 @@ def _read_worktree_spec_texts(project_root: Path, manifest: dict) -> dict[str, s
             out[spec_path] = path.read_text(encoding="utf-8")
         except FileNotFoundError:
             out[spec_path] = ""
-        except OSError:
+        except (OSError, ValueError):
             out[spec_path] = None
     return out
 
@@ -181,7 +183,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     project_root = Path(args.project_root).resolve()
     baseline_path = args.baseline or (project_root / BASELINE_RELPATH)
+    try:
+        return _run_gate(project_root, baseline_path, args.write)
+    except Exception as exc:  # last-resort fault boundary, same pattern the family uses
+        return _emit(_infra(f"unexpected gate fault: {exc!r}"), EXIT_INFRA)
 
+
+def _run_gate(project_root: Path, baseline_path: Path, write: bool) -> int:
     try:
         head_manifest = _read_head_manifest(project_root)
         spec_texts = _read_worktree_spec_texts(project_root, head_manifest)
@@ -190,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         return _emit(_infra(str(exc)), EXIT_INFRA)
     unbound = {_ac_str(k) for k in state.unbound}
 
-    if args.write:
+    if write:
         _write_baseline(baseline_path, unbound)
         return _emit({
             "gate": "ac_coverage_ratchet", "status": "baseline_written",
@@ -203,7 +211,10 @@ def main(argv: list[str] | None = None) -> int:
         return _emit(_infra(baseline_error), EXIT_INFRA)
 
     new_violations = sorted(unbound - baselined)
-    resolved = sorted(baselined - unbound)  # informational: shrinking, never blocks
+    # informational, never blocks: baselined AC no longer in `unbound` -- either it gained a
+    # binding, OR it was deleted/renumbered out of the minted population entirely (Stage-2
+    # code review, low: this field cannot distinguish the two; both read as "resolved").
+    resolved = sorted(baselined - unbound)
     payload = {
         "gate": "ac_coverage_ratchet",
         "unbound_count": len(unbound),

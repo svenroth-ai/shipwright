@@ -89,15 +89,33 @@ def head_and_base_minted(
     code review, glm, medium — an earlier version raised on ``None`` here,
     contradicting this very docstring and turning any base-side read fault
     into a hard infra exit that blocks every PR touching that path).
+
+    HEAD is guarded against a cross-spec-path ``(fr_id, ac_id)`` collision,
+    same pattern and same reason as ``_keystone_ac_digest.ac_change_set``'s
+    own ``head_minted_from`` guard (Stage-2 code review, medium): plain
+    ``dict.update`` across spec paths is last-write-wins, so a second path
+    re-anchoring an already-unbound AC under its OLD digest would silently
+    revert ``head_minted[key]``, making the digest read "unchanged" and
+    silencing this hard-from-day-one arm on exactly the input it must not
+    miss. Only HEAD is guarded, matching this module's own base/head
+    asymmetry above.
     """
     warnings: list[str] = []
     head_minted: dict[tuple[str, str], str] = {}
+    head_minted_from: dict[tuple[str, str], str] = {}
     base_minted: dict[tuple[str, str], str] = {}
     for rel_path in _spec_paths(head_manifest, base_manifest):
         head_text = spec_text_at(project_root, head_sha, rel_path)
         if head_text is None:
             raise ReadError(f"could not read {rel_path} at the head commit")
         h_minted, _ = ac_criteria_digests(head_text)
+        for key in h_minted:
+            prior = head_minted_from.setdefault(key, rel_path)
+            if prior != rel_path:
+                raise ReadError(
+                    f"{key[0]}/{key[1]} is minted in both {prior!r} and {rel_path!r} at head -- "
+                    "an AC id must anchor to exactly one spec path, never reused across documents."
+                )
         head_minted.update(h_minted)
 
         base_text = spec_text_at(project_root, base_sha, rel_path)

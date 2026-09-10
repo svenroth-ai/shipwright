@@ -150,3 +150,42 @@ def test_a_retired_requirement_contributes_nothing():
 def test_spec_path_by_fr_is_scoped_to_active_requirements():
     manifest = _manifest(status="retired")
     assert spec_path_by_fr(manifest) == {}
+
+
+def test_an_active_fr_with_no_spec_path_is_warned_not_silently_excluded():
+    """Stage-2 code review, medium: an active FR with no `spec_path` recorded
+    at all (`spec_path_by_fr` never enters it into `spec_text_by_path`, so it
+    has no read outcome to react to) is excluded from BOTH feeders -- its
+    minted ACs never enter `unbound` (feeder a), and any binding it still
+    carries never enters the orphan check (feeder b) -- and that exclusion
+    must be a WARNING naming both consequences, not a silent drop that would
+    read as a clean pass to either gate."""
+    manifest = {
+        "requirements": {
+            "ns::FR-01.01": {
+                "id": "FR-01.01", "status": "active", "spec_path": SPEC_PATH,
+                "acs": {"AC01": _bound_link()},
+            },
+            "ns::FR-01.02": {"id": "FR-01.02", "status": "active", "acs": {"AC03": _bound_link()}},
+            "ns::FR-01.03": {"id": "FR-01.03", "status": "active", "acs": {}},
+        },
+    }
+    state = read_binding_state({SPEC_PATH: SPEC}, manifest)
+    assert not any(fr == "FR-01.02" for fr, _ac in (state.minted | state.unbound | state.orphaned))
+    assert not any(fr == "FR-01.03" for fr, _ac in (state.minted | state.unbound | state.orphaned))
+    warned_frs = {w.split(":")[0] for w in state.warnings}
+    assert "FR-01.02" in warned_frs and "FR-01.03" in warned_frs
+    assert any("FR-01.02" in w and "1 AC binding" in w for w in state.warnings)
+    assert any("FR-01.03" in w and "0 AC binding" in w for w in state.warnings)
+
+
+def test_orphaned_keys_on_link_count_not_node_presence():
+    """Stage-2 code review, low: `bound`/`unbound` key on `links_for`'s COUNT
+    (its own stated convention, not the `acs` node's presence), so `orphaned`
+    must too -- an `acs[ac_id]` node with an empty `tests` map is not a real
+    binding and must not false-BLOCK the gate."""
+    manifest = _manifest(acs_by_fr={
+        "FR-01.01": {"AC99": {"tests": {"unit": []}}},  # node present, zero links
+    })
+    state = read_binding_state({SPEC_PATH: SPEC}, manifest)
+    assert state.orphaned == set()
