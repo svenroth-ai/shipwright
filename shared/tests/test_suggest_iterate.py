@@ -15,7 +15,100 @@ HOOK_SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "hooks" / "su
 
 # Import the module directly for unit testing helper functions
 sys.path.insert(0, str(HOOK_SCRIPT.parent))
-from suggest_iterate import detect_phase_intent, matches_phase
+import suggest_iterate
+from suggest_iterate import _phase_tasks_progress, detect_phase_intent, handle_in_progress_pipeline, matches_phase
+
+
+class TestPhaseTasksProgress:
+    """``_phase_tasks_progress`` is ``handle_in_progress_pipeline``'s primary
+    signal (campaign p4-04-retire-write-once-steps, sub-iterate s3)."""
+
+    def test_malformed_status_does_not_crash(self):
+        """A non-string status is neither finished nor absent, so the phase
+        reads as CURRENT (not confidently complete) rather than vanishing —
+        mirrors shared/scripts/lib/handoff_phase_status.status_of()'s guard
+        against an unhashable `x in frozenset` check."""
+        run_config = {"phase_tasks": [{"phase": "build", "status": ["done"]}]}
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "build"
+        assert completed == set()
+
+    def test_backlog_only_phase_counts_as_current(self):
+        """A phase whose only phase_tasks[] entry is still queued
+        (backlog/awaiting_launch) counts as CURRENT, not merely 'no
+        confident signal' — external plan review flagged an earlier version
+        that required an ACTIVE status, which would fall back to the
+        write-once fields this campaign retires for a run mid-transition
+        (successor task planned but not yet claimed) that is otherwise
+        perfectly healthy."""
+        run_config = {
+            "pipeline": ["project", "build"],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "build", "status": "backlog"},
+            ],
+        }
+        current, completed = _phase_tasks_progress(run_config)
+        assert current == "build"
+        assert completed == {"project"}
+
+    def test_reaches_classify_for_iterate_when_phase_tasks_says_test_done(self, monkeypatch, tmp_path):
+        """Hardens the subprocess-level fallthrough test below (its
+        assertion is soft — ``classify_intent``'s own confidence scoring can
+        legitimately return None — mirroring the pre-existing sibling test's
+        pattern for the same reason). This direct call proves
+        ``handle_in_progress_pipeline`` actually REACHES
+        ``classify_for_iterate`` when ``phase_tasks[]`` says test is done,
+        even though ``completed_steps`` (stale/write-once) is empty — not
+        merely that stdout happened to be non-empty (code-review finding,
+        campaign p4-04-retire-write-once-steps sub-iterate s3)."""
+        calls = []
+        monkeypatch.setattr(
+            suggest_iterate, "classify_for_iterate",
+            lambda prompt, project_root: calls.append((prompt, project_root)) or {"reached": True},
+        )
+        run_config = {
+            "status": "in_progress",
+            "current_step": "project",
+            "completed_steps": [],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "design", "status": "done"},
+                {"phase": "plan", "status": "done"},
+                {"phase": "build", "status": "done"},
+                {"phase": "test", "status": "done"},
+                {"phase": "changelog", "status": "in_progress"},
+            ],
+        }
+        result = handle_in_progress_pipeline(
+            "add a filter for completed tasks in the sidebar", tmp_path, run_config,
+        )
+        assert calls, "classify_for_iterate was never called"
+        assert result == {"reached": True}
+
+    def test_reaches_classify_for_iterate_via_legacy_cutover_when_no_phase_tasks(
+        self, monkeypatch, tmp_path,
+    ):
+        """The one-time legacy cutover (GLM MEDIUM, s5) makes this REACH
+        classify_for_iterate for a pre-s5 standalone config with no
+        phase_tasks[] at all — without it the post-test fallback is
+        permanently dead for that config (nothing left ever seeds
+        phase_tasks[] for a run with no more phases)."""
+        calls = []
+        monkeypatch.setattr(
+            suggest_iterate, "classify_for_iterate",
+            lambda prompt, project_root: calls.append((prompt, project_root)) or {"reached": True},
+        )
+        run_config = {
+            "status": "in_progress",
+            "current_step": "changelog",
+            "completed_steps": ["project", "design", "plan", "build", "test"],
+        }
+        result = handle_in_progress_pipeline(
+            "add a filter for completed tasks in the sidebar", tmp_path, run_config,
+        )
+        assert calls, "classify_for_iterate was never called"
+        assert result == {"reached": True}
 
 
 # --- Unit tests for pattern matching ---
@@ -205,11 +298,21 @@ class TestHookIntegration:
         assert "mismatch" in context.lower() or "build" in context
 
     def test_in_progress_no_output_when_matching(self, tmp_path):
-        """If user intent matches current step, no additional context needed."""
+        """If user intent matches current step, no additional context needed.
+
+        The current step is read from phase_tasks[] alone (campaign
+        p4-04-retire-write-once-steps, sub-iterate s5: the write-once
+        current_step field is retired)."""
         result = self._run_hook(
             "run the tests",
             str(tmp_path),
-            config={"status": "in_progress", "current_step": "test"},
+            config={
+                "status": "in_progress",
+                "phase_tasks": [
+                    {"phase": "build", "status": "done"},
+                    {"phase": "test", "status": "in_progress"},
+                ],
+            },
         )
         assert result.returncode == 0
         assert result.stdout.strip() == ""
@@ -264,6 +367,62 @@ class TestHookIntegration:
         context = output["hookSpecificOutput"]["additionalContext"]
         assert "mismatch" in context.lower()
         assert "/shipwright-deploy" in context
+
+    def test_in_progress_phase_tasks_primary_over_stale_current_step(self, tmp_path):
+        """current_step/completed_steps are write-once and never advance on a
+        driven run (campaign p4-04-retire-write-once-steps). Here they claim
+        'build' is current, while phase_tasks[] says 'test' is actually the
+        one in flight — the mismatch check must follow phase_tasks[], not the
+        stale field. 'run the tests' would warn a mismatch if current_step
+        were still consulted; it must not here."""
+        result = self._run_hook(
+            "run the tests",
+            str(tmp_path),
+            config={
+                "status": "in_progress",
+                "current_step": "build",
+                "completed_steps": [],
+                "phase_tasks": [
+                    {"phase": "project", "status": "done"},
+                    {"phase": "design", "status": "done"},
+                    {"phase": "plan", "status": "done"},
+                    {"phase": "build", "status": "done"},
+                    {"phase": "test", "status": "in_progress"},
+                ],
+            },
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_in_progress_phase_tasks_primary_post_test_fallthrough(self, tmp_path):
+        """completed_steps is empty (stale/write-once), but phase_tasks[] says
+        test already finished and changelog is running — the post-test
+        fallthrough to classify_for_iterate must follow phase_tasks[]."""
+        result = self._run_hook(
+            "add a filter for completed tasks in the sidebar",
+            str(tmp_path),
+            config={
+                "status": "in_progress",
+                "current_step": "project",
+                "completed_steps": [],
+                "phase_tasks": [
+                    {"phase": "project", "status": "done"},
+                    {"phase": "design", "status": "done"},
+                    {"phase": "plan", "status": "done"},
+                    {"phase": "build", "status": "done"},
+                    {"phase": "test", "status": "done"},
+                    {"phase": "changelog", "status": "in_progress"},
+                ],
+            },
+        )
+        assert result.returncode == 0
+        if result.stdout.strip():
+            output = json.loads(result.stdout)
+            context = output["hookSpecificOutput"]["additionalContext"]
+            assert "/shipwright-iterate" in context
+        # classify_for_iterate may return None on low confidence — the
+        # regression under test is that the post-test branch is REACHED at
+        # all (phase_tasks[] says test is done despite completed_steps=[]).
 
     def test_classify_for_iterate_import_path_resolves(self):
         """Regression: classify_for_iterate must find classify_intent.py at repo root.

@@ -58,6 +58,10 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
+from lib.handoff_phase_status import (  # noqa: E402
+    completed_phases,
+    phase_tasks_has_usable_entries,
+)
 
 # Canonical design artifact directory under .shipwright/. Module-local
 # constant per Sub-Iterate B of the designs relocation; the legacy
@@ -93,23 +97,27 @@ def _is_no_ui_scope(project_root: Path) -> bool:
 
 
 def _design_phase_ran(project_root: Path) -> bool:
-    """Return True iff ``"design"`` is in ``completed_steps`` of
-    ``shipwright_run_config.json`` — i.e. the design phase is part of this
-    project's lifecycle. Adopted (brownfield) projects never run
-    ``/shipwright-design`` (``shipwright-adopt`` seeds ``completed_steps`` as
-    ``[project, plan, build, test]``), so their design-manifest legitimately
-    never existed (triage trg-d26da6f4).
+    """Return True iff the design phase is part of this project's lifecycle.
+
+    ``phase_tasks[]``-only, via the shared ``completed_phases`` /
+    ``phase_tasks_has_usable_entries`` (campaign p4-04-retire-write-once-steps:
+    introduced with a ``completed_steps`` fallback in sub-iterate s4; the
+    fallback was retired in sub-iterate s5, once every writer of the old
+    fields was retargeted onto ``phase_tasks[]``). This alone reproduces the
+    adopted-repo skip: since s2/s2b, ``shipwright-adopt`` seeds
+    ``phase_tasks[]`` only for ``project``/``plan``/``build``/``test``
+    (never ``design``), all terminal, so ``"design" not in completed`` reads
+    False (triage trg-d26da6f4).
 
     Fail-loud: a missing / unreadable / malformed / undecodable config, a
-    non-dict payload, or a non-list ``completed_steps`` all return True — a
-    broken config never buys a silent free pass, and a manifest lost AFTER a
-    design phase ran is real drift. ``utf-8-sig`` tolerates a hand-edited BOM
-    (WP8/F24 config-reader convention). Callers MUST gate only the
-    *manifest-missing* branch on this helper, never as a top-level
-    short-circuit: the between-phase validator runs these checks before
-    ``"design"`` is appended to ``completed_steps``, but only once the
-    manifest is present, so a manifest-gated skip preserves its FR-orphan /
-    screen-existence enforcement.
+    non-dict payload, or a ``phase_tasks[]`` with no usable entries (absent,
+    malformed, empty, or partially malformed) all return True — a broken or
+    silent config never buys a free pass, and a manifest lost AFTER a design
+    phase ran is real drift. ``utf-8-sig`` tolerates a hand-edited BOM
+    (WP8/F24 convention). Callers MUST gate only the *manifest-missing*
+    branch on this helper: the between-phase validator runs these checks
+    only once the manifest is present, so a manifest-gated skip preserves
+    FR-orphan / screen-existence enforcement.
     """
     cfg = project_root / "shipwright_run_config.json"
     try:
@@ -118,10 +126,11 @@ def _design_phase_ran(project_root: Path) -> bool:
         return True
     if not isinstance(data, dict):
         return True
-    steps = data.get("completed_steps")
-    if not isinstance(steps, list):
+
+    if not phase_tasks_has_usable_entries(data):
         return True
-    return "design" in steps
+
+    return "design" in completed_phases(data)
 
 
 # ---------------------------------------------------------------------------
@@ -189,8 +198,8 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
     Skips if there are no planning FRs (early bootstrap, no work to do), if
     the project's scope has no UI surface (``scope=library``), or — when the
     manifest is absent — if the design phase was never part of the project's
-    lifecycle (adopted / brownfield; no ``"design"`` in ``completed_steps``),
-    so the manifest legitimately never existed (triage trg-d26da6f4). An
+    lifecycle (adopted / brownfield; no ``"design"`` among the completed
+    phases), so the manifest legitimately never existed (triage trg-d26da6f4). An
     absent manifest AFTER a design phase ran is real drift and still fails.
 
     A declared FR listed under the manifest's ``## Non-UI FRs`` section is
@@ -216,7 +225,7 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
         if not _design_phase_ran(project_root):
             return CheckResult(
                 name, None,
-                "design phase never ran (no 'design' in completed_steps) — "
+                "design phase never ran (no 'design' among completed phases) — "
                 "FR→screen mapping not applicable",
                 severity=Severity.SKIPPED.value,
             )

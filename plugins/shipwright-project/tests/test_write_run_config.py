@@ -56,10 +56,28 @@ def test_write_run_config_creates_valid_json(tmp_path):
     data = json.loads(config_path.read_text(encoding="utf-8"))
     assert data["contractVersion"] == 1
     assert data["status"] == "pending"
-    assert data["current_step"] == "project"
     assert data["profile"] == "supabase-nextjs"
     assert data["standalone"] is False
-    assert data["completed_steps"] == []
+    # campaign p4-04-retire-write-once-steps, s5: current_step / completed_steps
+    # are retired. A full-shape phase_tasks[] seed replaces the signal
+    # current_step="project" used to carry, so the Stop-hook fallback has
+    # something to key on even before Step 8's explicit update-step call.
+    assert "current_step" not in data
+    assert "completed_steps" not in data
+    assert len(data["phase_tasks"]) == 1
+    task = data["phase_tasks"][0]
+    assert task["phase"] == "project"
+    assert task["splitId"] is None
+    assert task["status"] == "awaiting_launch"
+    # External code review, sub-iterate s5: every PhaseTask.required field
+    # from run_config.v2.schema.json must be present, not just phase/status —
+    # `_upsert_v1_phase_task` only ever mutates status/startedAt/completedAt
+    # on a match, so an incomplete seed here would stay incomplete forever.
+    for required_field in (
+        "phaseTaskId", "sessionUuid", "version", "title", "slashCommand",
+        "prerequisites", "executionCount", "createdAt",
+    ):
+        assert required_field in task, f"missing required PhaseTask field: {required_field}"
     assert "project" in data["pipeline"]
     assert "build" in data["pipeline"]
     assert "created_at" in data

@@ -27,6 +27,7 @@ from orchestrator_pkg.validation_record import (  # noqa: E402
     VALIDATION_OVERRIDES_KEY,
     record_validation_override,
 )
+from lib.handoff_phase_status import phase_tasks_progress  # noqa: E402
 
 REASON = "release window closes tonight; missing mockups tracked in #123"
 ASK = {"severity": "ask", "message": "Missing spec.md for splits: 01-core"}
@@ -115,7 +116,8 @@ def test_a_waved_through_completion_is_recorded_with_what_and_why(run_project, m
     assert record["inform_count"] == 1
     assert record["at"]
     # …and the step really did complete — the override is evidence, not a block.
-    assert "project" in load_run_config(run_project)["completed_steps"]
+    _, completed = phase_tasks_progress(load_run_config(run_project))
+    assert "project" in completed
 
 
 def test_force_over_a_clean_gate_records_a_pass_not_a_waiver(run_project, mocker):
@@ -156,7 +158,8 @@ def test_ask_issues_without_force_still_pause_the_run(run_project, mocker):
 
     assert config["status"] == "needs_validation"
     assert config["validation_issues"] == [{"step": "project", **ASK}]
-    assert "project" not in config.get("completed_steps", [])
+    _, completed = phase_tasks_progress(config)
+    assert "project" not in completed
     assert VALIDATION_OVERRIDES_KEY not in config
 
 
@@ -171,7 +174,8 @@ def test_a_forced_retry_clears_the_stale_pause_issues(run_project, mocker):
     config = update_step(run_project, "project", "complete", force=True, force_reason=REASON)
 
     assert "validation_issues" not in config
-    assert "project" in config["completed_steps"]
+    _, completed = phase_tasks_progress(config)
+    assert "project" in completed
     assert _overrides(run_project)[-1]["gate_result"] == "pass"
 
 
@@ -189,7 +193,8 @@ def test_force_without_a_reason_is_refused_before_anything_is_written(
 
     spy.assert_not_called()                                  # refused up front
     config = load_run_config(run_project)
-    assert "project" not in config.get("completed_steps", [])
+    _, completed = phase_tasks_progress(config)
+    assert "project" not in completed
     assert VALIDATION_OVERRIDES_KEY not in config
 
 
@@ -225,7 +230,8 @@ def test_a_crashing_validator_does_not_wedge_the_force_path(run_project, mocker)
 
     config = update_step(run_project, "project", "complete", force=True, force_reason=REASON)
 
-    assert "project" in config["completed_steps"]
+    _, completed = phase_tasks_progress(config)
+    assert "project" in completed
     record = _overrides(run_project)[-1]
     assert record["waived"] is True
     assert GATE_ERROR_PREFIX in record["overridden_issues"][0]["message"]

@@ -1,0 +1,66 @@
+{
+  "pipeline": [
+    "project",
+    "design",
+    "plan",
+    "build",
+    "test",
+    "changelog",
+    "deploy"
+  ],
+  "status": "complete",
+  "current_step": null,
+  "completed_steps": [
+    "project",
+    "plan",
+    "build",
+    "test"
+  ],
+  "profile": "vite-hono",
+  "scope": "library",
+  "autonomy": "supervised",
+  "standalone": false,
+  "adoption": {
+    "adopted_at": "2026-05-29T07:52:55.356956+00:00",
+    "commit_at_adoption": "c5deef120d3fee88e42be4bd9de5e6b0610d2ba1",
+    "features_inferred": 0,
+    "nested_excluded": [],
+    "plugin_version": "0.1.0"
+  },
+  "phase_history": {
+    "project": [
+      {
+        "outcome": "adopted",
+        "run_id": "adopt-2026-05-29T075255",
+        "at": "2026-05-29T07:52:55.356956+00:00"
+      }
+    ],
+    "plan": [
+      {
+        "outcome": "adopted",
+        "run_id": "adopt-2026-05-29T075255",
+        "at": "2026-05-29T07:52:55.356956+00:00"
+      }
+    ],
+    "build": [
+      {
+        "outcome": "adopted",
+        "run_id": "adopt-2026-05-29T075255",
+        "at": "2026-05-29T07:52:55.356956+00:00"
+      }
+    ],
+    "test": [
+      {
+        "outcome": "adopted-skipped",
+        "run_id": "adopt-2026-05-29T075255",
+        "at": "2026-05-29T07:52:55.356956+00:00"
+      }
+    ]
+  },
+  "iterate_history": [],
+  "_iterate_migration_state": "complete",
+  "_iterate_migration_ts": "2026-05-29T07:52:55.356956+00:00",
+  "_iterate_migration_quarantined_count": 0,
+  "created_at": "2026-05-29T07:52:55.356956+00:00",
+  "updated_at": "2026-05-29T07:52:55.356956+00:00"
+}

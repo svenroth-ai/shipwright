@@ -18,6 +18,9 @@ from orchestrator import (
     update_step,
 )
 
+from lib.handoff_phase_status import phase_tasks_progress
+from tests.conftest import _phase_status
+
 SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "lib" / "orchestrator.py")
 
 
@@ -36,7 +39,7 @@ def test_create_config(tmp_project):
     )
     assert config["scope"] == "full_app"
     assert config["profile"] == "supabase-nextjs"
-    assert config["current_step"] == "project"
+    assert _phase_status(config, "project") == "awaiting_launch"
     assert config["pipeline"] == PIPELINE_STEPS
     assert (tmp_project / "shipwright_run_config.json").exists()
 
@@ -59,8 +62,8 @@ def test_update_step_complete(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
     config = update_step(tmp_project, "project", "complete", force=True, force_reason="fixture: no artifacts")
 
-    assert "project" in config["completed_steps"]
-    assert config["current_step"] == "design"
+    assert "project" in phase_tasks_progress(config)[1]
+    assert get_next_step(tmp_project)["next_step"] == "design"
 
 
 def test_update_step_all_complete(tmp_project):
@@ -71,7 +74,7 @@ def test_update_step_all_complete(tmp_project):
 
     config = load_run_config(tmp_project)
     assert config["status"] == "complete"
-    assert config["current_step"] is None
+    assert set(PIPELINE_STEPS).issubset(phase_tasks_progress(config)[1])
 
     result = get_next_step(tmp_project)
     assert result["next_step"] is None
@@ -81,7 +84,7 @@ def test_update_step_failed(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
     config = update_step(tmp_project, "build", "failed")
     assert config["status"] == "failed"
-    assert config["current_step"] == "build"
+    assert _phase_status(config, "build") == "failed"
 
 
 def test_build_pipeline_never_includes_security_post_decouple(monkeypatch):
@@ -265,7 +268,7 @@ def test_compliance_skipped_on_failure(tmp_project, mocker):
 
     config = update_step(tmp_project, "project", "complete", force=True, force_reason="fixture: no artifacts")
     assert "last_compliance_update" not in config
-    assert "project" in config["completed_steps"]
+    assert "project" in phase_tasks_progress(config)[1]
 
 
 def test_compliance_not_triggered_on_in_progress(tmp_project, mocker):
@@ -528,7 +531,7 @@ def test_update_step_no_config_bootstraps(tmp_path):
     """update_step with no run_config bootstraps a standalone config."""
     config = update_step(tmp_path, "project", "complete", force=True, force_reason="fixture: no artifacts")
     assert config["standalone"] is True
-    assert "project" in config["completed_steps"]
+    assert "project" in phase_tasks_progress(config)[1]
     assert config["pipeline"]  # should have default pipeline
     assert (tmp_path / "shipwright_run_config.json").exists()
 
@@ -541,30 +544,27 @@ def test_update_step_standalone_skips_validation(tmp_path, mocker):
     config = update_step(tmp_path, "project", "complete")
     # validate_phase should NOT have been called (standalone skips it)
     mock_validate.assert_not_called()
-    assert "project" in config["completed_steps"]
+    assert "project" in phase_tasks_progress(config)[1]
 
 
 def test_standalone_then_run_merges(tmp_path):
-    """Switching from standalone to orchestrator preserves completed_steps."""
-    # Simulate standalone completion
+    """Switching from standalone to orchestrator preserves phase_tasks[] progress."""
+    # Simulate standalone completion via phase_tasks[] (s5: current_step/completed_steps retired).
     standalone = {
         "standalone": True,
         "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"],
         "status": "in_progress",
-        "current_step": "design",
-        "completed_steps": ["project"],
+        "phase_tasks": [{"phase": "project", "splitId": None, "status": "done"}],
     }
-    (tmp_path / "shipwright_run_config.json").write_text(
-        json.dumps(standalone), encoding="utf-8"
-    )
+    (tmp_path / "shipwright_run_config.json").write_text(json.dumps(standalone), encoding="utf-8")
 
     # Now create orchestrator config (simulating /shipwright-run)
     config = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_path)
 
     # project should be carried over as completed
-    assert "project" in config["completed_steps"]
-    # current_step should be next after project (design)
-    assert config["current_step"] == "design"
+    assert "project" in phase_tasks_progress(config)[1]
+    # next uncompleted step is design
+    assert get_next_step(tmp_path)["next_step"] == "design"
     # standalone flag should be gone (new config is not standalone)
     assert "standalone" not in config
 

@@ -18,6 +18,7 @@ from orchestrator import (  # noqa: E402
     save_run_config,
     update_step,
 )
+from lib.handoff_phase_status import phase_tasks_progress  # noqa: E402
 
 # update_step REQUIRES a reason whenever force completes a non-standalone step
 # (FR-01.01 — an override has to record why). This fixture forces to skip
@@ -44,13 +45,15 @@ def test_update_step_complete_does_not_clobber_concurrent_write(tmp_path, mocker
     config = update_step(tmp_path, "project", "complete", force=True, force_reason=_FORCE_REASON)
 
     # update_step's own field landed ...
-    assert "project" in config["completed_steps"]
+    _, completed = phase_tasks_progress(config)
+    assert "project" in completed
 
     # ... AND the concurrent writer's field survived on disk (the pre-fix code
     # saved a stale in-memory copy and clobbered it).
     persisted = load_run_config(tmp_path)
     assert persisted["phase_history"]["__concurrent__"] == [{"run_id": "other"}]
-    assert "project" in persisted["completed_steps"]
+    _, persisted_completed = phase_tasks_progress(persisted)
+    assert "project" in persisted_completed
 
 
 def test_update_step_in_progress_preserves_unrelated_fields(tmp_path):
@@ -64,5 +67,10 @@ def test_update_step_in_progress_preserves_unrelated_fields(tmp_path):
     update_step(tmp_path, "build", "in_progress")
 
     persisted = load_run_config(tmp_path)
-    assert persisted["current_step"] == "build"
-    assert persisted["phase_tasks"] == [{"phaseTaskId": "ptk-x", "phase": "build", "version": 3}]
+    # The pre-seeded entry is UPDATED in place (find-or-create by phase name),
+    # not replaced: phaseTaskId/version survive, status/startedAt land.
+    assert len(persisted["phase_tasks"]) == 1
+    task = persisted["phase_tasks"][0]
+    assert task["phaseTaskId"] == "ptk-x"
+    assert task["version"] == 3
+    assert task["status"] == "in_progress"

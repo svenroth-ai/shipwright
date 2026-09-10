@@ -4,26 +4,18 @@ Owns the whole applicability gate: :func:`load_engagement_inputs` (read the
 inputs), :func:`phase_is_engaged` (the predicate the Stop-time audit gates on),
 and the v2 ``phase_tasks[]`` vocabulary the predicate now consults.
 
-``current_step`` / ``completed_steps`` are write-once on an orchestrator-driven
-run — ``config_factory`` stamps them at creation and the v2 lifecycle never
-advances them (only the v1 ``update_step`` path does, and it is inert on a driven
-run). ``phase_tasks[]`` is the authority that does not go stale, so both
-Phase-Quality readers consult it: :func:`phase_is_engaged` for which phases the
-Stop-time audit covers, and :func:`~._resolution.resolve_source` for the
-orchestrator/standalone stamp.
+``current_step`` / ``completed_steps`` — the write-once v1 fields — and every
+writer of them are retired (campaign p4-04-retire-write-once-steps,
+sub-iterate s5). ``phase_tasks[]`` is the SOLE authority now: ``config_factory``
+materializes it at run creation, ``phase_task_lifecycle`` advances it on a
+driven run, and the v1 ``update_step`` path advances it directly for a
+standalone/legacy/adopted run — so both Phase-Quality readers consult only
+it: :func:`phase_is_engaged` for which phases the Stop-time audit covers, and
+:func:`~._resolution.resolve_source` for the orchestrator/standalone stamp.
 
 Split out of ``_triage_bundle`` so a run-config shape predicate does not live in
 the triage-bundle module that ``_resolution`` would otherwise have to reach into
 for it. Imports nothing from this package, so the edge stays one-way and acyclic.
-
-**Why the v1 fields are still consulted alongside this.**
-:func:`phase_is_engaged` ORs the two sources rather than swapping to v2.
-The v1 shape is still actively written (``shipwright-project``,
-``shipwright-adopt``, and the v1 ``update_step`` path), and a phase completed
-standalone before ``/shipwright-run`` appears as ``skipped`` in ``phase_tasks[]``
-while living in ``completed_steps`` — so a v2-only read would silently audit
-FEWER phases, the one direction Phase-Quality must never move in. Retiring the v1
-fields is a campaign blocked on ~9 other readers (triage ``trg-8d52a965``).
 """
 
 from __future__ import annotations
@@ -56,9 +48,8 @@ _STATUS_ENGAGES: dict[str, bool] = {
     # The two below mean "did not run" ONLY as an initial state. `recover_phase_task`
     # can force a task that DID run back to `awaiting_launch`, or retire it as
     # `skipped`; `config_factory` also marks a phase completed STANDALONE as
-    # `skipped`. Status alone would leave all three unaudited, and on a driven run
-    # the frozen `completed_steps` cannot rescue them — so execution history is
-    # consulted too, see :func:`_task_has_run`.
+    # `skipped`. Status alone would leave all three unaudited — so execution
+    # history is consulted too, see :func:`_task_has_run`.
     "awaiting_launch": False,
     "skipped": False,
 }
@@ -179,11 +170,12 @@ def phase_is_engaged(phase: str, cfg: dict | None, events: list[dict]) -> bool:
       ``source == phase``, exists in the event log; OR
     * ``cfg.status == "complete"`` AND ``phase == "iterate"`` (iterate is the
       always-on maintenance phase of a finished project); OR
-    * ``cfg.status != "complete"`` AND EITHER a v2 ``phase_tasks[]`` entry shows
-      ``phase`` ran, OR (v1) ``phase ∈ completed_steps`` / ``== current_step``.
+    * ``cfg.status != "complete"`` AND a ``phase_tasks[]`` entry shows
+      ``phase`` ran (:func:`engaged_via_phase_tasks`) — the sole run-config
+      signal since the v1 ``current_step``/``completed_steps`` fields were
+      retired (campaign p4-04-retire-write-once-steps, sub-iterate s5).
 
-    The v2 and v1 halves are OR-ed, never swapped (see the module docstring),
-    both behind ``status != "complete"`` so a finished run stays iterate-only
+    Behind ``status != "complete"`` so a finished run stays iterate-only
     (AC-2). FAIL-OPEN: ``cfg is None`` → engaged. Status casing is normalized.
 
     ``complete`` is the ONLY status that closes a run here, deliberately. A run
@@ -209,11 +201,6 @@ def phase_is_engaged(phase: str, cfg: dict | None, events: list[dict]) -> bool:
         return True
     if status != "complete":
         if engaged_via_phase_tasks(phase, cfg):
-            return True
-        completed = cfg.get("completed_steps")
-        if isinstance(completed, list) and phase in completed:
-            return True
-        if phase == cfg.get("current_step"):
             return True
     return False
 

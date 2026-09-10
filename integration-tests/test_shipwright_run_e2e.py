@@ -76,13 +76,11 @@ class TestFullPipelineE2E:
 
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
-            ["write-config",
-             "--scope", "full_app",
-             "--profile", "supabase-nextjs",
-             "--autonomy", "guided",
-             "--project-root", str(project)],
+            ["write-config", "--scope", "full_app", "--profile", "supabase-nextjs", "--autonomy", "guided", "--project-root", str(project)],
         )
-        assert result["current_step"] == "project"
+        assert "current_step" not in result  # retired (s5); phase_tasks[] is sole record
+        t0 = result["phase_tasks"][0]
+        assert (t0["phase"], t0["status"]) == ("project", "awaiting_launch")
         assert (project / "shipwright_run_config.json").exists()
         undrive(project)  # v1 update-step path (see undrive fixture)
 
@@ -208,14 +206,16 @@ class TestFullPipelineE2E:
         )
 
         # === Verify final state ===
-        config = json.loads(
-            (project / "shipwright_run_config.json").read_text(encoding="utf-8")
-        )
+        config = json.loads((project / "shipwright_run_config.json").read_text(encoding="utf-8"))
         assert config["status"] == "complete"
-        assert config["current_step"] is None
-        assert set(config["completed_steps"]) == {
-            "project", "design", "plan", "build", "test", "changelog", "deploy"
-        }
+        assert "current_step" not in config  # retired (s5); phase_tasks[] is sole record
+        assert "completed_steps" not in config
+        # Status pinned to "done" specifically, not "finished-ish" (GLM LOW):
+        # every phase here ran via explicit `update-step --status complete`.
+        statuses = {t["phase"]: t.get("status") for t in config["phase_tasks"] if t.get("splitId") is None}
+        assert statuses == dict.fromkeys(
+            ["project", "design", "plan", "build", "test", "changelog", "deploy"], "done",
+        )
 
 
 class TestResumeFromAnyPoint:

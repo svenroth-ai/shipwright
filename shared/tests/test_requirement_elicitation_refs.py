@@ -217,3 +217,48 @@ def test_elicitation_surface_cites_the_module(rel):
         f"shared/requirement-elicitation.md — the method would silently stop "
         f"being applied"
     )
+
+
+def test_project_interview_protocol_wires_the_context_producer():
+    """§4/§7 require a sharpened term to land in `CONTEXT.md` the moment it is
+    resolved, not batched after the interview. `write_context_term.py` is the
+    producer (P4.1); this pins that `/shipwright-project`'s interview protocol
+    actually calls it — a prompt-only guarantee, so this is the only test that
+    can exist for it (elicitation §6's `enforced`/`prompt-only` table)."""
+    doc = REPO_ROOT / "plugins/shipwright-project/skills/project/references/interview-protocol.md"
+    body = doc.read_text(encoding="utf-8")
+    assert "write_context_term.py" in body, (
+        "interview-protocol.md must call the write_context_term.py producer "
+        "at the point a term is sharpened (requirement-elicitation.md §4/§7)"
+    )
+    # It must be described as happening DURING the turn, not batched — the
+    # distinction the sub-iterate spec calls out explicitly.
+    assert "before the next" in body.lower() or "same turn" in body.lower(), (
+        "the wiring must instruct writing CONTEXT.md during the sharpening "
+        "turn, not deferred to end-of-interview"
+    )
+    # Pin the invocation's own flags, not just the script name (external code
+    # review, P4.1) — a flag rename in the wired snippet must fail loudly
+    # rather than leave this test passing against a broken command. The
+    # wired invocation is --payload-file, not --term/--definition/--avoid
+    # (P4.1 final review, GitHub required-check finding): free interview
+    # text must never be substituted into a shell-quoted --term/--definition
+    # argument — a single quote in the text breaks the quoting outright and
+    # the rest is interpreted as shell syntax — so that legacy flag path is
+    # deliberately NOT the documented invocation any more.
+    for flag in ("--project-root", "--payload-file"):
+        assert flag in body, (
+            f"the write_context_term.py invocation in interview-protocol.md "
+            f"is missing {flag!r} — the wired command must stay runnable"
+        )
+    for key in ('"term"', '"definition"'):
+        assert key in body, (
+            f"the write_context_term.py --payload-file JSON shape in "
+            f"interview-protocol.md is missing {key!r}"
+        )
+    assert "Write tool" in body, (
+        "interview-protocol.md must instruct writing the --payload-file "
+        "JSON via the Write tool (never a shell command) — that is the "
+        "whole point of --payload-file: no shell ever parses free "
+        "interview text, closing the quote-breakout vulnerability"
+    )

@@ -1,0 +1,96 @@
+{
+  "run_id": "iterate-2026-09-10-s3-hooks-and-state",
+  "date": "2026-09-10T00:16:15.427409Z",
+  "event_at": "2026-09-10T00:15:40.104282+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-p4-04-retire-write-once-steps-s3-hooks-and-state",
+  "spec": ".shipwright/planning/iterate/campaigns/p4-04-retire-write-once-steps/sub-iterates/s3-hooks-and-state.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-s3-hooks-and-state",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "state.py::detect_current_phase reads phase_tasks[] as primary, not current_step/completed_steps, even when they disagree",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_state.py::test_detect_phase_phase_tasks_ignores_stale_current_step PASSED"
+      },
+      {
+        "behavior": "state.py: all phase_tasks[] phases done -> complete, even though current_step/completed_steps still claim partial progress",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_state.py::test_detect_phase_complete_from_phase_tasks PASSED"
+      },
+      {
+        "behavior": "state.py: a v1-only (no phase_tasks[]) run whose completed_steps covers the whole pipeline still reads complete (code-review regression fix)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_state.py::test_detect_phase_v1_only_completed_steps_covers_pipeline_is_complete PASSED"
+      },
+      {
+        "behavior": "state.py: a backlog-only (queued, not yet claimed) phase_tasks[] entry counts as current, not a fallback trigger",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_state.py::test_detect_phase_backlog_entry_counts_as_current_not_a_fallback PASSED"
+      },
+      {
+        "behavior": "update_build_dashboard.py: Build Summary/Test Results sections key on phase_tasks[] only, ignoring stale completed_steps",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_build_dashboard.py::TestPhaseTasksLegacyReadSites (4 tests) PASSED"
+      },
+      {
+        "behavior": "update_build_dashboard.py: pipeline status strip ignores stale completed_steps/current_step and falls through cleanly when phase_tasks[] gives no confident signal",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_build_dashboard.py::test_pipeline_status_ignores_stale_completed_steps_and_current_step, ::test_pipeline_status_falls_through_when_phase_tasks_gives_no_confident_signal PASSED"
+      },
+      {
+        "behavior": "generate_handoff_on_stop.py: _detect_phase_complete's inputs derive from phase_tasks[] primary, v1 fields fallback only when phase_tasks[] gives no signal",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_generate_handoff_on_stop.py::TestPhaseTasksProgress (6 tests, incl. stale-field-ignored and backlog-as-current) PASSED"
+      },
+      {
+        "behavior": "suggest_iterate.py: handle_in_progress_pipeline reads phase_tasks[] primary; reaches the post-test classify_for_iterate branch when phase_tasks[] says test is done (hard assertion, not soft subprocess stdout check)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_suggest_iterate.py::test_reaches_classify_for_iterate_when_phase_tasks_says_test_done PASSED"
+      },
+      {
+        "behavior": "malformed phase_tasks[] status (non-string) does not crash any of the 4 readers and is treated as current, not silently absent",
+        "disposition": "tested",
+        "evidence": "test_malformed_status_does_not_crash across shared/tests/test_state.py, test_generate_handoff_on_stop.py, test_suggest_iterate.py, and shared/scripts/tests/test_build_dashboard.py::test_pipeline_status_malformed_task_status_does_not_crash -- all PASSED"
+      },
+      {
+        "behavior": "the unrelated build-step-number current_step:int|None local in update_build_dashboard.py's format_status/STEP_LABELS is untouched by this migration",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tests/test_build_dashboard.py existing format_status tests still PASSED unchanged; confirmed via self-review grep of the diff"
+      },
+      {
+        "behavior": "a full driven-run integration flow (project->design->plan->build) still resolves the correct current phase via get_checkpoint/detect_current_phase once current_step stopped being consulted",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_integration.py::test_full_workflow PASSED (fixture updated with a phase_tasks[] block after this was the one genuine regression the migration surfaced)"
+      },
+      {
+        "behavior": "state-recovery and single-session pipeline flows are unaffected by the migration at the integration-tests root",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_state_recovery.py (11 tests), test_single_session_pipeline.py (3 tests), test_single_session_capstone.py (3 tests) all PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Pure Python config-reader migration in shared/scripts/{lib,tools,hooks}; no startable web/dev-server/CLI surface of its own -- verification is the full shared/tests unit/integration suite (F0), including new round-trip tests writing real on-disk phase_tasks[] fixtures and reading them back through each of the 4 migrated readers."
+  },
+  "declared_removals": []
+}

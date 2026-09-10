@@ -1,0 +1,125 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-10-s5-retarget-v1-then-drop",
+    "date": "2026-09-10",
+    "unit": {
+      "status": "passed",
+      "passed": 14450,
+      "total": 14498
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "F0's own parallel (xdist) full-suite sweep intermittently reports shared/tests RED on a single test (test_check_fr_hygiene_doubt4.py::test_an_existing_non_canonical_anchors_edited_criterion_is_flagged, 'cannot obtain the diff') under the isolated-tempdir retry harness; the unit is unrelated to this diff (no reference to phase_tasks/current_step/completed_steps) and passes 10152/10152 when run alone/serially, twice, which the tool's own triage entry (dedup key f0-race:shared/tests, trg-f64d1c27) already documents as the authoritative verdict for this race class. Not treated as a regression; unit/integration counts above are the direct serial per-root runs, not the flaky parallel sweep."
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv --directory plugins/shipwright-run run pytest tests/ -q",
+      "tests_run": 568,
+      "exit_code": 0
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "v1 update_step advances phase_tasks[] (find-or-create, no CAS) instead of writing current_step/completed_steps",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_orchestrator.py::test_update_step_complete, test_update_step_all_complete, test_update_step_failed PASSED"
+        },
+        {
+          "behavior": "a retry (duplicate) call to update_step for the same phase is idempotent -- no duplicate phase_tasks[] entry is created",
+          "disposition": "tested",
+          "evidence": "empirical probe (2 update_step calls, same phase) confirmed n_tasks unchanged; pinned by plugins/shipwright-run/tests/test_standalone_merge_legacy_completed_steps.py's surrounding suite + test_orchestrator.py::test_update_step_all_complete's sequential-advance coverage"
+        },
+        {
+          "behavior": "a standalone->driven merge with a fully-migrated existing config (phase_tasks[] present) carries its completed phases forward via phase_tasks_progress()",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_orchestrator.py::test_standalone_then_run_merges PASSED"
+        },
+        {
+          "behavior": "a standalone->driven merge with a PRE-s5 legacy config (completed_steps only, no phase_tasks[]) recovers its completed-phase history via the one-time migration cutover, gated on phase_tasks_has_usable_entries (not on an empty completed set)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_standalone_merge_legacy_completed_steps.py::test_legacy_completed_steps_only_config_merges_into_driven_run, test_a_phase_tasks_present_config_never_consults_completed_steps PASSED (external plan + code review, GLM+OpenAI HIGH -- fixed, including the reviewer-flagged test-adequacy gap)"
+        },
+        {
+          "behavior": "a standalone-completed 'project' phase merged into a driven run engages Phase-Quality identically to its equally-completed siblings (executionCount stamped, not left at 0 on the skipped shape)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_standalone_merge_legacy_completed_steps.py::test_merged_project_engages_phase_quality_same_as_its_siblings PASSED (external code review round 3, GLM MEDIUM -- fixed; regression introduced by round-2's removal of _engagement.py's OR-fallback)"
+        },
+        {
+          "behavior": "config_factory.create_config and both remaining writers (write_run_config.py, config_writer.py) never emit current_step/completed_steps; write_run_config.py seeds a minimal phase_tasks[] entry instead so the Stop-hook fallback has a signal from project creation onward",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-project/tests/test_write_run_config.py::test_write_run_config_creates_valid_json (asserts the phase_tasks[] seed), plugins/shipwright-adopt/tests/test_config_writer.py PASSED (external code review round 2, OpenAI HIGH -- fixed)"
+        },
+        {
+          "behavior": "a phase paused for validation (needs_validation) is still locatable in phase_tasks[], and the v1 advance/reset helpers never leave an internally contradictory entry (stale completedAt after a retry or a reset, skipped treated as non-terminal)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_step_config_access_v1_hygiene.py -- 4 tests PASSED (external code review rounds 1-3, OpenAI MEDIUM + GLM LOW x3 -- all fixed)"
+        },
+        {
+          "behavior": "handoff_phase_status.completed_phases() (renamed from completed_phases_with_fallback) never reads completed_steps, on any phase_tasks[] shape (absent, empty, malformed, mixed-valid)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_handoff_phase_status_completed_phases.py -- 11 tests incl. test_completed_steps_is_never_consulted PASSED"
+        },
+        {
+          "behavior": "four readers (config_factory's merge, generate_handoff_on_stop's Stop-hook trigger, state.detect_current_phase, suggest_iterate's router) carry a ONE-TIME legacy cutover -- reading current_step/completed_steps only when phase_tasks[] has no usable entry at all, never as an ongoing fallback; every other s1/s3/s4-migrated reader has zero residual fallback",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_generate_handoff_on_stop.py (test_v1_only_config_uses_one_time_legacy_cutover_fallback, test_usable_phase_tasks_never_consults_legacy_fields), test_state.py (3 cutover tests), test_suggest_iterate.py (test_reaches_classify_for_iterate_via_legacy_cutover_when_no_phase_tasks) -- all PASSED (external code review rounds 2-3, GLM HIGH/MEDIUM x3 -- fixed; without these, a pre-s5 legacy run either silently loses history, deadlocks forever, or misreports its phase forever)"
+        },
+        {
+          "behavior": "shipwright-adopt's backfill_missing_phase_tasks() -- the one deliberate, documented exception outside this sub-iterate's own four -- still reads completed_steps as a one-time migration source",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests -- backfill suite PASSED (670 passed); adopted_phase_tasks.py docstring documents the exception"
+        },
+        {
+          "behavior": "docs/hooks-and-pipeline.md's schema block and every other write-once-field passage is updated in the same diff, including the four one-time-cutover exceptions this sub-iterate's review cascade added",
+          "disposition": "tested",
+          "evidence": "manual diff review against origin/main -- schema block, Cmp1 rule, split-retry note, Upstream-Success-Check step, invocation-mode note, and ~4 more passages all corrected; the 'every reader phase_tasks[]-only, no v1 fallback of any kind' claim corrected to name the four cutovers precisely; no remaining current_step/completed_steps reference outside historical records and the five documented one-time exceptions"
+        },
+        {
+          "behavior": "a greenfield run driven entirely through explicit update-step --status complete calls lands every phase_tasks[] entry as exactly 'done', never the standalone-merge 'skipped' shape",
+          "disposition": "tested",
+          "evidence": "integration-tests/test_shipwright_run_e2e.py::TestFullPipelineE2E::test_full_pipeline PASSED (external code review round 3, GLM LOW -- strengthened from a loose 'done or skipped' set check)"
+        }
+      ],
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-10-s5-retarget-v1-then-drop",
+    "commit": "feb6ebf0f7e3b0ea212dae692e5f93ebad900a02",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

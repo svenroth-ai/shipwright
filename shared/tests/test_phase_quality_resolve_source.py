@@ -56,9 +56,12 @@ def test_resolve_source_v2_is_orchestrator_without_current_step(tmp_path: Path) 
     assert pq.resolve_source(tmp_path, "build") == "orchestrator"
 
 
-def test_resolve_source_v1_current_step_still_orchestrator(tmp_path: Path) -> None:
+def test_resolve_source_v1_current_step_alone_is_standalone(tmp_path: Path) -> None:
+    """current_step, and every reader of it, is retired (sub-iterate s5): a
+    config carrying only that leftover field — no phase_tasks[] — has no
+    orchestrator-driven evidence left to read, so it classifies standalone."""
     _write_cfg(tmp_path, {"status": "in_progress", "current_step": "build"})
-    assert pq.resolve_source(tmp_path, "build") == "orchestrator"
+    assert pq.resolve_source(tmp_path, "build") == "standalone"
 
 
 def test_resolve_source_explicit_standalone_flag_wins(tmp_path: Path) -> None:

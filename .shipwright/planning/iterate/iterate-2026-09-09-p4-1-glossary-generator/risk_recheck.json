@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-09-p4-1-glossary-generator",
+  "risk_recheck": {
+    "changed_file_count": 5,
+    "diff_loc": 578,
+    "risk_flags": [
+      "touches_migrations"
+    ],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

@@ -985,8 +985,9 @@ _LEGACY_PIPELINE_ENTRIES: frozenset[str] = frozenset({"compliance", "security"})
 > detective audit runs via `/shipwright-compliance` (`run_audit.py`).
 > Legacy projects with `"compliance"` in their `config["pipeline"]` are
 > migrated on the next `load_run_config()` call (entry removed from
-> `pipeline`, preserved in `completed_steps` as a historical marker,
-> logged as a `pipeline_migration` event).
+> `pipeline`, preserved in `phase_tasks[]` — or, on a config predating
+> campaign `p4-04-retire-write-once-steps`, `completed_steps` — as a
+> historical marker, logged as a `pipeline_migration` event).
 
 > **Iterate `sec-report-and-orchestrator-decouple` — 2026-04.** Security was
 > also removed from the orchestrator. The previous `CONDITIONAL_STEPS` /
@@ -1147,65 +1148,68 @@ in `phase_tasks[]`:
     }
   ],
   "status": "in_progress | complete | failed | needs_validation",
-  "current_step": "...",            // legacy v1-compat field — NOT ADVANCED, see below
-  "completed_steps": [...],         // legacy v1-compat field — NOT ADVANCED, see below
-  "pipeline": [...]                 // legacy v1-compat field, drives banner counts
+  "pipeline": [...]                 // drives banner counts
 }
 ```
 
-> **`current_step` / `completed_steps` are WRITE-ONCE, NEVER-ADVANCED in a DRIVEN run.
-> Never key logic on them ALONE.** `config_factory` stamps `current_step` at run creation
-> (`"project"`) and nothing in the v2 lifecycle moves it: `phase_task_lifecycle` advances
-> `phase_tasks[]` + `completed_phase_task_ids` + `status`, and that is the whole authority.
+> **`current_step` / `completed_steps` — the write-once, never-advanced-in-a-driven-run
+> v1 fields — are RETIRED.** Campaign `p4-04-retire-write-once-steps` migrated every
+> reader (sub-iterates s1/s3/s4) onto `phase_tasks[]`, then retargeted every writer
+> (sub-iterate s5): `config_factory` no longer stamps them at creation,
+> `shipwright-project`'s `write_run_config.py` and `shipwright-adopt`'s `config_writer.py`
+> no longer emit them, and the v1 `update_step` path — the mechanism that serves a
+> standalone / legacy / adopted run's bare phase invocation, no orchestrator session —
+> now advances `phase_tasks[]` directly instead (find-or-create by `phase` name, no CAS:
+> there is no session/version to check). `phase_tasks[]` is therefore the SOLE progress
+> authority everywhere, on every run shape: `phase_task_lifecycle` advances it on a driven
+> run, the v1 path advances it on every other one.
 >
-> They are NOT dead fields, and the v1 `update_step` path *does* advance them — it is
-> merely inert on a driven run (the drivability guard). They are still written by
-> `shipwright-project`, by `shipwright-adopt` (which seeds `completed_steps` so an adopted
-> repo does not look like it skipped phases), and by that v1 path; and they are still read
-> by `generate_handoff_on_stop`, `suggest_iterate`, `update_build_dashboard`,
-> `state.detect_current_phase`, `convert_configs_to_events`, and the `design` /
-> `compliance` verifiers. **Since sub-iterate s2 of that campaign, `shipwright-adopt`
-> ALSO seeds a `phase_tasks[]` entry per completed step** — status `done` (`skipped` for
-> `test`, mirroring `phase_history`'s existing `adopted`/`adopted-skipped` split) plus an
-> additive `establishedAtAdoption: true` marker, so a reader migrated to `phase_tasks[]`
-> keeps seeing the phase as not-outstanding while still being able to tell an adopted-in
-> entry from one an actual phase-runner executed. This is FUTURE adoptions only — the
-> already-adopted repo's on-disk config is backfilled separately (sub-iterate s2b).
+> **Since sub-iterate s2, `shipwright-adopt` seeds a `phase_tasks[]` entry per
+> pre-adoption completed step** — status `done` (`skipped` for `test`, mirroring
+> `phase_history`'s existing `adopted`/`adopted-skipped` split) plus an additive
+> `establishedAtAdoption: true` marker, so a reader keeps seeing the phase as
+> not-outstanding while still being able to tell an adopted-in entry from one an actual
+> phase-runner (or the v1 path) executed.
 >
-> **A non-empty `phase_tasks[]` no longer, by itself, means an orchestrator-driven run.**
-> Before s2, presence of the array WAS that signal (`config_factory` materializes it at
-> run creation, `phase_task_lifecycle` was its only writer). shipwright-adopt is now a
-> SECOND writer, seeding `establishedAtAdoption: true` entries for a repo that was never
-> orchestrator-driven. Any reader that keys on mere presence — the way
-> `phase_quality._engagement.has_phase_tasks` did until this campaign's own delegated
-> review caught it — will mislabel a freshly adopted repo. **Use `schemaVersion == 2` to
-> ask "is this a driven run", and check `establishedAtAdoption` to ask "is this entry
+> **A non-empty `phase_tasks[]` does not, by itself, mean an orchestrator-driven run** —
+> shipwright-adopt and the v1 path are both writers of it now. Use `schemaVersion == 2`
+> to ask "is this a driven run", and check `establishedAtAdoption` to ask "is this entry
 > provenance, not execution"; a reader that only checks array presence must also exclude
-> an array where every entry is `establishedAtAdoption: true`.**
+> an array where every entry is `establishedAtAdoption: true`
+> (`phase_quality._engagement.has_phase_tasks` does this).
 >
-> **The rule for a not-yet-migrated reader is therefore: consult `phase_tasks[]` first,
-> and fall back to the v1 fields — do not read either one alone.** `phase_quality.resolve_source`
-> and `phase_quality.phase_is_engaged` were migrated to exactly that shape in
-> `iterate-2026-08-01-drop-write-once-step-fields`. They OR the two sources rather than
-> replacing v1, because `config_factory` marks a phase completed *standalone* as
-> `skipped` in `phase_tasks[]` while still listing it in `completed_steps` — so a
-> v2-only read would engage FEWER phases, and phase-quality's contract is "audit MORE,
-> never silently fewer". **A reader migrated by campaign `p4-04-retire-write-once-steps`
-> reads `phase_tasks[]` only, per that campaign's 2026-09-06 architecture review** — the
-> fall-back-and-OR shape above is for readers that campaign has not reached yet, not a
-> standing requirement. `compliance/mermaid.py` (dashboard phase strip) was the first
-> reader migrated (sub-iterate s1); the remaining readers above are the campaign's queue.
-> Dropping the fields entirely is the campaign's last step, once every reader above is
-> migrated — not a cleanup.
+> **Every reader consults `phase_tasks[]` as the primary and normally-only signal.**
+> `shared/scripts/lib/handoff_phase_status.py` is the shared vocabulary:
+> `phase_tasks_progress` (the `(current, completed)` pair), `phase_tasks_has_usable_entries`
+> (is the array present, non-empty, and every entry classifiable?), and `completed_phases`
+> (the completed-phase set, empty when the array isn't usable — no fallback left to
+> consult). `design_checks.py`'s adopted-repo design-skip gate, `compliance_compliance.py`'s
+> Cmp1 heuristic, `convert_configs_to_events`, `phase_quality.resolve_source`, and
+> `phase_quality.phase_is_engaged` read only this, unconditionally. `compliance/mermaid.py`
+> (dashboard phase strip) and `update_build_dashboard` were already `phase_tasks[]`-only from
+> sub-iterates s1/s3.
+>
+> **Four readers carry a ONE-TIME legacy cutover** (added after external code review, s5):
+> `config_factory.create_config`'s standalone→driven merge, `generate_handoff_on_stop`'s
+> phase-completion detector, `state.detect_current_phase`, and `suggest_iterate`'s router.
+> Each reads `current_step`/`completed_steps` **only** when
+> `phase_tasks_has_usable_entries()` says the config has no `phase_tasks[]` evidence
+> whatsoever — i.e. only a config the v1 `update_step` path touched *before* this
+> sub-iterate landed, never an ongoing fallback for a post-s5 config. Without these four,
+> a pre-s5 standalone config either silently loses its completed-phase history on
+> promotion to a driven run, deadlocks forever (nothing else ever calls `update_step` to
+> seed `phase_tasks[]`), or — for an already-FINISHED legacy run — misreports its phase
+> forever (no later event ever re-triggers `update_step` for a run with no phases left to
+> run). See that sub-iterate's ADR for the full case-by-case rationale.
 >
 > The phase skills used to derive "pipeline vs standalone" from
-> `status == "in_progress" AND current_step == <my phase>`, which is FALSE for every
+> `status == "in_progress" AND current_step == <my phase>`, which was FALSE for every
 > driven phase past the first — so every dispatched phase self-classified as standalone
 > and stamped its artifacts `"mode": "standalone"` (which `_validate_test` then rejects,
 > deadlocking the run). Fixed in `iterate-2026-07-14-phase-invocation-mode`: the
-> invocation mode is now resolved **only** from the dispatch token — see § Invocation
-> mode below. A scalar `current_step` could not have answered the question even if it
-> *were* maintained: the frontier is split-qualified (`plan/01-core` vs `plan/02-ui` share
+> invocation mode is resolved **only** from the dispatch token — see § Invocation mode
+> below. A scalar `current_step` could not have answered the question even if it had
+> stayed maintained: the frontier is split-qualified (`plan/01-core` vs `plan/02-ui` share
 > a phase name), so it cannot identify *which* task you are.
 
 **`runConditions` is frozen at run creation.** Mid-run env changes
@@ -1956,8 +1960,8 @@ at all, so it has no Stop hook.)
   near-simultaneous invocations must not be able to split the claim across two
   different roots (doubt-review D4). The winner resolves which phase(s) to audit from SESSION STATE
   via `phase_quality.resolve_engaged_phases()` (run config `phase_tasks[]` —
-  the v2 authority — OR-ed with the v1 `current_step` / `completed_steps`, plus
-  `status` + `events.jsonl`), **not** from
+  the sole authority since campaign `p4-04-retire-write-once-steps` retired the
+  v1 `current_step` / `completed_steps` fields — plus `status` + `events.jsonl`), **not** from
   `CLAUDE_PLUGIN_ROOT`. The plugin root is now only a recognition gate
   (`phase_from_plugin_root(...) is None` → foreign-plugin no-op). This replaces
   the old "each plugin audits its own plugin-root phase" fan-out, which audited
@@ -2049,7 +2053,7 @@ evidence (plan § 4.5).
 | W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
 | Sec1 | security (out-of-band) | FAIL | 1 | `.shipwright/compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]`. Audits the standalone `/shipwright-security` skill — runs from the security skill's Stop hook, not as a pipeline gate. |
 | Sec2 | security (out-of-band) | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `.shipwright/compliance/compliance_overrides.log`. Audits the standalone security skill, not a pipeline phase. |
-| Cmp1 | compliance | WARN | 2 | `.shipwright/compliance/dashboard.md` mentions every `run_config.completed_steps` phase (Tier-2, redundant with C2) |
+| Cmp1 | compliance | WARN | 2 | `.shipwright/compliance/dashboard.md` mentions every phase in `run_config.phase_tasks[]`'s completed set (Tier-2, redundant with C2) |
 | Cmp2 | compliance | FAIL | 1 | `traceability-matrix.md` coverage ≥ `shipwright_compliance_config.json.enforcement.rtm_coverage_min` (default 80%) |
 | D1 | design | FAIL | 1 | ≥1 artifact: `.shipwright/designs/mockups/*.html` OR `.shipwright/agent_docs/screens.md` OR `.shipwright/agent_docs/user-flow.md` |
 | D2 | design | WARN | 2 | Both `.shipwright/agent_docs/screens.md` and `.shipwright/agent_docs/user-flow.md` present + non-empty |
@@ -2416,7 +2420,7 @@ Mode* step consume its `mode`, so the two can never disagree. The mode logic its
 in `shared/scripts/lib/phase_invocation_mode.py`.
 
 **The dispatch token is the authority** — a phase skill must NOT read run-config state to
-decide its mode (see the `current_step` note under the schema above; a drift test,
+decide its mode (see the retired-`current_step` note under the schema above; a drift test,
 `integration-tests/test_phase_skill_invocation_mode_canon.py`, enforces this in both
 directions across all 7 driven skills).
 
@@ -2876,8 +2880,8 @@ contain `shipwright_run_config.json`.
    - Phase-keyword match (test / deploy / compliance / changelog / design / plan) → emit suggestion pointing at the matching slash command.
    - No phase match → delegate to `classify_for_iterate` (wraps `plugins/shipwright-iterate/scripts/lib/classify_intent.py`), which classifies FEATURE / BUGFIX / REFACTOR and emits an `/shipwright-iterate --type` hint.
 3. **`status == "in_progress"`** → `handle_in_progress_pipeline`:
-   - Phase-keyword match and phase != `current_step` → intent-mismatch warning (suggests standalone slash command or `/shipwright-run`).
-   - **Post-test fallback:** no phase-keyword match and `test ∈ completed_steps` → delegate to `classify_for_iterate`. This prevents the "stale limbo" where post-test code-change prompts get silently dropped while `changelog`/`deploy`/`compliance` are still pending.
+   - Phase-keyword match and phase != current phase (`phase_tasks[]`-derived; `"unknown"` when it gives no signal) → intent-mismatch warning (suggests standalone slash command or `/shipwright-run`).
+   - **Post-test fallback:** no phase-keyword match and `test` is in the `phase_tasks[]`-derived completed set → delegate to `classify_for_iterate`. This prevents the "stale limbo" where post-test code-change prompts get silently dropped while `changelog`/`deploy`/`compliance` are still pending.
    - Otherwise → silent.
 4. **Any other status** → silent.
 
@@ -2904,8 +2908,9 @@ Called by `orchestrator.py:update_step()` before marking a phase complete. Retur
 > Plan v7 Option Z removed the `compliance` row — compliance is no
 > longer a pipeline phase, so it has no `update-step` gate. The
 > `_validate_compliance` function is retained only for backwards
-> compat with legacy `completed_steps=["...","compliance"]` entries
-> that went through the phase before the v7 migration.
+> compat with legacy configs recording `"compliance"` as a completed
+> phase (pre-v7, and pre-campaign-`p4-04-retire-write-once-steps` in
+> whichever field a given config carries it).
 
 **Override mechanism:** `--force` on `update-step` overrides the **verdict**, never the
 **check**. The validator runs either way; what `--force` changes is that ask-level
@@ -2946,7 +2951,7 @@ re-runs the gate) does not duplicate inform notes into the tracked dashboard.
 > Before iterate-2026-07-27-phase-gate-override-evidence, `--force` skipped
 > `validate_phase` **entirely**: nothing knew what the gate would have said, nothing
 > recorded that an override happened, and inform-level notes were dropped on that
-> path too. Afterwards `completed_steps` said only "this phase completed" — a phase
+> path too. Afterwards the run config said only "this phase completed" — a phase
 > that passed cleanly and one that was waved through left byte-identical state,
 > which FR-01.01 requires to be distinguishable.
 >
@@ -3157,6 +3162,7 @@ directly. `full` mode is an explicit operator fallback and is counted.
 | Artifact | Created By | Updated By |
 |----------|-----------|-----------|
 | `CLAUDE.md` | project | — |
+| `CONTEXT.md` (target project root, domain glossary) | `/shipwright-project` interview (`shared/scripts/tools/write_context_term.py`, one `Language` entry per sharpened term, `file_lock` + `durable_atomic_write`) | the same producer on every re-sharpen (idempotent upsert; `Relationships` / `Flagged ambiguities` preserved but never written — no producer for either yet, hand-edit only, never interleaved with a running interview's writes). Format SSoT: `shared/context-format.md`. **Read via `shared/scripts/tools/context_md_format.py`'s `read_terms()`** — the sanctioned way to read sharpened terms back (never import the write-side internals or re-derive the parser); matching is exact-case, exact-prose, no folding. No pipeline reader calls it yet — it exists for a future consumer (e.g. P4.2's grill-trace completeness gate) to wire against without forking the parser. |
 | `.gitignore` (canonical `.shipwright/` artifact block) | adopt (Step E.6 CLI `shared/scripts/lib/gitignore_canon.py`), project (`write-project-config.py`, `--status complete`, in-code) | adopt/project re-runs (idempotent back-fill via `shared/scripts/lib/gitignore_canon.merge_canonical_block`). SSoT = `shared/templates/shipwright-gitignore.template`; line-level merge adds only missing rules inside a managed BEGIN/END block (never duplicates). Drift between the template and the framework's own `.gitignore` block is guarded by `shared/tests/test_gitignore_template_congruent.py`; a future ADR adding a gitignored `.shipwright/` dir must edit the template (auto-propagates to all projects). Manual self-heal of an existing project: `uv run shared/scripts/lib/gitignore_canon.py --project-root <path>`. (Adopt runs it as a standalone CLI step — not inside the grandfathered `generate_adoption_artifacts.py` — to respect the bloat baseline. iterate-2026-05-30-gitignore-canon-propagation) **Iterate self-heal (campaign 2026-06-08-triage-outbox-delivery / D3):** `setup_iterate_worktree.py` step 4.6 calls `shared/scripts/lib/gitignore_selfheal.self_heal_gitignore(worktree)` — a guarded `chore` commit on the iterate branch that back-fills the canon block into a managed repo whose plugin cache predates a template revision (sibling of the step-4.5 `.gitattributes` self-heal; merge logic single-sourced in `gitignore_canon.plan_merge`). This re-materializes the block that keeps the per-tree `.shipwright/triage.outbox.jsonl` buffer ignored, shipping the fix in the PR. No-op in the monorepo (block already present). |
 | `conventions.md` | project | write_decision_log.py (convention impact), reflection protocol (build, test, deploy, iterate) |
 | `decision_log.md` | project (init) | plan, build, deploy (via write_decision_log.py); iterate writes a per-run drop under `.shipwright/agent_docs/decision-drops/` (write_decision_drop.py) → folded into `decision_log.md` at `/shipwright-changelog` via `aggregate_decisions.py`. **Iterate A.3 (2026-05-21)**: per-field length is hard-rejected at write time (500 char budget); overflow goes into `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` and is linked via `--spec-ref`. Drop schema: [shared/schemas/decision_drop.schema.json](../shared/schemas/decision_drop.schema.json). |
@@ -3195,7 +3201,7 @@ Executed by the orchestrator between each skill invocation (orchestrate SKILL.md
 
 1. **Phase Validation & Completion** — `update-step --status complete` triggers `phase_validators.py`. If ASK issues found, asks user before proceeding.
 2. **Record Phase Event** — `record_event.py --type phase_completed --phase {phase}` appends to `shipwright_events.jsonl`.
-3. **Upstream Success Check** — Reads `shipwright_run_config.json`, verifies previous phase is in `completed_steps`. Prevents cascading failures.
+3. **Upstream Success Check** — Reads `shipwright_run_config.json`, verifies previous phase is in the `phase_tasks[]`-derived completed set. Prevents cascading failures.
 4. **Incremental Compliance Update** — `update_compliance.py --phase {phase}` (non-blocking subprocess, errors swallowed).
 5. **Dashboard Update** — `update_build_dashboard.py --phase {phase}` refreshes `.shipwright/agent_docs/build_dashboard.md`.
 6. **Tool Counter Reset** — `reset_tool_counter.py` prevents stale counts from triggering false context pressure.
@@ -3205,7 +3211,7 @@ Executed by the orchestrator between each skill invocation (orchestrate SKILL.md
 
 After build completes for a split:
 - `update_step()` calls `get_build_progress()`
-- If `all_done == false`: removes `plan` and `build` from `completed_steps`, sets `current_step = "plan"`
+- If `all_done == false`: resets `plan` and `build`'s `phase_tasks[]` entries back to `awaiting_launch`
 - Records `split_completed` event via `record_event.py --type split_completed --split {name}`
 - Test/changelog/deploy only run after `all_done == true` (compliance
   docs are updated as a side effect after every completed phase)

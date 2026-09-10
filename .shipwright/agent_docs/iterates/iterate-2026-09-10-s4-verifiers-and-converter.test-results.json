@@ -1,0 +1,104 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-10-s4-verifiers-and-converter",
+    "date": "2026-09-10",
+    "unit": {
+      "status": "passed",
+      "passed": 10954,
+      "total": 10954
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Pure Python config-reader migration in shared/scripts/{lib,tools}; no startable web/dev-server/CLI surface of its own -- verification is shared/tests (10144) + shared/scripts/tools/tests (810) + integration-tests (534), plus an empirical CLI dry-run of convert_configs_to_events.py's actual entry point."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "all three consumers (design_checks.py, compliance_compliance.py, convert_configs_to_events.py) read phase_tasks[] as their primary progress signal via the shared completed_phases_with_fallback",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_handoff_phase_status_fallback.py::test_prefers_phase_tasks_over_stale_completed_steps PASSED (plus consumer-level equivalents in test_verifiers_design.py, test_workflow_checks.py, test_convert_configs_to_events.py)"
+        },
+        {
+          "behavior": "the adopted-repo (post s2/s2b) design-skip gate fires from phase_tasks[] alone, without reading completed_steps",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_design.py::test_fr_coverage_skips_for_adopted_repo_via_phase_tasks PASSED"
+        },
+        {
+          "behavior": "a terminal design phase_tasks[] entry (design actually ran) still fails loud when the manifest is missing -- real drift, not a structural skip",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_design.py::test_fr_coverage_fails_when_manifest_missing_but_design_ran_per_phase_tasks PASSED"
+        },
+        {
+          "behavior": "a driven run mid-flight (phase_tasks[] present, nothing terminal yet) trusts its own EMPTY completed set and never falls back to a disagreeing, stale completed_steps",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_handoff_phase_status_fallback.py::test_trusts_an_empty_completed_set_when_phase_tasks_is_present, test_trusts_an_explicitly_empty_phase_tasks_list PASSED (plus per-consumer regression tests in design_checks/compliance_compliance/convert_configs_to_events suites)"
+        },
+        {
+          "behavior": "a phase_tasks[] entry terminalized as skipped counts as completed, matching completed_steps' pre-migration semantics (a standalone-skipped phase was already listed there like one that ran)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_handoff_phase_status_fallback.py::test_folds_skipped_into_completed_same_as_done, shared/scripts/tools/tests/test_convert_configs_to_events.py::test_convert_emits_phase_completed_for_a_skipped_phase PASSED"
+        },
+        {
+          "behavior": "the completed_steps fallback fires ONLY when phase_tasks is absent or not a list -- never merely because nothing has finished yet",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_handoff_phase_status_fallback.py::test_falls_back_when_phase_tasks_is_malformed, test_falls_back_to_completed_steps_when_phase_tasks_absent PASSED"
+        },
+        {
+          "behavior": "a legacy completed_steps list containing an unhashable entry (stray dict/list) is skipped rather than crashing the fallback",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_handoff_phase_status_fallback.py::test_completed_steps_fallback_skips_unhashable_entries PASSED"
+        },
+        {
+          "behavior": "a standalone/v1-only config (no phase_tasks[] at all) still reads completed_steps correctly for all three consumers",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_convert_configs_to_events.py::test_convert_still_reads_completed_steps_for_standalone_config, shared/tests/test_workflow_checks.py::test_cmp1_passes_when_all_phases_mentioned PASSED"
+        },
+        {
+          "behavior": "convert_configs_to_events.py's shared-lib import resolves in its real CLI invocation (uv run ... --dry-run), not only under pytest",
+          "disposition": "tested",
+          "evidence": "empirical probe: `uv run shared/scripts/tools/convert_configs_to_events.py --project-root <fixture> --dry-run` against a hand-built phase_tasks[]+stale-completed_steps config produced the phase_tasks[]-derived events, run 2026-09-10 during this iterate"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-10-s4-verifiers-and-converter",
+    "commit": "bea273043a89f410405271f8a49760f924754135",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
