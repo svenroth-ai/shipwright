@@ -148,3 +148,34 @@ def edit_ac01(root: Path, message: str = "edit AC01") -> str:
         root, BASE_SPEC.replace("The widget must fizz.", "The widget must fizz TWICE."),
         message,
     )
+
+
+# --------------------------------------------------------------------------
+# Shared by both keystone-DETECTIVE-arm test modules (classification and
+# greenness-recomputation) — same drift this module's own first paragraph
+# exists to prevent (code review, low; the pair was found copy-pasted).
+# --------------------------------------------------------------------------
+
+def make_verification(status: str, detail: str = "", run_id=None):
+    """A ``CIVerification`` with the given status, for mocking
+    ``resolve_ci_verification`` in the keystone-detective-arm tests."""
+    from ci_provenance import CIVerification
+    return CIVerification(status, detail, run_id)
+
+
+def make_evidence(status: str, requirements=None, detail: str = "", run_id: int = 1):
+    """An ``ExecutionEvidence`` with the given status, for mocking
+    ``resolve_execution_evidence`` in the keystone-detective-arm tests."""
+    from ci_execution_evidence import ExecutionEvidence
+    return ExecutionEvidence(status, detail, run_id, requirements)
+
+
+def repo_with_ac01_edit(tmp_path: Path, *, committed_executed: str = "pass"):
+    """A two-commit repo: base carries FR-01.01/AC01 bound to one unit test
+    (via :func:`bound_manifest`), head changes ONLY AC01's criterion text —
+    so ``(FR-01.01, AC01)`` is the sole ``changed`` AC, and the committed
+    manifest is byte-identical at both commits (only spec.md moved)."""
+    root = make_repo(tmp_path, manifest_obj=bound_manifest(executed=committed_executed))
+    base_sha = git("rev-parse", "HEAD", cwd=root)
+    head_sha = edit_ac01(root)
+    return root, base_sha, head_sha

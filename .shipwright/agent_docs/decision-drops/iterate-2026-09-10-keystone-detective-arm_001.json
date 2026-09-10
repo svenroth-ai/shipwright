@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-keystone-detective-arm",
+  "date": "2026-09-10",
+  "section": "Iterate — feature: keystone gate post-merge detective arm",
+  "title": "The keystone AC gate's post-merge detective arm",
+  "context": "P3.6's keystone gate is preventive and same-run only; a direct push bypasses it and even PR-merged commits are never re-checked against a real trunk CI run. Triage card trg-a05c4aba (ruling Q5).",
+  "decision": "Plain importable module only (classify_commit + build_verified_manifest), composing existing cross-commit resolvers. No CLI, no wiring, no ci.yml drift test -- per external Architecture Review scope reduction.",
+  "consequences": "A tested, callable detective classifier exists for a future consumer to invoke; ships dormant by design, no active control yet. Deferred follow-ups (drift fix, periodic consumer) must land in that order.",
+  "rationale": "Composing with resolve_ci_verification/resolve_execution_evidence (not the preventive gate's own same-run producer) is what makes this genuinely detective. Seven-way outcome taxonomy lets callers distinguish failure modes, never an open-ended TBD.",
+  "rejected": "Original CLI-shaped brief (disproportionate, no bound consumer); a stored baseline ledger (already rejected in P3.6's own ruling Q1); per-layer duplicate-id scoping (would reintroduce last-write-wins ambiguity).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-keystone-detective-arm.md"
+}

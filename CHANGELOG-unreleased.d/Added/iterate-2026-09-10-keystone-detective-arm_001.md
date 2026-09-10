@@ -1,0 +1,1 @@
+Keystone AC gate post-merge detective arm: classify_commit composes resolve_ci_verification/resolve_execution_evidence to judge an already-merged commit against CI-verified trunk evidence (ruling Q5). Plain importable module, no CLI/wiring yet.
