@@ -1,0 +1,1 @@
+test(requirement-elicitation): replace the hardcoded CITING_DOCS list in test_requirement_elicitation_refs.py with dynamic discovery of reference docs carrying the elicitation-surface marker (FR-01.16 AC09)

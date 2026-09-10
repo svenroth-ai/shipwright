@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p4-3-elicitation-site-discovery",
+  "date": "2026-09-10",
+  "section": "FR-01.16 AC09",
+  "title": "Dynamic discovery of requirement-elicitation citing docs",
+  "context": "test_requirement_elicitation_refs.py's CITING_DOCS was a hardcoded 4-tuple; FR-01.16 AC09 requires the set be established by looking, not by a list someone must remember to extend.",
+  "decision": "Replaced CITING_DOCS with discover_elicitation_reference_docs(root), globbing plugins/*/skills/*/references/*.md for the 'recommended answer' marker (verified unique to the 4 known docs). Split into _elicitation_discovery.py + two test files for the 300-LOC cap. See ADR for full external-review disposition table.",
+  "consequences": "A new elicitation-surface doc carrying the marker is reverse-checked for the citation automatically, no test-file edit needed. Marker stays a prose phrase (not a structural marker) by deliberate scope-bounded rejection -- editing it would touch shipwright-adopt's step-c-interview.md, out of scope.",
+  "rationale": "Mirrors the repo's established forward/reverse SSoT meta-test pattern (test_touches_build_python_inputs_sync.py). Subset check (not exact-equality) for AC1 avoids reintroducing the maintenance burden AC09 removes.",
+  "rejected": "Keying discovery on the citation string itself (collapses discovery and the reverse check); exact-set equality for the regression pin (blocks legitimate additions); a structural HTML-comment marker (would require write access to shipwright-adopt, out of scope).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-p4-3-elicitation-site-discovery.md"
+}
