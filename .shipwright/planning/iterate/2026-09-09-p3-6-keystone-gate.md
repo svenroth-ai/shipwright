@@ -902,9 +902,11 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   *the criterion is gone but its `@covers` tag survives, now pointing at nothing* → remove or
   retarget the tag — is precisely **p3.7(b)'s orphan detector, hard from day one** (SPEC §8 E2);
   building a second copy here is how two gates drift, which this campaign has already paid for
-  once. So p3.6 emits a dedicated **`removed_with_bindings`** key in its JSON on every PR, making
-  the shape visible in the CI log rather than only in this document, and p3.7(b) blocks it. Named
-  explicitly on p3.7(b)'s card (§10 item 8b) alongside the two-PR sequence.
+  once. So p3.6 emits a dedicated **`removed_with_bindings`** key in its JSON on every PR, and (no
+  reviewer asked for this — found during build, Stage-3 doubt review, low) also a `::warning::`
+  workflow-command annotation to stderr when it is non-empty, since the JSON key alone is invisible
+  in an otherwise-green exit-0 CI log unless a consumer already knows to look for it. p3.7(b) blocks
+  it. Named explicitly on p3.7(b)'s card (§10 item 8b) alongside the two-PR sequence.
 - **`pull_request`-only means a direct push to the default branch is ungated** (external plan
   review, glm). Consistent with "the gate is a merge condition", and every change here goes
   through a PR, but it is a *different* trust assumption than "exactly as strong as `ci.yml`":
@@ -942,6 +944,15 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   a fourth reason code and a fourth arm in a module already at the source-size limit, for a flow
   this repo has never performed. Recorded so that the first real occurrence is a two-line
   follow-up rather than a mystery.
+- **The `failed` HARD arm is practically unreachable from `ci.yml` itself, only from the unit-test
+  fixtures that exercise the pure evaluator directly** (no reviewer asked for this — found during
+  build, Stage-3 doubt review, informational). `ci.yml`'s test steps run under `set -e`: a real test
+  failure stops the job before this gate's step ever executes, so in normal CI operation `failed`
+  can only be observed with a stale/hand-edited manifest claiming `executed: "pass"` for a test that
+  did not actually run green this invocation — which the regeneration step (§4, AC-K13) already
+  forecloses. The reason code is not dead code: it is the correct answer for that adversarial input,
+  and `SKIPPED`/`NOT_SELECTED` remain reachable through ordinary `pytest.mark.skip`/deselection. Not
+  a defect, recorded so a future reader does not "simplify" the arm away as unreachable.
 
 ---
 
@@ -1279,6 +1290,26 @@ without checking that the assertion could FAIL against the code being replaced.*
 clearest instance yet — the test read as thorough (real git, a docstring naming the exact hazard)
 and was still vacuous, because the fixture's OTHER conjunct alone already produced the asserted
 outcome.
+
+### 12.1g Stage-1 round 7 (fresh, PASS) → Stage-2 round 3 (fresh, clean) → Stage-3 doubt review
+
+Round 7 PASSED against the §12.1f fixes (all three findings re-verified fresh, not diffed against
+the rejection). Stage-2 then ran a third time and found nothing blocking — the first clean Stage-2
+pass of this PR. Per this campaign's pattern for the keystone gate specifically, Stage-3
+doubt-review then ran once, adversarial, against the full merge-base diff. Six findings, triaged by
+the reviewer's own stated severity rather than treated uniformly, each independently re-verified by
+direct code reading before disposition:
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| Doubt 1 | high (must-address) | `binding_removed`'s `changed`-AC arm tested `head_links` for EMPTINESS only. Dropping ONE of several `@covers` tags on a fat AC (base 2 links, head 1) fell through to the ordinary greenness walk over the survivor, silently discharging the changed criterion's obligation with a test never written about it. | **Accepted-and-fixed.** Added a `len(head_links) < len(base_links)` HARD check in `_keystone_core.evaluate_keystone`, reusing the existing `BINDING_REMOVED` reason code (same remedy: restore the binding) rather than minting a new one. Pushed the file over 300 lines; resolved by extracting `_links_for`/`_walk_links` into a new sibling module `_keystone_links.py`, re-exported — the same pattern `_keystone_finding.py`/`_keystone_layer_gap.py` already set, not a one-off. Pinned by `test_a_partial_binding_reduction_on_a_changed_ac_is_also_binding_removed`, written to fail against the emptiness-only phrasing (the surviving link is green, so a walk-only evaluator reports the PR clean). |
+| Doubt 2 | medium (must-address) | `ac_change_set`'s `for rel_path in _spec_paths(...)` loop calls `.update()` on `head_minted`/`head_fr_digests` per path — last-write-wins. A second spec file added in the SAME PR that re-anchors an already-edited `(fr_id, ac_id)` with its OLD text silently overwrites the genuine edit's digest, reverting it to the base digest and erasing `changed` for a criterion this PR did change — exactly the "no ACs changed" silence the module's own docstring names as the one failure worse than over-firing. | **Accepted-and-fixed.** Added collision detection: each spec path's claim on a `(fr_id, ac_id)` key or bare `fr_id` key is tracked (`head_minted_from`/`head_fr_digest_from`), and a second path claiming a key already claimed by a different path raises `ReadError` rather than silently overwriting. HEAD-only, matching `ac_criteria_digests`'s own base/head asymmetry (a base commit is already merged and cannot be authored by this PR). Pushed the file over 300 lines; resolved by extracting `_digest`/`ac_criteria_digests`/`_unminted_texts` into a new sibling module `_keystone_criteria.py`, re-exported — same extraction pattern as Doubt 1's fix. Pinned by `test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error`. |
+| Doubt 3 | low (acceptable as follow-up) | The design's trust-posture paragraph (§4) claims the keystone gate's exposure to a `ci.yml` edit is "identical" to ruff/diff-coverage/Semgrep/Trivy/Gitleaks, but this gate's OWN verifier source under `shared/scripts/tools/verifiers/` is not itself named in `SENSITIVE_PATH_RE`/the CI-supply-chain patterns the way the others' enforcement points effectively are, so the parity claim slightly overstates. | **Deferred to a follow-up card**, per the reviewer's own explicit disposition ("acceptable as a follow-up card"). Adding these paths to `SENSITIVE_PATH_RE` is a CI-supply-chain-flag change in its own right and out of scope for this PR's diff. Not filed as a triage card by name in this document; tracked in the campaign's pending-tasks list for filing at merge, alongside the Q5/p3.7(b) follow-ups §5's blockquote already names. |
+| Doubt 4 | informational (investigated, no fix needed) | Framed as "`spec_text_at` conflates absent-at-a-commit with a git read failure." | **No code change — the premise does not hold.** Direct read of `spec_text_at` (this file, ~line 150) confirms a genuine three-way return: `None` only when the sha itself does not resolve (a real infra fault), `""` only when the commit resolves but the path genuinely does not exist there, real text otherwise — already correctly disambiguated, and `ac_change_set`'s `if base_text is None or head_text is None: raise ReadError` guard already fails closed on the first case. Traced the deletion scenario by hand: a spec file deleted entirely at head reads `head_text == ""`, `ac_criteria_digests("")` returns no minted keys for that path, and every AC previously minted there falls out of `set(base_minted) - set(head_minted)` into `result.removed` — the existing, correct, non-silent path, not a new gap. No reproduction of "silent laundering" survived independent tracing. |
+| Doubt 5 | low (cheap, optional) | `removed_with_bindings` is deliberately report-only (§7), but its only surface is a JSON array key — invisible in an otherwise green exit-0 CI log unless a consumer already knows to look for it. | **Accepted-and-fixed.** Added a `::warning::` GitHub Actions workflow-command annotation to **stderr** (never stdout — `_emit` prints the JSON payload as the whole of stdout, and every caller, including this CLI's own test harness, does `json.loads` on it) when `removed_with_bindings` is non-empty. Pinned by `test_removing_a_bound_ac_outright_is_reported_but_does_not_block`. |
+| Doubt 6 | informational (cheap, optional) | The `FAILED` HARD reason code is practically unreachable from real `ci.yml` operation, since `set -e` stops the job before this gate's step runs on a genuine test failure. | **Documented, not fixed** — added a §7 bullet. Not dead code: it is the correct answer for the adversarial input it IS reachable from (a stale/hand-edited manifest claiming `pass` for a test that did not run this invocation), which the regeneration step already forecloses in the honest path. Recorded so a future reader does not "simplify" the arm away. |
+
+No second Stage-3 pass was run after the Doubt 1/2 fixes — outside this cascade's established pattern (doubt review runs once, after Stage 1+2 pass), and the fixes are narrow, each independently traced by hand and pinned by a test written to fail against the prior phrasing, per this build's standing discipline. Stage 1 and Stage 2 both re-run fresh against the resulting diff before merge, which is where a fix that broke something else would surface.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 

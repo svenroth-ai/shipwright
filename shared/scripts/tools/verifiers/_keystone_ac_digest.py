@@ -56,6 +56,10 @@ from ._keystone_base_manifest import (  # noqa: E402  (re-exported: one import s
     read_base_manifest,
     require_manifest_shape,
 )
+from ._keystone_criteria import (  # noqa: E402  (re-exported: one import site for callers)
+    ac_criteria_digests,
+    unminted_texts as _unminted_texts,
+)
 from ._layer_coverage_ac import _spec_paths, criteria_digests, spec_text_at  # noqa: E402
 
 #: ``criteria_digests`` hashes the JOINED criteria text, so an FR with NO criteria
@@ -81,54 +85,6 @@ class AcChangeSet:
     def is_empty(self) -> bool:
         return not (self.changed or self.added or self.removed or self.unminted_changed
                     or self.new_frs_without_criteria or self.reader_divergence)
-
-
-def _digest(*parts: str) -> str:
-    return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()
-
-
-def ac_criteria_digests(text: str) -> tuple[dict[tuple[str, str], str], set[str]]:
-    """``({(fr_id, ac_id): digest}, {digest of each UNMINTED criterion})``.
-
-    ``read_all`` returns ``dict[fr_id, list[(ac_id | None, text)]]`` — iterate
-    ``.items()``; iterating the mapping itself yields FR-ID STRINGS.
-
-    Unminted criteria are digested over ``(fr_id, text)``, never bare ``text``:
-    identical boilerplate under two FRs would otherwise collapse to one digest,
-    and an unminted criterion moved verbatim from FR-A to FR-B would cancel out
-    in the set difference and go undetected.
-
-    Raises :class:`ReadError` on a marker that cannot be trusted — a
-    non-canonical ``[AC7]``, two markers on one criterion, or two criteria under
-    one FR sharing a number. Never coerced, never ignored: an untrustworthy
-    marker breaks "never reused", which is the whole basis of AC identity.
-    """
-    minted: dict[tuple[str, str], str] = {}
-    unminted: set[str] = set()
-    try:
-        blocks = ac_identity.read_all(text)
-    except ac_identity.AcIdentityError as exc:
-        raise ReadError(f"acceptance-criteria markers are not trustworthy: {exc}") from exc
-    for fr_id, items in blocks.items():
-        for ac_id, criterion in items:
-            if ac_id is None:
-                unminted.add(_digest(fr_id, criterion))
-            else:
-                minted[(fr_id, ac_id)] = _digest(fr_id, ac_id, criterion)
-    return minted, unminted
-
-
-def _unminted_texts(text: str) -> dict[str, tuple[str, str]]:
-    """``digest -> (fr_id, criterion_text)``, so a finding can quote the
-    criterion rather than only its hash. Re-parses rather than widening
-    :func:`ac_criteria_digests`'s return shape; the only caller reaches here
-    AFTER that call returned, so ``read_all`` cannot raise a second time."""
-    out: dict[str, tuple[str, str]] = {}
-    for fr_id, items in ac_identity.read_all(text).items():
-        for ac_id, criterion in items:
-            if ac_id is None:
-                out[_digest(fr_id, criterion)] = (fr_id, criterion)
-    return out
 
 
 def _active_display_ids(manifest: dict) -> set[str]:
@@ -162,6 +118,16 @@ def ac_change_set(
     head_fr_digests: dict[str, str] = {}
     head_seen_frs: set[str] = set()
     base_seen_frs: set[str] = set()
+    # Which spec path first claimed a HEAD key -- so a second path claiming the
+    # same (fr_id, ac_id) or fr_id can be caught rather than silently OVERWRITE
+    # it (found during build, Stage-3 doubt review, medium). `dict.update`
+    # across spec paths is last-write-wins: a second spec path re-anchoring an
+    # ALREADY-EDITED FR/AC with its OLD text reverts head_minted[key] back to
+    # base_minted[key], erasing `changed` for a criterion this PR did change.
+    # Only HEAD is guarded, matching `ac_criteria_digests`'s own asymmetry: a
+    # base commit is already merged and cannot be authored by this PR.
+    head_minted_from: dict[tuple[str, str], str] = {}
+    head_fr_digest_from: dict[str, str] = {}
 
     for rel_path in _spec_paths(head_manifest, base_manifest):
         base_text = spec_text_at(project_root, base_sha, rel_path)
@@ -171,10 +137,25 @@ def ac_change_set(
             raise ReadError(f"could not read {rel_path} at the {side} commit")
 
         h_minted, h_unminted = ac_criteria_digests(head_text)
+        for key in h_minted:
+            prior = head_minted_from.setdefault(key, rel_path)
+            if prior != rel_path:
+                raise ReadError(
+                    f"{key[0]}/{key[1]} is minted in both {prior!r} and {rel_path!r} at head -- "
+                    "an AC id must anchor to exactly one spec path, never reused across documents."
+                )
         head_minted.update(h_minted)
         head_unminted |= h_unminted
         head_texts.update(_unminted_texts(head_text))
-        head_fr_digests.update(criteria_digests(head_text))
+        h_fr_digests = criteria_digests(head_text)
+        for fr_id in h_fr_digests:
+            prior = head_fr_digest_from.setdefault(fr_id, rel_path)
+            if prior != rel_path:
+                raise ReadError(
+                    f"{fr_id} is heading-anchored in both {prior!r} and {rel_path!r} at head -- "
+                    "one spec file, one namespace today (design §7)."
+                )
+        head_fr_digests.update(h_fr_digests)
         # NON-EMPTY criteria lists only. `read_all` returns a key for EVERY
         # heading-anchored FR id, including one whose leading bullet run is empty
         # -- so keying on the id would report "this reader can see it" for exactly

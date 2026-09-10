@@ -212,6 +212,25 @@ def main(argv: list[str] | None = None) -> int:
         # degradation by key rather than by matching prose (design AC-K9(e)).
         payload["base_manifest_absent"] = base_warning
 
+    if verdict.removed_with_bindings:
+        # No reviewer asked for this -- found during build, Stage-3 doubt review,
+        # low. Report-only by design (see the module-level comment on
+        # `removed_with_bindings`'s home arm), which means a bare exit 0 with
+        # this list buried in JSON is otherwise invisible in a green CI log --
+        # an operator has to already know to look for it.
+        # stderr, never stdout: `_emit` below prints the JSON payload as the
+        # WHOLE of stdout and every caller (`run_gate` here, CI's own step)
+        # does `json.loads` on it -- a stdout line ahead of the JSON would
+        # break every one of them. GitHub Actions recognises `::warning::`
+        # workflow commands on either stream.
+        print(
+            f"::warning::THE KEYSTONE GATE: {len(verdict.removed_with_bindings)} AC(s) with a "
+            "test binding at base were removed in this PR: "
+            f"{', '.join(f'{fr}/{ac}' for fr, ac in sorted(verdict.removed_with_bindings))}. "
+            "This does not block (see design §7); p3.7(b) is the hard gate for an orphaned "
+            "@covers tag.",
+            file=sys.stderr,
+        )
     if verdict.any_hard:
         payload["status"] = "blocked"
         return _emit(payload, EXIT_BLOCKED)

@@ -187,6 +187,23 @@ def test_head_node_present_with_empty_tests_map_is_still_binding_removed():
     assert verdict.unbound == []
 
 
+def test_a_partial_binding_reduction_on_a_changed_ac_is_also_binding_removed():
+    """Stage-3 doubt review, high: the original rule tested EMPTINESS of
+    ``head_links``, never counts. Dropping one of several ``@covers`` tags on a
+    fat AC (base has 2 links, head has 1) used to fall through to the ordinary
+    greenness walk over the survivor -- silently discharging the obligation for
+    the changed criterion with tests that were never about it. Written to FAIL
+    against that phrasing: the surviving link is green, so a walk-only
+    evaluator would report this PR clean."""
+    base = _acs_for("FR-01.01", "AC01", [_link("t1"), _link("t2")])
+    head = _acs_for("FR-01.01", "AC01", [_link("t1")])  # t2's @covers tag dropped
+    verdict = kc.evaluate_keystone(
+        StubChangeSet(changed={("FR-01.01", "AC01")}), head, base,
+    )
+    assert [f.kind for f in verdict.hard] == [kc.BINDING_REMOVED]
+    assert "2 link(s) at base, 1 at head" in verdict.hard[0].detail
+
+
 def test_newly_bound_ac_takes_the_ordinary_greenness_walk_not_unbound():
     """AC-K8(c) — ``base_links == 0, head_links >= 1``."""
     base = _manifest(acs_node={})

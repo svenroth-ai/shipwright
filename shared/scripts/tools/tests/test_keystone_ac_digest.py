@@ -240,3 +240,34 @@ def test_spec_paths_are_the_union_of_both_manifests(repo):
     }
     cs = kd.ac_change_set(repo, base, head, _manifest(), base_manifest)
     assert ("FR-02.01", "AC01") in cs.removed
+
+
+# --------------------------------------------------------------------------
+# Cross-spec-path collision (Stage-3 doubt review, medium)
+# --------------------------------------------------------------------------
+
+def test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error(repo):
+    """No reviewer asked for this at spec time -- found during build, Stage-3
+    doubt review. ``dict.update`` across the ``_spec_paths`` loop is
+    last-write-wins: a SECOND spec file added in this same PR that re-anchors
+    an ALREADY-EDITED ``(fr_id, ac_id)`` with its OLD text used to silently
+    overwrite the genuine edit's digest, reverting ``head_minted`` back to
+    ``base_minted`` and erasing ``changed`` for a criterion this PR did
+    change. That is exactly the "no ACs changed" silence the module's own
+    docstring names as the one failure worse than over-firing. Written to
+    fail against that phrasing: a second head-minted claim on the same id
+    must raise, never silently win or lose."""
+    base = _git("rev-parse", "HEAD", cwd=repo)
+    _commit_spec(repo, BASE_SPEC.replace(
+        "The widget must fizz.", "The widget must fizz TWICE."))
+    second = "docs/second-spec.md"
+    (repo / second).write_text(BASE_SPEC, encoding="utf-8")  # OLD AC01 text, same id
+    _git("add", "-A", cwd=repo)
+    _git("commit", "-q", "-m", "add a second spec re-anchoring FR-01.01/AC01", cwd=repo)
+    head = _git("rev-parse", "HEAD", cwd=repo)
+    head_manifest = _manifest()
+    head_manifest["requirements"]["ns::FR-01.01-dup"] = {
+        "id": "FR-01.01", "status": "active", "spec_path": second,
+    }
+    with pytest.raises(kd.ReadError):
+        kd.ac_change_set(repo, base, head, head_manifest, _manifest())
