@@ -111,7 +111,8 @@ def test_standalone_flag_still_mirrors_load_or_bootstrap(tmp_path):
 def test_bootstrap_fires_only_when_the_file_is_absent(tmp_path):
     config = step_planning._load_or_bootstrap(tmp_path, "plan")
     assert config["standalone"] is True
-    assert config["current_step"] == "plan"
+    assert "current_step" not in config  # retired; v1 update_step advances phase_tasks[] itself
+    assert "phase_tasks" not in config
 
 
 def test_present_empty_object_is_returned_not_bootstrapped(tmp_path):
@@ -244,8 +245,11 @@ def test_no_longer_says_start_from_the_beginning(tmp_path):
 
 def test_blocked_is_distinguishable_from_all_steps_complete(tmp_path):
     """Both carry ``next_step: None``. Only ``blocked`` tells them apart."""
-    write(tmp_path, json.dumps(
-        {"pipeline": ["plan"], "completed_steps": ["plan"], "standalone": True}))
+    # get_next_step reads phase_tasks_progress(), which only needs phase/status.
+    write(tmp_path, json.dumps({
+        "pipeline": ["plan"], "standalone": True,
+        "phase_tasks": [{"phase": "plan", "status": "done"}],
+    }))
     done = step_planning.get_next_step(tmp_path)
     assert done["next_step"] is None and not done.get("blocked")
 

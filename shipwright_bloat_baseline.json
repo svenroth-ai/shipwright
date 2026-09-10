@@ -774,6 +774,13 @@
       "adr": "ADR-121"
     },
     {
+      "path": "shared/scripts/hooks/generate_handoff_on_stop.py",
+      "limit": 300,
+      "current": 420,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md"
+    },
+    {
       "path": "shared/scripts/lib/_host_resource_locking.py",
       "limit": 300,
       "current": 308,
@@ -1266,9 +1273,9 @@
     {
       "path": "shared/tests/test_generate_handoff_on_stop.py",
       "limit": 300,
-      "current": 559,
+      "current": 658,
       "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md"
     },
     {
       "path": "shared/tests/test_generate_session_handoff.py",
@@ -1476,9 +1483,9 @@
     {
       "path": "shared/tests/test_state.py",
       "limit": 300,
-      "current": 360,
+      "current": 380,
       "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md"
     },
     {
       "path": "shared/tests/test_surface_verification.py",

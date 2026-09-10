@@ -102,9 +102,15 @@ def test_mode_less_config_is_not_driven_and_keeps_the_v1_path(tmp_project):
     result = _run_update_step(tmp_project, "build", "in_progress")
 
     assert result.get("driven_run") is not True
-    # v1 path ran: it returned the real config and advanced the state machine.
+    # v1 path ran: it returned the real config and advanced the state machine
+    # (campaign p4-04-retire-write-once-steps, sub-iterate s5: onto
+    # phase_tasks[], not the retired current_step field).
     assert "phase_tasks" in result
-    assert result.get("current_step") == "build"
+    build_task = next(
+        t for t in result["phase_tasks"]
+        if t.get("phase") == "build" and t.get("splitId") is None
+    )
+    assert build_task["status"] == "in_progress"
 
 
 def test_no_run_config_is_not_driven(tmp_project):

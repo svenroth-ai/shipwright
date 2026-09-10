@@ -12,7 +12,7 @@ locks:
 After the storm:
   * the file is always valid JSON (atomic tmp+os.replace => no torn read), and
   * every write from EVERY family survived (no stale-copy clobber):
-      - update_step's ``current_step`` is set,
+      - update_step's v1 ``phase_tasks[]`` entry for the step is upserted,
       - recover_phase_task bumped ``version`` exactly N times, and
       - append_phase_history appended exactly N phase_history entries.
 
@@ -76,8 +76,6 @@ def _seed_config(project_root: Path) -> None:
         "splits_frozen": [],
         "runConditions": {"securityEnabled": False, "splitMode": None, "aikidoClientIdPresent": False},
         "status": "in_progress",
-        "completed_steps": [],
-        "current_step": "project",
         "created_at": "2026-06-13T00:00:00+00:00",
         "phase_history": {},
     }
@@ -108,6 +106,11 @@ def test_three_process_writers_no_truncation_no_lost_update(tmp_path):
 
     # Each family's writes ALL survived (a stale-copy clobber — the F11 bug —
     # would drop some, failing one of these exact counts):
-    assert cfg["current_step"] == "test"                       # orchestrator family
-    assert cfg["phase_tasks"][0]["version"] == 1 + N_ITERS     # phase-task family
-    assert len(cfg["phase_history"]["build"]) == N_ITERS       # phase-history family
+    test_task = next(
+        t for t in cfg["phase_tasks"]
+        if t.get("phase") == "test" and t.get("splitId") is None
+    )
+    assert test_task["status"] == "in_progress"                 # orchestrator family
+    build_task = next(t for t in cfg["phase_tasks"] if t.get("phaseTaskId") == "ptk-conc01")
+    assert build_task["version"] == 1 + N_ITERS                 # phase-task family
+    assert len(cfg["phase_history"]["build"]) == N_ITERS        # phase-history family

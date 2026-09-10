@@ -101,21 +101,21 @@ def phase_tasks_progress(run_config: dict[str, Any]) -> tuple[str | None, set[st
     p4-04-retire-write-once-steps, sub-iterate s3 code review — the three
     callers had each carried a byte-for-byte copy).
 
-    ``phase_tasks[]`` is authority for progress on a driven (v2) run, not
-    the write-once ``current_step``/``completed_steps`` fields, which
-    ``config_factory`` stamps once at run creation and the v2 lifecycle
-    never advances. ``None`` current + an empty completed set mean "no
-    confident phase_tasks[] evidence AT ALL" (e.g. a v1-only standalone
-    config) — every caller falls back to ``current_step``/``completed_steps``
-    in that case, and ONLY that case: a phase counts as "current" the moment
-    it has ANY ``phase_tasks[]`` entry that isn't finished yet — including
-    one still ``backlog``/``awaiting_launch`` (queued, not yet claimed), not
-    only an active (``in_progress``/``failed``) one. External plan review
-    flagged an earlier version that required an ACTIVE status: a run
-    mid-transition (previous phase done, successor task materialized but not
-    yet claimed) would then read as "no confident signal" and fall back to
-    the very write-once fields this campaign retires, for what is otherwise
-    a perfectly healthy driven run.
+    ``phase_tasks[]`` is the SOLE authority for progress. The write-once
+    ``current_step``/``completed_steps`` fields, and every writer of them,
+    are retired (campaign p4-04-retire-write-once-steps, sub-iterate s5):
+    the v1 ``update_step`` path now advances ``phase_tasks[]`` directly, so
+    no caller falls back to those fields any more — ``None`` current + an
+    empty completed set mean only "no ``phase_tasks[]`` evidence at all"
+    (an absent or malformed array; there was never anything else to read).
+    A phase counts as "current" the moment it has ANY ``phase_tasks[]``
+    entry that isn't finished yet — including one still
+    ``backlog``/``awaiting_launch`` (queued, not yet claimed), not only an
+    active (``in_progress``/``failed``) one. External plan review flagged an
+    earlier version that required an ACTIVE status: a run mid-transition
+    (previous phase done, successor task materialized but not yet claimed)
+    would then read as "no confident signal" — a regression this module no
+    longer has a fallback to hide behind.
 
     A phase can hold MULTIPLE entries when it is split (``plan``/``build``
     under ``splits_frozen``): it counts as complete only once every one of
@@ -199,37 +199,28 @@ def phase_tasks_has_usable_entries(run_config: dict[str, Any]) -> bool:
     )
 
 
-def completed_phases_with_fallback(run_config: dict[str, Any]) -> set[str]:
-    """Completed phase names — ``phase_tasks[]`` when
-    :func:`phase_tasks_has_usable_entries` trusts it, falling back to the
-    write-once ``completed_steps`` otherwise (absent, malformed, empty, or
-    partially malformed ``phase_tasks[]`` — no confident evidence at all).
+def completed_phases(run_config: dict[str, Any]) -> set[str]:
+    """Completed phase names, from ``phase_tasks[]`` alone.
 
-    Deliberately does **not** fall back merely because a trusted
-    ``phase_tasks[]``'s completed set is empty — a driven run mid-flight
-    (nothing finished YET) is itself an authoritative empty answer, not a
-    signal to consult the inert, possibly-stale ``completed_steps``.
+    Empty when :func:`phase_tasks_has_usable_entries` says the array is
+    absent, malformed, empty, or partially malformed — "no confident
+    evidence" now means "no completed phases", not a cue to consult the
+    write-once ``completed_steps`` (retired campaign
+    p4-04-retire-write-once-steps, sub-iterate s5 — every writer advances
+    ``phase_tasks[]`` directly, so it is always the complete picture, and
+    there is no other source left to fall back to).
 
     A phase counted here folds ``done`` AND ``skipped`` together (via
-    ``FINISHED_STATUSES``), matching ``completed_steps``'s own pre-migration
+    ``FINISHED_STATUSES``), matching ``completed_steps``'s own pre-retirement
     semantics.
 
     Shared by design_checks.py / compliance_compliance.py /
     convert_configs_to_events.py — one function, one contract, instead of
     three call sites re-deriving the same rule. Full rationale and review
-    history: campaign p4-04-retire-write-once-steps, sub-iterate s4 ADR.
+    history: campaign p4-04-retire-write-once-steps, sub-iterate s4 ADR
+    (introduced this shape as a completed_steps-fallback; s5's ADR records
+    the fallback's removal).
     """
-    if phase_tasks_has_usable_entries(run_config):
-        _, completed = phase_tasks_progress(run_config)
-        return completed
-    steps = run_config.get("completed_steps")
-    if not isinstance(steps, list):
+    if not phase_tasks_has_usable_entries(run_config):
         return set()
-    # A non-string entry (a stray dict/list from a hand-edited or corrupted
-    # config — old configs never validated this list) is UNHASHABLE; a bare
-    # `set(steps)` would raise TypeError here instead of the "skip the
-    # malformed entry" behaviour every other reader of this list gives it
-    # (external code review, OpenAI: this call site is new, the hazard is
-    # not — mirrors adopted_phase_tasks.backfill_missing_phase_tasks's own
-    # guard for the identical shape).
-    return {step for step in steps if isinstance(step, str)}
+    return phase_tasks_progress(run_config)[1]

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-s5-retarget-v1-then-drop",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T08:23:01.776887+00:00",
+      "disposition": "7-item Self-Review checklist completed and recorded in the iterate ADR's Self-Review section (Spec Compliance, Error Handling, Security Basics, Test Quality, Performance Basics, Naming & Structure, Affected Boundaries).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan has no data-migration story for in-flight runs. Any run created before this change whose state JSON contains `current_step`/`completed_steps` but empty or partial `phase_tasks[]` will, after this ships, have a v1 `update_step` call retargeted to a list that doesn't reflect its actual progress. Retargeting \"first\" makes this worse, not better — the retargeted writer will overwrite/stamp `phase_tasks[]` based on its own bookkeeping while the run's historical progress lives only in the dropped fields.",
+          "suggestion": "Either (a) define a one-time normalization on read/load that reconstructs `phase_tasks[]` from `current_step`/`completed_steps` for pre-existing runs, or (b) explicitly state that only runs started post-s4 are in scope and old runs are terminal/abandoned. Silence here is the biggest break-risk in the change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "\"Retarget first, then delete\" is described as sequential but scoped as a single diff. If both happen in one PR, the retarget is unobservable — there's no window where the retargeted path runs in production before the fields are dropped, so a bug in the retarget is discovered only after the old fields (the recovery source) are gone. The ordering rationale only pays off if the retarget ships separately.",
+          "suggestion": "Either split into two diffs (retarget + grep-gate, then drop), or keep one diff but add a test asserting the v1 path produces a `phase_tasks[]` state equivalent to what the v2 path would have produced for the same inputs, before the deletion lands.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The acceptance criteria say \"no reader anywhere keys on current_step or completed_steps\" but the plan only mentions grep as evidence. Grep misses dynamic key access (`state[fieldName]`, `getattr`, JSON consumers outside the repo — dashboards, exports, webhooks, scripts, log-based analytics keyed on those fields). If any external consumer reads the emitted run state, dropping the fields silently breaks it.",
+          "suggestion": "Enumerate the consumers explicitly (internal grep + a documented list of external/schema consumers), and confirm the docs schema block is the only external contract. If there's an API or event emission that includes the run state, version-bump or note the breaking change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The retargeted `update_step` must decide what \"advance\" means against `phase_tasks[]` — append, mark-complete-next, set index? Off-by-one or idempotency semantics (what happens on a retried/duplicate update_step call?) are unspecified. If v1 callers can retry, a non-idempotent append will corrupt the list.",
+          "suggestion": "Specify the retarget semantics in the plan and cover the duplicate-call case with a test, matching whatever v2 already does.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "No mention of updating or adding tests for the v1 path itself. If existing tests assert on `current_step`/`completed_steps` output, they'll fail at deletion time — fine — but the plan should state that test updates are in-scope, otherwise the \"drop is mechanical\" claim is misleading.",
+          "suggestion": "Add \"tests referencing the old fields are updated in the same diff\" to the acceptance criteria.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan says to “advance `phase_tasks[]`” but does not define the mapping from v1 `update_step` inputs to a task (task identity, ordering, completion state, and terminal behavior). Retargeting without preserving v1’s exact progression semantics can silently advance the wrong task or skip one.",
+          "suggestion": "Specify the canonical lookup and mutation rules, including how `update_step` identifies the active task and what constitutes an already-completed or final step.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Removing both persisted fields can break existing in-flight runs, stored snapshots, fixtures, or externally supplied v1 payloads that still contain only `current_step`/`completed_steps`. A source grep cannot establish compatibility for data written before deployment.",
+          "suggestion": "Establish the deployed-data strategy before deletion: migrate persisted records, derive `phase_tasks[]` when loading legacy records for one release, or explicitly prove no persisted/in-flight state survives the rollout.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“No reader anywhere” needs to cover more than application code: schemas/types, validators, serializers/deserializers, fixtures, test assertions, API contracts, generated artifacts, and operational scripts may encode the old fields without acting as ordinary readers. The mini-plan does not name these surfaces.",
+          "suggestion": "Add an explicit repository-wide inventory and update list, then run targeted tests for v1 updates and serialization/validation boundaries after removal.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not address repeated or out-of-order `update_step` calls. If `phase_tasks[]` is mutated by index or inferred “next incomplete” task, retries/concurrent hook events may mark multiple tasks complete or regress state.",
+          "suggestion": "Preserve idempotency with a stable task/step identifier and test duplicate, skipped, final-step, and concurrent/replayed update events.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Updating the documentation schema in the same diff is necessary, but the plan lacks a verification that the documented `phase_tasks[]` shape matches the runtime schema after old-field emission is removed. Drift here would mislead hook implementers immediately.",
+          "suggestion": "Derive the documentation block from the authoritative schema where feasible, or add a focused contract test/review check comparing the documented fields to emitted payloads.  Overall, retargeting before deletion is the right direction, but the plan needs an explicit legacy-state compatibility decision and precise v1-to-task progression semantics before the drop is safe. The proposed grep is useful verification, not sufficient migration evidence.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T08:23:56.169689+00:00",
+      "disposition": "All findings recorded and dispositioned in the iterate ADR's External-Plan-Review-Findings table (legacy-state migration, idempotency, doc-consumer inventory all addressed and fixed).",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review: s5 — Retarget v1 update_step onto phase_tasks[], then drop legacy fields\n\n## Findings\n\n- **Category: risk — Severity: high**\n  **Finding:** The plan has no data-migration story for in-flight runs. Any run created before this change whose state JSON contains `current_step`/`completed_steps` but empty or partial `phase_tasks[]` will, after this ships, have a v1 `update_step` call retargeted to a list that doesn't reflect its actual progress. Retargeting \"first\" makes this worse, not better — the retargeted writer will overwrite/stamp `phase_tasks[]` based on its own bookkeeping while the run's historical progress lives only in the dropped fields.\n  **Suggestion:** Either (a) define a one-time normalization on read/load that reconstructs `phase_tasks[]` from `current_step`/`completed_steps` for pre-existing runs, or (b) explicitly state that only runs started post-s4 are in scope and old runs are terminal/abandoned. Silence here is the biggest break-risk in the change.\n\n- **Category: approach — Severity: medium**\n  **Finding:** \"Retarget first, then delete\" is described as sequential but scoped as a single diff. If both happen in one PR, the retarget is unobservable — there's no window where the retargeted path runs in production before the fields are dropped, so a bug in the retarget is discovered only after the old fields (the recovery source) are gone. The ordering rationale only pays off if the retarget ships separately.\n  **Suggestion:** Either split into two diffs (retarget + grep-gate, then drop), or keep one diff but add a test asserting the v1 path produces a `phase_tasks[]` state equivalent to what the v2 path would have produced for the same inputs, before the deletion lands.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The acceptance criteria say \"no reader anywhere keys on current_step or completed_steps\" but the plan only mentions grep as evidence. Grep misses dynamic key access (`state[fieldName]`, `getattr`, JSON c […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The plan says to “advance `phase_tasks[]`” but does not define the mapping from v1 `update_step` inputs to a task (task identity, ordering, completion state, and terminal behavior). Retargeting without preserving v1’s exact progression semantics can silently advance the wrong task or skip one.  \n   **Suggestion:** Specify the canonical lookup and mutation rules, including how `update_step` identifies the active task and what constitutes an already-completed or final step.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Removing both persisted fields can break existing in-flight runs, stored snapshots, fixtures, or externally supplied v1 payloads that still contain only `current_step`/`completed_steps`. A source grep cannot establish compatibility for data written before deployment.  \n   **Suggestion:** Establish the deployed-data strategy before deletion: migrate persisted records, derive `phase_tasks[]` when loading legacy records for one release, or explicitly prove no persisted/in-flight state survives the rollout.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** “No reader anywhere” needs to cover more than application code: schemas/types, validators, serializers/deserializers, fixtures, test assertions, API contracts, generated artifacts, and operational scripts may encode the old fields without acting as ordinary readers. The mini-plan does not name these surfaces.  \n   **Suggestion:** Add an explicit repository-wide inventory and update list, then run targeted tests for v1 updates and serialization/validation boundaries after removal.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The plan does not address repeated or out-of-order `update_step` calls. If `phase_tasks[]` is mutated by index or inferred “next incomplete” task, retries/concurrent hook events may mark multiple tasks complete or regress state.  \n   ** […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-project/scripts/write_run_config.py",
+          "line": 58,
+          "finding": "The new phase_tasks[] seed {\"phase\": \"project\", \"splitId\": None, \"status\": \"awaiting_launch\"} was missing every other field PhaseTask.required mandates (phaseTaskId, sessionUuid, version, title, slashCommand, prerequisites, executionCount, createdAt). _upsert_v1_phase_task only ever mutates status/startedAt/completedAt on a match, so the incomplete shape would have persisted indefinitely.",
+          "suggestion": "Build the seed via a small local full-shape helper mirroring build_v1_phase_task's fields.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/legacy_migration.py",
+          "line": 35,
+          "finding": "Docstring still said \"completed_steps is left untouched\" -- a stale reference to a field this same diff retires everywhere else, inconsistent with constants.py's already-updated phrasing.",
+          "suggestion": "Update the docstring to match constants.py's phase_tasks[]-primary/completed_steps-legacy-only phrasing.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T08:49:53.683139+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "idempotency/correctness",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The round-1 fix (_seed_legacy_phase_task_history seeding only the historical completed_steps phases) fully resolves the legacy-cutover history-loss bug and the one-time cutover remains self-healing / eventually converges for a pre-s5 legacy run. — Traced two consecutive Stop-hook invocations for a legacy config with current_step='build', completed_steps=['project','design','plan'], no phase_tasks[], where build genuinely is NOT yet complete at the first Stop event. Invocation 1: cutover fires, historical_phases=['design','plan','project'] get seeded as 'done', but no entry is created for 'build' (excluded by construction). _detect_phase_complete('build', ...) is False, so _run_phase_completion is not called this round -- no phase_tasks[] entry for build is created. Invocation 2: phase_tasks[] now has 3 valid entries, so phase_tasks_has_usable_entries() flips True, and the cutover guard (current_phase is None and not usable) never fires again. phase_tasks_progress() only derives 'current' from phases already present in phase_tasks[], so current_phase is permanently None from this point -- build is never picked up again.",
+          "suggestion": "Also seed a non-terminal (in_progress) phase_tasks[] entry for current_phase itself in the same write as the historical entries, so a later invocation's phase_tasks_progress() can resolve it as current without the cutover firing again; the existing update-step call for a same-round completion then finds and upgrades that same entry to done via the standard phase+splitId=None match.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency/hidden-coupling-with-an-existing-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The new direct write in _seed_legacy_phase_task_history is a safe way to persist the legacy-history seed against shipwright_run_config.json. — config_io.py documents the established contract for shipwright_run_config.json: writes go through save_run_config, which is atomic (tmp + os.replace) and whose advisory run-config lock is held by callers (update_step, phase_task_lifecycle). _seed_legacy_phase_task_history did neither -- a plain run_config_path.write_text(...) with no lock and no tmp+replace, against the same file every other writer in the tree treats as lock-protected and atomically replaced. A process kill mid-write (Stop hooks can be time-boxed/killed) can leave a truncated/corrupt config, and a genuine race with a concurrent update-step subprocess is a lost-update window.",
+          "suggestion": "Route the write through the same shared advisory lock (lib.file_lock on the shipwright_run_config.json.lock path every other writer coordinates through) and the same atomic-write primitive (lib.atomic_write.durable_atomic_write) instead of a bare write_text -- both live in shared/scripts/lib, so no ADR-045 cross-plugin boundary issue, unlike the phase_tasks[]-shape duplication elsewhere in this diff.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary/contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: state.py's detect_current_phase and suggest_iterate.py, which read-only-recompute their own legacy cutover on every call, could share the same self-disabling-write failure class as generate_handoff_on_stop.py's cutover. — Traced both readers: neither persists anything -- they recompute fresh on every call, so they cannot self-disable the way the Stop-hook's new write-path can.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary/contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: config_factory.create_config's standalone-to-driven merge cutover shares the same current-phase-orphaning failure mode the Stop-hook cutover had. — create_config's merge always produces a fresh schemaVersion:2 config with a full phase_tasks[] set, including an entry for the actually-current phase via the ordinary v2 lifecycle machinery -- so phase_tasks_progress()'s schemaVersion-gated branch correctly resolves 'current' going forward. It does not share the Stop-hook cutover's failure mode.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage/hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The phase_quality._engagement.py executionCount=1 stamp reinstatement and the completed_phases_with_fallback -> completed_phases rename could have left an orphaned old-name reference or an inconsistent call site somewhere in the diff. — Checked all call sites (design_checks.py, compliance_compliance.py, convert_configs_to_events.py) -- all route through the renamed shared function, grep-clean for the old name.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T09:30:04.063011+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_factory.py` (create_config, `initial_task` vs `merged_tasks`)",
+          "line": null,
+          "finding": "create_config` marks a standalone-completed project as `status: \"skipped\"` (via `_build_initial_phase_task`, which per `_engagement.py` has `executionCount: 0` and no execution history), while every other standalone-completed phase gets a `build_v1_phase_task(..., \"done\")` entry with `executionCount: 1` — which `_task_has_run` treats as \"ran\". Since s5 removed the `completed_steps` union that used to keep the skipped-project engaged, `phase_is_engaged(\"project\", ...)` is now False for exactly the project phase on the same run where design/plan/build (all equally completed standalone) are engaged. Phase-Quality silently audits fewer phases for `project` than for its siblings on the identical config shape.",
+          "suggestion": "Either bump the skipped initial task's `executionCount` to 1 (it did run — standalone), or mark merged tasks `skipped` + an explicit marker, so all standalone-completed phases engage uniformly. Add a test asserting `phase_is_engaged` for every phase in `prior_completed` post-merge.  2. `state.detect_current_phase` and `suggest_iterate` lack the one-time legacy cutover every other reader got",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "generate_handoff_on_stop` and `config_factory.create_config` both gained a deliberate one-time `current_step`/`completed_steps` cutover for pre-s5 configs already on disk (so a legacy standalone run self-heals by triggering `update-step`, which seeds `phase_tasks[]`). `detect_current_phase` and `suggest_iterate` got no equivalent: a pre-s5 standalone config mid-pipeline now misreports its phase (the changed test itself pins `detect_current_phase == \"build\"` for a run whose `current_step` was `changelog`, and `test_detect_phase_v1_only_completed_steps...` pins a finished run reporting `\"build\"` instead of `\"complete\"`). A finished standalone run reading `\"build\"` forever is a user-visible wrong answer, and unlike the handoff path there is no mechanism that ever corrects it — the config never gets a `phase_tasks[]` write if nothing else touches it.",
+          "suggestion": "Either give both readers the same gated cutover (`current_step is None and not phase_tasks_has_usable_entries(...)`), or document explicitly in the s5 ADR why these two readers are permitted to permanently misreport legacy on-disk configs, and confirm no consumer of `detect_current_phase`'s \"complete\" answer gates anything.  3. `_upsert_v1_phase_task` treats `skipped` as non-terminal when clearing `completedAt",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/step_config_access.py` (`_upsert_v1_phase_task`)",
+          "line": null,
+          "finding": "if status in {\"done\", \"failed\"}: completedAt = now else: completedAt = None` — a status of `\"skipped\"` (terminal in `FINISHED_STATUSES` everywhere else) would land in the else-branch and clear `completedAt`, producing a \"skipped-but-never-finished\" entry. Currently unreachable because `update_step` only ever passes `in_progress`/`done`/`failed`, but the helper is exported and unit-tested as a general API, and the terminal-set duplication will silently diverge if a caller ever passes `skipped`.",
+          "suggestion": "Reuse the shared `FINISHED_STATUSES` constant (or add `\"skipped\"` to the terminal set) for the `completedAt` decision.  4. Post-test fallback in `suggest_iterate` is silently dead for legacy configs",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/hooks/suggest_iterate.py:113-117",
+          "line": null,
+          "finding": "With the v1 fallback removed, `completed_steps` is whatever `_phase_tasks_progress` returned — empty for a config with no usable `phase_tasks[]`. The \"post-test fallback\" (delegate to `classify_for_iterate` once test is done) therefore never fires for a pre-s5 standalone config, reintroducing exactly the \"stale limbo\" of silently-dropped post-test prompts that the fallback was added to fix — but only for that legacy population. Same root cause as finding 2, lower blast radius (advisory hint only).  5. `test_shipwright_run_e2e.py` final-state assertion accepts `skipped` without asserting which",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "integration-tests/test_shipwright_run_e2e.py:212-216",
+          "line": null,
+          "finding": "completed = {t[\"phase\"] for t in config[\"phase_tasks\"] if ... status in (\"done\", \"skipped\")}` — an implementation that marked a phase `skipped` when it should have been `done` (e.g., a wrongly-firing skip path) still passes. Pre-s5 the test asserted exact set equality against `completed_steps` contents; it now can't distinguish done from skipped at all.",
+          "suggestion": "Also assert every completed phase's status is `done` (or pin the expected per-phase statuses) for this greenfield e2e.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_factory.py",
+          "line": 222,
+          "finding": "The standalone-to-driven merge still reads `completed_steps` when `phase_tasks[]` is absent/unusable. This directly violates the acceptance criterion that no reader anywhere keys on the retired fields, and retains the mode/shape-conditional authority the specification explicitly rejects.",
+          "suggestion": "Perform legacy conversion in an explicit migration/backfill before this path, then make `create_config()` consume only `phase_tasks[]` and remove this fallback.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/hooks/generate_handoff_on_stop.py",
+          "line": 273,
+          "finding": "The Stop hook still reads `current_step` and `completed_steps` for “one-time cutover.” Thus a legacy config’s phase completion is still driven by the old fields, rather than `phase_tasks[]`, contrary to both “retarget first” and “No reader anywhere” requirements.",
+          "suggestion": "Backfill legacy configs before hook execution (or make a dedicated migration command mandatory) and remove this fallback branch so the hook only derives progress from `phase_tasks[]`.  The schema documentation and new-path tests are otherwise substantially aligned with the intended retargeting, but these intentional legacy read paths fail a core acceptance criterion. Ship with fixes after removing or externalizing the legacy-field reads.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T08:24:49.133119+00:00",
+      "disposition": "Ran 3 rounds (GLM+OpenAI each); round-3's findings recorded here are the last actual external pass. All 5 round-3 findings fixed or dispositioned in the ADR's External-Code-Review-Findings table (2 rejected-with-reason repeats of the same AC-literalism objection, argued at length; 5 fixed with regression tests). A 4th round was deliberately not re-run -- see ADR for why.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Inconsistent engagement for standalone-completed phases merged at run creation**\n- Category: bug\n- Severity: medium\n- File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_factory.py` (create_config, `initial_task` vs `merged_tasks`)\n- Finding: `create_config` marks a standalone-completed **project** as `status: \"skipped\"` (via `_build_initial_phase_task`, which per `_engagement.py` has `executionCount: 0` and no execution history), while every **other** standalone-completed phase gets a `build_v1_phase_task(..., \"done\")` entry with `executionCount: 1` — which `_task_has_run` treats as \"ran\". Since s5 removed the `completed_steps` union that used to keep the skipped-project engaged, `phase_is_engaged(\"project\", ...)` is now **False** for exactly the project phase on the same run where design/plan/build (all equally completed standalone) are engaged. Phase-Quality silently audits fewer phases for `project` than for its siblings on the identical config shape.\n- Suggestion: Either bump the skipped initial task's `executionCount` to 1 (it did run — standalone), or mark merged tasks `skipped` + an explicit marker, so all standalone-completed phases engage uniformly. Add a test asserting `phase_is_engaged` for every phase in `prior_completed` post-merge.\n\n**2. `state.detect_current_phase` and `suggest_iterate` lack the one-time legacy cutover every other reader got**\n- Category: edge-case\n- Severity: medium\n- Files: `shared/scripts/lib/state.py:44-50`, `shared/scripts/hooks/suggest_iterate.py:113-117`\n- Finding: `generate_handoff_on_stop` and `config_factory.create_config` both gained a deliberate one-time `current_step`/`completed_steps` cutover for pre-s5 configs already on disk (so a legacy standalone run self-heals by triggering `update-step`, which seeds `phase_tasks[]`). `detect_current_phase` and `suggest_iterate` got no equivalent: a pre-s5 standalone config mid-pipeline now misreports its phase (the changed test itself p […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: `plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_factory.py:222`\n- Finding: The standalone-to-driven merge still reads `completed_steps` when `phase_tasks[]` is absent/unusable. This directly violates the acceptance criterion that no reader anywhere keys on the retired fields, and retains the mode/shape-conditional authority the specification explicitly rejects.\n- Suggestion: Perform legacy conversion in an explicit migration/backfill before this path, then make `create_config()` consume only `phase_tasks[]` and remove this fallback.\n\n- Category: spec\n- Severity: high\n- File: `shared/scripts/hooks/generate_handoff_on_stop.py:273`\n- Finding: The Stop hook still reads `current_step` and `completed_steps` for “one-time cutover.” Thus a legacy config’s phase completion is still driven by the old fields, rather than `phase_tasks[]`, contrary to both “retarget first” and “No reader anywhere” requirements.\n- Suggestion: Backfill legacy configs before hook execution (or make a dedicated migration command mandatory) and remove this fallback branch so the hook only derives progress from `phase_tasks[]`.\n\nThe schema documentation and new-path tests are otherwise substantially aligned with the intended retargeting, but these intentional legacy read paths fail a core acceptance criterion. Ship with fixes after removing or externalizing the legacy-field reads.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T08:41:45.452161+00:00",
+      "disposition": null,
+      "recorded_by": "campaign-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T08:24:00.797023+00:00",
+      "disposition": "No internal arm for plan review (documented gap, references/iteration-reviews.md); the external plan-review pass above is the only plan-review pass for a campaign sub-iterate.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -230,9 +230,12 @@ def _write_run_config(root: Path, **fields) -> None:
     (root / "shipwright_run_config.json").write_text(json.dumps(fields))
 
 
-def test_fr_coverage_skips_when_design_phase_never_ran(tmp_path):
-    # Adopted project: FRs present, scope≠library, "design" not in
-    # completed_steps, and no design-manifest.md → SKIP, not FAIL.
+def test_fr_coverage_fails_loud_on_a_completed_steps_only_config(tmp_path):
+    # A pre-s2 config carrying only the retired completed_steps field (no
+    # phase_tasks[]) is no longer read here (s5: the s4 fallback is retired).
+    # Zero phase_tasks[] evidence -> _design_phase_ran fails loud (assume
+    # ran); the real skip path is test_fr_coverage_skips_for_adopted_repo_
+    # via_phase_tasks below (every adopt-seeded config has had it since s2b).
     (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
     (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
         "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
@@ -241,11 +244,11 @@ def test_fr_coverage_skips_when_design_phase_never_ran(tmp_path):
         tmp_path, scope="full_app",
         completed_steps=["project", "plan", "build", "test"],
     )
-    # No .shipwright/designs tree at all — the design phase never ran.
+    # No .shipwright/designs tree at all.
     r = check_design_fr_coverage(tmp_path)
-    assert r.ok is None
-    assert r.is_skipped
-    assert "design phase" in r.detail.lower()
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "missing" in r.detail.lower()
 
 
 def test_fr_coverage_skips_for_adopted_repo_via_phase_tasks(tmp_path):
@@ -263,12 +266,8 @@ def test_fr_coverage_skips_for_adopted_repo_via_phase_tasks(tmp_path):
     _write_run_config(
         tmp_path, scope="full_app",
         completed_steps=["project", "plan", "build", "test"],
-        phase_tasks=[
-            {"phase": "project", "status": "done", "establishedAtAdoption": True},
-            {"phase": "plan", "status": "done", "establishedAtAdoption": True},
-            {"phase": "build", "status": "done", "establishedAtAdoption": True},
-            {"phase": "test", "status": "skipped", "establishedAtAdoption": True},
-        ],
+        phase_tasks=[{"phase": p, "status": s, "establishedAtAdoption": True} for p, s in
+            [("project", "done"), ("plan", "done"), ("build", "done"), ("test", "skipped")]],
     )
     # No .shipwright/designs tree at all — the design phase never ran.
     r = check_design_fr_coverage(tmp_path)
@@ -416,9 +415,9 @@ def test_scope_library_skip_tolerates_utf8_bom_run_config(tmp_path):
 
 
 def test_lifecycle_skip_tolerates_utf8_bom_run_config(tmp_path):
-    # A hand-edited UTF-8-BOM run_config must still be parsed: completed_steps
-    # is read correctly, so a no-design project SKIPs (a BOM that broke parsing
-    # would fail-loud to FAIL instead).
+    # A hand-edited UTF-8-BOM run_config must still be parsed: phase_tasks[]
+    # is read correctly, so a no-design adopted project SKIPs (a BOM that
+    # broke parsing would fail-loud to FAIL instead).
     (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
     (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
         "| ID | Requirement | Priority |\n| FR-01.01 | Log in | Must |\n"
@@ -427,7 +426,8 @@ def test_lifecycle_skip_tolerates_utf8_bom_run_config(tmp_path):
         "﻿".encode("utf-8")
         + json.dumps({
             "scope": "full_app",
-            "completed_steps": ["project", "plan", "build", "test"],
+            "phase_tasks": [{"phase": p, "status": s, "establishedAtAdoption": True} for p, s in
+                [("project", "done"), ("plan", "done"), ("build", "done"), ("test", "skipped")]],
         }).encode("utf-8")
     )
     r = check_design_fr_coverage(tmp_path)

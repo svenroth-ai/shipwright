@@ -65,3 +65,17 @@ def existing_project(tmp_project):
     (tmp_project / ".shipwright" / "agent_docs").mkdir(parents=True)
     (tmp_project / ".shipwright" / "agent_docs" / "architecture.md").write_text("# Arch\n")
     return tmp_project
+
+
+def _phase_status(config, phase):
+    """The v1-owned (unsplit) phase_tasks[] entry's status, or None.
+
+    Shared across orchestrator tests (campaign p4-04-retire-write-once-steps,
+    sub-iterate s5) — moved here from test_orchestrator.py to keep that file
+    under its bloat-baseline ceiling; imported via ``from conftest import
+    _phase_status``, the same pattern shipwright-grade's tests already use.
+    """
+    for task in config.get("phase_tasks", []):
+        if task.get("phase") == phase and task.get("splitId") is None:
+            return task.get("status")
+    return None

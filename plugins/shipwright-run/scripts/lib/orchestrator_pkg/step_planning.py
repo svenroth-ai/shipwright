@@ -21,13 +21,18 @@ from .build_progress import get_build_progress
 # scope. Pinned by test_no_mutating_path_reaches_a_tolerant_read.
 from .config_io import RunConfigUnreadable, read_run_config, save_run_config
 from .constants import PIPELINE_STEPS
-# The two strict chokepoints update_step reads through. Re-exported into this
-# namespace because callers and tests reach them as
-# ``step_planning._read_standalone_flag`` / ``._load_or_bootstrap``.
+# The two strict chokepoints update_step reads through, PLUS the v1
+# phase_tasks[] advance/reset helpers that replaced its current_step /
+# completed_steps writes (campaign p4-04-retire-write-once-steps,
+# sub-iterate s5). Re-exported into this namespace because callers and
+# tests reach them as ``step_planning._read_standalone_flag`` etc.
 from .step_config_access import (  # noqa: F401
     _bootstrap_standalone_config,
     _load_or_bootstrap,
+    _now_iso,
     _read_standalone_flag,
+    _reset_v1_phase_tasks,
+    _upsert_v1_phase_task,
 )
 from .validation_record import (
     normalise_override_reason,
@@ -39,6 +44,8 @@ from .validation_record import (
 # ``run_config_store`` is a top-level module in this plugin's scripts/lib;
 # the ``.constants`` import above already put that dir on sys.path.
 from run_config_store import run_config_lock  # noqa: E402
+# ``.constants`` also put ``shared/scripts`` on sys.path.
+from lib.handoff_phase_status import phase_tasks_progress  # noqa: E402
 
 
 def get_next_step(project_root: Path) -> dict[str, Any]:
@@ -63,10 +70,10 @@ def get_next_step(project_root: Path) -> dict[str, Any]:
     if not config:
         return {"next_step": "project", "reason": "no config found, start from beginning"}
 
-    # `or`, not a .get default: an EXPLICIT null passes the shape gate (it is a
-    # well-formed object) and would then raise TypeError out of a reporter that
-    # promises not to crash. `update_step` already tolerates it the same way.
-    completed = set(config.get("completed_steps") or [])
+    # phase_tasks[] is the sole progress signal (campaign
+    # p4-04-retire-write-once-steps, sub-iterate s5 — the write-once
+    # completed_steps field, and every writer of it, is retired).
+    _, completed = phase_tasks_progress(config)
     pipeline = config.get("pipeline") or PIPELINE_STEPS
 
     for step in pipeline:
@@ -175,7 +182,12 @@ def update_step(
                 with run_config_lock(project_root):
                     config = _load_or_bootstrap(project_root, step)
                     record_inform_notes(config, step, inform_issues)
-                    config["current_step"] = step
+                    # Restore the signal the deleted `current_step = step` write
+                    # used to carry (external code review, OpenAI MEDIUM): a
+                    # phase paused for validation must still be locatable in
+                    # phase_tasks[], the sole progress record now, not silently
+                    # unrepresented for a phase with no prior task at all.
+                    _upsert_v1_phase_task(config, step, "in_progress", now=_now_iso())
                     config["status"] = "needs_validation"
                     config["validation_issues"] = [{"step": step, **i} for i in ask_issues]
                     save_run_config(project_root, config)
@@ -190,9 +202,9 @@ def update_step(
             # Clear BOTH halves of an earlier unforced attempt's pause, so a
             # completed step never carries state implying it is still stuck. The
             # findings alone were not enough: `status` stayed "needs_validation"
-            # while `completed_steps` and `current_step` had moved on, and that
-            # key is what update_build_dashboard and resolve_next_dispatch read.
-            # The terminal assignment below still overrides this when the
+            # while phase_tasks[] had moved on, and that is what
+            # update_build_dashboard and resolve_next_dispatch read. The
+            # terminal assignment below still overrides this when the
             # pipeline is finished.
             # Clear only THIS step's pause — both halves of it, together.
             #
@@ -225,19 +237,15 @@ def update_step(
                     checked=gate_checked,
                 )
 
-            completed = config.get("completed_steps", [])
-            if step not in completed:
-                completed.append(step)
-            config["completed_steps"] = completed
+            now = _now_iso()
+            _upsert_v1_phase_task(config, step, "done", now=now)
 
             # Split-loop: after build, loop back to plan if more splits remain
             # (test/changelog/deploy run ONCE after all splits are built).
             if step == "build":
                 progress = get_build_progress(project_root)
                 if progress.get("total_splits", 0) > 0 and not progress.get("all_done", True):
-                    split_steps = {"plan", "build"}
-                    config["completed_steps"] = [s for s in completed if s not in split_steps]
-                    config["current_step"] = "plan"
+                    _reset_v1_phase_tasks(config, {"plan", "build"})
                     config["status"] = "in_progress"
                     _record_compliance_result(config, step, compliance_result)
                     _reset_tool_counter(project_root)
@@ -245,9 +253,8 @@ def update_step(
                     return config
 
             pipeline = config.get("pipeline") or PIPELINE_STEPS  # tolerate explicit null
-            remaining = [s for s in pipeline if s not in completed]
-            config["current_step"] = remaining[0] if remaining else None
-            if not remaining:
+            _, completed = phase_tasks_progress(config)
+            if pipeline and set(pipeline).issubset(completed):
                 config["status"] = "complete"
             _record_compliance_result(config, step, compliance_result)
             save_run_config(project_root, config)
@@ -257,10 +264,11 @@ def update_step(
     # compliance/validation, so nothing slow runs under the lock.
     with run_config_lock(project_root):
         config = _load_or_bootstrap(project_root, step)
+        now = _now_iso()
         if status == "in_progress":
-            config["current_step"] = step
+            _upsert_v1_phase_task(config, step, "in_progress", now=now)
         elif status == "failed":
-            config["current_step"] = step
+            _upsert_v1_phase_task(config, step, "failed", now=now)
             config["status"] = "failed"
         save_run_config(project_root, config)
         return config

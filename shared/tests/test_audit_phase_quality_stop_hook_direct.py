@@ -28,8 +28,12 @@ def _shipwright_project(tmp_path: Path, *, run_id: str = "run-direct") -> Path:
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({
             "run_id": run_id,
-            "current_step": "build",
-            "completed_steps": ["project", "design", "plan"],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "design", "status": "done"},
+                {"phase": "plan", "status": "done"},
+                {"phase": "build", "status": "in_progress"},
+            ],
         }),
         encoding="utf-8",
     )

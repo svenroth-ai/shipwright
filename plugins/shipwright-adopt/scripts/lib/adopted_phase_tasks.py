@@ -17,6 +17,15 @@ the same entries against an EXISTING config, callable by
 ``plugins/shipwright-adopt/scripts/tools/backfill_phase_tasks.py`` against a
 project already on disk (verified against a real pre-2026-09 adopted
 repo — see that tool's docstring).
+
+Sub-iterate s5 retired ``current_step``/``completed_steps`` as a LIVE
+progress source — every other reader in the tree reads ``phase_tasks[]``
+alone now. This module's ``completed_steps`` read is the one deliberate
+exception, and stays one on purpose: it is a one-time BACKFILL of an
+existing on-disk legacy field into the new shape, not a live progress query,
+and it is the only remaining path that can recover a pre-s2 adopted repo's
+history at all — retiring it would make that history unrecoverable, not
+merely re-derived from elsewhere.
 """
 
 from __future__ import annotations

@@ -47,18 +47,26 @@ def test_iterate_engaged_when_complete() -> None:
     assert pq.phase_is_engaged("iterate", {"status": "complete"}, []) is True
 
 
-def test_in_progress_completed_step_engaged() -> None:
+def test_in_progress_completed_steps_alone_not_engaged() -> None:
+    # completed_steps is retired (sub-iterate s5) and no longer read — with
+    # no phase_tasks[] evidence there is nothing left to grant engagement.
     cfg = {"status": "in_progress", "completed_steps": ["project", "plan"]}
+    assert pq.phase_is_engaged("plan", cfg, []) is False
+
+
+def test_in_progress_current_step_alone_not_engaged() -> None:
+    # current_step is retired (sub-iterate s5) and no longer read.
+    cfg = {"status": "in_progress", "current_step": "build", "completed_steps": []}
+    assert pq.phase_is_engaged("build", cfg, []) is False
+
+
+def test_in_progress_engaged_via_phase_tasks() -> None:
+    cfg = {"status": "in_progress", "phase_tasks": [{"phase": "plan", "status": "done"}]}
     assert pq.phase_is_engaged("plan", cfg, []) is True
 
 
-def test_in_progress_current_step_engaged() -> None:
-    cfg = {"status": "in_progress", "current_step": "build", "completed_steps": []}
-    assert pq.phase_is_engaged("build", cfg, []) is True
-
-
 def test_complete_completed_step_without_event_not_engaged() -> None:
-    # AC-2: completed_steps grants engagement only while in progress.
+    # AC-2: a finished run is iterate-only regardless of any retired field.
     cfg = {"status": "complete", "completed_steps": ["build"]}
     assert pq.phase_is_engaged("build", cfg, []) is False
 
@@ -92,10 +100,14 @@ def _write_cfg(project: Path, cfg: dict) -> None:
 
 
 def test_resolve_engaged_returns_engaged_only(project: Path) -> None:
-    # in_progress, current_step=build, project+plan done → exactly those three.
+    # in_progress, project+plan done, build running → exactly those three.
     _write_cfg(project, {
-        "status": "in_progress", "current_step": "build",
-        "completed_steps": ["project", "plan"],
+        "status": "in_progress",
+        "phase_tasks": [
+            {"phase": "project", "status": "done"},
+            {"phase": "plan", "status": "done"},
+            {"phase": "build", "status": "in_progress"},
+        ],
     })
     engaged = pq.resolve_engaged_phases(project)
     assert set(engaged) == {"project", "plan", "build"}
@@ -158,7 +170,8 @@ def test_resolve_engaged_absent_events_not_failopen(project: Path) -> None:
     # A genuinely ABSENT event log is NOT "unreadable": cfg-based engagement
     # still applies, so we get the engaged set, not the full fail-open set.
     _write_cfg(project, {
-        "status": "in_progress", "current_step": "test", "completed_steps": [],
+        "status": "in_progress",
+        "phase_tasks": [{"phase": "test", "status": "in_progress"}],
     })
     engaged = pq.resolve_engaged_phases(project)
     assert engaged == ["test"]

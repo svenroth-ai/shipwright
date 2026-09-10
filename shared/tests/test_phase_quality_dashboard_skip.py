@@ -81,7 +81,12 @@ def test_pass_warn_skip_untouched(project: Path) -> None:
     assert [c["status"] for c in f["canon"]] == ["PASS", "WARN", "SKIP"]
 
 
-def test_in_progress_current_step_engaged_preserves_fail(project: Path) -> None:
-    _cfg(project, status="in_progress", current_step="build", completed_steps=[])
+def test_in_progress_phase_tasks_engaged_preserves_fail(project: Path) -> None:
+    # current_step is retired (sub-iterate s5) and no longer read —
+    # phase_tasks[] is the engagement signal.
+    _cfg(
+        project, status="in_progress",
+        phase_tasks=[{"phase": "build", "status": "in_progress"}],
+    )
     f = audit_hook._skip_unengaged_fails(_findings("FAIL"), "build", project)
     assert f["canon"][0]["status"] == pq.STATUS_FAIL

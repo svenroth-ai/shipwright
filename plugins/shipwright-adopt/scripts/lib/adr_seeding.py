@@ -46,10 +46,10 @@ def _adoption_adr_fields(*, features_count: int, profile: str, scope: str) -> di
         ),
         "decision": (
             f"Adopted into Shipwright using profile `{profile}` and scope `{scope}`. "
-            'Retroactively marked `completed_steps = ["project", "plan", "build", '
-            '"test"]` so that `/shipwright-iterate` and downstream skills '
-            "(`/shipwright-compliance`, `/shipwright-test`) work as on a "
-            "natively-built project."
+            'Retroactively seeded `phase_tasks[]` for `["project", "plan", "build", '
+            '"test"]` (marked `establishedAtAdoption`) so that `/shipwright-iterate` '
+            "and downstream skills (`/shipwright-compliance`, `/shipwright-test`) "
+            "work as on a natively-built project."
         ),
         "consequences": (
             "- Future changes MUST go through `/shipwright-iterate` (not "

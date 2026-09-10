@@ -60,7 +60,7 @@ AUDIT_PLUGINS = [
     "shipwright-iterate", "shipwright-adopt",
 ]
 # The expected engaged phase set for the fixture below (session state, NOT the
-# plugin roots): project + plan via completed_steps, build via current_step/event.
+# plugin roots): project + plan + build via phase_tasks[] (build also via event).
 ENGAGED = {"project", "plan", "build"}
 
 
@@ -73,8 +73,11 @@ def hooks_project(tmp_path: Path) -> Path:
         json.dumps({
             "run_id": "run-int",
             "status": "in_progress",
-            "current_step": "build",
-            "completed_steps": ["project", "plan"],
+            "phase_tasks": [
+                {"phase": "project", "status": "done"},
+                {"phase": "plan", "status": "done"},
+                {"phase": "build", "status": "in_progress"},
+            ],
         }),
         encoding="utf-8",
     )

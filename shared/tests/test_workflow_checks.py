@@ -415,8 +415,12 @@ def test_cmp1_warns_without_dashboard(proj: Path):
     assert f["tier"] == 2
 
 
+def _completed_phase_tasks(*phases: str) -> list[dict]:
+    return [{"phase": p, "status": "done"} for p in phases]
+
+
 def test_cmp1_warns_on_missing_phase_mention(proj: Path):
-    _write_run_config(proj, completed_steps=["project", "design", "build"])
+    _write_run_config(proj, phase_tasks=_completed_phase_tasks("project", "design", "build"))
     (proj / ".shipwright" / "compliance").mkdir()
     (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
         "# Dashboard\n\n- project complete\n- design complete\n",
@@ -428,7 +432,7 @@ def test_cmp1_warns_on_missing_phase_mention(proj: Path):
 
 
 def test_cmp1_passes_when_all_phases_mentioned(proj: Path):
-    _write_run_config(proj, completed_steps=["project", "design", "build"])
+    _write_run_config(proj, phase_tasks=_completed_phase_tasks("project", "design", "build"))
     (proj / ".shipwright" / "compliance").mkdir()
     (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
         "# Dashboard\n\n- project\n- design\n- build\n",
@@ -444,8 +448,7 @@ def test_cmp1_skips_mid_flight_driven_run_despite_stale_completed_steps(proj: Pa
     # empty-but-present signal is authoritative and must not fall back to a
     # stale completed_steps just because nothing has finished YET.
     _write_run_config(
-        proj,
-        completed_steps=["project", "design"],
+        proj, completed_steps=["project", "design"],
         phase_tasks=[{"phase": "project", "status": "in_progress"}],
     )
     (proj / ".shipwright" / "compliance").mkdir()
@@ -465,13 +468,9 @@ def test_cmp1_reads_phase_tasks_over_stale_completed_steps(proj: Path):
     # but `phase_tasks[]` shows design + build are ALSO finished — Cmp1 must
     # follow phase_tasks[], not fail on the stale completed_steps snapshot.
     _write_run_config(
-        proj,
-        completed_steps=["project"],
-        phase_tasks=[
-            {"phase": "project", "status": "done"},
-            {"phase": "design", "status": "done"},
-            {"phase": "build", "status": "skipped"},
-        ],
+        proj, completed_steps=["project"],
+        phase_tasks=[{"phase": p, "status": s} for p, s in
+            [("project", "done"), ("design", "done"), ("build", "skipped")]],
     )
     (proj / ".shipwright" / "compliance").mkdir()
     (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
