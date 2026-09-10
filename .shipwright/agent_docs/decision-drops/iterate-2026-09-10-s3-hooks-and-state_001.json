@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-s3-hooks-and-state",
+  "date": "2026-09-10",
+  "section": "shared/scripts/lib/state.py; shared/scripts/tools/update_build_dashboard.py; shared/scripts/hooks/generate_handoff_on_stop.py; shared/scripts/hooks/suggest_iterate.py",
+  "title": "Migrate 4 write-once current_step/completed_steps readers to phase_tasks[] (P4.04 s3)",
+  "context": "state.py::detect_current_phase falsely claimed phase_tasks[] was 'authoritative when present' in its own comment/docstring while still not treating it as primary. Three other readers (dashboard, 2 hooks) still keyed routing/display on write-once current_step/completed_steps, which the v2 orchestrator never advances.",
+  "decision": "Made phase_tasks[] the primary signal in all 4 readers. Two shapes: display-only (dashboard) drops v1 entirely, mirroring mermaid.py (s1); behavioral/routing readers (state.py, 2 hooks) keep a fallback — state.py's existing config heuristic, the hooks' v1 fields (load-bearing for standalone configs).",
+  "consequences": "Standalone/v1 dashboard configs now render pending instead of stale complete/in-progress (intentional, matches mermaid.py). A v1-only completed_steps-covers-pipeline case needed a narrow terminal check in state.py restored after code review. Full shared/tests suite (10,118) green.",
+  "rationale": "phase_tasks-first with v1-fallback ONLY when phase_tasks[] gives no confident signal (absent/empty) avoids an OR-merge that could resurrect stale write-once data; 'current' means has-an-unfinished-entry (incl. backlog/awaiting_launch), not just active, per external plan review.",
+  "rejected": "OR-merging v1 and v2 signals (would let a stale write-once field win); extracting one shared cross-file aggregation helper now (deferred — two genuinely different fallback shapes, premature abstraction for a single sub-iterate).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-s3-hooks-and-state-phase-tasks-reader.md"
+}

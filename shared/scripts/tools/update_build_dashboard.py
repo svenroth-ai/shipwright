@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import collect_all_build_sections, read_config, read_events
 from lib.events_log import latest_event_dt
+from lib.handoff_phase_status import FAILED_STATUSES, FINISHED_STATUSES, INTERRUPTED_STATUSES, status_of
 from event_classification import normalize_intent
 from markdown_table import escape_cell
 from tests_block import skip_suffix  # shared skip-vs-fail SSOT
@@ -79,19 +80,86 @@ def format_status(section: dict, current_section: str | None, current_step: int 
             "paused": "paused", "failed": "FAILED"}.get(status, "pending")
 
 
-def _pipeline_status(run_config: dict, total_sections: int, completed_sections: int) -> str:
-    """Format pipeline phase for the status column."""
-    completed = set(run_config.get("completed_steps", []))
-    current = run_config.get("current_step")
-    in_split_loop = (current in ("plan", "build")
-                     and "project" in completed and "design" in completed)
+_SPLIT_ELIGIBLE_PHASES = frozenset({"plan", "build"})
 
+
+def _phase_tasks_status(phase: str, run_config: dict) -> str | None:
+    """Aggregate status of *phase* from ``phase_tasks[]``, or ``None`` if there
+    is no CONFIDENT phase_tasks evidence for it: no ``phase_tasks[]`` at all (a
+    config that has never been driven by the orchestrator), the phase has not
+    been planned yet, or every matching entry is neither finished nor active
+    (e.g. still ``backlog``/``awaiting_launch``, or a malformed/non-string
+    status). ``None`` tells the caller to fall through (here: render
+    "pending") rather than assert a status this reader is not confident of.
+
+    A phase can hold MULTIPLE entries when it is split (``plan``/``build``
+    under ``splits_frozen``): it counts as ``complete`` only once every one of
+    them is ``done``/``skipped``, and as ``in_progress`` if any of them is
+    live or dead, so a partly-finished phase never reads as fully banked.
+
+    For ``plan``/``build`` specifically, "every MATCHING entry finished" is
+    not enough on its own: ``phase_state_machine.next_phase_task`` plans only
+    ONE split ahead (build/A done → plans plan/B, not build/B — see
+    ``plugins/shipwright-run/scripts/lib/phase_state_machine.py``), so mid-way
+    through a multi-split run ``phase_tasks[]`` can legitimately hold only
+    split A's `build` entry, all finished, while split B's build has not even
+    started. Reading that as "build complete" would flip
+    ``generate_dashboard``'s Build Summary/Build Sections choice to the
+    all-splits-done view while split B is still ahead — doubt review, campaign
+    p4-04-retire-write-once-steps sub-iterate s3. When ``splits_frozen`` names
+    more splits than this phase has entries for, the phase reads
+    ``in_progress`` (genuinely ongoing across splits), never ``complete``.
+
+    Mirrors ``plugins/shipwright-compliance/scripts/lib/mermaid.py``'s
+    ``_phase_tasks_status`` (campaign p4-04-retire-write-once-steps,
+    sub-iterate s1 established the pattern; s3 ports it here) — that reader
+    renders only a tri-state DISPLAY label, not a layout decision, so it does
+    not carry this same split-coverage risk and is out of scope here.
+    """
+    tasks = run_config.get("phase_tasks")
+    if not isinstance(tasks, list):
+        return None
+    matching = [t for t in tasks if isinstance(t, dict) and t.get("phase") == phase]
+    if not matching:
+        return None
+    statuses = [status_of(t) for t in matching]
+    if all(s in FINISHED_STATUSES for s in statuses):
+        if phase in _SPLIT_ELIGIBLE_PHASES:
+            splits_frozen = run_config.get("splits_frozen")
+            if isinstance(splits_frozen, list) and splits_frozen:
+                seen_splits = {
+                    t.get("splitId") for t in matching if isinstance(t.get("splitId"), str)
+                }
+                if not set(splits_frozen).issubset(seen_splits):
+                    return "in_progress"
+        return "complete"
+    if any(s in (FAILED_STATUSES | INTERRUPTED_STATUSES) for s in statuses):
+        return "in_progress"
+    return None
+
+
+def _pipeline_status(run_config: dict, total_sections: int, completed_sections: int) -> str:
+    """Format pipeline phase for the status column.
+
+    Authority for progress is ``phase_tasks[]`` (v2) — NOT the write-once
+    ``current_step``/``completed_steps`` fields, which ``config_factory``
+    stamps once at run creation and the v2 lifecycle never advances
+    (campaign p4-04-retire-write-once-steps, sub-iterate s3; mirrors
+    mermaid.py's ``_get_phase_status``, sub-iterate s1). Those two fields may
+    still be present on the config; this reader no longer consults them —
+    including the old ``in_split_loop`` special-case that forced downstream
+    phases to "pending" during a plan/build split cycle: that workaround
+    existed only because ``completed_steps`` is write-once and could keep
+    claiming e.g. "test" complete from an earlier pass while a later split
+    looped back through plan/build. A phase with no matching ``phase_tasks[]``
+    entries yet for the CURRENT split already reads "pending" here (no
+    confident signal), so the same staleness cannot occur.
+    """
     def phase_status(phase: str) -> str:
-        if in_split_loop and phase in ("test", "changelog", "deploy", "security"):
-            return "pending"
-        if phase in completed:
+        status = _phase_tasks_status(phase, run_config)
+        if status == "complete":
             return "complete"
-        if phase == current:
+        if status == "in_progress":
             if phase == "build" and total_sections > 0:
                 return f"**{completed_sections}/{total_sections} sections**"
             return "**in progress**"
@@ -197,7 +265,10 @@ def generate_dashboard(
     completed_splits, total_splits = build_info["completed_splits"], build_info["total_splits"]
     now = _deterministic_now(project_root)
     sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
-    completed_steps = set(run_config.get("completed_steps", [])) if run_config else set()
+    # phase_tasks[] is authority here too (see _pipeline_status docstring) —
+    # NOT completed_steps, which config_factory stamps once at run creation.
+    build_phase_complete = bool(run_config) and _phase_tasks_status("build", run_config) == "complete"
+    test_phase_complete = bool(run_config) and _phase_tasks_status("test", run_config) == "complete"
 
     lines = ["# Shipwright Build Dashboard", _dashboard_header(now, sid, run_id), ""]
     if run_config:
@@ -207,7 +278,7 @@ def generate_dashboard(
         lines.append("")
 
     # Build Summary (all splits done) vs Section table (in progress)
-    if "build" in completed_steps and total_splits > 1:
+    if build_phase_complete and total_splits > 1:
         lines.extend(_generate_build_summary(all_sections, completed_splits, total_splits))
     else:
         split_label = ""
@@ -237,7 +308,7 @@ def generate_dashboard(
                 )
             lines.append("")
 
-    if "test" in completed_steps:
+    if test_phase_complete:
         lines.extend(_generate_test_results(project_root))
 
     if section:
