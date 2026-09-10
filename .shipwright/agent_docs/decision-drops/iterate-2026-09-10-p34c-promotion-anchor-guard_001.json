@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p34c-promotion-anchor-guard",
+  "date": "2026-09-10",
+  "section": "bloat-gate exception",
+  "title": "Grandfather promote_required_layers.py + its test file as a bloat exception",
+  "context": "Both files were already several times over the 300-line limit before P3.4c touched them, with no existing baseline entry. P3.4c is additive functionality on the same tool/tests; see spec-ref for full detail.",
+  "decision": "Grandfather both files into shipwright_bloat_baseline.json with state=exception at their current sizes (678 / 1187 lines), referencing this ADR.",
+  "consequences": "Both files stay exempt from the anti-ratchet gate at current size; growing past 678 / 1187 lines re-trips the gate fresh.",
+  "rationale": "",
+  "rejected": "Splitting either file now -- rejected as out-of-scope churn mid-review-cascade; see spec-ref.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md"
+}

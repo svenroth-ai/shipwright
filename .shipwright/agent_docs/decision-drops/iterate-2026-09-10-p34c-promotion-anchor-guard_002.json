@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p34c-promotion-anchor-guard",
+  "date": "2026-09-10",
+  "section": "Iterate — change: anchor Layers-promotion to the newest verified ancestor",
+  "title": "Anchor Layers-promotion to the newest verified ancestor",
+  "context": "Layers-promotion only fires when HEAD's own CI run is verified; measured drift closes that window in ~1 hour, so the P3.5 mechanism rarely gets to run.",
+  "decision": "Walk HEAD's first-parent history for the newest verified ancestor A; promote FRs whose bound evidence is provably unstale between A and HEAD (identity + diff + unaccounted-test-path checks).",
+  "consequences": "Promotion fires on realistic PR-cadence timescales without loosening the unforgeability predicate; unavailable/error/anchor-evidence-fault all degrade to no-promotion, never a false one.",
+  "rationale": "Option C (auto-refresh bot) refused three times (no PAT/CI job/policy weakening); Option A (refresh ritual) needs a manual admin override every cycle. Anchoring is a pure widening.",
+  "rejected": "A - refresh/merge/promote ritual: manual toil, admin override every cycle. C - automatic drift-closing bot: refused three times, off the table again.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-anchor-design.md"
+}
