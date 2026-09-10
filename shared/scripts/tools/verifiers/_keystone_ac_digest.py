@@ -119,11 +119,10 @@ def ac_criteria_digests(text: str) -> tuple[dict[tuple[str, str], str], set[str]
 
 
 def _unminted_texts(text: str) -> dict[str, tuple[str, str]]:
-    """``digest -> (fr_id, criterion_text)`` for the unminted criteria, so a
-    finding can quote the criterion rather than only its hash. Re-parses rather
-    than widening :func:`ac_criteria_digests`'s designed return shape; the only
-    caller reaches here AFTER that call returned, so ``read_all`` cannot raise a
-    second time on the same text."""
+    """``digest -> (fr_id, criterion_text)``, so a finding can quote the
+    criterion rather than only its hash. Re-parses rather than widening
+    :func:`ac_criteria_digests`'s return shape; the only caller reaches here
+    AFTER that call returned, so ``read_all`` cannot raise a second time."""
     out: dict[str, tuple[str, str]] = {}
     for fr_id, items in ac_identity.read_all(text).items():
         for ac_id, criterion in items:
@@ -215,24 +214,19 @@ def ac_change_set(
 
     # Reader divergence, SCOPED to what THIS PR caused. An unscoped guard would
     # red every later PR in the repo -- including docs-only ones -- from the day
-    # one FR acquires an introductory sentence. Three scoping signals, and the
-    # first is why the design's single `criteria_digests(base) != (head)` test is
-    # not enough on its own (found by the AC-K9(d)(i) test at build time):
-    # ADDING the intro sentence changes NO criterion text, so the FR-level digest
-    # is byte-identical across the very PR that creates the divergence. Without
-    # arm (a), that PR passes silently, the AC vanishes from this reader, and the
-    # NEXT PR to edit it reads `added` rather than `changed` -- i.e. never blocks
-    # on greenness. That is the two-step version of the dodge the gate exists for.
+    # one FR acquires an introductory sentence. Arm (a) exists because ADDING an
+    # intro sentence changes NO criterion text, so the FR-level digest alone
+    # (single test, found insufficient at build time) is byte-identical across
+    # the very PR that creates the divergence -- without it the AC silently
+    # vanishes from this reader and the NEXT PR to edit it reads `added` rather
+    # than `changed`, i.e. never blocks on greenness (the two-step dodge).
     #
-    # ACTIVE FRs only. The design states the predicate twice as "read_all yields
-    # zero criteria for an ACTIVE FR" (§5.1, AC-K9(d)), and every sibling predicate
-    # in this gate filters the same way (`_links_for`, `_keystone_layer_gap._fr_node`,
-    # `_active_display_ids`). It was dropped here by omission, not by decision --
-    # found by a Stage-1 spec review. Unreachable today (no retired FR has an
-    # intro-sentence-before-bullets shape), and "latent today" is exactly the
-    # reasoning round 3 rejected once already: a spec.md heading survives
-    # retirement, so the day one retired FR gains an intro sentence this guard
-    # HARD-blocks a PR over a requirement the rest of the gate does not enforce.
+    # ACTIVE FRs only, like every sibling predicate in this gate (`_links_for`,
+    # `_keystone_layer_gap._fr_node`, `_active_display_ids`) -- dropped here by
+    # omission (found by a Stage-1 spec review). Unreachable today, but "latent
+    # today" is the reasoning round 3 rejected once already: a spec.md heading
+    # survives retirement, so a retired FR gaining an intro sentence would HARD-
+    # block a PR over a requirement the rest of the gate does not enforce.
     head_active_frs = _active_display_ids(head_manifest)
     for fr_id, head_fr_digest in sorted(head_fr_digests.items()):
         if fr_id not in head_active_frs:
@@ -280,6 +274,14 @@ def ac_change_set(
     if base_ids:
         for fr_id in sorted(_active_display_ids(head_manifest) - base_ids):
             if fr_id in diverged or fr_id in unminted_frs:
+                continue
+            # SPEC-derived (ruling Q1b): the manifest is regenerated at head
+            # but read from the last COMMIT at base, and the two are known to
+            # drift (the drift step is advisory, not a hard gate) -- found
+            # during build, Stage-2 code review. An FR whose heading already
+            # existed at base is not "new in this PR" even if a stale base
+            # manifest never carried it.
+            if fr_id in base_fr_digests:
                 continue
             if not any(k[0] == fr_id for k in head_minted):
                 result.new_frs_without_criteria.append(fr_id)

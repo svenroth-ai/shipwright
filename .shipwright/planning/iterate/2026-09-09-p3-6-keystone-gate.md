@@ -1232,6 +1232,24 @@ also went the whole way through self-review, external plan review and external c
 undetected, because each of those looks at the change, not at the agreement between the change and
 its spec. That is precisely the gap the Stage-1 hard gate exists to close, and it earned its place.
 
+### 12.1e Stage-1 round 5 (fresh, PASS) → Stage-2 code review (fresh, no blocking finding)
+
+Round 5 PASSED, confirming rounds 1-4's fixes had converged (all 24 review attributions in shipped
+source/tests cross-checked against `reviews.json`; deviation 3's ratification status consistent
+everywhere). Stage-2 then ran fresh against the new head and found nothing blocking, but one
+**medium** correctness gap worth closing before merge:
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| H | medium (non-blocking, fixed anyway) | Arm 2's "new active FR" predicate compares the REGENERATED head manifest against the last-COMMITTED base manifest, and the two are known to drift (the traceability drift step is advisory, not a hard gate). An FR whose heading already existed in the base spec, but whose display id a stale base manifest never carried, would false-fire arm 2 for a PR that never touched it — the same blast-radius class the divergence guard was rescoped three times to avoid, but arm 2 had no equivalent "caused here" signal. | **Accepted-and-fixed.** Added the spec-derived exclusion `if fr_id in base_fr_digests: continue` (ruling Q1b's own principle: spec-derived, not manifest-declared) — one conjunct, changes no existing test's outcome. Pinned by `test_an_fr_present_at_base_SPEC_but_missing_from_the_base_MANIFEST_is_not_new`. |
+
+Five smaller low-severity notes (a duplicate precedence check between producer and consumer, an
+unreachable `_spec_paths() == []` corner, two attribution comments that were accurate but read
+awkwardly out of context, an asymmetry between the manifest and spec git-read strategies, and one
+untested pooling/collision interaction in `_keystone_layer_gap`) were left as the author's call —
+none changes behaviour, and `_keystone_core.py` sits at exactly its 300-line limit, so cosmetic
+churn there is not free.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
