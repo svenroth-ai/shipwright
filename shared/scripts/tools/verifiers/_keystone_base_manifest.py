@@ -21,7 +21,6 @@ import json
 from pathlib import Path
 
 from .git_blob_read import read_committed_text
-from .git_helpers import _run_git
 
 MANIFEST_RELPATH = ".shipwright/compliance/test-traceability.json"
 
@@ -133,9 +132,11 @@ def read_base_manifest(project_root: Path, base_sha: str) -> tuple[dict, str]:
     if err:
         raise ReadError(err)
     if body is None:
-        rc_commit, _, _ = _run_git(project_root, "rev-parse", "--verify", f"{base_sha}^{{commit}}")
-        if rc_commit != 0:
-            raise ReadError(f"base commit {base_sha!r} could not be resolved by git")
+        # Dead as a re-verification, not just redundant (Stage-2 code review,
+        # low; found during build): `read_committed_text` -> `blob_oid` already
+        # ran `ls-tree <base_sha>`, and an UNRESOLVABLE commit fails THAT call
+        # (non-empty `err`, caught above) before ever reaching here. Reaching
+        # this branch with `err` empty already proves `base_sha` resolved.
         return {}, (
             f"{MANIFEST_RELPATH} does not exist at base commit {base_sha[:12]} -- every AC reads "
             "as having zero links at base, so binding_removed cannot fire for this PR and the "

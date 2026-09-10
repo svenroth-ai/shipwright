@@ -11,7 +11,6 @@ returns ``{}``, or a resolver that quietly returns "nothing changed", both exit 
 on a PR nobody graded.
 """
 
-
 from __future__ import annotations
 
 import json
@@ -187,6 +186,25 @@ def test_the_empty_link_tripwire_exits_two_not_one(repo, capsys, monkeypatch):
     assert code == gate.EXIT_INFRA
     assert payload["status"] == "infra_fault"
     assert "defect in the gate" in payload["error"]
+
+
+def test_an_unanticipated_exception_exits_two_not_one(repo, capsys, monkeypatch):
+    """Stage-2 code review, medium: `ReadError` and `EmptyLinkWalk` are the only
+    two exception types `main()` names, so anything else a reader raises --
+    a malformed-but-differently-shaped manifest, a git fault a future change to
+    `_merge_base`/`spec_text_at` doesn't anticipate -- would previously have
+    escaped as a bare Python exit 1 with no JSON, the exact misroute
+    `EmptyLinkWalk`'s own catch exists to prevent, one level up. `_run_gate`'s
+    caller in `main()` now wraps it in a catch-all."""
+    def _boom(*_a, **_k):
+        raise ValueError("something neither ReadError nor EmptyLinkWalk anticipated")
+
+    monkeypatch.setattr(gate, "evaluate_keystone", _boom)
+    head = _edit_ac01(repo)
+    code, payload = _run(repo, head, capsys=capsys)
+    assert code == gate.EXIT_INFRA
+    assert payload["status"] == "infra_fault"
+    assert "unexpected gate fault" in payload["error"]
 
 
 def test_a_missing_regenerated_head_manifest_is_an_infra_fault(repo, capsys):

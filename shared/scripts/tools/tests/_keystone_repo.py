@@ -6,9 +6,10 @@ convention already in this directory.
 **Real git, never a mock.** ``_keystone_ac_digest`` is the gate's only git-facing
 half, and a wrong invocation there fails in the one direction the design forbids:
 silently, as "no acceptance criterion changed". A mocked reader would test the
-mock. Reused by ``test_keystone_ac_digest.py``, ``test_keystone_readers.py``,
-``test_check_keystone_ac_gate.py`` and ``test_keystone_gate_infra.py`` so the four
-cannot drift into asserting against different spec shapes.
+mock. Reused by ``test_keystone_ac_digest.py``, ``test_keystone_ac_digest_never_silent.py``,
+``test_keystone_readers.py``, ``test_check_keystone_ac_gate.py`` and
+``test_keystone_gate_infra.py`` so the five cannot drift into asserting against
+different spec shapes.
 
 The CLI harness at the bottom (:func:`bound_manifest`, :func:`run_gate`,
 :func:`edit_ac01`) lives here for the same reason and not merely to save lines:

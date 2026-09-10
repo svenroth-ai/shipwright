@@ -171,4 +171,3 @@ def test_a_hand_edited_committed_manifest_cannot_flip_the_verdict(repo, capsys):
     committed = json.loads(_git("show", f"HEAD:{MANIFEST_RELPATH}", cwd=repo))
     assert committed == forged, "the forged bytes really are what was committed"
 
-

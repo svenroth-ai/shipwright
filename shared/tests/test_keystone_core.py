@@ -202,6 +202,7 @@ def test_a_partial_binding_reduction_on_a_changed_ac_is_also_binding_removed():
     )
     assert [f.kind for f in verdict.hard] == [kc.BINDING_REMOVED]
     assert "2 link(s) at base, 1 at head" in verdict.hard[0].detail
+    assert "missing: t2" in verdict.hard[0].detail
 
 
 def test_newly_bound_ac_takes_the_ordinary_greenness_walk_not_unbound():

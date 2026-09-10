@@ -27,7 +27,6 @@ NEW_FR_NO_CRITERIA = "new_fr_no_criteria"
 READER_DIVERGENCE = "reader_divergence"
 
 
-
 @dataclass(frozen=True)
 class Finding:
     kind: str          # one of the reason codes above

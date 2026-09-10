@@ -152,11 +152,20 @@ def evaluate_keystone(change_set, head_manifest: dict, base_manifest: dict) -> K
         # only `head_links == []` was ever checked -- the exact remediable-in-
         # this-PR shape `binding_removed` exists to catch, just short of zero.
         if len(head_links) < len(base_links):
+            # Named, not just counted (Stage-2 code review, low; found during
+            # build): a set-difference over link ids tells the operator WHICH
+            # `@covers` tag(s) vanished, rather than leaving them to diff two
+            # manifests by hand to find out.
+            base_ids = {str(link.get("id") or "<unknown test>") for link in base_links}
+            head_ids = {str(link.get("id") or "<unknown test>") for link in head_links}
+            missing = sorted(base_ids - head_ids)
+            missing_desc = ", ".join(missing) if missing else "none identifiable by id"
             verdict.hard.append(Finding(
                 BINDING_REMOVED, fr_id, ac_id,
                 f"{fr_id}/{ac_id}: this PR changes the criterion AND reduces its test binding "
-                f"({len(base_links)} link(s) at base, {len(head_links)} at head). Restore the "
-                f'removed @pytest.mark.covers("{fr_id}/{ac_id}") tag(s), or justify the reduction '
+                f"({len(base_links)} link(s) at base, {len(head_links)} at head; missing: "
+                f"{missing_desc}). Restore the removed "
+                f'@pytest.mark.covers("{fr_id}/{ac_id}") tag(s), or justify the reduction '
                 "in review.",
                 "hard",
             ))

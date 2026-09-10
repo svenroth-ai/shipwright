@@ -1,14 +1,17 @@
 """P3.6 THE KEYSTONE GATE — per-AC change detection (``_keystone_ac_digest``).
 
-Covers AC-K1 (docs-only / prose-outside-a-criterion), AC-K2 (the naming arm),
-AC-K3 (reorder + reflow are not changes) and AC-K9 (a)(b)(c) (never silent), from
+Covers AC-K1 (docs-only / prose-outside-a-criterion), AC-K2 (the naming arm)
+and AC-K3 (reorder + reflow are not changes), from
 ``.shipwright/planning/iterate/2026-09-09-p3-6-keystone-gate.md``.
 
 **Real git throughout.** This module is the gate's only git-facing half, and a
 wrong invocation here fails in the one direction the design forbids: silently,
 as "no ACs changed". Mocking the reader would test the mock.
 
-Its siblings: AC-K9(d)'s reader-divergence guard and AC-K15's drift pin are in
+Its siblings: AC-K9 (never silent) and the cross-spec-path collision guards
+are in ``test_keystone_ac_digest_never_silent.py`` (split out, Stage-2 code
+review, low — this module crossed the 300-line guideline); AC-K9(d)'s
+reader-divergence guard and AC-K15's drift pin are in
 ``test_keystone_readers.py``; AC-K13/K14 and the exit codes are in
 ``test_check_keystone_ac_gate.py``; AC-K9(e)'s base-manifest three-way read and
 AC-K11's base resolution are in ``test_keystone_gate_infra.py``; the pure
@@ -183,91 +186,3 @@ def test_an_unminted_criterion_moved_verbatim_between_frs_still_fires(repo):
     ))
     cs = _change_set(repo, head)
     assert cs.unminted_changed == [("FR-01.02", "An unowned criterion.")]
-
-
-# --------------------------------------------------------------------------
-# AC-K9 (a)(b)(c) — never silent
-# --------------------------------------------------------------------------
-
-def test_an_untrustworthy_marker_at_head_raises_read_error(repo):
-    """AC-K9(a). Two criteria under one FR carrying the same number breaks
-    "never reused", which is the whole basis of AC identity."""
-    head = _commit_spec(repo, BASE_SPEC.replace(
-        "- [AC02] The widget must buzz.", "- [AC01] The widget must buzz."))
-    with pytest.raises(kd.ReadError):
-        _change_set(repo, head)
-
-
-def test_an_untrustworthy_marker_at_base_warns_and_treats_base_as_empty(repo):
-    """AC-K9(b). Asymmetric on purpose: a base commit is already merged and
-    cannot have been authored by this PR, so leniency there is not exploitable —
-    and it lets a branch forked before the mint pass cleanly."""
-    _commit_spec(repo, BASE_SPEC.replace(
-        "- [AC02] The widget must buzz.", "- [AC01] The widget must buzz."),
-        "a broken base")
-    head = _commit_spec(repo, BASE_SPEC)
-    cs = _change_set(repo, head)
-    assert cs.warnings and "base commit" in cs.warnings[0]
-    assert cs.added == {("FR-01.01", "AC01"), ("FR-01.01", "AC02"), ("FR-01.02", "AC03")}
-    assert cs.changed == set()
-
-
-def test_an_unreadable_side_raises_rather_than_reporting_no_change(repo):
-    """AC-K9(c) — ``spec_text_at`` returning ``None`` is an infrastructure fault.
-    Collapsing it into "" would make a broken repository look like a spec with no
-    criteria, i.e. a false green exactly where the gate must fail closed."""
-    head = _git("rev-parse", "HEAD", cwd=repo)
-    with pytest.raises(kd.ReadError):
-        kd.ac_change_set(repo, "0" * 40, head, _manifest(), _manifest())
-
-
-def test_spec_paths_are_the_union_of_both_manifests(repo):
-    """A spec file this PR REMOVES is only visible from the base side. Head-only
-    scanning would hide its criteria — including from ``binding_removed``, the
-    very subtractability ruling Q2 says must not be freely available."""
-    other = "docs/other-spec.md"
-    (repo / other).write_text(
-        "### FR-02.01: Others\n\n- [AC01] The other must hum.\n", encoding="utf-8")
-    _git("add", "-A", cwd=repo)
-    _git("commit", "-q", "-m", "add second spec", cwd=repo)
-    base = _git("rev-parse", "HEAD", cwd=repo)
-    (repo / other).unlink()
-    _git("add", "-A", cwd=repo)
-    _git("commit", "-q", "-m", "remove second spec", cwd=repo)
-    head = _git("rev-parse", "HEAD", cwd=repo)
-    base_manifest = _manifest()
-    base_manifest["requirements"]["ns::FR-02.01"] = {
-        "id": "FR-02.01", "status": "active", "spec_path": other,
-    }
-    cs = kd.ac_change_set(repo, base, head, _manifest(), base_manifest)
-    assert ("FR-02.01", "AC01") in cs.removed
-
-
-# --------------------------------------------------------------------------
-# Cross-spec-path collision (Stage-3 doubt review, medium)
-# --------------------------------------------------------------------------
-
-def test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error(repo):
-    """Stage-3 doubt review, medium. ``dict.update`` across the ``_spec_paths`` loop is
-    last-write-wins: a SECOND spec file added in this same PR that re-anchors
-    an ALREADY-EDITED ``(fr_id, ac_id)`` with its OLD text used to silently
-    overwrite the genuine edit's digest, reverting ``head_minted`` back to
-    ``base_minted`` and erasing ``changed`` for a criterion this PR did
-    change. That is exactly the "no ACs changed" silence the module's own
-    docstring names as the one failure worse than over-firing. Written to
-    fail against that phrasing: a second head-minted claim on the same id
-    must raise, never silently win or lose."""
-    base = _git("rev-parse", "HEAD", cwd=repo)
-    _commit_spec(repo, BASE_SPEC.replace(
-        "The widget must fizz.", "The widget must fizz TWICE."))
-    second = "docs/second-spec.md"
-    (repo / second).write_text(BASE_SPEC, encoding="utf-8")  # OLD AC01 text, same id
-    _git("add", "-A", cwd=repo)
-    _git("commit", "-q", "-m", "add a second spec re-anchoring FR-01.01/AC01", cwd=repo)
-    head = _git("rev-parse", "HEAD", cwd=repo)
-    head_manifest = _manifest()
-    head_manifest["requirements"]["ns::FR-01.01-dup"] = {
-        "id": "FR-01.01", "status": "active", "spec_path": second,
-    }
-    with pytest.raises(kd.ReadError):
-        kd.ac_change_set(repo, base, head, head_manifest, _manifest())

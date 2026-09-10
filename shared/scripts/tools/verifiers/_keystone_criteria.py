@@ -10,10 +10,21 @@ callers and tests use.
 from __future__ import annotations
 
 import hashlib
+import sys
+from pathlib import Path
 
-from lib import ac_identity
+# ADR-045: this module's own bootstrap, never relying on `verifiers/__init__.py`'s
+# side effect (Stage-2 code review, low; found during build) -- every sibling
+# verifiers module that reaches into `lib` carries this same four-line insert,
+# and an implicit import-order dependency on the package `__init__` is exactly
+# the coupling ADR-045 exists to avoid.
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from ._keystone_base_manifest import ReadError
+from lib import ac_identity  # noqa: E402
+
+from ._keystone_base_manifest import ReadError  # noqa: E402
 
 
 def _digest(*parts: str) -> str:

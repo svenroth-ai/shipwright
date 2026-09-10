@@ -86,7 +86,7 @@ from verifiers._keystone_ac_digest import (  # noqa: E402
     read_base_manifest,
     require_manifest_shape,
 )
-from verifiers._keystone_core import EmptyLinkWalk, evaluate_keystone  # noqa: E402
+from verifiers._keystone_core import EmptyLinkWalk, UNBOUND, evaluate_keystone  # noqa: E402
 from verifiers._layer_coverage_regen import _merge_base  # noqa: E402
 from verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
@@ -151,7 +151,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     project_root = Path(args.project_root).resolve()
+    try:
+        return _run_gate(project_root, args)
+    except Exception as exc:  # last-resort fault boundary, deliberately broad
+        # Every reader this gate calls can raise something neither ReadError nor
+        # EmptyLinkWalk names (a malformed-but-differently-shaped manifest, a git
+        # fault `_merge_base`/`spec_text_at` didn't anticipate, ...). Uncaught, that
+        # is a bare Python exit 1 with no JSON -- indistinguishable in a CI log from
+        # a real hard finding, the exact misroute `EmptyLinkWalk`'s own catch and
+        # `require_manifest_shape`'s docstring both exist to prevent, one level up
+        # (found during build, Stage-2 code review, medium).
+        return _emit(
+            _infra(f"unexpected gate fault: {exc!r}", head_sha=args.head_sha), EXIT_INFRA,
+        )
 
+
+def _run_gate(project_root: Path, args: argparse.Namespace) -> int:
     # The precondition is _merge_base's own VERDICT, never `git rev-parse --verify
     # origin/main`: that would exit 2 as a false "infra fault" on a master-default
     # or upstream-tracking repo whose base _merge_base resolves fine.
@@ -200,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
         # own key so p3.7(b) consumes a list, not a diff of two other lists.
         "removed_with_bindings": sorted(
             f"{fr}/{ac}" for fr, ac in verdict.removed_with_bindings),
-        "unbound": sorted(f"{fr}/{ac}" for fr, ac in verdict.unbound),
+        UNBOUND: sorted(f"{fr}/{ac}" for fr, ac in verdict.unbound),
         "findings": [f.as_dict() for f in verdict.hard],
         "advisory": [f.as_dict() for f in verdict.advisory],
         "warnings": warnings,

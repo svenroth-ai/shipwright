@@ -982,6 +982,24 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   forecloses. The reason code is not dead code: it is the correct answer for that adversarial input,
   and `SKIPPED`/`NOT_SELECTED` remain reachable through ordinary `pytest.mark.skip`/deselection. Not
   a defect, recorded so a future reader does not "simplify" the arm away as unreachable.
+- **The reduction check compares a REGENERATED head manifest against a STALE-BY-CONSTRUCTION base
+  one** (Stage-2 code review, medium). `head_manifest` is regenerated from THIS run's own JUnit
+  (§4, AC-K13), but `base_manifest` is read from the last COMMIT at base (§5.7) — the same "the
+  two are known to drift" gap ruling Q1b already accepts for the new-FR-without-criteria arm. A
+  base commit whose manifest under-counts links relative to what actually existed at base (stale
+  regeneration, a hand-edit, an interrupted mint) can make `len(head_links) < len(base_links)`
+  read as SMALLER than the true reduction, or manufacture a reduction that never happened. Not
+  fixed: base is immutable by definition (§5.7's whole justification for reading it as a JSON
+  artifact rather than regenerating it), so there is no "more current" base to compare against
+  inside this PR — the same remediability argument deviation 3 already applies to `removed`.
+- **A cardinality-only reduction check can be defeated by a constant-count retag** (Stage-2 code
+  review, medium). `len(head_links) < len(base_links)` catches a link COUNT dropping, but two
+  links whose ids both rotate to point at DIFFERENT tests of the same count leaves the count
+  unchanged, so `binding_removed`'s reduction arm does not fire even though every original binding
+  is gone. Not fixed: closing it needs per-link IDENTITY tracking (not just counts), which is the
+  same "one vocabulary: LINK COUNTS" scope §5.3's tables already commit this gate to, and the
+  identity-level question ("does this test still cover what it claims to") is p3.7(b)'s orphan
+  detector's, not a count-based structural check's.
 
 ---
 
@@ -1410,6 +1428,47 @@ happen, a wrong section citation). Check the row count in §12.1h against §12.3
 flagging either — if they already agree and the only gap is "the round that just ran isn't in here
 yet", that gap is expected, not a finding.
 
+### 12.1i Stage-1 round 12 (fresh, PASS) → Stage-2 code review (fresh, first pass on this code) — PASS-WITH-FINDINGS
+
+**Round 12 PASSED** — the first PASS since round 7, ending the four-consecutive-REJECT streak
+(rounds 8-11, §12.1h) and confirming the one-round-lag principle stated at the end of that section:
+given the principle explicitly as a reviewing instruction, round 12's reviewer correctly
+distinguished the (expected) one-round documentation lag from a genuine defect and passed clean.
+Two non-blocking observations were raised and deliberately NOT acted on, to avoid re-triggering the
+lag cycle over content the reviewer itself did not call a finding: this section's own
+hooks-and-pipeline.md guard-count phrasing (see finding 13 below — since fixed, as part of THIS
+round's work) and §10's file-creation list being incomplete.
+
+**Stage-2 code review then ran for the first time against the Doubt-1/2 fixes** (the cross-spec-path
+collision guard and the partial-binding-reduction check, §12.1g) — **PASS-WITH-FINDINGS, 14 findings
+(5 medium, 9 low), none blocking.** Given P3.6's stakes, every medium and most lows were addressed
+rather than left at "does not block merge":
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium | `main()` named only `ReadError`/`EmptyLinkWalk`; any other exception a reader raised (a malformed-but-differently-shaped manifest, an unanticipated git fault) escaped as a bare Python exit 1 with no JSON — indistinguishable in a CI log from a real hard finding. | **Fixed.** `main()`'s body extracted into `_run_gate`, wrapped in a catch-all that maps any exception to an `infra_fault` JSON payload, exit 2. Pinned by `test_an_unanticipated_exception_exits_two_not_one`. |
+| 2 | medium | The reduction check compares a REGENERATED head manifest against a STALE-BY-CONSTRUCTION base one; base-side drift can under- or over-report a reduction. | **Disclosed, not fixed** (§7) — base is immutable by definition, so there is no more-current base to compare against inside this PR; same remediability argument as deviation 3. |
+| 3 | medium | Neither manifest naming a `spec_path` for any requirement makes the per-AC change-set loop a silent no-op — indistinguishable from "nothing changed" when the real story is "there was nothing to compare". | **Fixed.** A warning is appended when `_spec_paths` returns empty. Pinned by `test_no_spec_path_in_either_manifest_warns_rather_than_reading_as_clean`. |
+| 4 | medium | A cardinality-only reduction check (`len(head_links) < len(base_links)`) is defeated by a constant-count retag — two links rotating to different tests leaves the count, and the check, silent. | **Disclosed, not fixed** (§7), per the reviewer's own framing — per-link identity tracking is p3.7(b)'s orphan detector's question, not this count-based structural check's. |
+| 5 | medium | The FR-heading collision branch (`head_fr_digest_from`, distinct from the AC-id collision branch above it) had no test of its own. | **Fixed.** `test_two_spec_files_heading_anchoring_the_same_fr_with_no_ac_markers_raises` added; the existing AC-id collision test also gained a `match=` pin. |
+| 6 | low | The reduction's HARD-finding message named only link COUNTS, leaving an operator to diff two manifests by hand to find which `@covers` tag(s) vanished. | **Fixed.** A set-difference over base/head link ids names the missing id(s) directly. |
+| 7 | low | `head_texts.get(digest, ("<unknown FR>", ""))` degrades a provably-unreachable miss into an unhelpful sentinel rather than surfacing the broken invariant. | **Fixed.** Bare subscript. |
+| 8 | low | `UNBOUND` was defined and imported but never referenced; the JSON key it should have named was hardcoded as the literal string `"unbound"`. | **Fixed.** The gate's JSON payload now keys on `UNBOUND` directly. |
+| 9 | low | `read_base_manifest` carried a dead `git rev-parse --verify` re-check — `read_committed_text`'s own `ls-tree` call already fails closed on an unresolvable commit before this branch is ever reached. | **Fixed.** Dead branch removed. |
+| 10 | low | `_keystone_criteria.py` was the one verifiers module reaching into `lib` without its own ADR-045 sys.path bootstrap, relying on `verifiers/__init__.py`'s side effect. | **Fixed.** Bootstrap added, matching every sibling. |
+| 11 | low | Redundant re-parsing across the per-spec-path loop (a performance micro-optimization). | **Deliberately deferred** — cosmetic, no correctness risk, and touching the loop again risks yet another documentation-drift round for no behavioral gain. |
+| 12 | low | `test_keystone_core_arms.py` sits at exactly 300 lines, zero headroom. | **Deliberately deferred** — the limit has not been crossed; pre-emptive rebalancing is premature. |
+| 13 | low | `docs/hooks-and-pipeline.md`'s "four tabulated... other three (deliberately unmirrored)" phrasing undercounts: one of the four tabulated guards is ALSO unmirrored, so the true unmirrored total is four (matching the section's own later sentence), not three. Independently flagged by both round 12's spec-reviewer (as a non-blocking observation) and this Stage-2 pass. | **Fixed.** Intro sentence reworded to state the split precisely: three of the four tabulated guards are mirrored, the fourth is not, plus three more described below. |
+| 14 | low | Formatting nits: three consecutive blank lines before `@dataclass` in `_keystone_finding.py`; a trailing blank line at EOF in `test_check_keystone_ac_gate.py`; a doubled blank line between the module docstring and `from __future__` in `test_keystone_gate_infra.py`. | **Fixed**, all three. (The unconditional `::warning::` print gating suggestion in this same finding was cosmetic-only and needs no action.) |
+
+**Two source files crossed the 300-line guideline as a direct consequence of these fixes, and both
+were extracted rather than baselined, continuing this build's established pattern** (§12.2 item 6):
+`test_keystone_ac_digest.py` (finding 5's new test) split into itself plus
+`test_keystone_ac_digest_never_silent.py` (the AC-K9/never-silent and cross-spec-path-collision
+tests); `_keystone_ac_digest.py` (finding 7's fix) split its reader-divergence and
+new-FR-without-criteria arms into a new eighth verifier module, `_keystone_divergence.py`. Neither
+extraction changed behavior — both are pinned by the unchanged test suite passing before and after.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1419,7 +1478,7 @@ yet", that gap is expected, not a finding.
 | 3 | Security Basics | **pass** | No new trust artifact, no new persisted state, no network. `github.sha` is interpolated as a SHA (no injection surface). The base read is fail-closed three ways and its one permissive branch is surfaced under its own JSON key. |
 | 4 | Test Quality | **pass** | 52 + 48 cases (grew by two per root over the Stage-3 doubt-review fix); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
 | 5 | Performance Basics | **pass** | Two spec parses and one extra `git show` per PR; no regeneration, no extra test execution. |
-| 6 | Naming & Structure | **pass** | Seven verifier modules plus the CLI, five extracted from the two the gate is built around (`_keystone_finding`, `_keystone_layer_gap`, `_keystone_base_manifest` from round 1-4; `_keystone_links`, `_keystone_criteria` added by the Stage-3 doubt-review fix, §12.1g) — each under 300 lines by *extraction*, never by baselining. No new abstraction with one caller. |
+| 6 | Naming & Structure | **pass** | Eight verifier modules plus the CLI, six extracted from the two the gate is built around (`_keystone_finding`, `_keystone_layer_gap`, `_keystone_base_manifest` from round 1-4; `_keystone_links`, `_keystone_criteria` added by the Stage-3 doubt-review fix, §12.1g; `_keystone_divergence` added by the Stage-2 code-review fix, §12.1i) — each under 300 lines by *extraction*, never by baselining. No new abstraction with one caller. |
 | 7 | Affected Boundaries (ADR-024) | **pass** | See §12.3 — all four boundaries probed or pinned, and (iii) moved from *reasoned* to *measured* this round. |
 
 ### 12.3 Confidence Calibration (Step 3.8)
@@ -1461,6 +1520,12 @@ capable of erasing a genuine `changed` verdict, §12.1g Doubt 2) — after Stage
 BOTH already passed. That last fact is the sharpest data point yet: a spec-compliance pass and a
 code-quality pass, run fresh and independently, both cleared code that an adversarial pass reading
 for hidden coupling and boundary contracts did not.
+
+**The streak broke at round 12** (§12.1i) — the first Stage-1 PASS since round 7, four rounds
+after it started. Stage-2's first pass on the Doubt-1/2 fixes then found 14 more non-blocking
+findings (5 medium, 9 low; §12.1i) — none of which round 12's spec-compliance pass was positioned
+to catch, since none is a spec/document divergence. The two review stages keep finding disjoint
+classes of defect, which is the argument for running both, not for either alone.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
