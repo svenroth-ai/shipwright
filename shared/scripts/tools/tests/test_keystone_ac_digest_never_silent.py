@@ -166,6 +166,40 @@ def test_a_named_spec_path_absent_from_git_at_both_commits_also_suppresses_arm_2
     assert any("none resolved to any content" in w for w in cs.warnings)
 
 
+def test_one_stale_path_among_several_warns_even_though_a_sibling_was_read(repo):
+    """Code robustness follow-up (P4.4 triage card). ``spec_text_was_read`` is
+    computed ONCE across ALL named spec paths, so with multiple spec paths where
+    one resolves to no content at either commit and another has real content,
+    the aggregate flag stays True -- correctly, per design, so arm 2's
+    suppression does NOT apply to a head-only FR anchored to the good path (it
+    is judged against text that WAS read). But the stale path itself used to get
+    NO warning at all, because the aggregate-empty branch above is keyed on
+    ``not spec_text_was_read`` and never fires once a sibling path succeeds --
+    the exact silence the module docstring calls the one failure worse than
+    over-firing, one layer deeper than the all-paths-stale case already
+    covered above."""
+    good_path = "docs/spec.md"  # already committed by `make_repo`
+    stale_path = "Spec/design/does-not-exist.md"
+    head = _git("rev-parse", "HEAD", cwd=repo)
+    base_manifest = {"requirements": {
+        "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": good_path},
+    }}
+    head_manifest = {"requirements": {
+        "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": good_path},
+        "ns::FR-03.01": {"id": "FR-03.01", "status": "active", "spec_path": stale_path},
+    }}
+    cs = kd.ac_change_set(repo, head, head, head_manifest, base_manifest)
+    # The suppression stays keyed on the aggregate flag (unchanged by design):
+    # FR-03.01 is a new active FR at head with no minted criteria anywhere, and
+    # `spec_text_was_read` is True because `good_path` was read -- so it DOES
+    # fire, exactly as the aggregate design intends.
+    assert cs.new_frs_without_criteria == ["FR-03.01"]
+    assert any(
+        stale_path in w and good_path not in w and "even though another" in w
+        for w in cs.warnings
+    ), cs.warnings
+
+
 # --------------------------------------------------------------------------
 # Cross-spec-path collision (Stage-3 doubt review, medium)
 # --------------------------------------------------------------------------
