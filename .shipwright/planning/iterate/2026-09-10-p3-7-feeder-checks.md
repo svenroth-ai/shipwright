@@ -196,7 +196,38 @@ diff), plus two pre-existing gaps neither Stage-1 nor the runner's own review ha
 
 All fixes verified: 39/39 tests green across the four touched test modules (up from 24),
 `uvx ruff@0.15.15 check` clean, full `verify_local.py` 3/3 mirrored gates green, before
-the orchestrator re-pushed. Doubt-reviewer (Stage 3) runs next, over this same commit.
+the orchestrator re-pushed.
+
+**Stage 3 (doubt-reviewer), commit `246875fa`: 1 HIGH, 3 MEDIUM, 3 LOW, advisory.**
+Biased to disprove; three of its five named investigation angles came back FALSE ALARM
+after tracing (over-broad `except Exception`, the missing-`spec_path` warning being dead
+code, and the `readable_frs` removal changing behavior) — recorded below as `checked_and_cleared`,
+not re-litigated. The findings that survived:
+
+| # | Sev | Finding | Disposition |
+|---|---|---|---|
+| 1 | HIGH | Arm 1's `spec_path_by_fr` (a plain dict keyed on display id) silently picks ONE spec_path when >=2 active nodes share a display id with different paths — the exact last-write-wins class Stage 2's `head_minted_from` guard closed on arm 2, but arm 1 is the one that HARD-blocks with no baseline. Any AC minted only in the LOSING document, with a binding, false-orphans. The repo already models display-id collisions as `_layer_coverage_core.collision_display_ids` and routes them ADVISORY everywhere else in the family (`_keystone_layer_gap`, `_layer_coverage_binding`); this sub-iterate silently promoted the same ambiguity to a hard block. | **Fixed.** `read_binding_state` now excludes any display id in `collision_display_ids(manifest)` from `fr_paths` before the main loop (so it never enters `minted`/`bound`/`unbound`/`orphaned`), with a WARNING naming the collision explicitly — reusing the SAME "excluded, not misreported" mechanism the missing-`spec_path` case already had (§5c finding 2), rather than the stricter symmetric-`ReadError` option, because failing closed here would immediately block every PR touching any PRE-EXISTING collision, not just this PR's own change. A non-string `id` gets the identical treatment for the same reason. |
+| 2 | MEDIUM | `check_orphan_ac_binding.py`'s remedy text told the author `binding_regressions` AC(s) "had a passing binding at the base commit" — contradicting this very PR's own `BindingState.bound` field docstring and pinned test (§5a finding 8: binding is TAG-derived, never execution-derived). An author whose base had a FAILING tagged test reads "had a passing binding" and looks in the wrong place, on a hard gate with no baseline, where the remedy string is the whole diagnosis. | **Fixed.** Reworded to "had at least one `@covers` binding at the base commit." |
+| 3 | MEDIUM | The `pull_request`-only trigger on BOTH new gates (matching the Keystone gate's own precedent) means the coverage-ratchet baseline is observed exactly once in its lifecycle — inside the introducing PR — and never again automatically; §5a/§5b/§5c already narrowed the "same precedent as the bloat baseline" claim to same-shape-not-same-strength, but this sharpens it further: zero post-merge automated observation at all, versus the bloat baseline's continuous re-measurement. | **Rejected-with-reason, filed as `trg-e69bf1ba`** (a new, sharper card rather than folding into `trg-91532c29`, per this campaign's own established practice of naming what changed rather than leaving a vaguer TBD). Not fixed here: switching the ratchet step to also run on `push` is a real CI-trust-boundary decision (a NEW trigger surface beyond what this PR's `ci_supplychain_ack.json` already covers) that deserves its own considered review, not a same-PR patch under review pressure. |
+| 4 | MEDIUM | Arm 2's `head_and_base_minted` reused P3.6's `ac_change_set` readers but dropped both of its earned null-case warnings (`_keystone_ac_digest.py`: "neither manifest names a spec_path" and "named, but none resolved to any content at either commit") — a trivially-empty comparison would otherwise be indistinguishable from "nothing changed", the exact silent-arm risk this hard-from-day-one check exists to avoid. | **Fixed.** Both warnings ported verbatim (same wording pattern, same trigger conditions) into `head_and_base_minted`. |
+| 5 | LOW | Arm ordering in `_run_gate`: if arm 2 raises `ReadError` (now reachable via the new collision guard), arm 1's already-computed `state.orphaned` — a possibly real, actionable finding — was discarded from the infra-fault payload. | **Fixed.** The `orphaned_bindings` arm 1 already computed is now carried into the arm-2 infra-fault payload, so an author facing both issues sees both. |
+| 6 | LOW | `ensure_utf8_stdout()`/`parse_args()`/`Path(args.project_root).resolve()` sit outside the `main`/`_run_gate` try boundary Stage 2 added; a pathological `--project-root` could still escape as a bare exit 1 in the ratchet CLI. | **Rejected-with-reason.** `--project-root .` is hardcoded in `ci.yml` (never operator-supplied in the path CI actually runs), so this is unreachable in production; the reviewer's own assessment concurred ("reachability in CI is nil... a nit, not a defect"). |
+
+**Self-identified while applying finding 1 above:** the fix's own warning claims a
+colliding `fr_id`'s bindings are "absent ... from the orphan check (feeder b)" — but that
+claim was FALSE for arm 2 until checked: `binding_regressions` never consulted
+`collision_display_ids`, and `links_for` deliberately POOLS link counts across every
+active node sharing a display id, so a collision could still make arm 2's "0 links at
+head" an artifact of which node's tests happened to be pooled, not a real regression on
+that criterion. **Fixed** the same way, checked against BOTH manifests (a collision
+introduced or resolved between base and head still taints the comparison either way):
+`binding_regressions` now skips any `fr_id` in `collision_display_ids(head_manifest) |
+collision_display_ids(base_manifest)`. Pinned by
+`test_binding_regressions_skips_a_display_id_collision`.
+
+All fixes re-verified before this section was written: full `shared/scripts/tools/tests/`
+suite green, `uvx ruff@0.15.15 check` clean on every touched file, `verify_local.py`
+3/3 mirrored gates green.
 
 ## 6. Empirical probes (Step 3.8 boundary — real repo, real git)
 

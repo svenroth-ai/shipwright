@@ -72,6 +72,7 @@ from ._keystone_ac_digest import ReadError  # noqa: E402
 from ._keystone_criteria import ac_criteria_digests  # noqa: E402
 from ._keystone_links import links_for  # noqa: E402
 from ._layer_coverage_ac import _spec_paths, spec_text_at  # noqa: E402
+from ._layer_coverage_core import collision_display_ids  # noqa: E402
 
 
 def head_and_base_minted(
@@ -99,15 +100,32 @@ def head_and_base_minted(
     silencing this hard-from-day-one arm on exactly the input it must not
     miss. Only HEAD is guarded, matching this module's own base/head
     asymmetry above.
+
+    Ported from ``ac_change_set`` (doubt review, medium — found during
+    build): a trivially-empty comparison must never look identical to
+    "nothing changed". Warns when NEITHER manifest names a spec_path at all
+    (the loop below never executes) and when spec_path(s) ARE named but
+    NONE resolved to any content at either commit (a stale/mistyped
+    ``spec_path``) — both null cases this arm shares with ``ac_change_set``,
+    which earned its own two warnings the identical way.
     """
     warnings: list[str] = []
     head_minted: dict[tuple[str, str], str] = {}
     head_minted_from: dict[tuple[str, str], str] = {}
     base_minted: dict[tuple[str, str], str] = {}
-    for rel_path in _spec_paths(head_manifest, base_manifest):
+    spec_text_was_read = False
+    spec_paths = _spec_paths(head_manifest, base_manifest)
+    if not spec_paths:
+        warnings.append(
+            "neither manifest names a spec_path for any requirement; binding_regressions is "
+            "trivially empty because there is nothing to compare, not because nothing changed."
+        )
+    for rel_path in spec_paths:
         head_text = spec_text_at(project_root, head_sha, rel_path)
         if head_text is None:
             raise ReadError(f"could not read {rel_path} at the head commit")
+        if head_text:
+            spec_text_was_read = True
         h_minted, _ = ac_criteria_digests(head_text)
         for key in h_minted:
             prior = head_minted_from.setdefault(key, rel_path)
@@ -125,6 +143,8 @@ def head_and_base_minted(
                 "no acceptance criteria there."
             )
             continue
+        if base_text:
+            spec_text_was_read = True
         try:
             b_minted, _ = ac_criteria_digests(base_text)
         except ReadError as exc:
@@ -134,6 +154,12 @@ def head_and_base_minted(
             )
             b_minted = {}
         base_minted.update(b_minted)
+    if spec_paths and not spec_text_was_read:
+        warnings.append(
+            f"{len(spec_paths)} spec_path(s) named ({', '.join(spec_paths)}) but none resolved "
+            "to any content at either commit; binding_regressions is trivially empty because "
+            "there is nothing to compare, not because nothing changed."
+        )
     return head_minted, base_minted, warnings
 
 
@@ -151,12 +177,31 @@ def binding_regressions(
     criterion whose TEXT changed already gets that check's greenness/removal
     walk); this arm exists precisely for the complement, the AC P3.6 cannot
     see because nothing about its text moved.
+
+    **Skips a display-id collision, at EITHER commit (Stage-2 code review,
+    found during the review cascade).** ``links_for`` deliberately POOLS link
+    counts across every active node sharing a display id (its own docstring:
+    "a real collision, fail-closed there") — so for a colliding ``fr_id`` the
+    "0 links at head" this arm keys on can be an artifact of which node's
+    tests happened to be pooled, not a real regression on THIS criterion.
+    Arm 1 (``_ac_binding_state.read_binding_state``) already excludes any
+    colliding ``fr_id`` from the orphan check entirely, with a warning
+    naming it "absent from the orphan check (feeder b)" — that claim was
+    FALSE for this arm until this guard existed, since this function never
+    consulted ``collision_display_ids`` and could still fire a HARD,
+    no-baseline finding for a collision-affected id. Checked against BOTH
+    manifests (a collision introduced or resolved between base and head
+    still taints the comparison either way), matching arm 1's own
+    "any collision at all" caution.
     """
+    collisions = collision_display_ids(head_manifest) | collision_display_ids(base_manifest)
     out: set[tuple[str, str]] = set()
     for key, head_digest in head_minted.items():
         if base_minted.get(key) != head_digest:
             continue  # not "unchanged" (absent at base, or a real edit)
         fr_id, ac_id = key
+        if fr_id in collisions:
+            continue
         if links_for(base_manifest, fr_id, ac_id) and not links_for(head_manifest, fr_id, ac_id):
             out.add(key)
     return out

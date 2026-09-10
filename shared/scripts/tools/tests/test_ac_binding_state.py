@@ -179,6 +179,50 @@ def test_an_active_fr_with_no_spec_path_is_warned_not_silently_excluded():
     assert any("FR-01.03" in w and "0 AC binding" in w for w in state.warnings)
 
 
+def test_a_display_id_collision_is_warned_not_falsely_orphaned():
+    """Stage-3 doubt review, HIGH: two active nodes sharing a display id but
+    naming DIFFERENT spec_paths make `spec_path_by_fr`'s plain dict pick ONE
+    path arbitrarily (last write wins) -- an AC minted only in the LOSING
+    document, with a binding, would otherwise false-orphan on this hard,
+    unbaselined gate. The same ambiguity is already routed ADVISORY
+    everywhere else the family checks for it
+    (`_layer_coverage_core.collision_display_ids`); this reader picks the
+    SAME resolution (exclude + warn), not a stricter one, since failing
+    closed would block every PR touching any PRE-EXISTING collision."""
+    second_path = "docs/spec2.md"
+    second_spec_text = (
+        "# Spec 2\n\n## 2. Functional Requirements\n\n### FR-01.01: Widgets (dup)\n\n"
+        "- [AC02] A criterion minted only in the second, colliding document.\n"
+    )
+    manifest = {
+        "requirements": {
+            "ns::FR-01.01-a": {
+                "id": "FR-01.01", "status": "active", "spec_path": SPEC_PATH,
+                "acs": {"AC01": _bound_link()},
+            },
+            "ns::FR-01.01-b": {
+                "id": "FR-01.01", "status": "active", "spec_path": second_path,
+                "acs": {},
+            },
+        },
+    }
+    state = read_binding_state({SPEC_PATH: SPEC, second_path: second_spec_text}, manifest)
+    assert state.orphaned == set()
+    assert not any(fr == "FR-01.01" for fr, _ac in (state.minted | state.unbound))
+    assert any("FR-01.01" in w and "collides" in w for w in state.warnings)
+
+
+def test_a_non_string_id_is_warned_not_silently_excluded():
+    """Stage-3 doubt review, low: the third instance of the same silent-
+    exclusion class -- an active node whose `id` is not a string falls
+    through every string-keyed branch; it must warn like its two siblings
+    (missing spec_path, display-id collision), not skip silently."""
+    manifest = {"requirements": {"ns::x": {"id": 123, "status": "active", "acs": {"AC01": {}}}}}
+    state = read_binding_state({}, manifest)
+    assert state.orphaned == set() and state.minted == set()
+    assert any("123" in w for w in state.warnings)
+
+
 def test_orphaned_keys_on_link_count_not_node_presence():
     """Stage-2 code review, low: `bound`/`unbound` key on `links_for`'s COUNT
     (its own stated convention, not the `acs` node's presence), so `orphaned`

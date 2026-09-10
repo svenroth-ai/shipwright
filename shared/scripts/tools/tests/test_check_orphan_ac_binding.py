@@ -140,6 +140,31 @@ def test_a_never_bound_ac_staying_unbound_is_not_a_regression(capsys, tmp_path):
     assert payload["binding_regressions"] == []
 
 
+def test_an_infra_fault_from_arm_2_still_carries_arm_1s_orphan_finding(capsys, tmp_path):
+    """Doubt review, low: arm ordering -- if arm 2 raises (a genuine
+    cross-spec-path collision at head), arm 1's already-computed
+    `orphaned_bindings` must not be discarded from the infra-fault payload;
+    an author facing both a real orphan and this fault should see both."""
+    root = make_repo(tmp_path, manifest_obj=_manifest_with_binding())
+    second_rel = "docs/spec2.md"
+    (root / second_rel).write_text(
+        "# Spec 2\n\n## 2. Functional Requirements\n\n### FR-01.02: Gadgets\n\n"
+        "- [AC03] A duplicate anchor for the SAME (fr, ac) in a second document.\n",
+        encoding="utf-8",
+    )
+    m = _manifest_with_binding()
+    m["requirements"]["ns::FR-01.02-dup"] = {
+        "id": "FR-01.02", "status": "active", "spec_path": second_rel, "acs": {},
+    }
+    write_manifest(root, m)
+    head = _commit_spec(
+        root, BASE_SPEC.replace("- [AC01] The widget must fizz.\n", ""),
+        "delete AC01 (a real orphan) + add a colliding second FR-01.02 doc")
+    code, payload = _run(root, head, capsys=capsys)
+    assert code == gate.EXIT_INFRA
+    assert payload["orphaned_bindings"] == ["FR-01.01/AC01"]
+
+
 def test_the_cli_starts_and_exits_cleanly_as_a_real_subprocess(tmp_path):
     """Deliberately the ONLY subprocess case in this module (house convention,
     ``test_keystone_gate_infra.py``)."""

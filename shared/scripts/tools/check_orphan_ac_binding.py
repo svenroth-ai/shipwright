@@ -175,7 +175,17 @@ def _run_gate(project_root: Path, args: argparse.Namespace) -> int:
             project_root, base_sha, args.head_sha, head_manifest, base_manifest,
         )
     except ReadError as exc:
-        return _emit(_infra(str(exc), base_sha=base_sha, head_sha=args.head_sha), EXIT_INFRA)
+        # Doubt review, low: arm 1's `state` (possibly a real, actionable
+        # `orphaned` finding) is already computed above -- carry it into the
+        # infra payload rather than discarding it, so an author facing BOTH a
+        # genuine orphan and this fault sees both, not just the latter.
+        return _emit(
+            _infra(
+                str(exc), base_sha=base_sha, head_sha=args.head_sha,
+                orphaned_bindings=sorted(_ac_str(k) for k in state.orphaned),
+            ),
+            EXIT_INFRA,
+        )
     regressions = binding_regressions(head_minted, base_minted, head_manifest, base_manifest)
 
     warnings = list(state.warnings) + arm2_warnings
@@ -200,8 +210,8 @@ def _run_gate(project_root: Path, args: argparse.Namespace) -> int:
         payload["remedy"] = (
             "`orphaned_bindings`: the `@covers` tag(s) named there point at an AC id that no "
             "longer exists in the spec — remove the tag, or retarget it to the AC that replaced "
-            "it (a rotated id). `binding_regressions`: the AC(s) named there had a passing "
-            "binding at the base commit and have none now, even though the criterion's own text "
+            "it (a rotated id). `binding_regressions`: the AC(s) named there had at least one "
+            "`@covers` binding at the base commit and have none now, even though the criterion's own text "
             "is unchanged — restore the `@covers` tag (or the test it named), or, if retiring "
             "the binding is deliberate, edit the criterion's own text in the same PR so it is "
             "reviewed as the intentional change it is."

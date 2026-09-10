@@ -83,6 +83,40 @@ def test_binding_regressions_flags_an_unchanged_digest_that_lost_its_links():
     assert out == {("FR-01.01", "AC01")}
 
 
+def test_binding_regressions_skips_a_display_id_collision():
+    """Stage-2 code review: arm 1 (`_ac_binding_state.read_binding_state`)
+    excludes a display-id collision from the orphan check entirely, warning
+    that the FR's binding(s) are "absent from the orphan check (feeder b)"
+    -- but that claim was FALSE for this arm before this guard existed, since
+    `links_for` deliberately POOLS link counts across every active node
+    sharing a display id. Two nodes sharing `FR-01.01`, one losing its only
+    link between base and head with an UNCHANGED digest, must not fire here
+    even though a naive (uncollision-aware) read of `links_for` would see
+    base_links>0 and head_links==0."""
+    base_manifest = {
+        "requirements": {
+            "ns::FR-01.01-a": {
+                "id": "FR-01.01", "status": "active",
+                "acs": {"AC01": {"tests": {"unit": [
+                    {"id": "tests/test_widget.py::test_fizz", "layer": "unit",
+                     "status": "enabled", "executed": "pass"},
+                ]}}},
+            },
+            "ns::FR-01.01-b": {"id": "FR-01.01", "status": "active", "acs": {}},
+        },
+    }
+    head_manifest = {
+        "requirements": {
+            "ns::FR-01.01-a": {"id": "FR-01.01", "status": "active", "acs": {}},
+            "ns::FR-01.01-b": {"id": "FR-01.01", "status": "active", "acs": {}},
+        },
+    }
+    head_minted = {("FR-01.01", "AC01"): "digest-unchanged"}
+    base_minted = {("FR-01.01", "AC01"): "digest-unchanged"}
+    out = arm2.binding_regressions(head_minted, base_minted, head_manifest, base_manifest)
+    assert out == set()
+
+
 def test_head_and_base_minted_reads_real_criteria_over_a_real_commit_pair(tmp_path):
     """Not a git-failure path: confirms the happy path still reads real spec
     text at two real commits, unchanged by the leniency fix above."""
@@ -129,6 +163,36 @@ def test_head_and_base_minted_raises_on_a_cross_spec_path_collision(tmp_path):
 
     with pytest.raises(ReadError, match="FR-01.01/AC01"):
         arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
+
+
+def test_head_and_base_minted_warns_when_no_manifest_names_a_spec_path(tmp_path):
+    """Doubt review, medium: ported from `_keystone_ac_digest.ac_change_set`'s
+    own null-case warning -- a trivially-empty comparison (nothing to compare)
+    must not look identical to "nothing changed" (a real comparison that found
+    no regression)."""
+    root = make_repo(tmp_path)
+    head_sha = _commit_head_of(root)
+    m: dict = {"requirements": {}}
+    head_minted, base_minted, warnings = arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
+    assert head_minted == {} and base_minted == {}
+    assert any("neither manifest names a spec_path" in w for w in warnings)
+
+
+def test_head_and_base_minted_warns_when_named_paths_resolve_to_no_content(tmp_path):
+    """Doubt review, medium: the null case one layer deeper than the one
+    above -- spec_path(s) ARE named, but none resolve to any content at
+    EITHER commit (a stale/mistyped spec_path), which the top-level warning
+    (keyed on `not spec_paths`) does not catch."""
+    root = make_repo(tmp_path)
+    head_sha = _commit_head_of(root)
+    m = {
+        "requirements": {
+            "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": "docs/ghost.md"},
+        },
+    }
+    head_minted, base_minted, warnings = arm2.head_and_base_minted(root, head_sha, head_sha, m, m)
+    assert head_minted == {} and base_minted == {}
+    assert any("none resolved to any content" in w for w in warnings)
 
 
 def _commit_head_of(root: Path) -> str:

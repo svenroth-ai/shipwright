@@ -38,6 +38,7 @@ from lib import ac_identity  # noqa: E402
 
 from ._keystone_base_manifest import ReadError  # noqa: E402  (re-exported: one import site)
 from ._keystone_links import links_for  # noqa: E402
+from ._layer_coverage_core import collision_display_ids  # noqa: E402
 
 
 def active_requirements(manifest: dict) -> list[dict]:
@@ -112,6 +113,23 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
       manifest-generated FR sets ``spec_path``), but the reader does not
       assume that — it is "excluded, not misreported" the same way the other
       branches are, never a silent skip.
+    * A display id shared by >=2 active requirement nodes
+      (``_layer_coverage_core.collision_display_ids``) is EXCLUDED the same
+      way, with a WARNING (doubt review, HIGH — found during build): plain
+      ``dict``-keyed-on-display-id construction (``spec_path_by_fr``) makes
+      ONE colliding node's ``spec_path`` win arbitrarily, so an AC minted
+      only in the LOSING document would false-BLOCK as ``orphaned`` on a
+      hard, unbaselined gate — while the very same ambiguity is already
+      routed ADVISORY everywhere else this family checks for it
+      (``_keystone_layer_gap``, ``_layer_coverage_binding``). This module
+      picks the SAME resolution (exclude + warn) rather than a NEW,
+      stricter one, since a hard fail-closed here would immediately block
+      every PR touching any PRE-EXISTING collision, not just this PR's own
+      change — out of scope for a feeder check to fix.
+    * An active node whose ``id`` is not a string at all gets the identical
+      treatment (repr'd in the warning), for the same "excluded, not
+      misreported" reason — ``require_manifest_shape`` does not itself
+      validate ``id``'s type.
     * ``None`` (a genuine read fault) or untrustworthy markers
       (``ac_identity.AcIdentityError`` — malformed/duplicate) at this text
       RAISE :class:`ReadError` — matching P3.6's own HEAD-side treatment
@@ -122,7 +140,8 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
       base/head asymmetry.
     """
     state = BindingState()
-    fr_paths = spec_path_by_fr(manifest)
+    collisions = collision_display_ids(manifest)
+    fr_paths = {fr: path for fr, path in spec_path_by_fr(manifest).items() if fr not in collisions}
     minted_by_fr: dict[str, set[str]] = {}
 
     for fr_id, spec_path in fr_paths.items():
@@ -152,15 +171,27 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
     for node in active_requirements(manifest):
         fr_id = node.get("id")
         if not isinstance(fr_id, str) or fr_id not in minted_by_fr:
-            if isinstance(fr_id, str):
-                acs = node.get("acs")
-                binding_count = len(acs) if isinstance(acs, dict) else 0
-                state.warnings.append(
-                    f"{fr_id}: no spec_path recorded for this requirement in the manifest; "
-                    f"excluded from this run entirely — its minted ACs are absent from "
-                    f"'unbound' (feeder a) and its {binding_count} AC binding(s) are absent "
-                    "from the orphan check (feeder b), never misreported as unbound/orphaned."
+            acs = node.get("acs")
+            binding_count = len(acs) if isinstance(acs, dict) else 0
+            if not isinstance(fr_id, str):
+                reason = f"its 'id' is not a string ({fr_id!r})"
+            elif fr_id in collisions:
+                reason = (
+                    "its display id collides with >=1 other requirement node "
+                    "(_layer_coverage_core.collision_display_ids — same ambiguity the family "
+                    "already treats as ADVISORY elsewhere, e.g. _keystone_layer_gap; a hard "
+                    "orphan/unbound verdict here would be keyed on whichever node's spec_path "
+                    "happened to win the dict build, not a real answer)"
                 )
+            else:
+                reason = "no spec_path is recorded for this requirement in the manifest"
+            label = fr_id if isinstance(fr_id, str) else repr(fr_id)
+            state.warnings.append(
+                f"{label}: {reason}; excluded from this run entirely — its minted ACs are "
+                f"absent from 'unbound' (feeder a) and its {binding_count} AC binding(s) "
+                "are absent from the orphan check (feeder b), never misreported as "
+                "unbound/orphaned."
+            )
             continue
         acs = node.get("acs")
         if not isinstance(acs, dict):
