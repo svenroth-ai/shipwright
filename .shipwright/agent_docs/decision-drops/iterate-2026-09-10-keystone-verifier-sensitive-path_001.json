@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-keystone-verifier-sensitive-path",
+  "date": "2026-09-10",
+  "section": "Iterate — change: keystone gate verifier sensitive-path parity",
+  "title": "Keystone gate verifier logic added to SENSITIVE_PATH_RE",
+  "context": "The keystone AC gate's own verifier logic (check_keystone_ac_gate.py + 8 _keystone_*.py modules) was not named in SENSITIVE_PATH_RE, so editing it alone escaped the mandatory review an edit to ci.yml gets (trg-9967000f).",
+  "decision": "Add the ci.yml-invoked entry point and a _keystone_ prefix match to SENSITIVE_PATH_RE so skip-pr-review cannot waive review on the gate's own verifier logic.",
+  "consequences": "Edits to the 8 _keystone_*.py modules or their entry point now force mandatory PR review, matching ci.yml. A residual gap in shared helper modules those files import is documented and deferred (trg-a719e3b7).",
+  "rationale": "Doubt-review found the shared _layer_coverage_* helpers those modules import also back an unrelated gate, so widening further would over-broaden mandatory review onto that gate's unrelated PRs -- a real trade-off, not a drop-in fix.",
+  "rejected": "Widening SENSITIVE_PATH_RE to the whole verifiers/ directory -- rejected as over-broad; deferred to trg-a719e3b7 for a scoped follow-up.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

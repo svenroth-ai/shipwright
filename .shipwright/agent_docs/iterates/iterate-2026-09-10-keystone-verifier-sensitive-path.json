@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-09-10-keystone-verifier-sensitive-path",
+  "date": "2026-09-10T16:54:45.571203Z",
+  "event_at": "2026-09-10T15:11:15.075270+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/keystone-verifier-sensitive-path",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-keystone-verifier-sensitive-path"
+}
