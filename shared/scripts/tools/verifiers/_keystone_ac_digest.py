@@ -267,10 +267,19 @@ def ac_change_set(
     # blast-radius mistake round 3 fixed for the divergence guard. "New" is not
     # answerable without a base to be new relative to, so it is not answered.
     diverged = set(result.reader_divergence)
+    # Same precedence as `diverged`: an FR already reported by arm 1
+    # (`unminted_changed`) is NOT "states no acceptance criterion" -- it states
+    # one or more, unminted. Without this exclusion a brand-new FR authored with
+    # bullets but no `[ACnn]` markers fires BOTH arms, and arm 2's message then
+    # tells the operator to do something they already did (found by Stage-2
+    # code review: the single most likely first real-world encounter with this
+    # gate is exactly this shape -- an FR hand-authored before running the
+    # minter).
+    unminted_frs = {fr for fr, _ in result.unminted_changed}
     base_ids = _active_display_ids(base_manifest)
     if base_ids:
         for fr_id in sorted(_active_display_ids(head_manifest) - base_ids):
-            if fr_id in diverged:
+            if fr_id in diverged or fr_id in unminted_frs:
                 continue
             if not any(k[0] == fr_id for k in head_minted):
                 result.new_frs_without_criteria.append(fr_id)

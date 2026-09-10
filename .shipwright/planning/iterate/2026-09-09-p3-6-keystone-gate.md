@@ -130,7 +130,7 @@ Over the last **60 commits on `origin/main`**, exactly **3** touched `spec.md`:
 
 | commit | verdict under the proposed per-AC digest |
 |---|---|
-| `545a4f320` (P3.4 backfill) | 268 ACs read as `added` — an artefact of the mint itself: at base no criterion carried a marker. Additions do **not** block under arm 2 of AC-2, but under §5.2's corrected `unminted_changed` rule they would have blocked *at base*, which is why "mint before gating" is a stated precondition (§7). |
+| `545a4f320` (P3.4 backfill) | 268 ACs read as `added` — an artefact of the mint itself: at base no criterion carried a marker. Additions do **not** block under arm 2 of AC-2 unless they already carry a binding (deviation 3, §7), but under §5.2's corrected `unminted_changed` rule they would have blocked *at base*, which is why "mint before gating" is a stated precondition (§7). |
 | `43e8969b2` | spec.md touched, **no minted-AC text change** → gate silent |
 | `8255aca2f` | spec.md touched, **no minted-AC text change** → gate silent |
 

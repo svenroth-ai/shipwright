@@ -183,6 +183,25 @@ def test_a_new_fr_stating_no_criterion_at_all_is_reported_separately(repo):
     assert cs.reader_divergence == []
 
 
+def test_a_new_fr_with_unminted_bullets_is_not_ALSO_reported_as_stating_none(repo):
+    """Precedence, arm 1 over arm 2 (Stage-2 code review, medium): a brand-new
+    FR hand-authored with bullets but no ``[ACnn]`` markers yet is already
+    reported by arm 1 (``unminted_changed``) — it must not ALSO land in
+    ``new_frs_without_criteria``, whose message ("states no acceptance
+    criterion") would then be false: it states criteria, just unminted ones.
+    This is the single most likely first real-world encounter with the gate —
+    an FR authored before running the minter."""
+    manifest = _manifest(ids=("FR-01.01", "FR-01.02", "FR-01.03"))
+    head = _commit_spec(
+        repo,
+        BASE_SPEC + "\n### FR-01.03: Widgets\n\n- The widget must spin.\n",
+    )
+    base = _git("rev-parse", "HEAD~1", cwd=repo)
+    cs = kd.ac_change_set(repo, base, head, manifest, _manifest())
+    assert [fr for fr, _ in cs.unminted_changed] == ["FR-01.03"]
+    assert cs.new_frs_without_criteria == []
+
+
 def test_an_absent_base_manifest_suppresses_the_new_fr_arm_entirely(repo):
     """External plan review (glm, low) asked for arm 2's set operation to be
     stated; stating it exposed a repo-wide false red.
