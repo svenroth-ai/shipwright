@@ -1362,7 +1362,9 @@ No second Stage-3 pass was run after the Doubt 1/2 fixes — outside this cascad
 
 ### 12.3 Confidence Calibration (Step 3.8)
 
-Probes run: **10**. Findings: **5**. Asymptote: **reached for the base-manifest boundary, NOT
+Probes run: **10**. Findings: **3 from probes (D, F, H below) + 2 from the Stage-3 doubt review
+(§12.1g Doubt 1/2, which are not probes and have no row in the table below) = 5**. Asymptote:
+**reached for the base-manifest boundary, NOT
 reached for the gate as a whole** — and the second half is the honest answer, so it is stated
 rather than rounded up. Probe H is the direct evidence for that second half: a probe written to
 close a boundary found the same defect one level deeper, *after* the boundary had been declared

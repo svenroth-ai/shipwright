@@ -14,14 +14,16 @@ reason it is unit-testable against fixtures without a repo.
 **ONE vocabulary: LINK COUNTS, never node presence** (design §5.3). Every outcome
 for a ``changed`` AC derives from exactly two numbers:
 
-===============  ===============  ====================================
-``base_links``   ``head_links``   outcome
-===============  ===============  ====================================
->= 1             **0**            ``binding_removed`` (HARD)
-0                0                ``unbound`` (report-only)
-0                >= 1             the greenness walk
->= 1             >= 1             the greenness walk
-===============  ===============  ====================================
+===============  =========================  ====================================
+``base_links``   ``head_links``             outcome
+===============  =========================  ====================================
+>= 1             **0**                      ``binding_removed`` (HARD)
+>= 1             **< base_links, >= 1**     ``binding_removed`` (HARD -- a reduction, not
+                                             just a removal; Stage-3 doubt review, high)
+0                0                          ``unbound`` (report-only)
+0                >= 1                       the greenness walk
+>= 1             ``>= base_links``          the greenness walk
+===============  =========================  ====================================
 
 A node-presence phrasing of the same rule disagrees on exactly one input — base
 has links, head has an ``acs[ac_id]`` node whose ``tests`` map is empty — where
