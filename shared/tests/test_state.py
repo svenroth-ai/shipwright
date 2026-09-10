@@ -6,13 +6,11 @@ from lib.state import _phase_tasks_progress, detect_current_phase, get_checkpoin
 
 
 class TestPhaseTasksProgress:
-    """``_phase_tasks_progress`` is ``detect_current_phase``'s primary signal
-    (campaign p4-04-retire-write-once-steps, sub-iterate s3)."""
+    """``_phase_tasks_progress`` is ``detect_current_phase``'s primary signal."""
 
     def test_malformed_status_does_not_crash(self):
         """A non-string status is neither finished nor absent, so the phase
-        reads as CURRENT (not confidently complete) rather than vanishing —
-        mirrors shared/scripts/lib/handoff_phase_status.status_of()'s guard
+        reads as CURRENT rather than vanishing — mirrors status_of()'s guard
         against an unhashable `x in frozenset` check."""
         run = {"phase_tasks": [{"phase": "build", "status": ["done"]}]}
         current, completed = _phase_tasks_progress(run)
@@ -22,10 +20,8 @@ class TestPhaseTasksProgress:
     def test_backlog_only_phase_counts_as_current(self):
         """A phase whose only phase_tasks[] entry is still queued
         (backlog/awaiting_launch) counts as CURRENT, not merely 'no
-        confident signal' — external plan review flagged an earlier version
-        that required an ACTIVE status, which would fall back to a
-        config-heuristic for a run mid-transition (successor task planned
-        but not yet claimed) that is otherwise perfectly healthy."""
+        confident signal' — a run mid-transition (successor task planned but
+        not yet claimed) is otherwise perfectly healthy."""
         run = {
             "pipeline": ["project", "build"],
             "phase_tasks": [
@@ -87,14 +83,10 @@ def test_detect_phase_not_started(tmp_project):
     assert detect_current_phase(tmp_project) == "not_started"
 
 
-def test_detect_phase_v1_only_completed_steps_covers_pipeline_is_complete(tmp_project):
-    """A v1-only (no phase_tasks[]) run whose completed_steps covers the
-    whole declared pipeline must read "complete" — external code review,
-    campaign p4-04-retire-write-once-steps sub-iterate s3: the config-only
-    heuristic fallback has no terminal "complete" state of its own (it only
-    ever returns a phase name or "not_started"), so dropping this narrow
-    completed_steps-based check regressed a genuinely-finished standalone
-    run to reporting a phase name instead."""
+def test_detect_phase_v1_only_completed_steps_reports_complete_via_cutover(tmp_project):
+    """The ONE-TIME legacy cutover (GLM MEDIUM, s5) reads `completed_steps`
+    here — without it this finished legacy run misreports "build" FOREVER
+    (heuristic below can't express test/changelog/deploy)."""
     (tmp_project / "shipwright_run_config.json").write_text(
         json.dumps({
             "pipeline": ["project", "design", "plan", "build"],
@@ -115,13 +107,9 @@ def test_detect_phase_v1_only_completed_steps_covers_pipeline_is_complete(tmp_pr
     assert detect_current_phase(tmp_project) == "complete"
 
 
-def test_detect_phase_v1_only_mid_pipeline_reads_live_current_step(tmp_project):
-    """A v1-only (no phase_tasks[]) run past `build` must read the live
-    `current_step` `update_step` maintains for standalone runs, not fall to
-    the config heuristic -- which has no way to express test/changelog/
-    deploy at all and would misreport "build" (code review, campaign
-    p4-04-retire-write-once-steps, sub-iterate s3: an earlier version
-    dropped this read entirely)."""
+def test_detect_phase_v1_only_current_step_reported_via_cutover(tmp_project):
+    """The same cutover reads live `current_step` — restoring the pre-s5
+    answer ("changelog") instead of the heuristic's "build"."""
     (tmp_project / "shipwright_run_config.json").write_text(
         json.dumps({
             "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
@@ -140,16 +128,49 @@ def test_detect_phase_v1_only_mid_pipeline_reads_live_current_step(tmp_project):
     assert detect_current_phase(tmp_project) == "changelog"
 
 
+def test_detect_phase_malformed_completed_steps_entry_does_not_crash(tmp_project):
+    """PR-review Tier-3 (openai/gpt-5.6-luna) BLOCK, s5: the legacy cutover
+    used to build `set(run.get("completed_steps", []))` directly — an
+    unhashable entry (a dict, from a corrupted or hand-edited legacy
+    config) raised TypeError and crashed detect_current_phase() instead of
+    degrading. Non-string entries must be filtered out, matching every
+    other legacy-completed_steps reader in this diff, not raise."""
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({
+            "pipeline": ["project", "design"],
+            "completed_steps": ["project", {"bad": "entry"}],
+        }),
+        encoding="utf-8",
+    )
+    # Doesn't raise, and the malformed entry can't count toward "complete"
+    # (pipeline is not a subset of the one salvageable string entry) —
+    # falls through to the heuristic, same as no signal at all.
+    assert detect_current_phase(tmp_project) == "not_started"
+
+
+def test_detect_phase_usable_phase_tasks_never_consults_legacy_fields(tmp_project):
+    """A USABLE phase_tasks[] never falls back to legacy fields, even when
+    they disagree in a way that WOULD change the answer if consulted."""
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({
+            "pipeline": ["project", "build"],
+            "current_step": "build",
+            "completed_steps": ["project", "build"],
+            "phase_tasks": [{"phase": "project", "status": "done"}],
+        }),
+        encoding="utf-8",
+    )
+    assert detect_current_phase(tmp_project) == "not_started"
+
+
 def test_detect_phase_build(project_with_configs):
-    """Fixture has no phase_tasks[] (v1-only shape) — falls back to the
-    build_config heuristic (01-layout complete, 02-widgets in_progress),
+    """Fixture has no phase_tasks[]; falls back to the build_config heuristic,
     which happens to agree with the fixture's stale current_step=build."""
     assert detect_current_phase(project_with_configs) == "build"
 
 
 def test_detect_phase_from_phase_tasks(project_with_configs):
-    """Primary path: reads the current phase from phase_tasks[], not
-    current_step (campaign p4-04-retire-write-once-steps, sub-iterate s3)."""
+    """Primary path: reads the current phase from phase_tasks[], not current_step."""
     run_path = project_with_configs / "shipwright_run_config.json"
     config = json.loads(run_path.read_text())
     config["phase_tasks"] = [
@@ -167,9 +188,8 @@ def test_detect_phase_from_phase_tasks(project_with_configs):
 
 
 def test_detect_phase_phase_tasks_ignores_stale_current_step(project_with_configs):
-    """current_step/completed_steps are write-once and claim 'build' here,
-    while phase_tasks[] says deploy is actually running — phase_tasks[] must
-    win (campaign p4-04-retire-write-once-steps)."""
+    """current_step claims 'build' here, while phase_tasks[] says deploy is
+    actually running — phase_tasks[] must win."""
     run_path = project_with_configs / "shipwright_run_config.json"
     config = json.loads(run_path.read_text())
     assert config["current_step"] == "build"  # fixture's stale claim, unchanged
@@ -188,8 +208,8 @@ def test_detect_phase_phase_tasks_ignores_stale_current_step(project_with_config
 
 
 def test_detect_phase_complete_from_phase_tasks(project_with_configs):
-    """All pipeline phases finished in phase_tasks[] → complete, even though
-    current_step/completed_steps (write-once) still claim 'build'/partial."""
+    """All phases finished in phase_tasks[] → complete, even though
+    current_step still claims 'build'."""
     run_path = project_with_configs / "shipwright_run_config.json"
     config = json.loads(run_path.read_text())
     config["phase_tasks"] = [

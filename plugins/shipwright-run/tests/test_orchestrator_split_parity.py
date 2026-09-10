@@ -31,6 +31,7 @@ sys.path.insert(
 
 import orchestrator  # noqa: E402
 from orchestrator_pkg import router as _router  # noqa: E402
+from lib.handoff_phase_status import phase_tasks_progress  # noqa: E402
 
 # update_step REQUIRES a reason whenever force completes a non-standalone step
 # (FR-01.01 — an override has to record why). These fixtures force to skip
@@ -197,7 +198,6 @@ def test_two_phase_flow_routes_identically_post_split(tmp_project):
         autonomy="guided", deploy_target="jelastic-dev",
         project_root=tmp_project,
     )
-    assert cfg["current_step"] == "project"
     initial_task = cfg["phase_tasks"][0]
     assert initial_task["phase"] == "project"
     assert initial_task["status"] == "awaiting_launch"
@@ -207,14 +207,14 @@ def test_two_phase_flow_routes_identically_post_split(tmp_project):
     cfg2 = orchestrator.update_step(
         tmp_project, "project", "complete", force=True, force_reason=_FORCE_REASON,
     )
-    assert "project" in cfg2["completed_steps"]
-    assert cfg2["current_step"] == "design", (
-        f"Expected design after project, got {cfg2['current_step']!r}. "
-        "Phase order changed post-split — REGRESSION."
-    )
+    _, completed = phase_tasks_progress(cfg2)
+    assert "project" in completed
 
     next_step = orchestrator.get_next_step(tmp_project)
-    assert next_step["next_step"] == "design"
+    assert next_step["next_step"] == "design", (
+        f"Expected design after project, got {next_step['next_step']!r}. "
+        "Phase order changed post-split — REGRESSION."
+    )
 
 
 def test_pipeline_steps_literal_lives_in_constants_module():

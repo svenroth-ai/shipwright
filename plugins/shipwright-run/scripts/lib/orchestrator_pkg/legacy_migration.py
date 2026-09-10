@@ -32,8 +32,9 @@ def _migrate_legacy_pipeline_if_needed(
     - ``compliance`` — auto-background side-effect since plan v7 Option Z
     - ``security`` — manual / CI since iterate sec-report-and-orchestrator-decouple
 
-    ``completed_steps`` is left untouched so the historical record of
-    completed runs is preserved.
+    The historical record of completed runs is left untouched — in
+    ``phase_tasks[]`` for a driven run, or (on a config predating this
+    campaign) ``completed_steps`` — this function never rewrites either.
 
     For ``security`` specifically, also iterate ``phase_tasks[]`` and skip any
     non-terminal entry (``backlog`` / ``awaiting_launch``) — they would

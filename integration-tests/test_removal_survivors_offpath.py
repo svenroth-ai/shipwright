@@ -129,15 +129,21 @@ def test_phase_completion_fallback_still_fires(tmp_path):
 
     Asserting only the handoff FILE would let a regression that silently dropped this
     fallback pass — the hook would still exit 0 and still write its handoff.
+
+    Signal is `phase_tasks[]` alone (campaign p4-04-retire-write-once-steps,
+    sub-iterate s5: `current_step`/`completed_steps` are retired and no longer
+    read) — a v1-run config parked on `project` still in progress there, whose
+    phase config says complete.
     """
     project = tmp_path / "proj"
     project.mkdir()
     (project / "CLAUDE.md").write_text("# proj\n", encoding="utf-8")
-    # A v1/standalone run config parked on `project`, whose phase config says complete.
     (project / CONFIG_NAME).write_text(
-        json.dumps({"status": "in_progress", "current_step": "project",
-                    "completed_steps": [], "standalone": True,
-                    "pipeline": list(PIPELINE_PHASES)}),
+        json.dumps({
+            "status": "in_progress", "standalone": True,
+            "pipeline": list(PIPELINE_PHASES),
+            "phase_tasks": [{"phase": "project", "status": "in_progress"}],
+        }),
         encoding="utf-8",
     )
     (project / "shipwright_project_config.json").write_text(
@@ -147,7 +153,12 @@ def test_phase_completion_fallback_still_fires(tmp_path):
     assert _fire_stop_hook(project).returncode == 0
 
     cfg = json.loads((project / CONFIG_NAME).read_text(encoding="utf-8"))
-    assert "project" in cfg.get("completed_steps", []), (
+    project_task = next(
+        (t for t in cfg.get("phase_tasks", [])
+         if t.get("phase") == "project" and t.get("splitId") is None),
+        None,
+    )
+    assert project_task is not None and project_task.get("status") == "done", (
         "the phase-completion fallback no longer fires — a finished phase would stay "
         f"unmarked in the run config. config: {cfg}"
     )

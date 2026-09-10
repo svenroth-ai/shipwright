@@ -9,7 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from .config import read_all_configs
-from .handoff_phase_status import phase_tasks_progress as _phase_tasks_progress
+from .handoff_phase_status import (
+    phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
+    phase_tasks_progress as _phase_tasks_progress,
+)
 
 
 def detect_current_phase(project_root: str | Path) -> str:
@@ -22,22 +25,19 @@ def detect_current_phase(project_root: str | Path) -> str:
     1. Primary: phase_tasks[] (v2) — the orchestrator's per-phase task
        list, authoritative for progress within a driven (/shipwright-run)
        run.
-    2. Secondary: the write-once ``current_step`` field, ONLY when
-       phase_tasks[] gave no confident signal at all (a standalone/v1-only
-       run, or an adopted-then-standalone repo whose established-at-
-       adoption entries are all finished). ``current_step`` is stamped
-       once at run creation (config_factory) and the v2 lifecycle never
-       advances it, so a driven run always has a confident phase_tasks[]
-       answer before this is reached — code review, campaign
-       p4-04-retire-write-once-steps, sub-iterate s3: an earlier version of
-       this migration dropped this path entirely, regressing every
-       standalone run past ``build`` (whose config heuristic below cannot
-       express test/changelog/deploy) to misreporting "build". Mirrors
-       ``shared/scripts/hooks/generate_handoff_on_stop.py`` and
-       ``suggest_iterate.py``'s identical fallback gate.
-    3. Tertiary: heuristic from phase-specific configs (only when the run
-       config itself has no usable ``current_step`` either, or there is no
-       run_config at all).
+    2. One-time legacy cutover (external code review, GLM MEDIUM, sub-iterate
+       s5): a PRE-s5 standalone/legacy run has no ``phase_tasks[]`` at all and
+       never will again once it is finished — nothing left calls
+       ``update_step`` to seed one, so unlike the Stop-hook's self-healing
+       trigger this reader's wrong answer would otherwise persist forever
+       (the below config-heuristic can't express test/changelog/deploy, so a
+       finished legacy run misreports "build"). Reads the retired
+       ``current_step``/``completed_steps`` fields ONLY when
+       ``phase_tasks[]`` has no usable entry at all — never as an ongoing
+       fallback. Mirrors ``config_factory.create_config``'s identical
+       boundary.
+    3. Tertiary: heuristic from phase-specific configs (only when neither of
+       the above gives a usable signal, or there is no run_config at all).
     """
     configs = read_all_configs(project_root)
 
@@ -50,15 +50,20 @@ def detect_current_phase(project_root: str | Path) -> str:
         if pipeline and completed and set(pipeline).issubset(completed):
             return "complete"
 
-        current_step = run.get("current_step")
-        if current_step:
-            return current_step
-        completed_steps = set(run.get("completed_steps", []))
-        if pipeline and set(pipeline).issubset(completed_steps):
-            return "complete"
+        if not _phase_tasks_has_usable_entries(run):
+            legacy_current = run.get("current_step")
+            if legacy_current:
+                return legacy_current
+            legacy_steps = run.get("completed_steps")
+            legacy_completed = (
+                {s for s in legacy_steps if isinstance(s, str)}
+                if isinstance(legacy_steps, list) else set()
+            )
+            if pipeline and set(pipeline).issubset(legacy_completed):
+                return "complete"
 
-    # Tertiary fallback: heuristic for a run_config with no usable
-    # current_step either, or no run_config at all. Check in-progress
+    # Fallback: heuristic for a run_config with no usable phase_tasks[]
+    # or legacy signal, or no run_config at all. Check in-progress
     # phases first, then derive next step from completed phases.
     build = configs["build"]
     if build.get("sections"):

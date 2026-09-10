@@ -155,12 +155,10 @@ def resolve_source(project_root: Path, phase: str) -> str:
     always tagged regardless of orchestrated state because iterate runs
     on a separate finalize path.
 
-    "Driven" is read from the v2 ``phase_tasks[]`` authority OR the v1
-    ``current_step``. The v1 field alone was not enough for one narrow shape: a
-    ``/shipwright-run`` created over a pipeline already completed standalone gets
-    ``current_step: None`` (``config_factory`` couples that to ``status:
-    complete``), and was then stamped ``standalone`` despite being orchestrated.
-    An explicit ``standalone: true`` marker still outranks both.
+    "Driven" is read from the ``phase_tasks[]`` authority alone — the v1
+    ``current_step``/``completed_steps`` fields, and every writer of them,
+    are retired (campaign p4-04-retire-write-once-steps, sub-iterate s5).
+    An explicit ``standalone: true`` marker still outranks it.
     """
     if phase == "iterate":
         return "iterate"
@@ -175,7 +173,7 @@ def resolve_source(project_root: Path, phase: str) -> str:
         return "standalone"
     if data.get("standalone") is True:
         return "standalone"
-    if has_phase_tasks(data) or data.get("current_step"):
+    if has_phase_tasks(data):
         return "orchestrator"
     return "standalone"
 
@@ -195,7 +193,7 @@ def _engagement_evidence_unreadable(project_root: Path) -> bool:
     """``True`` iff the event log EXISTS but cannot be read (partial flush / OSError).
 
     A genuinely ABSENT event log is NOT "unreadable" — cfg-based engagement
-    (status / phase_tasks[] / current_step / completed_steps) still applies, so
+    (status / phase_tasks[]) still applies, so
     absence must not trigger fail-open. Only an existing-but-unreadable log counts
     as insufficient evidence. Any resolver error is treated as unreadable
     (conservative).

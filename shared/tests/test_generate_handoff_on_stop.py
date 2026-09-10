@@ -1,10 +1,8 @@
 """Tests for the Stop hook that generates session_handoff.md.
 
-Post-iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox:
-the hook writes to ``.shipwright/agent_docs/runtime/`` (gitignored). The
+The hook writes to ``.shipwright/agent_docs/runtime/`` (gitignored); the
 tracked ``.shipwright/agent_docs/session_handoff.md`` is produced
-exclusively by iterate-finalize. Tests use ``runtime_handoff_path`` to
-target the live-state path.
+exclusively by iterate-finalize. ``runtime_handoff_path`` targets live state.
 """
 
 import io
@@ -14,8 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-# The hook script path (declared here too so the direct-import unit tests
-# below don't depend on definition order with the subprocess-based ones).
+# Declared here too so the direct-import unit tests below don't depend on
+# definition order with the subprocess-based ones.
 _HOOK_SCRIPT_DIR = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
 sys.path.insert(0, str(_HOOK_SCRIPT_DIR))
 import generate_handoff_on_stop as _ghs  # noqa: E402
@@ -24,10 +22,8 @@ from generate_handoff_on_stop import _phase_tasks_progress  # noqa: E402
 
 class TestPhaseTasksProgress:
     """``_phase_tasks_progress`` is the phase-completion fallback detector's
-    primary signal (campaign p4-04-retire-write-once-steps, sub-iterate s3) —
-    NOT the write-once ``current_step``/``completed_steps`` fields, which
-    ``config_factory`` stamps once at run creation and the v2 lifecycle
-    never advances."""
+    primary signal — NOT the write-once ``current_step``/``completed_steps``
+    fields ``config_factory`` stamps once at run creation."""
 
     def test_no_phase_tasks_returns_none_and_empty(self):
         assert _phase_tasks_progress({}) == (None, set())
@@ -72,11 +68,9 @@ class TestPhaseTasksProgress:
         assert completed == {"project"}
 
     def test_malformed_status_does_not_crash(self):
-        """A producer that writes a non-string status (list/dict) must not
-        raise — mirrors shared/scripts/lib/handoff_phase_status.status_of()'s
-        guard against an unhashable `x in frozenset` check. A malformed
-        status is neither finished nor absent, so the phase reads as
-        CURRENT (not confidently complete) rather than vanishing silently."""
+        """A non-string status (list/dict) must not raise — mirrors
+        handoff_phase_status.status_of()'s unhashable-check guard. It reads
+        as CURRENT (not confidently complete), never vanishing silently."""
         run_config = {"phase_tasks": [{"phase": "build", "status": ["done"]}]}
         current, completed = _phase_tasks_progress(run_config)
         assert current == "build"
@@ -85,12 +79,9 @@ class TestPhaseTasksProgress:
     def test_backlog_only_phase_counts_as_current(self):
         """A phase whose only phase_tasks[] entry is still queued
         (backlog/awaiting_launch — materialized but not yet claimed) counts
-        as CURRENT, not merely 'no confident signal'. External plan review
-        (campaign p4-04-retire-write-once-steps, sub-iterate s3) flagged an
-        earlier version that required an ACTIVE status here: a run
-        mid-transition (previous phase done, successor task planned but not
-        yet claimed) would then fall back to the very write-once fields this
-        campaign retires, for an otherwise healthy driven run."""
+        as CURRENT, not merely 'no confident signal' (external plan review,
+        sub-iterate s3: an ACTIVE-status-only version regressed a healthy
+        mid-transition run to the write-once fields this campaign retires)."""
         run_config = {
             "pipeline": ["project", "build"],
             "phase_tasks": [
@@ -104,14 +95,11 @@ class TestPhaseTasksProgress:
 
 
 class TestMainPhaseCompletionWiring:
-    """``main()``'s ordering (code review, campaign p4-04-retire-write-once-steps,
-    sub-iterate s3): a driven config's phase_tasks[]-derived current phase must
-    win over a stale ``current_step``, and the v1 fallback must still fire for a
-    standalone (no phase_tasks[]) config. Calls ``main()`` in-process (not via
-    the subprocess-based ``run_hook`` helper other tests in this file use) so
-    ``_run_phase_completion`` — the real producer, which shells out to
-    ``orchestrator.py update-step`` — can be stubbed at the module object rather
-    than actually invoked."""
+    """``main()``'s ordering: a driven config's phase_tasks[]-derived current
+    phase wins over a stale ``current_step``, and a standalone (no
+    phase_tasks[]) config uses the one-time legacy cutover (s5). Calls
+    ``main()`` in-process, stubbing ``_run_phase_completion`` — the real
+    producer, which shells out to ``orchestrator.py update-step``."""
 
     @staticmethod
     def _call_main(tmp_project: Path, monkeypatch, run_config: dict) -> list[tuple]:
@@ -132,13 +120,12 @@ class TestMainPhaseCompletionWiring:
     def test_driven_config_uses_phase_tasks_current_not_stale_current_step(
         self, tmp_project, monkeypatch,
     ):
-        """A driven config whose write-once current_step still claims
-        'project' (config_factory's original stamp) must dispatch on the
-        phase_tasks[]-derived current phase ('build') instead. The build
-        config here has no sections yet, so _detect_phase_complete('build',
-        ...) is False and _run_phase_completion must NOT be called at all —
-        whereas the OLD current_step ('project') would have fired it, since
-        shipwright_project_config.json below reports status=complete."""
+        """A driven config whose stale current_step still claims 'project'
+        must dispatch on the phase_tasks[]-derived current phase ('build')
+        instead. The build config here has no sections yet, so
+        _run_phase_completion must NOT be called — whereas the OLD
+        current_step ('project') would have fired it, since
+        shipwright_project_config.json reports status=complete."""
         (tmp_project / "shipwright_project_config.json").write_text(
             json.dumps({"status": "complete"}), encoding="utf-8",
         )
@@ -156,10 +143,12 @@ class TestMainPhaseCompletionWiring:
         })
         assert calls == []
 
-    def test_v1_only_config_still_falls_back_and_fires(self, tmp_project, monkeypatch):
-        """No phase_tasks[] at all (standalone / pre-v2 config) — the v1
-        current_step fallback must still fire, exactly as before this
-        sub-iterate's migration."""
+    def test_v1_only_config_uses_one_time_legacy_cutover_fallback(self, tmp_project, monkeypatch):
+        """No phase_tasks[] at all: the ONE-TIME legacy cutover (external
+        code review, GLM HIGH) reads current_step/completed_steps so this
+        detector — the only thing that calls update-step for a standalone
+        run — still fires and seeds phase_tasks[] once. Without it the run
+        deadlocks forever: nothing else would ever trigger it."""
         (tmp_project / "shipwright_project_config.json").write_text(
             json.dumps({"status": "complete"}), encoding="utf-8",
         )
@@ -169,6 +158,124 @@ class TestMainPhaseCompletionWiring:
             "status": "in_progress",
         })
         assert calls == [(tmp_project, "project")]
+
+    def test_usable_phase_tasks_never_consults_legacy_fields(self, tmp_project, monkeypatch):
+        """A USABLE phase_tasks[] must never fall back to current_step/
+        completed_steps — even when it derives 'no current phase' (all
+        present entries finished) and the legacy fields disagree in a way
+        that WOULD fire if wrongly consulted. Only total absence of usable
+        phase_tasks[] triggers the cutover above."""
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps({"status": "complete"}), encoding="utf-8",
+        )
+        calls = self._call_main(tmp_project, monkeypatch, {
+            "current_step": "project",
+            "completed_steps": [],
+            "status": "in_progress",
+            "phase_tasks": [{"phase": "project", "status": "done"}],
+        })
+        assert calls == []
+
+    def test_legacy_cutover_seeds_phase_tasks_for_every_completed_step(
+        self, tmp_project, monkeypatch,
+    ):
+        """Doubt review, sub-iterate s5: the one-time legacy cutover used to
+        seed phase_tasks[] for only the ONE phase about to be marked
+        complete via update-step, permanently losing every OTHER phase
+        recovered from completed_steps the instant the cutover self-disabled
+        (phase_tasks[] gaining usable entries). With multiple prior phases
+        in completed_steps, all of them must land as 'done' phase_tasks[]
+        entries alongside the update-step call for the current phase (which
+        also gets its own 'in_progress' seed -- see the orphaning test
+        below for why)."""
+        (tmp_project / "shipwright_test_results.json").write_text(
+            json.dumps({"status": "pass"}), encoding="utf-8",
+        )
+        calls = self._call_main(tmp_project, monkeypatch, {
+            "current_step": "test",
+            "completed_steps": ["project", "design", "plan"],
+            "status": "in_progress",
+        })
+        assert calls == [(tmp_project, "test")]
+
+        written = json.loads(
+            (tmp_project / "shipwright_run_config.json").read_text(encoding="utf-8"),
+        )
+        seeded = {
+            t["phase"]: t["status"]
+            for t in written["phase_tasks"]
+            if t.get("splitId") is None
+        }
+        # "test" is also seeded, as 'in_progress' — its own update-step call
+        # (stubbed above) would upgrade it to 'done' in a real run; a stub
+        # that never touches the file leaves the seed as-is, which is
+        # exactly what the orphaning test below exercises deliberately.
+        assert seeded == {
+            "project": "done", "design": "done", "plan": "done", "test": "in_progress",
+        }
+
+    def test_legacy_cutover_seeds_current_phase_to_avoid_orphaning_it(
+        self, tmp_project, monkeypatch,
+    ):
+        """Doubt review round 2: seeding ONLY the historical phases could
+        flip phase_tasks_has_usable_entries() True before current_phase
+        itself had a phase_tasks[] entry — self-disabling the cutover (it
+        never fires twice) and permanently orphaning whatever phase was
+        actually in flight at cutover time, the identical deadlock class
+        this whole cutover exists to prevent. First Stop event: 'test'
+        genuinely isn't done yet — update-step must not fire, but 'test'
+        must still land as an 'in_progress' phase_tasks[] entry so a LATER
+        Stop event resolves it as current via the ordinary phase_tasks[]
+        path (the cutover itself is now permanently disabled)."""
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps({
+                "current_step": "test",
+                "completed_steps": ["project", "design", "plan", "build"],
+                "status": "in_progress",
+            }),
+            encoding="utf-8",
+        )
+        calls: list[tuple] = []
+        monkeypatch.setattr(
+            _ghs, "_run_phase_completion",
+            lambda project_root, step: calls.append((project_root, step)),
+        )
+        monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(tmp_project))
+        monkeypatch.delenv("SHIPWRIGHT_RUN_ID", raising=False)
+
+        # Distinct session ids per call: claim_once_for_event dedups
+        # same-session Stop-hook fan-out within a 30s TTL, which would
+        # otherwise skip the second call's phase-completion fallback
+        # entirely — these are meant to model two SEPARATE Stop events.
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "sess-1")
+        monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+        assert _ghs.main() == 0
+        assert calls == []
+
+        written = json.loads(
+            (tmp_project / "shipwright_run_config.json").read_text(encoding="utf-8"),
+        )
+        seeded = {
+            t["phase"]: t["status"]
+            for t in written["phase_tasks"]
+            if t.get("splitId") is None
+        }
+        assert seeded == {
+            "project": "done", "design": "done", "plan": "done",
+            "build": "done", "test": "in_progress",
+        }
+
+        # Second Stop event, later: 'test' has now genuinely finished. The
+        # cutover is self-disabled (phase_tasks[] is now usable) — the
+        # ordinary phase_tasks[]-derived path must pick 'test' up as
+        # current on its own, from the in_progress entry seeded above.
+        (tmp_project / "shipwright_test_results.json").write_text(
+            json.dumps({"status": "pass"}), encoding="utf-8",
+        )
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "sess-2")
+        monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+        assert _ghs.main() == 0
+        assert calls == [(tmp_project, "test")]
 
 
 def _agent_docs_root(tmp: Path) -> Path:
@@ -217,11 +324,8 @@ def test_exits_zero_when_not_shipwright_project(tmp_path):
 
 
 def test_generates_handoff_with_run_config(tmp_project):
-    """Hook generates runtime/session_handoff.md when shipwright_run_config.json exists.
-
-    Post-iterate-2026-05-27: write target is runtime/, NOT the tracked path
-    (iterate-finalize is the sole producer of the tracked variant).
-    """
+    """Hook writes runtime/session_handoff.md, NOT the tracked path
+    (iterate-finalize is the sole producer of the tracked variant)."""
     config = {"scope": "full_app", "profile": "test"}
     (tmp_project / "shipwright_run_config.json").write_text(
         json.dumps(config), encoding="utf-8"
@@ -264,14 +368,9 @@ def test_generates_handoff_with_only_agent_docs(tmp_project):
 
 
 def test_stop_hook_does_not_emit_invalid_stdout_json(tmp_project):
-    """Post-ADR-042: Stop hooks must not emit hookSpecificOutput on stdout.
-
-    Claude Code's Stop event schema only permits `hookEventName` inside
-    `hookSpecificOutput`; `additionalContext` (formerly used here) is
-    schema-invalid and triggers
-    "Hook JSON output validation failed — (root): Invalid input" at every
-    session end. Diagnostic moved to stderr.
-    """
+    """Post-ADR-042: Stop hooks must not emit hookSpecificOutput on stdout —
+    `additionalContext` (formerly used here) is schema-invalid and triggers
+    a JSON validation failure at every session end. Moved to stderr."""
     result = run_hook(tmp_project)
 
     assert result.returncode == 0

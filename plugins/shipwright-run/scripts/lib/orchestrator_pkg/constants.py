@@ -96,8 +96,9 @@ PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "de
 
 # Legacy pipeline entries removed by load_run_config migration. Kept for
 # documentation: projects migrated off a prior pipeline get those entries
-# dropped from `pipeline` (not replayed) but preserved in `completed_steps`
-# as a historical marker.
+# dropped from `pipeline` (not replayed) but preserved in `phase_tasks[]`
+# (or, on a config predating this campaign, `completed_steps`) as a
+# historical marker.
 #
 #   "compliance" — removed earlier (plan v7 Option Z); compliance is now an
 #       auto-background side-effect + on-demand /shipwright-compliance audit.

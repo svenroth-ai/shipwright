@@ -53,15 +53,17 @@ def test_writes_all_configs_in_order(tmp_path: Path) -> None:
     # Validate JSON shapes
     run_config = json.loads((tmp_path / "shipwright_run_config.json").read_text())
     assert run_config["status"] == "complete"
-    assert run_config["current_step"] is None
-    assert run_config["completed_steps"] == ["project", "plan", "build", "test"]
+    # campaign p4-04-retire-write-once-steps, s5: current_step / completed_steps
+    # are retired — phase_tasks[] below is the sole progress record.
+    assert "current_step" not in run_config
+    assert "completed_steps" not in run_config
     assert run_config["adoption"]["features_inferred"] == 7
     assert run_config["adoption"]["nested_excluded"] == ["webui"]
     assert run_config["phase_history"]["test"][0]["outcome"] == "adopted-skipped"
     assert run_config["phase_history"]["build"][0]["outcome"] == "adopted"
 
-    # phase_tasks[] — the shape readers are migrating to (s2). Seeded
-    # alongside completed_steps/phase_history, not instead of them.
+    # phase_tasks[] — the shape readers moved to (s2, retired for good in s5).
+    # Seeded alongside phase_history, which stays as a separate audit trail.
     phase_tasks = run_config["phase_tasks"]
     assert [t["phase"] for t in phase_tasks] == ["project", "plan", "build", "test"]
     for task in phase_tasks:
@@ -260,7 +262,7 @@ def test_custom_completed_steps(tmp_path: Path) -> None:
         completed_steps=["project", "plan", "build"],  # no test
     )
     run_config = json.loads((tmp_path / "shipwright_run_config.json").read_text())
-    assert run_config["completed_steps"] == ["project", "plan", "build"]
+    assert "completed_steps" not in run_config
     assert "test" not in run_config["phase_history"]
     assert [t["phase"] for t in run_config["phase_tasks"]] == ["project", "plan", "build"]
     assert all(t["status"] == "done" for t in run_config["phase_tasks"])

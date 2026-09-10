@@ -9,7 +9,10 @@ full split-fanned run, and asserts that the thing a dispatched phase skill asks
 That composition is exactly what was broken: the state *writer* (v2, `phase_tasks[]`) and
 the invocation-mode *reader* (v1, `current_step`) were never wired to each other, and no
 test drove them together — so a driven run silently classified itself as standalone from
-the second phase onward.
+the second phase onward. `current_step`, and every reader of it, was later retired for good
+(campaign p4-04-retire-write-once-steps, sub-iterate s5) — the tests below that used to pin
+"the v1 predicate only ever passes for the first phase" now pin "the field is gone
+entirely", which is the natural conclusion of the same regression this file exists for.
 """
 from __future__ import annotations
 
@@ -54,8 +57,11 @@ def _read_cfg(project_root: Path) -> dict:
 def _v1_step_c_says_pipeline(cfg: dict, phase: str) -> bool:
     """The step-C predicate as the 7 phase skills used to spell it, verbatim.
 
-    Kept here as an executable regression pin: if someone reintroduces it, this test
-    shows it is wrong for every driven phase past the first.
+    Kept here as an executable regression pin: `current_step` is retired
+    (campaign p4-04-retire-write-once-steps, sub-iterate s5) and no longer
+    emitted at all, so this now always reads False — if someone reintroduces
+    the field, this test shows it is wrong for every driven phase past the
+    first, exactly as it did before the field was removed.
     """
     return cfg.get("status") == "in_progress" and cfg.get("current_step") == phase
 
@@ -116,15 +122,18 @@ def _drive(project: Path):
 def test_every_dispatched_phase_resolves_as_pipeline(driven_run):
     """The headline: a driven phase must know it is driven — at every frontier.
 
-    Also pins the bug: the old v1 predicate returns "standalone" for every phase after
-    `project` (which only passed by accident, `current_step` being stamped "project" at
-    run creation and never advanced).
+    Also pins the bug's natural conclusion: the old v1 predicate would have
+    returned "standalone" for every phase after `project` (which only passed
+    by accident, `current_step` being stamped "project" at run creation and
+    never advanced) — and since sub-iterate s5 retired the field entirely,
+    it now returns "standalone" for EVERY phase, including the first.
     """
     seen: list[tuple[str, str | None]] = []
     v1_verdicts: dict[str, bool] = {}
 
     for phase, split_id, ptk, cfg in _drive(driven_run):
         seen.append((phase, split_id))
+        assert "current_step" not in cfg
 
         # The fix: the dispatch token the orchestrator handed us.
         out = build_phase_context(driven_run, ptk, phase=phase)
@@ -139,34 +148,36 @@ def test_every_dispatched_phase_resolves_as_pipeline(driven_run):
 
     assert seen == EXPECTED_FRONTIER, seen
 
-    # The regression pin: only the first phase ever passed the v1 check.
-    assert v1_verdicts["project/None"] is True
-    assert not any(
-        passed for key, passed in v1_verdicts.items() if key != "project/None"
-    ), f"v1 predicate unexpectedly passed somewhere: {v1_verdicts}"
+    # The regression pin: the v1 check never passes at all any more — not even
+    # for the first phase, since config_factory no longer stamps current_step.
+    assert not any(v1_verdicts.values()), f"v1 predicate unexpectedly passed: {v1_verdicts}"
 
 
-def test_current_step_never_advances_and_cannot_identify_a_split_task(driven_run):
+def test_current_step_is_retired_and_cannot_identify_a_split_task(driven_run):
     """Root cause, pinned two ways.
 
-    (1) Nothing in the v2 lifecycle advances `current_step` — it stays at its
-        creation-time value for the entire run, while `completed_phase_task_ids` grows.
-    (2) Even if it *were* advanced, it is phase-scoped and the frontier is
-        split-scoped: the two `plan` tasks share a phase name but are different tasks.
-        A scalar cannot address them, which is why the v1 fields were not simply revived.
+    (1) `current_step`, and every writer of it, is retired (campaign
+        p4-04-retire-write-once-steps, sub-iterate s5) — it is absent from
+        every config this drive produces, while `completed_phase_task_ids`
+        grows.
+    (2) Even were it revived, it is phase-scoped and the frontier is
+        split-scoped: the two `plan` tasks share a phase name but are
+        different tasks. A scalar cannot address them, which is why the v1
+        fields were not simply revived, and why retiring them for good was
+        safe.
     """
     plan_tokens: list[str] = []
     for phase, _split, ptk, cfg in _drive(driven_run):
-        assert cfg["current_step"] == "project", (
-            f"current_step moved to {cfg['current_step']!r} at {phase} — if the v2 "
-            f"lifecycle now maintains it, revisit the invocation-mode design"
+        assert "current_step" not in cfg, (
+            f"current_step present at {phase} — the retired field must never "
+            f"be re-emitted"
         )
         if phase == "plan":
             plan_tokens.append(ptk)
 
     final = _read_cfg(driven_run)
-    assert final["current_step"] == "project"
-    assert final["completed_steps"] == []
+    assert "current_step" not in final
+    assert "completed_steps" not in final
     assert len(final["completed_phase_task_ids"]) == len(EXPECTED_FRONTIER)
     assert final["status"] == "complete"
 

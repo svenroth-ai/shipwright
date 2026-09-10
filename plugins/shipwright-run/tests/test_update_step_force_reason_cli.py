@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib
 
 from orchestrator import create_config, load_run_config  # noqa: E402
 from orchestrator_pkg.validation_record import VALIDATION_OVERRIDES_KEY  # noqa: E402
+from lib.handoff_phase_status import phase_tasks_progress  # noqa: E402
 
 SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "lib" / "orchestrator.py")
 REASON = "release window closes tonight; missing mockups tracked in #123"
@@ -59,7 +60,8 @@ def test_force_without_a_reason_is_refused(run_project):
     assert result.returncode != 0
     assert "--force-reason" in result.stderr
     config = load_run_config(run_project)
-    assert "project" not in config.get("completed_steps", [])
+    _, completed = phase_tasks_progress(config)
+    assert "project" not in completed
     assert VALIDATION_OVERRIDES_KEY not in config
 
 

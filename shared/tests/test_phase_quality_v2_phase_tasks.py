@@ -1,23 +1,22 @@
-"""Phase-Quality reads the v2 ``phase_tasks[]`` authority, not the frozen v1 fields.
+"""Phase-Quality reads the v2 ``phase_tasks[]`` authority — the SOLE one.
 
-``current_step`` / ``completed_steps`` are **write-once** in a driven run:
-``config_factory`` stamps them at run creation and the v2 lifecycle
-(``phase_task_lifecycle``) never advances them — only the v1 ``update_step``
-path does, and that path is inert on a driven run (``test_update_step_driven_run_guard``).
-Two Phase-Quality readers still keyed on them:
+``current_step`` / ``completed_steps`` were **write-once** in a driven run:
+``config_factory`` stamped them at run creation and the v2 lifecycle
+(``phase_task_lifecycle``) never advanced them — only the v1 ``update_step``
+path did, and that path is inert on a driven run
+(``test_update_step_driven_run_guard``). Two Phase-Quality readers used to key
+on them too:
 
 * :func:`phase_is_engaged` — which phases the Stop-time audit covers;
 * :func:`resolve_source` — the orchestrator / standalone audit-source stamp.
 
-On a v2 run both therefore answered from state frozen at ``"project"``.
-
-**Union, not replacement.** v2 ``phase_tasks[]`` is consulted *in addition to*
-the v1 fields, never instead of them. The v1 shape is still actively written
-(``shipwright-project``, ``shipwright-adopt``, and the v1 ``update_step`` path),
-and ``config_factory`` marks a standalone-completed phase ``skipped`` in
-``phase_tasks[]`` while recording it in ``completed_steps`` — so a v2-only read
-would drop engagement the v1 read grants. This module's contract is
-"audit MORE, never silently fewer", so the two sources are OR-ed.
+Campaign p4-04-retire-write-once-steps, sub-iterate s5 retired both fields
+and every writer of them: the v1 ``update_step`` path now advances
+``phase_tasks[]`` directly, so it is always the complete picture and there is
+nothing left to union with. A config that still carries the old fields (a
+leftover from before this campaign) has them read by neither function any
+more — this file's earlier "Union, not replacement" contract is retired
+along with the fields it unioned.
 """
 
 from __future__ import annotations
@@ -45,14 +44,11 @@ def _task(phase: str, status: str) -> dict:
 
 
 def _v2_cfg(*tasks: dict, status: str = "in_progress") -> dict:
-    """A driven v2 config: phase_tasks[] live, v1 fields FROZEN at creation."""
+    """A driven v2 config: phase_tasks[] is the sole authority."""
     return {
         "schemaVersion": 2,
         "mode": "single_session",
         "status": status,
-        # Write-once: stamped by config_factory, never advanced afterwards.
-        "current_step": "project",
-        "completed_steps": [],
         "phase_tasks": list(tasks),
     }
 
@@ -61,18 +57,17 @@ def _v2_cfg(*tasks: dict, status: str = "in_progress") -> dict:
 
 @pytest.mark.parametrize("task_status", ["in_progress", "done", "failed"])
 def test_v2_phase_task_that_ran_is_engaged(task_status: str) -> None:
-    """A phase that ran (or is running) is engaged even though current_step
-    still says "project" — the regression this migration fixes."""
     cfg = _v2_cfg(_task("project", "done"), _task("build", task_status))
     assert pq.phase_is_engaged("build", cfg, []) is True
 
 
 @pytest.mark.parametrize("task_status", ["backlog", "awaiting_launch", "skipped"])
 def test_v2_phase_task_that_did_not_run_is_not_engaged(task_status: str) -> None:
-    """Planned-but-never-started grants nothing — mirroring v1, where a future
-    pipeline step was in neither completed_steps nor current_step. `skipped` is
-    here too: with NO v1 evidence it means the phase never executed (the
-    already-done-standalone case is covered by completed_steps, tested below)."""
+    """Planned-but-never-started grants nothing. `skipped` is here too: with no
+    other evidence it means the phase never executed — including the
+    standalone-completed case, since s5 retired the completed_steps read
+    that used to distinguish it (see
+    ``test_skipped_task_with_stale_completed_steps_is_not_engaged`` below)."""
     cfg = _v2_cfg(_task("project", "done"), _task("deploy", task_status))
     assert pq.phase_is_engaged("deploy", cfg, []) is False
 
@@ -94,32 +89,41 @@ def test_v2_complete_run_still_engages_iterate() -> None:
     assert pq.phase_is_engaged("iterate", cfg, []) is True
 
 
-# --- union: v2 must never subtract what v1 granted ------------------------
+# --- s5: the retired v1 fields grant nothing, even when still present -----
 
-def test_skipped_task_still_engaged_via_v1_completed_steps() -> None:
-    """config_factory marks a phase completed STANDALONE as ``skipped`` in
-    phase_tasks[] while carrying it in completed_steps. ``skipped`` alone does
-    not mean "ran", so only the union keeps this phase audited."""
+def test_skipped_task_with_stale_completed_steps_is_not_engaged() -> None:
+    """Before s5, config_factory marking a standalone-completed phase
+    `skipped` in phase_tasks[] while also recording it in completed_steps
+    meant the union still engaged it. completed_steps is retired and no
+    longer read, so a bare `skipped` status (with nothing else showing the
+    phase ran) is not engaged — even though the leftover field still claims
+    it completed."""
     cfg = _v2_cfg(_task("project", "skipped"))
-    cfg["completed_steps"] = ["project"]
-    assert pq.phase_is_engaged("project", cfg, []) is True
+    cfg["completed_steps"] = ["project"]  # leftover write-once field, ignored
+    assert pq.phase_is_engaged("project", cfg, []) is False
 
 
-def test_v1_current_step_still_engaged_alongside_phase_tasks() -> None:
+def test_stale_current_step_grants_no_engagement() -> None:
+    """A leftover current_step naming a phase with no phase_tasks[] entry at
+    all used to still engage it via the v1 union; s5 retired that read."""
     cfg = _v2_cfg(_task("project", "done"))
-    cfg["current_step"] = "plan"
-    assert pq.phase_is_engaged("plan", cfg, []) is True
+    cfg["current_step"] = "plan"  # leftover write-once field, ignored
+    assert pq.phase_is_engaged("plan", cfg, []) is False
 
 
 @pytest.mark.parametrize("bad", [None, {}, "phase_tasks", [None], [1, 2]])
-def test_malformed_phase_tasks_falls_back_to_v1(bad: object) -> None:
-    """A malformed v2 array must not raise and must not suppress the v1 read."""
+def test_malformed_phase_tasks_is_not_engaged_despite_stale_completed_steps(
+    bad: object,
+) -> None:
+    """A malformed v2 array must not raise, and — since s5 — must not fall
+    back to a stale completed_steps either: there is no other source left to
+    read, so this is simply not engaged."""
     cfg = {"status": "in_progress", "completed_steps": ["plan"], "phase_tasks": bad}
-    assert pq.phase_is_engaged("plan", cfg, []) is True
+    assert pq.phase_is_engaged("plan", cfg, []) is False
 
 
 def test_malformed_phase_tasks_without_v1_evidence_is_not_engaged() -> None:
-    cfg = {"status": "in_progress", "completed_steps": [], "phase_tasks": [None]}
+    cfg = {"status": "in_progress", "phase_tasks": [None]}
     assert pq.phase_is_engaged("build", cfg, []) is False
 
 
@@ -138,10 +142,10 @@ def test_unhashable_or_non_string_status_does_not_raise(bad_status: object) -> N
     assert pq.phase_is_engaged("build", cfg, []) is False
 
 
-def test_unhashable_status_does_not_suppress_the_v1_read() -> None:
+def test_unhashable_status_does_not_get_rescued_by_stale_completed_steps() -> None:
     cfg = _v2_cfg({"phase": "build", "status": ["done"]})
-    cfg["completed_steps"] = ["build"]
-    assert pq.phase_is_engaged("build", cfg, []) is True
+    cfg["completed_steps"] = ["build"]  # leftover write-once field, ignored
+    assert pq.phase_is_engaged("build", cfg, []) is False
 
 
 # --- drift guard on the status vocabulary ---------------------------------
@@ -161,8 +165,8 @@ def test_every_known_status_is_classified() -> None:
 def test_task_recovered_to_a_not_started_status_is_still_engaged(forced: str) -> None:
     """`recover_phase_task` can force a task that RAN back to `awaiting_launch`,
     or retire it as `skipped`. It nulls `startedAt` but deliberately preserves
-    `executionCount`, so execution history is what keeps the phase audited — on a
-    driven run the frozen `completed_steps` cannot."""
+    `executionCount`, so execution history is what keeps the phase audited — the
+    retired `completed_steps` field never could."""
     task = _task("build", forced)
     task["executionCount"] = 1
     assert pq.phase_is_engaged("build", _v2_cfg(task), []) is True
@@ -187,10 +191,11 @@ def test_unfinished_run_still_audits_every_phase_that_ran(run_status: str) -> No
 
 
 def test_v2_only_config_engages_without_any_v1_field() -> None:
-    """Guards the successor campaign (trg-8d52a965): once current_step /
-    completed_steps are dropped, phase_tasks[] alone must still answer. If it did
-    not, resolve_engaged_phases' `engaged or all_phases` fail-open would mask it
-    as a silent widening to all 11 phases instead of a visible failure."""
+    """s5: current_step / completed_steps are dropped for real now —
+    phase_tasks[] alone answers, exactly as this guard (written ahead of the
+    retirement, trg-8d52a965) anticipated. If it did not, resolve_engaged_phases'
+    `engaged or all_phases` fail-open would mask it as a silent widening to all
+    11 phases instead of a visible failure."""
     cfg = {"schemaVersion": 2, "status": "in_progress",
            "phase_tasks": [_task("project", "done"), _task("build", "in_progress")]}
     assert pq.phase_is_engaged("project", cfg, []) is True

@@ -87,7 +87,7 @@ def run(project_root: Path, *, dry_run: bool) -> dict[str, Any]:
     # it -- not just the write. This tool's own stated trigger scenario is a
     # repo "later picked up by /shipwright-run for a new feature": exactly
     # when a live, lock-holding orchestrator session could be concurrently
-    # advancing status/current_step/phase_history/phase_tasks[] on this same
+    # advancing status/phase_history/phase_tasks[] on this same
     # file. Reading first and locking only around the write would still let
     # this tool's full-document write clobber whatever the orchestrator
     # committed in between (doubt-reviewer, s2b) -- the lock has to cover

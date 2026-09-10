@@ -25,6 +25,7 @@ from orchestrator_pkg.validation_record import (  # noqa: E402
     VALIDATION_OVERRIDES_KEY,
     run_phase_gate,
 )
+from lib.handoff_phase_status import phase_tasks_progress  # noqa: E402
 
 SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "lib" / "orchestrator.py")
 REASON = "shipping tonight; tracked in #123"
@@ -77,7 +78,7 @@ def test_a_forced_retry_clears_the_needs_validation_status(run_project, mocker):
     assert config["status"] != "needs_validation"
     assert config["status"] == "in_progress"
     assert "validation_issues" not in config
-    assert "project" in config["completed_steps"]
+    assert "project" in phase_tasks_progress(config)[1]
 
 
 def test_the_pipeline_complete_status_still_wins(run_project, mocker):
@@ -111,7 +112,7 @@ def test_a_lifecycle_set_pause_is_not_lifted(run_project, mocker):
     result = update_step(run_project, "project", "complete", force=True, force_reason=REASON)
 
     assert result["status"] == "needs_validation"
-    assert "project" in result["completed_steps"]
+    assert "project" in phase_tasks_progress(result)[1]
 
 
 # --------------------------------------------------------------------------- #

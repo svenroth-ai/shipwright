@@ -1,0 +1,1 @@
+Retire the write-once current_step/completed_steps run-config fields: the v1 update_step path now advances phase_tasks[] directly, and both remaining writers drop the fields (campaign p4-04-retire-write-once-steps, sub-iterate s5, final)

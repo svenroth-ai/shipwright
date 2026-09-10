@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-s5-retarget-v1-then-drop",
+  "date": "2026-09-10",
+  "section": "Iterate — campaign p4-04-retire-write-once-steps s5: retarget v1 update_step, drop write-once fields",
+  "title": "Retarget v1 update_step onto phase_tasks[], then drop current_step/completed_steps",
+  "context": "Campaign p4-04 migrated every reader off the write-once current_step/completed_steps fields (s1/s3/s4); the v1 update_step path and both remaining writers still used them.",
+  "decision": "v1 update_step now advances phase_tasks[] directly (find-or-create, no CAS); both writers (write_run_config.py, config_writer.py) drop the fields; every fallback reader branch is deleted except four one-time legacy cutovers external code review surfaced.",
+  "consequences": "phase_tasks[] is the sole progress authority on every run shape. Four narrow one-time migration boundaries remain (create_config's merge, generate_handoff_on_stop.py, state.py, suggest_iterate.py), each firing only for a pre-s5 config with zero usable phase_tasks[] evidence, to avoid permanent deadlock/misreport.",
+  "rationale": "Retarget-first-then-delete avoids a dual-write window; single diff keeps the retarget and the drop from ever landing half-migrated.",
+  "rejected": "Dual-write both shapes for a transition sub-iterate (rejected: reinstalls mode-conditional truth). Keep completed_steps readable forever (rejected: defeats the campaign). Re-add a general completed_steps fallback to phase_tasks_progress() itself (rejected: reopens mode-conditional truth app-wide instead of one boundary).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-s5-retarget-v1-then-drop.md"
+}

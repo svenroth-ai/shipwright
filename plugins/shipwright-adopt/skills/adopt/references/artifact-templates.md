@@ -67,7 +67,7 @@ a project-wide convention upgrade, not adopt's call.
 | Git summary | `snapshot.git.{commits_total,contributors_total}` |
 | Excluded nested | `snapshot.excludes[]` |
 | LOC by layer | `snapshot.folders.loc_by_layer` |
-| Pipeline status table | Static, derived from `completed_steps` |
+| Pipeline status table | Static, derived from `phase_tasks[]` (campaign p4-04-retire-write-once-steps, sub-iterate s5: `completed_steps` is retired) |
 
 ## .shipwright/planning/&lt;split&gt;/spec.md
 

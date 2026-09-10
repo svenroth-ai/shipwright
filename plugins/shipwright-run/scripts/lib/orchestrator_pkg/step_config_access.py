@@ -25,22 +25,32 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .config_factory import build_pipeline
+from .config_factory import build_pipeline, build_v1_phase_task
 
 # STRICT only. A tolerant ``load_run_config`` import here would silently reopen
 # the defect this module exists to close.
 from .config_io import read_run_config
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def _bootstrap_standalone_config(step: str) -> dict[str, Any]:
-    """Synthesise a standalone config for a bare phase invocation (no /shipwright-run)."""
+    """Synthesise a standalone config for a bare phase invocation (no /shipwright-run).
+
+    ``phase_tasks`` is deliberately absent here, not seeded empty: the v1
+    ``update_step`` path — the only caller that reaches this bootstrap — is
+    about to advance it itself (:func:`_upsert_v1_phase_task`, below;
+    campaign p4-04-retire-write-once-steps, sub-iterate s5), which creates
+    the list on first write. Seeding a placeholder entry here would just be
+    overwritten by that same call.
+    """
     return {
         "pipeline": build_pipeline(),
         "status": "in_progress",
-        "current_step": step,
-        "completed_steps": [],
         "standalone": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": _now_iso(),
         # Iterate 12.0 (ADR-027): empty phase_history on bootstrap so
         # append_phase_history.py never has to synthesise the schema.
         "phase_history": {},
@@ -94,3 +104,65 @@ def _read_standalone_flag(project_root: Path) -> bool:
     if not present:
         return True
     return config.get("standalone") is True
+
+
+# ---------------------------------------------------------------------------
+# v1 phase_tasks[] advance/reset — the replacement for current_step /
+# completed_steps writes (campaign p4-04-retire-write-once-steps, s5)
+# ---------------------------------------------------------------------------
+
+def _find_v1_phase_task(config: dict[str, Any], phase: str) -> dict[str, Any] | None:
+    """The ``phase_tasks[]`` entry the v1 mechanism owns for *phase* — never
+    split (``splitId`` is ``None``), so it matches at most one entry
+    regardless of how many split-scoped v2 entries a driven run may also
+    carry for the same phase name (``update_step`` never runs against a
+    driven run — see ``cli_update_step.py``'s drivability guard — but the
+    config it reads is never assumed to be exclusively v1-shaped either)."""
+    for task in config.get("phase_tasks") or []:
+        if isinstance(task, dict) and task.get("phase") == phase and task.get("splitId") is None:
+            return task
+    return None
+
+
+def _upsert_v1_phase_task(config: dict[str, Any], phase: str, status: str, *, now: str) -> None:
+    """Advance *phase*'s ``phase_tasks[]`` entry the way the v1
+    ``update_step`` path does — find-or-create, no CAS (there is no
+    session/version to check; a bare phase invocation has no claim to
+    contend for). Mutates *config* in place.
+    """
+    tasks = config.get("phase_tasks")
+    if not isinstance(tasks, list):
+        tasks = []
+        config["phase_tasks"] = tasks
+    existing = _find_v1_phase_task(config, phase)
+    if existing is not None:
+        existing["status"] = status
+        if status == "in_progress" and not existing.get("startedAt"):
+            existing["startedAt"] = now
+        if status in {"done", "failed", "skipped"}:
+            existing["completedAt"] = now
+        else:
+            # A retry back to a non-terminal status (e.g. "in_progress" after
+            # a prior "failed") must not leave a stale completedAt from that
+            # earlier terminal write — an internally contradictory entry
+            # (external code review, GLM LOW).
+            existing["completedAt"] = None
+        return
+    tasks.append(build_v1_phase_task(phase, status, now=now))
+
+
+def _reset_v1_phase_tasks(config: dict[str, Any], phases: set[str]) -> None:
+    """Reset *phases*' v1 ``phase_tasks[]`` entries back to non-terminal
+    (``awaiting_launch``) — the ``phase_tasks[]`` equivalent of the old
+    split-loop ``completed_steps`` reset in ``step_planning.update_step``.
+    """
+    for phase in phases:
+        task = _find_v1_phase_task(config, phase)
+        if task is not None:
+            task["status"] = "awaiting_launch"
+            task["completedAt"] = None
+            # Same contradictory-shape hygiene as the retry case above
+            # (external code review, GLM LOW): a reset entry claiming
+            # "awaiting_launch" must not still carry a startedAt from the
+            # attempt being reset.
+            task["startedAt"] = None

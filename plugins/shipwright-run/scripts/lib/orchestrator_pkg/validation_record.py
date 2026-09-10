@@ -11,7 +11,7 @@ Before this module ``update_step`` gated completion behind ``not force``::
 
 so with ``--force`` the validator **did not run at all**. Nothing knew what the
 gate would have said, nothing recorded that an override happened or why, and
-``inform``-level notes were dropped on that path too. Afterwards ``completed_steps``
+``inform``-level notes were dropped on that path too. Afterwards the run config
 said only *"this phase completed"* — a phase that passed cleanly and a phase that
 was waved through left byte-identical state.
 
@@ -27,8 +27,9 @@ Kept out of ``step_planning`` deliberately: that module is at 245 of its 300-LOC
 budget, and these are pure functions over a config dict — testable without the
 advisory lock, the compliance subprocess, or a pipeline.
 
-Scope: this is the **v1** completion path (``completed_steps``), which serves
-standalone / legacy / adopted runs. The v2 driven path
+Scope: this is the **v1** completion path (advances ``phase_tasks[]`` directly,
+campaign p4-04-retire-write-once-steps sub-iterate s5 — no CAS, no session),
+which serves standalone / legacy / adopted runs. The v2 driven path
 (``single-session-apply`` → ``phase_task_lifecycle``) has no ``--force`` and is
 untouched.
 """
