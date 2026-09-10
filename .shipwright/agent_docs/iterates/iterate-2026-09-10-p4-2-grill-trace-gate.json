@@ -1,6 +1,6 @@
 {
   "run_id": "iterate-2026-09-10-p4-2-grill-trace-gate",
-  "date": "2026-09-10T07:37:34.881509Z",
+  "date": "2026-09-10T08:42:55.458816Z",
   "event_at": "2026-09-10T07:37:24.487825+00:00",
   "type": "feature",
   "complexity": "small",
@@ -8,5 +8,100 @@
   "branch": "iterate/campaign-req3-09-p4-grill-glossary",
   "spec": ".shipwright/planning/iterate/campaigns/req3-09-p4-grill-glossary/sub-iterates/P4.2-grill-trace-gate.md",
   "tests_passed": true,
-  "adr": "iterate-2026-09-10-p4-2-grill-trace-gate"
+  "adr": "iterate-2026-09-10-p4-2-grill-trace-gate",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a grill-trace record is written to disk (created) and re-writing the same requirement_key updates it in place, idempotently",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_write_grill_trace.py::test_write_trace_creates_a_new_file PASSED, ::test_write_trace_updates_an_existing_file_in_place PASSED, ::test_write_trace_is_idempotent_on_repeated_identical_payload PASSED"
+      },
+      {
+        "behavior": "a malformed payload is rejected before any I/O happens (no partial write)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_write_grill_trace.py::test_write_trace_rejects_a_malformed_payload_before_any_write PASSED"
+      },
+      {
+        "behavior": "the --payload-file CLI contract safely carries interview text containing a single quote (no shell quote-breakout)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_write_grill_trace.py::test_cli_payload_file_writes_a_trace_with_an_embedded_single_quote PASSED"
+      },
+      {
+        "behavior": "the producer's write and the sanctioned reader's read of the same grill-trace round-trip every field (ADR-024 affected-boundaries probe)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_write_grill_trace.py::test_producer_write_round_trips_through_the_sanctioned_reader PASSED"
+      },
+      {
+        "behavior": "requirement_key is validated lower-kebab-case (a-z0-9, single hyphens) and rejected otherwise, foreclosing path-traversal filenames",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grill_trace_format.py (requirement_key validation cases) PASSED"
+      },
+      {
+        "behavior": "each of the seven dimensions must be present and answered/assumed:<reason>/n-a:<reason> -- a missing key is rejected at write time (parse_trace), a bad shape/value is caught by the gate's check_blank_dimension",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grill_trace_format.py (missing/extra dimensions keys) PASSED; shared/tests/test_verify_grill_trace_completeness.py::test_blank_dimension_* PASSED"
+      },
+      {
+        "behavior": "STOP 2 -- any 'assumed' dimension value fires in /shipwright-project's surface, with no exceptions; a non-'project' surface trace under a project's planning tree is a data-integrity FAIL, not an exemption",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_greenfield_assumed_fails_on_any_assumed_in_project_surface PASSED, ::test_greenfield_assumed_fails_a_non_project_surface_trace_as_a_data_integrity_error PASSED"
+      },
+      {
+        "behavior": "STOP 3 -- a declared term resolving in neither shared/glossary.md nor the target project's CONTEXT.md (read via P4.1's context_md_format.read_terms) fires; matching is exact-case, exact-prose",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_undefined_term_* PASSED; shared/tests/test_grill_trace_glossary.py::test_collect_known_terms_reads_glossary_bullets_and_context_language PASSED"
+      },
+      {
+        "behavior": "STOP 4 -- outcome answered with no fit_criterion fires; outcome not answered does not trigger the rule",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_outcome_fit_criterion_* PASSED"
+      },
+      {
+        "behavior": "honesty guard -- a structurally complete but low-quality (terse, one-word) trace passes the FULL run_all_checks() gate; the gate never judges prose",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness_integration.py::test_low_quality_but_structurally_complete_trace_passes_every_check PASSED"
+      },
+      {
+        "behavior": "honesty guard mirror -- the same terse prose style does not mask a genuine STOP (an 'assumed' value is a real declined-to-ask, not a quality defect)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness_integration.py::test_low_quality_trace_still_catches_a_real_completeness_gap PASSED"
+      },
+      {
+        "behavior": "grill_trace_coverage: an interview ran but zero traces were written at all is caught",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_coverage_fails_when_transcript_exists_but_no_traces_were_written PASSED"
+      },
+      {
+        "behavior": "fr_trace_coverage: a partially recorded interview (some requirements traced, one FR row without a matching trace) is caught even when grill_trace_coverage alone would pass",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness_integration.py::test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist PASSED"
+      },
+      {
+        "behavior": "a malformed grill-trace JSON file on disk is reported as a red CheckResult, never an unhandled crash",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness_integration.py::test_run_all_checks_reports_a_malformed_trace_file_instead_of_crashing PASSED"
+      },
+      {
+        "behavior": "a missing shared/glossary.md (broken install) is reported as its own failing check, distinct from a legitimately absent CONTEXT.md",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_grill_trace_glossary.py::test_check_glossary_source_available_fails_when_the_file_is_missing PASSED"
+      },
+      {
+        "behavior": "a glossary_delta-recorded term not listed in terms_used is caught as a self-consistency gap",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_glossary_delta_declared_fails_when_a_delta_term_is_missing_from_terms_used PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 16,
+      "tested": 16,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  }
 }

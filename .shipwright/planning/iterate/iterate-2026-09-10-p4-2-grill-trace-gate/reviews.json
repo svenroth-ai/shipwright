@@ -281,13 +281,23 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/tools/verifiers/project_checks.py:147-181,205",
+          "line": null,
+          "finding": "RESOLVED — round 1 REJECT: the completeness gate existed and was logically correct (four closed-vocabulary STOPs, honesty guard upheld) but was wired into Step 8 only as prose in step-8-completion.md/SKILL.md that an LLM agent could skip, not a genuine code-level block, contradicting AC2's explicit 'not just advisory' requirement and the design doc's own stated F11-verifier mechanism ('you cannot fix a prompt-only guarantee with more prompt'). Fixed by adding check_grill_trace_completeness() to shared/scripts/tools/verifiers/project_checks.py, delegating to verify_grill_trace_completeness.run_all_checks() and registered inside run_project_checks() alongside C1-C5. Round 2 re-review traced the full call chain (run_project_checks -> phase_validators.py::_run_canon_checks/_validate_project -> validate_phase() -> update_step()'s ask-level block) and confirmed it is the SAME enforcement path C1-C5 already use, proven by two new test files that call the real functions directly (no mocking of the enforcement boundary): shared/tests/test_verifiers_project.py and plugins/shipwright-run/tests/test_phase_validators_project.py. — spec: .shipwright/planning/iterate/campaigns/req3-09-p4-grill-glossary/sub-iterates/P4.2-grill-trace-gate.md:10 (AC2)",
+          "suggestion": ".shipwright/planning/iterate/campaigns/req3-09-p4-grill-glossary/sub-iterates/P4.2-grill-trace-gate.md:10 (AC2)",
+          "source": "spec-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-10T07:08:33.558184+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T08:12:05.278514+00:00",
+      "disposition": null,
+      "recorded_by": "campaign orchestrator, session 7de9842e",
       "parse_status": null,
       "raw_excerpt": null
     },

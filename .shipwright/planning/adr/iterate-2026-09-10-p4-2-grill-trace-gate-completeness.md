@@ -171,3 +171,27 @@ directly — the exact function `update-step --step project` calls — proving
 a failing grill-trace produces the same ask-level, `valid=False` block the
 existing C5/`phase_history` tests in that file already prove for C1-C5, at
 the same integration boundary, not a parallel one.
+
+## Stage-2 Code Review (campaign, P4.2 round) — one HIGH finding, fixed
+
+The campaign orchestrator's Stage-2 `code-reviewer` approved with one HIGH
+finding: `write_grill_trace.py::main()` (lines 84-119) and
+`_write_grill_trace_cli.py`'s `build_arg_parser`/`load_payload_file` had no
+direct/in-process test coverage — `test_write_grill_trace.py` exercises
+`write_trace()` directly but reaches `main()` and the CLI helpers only via
+`subprocess.run(...)`, a separate Python process this repo's coverage
+instrumentation never observes (no `COVERAGE_PROCESS_START` hook). Identical
+gap class to the one P4.1 hit and fixed for `write_context_term.py`.
+
+**Fix:** added `shared/tests/test_write_grill_trace_direct.py` (in-process
+`main()` coverage — success path, `--planning-dir` override, `PayloadError`
+from a missing `--payload-file`, missing `--project-root`, `GrillTraceError`
+from a malformed record, `LockTimeout`) and
+`shared/tests/test_write_grill_trace_cli_direct.py` (in-process
+`build_arg_parser`/`load_payload_file` coverage — defaults, every flag,
+missing/invalid/non-object/non-dict-scalar payload files), mirroring P4.1's
+`test_write_context_term_direct.py` / `test_write_context_term_cli_direct.py`
+precedent exactly. Result: `write_grill_trace.py` diff coverage 82%→97.9%
+(only the `if __name__ == "__main__":` guard remains uncovered, same as the
+P4.1 precedent), `_write_grill_trace_cli.py` at 100%; full-diff diff-coverage
+gate (`origin/main`→HEAD) now measures 91%, above the 80% CI gate.
