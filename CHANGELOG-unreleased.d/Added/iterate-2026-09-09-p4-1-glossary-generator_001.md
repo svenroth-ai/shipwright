@@ -1,0 +1,1 @@
+add write_context_term.py, a producer that writes/updates a target project's CONTEXT.md domain glossary, wired into /shipwright-project's interview protocol so a sharpened term lands the moment it is resolved

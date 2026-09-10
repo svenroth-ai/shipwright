@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-09-p4-1-glossary-generator",
+  "date": "2026-09-09",
+  "section": "Campaign req3-09-p4-grill-glossary — P4.1: glossary-generator",
+  "title": "CONTEXT.md producer wired into the interview protocol",
+  "context": "shared/context-format.md defined CONTEXT.md's schema but no script ever wrote it (FR-01.16 AC06 unearned promise); requirement-elicitation.md Sec.4/Sec.7 require a sharpened term to land there in the same interview turn.",
+  "decision": "Added write_context_term.py (idempotent, lock+atomic-write producer) and wired it into interview-protocol.md right after Philosophy, invoked in the same turn a term is sharpened.",
+  "consequences": "/shipwright-project interviews now produce a real, growing CONTEXT.md; a second/third term appends without corrupting earlier ones; unchanged reruns are byte-identical.",
+  "rationale": "Producer-script pattern mirrors every other shared producer (file_lock + durable_atomic_write); atomic, lock-safe, independently testable.",
+  "rejected": "Case-folding terms (risks merging genuinely different terms); broad markdown-escaping (over-broad, only ** is a real delimiter risk); a different {shared_root} convention (diverges from every existing producer for no reason).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-09-p4-1-glossary-generator-context-md-producer.md"
+}
