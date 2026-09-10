@@ -546,6 +546,19 @@ Spec-derived, per ruling Q1b's own principle. Pinned by
 > rather than silently inferred. Pinned by
 > `test_an_absent_base_manifest_suppresses_the_new_fr_arm_entirely`.
 
+**Fourth precedence rule (Stage-2 code review, medium; found during build) — arm 2 is ALSO
+suppressed when neither manifest names a `spec_path` for any requirement.** This is a THIRD,
+independent null case, distinct from both the empty-base-manifest amendment above and the
+divergence guard's own scoping (§5.1): `base_fr_digests` and `head_minted` are empty not because the
+base genuinely states no criteria, but because no spec text was ever scanned (§5.1's own "neither
+manifest names a `spec_path`" warning covers exactly this state). Without this exclusion, a base
+manifest that DOES carry active requirements makes every head-only active FR read as
+`new_frs_without_criteria` — "states no acceptance criterion" asserted from a document nobody read,
+the same blast-radius mistake the empty-base-manifest amendment already exists to prevent, one call
+away. No second warning is emitted; §5.1's existing one already explains why the change set is
+trivially empty. Pinned by
+`test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base`.
+
 **Deliberately NOT an arm:**
 
 - **A title-only FR row change does not block.** `behavior_changed_keys` counts a changed `title`
@@ -1514,6 +1527,18 @@ re-exports, no orphaned code).
 | 8 | nit | `Path(args.project_root).resolve()` re-wraps a value argparse's `type=Path` already produced. | **Not fixed** — cosmetic. |
 | 9 | nit | `_read_head_manifest`'s `except ValueError` also silently catches `UnicodeDecodeError`, mislabeling a byte-corrupt manifest as "not valid JSON". Already fail-closed; only the message is imprecise. | **Not fixed** — cosmetic, no behavior change; the outcome (exit 2, `ReadError`) is correct either way. |
 
+### 12.1l Stage-1 round 15 (fresh) — REJECT (2 hard)
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | hard | The `no_spec_was_read` suppressor (§12.1k finding 1) is a FOURTH arm-2 precedence rule shipping with no normative statement anywhere in §5.1/§5.2, which still enumerated only three suppressors. The identical class §12.1c finding C and §12.1f finding J were each hard-rejected for once already — a behavioural change landing without the design section it modifies being updated to match. | **Accepted-and-fixed.** A "Fourth precedence rule" paragraph added directly after §5.2's arm-2 definition (following the third precedence rule), stating the rule, its rationale, and its test. |
+| 2 | hard | This same commit's own new test in `test_keystone_ac_digest_never_silent.py` made the F11 ledger's evidence string ("7 tests PASSED" for that file) false — it now holds 8. Verbatim recurrence of §12.1j finding 3, one commit later, not one-round lag: the count is contradicted by the tree the SAME commit produced. | **Fixed** — evidence string updated to 8. |
+
+The reviewer independently re-traced the fix by hand with `no_spec_was_read` reverted and confirmed
+the new test genuinely fails without it (a real regression test, not a vacuous one), and re-verified
+every other count and citation in the document as still accurate — nothing else in this round's
+commit had drifted.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1585,6 +1610,15 @@ medium correctness bug (arm 2 firing from a document nobody read, in the very de
 PRIOR Stage-2 pass's own finding 3 introduced the warning for) alongside six low findings and two
 nits. The pattern holds across seven rounds of alternating review now: Stage 1 and Stage 2 keep
 finding disjoint defect classes in the SAME code, including in fixes only one round old.
+
+**Round 15 (§12.1l) rejected the fix for THAT medium bug — a tenth rejection, across rounds
+1-15 now** — 2 hard findings, both created by the fix commit itself: the new `no_spec_was_read`
+suppressor shipped as a fourth arm-2 precedence rule with no matching normative statement in §5.2
+(the identical class §12.1c finding C and §12.1f finding J were each hard-rejected for already), and
+the fix's own new test invalidated the F11 ledger's evidence count for the file it landed in
+(the identical class §12.1j finding 3 was rejected for, one commit later). Both classes are now
+recurring a THIRD time each across this cascade — a normative-lag miss and a collateral-count miss,
+each independently confirmed to survive one full extra round after the pattern was first named.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
