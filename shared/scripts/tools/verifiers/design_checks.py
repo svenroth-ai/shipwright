@@ -59,7 +59,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 
 from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
 from lib.handoff_phase_status import (  # noqa: E402
-    completed_phases_with_fallback,
+    completed_phases,
     phase_tasks_has_usable_entries,
 )
 
@@ -99,37 +99,25 @@ def _is_no_ui_scope(project_root: Path) -> bool:
 def _design_phase_ran(project_root: Path) -> bool:
     """Return True iff the design phase is part of this project's lifecycle.
 
-    ``phase_tasks[]``-first via the shared ``completed_phases_with_fallback``
-    (campaign p4-04-retire-write-once-steps, sub-iterate s4) — see its
-    docstring for why the ``completed_steps`` fallback triggers only on
-    ``phase_tasks[]`` having no usable entries, never merely on an empty
-    completed set. This alone reproduces the adopted-repo skip: since
-    s2/s2b, ``shipwright-adopt`` seeds ``phase_tasks[]`` only for
-    ``project``/``plan``/``build``/``test`` (never ``design``), all
-    terminal, so ``"design" not in completed`` reads False without ever
-    touching ``completed_steps`` (triage trg-d26da6f4).
+    ``phase_tasks[]``-only, via the shared ``completed_phases`` /
+    ``phase_tasks_has_usable_entries`` (campaign p4-04-retire-write-once-steps:
+    introduced with a ``completed_steps`` fallback in sub-iterate s4; the
+    fallback was retired in sub-iterate s5, once every writer of the old
+    fields was retargeted onto ``phase_tasks[]``). This alone reproduces the
+    adopted-repo skip: since s2/s2b, ``shipwright-adopt`` seeds
+    ``phase_tasks[]`` only for ``project``/``plan``/``build``/``test``
+    (never ``design``), all terminal, so ``"design" not in completed`` reads
+    False (triage trg-d26da6f4).
 
     Fail-loud: a missing / unreadable / malformed / undecodable config, a
-    non-dict payload, or (once ``phase_tasks[]`` has no usable entries) a
-    non-list ``completed_steps`` all return True — a broken config never
-    buys a silent free pass, and a manifest lost AFTER a design phase ran is
-    real drift. External Tier-3 review, sub-iterate s4: gating this on
-    ``isinstance(phase_tasks, list)`` alone — true even for ``[]`` or a
-    malformed non-empty list — meant an unconditional delegation to
-    ``completed_phases_with_fallback`` for that shape too, and *that*
-    function's own empty-set answer is indistinguishable, by value alone,
-    from "confidently zero" — so when ``completed_steps`` was ALSO
-    absent/malformed (zero evidence from either source) this silently
-    returned False ("design never ran") instead of failing loud. Gating on
-    ``phase_tasks_has_usable_entries`` instead, and falling through to a
-    *local* fail-loud ``completed_steps`` check (not the shared function)
-    when it says no, closes that gap while leaving the confident-empty
-    mid-flight case (``phase_tasks[]`` present with usable entries, none
-    named ``design`` yet) trusted exactly as before. ``utf-8-sig`` tolerates
-    a hand-edited BOM (WP8/F24 convention). Callers MUST gate only the
-    *manifest-missing* branch on this helper: the between-phase validator
-    runs these checks only once the manifest is present, so a
-    manifest-gated skip preserves FR-orphan / screen-existence enforcement.
+    non-dict payload, or a ``phase_tasks[]`` with no usable entries (absent,
+    malformed, empty, or partially malformed) all return True — a broken or
+    silent config never buys a free pass, and a manifest lost AFTER a design
+    phase ran is real drift. ``utf-8-sig`` tolerates a hand-edited BOM
+    (WP8/F24 convention). Callers MUST gate only the *manifest-missing*
+    branch on this helper: the between-phase validator runs these checks
+    only once the manifest is present, so a manifest-gated skip preserves
+    FR-orphan / screen-existence enforcement.
     """
     cfg = project_root / "shipwright_run_config.json"
     try:
@@ -139,13 +127,10 @@ def _design_phase_ran(project_root: Path) -> bool:
     if not isinstance(data, dict):
         return True
 
-    if phase_tasks_has_usable_entries(data):
-        return "design" in completed_phases_with_fallback(data)
-
-    steps = data.get("completed_steps")
-    if not isinstance(steps, list):
+    if not phase_tasks_has_usable_entries(data):
         return True
-    return "design" in steps
+
+    return "design" in completed_phases(data)
 
 
 # ---------------------------------------------------------------------------

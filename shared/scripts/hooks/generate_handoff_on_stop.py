@@ -18,16 +18,31 @@ import json
 import os
 import subprocess
 import sys
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 # Canonical greenfield/foreign predicate — single SSoT every hook shares.
+from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.canon_frontmatter import parse_canon_frontmatter  # noqa: E402
-from lib.handoff_phase_status import phase_tasks_progress as _phase_tasks_progress  # noqa: E402
+from lib.file_lock import LockTimeout, file_lock  # noqa: E402
+from lib.handoff_phase_status import (  # noqa: E402
+    phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
+    phase_tasks_progress as _phase_tasks_progress,
+)
 from lib.project_root import is_shipwright_project, resolve_project_root  # noqa: E402
+
+_RUN_CONFIG_NAME = "shipwright_run_config.json"
+# Matches orchestrator_pkg/run_config_store.py's LOCK_NAME — the same
+# advisory lock every other shipwright_run_config.json writer coordinates
+# through. Not imported (plugin-local, ADR-045 lib collision): a bare
+# filename suffix is a safe duplication.
+_RUN_CONFIG_LOCK_NAME = _RUN_CONFIG_NAME + ".lock"
 
 
 # Canonical home of the agent_docs artifact set, relative to project_root.
@@ -83,17 +98,17 @@ def _should_skip_regeneration(handoff_path: Path) -> tuple[bool, str]:
     return True, f"canon marker matches run_id={current_run_id}"
 
 
-def _detect_phase_complete(current_step: str, project_root: Path, completed_steps: set) -> bool:
+def _detect_phase_complete(current_phase: str, project_root: Path, completed_phases: set) -> bool:
     """Check if current phase has completed work but isn't marked complete."""
-    if current_step in completed_steps:
+    if current_phase in completed_phases:
         return False
 
     # Guard: skip detection during split-loop resume
     # (project+design done but plan/build cycling = mid-split-loop, stale configs)
-    if current_step in ("plan", "build") and "project" in completed_steps and "design" in completed_steps:
+    if current_phase in ("plan", "build") and "project" in completed_phases and "design" in completed_phases:
         return False
 
-    if current_step == "build":
+    if current_phase == "build":
         config_path = project_root / "shipwright_build_config.json"
         if config_path.exists():
             try:
@@ -104,7 +119,7 @@ def _detect_phase_complete(current_step: str, project_root: Path, completed_step
                 )
             except (json.JSONDecodeError, OSError):
                 pass
-    elif current_step == "plan":
+    elif current_phase == "plan":
         config_path = project_root / "shipwright_plan_config.json"
         if config_path.exists():
             try:
@@ -112,7 +127,7 @@ def _detect_phase_complete(current_step: str, project_root: Path, completed_step
                 return config.get("status") == "complete"
             except (json.JSONDecodeError, OSError):
                 pass
-    elif current_step == "project":
+    elif current_phase == "project":
         config_path = project_root / "shipwright_project_config.json"
         if config_path.exists():
             try:
@@ -120,7 +135,7 @@ def _detect_phase_complete(current_step: str, project_root: Path, completed_step
                 return config.get("status") == "complete"
             except (json.JSONDecodeError, OSError):
                 pass
-    elif current_step == "test":
+    elif current_phase == "test":
         results_path = project_root / "shipwright_test_results.json"
         if results_path.exists():
             try:
@@ -130,6 +145,104 @@ def _detect_phase_complete(current_step: str, project_root: Path, completed_step
                 pass
 
     return False
+
+
+def _build_legacy_phase_task(phase: str, status: str, now: str) -> dict[str, Any]:
+    """A full-shape ``phase_tasks[]`` entry for a phase recovered from legacy
+    ``current_step``/``completed_steps``, used only by the one-time cutover
+    below. Mirrors ``config_factory.build_v1_phase_task(phase, status,
+    now=...)`` field-for-field, terminal/active logic included (not
+    imported: ADR-045 lib collision, same tradeoff as
+    ``write_run_config._build_v1_style_phase_task_seed``).
+    """
+    terminal = status in {"done", "failed", "skipped"}
+    active = status not in {"backlog", "awaiting_launch"}
+    return {
+        "phaseTaskId": "ptk-" + uuid.uuid4().hex[:8],
+        "phase": phase,
+        "splitId": None,
+        "sessionUuid": str(uuid.uuid4()),
+        "version": 1,
+        "status": status,
+        "title": phase,
+        "description": (
+            "Advanced via the v1 update_step path (standalone / legacy / "
+            "adopted run, no orchestrator session)."
+        ),
+        "slashCommand": f"/shipwright-{phase}",
+        "prerequisites": [],
+        "claimedBySessionUuid": None,
+        "claimAttemptedAt": None,
+        "executionCount": 1 if active else 0,
+        "createdAt": now,
+        "awaitingLaunchAt": None,
+        "startedAt": now if active else None,
+        "completedAt": now if terminal else None,
+        "result": None,
+        "errors": [],
+    }
+
+
+def _seed_legacy_phase_task_history(
+    project_root: Path, done_phases: list[str], current_phase: str | None,
+) -> None:
+    """Locked + atomic read-modify-write: append a ``done`` phase_tasks[]
+    entry for every phase in ``done_phases`` without one already, PLUS an
+    ``in_progress`` entry for ``current_phase`` if it has none.
+
+    Only called from the one-time legacy cutover in ``main()`` — the sole
+    chance to carry ``completed_steps`` history forward, since the cutover
+    self-disables once ``phase_tasks[]`` gains usable entries. Seeding
+    ``current_phase`` too (not just the historical phases) closes a
+    doubt-review round-2 finding: seeding ONLY the historical phases could
+    flip ``phase_tasks_has_usable_entries()`` True — self-disabling the
+    cutover — before ``current_phase`` itself ever got a ``phase_tasks[]``
+    entry, permanently orphaning whichever phase was actually in flight at
+    cutover time. If it also completes this same invocation,
+    ``_run_phase_completion``'s ``update-step`` call below finds this seed
+    (matches on phase + splitId=None, same as ``_upsert_v1_phase_task``
+    everywhere else) and mutates it to ``done`` in place.
+
+    Locked (``lib.file_lock`` on the same ``*.lock`` path
+    ``orchestrator_pkg/run_config_store.py`` uses — every other
+    ``shipwright_run_config.json`` writer coordinates through that same
+    path) and atomic (``lib.atomic_write``) — round-1 of this same doubt
+    review flagged a bare, unlocked ``write_text`` here as unlike every
+    other writer of this file, which this codebase treats as
+    lock-and-atomic-write-protected (``config_io.save_run_config``'s own
+    docstring). Re-reads the file fresh under the lock rather than reusing
+    a copy read before the lock was taken, closing that same race window.
+    Best-effort: any failure here just means the next Stop-hook invocation
+    retries the cutover.
+    """
+    run_config_path = project_root / _RUN_CONFIG_NAME
+    lock_path = project_root / _RUN_CONFIG_LOCK_NAME
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        with file_lock(lock_path, timeout_seconds=10.0):
+            if not run_config_path.exists():
+                return
+            run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
+            tasks = run_config.get("phase_tasks")
+            tasks = list(tasks) if isinstance(tasks, list) else []
+            existing_phases = {
+                t.get("phase") for t in tasks
+                if isinstance(t, dict) and t.get("splitId") is None
+            }
+            for phase in done_phases:
+                if phase in existing_phases:
+                    continue
+                tasks.append(_build_legacy_phase_task(phase, "done", now))
+            if current_phase and current_phase not in existing_phases:
+                tasks.append(
+                    _build_legacy_phase_task(current_phase, "in_progress", now),
+                )
+            run_config["phase_tasks"] = tasks
+            durable_atomic_write(
+                run_config_path, json.dumps(run_config, indent=2) + "\n",
+            )
+    except (LockTimeout, OSError, json.JSONDecodeError):
+        pass
 
 
 def _run_phase_completion(project_root: Path, step: str) -> None:
@@ -213,12 +326,9 @@ def main() -> int:
 
         content = generate_handoff(project_root, session_id, reason="session end")
 
-        # A phase-namespaced handoff branch (runs/<runId>/<phaseTaskId>/handoff.md)
-        # used to fire when the live session id matched a phase_tasks[].sessionUuid —
-        # only ever possible under the removed multi_session mode, where each phase
-        # WAS its own bound Claude session. Under single_session the phase runner is
-        # a subagent of the master, so nothing could ever match. Removed with the
-        # engine (iterate-2026-07-14-remove-multi-session).
+        # A phase-namespaced handoff branch used to fire under the removed
+        # multi_session mode; single_session never matches it. Removed with
+        # the engine (iterate-2026-07-14-remove-multi-session).
         loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
         loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID")
         if loop_id and loop_unit:
@@ -248,31 +358,48 @@ def main() -> int:
             pass  # Dashboard update is best-effort
 
         # Compliance MDs are NEVER written by this Stop hook
-        # (iterate-2026-05-23-compliance-md-single-producer): iterate-finalize is
-        # the sole producer of .shipwright/compliance/*.md. Out-of-band auto-regen
-        # here caused dirty-tree noise on every non-iterate Stop and wrote MDs
-        # from a possibly-stale local events.jsonl. Deleted as a class of bug.
+        # (iterate-2026-05-23-compliance-md-single-producer): iterate-finalize
+        # is the sole producer of .shipwright/compliance/*.md.
 
         # Fallback: detect incomplete phase-completion and trigger it
         try:
-            run_config_path = project_root / "shipwright_run_config.json"
+            run_config_path = project_root / _RUN_CONFIG_NAME
             if run_config_path.exists():
                 run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
 
-                # Primary: phase_tasks[] (v2) is authoritative for progress
-                # on a driven run — current_step/completed_steps are
-                # write-once at run creation and the v2 lifecycle never
-                # advances them (campaign p4-04-retire-write-once-steps,
-                # sub-iterate s3). Fall back to the v1 fields only when
-                # phase_tasks[] gives no confident signal (a standalone /
-                # non-driven config).
-                current_step, completed_steps = _phase_tasks_progress(run_config)
-                if current_step is None:
-                    current_step = run_config.get("current_step")
-                    completed_steps = set(run_config.get("completed_steps", []))
+                # phase_tasks[] (v2) is the SOLE authority for progress — the
+                # write-once current_step/completed_steps fields are retired
+                # (campaign p4-04-retire-write-once-steps, sub-iterate s5).
+                current_phase, completed_phases = _phase_tasks_progress(run_config)
 
-                if current_step and _detect_phase_complete(current_step, project_root, completed_steps):
-                    _run_phase_completion(project_root, current_step)
+                # One-time cutover (external code review, GLM HIGH): this is
+                # what triggers update-step, which seeds phase_tasks[] — a
+                # PRE-s5 (legacy-only) config would otherwise never self-heal.
+                # Mirrors config_factory.create_config's identical boundary.
+                if current_phase is None and not _phase_tasks_has_usable_entries(run_config):
+                    legacy_current = run_config.get("current_step")
+                    if isinstance(legacy_current, str):
+                        current_phase = legacy_current
+                        legacy_steps = run_config.get("completed_steps")
+                        completed_phases = (
+                            {s for s in legacy_steps if isinstance(s, str)}
+                            if isinstance(legacy_steps, list) else set()
+                        )
+                        # Seed history for every OTHER recovered phase, PLUS
+                        # an in_progress placeholder for current_phase itself
+                        # — not just the one phase update-step marks complete
+                        # below (doubt review, s5) — this cutover never fires
+                        # again once phase_tasks[] has usable entries, so
+                        # current_phase must get one of its own here too, or
+                        # it is permanently orphaned the moment the seed
+                        # below makes the OTHER entries usable.
+                        historical_phases = sorted(completed_phases - {current_phase})
+                        _seed_legacy_phase_task_history(
+                            project_root, historical_phases, current_phase,
+                        )
+
+                if current_phase and _detect_phase_complete(current_phase, project_root, completed_phases):
+                    _run_phase_completion(project_root, current_phase)
         except Exception:
             pass  # Phase-completion fallback is best-effort
 

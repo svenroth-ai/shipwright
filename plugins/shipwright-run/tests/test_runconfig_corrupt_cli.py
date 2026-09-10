@@ -87,7 +87,14 @@ def test_all_steps_complete_still_exits_zero(tmp_path):
     """The blocked case must not be confused with a finished run — both carry
     ``next_step: null``."""
     write(tmp_path, json.dumps({
-        "pipeline": ["plan"], "completed_steps": ["plan"], "standalone": True,
+        "pipeline": ["plan"], "standalone": True,
+        "phase_tasks": [{
+            "phaseTaskId": "ptk-aaaaaaaa", "phase": "plan", "splitId": None,
+            "sessionUuid": "11111111-1111-1111-1111-111111111111", "version": 1,
+            "status": "done", "title": "plan", "slashCommand": "/shipwright-plan",
+            "prerequisites": [], "executionCount": 1,
+            "createdAt": "2026-09-10T00:00:00+00:00",
+        }],
     }))
     result = _run("get-next-step", cwd=tmp_path)
     assert result.returncode == 0, result.stderr
@@ -160,12 +167,13 @@ def _create(project_root):
 @pytest.mark.parametrize("name", sorted(UNUSABLE_CONTENT))
 def test_create_config_recovers_from_bad_content(tmp_path, name):
     """'Delete it and re-run' has to actually work. ``create_config`` reads the
-    old file only to merge ``completed_steps``; bad content is precisely what it
-    is here to replace."""
+    old file only to merge prior ``phase_tasks[]`` progress; bad content is
+    precisely what it is here to replace."""
     write(tmp_path, UNUSABLE_CONTENT[name])
     config = _create(tmp_path)
     assert config["schemaVersion"] == 2
-    assert config["completed_steps"] == []
+    # Nothing merged: the fresh initial task is unclaimed, not skipped.
+    assert config["phase_tasks"][0]["status"] == "awaiting_launch"
 
 
 def test_create_config_recovers_from_non_utf8(tmp_path):
@@ -195,9 +203,18 @@ def test_create_config_stays_loud_on_a_filesystem_fault(tmp_path, monkeypatch):
 def test_create_config_still_merges_a_healthy_standalone_config(tmp_path):
     """The recovery change must not cost the normal merge."""
     write(tmp_path, json.dumps({
-        "standalone": True, "completed_steps": ["project"], "pipeline": ["project", "plan"],
+        "standalone": True, "pipeline": ["project", "plan"],
+        "phase_tasks": [{
+            "phaseTaskId": "ptk-aaaaaaaa", "phase": "project", "splitId": None,
+            "sessionUuid": "11111111-1111-1111-1111-111111111111", "version": 1,
+            "status": "done", "title": "project", "slashCommand": "/shipwright-project",
+            "prerequisites": [], "executionCount": 1,
+            "createdAt": "2026-09-10T00:00:00+00:00",
+        }],
     }))
-    assert "project" in _create(tmp_path)["completed_steps"]
+    from lib.handoff_phase_status import phase_tasks_progress
+    _, completed = phase_tasks_progress(_create(tmp_path))
+    assert "project" in completed
 
 
 def test_create_config_says_the_prior_steps_were_not_merged(tmp_path, capsys):
@@ -206,7 +223,7 @@ def test_create_config_says_the_prior_steps_were_not_merged(tmp_path, capsys):
     write(tmp_path, truncated())
     _create(tmp_path)
     warning = capsys.readouterr().err
-    assert "completed_steps" in warning
+    assert "progress" in warning
     assert "NOT merged" in warning or "not merged" in warning.lower()
 
 

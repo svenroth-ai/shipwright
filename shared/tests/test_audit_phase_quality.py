@@ -54,8 +54,8 @@ def shipwright_project(tmp_path: Path) -> Path:
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({
             "run_id": "run-abc",
-            "current_step": "build",
-            "completed_steps": ["project", "design", "plan"],
+            "phase_tasks": [{"phase": p, "status": s} for p, s in
+                [("project", "done"), ("design", "done"), ("plan", "done"), ("build", "in_progress")]],
         }),
         encoding="utf-8",
     )
@@ -397,7 +397,7 @@ def test_hook_writes_finding_and_aggregates(shipwright_project: Path):
     finding_dir = shipwright_project / pq.FINDING_DIR
     assert finding_dir.is_dir()
     # One Stop now audits every ENGAGED phase resolved from session state
-    # (project/design/plan via completed_steps + build via current_step/event),
+    # (project/design/plan via phase_tasks[] + build via phase_tasks[]/event),
     # not the single plugin-root phase. (Was: exactly one "build" finding.)
     fbp = _findings_by_phase(finding_dir)
     assert set(fbp) == {"project", "design", "plan", "build"}

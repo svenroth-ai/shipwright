@@ -191,8 +191,6 @@ def write_run_config(
             "test", "changelog", "deploy",
         ],
         "status": "complete",
-        "current_step": None,
-        "completed_steps": completed_steps,
         "phase_tasks": phase_tasks,
         "profile": profile,
         "scope": scope,

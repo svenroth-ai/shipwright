@@ -2461,7 +2461,7 @@ When you have a specific question, go directly to the file that owns the answer.
 | What requirement maps to which file? | `shipwright_sync_config.json` (if present) | FR ↔ file mapping |
 | Which stable area owns this path? | `.shipwright/agent_docs/area_catalog.json` | Canonical deterministic area/path-pattern contract; not an LLM startup input |
 | What requirements does this project even have? | `.shipwright/planning/*/spec.md` | IREB-aligned FR/NFR specs |
-| Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_step`) + `phase_history` for "which step ran when" | Pipeline state machine; `current_step` is the live cursor, `phase_history` is the trail |
+| Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `phase_tasks[]`) + `phase_history` for "which step ran when" | Pipeline state machine; `phase_tasks[]` (via `phase_tasks_progress`) is the live cursor, `phase_history` is the trail |
 | What sections has build completed? | `shipwright_build_config.json` (`completed_sections`) | Per-section build state lives here, not in run config |
 | What iterates have run? | `.shipwright/agent_docs/iterates/*.json` (one file per iterate); fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | One file per iterate; the run-config array is migration-only for older projects |
 | What was the most recent decision? | `.shipwright/agent_docs/decision_log.md` (latest ADR) | Forward-only append |

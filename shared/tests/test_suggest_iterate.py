@@ -86,6 +86,30 @@ class TestPhaseTasksProgress:
         assert calls, "classify_for_iterate was never called"
         assert result == {"reached": True}
 
+    def test_reaches_classify_for_iterate_via_legacy_cutover_when_no_phase_tasks(
+        self, monkeypatch, tmp_path,
+    ):
+        """The one-time legacy cutover (GLM MEDIUM, s5) makes this REACH
+        classify_for_iterate for a pre-s5 standalone config with no
+        phase_tasks[] at all — without it the post-test fallback is
+        permanently dead for that config (nothing left ever seeds
+        phase_tasks[] for a run with no more phases)."""
+        calls = []
+        monkeypatch.setattr(
+            suggest_iterate, "classify_for_iterate",
+            lambda prompt, project_root: calls.append((prompt, project_root)) or {"reached": True},
+        )
+        run_config = {
+            "status": "in_progress",
+            "current_step": "changelog",
+            "completed_steps": ["project", "design", "plan", "build", "test"],
+        }
+        result = handle_in_progress_pipeline(
+            "add a filter for completed tasks in the sidebar", tmp_path, run_config,
+        )
+        assert calls, "classify_for_iterate was never called"
+        assert result == {"reached": True}
+
 
 # --- Unit tests for pattern matching ---
 
@@ -274,11 +298,21 @@ class TestHookIntegration:
         assert "mismatch" in context.lower() or "build" in context
 
     def test_in_progress_no_output_when_matching(self, tmp_path):
-        """If user intent matches current step, no additional context needed."""
+        """If user intent matches current step, no additional context needed.
+
+        The current step is read from phase_tasks[] alone (campaign
+        p4-04-retire-write-once-steps, sub-iterate s5: the write-once
+        current_step field is retired)."""
         result = self._run_hook(
             "run the tests",
             str(tmp_path),
-            config={"status": "in_progress", "current_step": "test"},
+            config={
+                "status": "in_progress",
+                "phase_tasks": [
+                    {"phase": "build", "status": "done"},
+                    {"phase": "test", "status": "in_progress"},
+                ],
+            },
         )
         assert result.returncode == 0
         assert result.stdout.strip() == ""

@@ -21,7 +21,10 @@ from pathlib import Path
 _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
-from lib.handoff_phase_status import phase_tasks_progress as _phase_tasks_progress  # noqa: E402
+from lib.handoff_phase_status import (  # noqa: E402
+    phase_tasks_has_usable_entries as _phase_tasks_has_usable_entries,
+    phase_tasks_progress as _phase_tasks_progress,
+)
 
 # Multilingual pattern registry — en + de now, extensible for fr/it later
 PHASE_PATTERNS: dict[str, dict[str, str]] = {
@@ -109,16 +112,25 @@ def handle_in_progress_pipeline(
     code-change requests don't get dropped while changelog/deploy/compliance
     remain pending.
 
-    Primary signal is ``phase_tasks[]`` (v2) — not the write-once
-    ``current_step``/``completed_steps`` fields, which never advance past
-    run creation on a driven run (campaign p4-04-retire-write-once-steps,
-    sub-iterate s3). Falls back to the v1 fields only when ``phase_tasks[]``
-    gives no confident signal (a standalone / non-driven config).
+    Signal is ``phase_tasks[]`` (v2) first. A ONE-TIME legacy cutover
+    (external code review, GLM MEDIUM, sub-iterate s5) reads the retired
+    ``current_step``/``completed_steps`` fields ONLY when ``phase_tasks[]``
+    has no usable entry at all — a PRE-s5 standalone config otherwise
+    misroutes every prompt to the intent-mismatch warning and never reaches
+    the post-test iterate fallback below, forever (nothing left ever seeds
+    ``phase_tasks[]`` for a run with no more phases to run). Mirrors
+    ``state.detect_current_phase``'s identical boundary.
     """
     current_step, completed_steps = _phase_tasks_progress(run_config)
+    if current_step is None and not _phase_tasks_has_usable_entries(run_config):
+        legacy_current = run_config.get("current_step")
+        if legacy_current:
+            current_step = legacy_current
+        legacy_completed = run_config.get("completed_steps")
+        if isinstance(legacy_completed, list):
+            completed_steps = {s for s in legacy_completed if isinstance(s, str)}
     if current_step is None:
-        current_step = run_config.get("current_step", "unknown")
-        completed_steps = set(run_config.get("completed_steps", []))
+        current_step = "unknown"
     phase = detect_phase_intent(prompt)
 
     if phase and phase != current_step:

@@ -137,13 +137,12 @@ def test_load_run_config_round_trip_preserves_v2_fields(tmp_project):
 # ---- v1 compat fields still present (until F2 hard-cut) ----
 
 
-def test_create_config_keeps_v1_compat_fields(tmp_project):
+def test_create_config_drops_the_retired_v1_fields(tmp_project):
+    """campaign p4-04-retire-write-once-steps, sub-iterate s5: current_step /
+    completed_steps are retired — create_config no longer emits either."""
     cfg = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
-    # These are needed by the existing update_step / get_next_step until F2.
-    assert "current_step" in cfg
-    assert "completed_steps" in cfg
-    assert cfg["current_step"] == "project"
-    assert cfg["completed_steps"] == []
+    assert "current_step" not in cfg
+    assert "completed_steps" not in cfg
 
 
 # ---- standalone-merge interaction ----
@@ -151,9 +150,23 @@ def test_create_config_keeps_v1_compat_fields(tmp_project):
 
 def test_create_config_skips_initial_task_when_standalone_already_completed_project(tmp_project):
     # Simulate a prior /shipwright-project run that wrote a standalone config
+    # (the v1 update_step path's shape post sub-iterate s5: phase_tasks[],
+    # not the retired completed_steps field).
     standalone = {
         "standalone": True,
-        "completed_steps": ["project"],
+        "phase_tasks": [{
+            "phaseTaskId": "ptk-aaaaaaaa",
+            "phase": "project",
+            "splitId": None,
+            "sessionUuid": "11111111-1111-1111-1111-111111111111",
+            "version": 1,
+            "status": "done",
+            "title": "project",
+            "slashCommand": "/shipwright-project",
+            "prerequisites": [],
+            "executionCount": 1,
+            "createdAt": "2026-09-10T00:00:00+00:00",
+        }],
         "phase_history": {"project": {"foo": "bar"}},
     }
     (tmp_project / "shipwright_run_config.json").write_text(
