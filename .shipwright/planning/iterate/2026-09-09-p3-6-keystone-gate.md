@@ -1638,7 +1638,7 @@ observation and several low documentation/cosmetic ones.
 
 | # | Severity | Finding | Disposition |
 |---|---|---|---|
-| 1 | medium (robustness) | `spec_text_was_read` is computed once across ALL named spec paths, but the failure it targets is per-path: with two spec paths where one resolves to `""` at both commits and the other has real content, the flag reads `True`, so the stale path gets no warning of its own and arm 2 stays armed for a head-only FR anchored to it — a narrower recurrence of the original false-HARD-block shape. Matches §5.1's own bullet text verbatim ("**every** named `spec_path** resolving to no content"), so NOT a spec violation — Stage-1's PASS stands. Low real-world likelihood: CI always regenerates the head manifest, so a bogus per-path `spec_path` implies an already-broken requirements catalog. Reviewer's own recommendation: **card it, do not reopen this PR for it.** | **Deferred, per the reviewer's explicit recommendation.** Triage card `trg-6769326b` filed rather than fixed in-PR — a 20-round PR is the wrong place to add a new per-path collection loop for a low-likelihood edge case the design doc already scopes correctly. |
+| 1 | medium (robustness) | `spec_text_was_read` is computed once across ALL named spec paths, but the failure it targets is per-path: with two spec paths where one resolves to `""` at both commits and the other has real content, the flag reads `True`, so the stale path gets no warning of its own and arm 2 stays armed for a head-only FR anchored to it — a narrower recurrence of the original false-HARD-block shape. Matches §5.1's own bullet text verbatim ("**every** named `spec_path` resolving to no content"), so NOT a spec violation — Stage-1's PASS stands. Low real-world likelihood: CI always regenerates the head manifest, so a bogus per-path `spec_path` implies an already-broken requirements catalog. Reviewer's own recommendation: **card it, do not reopen this PR for it.** | **Deferred, per the reviewer's explicit recommendation.** Triage card `trg-6769326b` filed rather than fixed in-PR — a 20-round PR is the wrong place to add a new per-path collection loop for a low-likelihood edge case the design doc already scopes correctly. |
 | 2 | low (readability, non-blocking) | The single invariant "no spec text read → say why" is spelled three different ways across two files (`if not spec_paths`, `if spec_paths and not spec_text_was_read`, `if not spec_text_was_read`) — the reviewer's own diagnosis of WHY rounds 18/19 kept rejecting this exact area twice. Suggested consolidating into one post-loop branch. Reviewer's own framing: "not block-eligible." | **Deferred as advisory.** Restructuring an area that has already produced three consecutive citation/comment mismatches carries its own regression risk; left as a candidate for a future dedicated cleanup rather than folded into this already-long chain. |
 | 3 | low (docs) | `_keystone_divergence.py`'s docstring never stated the required parameter's plain meaning, and used leftover phrasing from the pre-rename negative form. | **Fixed.** Added "True iff at least one named `spec_path` yielded non-empty content at either commit" directly in the docstring. |
 | 4 | low (docs) | `_keystone_ac_digest.py`'s comment above `spec_text_was_read = False` described what the PRIOR (unfixed) implementation would have done, using the CURRENT variable name — a counterfactual a fresh reader has to unpick. | **Fixed.** Reworded to a plain definition plus the one-sentence reason it matters. |
@@ -1767,6 +1767,15 @@ the pre-round-18 false claim it had just disproved everywhere else. Nothing beha
 the docstring, the design doc, the test, and the runtime behavior all already agreed — which is
 itself the most reassuring reading of thirteen rounds this far in: the remaining defect class is
 prose echoing stale prose, not logic diverging from either.
+
+**Round 20 (§12.1q) passed, and Stage-2's FOURTH pass found nothing blocking again** — one medium
+robustness gap (deferred to triage card `trg-6769326b` per the reviewer's own explicit recommendation,
+since it matches the design doc's suppression condition verbatim and is therefore not a spec
+violation) and five low findings, four fixed and one left advisory. **Round 21 passed clean** — the
+first round in this cascade's second half to find genuinely nothing, not even a citation lag,
+confirming all six of round 20's fixes landed faithfully with no collateral drift into any count or
+cross-reference. Twenty-one rounds, thirteen rejections, all now resolved: the two review stages have
+converged on the same code from two different directions.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 
