@@ -509,6 +509,15 @@ level reader sees criteria the AC-level reader cannot; this fires when the AC-le
 them too, just unminted. Pinned by
 `test_a_new_fr_with_unminted_bullets_is_not_ALSO_reported_as_stating_none`.
 
+**Third precedence rule (Stage-2 code review, medium):** arm 2 is ALSO suppressed for any FR whose
+heading already exists in the BASE **spec text** (`fr_id in base_fr_digests`), independently of the
+base *manifest*. The manifest is regenerated at head but read from the last COMMIT at base, and the
+two are known to drift — the traceability drift step is advisory, not a hard gate — so a display id
+absent from a stale base manifest is not evidence the FR is new; the spec is. Without this
+exclusion, an untouched FR whose base-manifest entry never landed would HARD-block an unrelated PR.
+Spec-derived, per ruling Q1b's own principle. Pinned by
+`test_an_fr_present_at_base_SPEC_but_missing_from_the_base_MANIFEST_is_not_new`.
+
 > **BUILD-TIME AMENDMENT (external plan review, glm low) — state the set operation, because
 > stating it exposed a repo-wide false red.** "NEW active FR" was left undefined; it is
 > `active_display_ids(head_manifest) - active_display_ids(base_manifest)`, where *active* means
@@ -1249,6 +1258,27 @@ awkwardly out of context, an asymmetry between the manifest and spec git-read st
 untested pooling/collision interaction in `_keystone_layer_gap`) were left as the author's call —
 none changes behaviour, and `_keystone_core.py` sits at exactly its 300-line limit, so cosmetic
 churn there is not free.
+
+### 12.1f Stage-1 round 6 (fresh) — REJECT
+
+Round 5's Stage-2 fix (§12.1e finding H) itself had two of the same defect classes rounds 3-4 kept
+finding, plus a new one specific to test quality:
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| I | reject (hard gate) | The pinning test named in §12.1e was VACUOUS: it used FR-01.02, which carries a MINTED criterion in `BASE_SPEC`, so arm 2's own final conjunct (`not any(k[0] == fr_id for k in head_minted)`) already suppressed it regardless of the new exclusion — the test passed identically with the fix reverted. | **Accepted-and-fixed.** Rewritten against a criteria-less FR (`### FR-01.03: Empties`), so only the `base_fr_digests` exclusion can save it. Verified by hand: reverting the exclusion makes the test fail (`['FR-01.03'] == []` assertion error), confirming it is now load-bearing. |
+| J | reject (hard gate) | §5.2 was not updated with the third suppressor — the identical defect §12.1c finding C was rejected for two rounds earlier. | **Accepted-and-fixed.** A "Third precedence rule" paragraph added directly after the second, naming the exclusion, the drift condition, and the corrected pinning test. |
+| K | reject (hard gate) | The new test's docstring opened "No reviewer asked for this — found during build, Stage-2 code review", asserting both "no reviewer asked" and "a reviewer (Stage-2) found it" in the same sentence — self-contradictory, and the wrong form: a reviewer DID ask, so the honest form is the one its sibling test already uses ("Stage-2 code review, medium"), not the build-time form reserved for un-requested findings. | **Accepted-and-fixed.** Docstring opens "Stage-2 code review, medium" to match. |
+
+**Pattern across all six Stage-1 rounds, restated because it repeated a fifth time:** every REJECT
+has been a code/document disagreement, an attribution error, or (new this round) a test that does
+not test what it claims — never a wrong verdict from the evaluator itself. The evaluator has now
+re-derived as AC-1/AC-2/AC-3-compliant fresh, six times running. **The recurring root cause is
+narrower than "check everything again": a fix that satisfies the one assertion a reviewer wrote,
+without checking that the assertion could FAIL against the code being replaced.** Finding I is the
+clearest instance yet — the test read as thorough (real git, a docstring naming the exact hazard)
+and was still vacuous, because the fixture's OTHER conjunct alone already produced the asserted
+outcome.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 

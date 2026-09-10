@@ -203,20 +203,27 @@ def test_a_new_fr_with_unminted_bullets_is_not_ALSO_reported_as_stating_none(rep
 
 
 def test_an_fr_present_at_base_SPEC_but_missing_from_the_base_MANIFEST_is_not_new(repo):
-    """No reviewer asked for this — found during build, Stage-2 code review
-    (medium): arm 2's "new active FR" predicate is `active(head manifest) -
-    active(base manifest)`, but the manifest is REGENERATED at head and read
-    from the last COMMIT at base — and the two are known to drift (the
-    traceability drift step is advisory, not a hard gate). An FR whose heading
-    already existed in the base SPEC is not "new in this PR" merely because a
-    stale base manifest never carried it; without the spec-derived exclusion
-    this would HARD-block an unrelated PR that never touched the FR."""
-    head = base = _git("rev-parse", "HEAD", cwd=repo)
-    base_manifest = _manifest(ids=("FR-01.01",))  # FR-01.02 missing here...
-    head_manifest = _manifest(ids=("FR-01.01", "FR-01.02"))  # ...but present here
+    """Stage-2 code review, medium: arm 2's "new active FR" predicate is
+    `active(head manifest) - active(base manifest)`, but the manifest is
+    REGENERATED at head and read from the last COMMIT at base — and the two
+    are known to drift (the traceability drift step is advisory, not a hard
+    gate). An FR whose heading already existed in the base SPEC, with no
+    criteria at all, is not "new in this PR" merely because a stale base
+    manifest never carried it; without the spec-derived exclusion this would
+    HARD-block an unrelated PR that never touched the FR. Genuinely pinned:
+    the FR carries NO minted criteria, so arm 2's other conjunct
+    (`not any(k[0] == fr_id for k in head_minted)`) cannot save this test on
+    its own -- only the `base_fr_digests` exclusion can."""
+    head = base = _commit_spec(repo, BASE_SPEC + "\n### FR-01.03: Empties\n\nNothing yet.\n")
+    base_manifest = _manifest(ids=("FR-01.01", "FR-01.02"))  # FR-01.03 missing here...
+    head_manifest = _manifest(ids=("FR-01.01", "FR-01.02", "FR-01.03"))  # ...but present here
     cs = kd.ac_change_set(repo, base, head, head_manifest, base_manifest)
     assert cs.new_frs_without_criteria == []
     assert not cs.changed and not cs.added and not cs.removed and not cs.reader_divergence
+    # Companion, so this guard cannot pass merely because arm 2 never fires
+    # for this FR shape: `test_a_new_fr_stating_no_criterion_at_all_is_reported_separately`
+    # (above) uses the identical FR-01.03 shape genuinely absent from the base
+    # SPEC and asserts arm 2 DOES fire for it.
 
 
 def test_an_absent_base_manifest_suppresses_the_new_fr_arm_entirely(repo):
