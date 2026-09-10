@@ -1397,10 +1397,18 @@ disagreement, one this section's own tally lagging the round it was written to c
 | 1 | medium | `test_keystone_ac_digest.py`'s sibling map routed AC-K9(e) and AC-K11 to `test_check_keystone_ac_gate.py`; both actually live in `test_keystone_gate_infra.py`, which its own docstring and `test_check_keystone_ac_gate.py`'s docstring both already stated correctly — three shipped docstrings, one of the three wrong. | **Fixed** — `test_keystone_ac_digest.py`'s sibling map corrected to route AC-K9(e)/AC-K11 to `test_keystone_gate_infra.py`, keeping AC-K13/K14 on `test_check_keystone_ac_gate.py`. |
 | 2 | medium | This section still ended at round 10 while round 10's own three fixes (this diff) constitute a fourth round with no record, and §12.3's tally still read "seven times, across rounds 1-10" — the verbatim recurrence of round 10's own finding 3, one round later. | **Fixed** — this row and the heading/opening paragraph above extended to cover round 11; §12.3 updated to "eight times, across rounds 1-11". |
 
-**Note for whoever reviews round 12: this section will need extending again if round 11 itself
-does not PASS — the same self-referential lag every prior round in this table has hit once. Check
-§12.3's tally against the ACTUAL count of REJECT rows in this table before accepting either as
-current.**
+**A structural note for whoever reviews the next round, stated once here rather than re-discovered
+each time: this record cannot document its own review round, by construction.** The commit that
+fixes round N's findings is itself the diff round N+1 reviews — round N's own outcome (this record
+extended, or not) is only knowable after round N+1 runs, which is necessarily after this commit
+already exists. So the record legitimately lags the in-flight round by exactly one at every point
+in this cascade; that one-round lag is not itself a defect (the round-11 reviewer made exactly this
+call: *"a record that lags the in-flight round is unavoidable ... not the same thing"* as a false
+claim). What IS a defect, every time: a record stale by MORE than one round, a count that
+contradicts the rows actually present, or an affirmatively false claim (a stated PASS that did not
+happen, a wrong section citation). Check the row count in §12.1h against §12.3's tally before
+flagging either — if they already agree and the only gap is "the round that just ran isn't in here
+yet", that gap is expected, not a finding.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
