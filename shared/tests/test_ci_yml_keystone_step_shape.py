@@ -19,8 +19,7 @@ from pathlib import Path
 
 import yaml
 
-from tools.check_ci_gate_coverage import GATE_COMMANDS, is_gate_step
-from tools.check_ci_gate_coverage import parse_workflows as _parse_workflows
+from tools.check_ci_gate_coverage import GATE_COMMANDS, is_gate_step, parse_workflows
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CI_YML = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
@@ -60,7 +59,7 @@ def _real_keystone_step():
     ``bool("false")`` reads a string ``"false"`` as truthy, while the real
     parser's own string-aware check reads it as `False`)."""
     steps = [
-        s for s in _parse_workflows(_REPO_ROOT)
+        s for s in parse_workflows(_REPO_ROOT)
         if s.workflow == "ci.yml" and s.name == KEYSTONE_STEP_NAME
     ]
     assert len(steps) == 1, f"expected exactly one {KEYSTONE_STEP_NAME!r} step, found {len(steps)}"

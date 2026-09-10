@@ -571,7 +571,7 @@ BOTH halves: §5.1's fourth (`_spec_paths`-empty) bullet's warning covers the "n
 does NOT trigger that warning, since a path WAS named — carries its own warning, added specifically
 so this branch is not silent (round 18's rejection). Pinned by
 `test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base` (first half) and
-`test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_2` (second half).
+`test_a_named_spec_path_absent_from_git_at_both_commits_also_suppresses_arm_2` (second half).
 
 **Deliberately NOT an arm:**
 
@@ -1582,7 +1582,7 @@ changes correct, including a full hand-trace proving the new regression test fai
 
 | # | Severity | Finding | Disposition |
 |---|---|---|---|
-| 1 | low | `no_spec_was_read = not spec_paths` tested whether a `spec_path` was NAMED, not whether text was actually READ — a path present in the manifest but resolving to `""` at BOTH commits (absent from git at either sha) would leave arm 2 unsuppressed with empty digests, still HARD-blocking incorrectly. Fails closed/loud, not silently — low likelihood in real CI, reachable in local reproduction. | **Fixed.** Renamed to `spec_text_was_read`, computed from whether any spec path actually yielded non-empty text at either commit during the read loop, not from `spec_paths` alone. New regression test: `test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_2`. |
+| 1 | low | `no_spec_was_read = not spec_paths` tested whether a `spec_path` was NAMED, not whether text was actually READ — a path present in the manifest but resolving to `""` at BOTH commits (absent from git at either sha) would leave arm 2 unsuppressed with empty digests, still HARD-blocking incorrectly. Fails closed/loud, not silently — low likelihood in real CI, reachable in local reproduction. | **Fixed.** Renamed to `spec_text_was_read`, computed from whether any spec path actually yielded non-empty text at either commit during the read loop, not from `spec_paths` alone. New regression test: `test_a_named_spec_path_absent_from_git_at_both_commits_also_suppresses_arm_2`. |
 | 2 | low | `no_spec_was_read: bool = False` was an unsafe-by-default parameter with exactly one caller; `head_minted` also lacked a type annotation. | **Fixed** in the same edit as finding 1: `spec_text_was_read` is now a required keyword-only argument with no default, positively named, and `head_minted: dict[tuple[str, str], str]` is annotated. |
 | 3 | low | The CI-shape test rewritten at §12.1k finding 3 never mutated the step's `name` to prove the `(gate)` suffix specifically (not just the run body) is load-bearing. | **Fixed.** Added a `dataclasses.replace(step, name=...)` assertion stripping `" (gate)"` and confirming `is_gate_step` then returns `False`. |
 | 4 | low | That same test's hand-built `Step(...)` duplicated, and already diverged from, `parse_workflows`'s own field coercion — a naive `bool("false")` reads a string `"false"` as truthy, while the real parser's string-aware check reads it as `False`. | **Fixed.** The test now selects the step from `parse_workflows(_REPO_ROOT)` directly instead of hand-constructing one, exercising the real code path. |
@@ -1624,6 +1624,31 @@ no revision (no new test function was added this round, only an assertion). The 
 the one stale comment, not a wider drift — the fourth time in this cascade a fix's own explanatory
 prose (as opposed to its behavior) lagged one step behind a change it made, after §12.1j, §12.1l and
 §12.1m each hit a version of the same pattern in the design doc rather than in code.
+
+### 12.1q Stage-1 round 20 (fresh, PASS) → Stage-2 code review (fresh, fourth pass) — PASS-WITH-FINDINGS
+
+Round 20 confirmed round 19's comment reword and the "§5.1's fourth bullet" correction are both
+accurate, and independently re-derived the bullet ordinal from scratch (counting five bullets total
+in §5.1's never-silent list) rather than trusting the prior round's count.
+
+Three commits (`589623b1`, `d20e7864`, `221ea05b` — Stage-2's third-pass fixes and the two Stage-1
+rejections that followed) had accumulated real code changes Stage-2 had not yet reviewed. A fourth
+Stage-2 pass over that slice came back **PASS-WITH-FINDINGS, 0 blocking**: one medium robustness
+observation and several low documentation/cosmetic ones.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | medium (robustness) | `spec_text_was_read` is computed once across ALL named spec paths, but the failure it targets is per-path: with two spec paths where one resolves to `""` at both commits and the other has real content, the flag reads `True`, so the stale path gets no warning of its own and arm 2 stays armed for a head-only FR anchored to it — a narrower recurrence of the original false-HARD-block shape. Matches §5.1's own bullet text verbatim ("**every** named `spec_path** resolving to no content"), so NOT a spec violation — Stage-1's PASS stands. Low real-world likelihood: CI always regenerates the head manifest, so a bogus per-path `spec_path` implies an already-broken requirements catalog. Reviewer's own recommendation: **card it, do not reopen this PR for it.** | **Deferred, per the reviewer's explicit recommendation.** Triage card `trg-6769326b` filed rather than fixed in-PR — a 20-round PR is the wrong place to add a new per-path collection loop for a low-likelihood edge case the design doc already scopes correctly. |
+| 2 | low (readability, non-blocking) | The single invariant "no spec text read → say why" is spelled three different ways across two files (`if not spec_paths`, `if spec_paths and not spec_text_was_read`, `if not spec_text_was_read`) — the reviewer's own diagnosis of WHY rounds 18/19 kept rejecting this exact area twice. Suggested consolidating into one post-loop branch. Reviewer's own framing: "not block-eligible." | **Deferred as advisory.** Restructuring an area that has already produced three consecutive citation/comment mismatches carries its own regression risk; left as a candidate for a future dedicated cleanup rather than folded into this already-long chain. |
+| 3 | low (docs) | `_keystone_divergence.py`'s docstring never stated the required parameter's plain meaning, and used leftover phrasing from the pre-rename negative form. | **Fixed.** Added "True iff at least one named `spec_path` yielded non-empty content at either commit" directly in the docstring. |
+| 4 | low (docs) | `_keystone_ac_digest.py`'s comment above `spec_text_was_read = False` described what the PRIOR (unfixed) implementation would have done, using the CURRENT variable name — a counterfactual a fresh reader has to unpick. | **Fixed.** Reworded to a plain definition plus the one-sentence reason it matters. |
+| 5 | low (cosmetic) | The new test's name said "absent from git at **either** commit" when the fixture requires **both** (absent at only one side is the ordinary add/delete case, which does not suppress). | **Fixed.** Renamed to `test_a_named_spec_path_absent_from_git_at_both_commits_also_suppresses_arm_2`, including its two design-doc citations. |
+| 6 | low (cosmetic) | `test_ci_yml_keystone_step_shape.py` imported `parse_workflows as _parse_workflows` — an alias serving no purpose now that the imported name is a function, not a class needing disambiguation (unlike the earlier `Step as _GateStep` alias it replaced). | **Fixed.** Single unaliased import, matching the line above it. |
+
+Findings 1 and 2 were left exactly as the reviewer itself framed them — a card and an advisory,
+respectively — rather than reopening a fix chain that has already run to three consecutive
+single-issue rounds on this same area. Findings 3-6 were cheap, text-only or naming-only changes with
+no risk of introducing a new divergence, so all four were fixed in this same pass.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 

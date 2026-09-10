@@ -126,12 +126,11 @@ def ac_change_set(
     # base commit is already merged and cannot be authored by this PR.
     head_minted_from: dict[tuple[str, str], str] = {}
     head_fr_digest_from: dict[str, str] = {}
-    # Whether any spec path actually yielded content, not merely whether one
-    # was NAMED (Stage-2 code review, low; found during build): a spec_path
+    # True iff at least one named spec_path yielded non-empty content at
+    # either commit (Stage-2 code review, low; found during build): a path
     # resolving to "" at BOTH commits -- present in the manifest but absent
-    # from git at either sha -- would otherwise leave `spec_text_was_read`
-    # True from `spec_paths` alone while `base_fr_digests`/`head_minted` stay
-    # empty, reproducing the exact false-HARD-block this flag exists to stop.
+    # from git at either sha -- must not count as read, on pain of arm 2
+    # (below) firing from a document nobody actually read.
     spec_text_was_read = False
 
     spec_paths = _spec_paths(head_manifest, base_manifest)

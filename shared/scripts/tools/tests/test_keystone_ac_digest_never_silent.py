@@ -139,7 +139,7 @@ def test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base(r
     assert cs.new_frs_without_criteria == []
 
 
-def test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_2(repo):
+def test_a_named_spec_path_absent_from_git_at_both_commits_also_suppresses_arm_2(repo):
     """Stage-2 code review, low; found round 6. ``spec_text_was_read`` asks
     whether text was actually READ, not merely whether a path was NAMED -- a
     ``spec_path`` present in both manifests but absent from git at BOTH

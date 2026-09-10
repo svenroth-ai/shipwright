@@ -81,8 +81,10 @@ def resolve_new_frs_without_criteria(
     blast-radius mistake round 3 fixed for the divergence guard. "New" is not
     answerable without a base to be new relative to, so it is not answered.
 
-    ``spec_text_was_read`` is the SAME suppression for a second, independent
-    null case (Stage-2 code review, medium; found during build): neither
+    ``spec_text_was_read`` -- True iff at least one named ``spec_path``
+    yielded non-empty content at either commit -- gates the SAME suppression
+    for a second, independent null case (Stage-2 code review, medium; found
+    during build): neither
     manifest naming a `spec_path` -- or every named path resolving to no
     content at either commit (Stage-2 code review, low; found during build,
     round 6) -- means `base_fr_digests` and `head_minted` are empty NOT
