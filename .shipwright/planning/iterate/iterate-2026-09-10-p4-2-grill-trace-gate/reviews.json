@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p4-2-grill-trace-gate",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T07:08:15.230983+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The `fr_trace_coverage` slug-join is the riskiest part of the plan and the least specified. Slugification of free-text FR `Name` cells is a classic collision/mismatch source: two FRs named \"User login\" and \"User  login\" (whitespace), \"Login (SSO)\" (punctuation), or non-ASCII names will slugify unpredictably or collide, and the plan doesn't state the slug rule, collision handling, or what the gate does on a trace whose `requirement_key` matches nothing (orphan traces). A slug mismatch produces a hard STOP at Step 8 with no obvious remediation path for the user.",
+          "suggestion": "Pin the exact slug rule in `shared/grill-trace-format.md` (documented, tested), add unit tests for punctuation/whitespace/case/unicode cases, and decide explicitly: orphan traces are ignored, warned, or STOP. Also consider emitting a friendly error that lists unmatched FR Names and unmatched trace keys.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `undefined-term` STOP condition relies on `terms_used` being declared by the interviewer. A lazy or forgetful interviewer declares an empty `terms_used` and the gate trivially passes — the honesty guard prevents scanning, but nothing requires the declaration to be non-trivial or that declared terms actually appear in `requirement_text`. Combined with the low-quality-passes test (by design), this means the strongest STOP condition is entirely self-attested.",
+          "suggestion": "This is likely a design-accepted limitation — but it should at least be documented in `grill-trace-format.md` as a known escape hatch, and the producer could require `terms_used` to be non-empty for any requirement whose text contains no numbers/identifiers... actually simpler: just document it. Don't add heuristics that reintroduce quality-judging.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "greenfield 'assumed'` check — the plan says \"any assumed at all in shipwright-project\" but the gate script presumably reads traces on disk. For an existing project that ran interviews before this change lands, there are no grill-trace files at all. The plan doesn't state whether Step 8's new blocking gate item applies retroactively (it would break completion of any in-flight project).",
+          "suggestion": "Specify the migration stance explicitly (e.g., gate only applies when traces exist for the current interview run / a run marker is present), or accept that in-flight projects get blocked and say so. Even one sentence in the step-8 doc change matters.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Editing `interview-protocol.md` and `step-8-completion.md` are prompt/doc changes — the \"producer is called at the confirm turn\" behavior is LLM-followed, not mechanically enforced. A drift or non-compliance there is only caught by the (revised) `fr_trace_coverage` join at Step 8 — which is fine, but only if that join is actually wired as blocking too. The plan wires the gate \"as item 7\" but doesn't explicitly say `fr_trace_coverage` is in the blocking set vs. advisory.",
+          "suggestion": "State explicitly that both `grill_trace_coverage` and `fr_trace_coverage` are blocking check items in Step 8, not advisory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The undefined-term check depends on P4.1's CONTEXT.md producer output format. The plan references it but doesn't state a version-check or graceful failure if a project's CONTEXT.md predates P4.1 or is malformed — does the term check fail open (treat as empty) or fail closed (STOP)?",
+          "suggestion": "Specify fail-closed behavior for malformed/missing CONTEXT.md (or at minimum, a distinct error message) so a missing file isn't silently treated as \"no terms defined,\" which would falsely trip undefined-term STOPs on legitimate terms.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan adds `grill_trace_coverage` and `fr_trace_coverage` as completion-blocking checks in addition to the four specified closed-vocabulary STOP conditions. That makes the gate enforce six blocking conditions, conflicting with the requirement to implement the design’s four STOP conditions verbatim.",
+          "suggestion": "Confirm the design explicitly authorizes these as separate blocking guards. If it does not, keep them as non-blocking diagnostics or amend the approved design before implementation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The proposed `Name`-slug join has no producer-side contract ensuring that a later spec FR `Name` exactly derives from the interview-time `requirement_key`. Spec generation can rename, split, merge, or produce duplicate names; slug collisions can also let the wrong trace satisfy coverage.",
+          "suggestion": "Define and enforce a stable trace key carried from interview output into the generated FR artifact, with uniqueness checks. If a slug join is retained, reject duplicate normalized names/keys and add integration tests for rename, split, merge, and collision cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Declared `terms_used` cannot enforce “a term used in requirement text” when the interviewer omits a term from that array. A trace containing an undefined word in `requirement_text` and `terms_used: []` would pass, undermining the stated glossary-capture mechanism.",
+          "suggestion": "Use a deterministic, required term-marking convention in requirement text (or another non-judgmental lexical contract) and validate those markers against `terms_used` and the two glossaries. This preserves the honesty guard while preventing omission from bypassing the check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The wiring described is documentation-level: edits to `SKILL.md` and a Step 8 checklist. The plan does not identify the concrete completion command/path that invokes the verifier, propagates its nonzero result, and prevents finalization from being recorded.",
+          "suggestion": "Specify that invocation point and add an integration test proving a failing gate prevents the Step 8 completion artifact/state from being produced.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "P4.1 is treated as an assumed prerequisite, but the plan does not state behavior when the target `CONTEXT.md` is absent, malformed, or from an incompatible producer version. That can accidentally reduce the undefined-term lookup to the shared glossary or yield a runtime failure.",
+          "suggestion": "Make the P4.1 output contract an explicit dependency and fail closed with a clear actionable error when `CONTEXT.md` is missing or invalid; cover those cases in verifier tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "requirement_key` is used to create one file per requirement, but the plan does not require safe filename handling. Interview payload content must not be able to introduce traversal segments, absolute paths, or collisions outside the intended planning directory.",
+          "suggestion": "Validate keys against a strict slug pattern, resolve output paths beneath the intended trace directory, reject collisions unless they are an explicit update to the same canonical key, and test traversal/absolute-path inputs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The honesty-guard test description is internally inconsistent: it says the low-quality trace “passes every check except” a genuine completeness gap. That does not prove the acceptance criterion that a well-formed, low-quality trace passes the gate.",
+          "suggestion": "Split this into two tests: one fully complete but deliberately poor-prose trace that passes all checks, and one trace with exactly one structural defect that fails only the corresponding check.  Overall, the artifact and structural-validation approach is sound, but the additional blocking guards, unreliable late slug linkage, and term-declaration bypass need resolution before implementation. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T07:08:20.113906+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] # Review — P4.2 Grill-trace evidence record + completeness gate\n\n## Findings\n\n**Category: approach — Severity: medium**\n**Finding:** The `fr_trace_coverage` slug-join is the riskiest part of the plan and the least specified. Slugification of free-text FR `Name` cells is a classic collision/mismatch source: two FRs named \"User login\" and \"User  login\" (whitespace), \"Login (SSO)\" (punctuation), or non-ASCII names will slugify unpredictably or collide, and the plan doesn't state the slug rule, collision handling, or what the gate does on a trace whose `requirement_key` matches nothing (orphan traces). A slug mismatch produces a hard STOP at Step 8 with no obvious remediation path for the user.\n**Suggestion:** Pin the exact slug rule in `shared/grill-trace-format.md` (documented, tested), add unit tests for punctuation/whitespace/case/unicode cases, and decide explicitly: orphan traces are ignored, warned, or STOP. Also consider emitting a friendly error that lists unmatched FR Names and unmatched trace keys.\n\n**Category: edge-case — Severity: medium**\n**Finding:** The `undefined-term` STOP condition relies on `terms_used` being *declared* by the interviewer. A lazy or forgetful interviewer declares an empty `terms_used` and the gate trivially passes — the honesty guard prevents scanning, but nothing requires the declaration to be non-trivial or that declared terms actually appear in `requirement_text`. Combined with the low-quality-passes test (by design), this means the strongest STOP condition is entirely self-attested.\n**Suggestion:** This is likely a design-accepted limitation — but it should at least be documented in `grill-trace-format.md` as a known escape hatch, and the producer could require `terms_used` to be non-empty for any requirement whose text contains no numbers/identifiers... actually simpler: just document it. Don't add heuristics that reintroduce quality-judging.\n\n**Category: edge-case — Severity: low**\n**Finding:** `greenfield 'assumed […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The plan adds `grill_trace_coverage` and `fr_trace_coverage` as completion-blocking checks in addition to the four specified closed-vocabulary STOP conditions. That makes the gate enforce six blocking conditions, conflicting with the requirement to implement the design’s four STOP conditions verbatim.  \n   **Suggestion:** Confirm the design explicitly authorizes these as separate blocking guards. If it does not, keep them as non-blocking diagnostics or amend the approved design before implementation.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The proposed `Name`-slug join has no producer-side contract ensuring that a later spec FR `Name` exactly derives from the interview-time `requirement_key`. Spec generation can rename, split, merge, or produce duplicate names; slug collisions can also let the wrong trace satisfy coverage.  \n   **Suggestion:** Define and enforce a stable trace key carried from interview output into the generated FR artifact, with uniqueness checks. If a slug join is retained, reject duplicate normalized names/keys and add integration tests for rename, split, merge, and collision cases.\n\n3. **Category:** approach  \n   **Severity:** high  \n   **Finding:** Declared `terms_used` cannot enforce “a term used in requirement text” when the interviewer omits a term from that array. A trace containing an undefined word in `requirement_text` and `terms_used: []` would pass, undermining the stated glossary-capture mechanism.  \n   **Suggestion:** Use a deterministic, required term-marking convention in requirement text (or another non-judgmental lexical contract) and validate those markers against `terms_used` and the two glossaries. This preserves the honesty guard while preventing omission from bypassing the check.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The wiring described is documentation-level: edits to `SKILL.md` and a […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T07:08:33.670845+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T07:08:33.781513+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/verify_grill_trace_completeness.py` — `run_all_checks` (via `read_trace_dir`) A malformed trace file (invalid JSON, or a `GrillTraceError`) makes the gate CLI crash with a raw traceback instead of producing a formatted red report. `read_trace_dir` deliberately re-raises, and nothing in `run_all_checks`/`main` catches it. It still blocks (non-zero exit), so it's no […truncated]",
+          "line": null,
+          "finding": "wrap `read_trace_dir` in `run_all_checks` and convert any exception into a red `CheckResult` (e.g. `malformed_trace[<file>]`) so the failure path reports like every other STOP.  2. Category: spec | Severity: medium",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/grill_trace_format.py` — `terms_used`; `shared/grill-trace-format.md` §3 The spec's STOP condition is \"a term used in requirement text that is in neither glossary\". The implementation checks only interviewer-declared `terms_used`. This is documented as a deliberate honesty-guard decision in the miniplan, but the practical consequence is that an interviewer who und […truncated]",
+          "line": null,
+          "finding": "at minimum, cross-check declared terms against `glossary_delta` entries (a term in `glossary_delta` not appearing in `terms_used` is an objective inconsistency), or confirm DESIGN.md sanctions the declared-only semantics and note the residual bypass explicitly in the format doc.  3. Category: bug | Severity: low",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/grill_trace_format.py` — `_validate_dimensions` The producer's write-time validation rejects extra dimension keys but not missing ones — a trace with four dimensions is written to disk happily, and only the Step-8 gate catches it. The format doc says \"a missing key is the same STOP as a blank one\", but the producer is the natural place to reject it before it's eve […truncated]",
+          "line": null,
+          "finding": "in `_validate_dimensions`, also fail when `set(DIMENSIONS) - set(dimensions)` is non-empty.  4. Category: edge-case | Severity: low",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/grill_trace_fr_coverage.py` — `slugify` vs `_REQUIREMENT_KEY_RE` `slugify` collapses any non-`[a-z0-9]` run to a single hyphen (so `\"Café Login\"` → `\"caf-login\"`, `\"User's login\"` → `\"user-s-login\"`), while `requirement_key` must be pure ASCII kebab. An interviewer choosing the natural transliteration (`cafe-login`, `users-login`) produces a guaranteed false-red ` […truncated]",
+          "line": null,
+          "finding": "add one sentence to §1 telling the interviewer to slugify with the same collapse rule (and to avoid apostrophes/diacritics in the key).  5. Category: bug | Severity: low",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/write_grill_trace.py` — `write_trace` `existed = path.exists()` is computed before acquiring the file lock, so under a concurrent re-entrant write the `status` (`created` vs `updated`) can be wrong. Harmless for file content (the write itself is atomic and locked), but the returned status is a TOCTOU.",
+          "line": null,
+          "finding": "move the `exists()` check inside the `file_lock` block.  6. Category: edge-case | Severity: low",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/verify_grill_trace_completeness.py` — `_GLOSSARY_TERM_RE` The regex treats any bold bullet in `shared/glossary.md` as a term, including non-term bullets (examples, notes) if the glossary ever uses that shape. Since you control the glossary format, this is acceptable today, but it means the \"line-anchored\" guarantee is weaker than the doc claims if the glossary's format drifts.",
+          "line": null,
+          "finding": "optionally constrain to a known section (e.g. only bullets under a \"Terms\" heading), or leave as-is with the format assumption pinned in the doc.  ## Test-quality note (positive + one gap)  The tests are substantive: per-STOP-condition unit tests, exact-case no-folding test, producer↔reader round-trip, shell-injection CLI subprocess test, the partial-interview FR-join test, and the two-part honesty-guard test — a wrong implementation would fail several of these. One gap: there is no test that the gate CLI's exit code is 1 on a red tree (only `run_all_checks` return values are asserted; `test_cli_rejects_a_missing_project_root` tests the producer, not the gate). Since \"blocks completion, not just advisory\" is an AC and blocking is implemented via exit code, a regression in `main()`'s exit logic would pass the suite.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "add one subprocess test asserting `verify_grill_trace_completeness.py` exits 1 on a tree with a transcript and zero traces, and 0 on the all-green tree.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[verify_grill_trace_completeness.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\scripts\\tools\\verify_grill_trace_completeness.py:204)",
+          "line": null,
+          "finding": "The gate blocks on `fr_trace_coverage`, an extra FR-name/slug join not among the four specified STOP conditions. This contradicts the mini-plan’s stated no-FR-parser linkage decision and can reject a complete trace merely because spec generation chose a differently worded `Name` cell.",
+          "suggestion": "Remove this blocking check from P4.2, or make it non-blocking and deliver it under a separately specified change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[verify_grill_trace_completeness.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\scripts\\tools\\verify_grill_trace_completeness.py:89)",
+          "line": null,
+          "finding": "A missing `shared/glossary.md` is silently treated as an empty glossary. This conflicts with the documented strict behavior for absent glossary sources and can let a trace with no declared terms pass while one of the required sources was never read.",
+          "suggestion": "Return a failing `CheckResult` when the shared glossary is absent or unreadable, rather than converting it to an empty set.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[verify_grill_trace_completeness.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\scripts\\tools\\verify_grill_trace_completeness.py:135)",
+          "line": null,
+          "finding": "The greenfield `assumed` STOP can be bypassed by writing a trace with `surface: \"adopt\"` or `\"iterate\"` into the project planning tree; the producer accepts those values and the gate skips the check. This project-only workflow should not trust payload-controlled surface metadata to decide whether a project gate applies.",
+          "suggestion": "Have the project writer require `surface == \"project\"` or apply the no-`assumed` rule to every trace evaluated by this project gate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_verify_grill_trace_completeness_integration.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\tests\\test_verify_grill_trace_completeness_integration.py:147)",
+          "line": null,
+          "finding": "The required honesty-guard test claims a low-quality trace “passes every check,” but it omits `check_greenfield_assumed` because its payload contains `assumed:idk`, which would fail. It also does not run `run_all_checks`, so it does not prove the gate accepts a low-quality but structurally complete trace.",
+          "suggestion": "Use terse but valid `answered`/`n/a:<reason>` values and assert that `run_all_checks` returns no failures.  Overall: ship-with-fixes. The core record and gate are present, but the project-surface bypass and missing-source handling need correction, and the acceptance test does not prove the promised honesty guard.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T07:08:25.319342+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: bug | Severity: medium**\nFile: `shared/scripts/tools/verify_grill_trace_completeness.py` — `run_all_checks` (via `read_trace_dir`)\nA malformed trace file (invalid JSON, or a `GrillTraceError`) makes the gate CLI crash with a raw traceback instead of producing a formatted red report. `read_trace_dir` deliberately re-raises, and nothing in `run_all_checks`/`main` catches it. It still blocks (non-zero exit), so it's not advisory, but the operator gets a stack trace, not the named gap, and `--strict`/report formatting semantics are bypassed.\nSuggestion: wrap `read_trace_dir` in `run_all_checks` and convert any exception into a red `CheckResult` (e.g. `malformed_trace[<file>]`) so the failure path reports like every other STOP.\n\n**2. Category: spec | Severity: medium**\nFile: `shared/scripts/tools/grill_trace_format.py` — `terms_used`; `shared/grill-trace-format.md` §3\nThe spec's STOP condition is \"a term **used in requirement text** that is in neither glossary\". The implementation checks only interviewer-**declared** `terms_used`. This is documented as a deliberate honesty-guard decision in the miniplan, but the practical consequence is that an interviewer who under-declares (or declares nothing) fully bypasses the undefined-term STOP — the very mechanism the spec says \"forces glossary capture\" can be voided by omission, and nothing detects it. If DESIGN.md does not itself mandate the declared-list approach, this is a partial implementation of the criterion.\nSuggestion: at minimum, cross-check declared terms against `glossary_delta` entries (a term in `glossary_delta` not appearing in `terms_used` is an objective inconsistency), or confirm DESIGN.md sanctions the declared-only semantics and note the residual bypass explicitly in the format doc.\n\n**3. Category: bug | Severity: low**\nFile: `shared/scripts/tools/grill_trace_format.py` — `_validate_dimensions`\nThe producer's write-time validation rejects *extra* dimension keys but not […truncated]\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: [verify_grill_trace_completeness.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\scripts\\tools\\verify_grill_trace_completeness.py:204)  \n  Finding: The gate blocks on `fr_trace_coverage`, an extra FR-name/slug join not among the four specified STOP conditions. This contradicts the mini-plan’s stated no-FR-parser linkage decision and can reject a complete trace merely because spec generation chose a differently worded `Name` cell.  \n  Suggestion: Remove this blocking check from P4.2, or make it non-blocking and deliver it under a separately specified change.\n\n- Category: bug  \n  Severity: medium  \n  File: [verify_grill_trace_completeness.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\scripts\\tools\\verify_grill_trace_completeness.py:89)  \n  Finding: A missing `shared/glossary.md` is silently treated as an empty glossary. This conflicts with the documented strict behavior for absent glossary sources and can let a trace with no declared terms pass while one of the required sources was never read.  \n  Suggestion: Return a failing `CheckResult` when the shared glossary is absent or unreadable, rather than converting it to an empty set.\n\n- Category: bug  \n  Severity: medium  \n  File: [verify_grill_trace_completeness.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-97qraarq\\shared\\scripts\\tools\\verify_grill_trace_completeness.py:135)  \n  Finding: The greenfield `assumed` STOP can be bypassed by writing a trace with `surface: \"adopt\"` or `\"iterate\"` into the project planning tree; the producer accepts those values and the gate skips the check. This project-only workflow should not trust payload-controlled surface metadata to decide whether a project gate applies.  \n  Suggestion: Have the project writer require `surface == \"project\"` or apply the no-`assumed` rule to every trace evaluated by this project gate.\n\n- Category: test  \n  Se […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T07:08:33.558184+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T07:08:33.889340+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

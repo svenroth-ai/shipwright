@@ -31,6 +31,17 @@ gate's `fr_trace_coverage` check (§5) slugifies every spec.md FR row's
 `Name` cell with the exact same rule and fails when no grill-trace
 `requirement_key` matches it.
 
+`grill_trace_fr_coverage.slugify()` lowercases, replaces runs of
+non-`[a-z0-9]` with a single hyphen, and strips leading/trailing hyphens —
+it does **not** transliterate. An FR `Name` containing an apostrophe or a
+diacritic (`"Editor's picks"`, `"Café order"`) collapses the punctuation to
+a hyphen or drops it rather than substituting an ASCII equivalent
+(`café` → `caf`, not `cafe`) — an interviewer picking a `requirement_key`
+by hand should avoid apostrophes and non-ASCII letters in the requirement
+text they slug from, or the two slugify passes (this one and spec
+generation's, if they ever diverge in implementation) risk producing two
+different strings for what a person would call the same name.
+
 ## 2. The shape
 
 ```json
@@ -111,8 +122,8 @@ fails **strict**, never lenient, on an absent glossary source.
 
 ## 5. Coverage — not one of the four STOPs, but not advisory either
 
-Two additional checks the gate runs, each under its own name so neither is
-ever confused with the four closed-vocabulary STOPs above:
+Additional checks the gate runs, each under its own name so none is ever
+confused with the four closed-vocabulary STOPs above:
 
 - **`grill_trace_coverage`** — an interview transcript exists but zero
   grill-trace records were written at all (the SKIPPED-interview case).
@@ -122,9 +133,40 @@ ever confused with the four closed-vocabulary STOPs above:
   grill-trace file. Catches a PARTIALLY recorded interview the coverage
   check above cannot see (some requirements traced, one silently skipped).
   SKIPPED entirely before any spec.md exists.
+- **`glossary_source_available`** (`grill_trace_glossary.py`) — the
+  framework's own `shared/glossary.md` is missing. Unlike an absent
+  `CONTEXT.md` (§4, a legitimate fresh-project state), this means the
+  Shipwright install itself is broken.
+- **`glossary_delta_declared`** — a term the trace records sharpening
+  (`glossary_delta`) but never lists in `terms_used`. A narrow,
+  self-consistency slice of the honesty guard's declared-list limit (§3):
+  it catches the case where a trace contradicts itself, not the case
+  where a term is omitted from both lists (still possible by design — see
+  §3).
 
-Both are **structural presence checks**, not content judgments — the same
-honesty guard (§3) applies to them.
+All are **structural presence/consistency checks**, not content
+judgments — the same honesty guard (§3) applies to them.
+
+**Known limitation — `fr_trace_coverage`'s slug join (second-round external
+plan review, P4.2):** the join is exact-string equality between
+`slugify(FR row's Name)` and an existing grill-trace `requirement_key`, not
+a tracked, producer-enforced identity carried from interview output into
+the generated FR row. Two consequences, both accepted rather than built
+around in this sub-iterate (scope: wire the four DESIGN.md STOPs onto
+`/shipwright-project`, not redesign spec generation's FR-naming pipeline):
+
+1. **Collision:** two FR `Name` cells that slugify to the same string (for
+   example differing only in whitespace or punctuation:
+   `"Login (SSO)"` / `"Login SSO"`) are indistinguishable to the join —
+   one grill-trace can appear to cover both.
+2. **Orphan traces:** a grill-trace whose `requirement_key` matches no
+   live FR row is never itself flagged; the check only walks FR rows
+   looking for a match, not traces looking for a landing FR.
+
+Neither produces a false PASS on the four closed-vocabulary STOPs
+(§ this section is deliberately not one of them) — the failure mode is a
+missed or ambiguous coverage signal, not a silently-accepted incomplete
+trace. Follow-up tracked as a triage card rather than blocking P4.2.
 
 ---
 

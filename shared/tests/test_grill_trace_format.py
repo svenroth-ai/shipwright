@@ -109,11 +109,11 @@ def test_parse_trace_allows_null_fit_criterion_when_outcome_not_answered():
 
 
 def test_read_trace_dir_returns_empty_list_when_directory_missing(tmp_path):
-    assert read_trace_dir(tmp_path / "planning") == []
+    assert read_trace_dir(tmp_path / ".shipwright" / "planning") == []
 
 
 def test_read_trace_dir_reads_every_json_file(tmp_path):
-    planning_dir = tmp_path / "planning"
+    planning_dir = tmp_path / ".shipwright" / "planning"
     directory = planning_dir / "grill-traces"
     directory.mkdir(parents=True)
     (directory / "a.json").write_text(json.dumps(_valid_payload(requirement_key="a")))
@@ -130,7 +130,7 @@ def test_read_trace_dir_reads_every_json_file(tmp_path):
 def test_read_trace_dir_raises_on_a_malformed_file(tmp_path):
     """A broken trace must surface, never be silently skipped — it would
     otherwise look identical to 'elicitation never ran'."""
-    planning_dir = tmp_path / "planning"
+    planning_dir = tmp_path / ".shipwright" / "planning"
     directory = planning_dir / "grill-traces"
     directory.mkdir(parents=True)
     (directory / "bad.json").write_text(json.dumps({"requirement_key": "bad"}))

@@ -22,9 +22,10 @@ names, per grill-trace record (``shared/grill-trace-format.md``):
 4. **Outcome without a fit criterion** — the ``outcome`` dimension is
    ``answered`` with no ``fit_criterion`` recorded.
 
-Plus two coverage checks that are NOT part of the four (each kept in its
-own, separately-named result so neither is ever confused with the closed
-vocabulary above):
+Plus structural checks that are NOT part of the four (each kept under its
+own, separately-named result so none is ever confused with the closed
+vocabulary above — every one is a presence/consistency check, never a
+prose judgment, same honesty guard as the four):
 
 - ``grill_trace_coverage`` — an interview transcript exists but ZERO
   grill-trace records were written at all. The exact failure mode the
@@ -34,12 +35,21 @@ vocabulary above):
   Catches a PARTIALLY recorded interview the coverage check above cannot
   see (some requirements traced, others not) — only meaningful once
   Step 6 has minted FR ids, so SKIPPED before any spec.md exists.
+- ``glossary_source_available`` (``grill_trace_glossary.py``, external code
+  review, P4.2) — ``shared/glossary.md`` itself is missing (a broken
+  install, never a legitimate state, unlike an absent ``CONTEXT.md``).
+- ``glossary_delta_declared`` (external code review, P4.2) — a term the
+  trace recorded sharpening (``glossary_delta``) but never listed in
+  ``terms_used`` — narrows (does not eliminate) the declared-list honesty
+  guard's residual under-declaration bypass.
+- ``malformed_trace`` — a grill-trace JSON file could not be parsed/
+  validated at all; reported as a red result instead of crashing the CLI.
 
 **Honesty guard:** none of these checks read ``evidence``, ``fit_criterion``,
 or ``confirmed_by`` for *quality* — only for presence/shape. See
 ``shared/grill-trace-format.md`` §3 and
-``shared/scripts/tools/tests/test_verify_grill_trace_completeness.py``'s
-low-quality-but-complete-trace test.
+``shared/tests/test_verify_grill_trace_completeness_integration.py``'s
+low-quality-but-complete-trace tests.
 
 CLI usage:
     uv run verify_grill_trace_completeness.py --project-root <target-project>
@@ -62,45 +72,17 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from tools.verifiers.common import CheckResult, Severity, format_report  # noqa: E402
 from tools.verifiers.stdio import ensure_utf8_stdout  # noqa: E402
 
-from tools.context_md_format import read_terms  # noqa: E402
-from tools.grill_trace_format import DIMENSIONS, GrillTrace, grill_traces_dir, read_trace_dir  # noqa: E402
+from tools.grill_trace_format import (  # noqa: E402
+    DIMENSIONS, GrillTrace, GrillTraceError, grill_traces_dir, read_trace_dir,
+)
 from tools.grill_trace_fr_coverage import check_fr_trace_coverage  # noqa: E402
-
-# shared/glossary.md ships alongside this script's own `shared/` tree — it is
-# framework vocabulary, never part of a target project — so it resolves by
-# file location, not via --project-root. `parents[2]` from
-# shared/scripts/tools/<this file>.py is `shared/`.
-DEFAULT_GLOSSARY_PATH = Path(__file__).resolve().parents[2] / "glossary.md"
-
-# `- **Term** — ...` bullet entries anywhere in shared/glossary.md (mirrors
-# context_md_format's line-anchored matching discipline — a bold phrase
-# mid-sentence elsewhere in the glossary's own prose must not count).
-_GLOSSARY_TERM_RE = re.compile(r"^\s*-\s+\*\*(.+?)\*\*", re.MULTILINE)
+from tools.grill_trace_glossary import (  # noqa: E402
+    DEFAULT_GLOSSARY_PATH, check_glossary_source_available, collect_known_terms,
+)
 
 # A dimension value must be exactly "answered", or "assumed:<reason>" / "n/a:<reason>"
 # with a non-blank reason after the colon.
 _DIMENSION_VALUE_RE = re.compile(r"^(answered)$|^(assumed|n/a):(.+)$")
-
-
-def parse_glossary_terms(glossary_path: Path) -> set[str]:
-    if not glossary_path.exists():
-        return set()
-    content = glossary_path.read_text(encoding="utf-8")
-    return set(_GLOSSARY_TERM_RE.findall(content))
-
-
-def collect_known_terms(glossary_path: Path, context_path: Path) -> set[str]:
-    """Union of ``shared/glossary.md``'s bold entries and the target
-    project's ``CONTEXT.md`` ``Language`` terms — exact-case, exact-prose,
-    no folding (the same matching contract ``context_md_format.py``
-    documents for its own reader). A missing ``CONTEXT.md`` (P4.1 not yet
-    run, or a fresh project) contributes no terms — deliberately fail
-    STRICT, never lenient: a declared term then has only
-    ``shared/glossary.md`` to resolve against, so the undefined-term STOP
-    still fires rather than silently passing (external plan review, P4.2)."""
-    terms = parse_glossary_terms(glossary_path)
-    terms.update(t.term for t in read_terms(context_path))
-    return terms
 
 
 def check_blank_dimension(trace: GrillTrace) -> CheckResult:
@@ -126,11 +108,21 @@ def check_blank_dimension(trace: GrillTrace) -> CheckResult:
 
 
 def check_greenfield_assumed(trace: GrillTrace) -> CheckResult:
+    """This gate is wired ONLY into ``/shipwright-project``'s Step 8, and
+    nothing else writes into a project's ``grill-traces/`` directory — so a
+    trace claiming ``surface != "project"`` there is a data-integrity fault,
+    never a legitimate exemption. Trusting a payload-declared field to skip
+    this rule is exactly the bypass external code review (P4.2) found: a
+    trace could opt itself out of the no-'assumed' rule just by writing
+    ``"surface": "adopt"``. FAIL, don't skip."""
     name = f"greenfield_assumed[{trace.requirement_key}]"
     if trace.surface != "project":
         return CheckResult(
-            name, None, f"surface={trace.surface!r} — rule applies to 'project' only",
-            severity=Severity.SKIPPED.value,
+            name, False,
+            f"surface={trace.surface!r} but this gate only evaluates "
+            "/shipwright-project's traces — a non-'project' surface trace "
+            "found in a project's planning tree is a data-integrity error, "
+            "not an exemption from the no-'assumed' rule",
         )
     assumed_dims = sorted(d for d, v in trace.dimensions.items() if v.startswith("assumed:"))
     if assumed_dims:
@@ -167,6 +159,29 @@ def check_undefined_term(trace: GrillTrace, known_terms: set[str]) -> CheckResul
     )
 
 
+def check_glossary_delta_declared(trace: GrillTrace) -> CheckResult:
+    """Structural (not a prose judgment) narrowing of the ``terms_used``
+    declared-list honesty-guard's residual bypass (external code review,
+    P4.2): a term the trace itself recorded sharpening
+    (``glossary_delta``) but never listed in ``terms_used`` is an
+    objective, checkable inconsistency — the interviewer declared writing
+    the definition down without declaring the requirement depends on it.
+    Does not close the bypass entirely (an interviewer can still omit a
+    term from BOTH lists — see ``shared/grill-trace-format.md`` §3, the
+    honesty guard is a deliberate, documented limit, not a bug), only the
+    self-contradictory half of it."""
+    name = f"glossary_delta_declared[{trace.requirement_key}]"
+    delta_terms = {entry["term"] for entry in trace.glossary_delta}
+    undeclared = sorted(delta_terms - set(trace.terms_used))
+    if undeclared:
+        return CheckResult(
+            name, False,
+            f"glossary_delta records sharpening {undeclared} but terms_used "
+            "does not list them — declare every glossary_delta term in terms_used",
+        )
+    return CheckResult(name, True, f"{len(delta_terms)} glossary_delta term(s), all declared")
+
+
 def check_grill_trace_coverage(planning_dir: Path, traces: list[GrillTrace]) -> CheckResult:
     """Not one of the four closed-vocabulary STOP conditions — a distinct
     structural guard against the exact bypass the design opens with:
@@ -200,13 +215,26 @@ def run_all_checks(
     glossary_path = Path(glossary_path) if glossary_path else DEFAULT_GLOSSARY_PATH
     context_path = Path(context_path) if context_path else project_root / "CONTEXT.md"
 
-    traces = read_trace_dir(planning_dir)
+    # A malformed trace file (bad JSON, a GrillTraceError) must report as a
+    # red CheckResult like every other STOP — never crash the CLI with a raw
+    # traceback (external code review, P4.2). Still blocks (the caller sees
+    # an ERROR-severity failure), only the reporting path changes.
+    try:
+        traces = read_trace_dir(planning_dir)
+    except (GrillTraceError, OSError, ValueError) as exc:
+        return [CheckResult(
+            "malformed_trace", False,
+            f"could not read grill-trace records under {grill_traces_dir(planning_dir)}: "
+            f"{type(exc).__name__}: {exc}",
+        )]
+
     trace_keys = {t.requirement_key for t in traces}
     spec_paths = sorted(planning_dir.glob("*/spec.md"))
 
     results: list[CheckResult] = [
         check_grill_trace_coverage(planning_dir, traces),
         check_fr_trace_coverage(spec_paths, trace_keys),
+        check_glossary_source_available(glossary_path),
     ]
     if not traces:
         return results
@@ -217,6 +245,7 @@ def run_all_checks(
         results.append(check_greenfield_assumed(trace))
         results.append(check_outcome_fit_criterion(trace))
         results.append(check_undefined_term(trace, known_terms))
+        results.append(check_glossary_delta_declared(trace))
     return results
 
 

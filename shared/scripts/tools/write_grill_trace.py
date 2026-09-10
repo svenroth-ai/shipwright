@@ -64,9 +64,14 @@ def write_trace(planning_dir: Path, payload: dict, *, lock_timeout: float) -> di
     path = trace_path(planning_dir, trace.requirement_key)
     lock_path = path.with_suffix(path.suffix + ".lock")
 
-    existed = path.exists()
     new_content = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    # existed is read INSIDE the lock (external code review, P4.2) — reading it
+    # before acquiring the lock is a TOCTOU: a concurrent re-entrant write to the
+    # SAME requirement_key could flip "created" vs "updated" in the returned
+    # status between the check and the write. The write itself was already safe
+    # (durable_atomic_write + the lock), only the reported status was affected.
     with file_lock(lock_path, timeout_seconds=lock_timeout):
+        existed = path.exists()
         durable_atomic_write(path, new_content)
 
     return {

@@ -8,15 +8,14 @@ in ``test_verify_grill_trace_completeness_integration.py`` (split at the
 
 from __future__ import annotations
 
-from tools.grill_trace_format import parse_trace
+from tools.grill_trace_format import GrillTrace, parse_trace
 from tools.verify_grill_trace_completeness import (
     check_blank_dimension,
+    check_glossary_delta_declared,
     check_grill_trace_coverage,
     check_greenfield_assumed,
     check_outcome_fit_criterion,
     check_undefined_term,
-    collect_known_terms,
-    parse_glossary_terms,
 )
 
 
@@ -54,9 +53,26 @@ def test_blank_dimension_passes_when_all_seven_are_answered_or_assumed_or_na():
 
 
 def test_blank_dimension_fails_on_a_missing_key():
+    """A missing dimensions key is now rejected earlier, at parse_trace() /
+    write time (grill_trace_format._validate_dimensions — external code
+    review, P4.2) — this test constructs the GrillTrace dataclass directly,
+    bypassing that write-time validation, to prove check_blank_dimension()
+    still independently catches a missing key on a record that somehow
+    reached it anyway (e.g. a legacy file written before that guard existed)."""
     payload = _payload()
-    del payload["dimensions"]["rationale"]
-    trace = parse_trace(payload)
+    dimensions = dict(payload["dimensions"])
+    del dimensions["rationale"]
+    trace = GrillTrace(
+        requirement_key=payload["requirement_key"],
+        requirement_text=payload["requirement_text"],
+        surface=payload["surface"],
+        evidence=tuple(payload["evidence"]),
+        dimensions=dimensions,
+        fit_criterion=payload["fit_criterion"],
+        glossary_delta=tuple(payload["glossary_delta"]),
+        confirmed_by=payload["confirmed_by"],
+        terms_used=tuple(payload["terms_used"]),
+    )
     result = check_blank_dimension(trace)
     assert result.ok is False
     assert "rationale" in result.detail
@@ -96,12 +112,19 @@ def test_greenfield_assumed_permits_n_a_in_project_surface():
     assert check_greenfield_assumed(trace).ok is True
 
 
-def test_greenfield_assumed_rule_does_not_apply_outside_project_surface():
+def test_greenfield_assumed_fails_a_non_project_surface_trace_as_a_data_integrity_error():
+    """Changed from a skip to a FAIL (external code review, P4.2 finding
+    OpenAI-C): this gate is wired only into /shipwright-project's Step 8,
+    so a trace claiming surface != "project" under a project's planning
+    tree is a data-integrity fault, never a legitimate exemption from the
+    no-'assumed' rule — trusting the payload-declared field to skip the
+    rule was exactly the bypass the finding identified."""
     payload = _payload(surface="adopt")
     payload["dimensions"]["rationale"] = "assumed:code predates every current maintainer"
     trace = parse_trace(payload)
     result = check_greenfield_assumed(trace)
-    assert result.is_skipped
+    assert result.ok is False
+    assert "adopt" in result.detail
 
 
 # ---------------------------------------------------------------------------
@@ -128,43 +151,9 @@ def test_undefined_term_matching_is_exact_case_no_folding():
     assert result.ok is False
 
 
-def test_collect_known_terms_reads_glossary_bullets_and_context_language(tmp_path):
-    glossary = tmp_path / "glossary.md"
-    glossary.write_text(
-        "# Glossary\n\n## Core mechanics\n\n"
-        "- **Allowlist** — the bloat baseline file.\n"
-        "- **Ratchet** — measured LOC exceeds the frozen value.\n",
-        encoding="utf-8",
-    )
-    context = tmp_path / "CONTEXT.md"
-    context.write_text(
-        "# CONTEXT.md — Acme domain glossary\n\nAcme sells widgets.\n\n"
-        "## Language\n\n**Order** — a confirmed purchase.\n",
-        encoding="utf-8",
-    )
-
-    terms = collect_known_terms(glossary, context)
-
-    assert terms == {"Allowlist", "Ratchet", "Order"}
-
-
-def test_parse_glossary_terms_ignores_a_missing_file(tmp_path):
-    assert parse_glossary_terms(tmp_path / "does-not-exist.md") == set()
-
-
-def test_parse_glossary_terms_dedupes_a_repeated_mid_sentence_bold_phrase(tmp_path):
-    """A bold phrase referenced again mid-sentence elsewhere in the glossary's
-    own prose (not a new bullet entry) must not produce a second, distinct
-    term — the set naturally dedupes, and no false term is introduced."""
-    content = (
-        "## Section\n\n"
-        "- **Real Term** — a bullet-anchored entry, referencing "
-        "a **Real Term** again mid-line.\n"
-    )
-    path = tmp_path / "glossary.md"
-    path.write_text(content, encoding="utf-8")
-
-    assert parse_glossary_terms(path) == {"Real Term"}
+# collect_known_terms / parse_glossary_terms now live in grill_trace_glossary.py
+# (external code review split, P4.2) — their tests moved to
+# shared/tests/test_grill_trace_glossary.py.
 
 
 # ---------------------------------------------------------------------------
@@ -208,5 +197,27 @@ def test_coverage_passes_when_at_least_one_trace_exists(tmp_path):
     trace = parse_trace(_payload())
     result = check_grill_trace_coverage(tmp_path, traces=[trace])
     assert result.ok is True
+
+
+# ---------------------------------------------------------------------------
+# glossary_delta_declared (not one of the four, own name)
+# ---------------------------------------------------------------------------
+
+def test_glossary_delta_declared_passes_when_every_delta_term_is_in_terms_used():
+    trace = parse_trace(_payload(
+        terms_used=["Order"],
+        glossary_delta=[{"term": "Order", "recorded_in": "CONTEXT.md"}],
+    ))
+    assert check_glossary_delta_declared(trace).ok is True
+
+
+def test_glossary_delta_declared_fails_when_a_delta_term_is_missing_from_terms_used():
+    trace = parse_trace(_payload(
+        terms_used=[],
+        glossary_delta=[{"term": "Order", "recorded_in": "CONTEXT.md"}],
+    ))
+    result = check_glossary_delta_declared(trace)
+    assert result.ok is False
+    assert "Order" in result.detail
 
 

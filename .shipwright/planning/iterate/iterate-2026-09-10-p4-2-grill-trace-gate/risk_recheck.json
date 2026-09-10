@@ -2,8 +2,8 @@
   "schema_version": 1,
   "run_id": "iterate-2026-09-10-p4-2-grill-trace-gate",
   "risk_recheck": {
-    "changed_file_count": 17,
-    "diff_loc": 1795,
+    "changed_file_count": 25,
+    "diff_loc": 2480,
     "risk_flags": [],
     "diff_risk_flags": [],
     "complexity_floor": "trivial",

@@ -96,6 +96,13 @@ def _validate_dimensions(payload: dict) -> dict[str, str]:
     extra = set(dimensions) - set(DIMENSIONS)
     if extra:
         raise GrillTraceError(f"'dimensions' has unrecognized key(s): {sorted(extra)}")
+    # A missing key is "the same STOP as a blank one" (shared/grill-trace-format.md
+    # §2) — reject it HERE, at write time, rather than letting an incomplete
+    # record reach disk and only be caught later by the gate's
+    # check_blank_dimension (external code review, P4.2).
+    missing = set(DIMENSIONS) - set(dimensions)
+    if missing:
+        raise GrillTraceError(f"'dimensions' is missing key(s): {sorted(missing)}")
     for name, value in dimensions.items():
         if not isinstance(value, str) or not value.strip():
             raise GrillTraceError(f"'dimensions.{name}' must be a non-blank string")

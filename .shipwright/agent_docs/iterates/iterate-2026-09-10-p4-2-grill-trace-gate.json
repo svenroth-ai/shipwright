@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-09-10-p4-2-grill-trace-gate",
+  "date": "2026-09-10T07:37:34.881509Z",
+  "event_at": "2026-09-10T07:37:24.487825+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-req3-09-p4-grill-glossary",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-09-p4-grill-glossary/sub-iterates/P4.2-grill-trace-gate.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-p4-2-grill-trace-gate"
+}

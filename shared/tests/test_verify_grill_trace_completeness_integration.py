@@ -13,10 +13,7 @@ from pathlib import Path
 
 from tools.grill_trace_format import parse_trace
 from tools.verify_grill_trace_completeness import (
-    check_blank_dimension,
     check_greenfield_assumed,
-    check_outcome_fit_criterion,
-    check_undefined_term,
     run_all_checks,
 )
 
@@ -69,9 +66,14 @@ def test_run_all_checks_all_green_for_a_well_formed_trace(tmp_path):
 
 
 def test_run_all_checks_reports_the_one_failure_when_a_trace_has_a_blank_dimension(tmp_path):
+    """A missing dimensions KEY is now rejected earlier, at parse_trace()
+    (external code review, P4.2) — read_trace_dir() surfaces that as
+    malformed_trace instead. Use a dimension VALUE outside the closed
+    vocabulary instead, which still parses fine and is check_blank_dimension's
+    own job to catch."""
     planning_dir = tmp_path / ".shipwright" / "planning"
     payload = _payload()
-    del payload["dimensions"]["glossary"]
+    payload["dimensions"]["glossary"] = "maybe"
     _write_trace(planning_dir, payload)
     glossary = tmp_path / "glossary.md"
     glossary.write_text("", encoding="utf-8")
@@ -94,6 +96,22 @@ def test_run_all_checks_flags_coverage_gap_when_transcript_exists_with_no_traces
     assert by_name["grill_trace_coverage"].ok is False
     # No spec.md anywhere yet — the FR-join check has nothing to check against.
     assert by_name["fr_trace_coverage"].is_skipped
+
+
+def test_run_all_checks_reports_a_malformed_trace_file_instead_of_crashing(tmp_path):
+    """A grill-trace JSON file that fails to parse/validate must surface as
+    a red CheckResult, never a raw traceback out of the CLI (external code
+    review, P4.2 — GLM finding #1)."""
+    planning_dir = tmp_path / ".shipwright" / "planning"
+    directory = planning_dir / "grill-traces"
+    directory.mkdir(parents=True)
+    (directory / "broken.json").write_text("{not valid json", encoding="utf-8")
+
+    results = run_all_checks(tmp_path, planning_dir=planning_dir)
+
+    assert len(results) == 1
+    assert results[0].name == "malformed_trace"
+    assert results[0].ok is False
 
 
 def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist(tmp_path):
@@ -130,25 +148,32 @@ def test_run_all_checks_flags_fr_without_a_matching_trace_even_when_others_exist
 # "still catches a real gap", which read as internally unclear):
 # ---------------------------------------------------------------------------
 
-def test_low_quality_but_structurally_complete_trace_passes_every_check():
-    """One-word evidence/confirmation, a terse assumption reason, a
-    one-letter fit criterion — the gate must not judge any of that. Only
-    structural shape is checked, per shared/grill-trace-format.md §3. Every
-    dimension here is properly shaped (answered/assumed/n-a with a non-blank
-    reason), so every check passes."""
+def test_low_quality_but_structurally_complete_trace_passes_every_check(tmp_path):
+    """One-word evidence/confirmation, a terse fit criterion, a curt
+    n/a-reason — the gate must not judge any of that, only structural shape
+    (shared/grill-trace-format.md §3). Runs the FULL run_all_checks() gate,
+    not just three individually-called check functions (external code
+    review, P4.2 finding OpenAI-D) — and uses no 'assumed:' value at all,
+    since /shipwright-project's surface treats ANY 'assumed' as its own
+    separate STOP (greenfield_assumed) regardless of prose quality; mixing
+    that STOP into a low-quality-prose test would conflate two different
+    things this gate checks."""
     payload = _payload(
         evidence=["x"],
         confirmed_by="ok",
         fit_criterion="y",
         terms_used=[],
     )
-    payload["dimensions"]["rationale"] = "assumed:idk"
+    payload["dimensions"]["rationale"] = "n/a:n"
     payload["dimensions"]["out_of_scope"] = "n/a:n"
-    trace = parse_trace(payload)
+    planning_dir = tmp_path / ".shipwright" / "planning"
+    _write_trace(planning_dir, payload)
+    glossary = tmp_path / "glossary.md"
+    glossary.write_text("", encoding="utf-8")
 
-    assert check_blank_dimension(trace).ok is True
-    assert check_outcome_fit_criterion(trace).ok is True
-    assert check_undefined_term(trace, known_terms=set()).ok is True
+    results = run_all_checks(tmp_path, planning_dir=planning_dir, glossary_path=glossary)
+
+    assert all(r.ok is not False for r in results), [r for r in results if r.ok is False]
 
 
 def test_low_quality_trace_still_catches_a_real_completeness_gap():

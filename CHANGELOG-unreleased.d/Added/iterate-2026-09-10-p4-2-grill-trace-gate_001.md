@@ -1,0 +1,1 @@
+shipwright-project: grill-trace evidence record per elicited requirement, written live during the interview, with a Step 8 completeness gate enforcing the four required closed-vocabulary checks (P4.2)

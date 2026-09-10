@@ -55,12 +55,25 @@ different triage item, `trg-1aa5a8ab`) and is not touched.
 ## 2. Design decisions not open for re-litigation
 
 - The four STOP conditions and the honesty guard are DESIGN.md's, verbatim.
-- **Requirement linkage without FR-table parsing:** a grill-trace is
-  self-contained (`requirement_text`, `terms_used` declared by the
-  interviewer) rather than joined to a spec.md FR row by id — FR ids don't
-  exist yet at interview time (Step 1 precedes Step 6's spec generation).
-  `requirement_key` is a human-chosen slug matching the words that become
-  the FR row's `Name` column, by convention, not by parser-enforced join.
+- **Requirement linkage without FR-id joining, but WITH a slug join at
+  gate-time (revised post-plan-review):** a grill-trace is self-contained
+  at write time (`requirement_text`, `terms_used` declared by the
+  interviewer) — it cannot be joined to a spec.md FR row by id, because FR
+  ids don't exist yet at interview time (Step 1 precedes Step 6's spec
+  generation). The ORIGINAL plan stopped there, with `requirement_key`
+  matching the FR row's `Name` column "by convention, not by
+  parser-enforced join". External plan review found this left a
+  partially-recorded interview (some requirements traced, one silently
+  skipped) invisible to the `grill_trace_coverage` guard, which only
+  detects the all-or-nothing SKIPPED case. Fixed by adding
+  `fr_trace_coverage` (`grill_trace_fr_coverage.py`): at Step 8, once
+  spec.md exists, it slugifies every live FR row's `Name` cell with the
+  same rule and requires a matching grill-trace `requirement_key` — a
+  narrow, local `Name`-column-only parser (deliberately not
+  `drift_parsers.parse_fr_table`, which never exposes `Name`), not a
+  general FR-table reader. This closes the partial-coverage gap while
+  still never needing FR ids at interview time; the join happens later,
+  at gate-time, against the one column it needs.
 - **`terms_used` is declared, not scanned.** Free-text term extraction from
   `requirement_text` is a judgment call (honesty guard §3) — the gate must
   never make one, so the interviewer declares which terms the requirement
@@ -97,6 +110,9 @@ which is a project-side planning artifact, not a database/schema change.
 - Only `/shipwright-project`'s surface is wired (this sub-iterate's scope).
   `adopt`/`iterate` are reserved `surface` values in the schema, not wired
   — `trg-1aa5a8ab` owns the onboarding-side trigger.
-- The coverage guard is a global "zero traces despite an interview having
-  run" check, not a per-FR-row join — a deliberate scope decision (§2) to
-  avoid coupling this gate to `spec.md`'s FR-table parser.
+- The original `grill_trace_coverage` guard is a global "zero traces
+  despite an interview having run" check, not a per-FR-row join. As
+  revised in §2, it is now PAIRED with `fr_trace_coverage`, a narrow
+  `Name`-column-only join added post-plan-review specifically to close
+  the partial-coverage gap the global check alone cannot see — this is no
+  longer an unaddressed scope decision, it is the shipped design.
