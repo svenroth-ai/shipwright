@@ -1,0 +1,58 @@
+{
+  "run_id": "iterate-2026-09-10-p4-4-grill-module-recent-rules-drift",
+  "date": "2026-09-10T15:12:00.768403Z",
+  "event_at": "2026-09-10T15:11:15.075270+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-req3-09-p4-grill-glossary",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-09-p4-grill-glossary/sub-iterates/P4.4-grill-module-recent-rules-drift.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-p4-4-grill-module-recent-rules-drift",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Sec.0's own load-bearing-order claim ('the order is load-bearing') survives verbatim, not just the section heading",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_execution_order_rule_by_sentence PASSED; manually spot-checked to FAIL when the sentence is removed"
+      },
+      {
+        "behavior": "Sec.5's minimum-two-scenarios rule (FR-01.16 AC05) survives verbatim",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_minimum_two_scenarios_rule_by_sentence PASSED; manually spot-checked to FAIL when the sentence is removed"
+      },
+      {
+        "behavior": "Sec.4's glossary cross-check trigger sentence (FR-01.16 AC04) survives verbatim, tolerating the sentence's own markdown line-wrap via whitespace normalization",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_glossary_cross_check_trigger_by_sentence PASSED; manually spot-checked to FAIL when the sentence is removed"
+      },
+      {
+        "behavior": "the new Sec.0 REQUIRED_SECTIONS entry is retained, and the existing 12 entries keep their order/position",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_retains_cited_sections[## 0. The order - do it in this sequence] PASSED, plus the other 12 parametrized cases PASSED unchanged"
+      },
+      {
+        "behavior": "all pre-existing assertions in both sibling drift-test files still pass unchanged (38 tests total)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py + test_requirement_elicitation_discovery.py: 38 passed, 0 failed (local targeted run); reconfirmed by the full canonical F0 suite (18384 total, 0 failures other than the known, already-tracked trg-f64d1c27 race unrelated to this diff)"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Test-only drift-protection change (3 new pinning tests + a REQUIRED_SECTIONS entry in an existing test file); no CLI/web/API behavior surface added or altered. Not mandatory at this run's complexity (small) per check_surface_verification's own trivial/small skip."
+  }
+}

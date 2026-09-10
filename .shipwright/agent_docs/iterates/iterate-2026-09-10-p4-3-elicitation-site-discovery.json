@@ -1,0 +1,73 @@
+{
+  "run_id": "iterate-2026-09-10-p4-3-elicitation-site-discovery",
+  "date": "2026-09-10T13:30:29.972750Z",
+  "event_at": "2026-09-10T13:29:57.037434+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-req3-09-p4-grill-glossary",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-09-p4-grill-glossary/sub-iterates/P4.3-elicitation-site-discovery.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-p4-3-elicitation-site-discovery",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the 4 currently-known citing docs are still discovered (AC1)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_discovery_finds_at_least_the_known_citing_docs PASSED"
+      },
+      {
+        "behavior": "a new reference doc carrying the marker is discovered dynamically, without editing the test file (AC2)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_discovery_is_dynamic_a_new_reference_doc_is_picked_up PASSED"
+      },
+      {
+        "behavior": "a dynamically-discovered but uncited doc is actually caught by the reverse-check enforcement, not merely returned by discovery (AC2 enforcement proof)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_a_discovered_but_uncited_fixture_doc_fails_the_reverse_check PASSED"
+      },
+      {
+        "behavior": "the discovery signal is not simply the citation string 'requirement-elicitation.md' (AC3)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_discovery_signal_is_not_the_reverse_citation_string PASSED"
+      },
+      {
+        "behavior": "discovery does not sweep in an unrelated doc today (marker false-positive guard, external code review round 2)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_discovery_has_no_unexpected_extra_matches_today PASSED"
+      },
+      {
+        "behavior": "all pre-existing forward-direction assertions still pass (AC4)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py (24 items) PASSED"
+      },
+      {
+        "behavior": "each of the 4 discovered docs still cites shared/requirement-elicitation.md",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_elicitation_surface_cites_the_module[4 parametrized cases] PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "runner": "",
+    "exit_code": 0,
+    "tests_run": 0,
+    "evidence_path": "",
+    "timestamp": "2026-09-10T13:00:48.542Z",
+    "attempts": 0,
+    "justification": "Test-only drift-protection change (discovery function + test files); no CLI/web/API behavior surface added or altered"
+  },
+  "declared_removals": []
+}

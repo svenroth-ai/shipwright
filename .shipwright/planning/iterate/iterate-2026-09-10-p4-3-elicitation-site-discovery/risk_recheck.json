@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p4-3-elicitation-site-discovery",
+  "risk_recheck": {
+    "changed_file_count": 4,
+    "diff_loc": 351,
+    "risk_flags": [],
+    "diff_risk_flags": [],
+    "complexity_floor": "trivial",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}
