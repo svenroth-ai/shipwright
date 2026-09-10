@@ -102,12 +102,13 @@ def test_a_disabled_and_failing_link_reports_skipped_not_failed():
 
 
 def test_a_retired_duplicate_requirement_contributes_no_links():
-    """External code review (glm, low) — the asymmetry was fail-OPEN.
-
-    ``_links_for`` pooled every node carrying the display id, retired ones
-    included, while the layer-gap arm restricted to active nodes. A retired
-    duplicate silently ADDS to the head count — which is precisely what turns a
-    `base >= 1, head 0` ``binding_removed`` into an ordinary greenness walk.
+    """No reviewer asked for this — found during build (NOT the same as the
+    separate glm-low finding at §7 about retiring an FR while editing its
+    criterion). The asymmetry was fail-OPEN: ``_links_for`` pooled every node
+    carrying the display id, retired ones included, while the layer-gap arm
+    restricted to active nodes. A retired duplicate silently ADDS to the head
+    count — which is precisely what turns a `base >= 1, head 0`
+    ``binding_removed`` into an ordinary greenness walk.
     """
     base = _acs_for("FR-01.01", "AC01", [_link("t1")])
     head = _manifest(acs_node={})

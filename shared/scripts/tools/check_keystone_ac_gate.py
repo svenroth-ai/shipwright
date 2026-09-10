@@ -31,11 +31,11 @@ the moment the PR is merged:**
   self-reported event ``fr_impact``"*).
 
 A **third** deviation exists, from the ratified DESIGN rather than from the sub-iterate
-spec, and is **not** ratified: an ``added`` AC that already carries a binding takes AC-2's
-greenness walk instead of being report-only. It was taken at build time, no reviewer asked
-for it, and the reasoning + scope live in design §7 and in ``_keystone_core``'s added-arm
-comment. Named here so a reader of this file does not infer from the two above that the
-shipped behaviour matches the design everywhere else.
+spec, and is **ratified (2026-09-10, coordinator)**: an ``added`` AC that already carries a
+binding takes AC-2's greenness walk instead of being report-only. It was taken at build time,
+no reviewer asked for it, and the reasoning + scope live in design §7 and in
+``_keystone_core``'s added-arm comment. Named here so a reader of this file does not infer
+from the two above that the shipped behaviour matches the design everywhere else.
 
 **Why this gate does NOT call ``resolve_execution_evidence``** — the single most
 important thing to know before "improving" it. That resolver answers *"can I

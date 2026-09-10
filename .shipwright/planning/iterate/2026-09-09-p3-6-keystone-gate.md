@@ -936,16 +936,16 @@ and is not evidence of a defect; the *false-red* count is the number that matter
 
 ---
 
-## 8. Rulings adopted — all seven, none open; plus one build-time deviation awaiting ratification
+## 8. Rulings adopted — all eight, none open
 
 **Deviation count: THREE, not two.** Q1 and Q1b were ratified at the plan gate. **Deviation 3**
-(§7) was taken at build time, is *not* ratified, and is flagged here so the coordinator decides it
-rather than inherits it. Any passage of this document claiming "exactly two deviations" without
+(§7) was taken at build time and **ratified (2026-09-10, coordinator)** after Stage-1 round 2
+passed fresh against it. Any passage of this document claiming "exactly two deviations" without
 naming the third is stale — a Stage-1 spec review rejected the build for exactly that.
 
 | # | Ruling | Where it lands |
 |---|---|---|
-| **D3** | **NOT A RULING — an open ask.** An `added` AC that already carries a binding takes AC-2's greenness walk (`head_links >= 1`); unbound `added` ACs stay report-only, and no layer-gap check applies to this arm at all. Taken during build because AC-2 names *any* named AC and the design's exemption rested on an assumption that fails when the criterion arrives tagged. **No reviewer requested it.** Full four-step reasoning and scope: §7's deviation-3 block. | §5.1 table, §7, AC-K4 |
+| **D3** | **RATIFIED (2026-09-10, coordinator).** An `added` AC that already carries a binding takes AC-2's greenness walk (`head_links >= 1`); unbound `added` ACs stay report-only, and no layer-gap check applies to this arm at all. Taken during build because AC-2 names *any* named AC and the design's exemption rested on an assumption that fails when the criterion arrives tagged. **No reviewer requested it.** Full four-step reasoning and scope: §7's deviation-3 block. | §5.1 table, §7, AC-K4 |
 | Q1 | **Drop D9's `last_verified_commit` baseline.** ci.yml re-runs every suite on every PR; nothing selective for a ledger to compensate for, and a stored baseline is a self-reported trust artifact — the class that cost PR #690 twelve rounds. **Condition:** record the deviation from the Scope line in **both the PR body and the module docstring**. | §5.8, §11 item 1 |
 | Q2 | **Spec-side-only "behaviour-changing" is correct.** **Conditions:** (i) state verbatim in the PR body — *"a PR that changes behaviour in code and changes no acceptance criterion passes this gate untouched; it enforces spec-to-test consistency, not code-to-spec consistency"*; (ii) paired with finding 1 — spec-side-only means the binding side must not be silently subtractable. | §3(a), §5.3 |
 | Q3 | **`not_selected` HARD; no advisory softening, no forced rerun.** Specific instance (retag `FR-01.07/AC06`?) → **no**, on re-measured evidence. | §5.4, §2.3 |
@@ -1207,9 +1207,22 @@ not on anything Stage-1 rounds 1-2 had already covered:
 | C | reject (hard gate) | Stage-2's fix added a second, undocumented suppressor of arm 2 — an FR already reported by arm 1 (`unminted_changed`) is now also skipped — while §5.1 names the divergence guard as **the** suppressor and §5.2 states arm 2's predicate without the exception. The fix is correct on the merits (the reasoning mirrors §5.1's own precedence rule for a sibling case) but no passage of the design doc was edited to say so, in the same commit that DID edit two peripheral passages (§2.2, the decision drop). | **Accepted-and-documented.** New precedence paragraph added directly after §5.2's arm-2 definition, naming the rule, the shape it prevents, and the pinning test explicitly, so a reader of §5.2 is no longer wrong about the shipped behaviour. |
 | D | reject (hard gate) | Two fabricated attributions in `_keystone_core.py`, unrelated to the fix under review: `_walk_links`'s STATUS-FIRST precedence credited "external code review, glm medium", and `_links_for`'s ACTIVE-nodes-only credited "external code review, glm low" — neither matches any of the 8 recorded `external_code` findings (verified against `reviews.json` directly: the nearest real glm-low findings are the retire+edit misrouted-message finding, already recorded honestly at §7, and the `not_selected` catch-all — neither is either of these). Repeated in `test_keystone_core.py`'s docstring for the first. | **Accepted-and-fixed.** Both attributions corrected to "no reviewer asked for this — found during build" (the same honest form deviation 3 already uses), in the source comment, the module's ACTIVE-nodes-only paragraph (with a note distinguishing it from the real §7 finding it is adjacent to but not the same as), and the test docstring. |
 
-**Pattern across all three Stage-1 rounds:** every REJECT has been a code/document disagreement or
+### 12.1d Stage-1 round 4 (fresh) — REJECT
+
+Round 3's fix itself contained the same two error classes it was fixing, undetected by round 3
+because it checked "was the cited finding fixed", not "is the whole diff now consistent":
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| E | reject (hard gate) | Round 3's ACTIVE-nodes-only attribution fix landed in `_keystone_core.py`'s docstring but not in the test that pins the same behaviour — `test_a_retired_duplicate_requirement_contributes_no_links` in `shared/tests/test_keystone_core.py` still opened "External code review (glm, low)". Round 3's own §12.1c row D claimed the repeat was "for the first [attribution]" only, under-reporting its own diff. | **Accepted-and-fixed.** Corrected to the same honest form, with the same distinguishing note. |
+| F | reject (hard gate) | A third, independent fabricated attribution, not raised by any prior round: `test_the_step_takes_no_conditional_dependency_on_another_step` in `test_ci_yml_keystone_step_shape.py` credited a tautology fix to "external code review (glm, low)" — no such finding exists among the 8 recorded `external_code` findings. | **Accepted-and-fixed.** Corrected to the honest build-time form. |
+| G | reject (hard gate) | §8's heading, opening paragraph and row D3 all still stated deviation 3 was "NOT ratified — an open ask", and `check_keystone_ac_gate.py`'s module docstring repeated "is **not** ratified" — while this same round's §12.1c had already stated "The orchestrator then personally ratified deviation 3." Three-plus-one passages asserting the stale status, the identical pattern finding A (§12.1b) was rejected for. | **Accepted-and-fixed.** §8's heading, paragraph and row D3, and the CLI docstring, all now read "RATIFIED (2026-09-10, coordinator)" — the ratification is real (it happened after Stage-1 round 2 passed, before this round's diff was ever built), so the fix is to correct the stale passages, not to walk back the claim. |
+
+**Pattern across all four Stage-1 rounds:** every REJECT has been a code/document disagreement or
 an attribution error, never a wrong verdict from the evaluator itself — source AC-1/AC-2/AC-3 and
-the link-count vocabulary have re-derived as compliant fresh, three times running.
+the link-count vocabulary have re-derived as compliant fresh, four times running. Rounds 3 and 4
+narrow to the same root cause: a fix that corrects the *instance* a reviewer names, without a
+repo-wide check (grep) for siblings of the same shape in the same diff.
 
 **Why finding A is the most serious of the run.** Every other finding this iterate collected was a
 defect in code. This one is a divergence between the code and the document that ships beside it —

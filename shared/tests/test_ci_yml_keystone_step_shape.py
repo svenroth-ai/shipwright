@@ -118,11 +118,10 @@ def test_the_step_comes_after_the_manifest_regeneration_step():
 
 
 def test_the_step_takes_no_conditional_dependency_on_another_step():
-    """The negative half of §5.7, rewritten after external code review (glm, low)
-    called the first version a tautology — it asserted `"Diff coverage" not in`
-    the step's own body, which is trivially true of any step that does not
-    mention it, and would have passed a `hashFiles('coverage.xml')` condition
-    worded differently.
+    """The negative half of §5.7. No reviewer asked for this — found during
+    build: the first version asserted `"Diff coverage" not in` the step's own
+    body, which is trivially true of any step that does not mention it, and
+    would have passed a `hashFiles('coverage.xml')` condition worded differently.
 
     The real constraint: the keystone step's execution must not be predicated on
     anything OTHER than the event. `Diff coverage (gate)` is itself conditional
