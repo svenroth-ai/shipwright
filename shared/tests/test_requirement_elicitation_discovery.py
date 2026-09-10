@@ -115,31 +115,44 @@ def test_discovery_finds_at_least_the_known_citing_docs():
     )
 
 
-def test_discovery_marker_is_not_absurdly_broad():
-    """Marker-sanity guard, distinct from the AC1 subset check above: catches
-    a marker gone generic (e.g. edited down to a common word/phrase that now
-    sweeps in unrelated docs) WITHOUT reintroducing a per-file allowlist a
-    contributor must extend for every legitimate new surface.
+#: A small, curated set of real `references/*.md` docs that discuss adjacent
+#: concepts (the coverage checklist's `Basis: assumed` stop-condition,
+#: elicitation prose in general) WITHOUT carrying the elicitation-surface
+#: marker itself — near-misses a broadened marker would plausibly start
+#: sweeping in. Verified today (P4.3 precedent research): `spec-generation.md`
+#: contains `"Basis: assumed"` but not `"recommended answer"`.
+KNOWN_NON_ELICITATION_NEAR_MISSES = (
+    "plugins/shipwright-project/skills/project/references/spec-generation.md",
+)
 
-    An earlier version of this test asserted the discovered set was exactly
-    `KNOWN_CITING_DOCS` (a snapshot equality). PR-review gate (round 3,
-    openai/gpt-5.6-luna) correctly flagged that as making a legitimate new
-    elicitation-surface doc fail CI until a human manually extended the
-    tuple — precisely the "consulting a list someone must remember to
-    extend" burden FR-01.16 AC09 exists to remove, just relocated from the
-    enforcement path (the reverse citation-check) to this test. Removed in
-    favor of a generous count ceiling: it still fails loudly if the marker
-    degrades into something that matches broadly across the ~190
-    `references/*.md` docs in the repo, but tolerates any number of
-    genuinely new, individually-marked elicitation surfaces.
+
+def test_discovery_marker_does_not_sweep_in_known_near_misses():
+    """Marker-precision guard, distinct from the AC1 subset check above:
+    catches a marker gone generic (e.g. broadened to a common word/phrase)
+    WITHOUT reintroducing any burden on a legitimate new elicitation surface.
+
+    Two earlier versions of this test failed exactly that bar. Round 1
+    (external code review) added an exact-set snapshot assertion
+    (`discovered == KNOWN_CITING_DOCS`); PR-review gate (round 3,
+    openai/gpt-5.6-luna) correctly flagged that a legitimate 5th surface
+    would fail CI until a human manually extended the tuple. Round 2
+    replaced it with a count ceiling (`len(discovered) <= 20`); the same
+    gate correctly flagged that a 21st legitimate surface would fail for
+    the identical reason — any ceiling on the COUNT of matches is, in the
+    limit, exactly the same "list someone must remember to extend" burden
+    FR-01.16 AC09 exists to eliminate. This version tests marker precision
+    against a fixed, curated set of docs already known NOT to carry the
+    marker (a negative control), which can never fail due to a new,
+    legitimately-marked surface being added — only if the marker itself
+    degrades into something that starts matching these known near-misses.
     """
-    count = len(DISCOVERED_ELICITATION_DOCS)
-    assert count <= 20, (
-        f"discover_elicitation_reference_docs(REPO_ROOT) found {count} docs "
-        f"(today's known count is {len(KNOWN_CITING_DOCS)}) — this many "
-        f"matches suggests ELICITATION_SURFACE_MARKER has become too broad "
-        f"and is sweeping in unrelated docs; tighten the marker rather than "
-        f"raising this ceiling"
+    near_misses = {REPO_ROOT / rel for rel in KNOWN_NON_ELICITATION_NEAR_MISSES}
+    swept_in = near_misses & set(DISCOVERED_ELICITATION_DOCS)
+    assert not swept_in, (
+        f"ELICITATION_SURFACE_MARKER now matches known non-elicitation "
+        f"doc(s) {sorted(p.relative_to(REPO_ROOT).as_posix() for p in swept_in)} "
+        f"— it has become too broad; tighten it rather than adding these to "
+        f"KNOWN_CITING_DOCS"
     )
 
 

@@ -200,3 +200,23 @@ Replaced with `test_discovery_marker_is_not_absurdly_broad`: a generous
 count ceiling (20, against today's 4 and ~190 total `references/*.md` docs
 repo-wide) that still catches a marker gone generic without blocking any
 single legitimate new addition.
+
+## PR-review gate, round 4 (openai/gpt-5.6-luna) — BLOCK, fixed
+
+The gate correctly generalized its own round-3 objection: a fixed count
+ceiling is, in the limit, the same "list someone must remember to extend"
+burden — a 21st legitimate marked surface would fail exactly as a 5th did
+under the original snapshot equality. Any assertion keyed on the *count* or
+*exact identity* of discovered docs has this defect; the fix had to stop
+keying marker-precision on the positive/discovered side entirely. Replaced
+`test_discovery_marker_is_not_absurdly_broad` with
+`test_discovery_marker_does_not_sweep_in_known_near_misses`: a negative
+control against a small, curated set of real docs already verified today
+not to carry the marker (`spec-generation.md`, which carries the adjacent
+`"Basis: assumed"` phrase but not `"recommended answer"` — independently
+re-verified via `grep -c` before writing the test). This can only fail if
+the marker itself degrades into matching a known non-surface; it places no
+ceiling and no exact-set requirement on legitimate matches, so it cannot
+fail due to any number of genuinely new, correctly-marked elicitation
+surfaces being added — closing the class of finding the gate raised across
+rounds 3 and 4, not just its two instances.
