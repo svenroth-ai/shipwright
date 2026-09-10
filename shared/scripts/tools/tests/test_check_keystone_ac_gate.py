@@ -106,6 +106,12 @@ def test_removing_a_bound_ac_outright_is_reported_but_does_not_block(repo, capsy
     assert payload["removed_with_bindings"] == ["FR-01.01/AC01"]
     assert "::warning::" in captured.err
     assert "FR-01.01/AC01" in captured.err
+    # Stage-2 code review, low; found round 6. This line used to carry a
+    # non-ASCII section-sign; Windows stderr on a codepage that can't encode
+    # it turns a legitimate clean exit into a bogus infra-fault exit via the
+    # gate's own catch-all (mirrors `test_operator_facing_strings_are_ascii_only`
+    # in test_suite_units.py).
+    assert captured.err.isascii()
 
 
 # --------------------------------------------------------------------------

@@ -124,8 +124,8 @@ def test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base(r
     head and base, which never exercises arm 2's risky combination: a base
     manifest that DOES carry an active requirement, alongside a head-only
     active FR, with NEITHER manifest naming a spec_path. Without the
-    ``no_spec_was_read`` suppression, `base_fr_digests` and `head_minted` are
-    empty because no spec text was ever scanned -- not because the base
+    ``spec_text_was_read`` suppression, `base_fr_digests` and `head_minted`
+    are empty because no spec text was ever scanned -- not because the base
     genuinely has no criteria -- so the head-only FR would read as
     `new_frs_without_criteria` (a HARD block) from a document nobody read."""
     head = _git("rev-parse", "HEAD", cwd=repo)
@@ -133,6 +133,28 @@ def test_no_spec_path_read_suppresses_the_new_fr_arm_even_with_a_nonempty_base(r
     head_manifest = {"requirements": {
         "ns::FR-01.01": {"id": "FR-01.01", "status": "active"},
         "ns::FR-02.01": {"id": "FR-02.01", "status": "active"},  # new at head, no spec_path
+    }}
+    cs = kd.ac_change_set(repo, head, head, head_manifest, base_manifest)
+    assert cs.is_empty
+    assert cs.new_frs_without_criteria == []
+
+
+def test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_2(repo):
+    """Stage-2 code review, low; found round 6. ``spec_text_was_read`` asks
+    whether text was actually READ, not merely whether a path was NAMED -- a
+    ``spec_path`` present in both manifests but absent from git at BOTH
+    commits (a stale or mistyped path, so `spec_text_at` returns `""` for
+    each side, same as the no-path-named case) must suppress arm 2 exactly
+    like the test above, not fall through to a false HARD block asserted
+    from a document that was never actually read."""
+    head = _git("rev-parse", "HEAD", cwd=repo)
+    stale_path = "Spec/design/does-not-exist.md"
+    base_manifest = {"requirements": {
+        "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": stale_path},
+    }}
+    head_manifest = {"requirements": {
+        "ns::FR-01.01": {"id": "FR-01.01", "status": "active", "spec_path": stale_path},
+        "ns::FR-02.01": {"id": "FR-02.01", "status": "active", "spec_path": stale_path},
     }}
     cs = kd.ac_change_set(repo, head, head, head_manifest, base_manifest)
     assert cs.is_empty

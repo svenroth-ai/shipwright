@@ -126,6 +126,13 @@ def ac_change_set(
     # base commit is already merged and cannot be authored by this PR.
     head_minted_from: dict[tuple[str, str], str] = {}
     head_fr_digest_from: dict[str, str] = {}
+    # Whether any spec path actually yielded content, not merely whether one
+    # was NAMED (Stage-2 code review, low; found during build): a spec_path
+    # resolving to "" at BOTH commits -- present in the manifest but absent
+    # from git at either sha -- would otherwise leave `spec_text_was_read`
+    # True from `spec_paths` alone while `base_fr_digests`/`head_minted` stay
+    # empty, reproducing the exact false-HARD-block this flag exists to stop.
+    spec_text_was_read = False
 
     spec_paths = _spec_paths(head_manifest, base_manifest)
     if not spec_paths:
@@ -147,6 +154,8 @@ def ac_change_set(
         if base_text is None or head_text is None:
             side = "base" if base_text is None else "head"
             raise ReadError(f"could not read {rel_path} at the {side} commit")
+        if base_text or head_text:
+            spec_text_was_read = True
 
         h_minted, h_unminted = ac_criteria_digests(head_text)
         for key in h_minted:
@@ -224,7 +233,7 @@ def ac_change_set(
         result, head_active_ids=_active_display_ids(head_manifest),
         base_active_ids=_active_display_ids(base_manifest),
         base_fr_digests=base_fr_digests, head_minted=head_minted,
-        no_spec_was_read=not spec_paths,
+        spec_text_was_read=spec_text_was_read,
     )
     return result
 

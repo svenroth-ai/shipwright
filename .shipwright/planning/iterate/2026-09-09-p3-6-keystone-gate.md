@@ -1559,6 +1559,31 @@ own scoping" (loose — the divergence guard's scoping is a blast-radius rule, n
 SECOND, independent null case beyond the empty-base-manifest amendment"; §12.1l's own placement
 description was left as-is, since the reviewer judged it harmless boilerplate.
 
+### 12.1n Stage-1 round 17 (fresh, PASS) → Stage-2 code review (fresh, third pass) — PASS-WITH-FINDINGS
+
+Round 17 confirmed round 16's §5.1 addition and the "SECOND, independent null case" rewording are
+both accurate, and noted (non-blocking) that `_keystone_divergence.py`'s own docstring already said
+"second" independently of the design doc — i.e. code and doc now agree, not one copying the other.
+
+Stage-2's third pass reviewed the code changes since its second pass (`no_spec_was_read`, the stderr
+`§` removal, the CI-shape test rewrite — the Stage-1 rounds in between were documentation-only) and
+came back **PASS-WITH-FINDINGS, 0 blocking, 5 low**, after independently hand-verifying all four
+changes correct, including a full hand-trace proving the new regression test fails without the fix.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | low | `no_spec_was_read = not spec_paths` tested whether a `spec_path` was NAMED, not whether text was actually READ — a path present in the manifest but resolving to `""` at BOTH commits (absent from git at either sha) would leave arm 2 unsuppressed with empty digests, still HARD-blocking incorrectly. Fails closed/loud, not silently — low likelihood in real CI, reachable in local reproduction. | **Fixed.** Renamed to `spec_text_was_read`, computed from whether any spec path actually yielded non-empty text at either commit during the read loop, not from `spec_paths` alone. New regression test: `test_a_named_spec_path_absent_from_git_at_either_commit_also_suppresses_arm_2`. |
+| 2 | low | `no_spec_was_read: bool = False` was an unsafe-by-default parameter with exactly one caller; `head_minted` also lacked a type annotation. | **Fixed** in the same edit as finding 1: `spec_text_was_read` is now a required keyword-only argument with no default, positively named, and `head_minted: dict[tuple[str, str], str]` is annotated. |
+| 3 | low | The CI-shape test rewritten at §12.1k finding 3 never mutated the step's `name` to prove the `(gate)` suffix specifically (not just the run body) is load-bearing. | **Fixed.** Added a `dataclasses.replace(step, name=...)` assertion stripping `" (gate)"` and confirming `is_gate_step` then returns `False`. |
+| 4 | low | That same test's hand-built `Step(...)` duplicated, and already diverged from, `parse_workflows`'s own field coercion — a naive `bool("false")` reads a string `"false"` as truthy, while the real parser's string-aware check reads it as `False`. | **Fixed.** The test now selects the step from `parse_workflows(_REPO_ROOT)` directly instead of hand-constructing one, exercising the real code path. |
+| 5 | low | The stderr-ASCII fix (§12.1k finding 4) had no regression test pinning it. | **Fixed.** Added `assert captured.err.isascii()` alongside the existing `::warning::` assertion, mirroring the repo's `test_operator_facing_strings_are_ascii_only` precedent in `test_suite_units.py`. |
+
+All five findings were independently re-derived against the current source before being accepted —
+`spec_text_at`'s three-way return contract was re-read to confirm finding 1's `""`-at-both-sides case
+is genuinely reachable, and `ci_gate_scan.parse_workflows`'s `continue_on_error` coercion was re-read
+to confirm finding 4's claimed divergence from the test's naive `bool()` coercion. All five were fixed
+in one pass, none deferred: this is the first Stage-2 pass with nothing left to disclose-and-skip.
+
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
 | # | Item | Verdict | Note |
@@ -1566,7 +1591,7 @@ description was left as-is, since the reviewer judged it harmless boilerplate.
 | 1 | Spec Compliance | **FAIL → fixed, and this row is the one that was wrong** | Claimed "two named deviations" (Q1, Q1b) while the build had already taken a **third** — greenness-walking a bound `added` AC — reversing a rule ratified across four plan rounds and still asserted in three passages of this document. A **Stage-1 spec review rejected the build for it**; self-review had marked this row `pass`. Now: three deviations, the third named in §7, §8 row D3, §5.1's table and AC-K4's title, with its misattribution corrected in code and test. Q1/Q1b remain in the shipped module docstring. |
 | 2 | Error Handling | **fail → fixed twice, and the second time is the finding** | Found here first: `EmptyLinkWalk` escaping `main()` is a Python exit 1 — indistinguishable in a CI log from a real hard finding, so a gate defect would send an author to edit a spec that is fine. Now caught → exit 2 with JSON. External review then found the *same shape* at a different boundary (finding 3), and the Tier-3 PR review found it again two levels deeper (§12.1a finding B). The honest reading of this row: the class was identified early and then fixed **instance by instance** rather than enumerated. |
 | 3 | Security Basics | **pass** | No new trust artifact, no new persisted state, no network. `github.sha` is interpolated as a SHA (no injection surface). The base read is fail-closed three ways and its one permissive branch is surfaced under its own JSON key. |
-| 4 | Test Quality | **pass** | 56 + 48 cases (grew by four in the tools root over the two Stage-2 code-review passes — findings 1, 3 and 5 at §12.1i, finding 1 at §12.1k); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
+| 4 | Test Quality | **pass** | 57 + 48 cases (grew by five in the tools root over the three Stage-2 code-review passes — findings 1, 3 and 5 at §12.1i, finding 1 at §12.1k, finding 1 at §12.1n); the load-bearing ones fail against this document's *earlier rounds*, not merely pass against the current one. In-process `main(argv)` throughout with exactly one subprocess smoke, because subprocess-only tests contribute 0 % to the hard 80 % diff-coverage gate. |
 | 5 | Performance Basics | **pass** | Two spec parses and one extra `git show` per PR; no regeneration, no extra test execution. |
 | 6 | Naming & Structure | **pass** | Eight verifier modules plus the CLI, six extracted from the two the gate is built around (`_keystone_finding`, `_keystone_layer_gap`, `_keystone_base_manifest` from round 1-4; `_keystone_links`, `_keystone_criteria` added by the Stage-3 doubt-review fix, §12.1g; `_keystone_divergence` added by the Stage-2 code-review fix, §12.1i) — each under 300 lines by *extraction*, never by baselining. No new abstraction with one caller. |
 | 7 | Affected Boundaries (ADR-024) | **pass** | See §12.3 — all four boundaries probed or pinned, and (iii) moved from *reasoned* to *measured* this round. |
@@ -1646,6 +1671,15 @@ paragraph cited a §5.1 warning that §5.1 never actually states, because the wa
 never been given its own normative sentence. Fixed with one bullet added to §5.1's never-silent
 list, closing the citation and the gap in the same edit — the cheapest possible remedy, once the
 narrower diagnosis (a wrong citation pointing at a genuine hole, not two separate defects) was made.
+
+**Round 17 (§12.1n) passed, and Stage-2's THIRD pass found nothing blocking for the first time** —
+five low findings, all fixed in one pass rather than disclosed-and-deferred: a residual gap in the
+SAME shape of bug Stage-2's second pass found (§12.1k finding 1) one layer deeper — "was a spec path
+NAMED" is not "was spec text READ" — plus two test-quality strengthenings on the round-14 CI-shape
+rewrite and a missing regression test for round-14's own stderr-ASCII fix. That a fresh adversarial
+pass over already-twice-reviewed code still found a genuine (if low-likelihood) false-block gap is
+this cascade's clearest evidence yet that "no blocking findings" is a property of a specific diff at
+a specific round, never a property the code earns once and keeps.
 
 **The two distinct failure patterns this run produced, both worth more than the individual fixes:**
 

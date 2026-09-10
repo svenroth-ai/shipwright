@@ -112,7 +112,7 @@
       {
         "behavior": "per-AC change detection over REAL git and the real 268-criterion spec.md, including the reader-divergence scoping and the empty-criteria-digest discriminator",
         "disposition": "tested",
-        "evidence": "shared/scripts/tools/tests/test_keystone_ac_digest.py 12 tests PASSED; test_keystone_ac_digest_never_silent.py 8 tests PASSED; test_keystone_readers.py 11 tests PASSED; design doc SS6 Probe B measured 268 added / 0 changed over 680f46f0b9cb..545a4f32043b"
+        "evidence": "shared/scripts/tools/tests/test_keystone_ac_digest.py 12 tests PASSED; test_keystone_ac_digest_never_silent.py 9 tests PASSED; test_keystone_readers.py 11 tests PASSED; design doc SS6 Probe B measured 268 added / 0 changed over 680f46f0b9cb..545a4f32043b"
       },
       {
         "behavior": "the gate's real behaviour on a GitHub pull_request event (github.sha as the merge commit, base resolved by _merge_base with no --base-sha)",
