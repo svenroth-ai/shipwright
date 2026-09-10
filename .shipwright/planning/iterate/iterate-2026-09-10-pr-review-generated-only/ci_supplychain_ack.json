@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-pr-review-generated-only",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-10-pr-review-generated-only",
+    "paths_fingerprint": "c2477efdf7518357b7a12249941d88ca610d160246ac7e3dc5187d3a8adb07d2",
+    "consistent_with": "iterate-2026-09-10-pr-review-generated-only",
+    "statement": "Narrows stage 2's fail-closed PR-review gate with an all-generated carve-out, derived only from trusted API-read changed paths in default-branch stage-2 code (never stage-1's contributor-editable artifact -- the FR-01.17 (E)7 self-exemption boundary is unchanged). A sensitive path anywhere in the diff, a waiver-consumption failure, or the review step actually running and failing all still block; PR Review keeps exactly one producer.",
+    "ci_paths": [
+      ".github/workflows/pr-review-run.yml"
+    ]
+  }
+}

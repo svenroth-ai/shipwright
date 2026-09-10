@@ -25,6 +25,11 @@ package_spec.loader.exec_module(package)
 from _shipwright_shared_review_lib.review_record_core import entry_for  # noqa: E402
 from _shipwright_shared_review_lib.review_record_schema import validate_record  # noqa: E402
 
+PLUGIN_LIB = Path(__file__).resolve().parent.parent / "lib"
+if str(PLUGIN_LIB) not in sys.path:
+    sys.path.insert(0, str(PLUGIN_LIB))
+from pr_review_generated import is_safe_to_skip_review  # noqa: E402
+
 INTERNAL_REVIEW_TYPES = ("self", "spec", "code", "doubt")
 REVIEW_RECORD_RE = re.compile(r"^\.shipwright/planning/iterate/([A-Za-z0-9._-]+)/reviews\.json$")
 SENSITIVE_PATH_RE = re.compile(
@@ -90,6 +95,35 @@ def decide(changed_paths: list[str], labels: list[str], review_record: object | 
     return True, "review evidence lacks completed internal passes"
 
 
+def classify_generated_only(changed_paths: list[str]) -> tuple[bool, str]:
+    """Whether stage 2 should post `success` without running a review at all.
+
+    True only when every changed path is BOTH `pr_review_generated
+    .is_safe_to_skip_review` AND not a sensitive path (`SENSITIVE_PATH_RE`) —
+    the composition, not either check alone, is what "nothing to review"
+    means. An empty list, or one carrying the API-cap marker, is never
+    classified true: there is nothing positively identified as
+    generated-only, and a truncated list cannot be proven complete.
+
+    Deliberately uses `is_safe_to_skip_review`, NOT the broader
+    `is_generated_path` (which also hides sections from a model that still
+    reviews the rest of the diff — lower stakes than skipping the gate
+    entirely; see that function's docstring, added after a Stage-3 doubt
+    review caught the broader classifier here).
+
+    Derived from the same trusted, API-read `changed_paths` the tier decision
+    above uses — never from stage 1's artifact (FR-01.17 (E)7).
+    """
+    paths = [p for p in changed_paths if p]
+    if not paths or "sensitive_path_list_truncated" in paths:
+        return False, ""
+    if any(SENSITIVE_PATH_RE.match(p) for p in paths):
+        return False, ""
+    if not all(is_safe_to_skip_review(p) for p in paths):
+        return False, ""
+    return True, f"no reviewable content - all {len(paths)} paths are generated artifacts"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--changed-paths-file", type=Path, required=True)
@@ -103,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         if not isinstance(labels, list) or not all(isinstance(label, str) for label in labels):
             raise ValueError("labels must be a JSON array of strings")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"needs_review=true\nreason=tier inputs unreadable: {exc}")
+        print(f"needs_review=true\nreason=tier inputs unreadable: {exc}\nall_generated=false\nall_generated_reason=")
         return 0
     review_record: object | None = None
     if args.review_record_file.is_file():
@@ -112,7 +146,11 @@ def main(argv: list[str] | None = None) -> int:
         except (OSError, json.JSONDecodeError):
             review_record = None
     needs_review, reason = decide(changed_paths, labels, review_record, args.trusted_head_approval)
-    print(f"needs_review={str(needs_review).lower()}\nreason={reason}")
+    all_generated, all_generated_reason = classify_generated_only(changed_paths)
+    print(
+        f"needs_review={str(needs_review).lower()}\nreason={reason}\n"
+        f"all_generated={str(all_generated).lower()}\nall_generated_reason={all_generated_reason}"
+    )
     return 0
 
 

@@ -206,6 +206,60 @@ def test_cli_reports_unreadable_inputs_when_changed_paths_file_is_missing(tmp_pa
     assert "tier inputs unreadable" in out
 
 
+# ---------------------------------------------------------------------------
+# classify_generated_only — the "nothing to review" carve-out
+# (iterate-2026-09-10-pr-review-generated-only)
+# ---------------------------------------------------------------------------
+
+def test_all_generated_paths_classify_true_with_a_naming_reason():
+    changed = [
+        ".shipwright/compliance/dashboard.md",
+        ".shipwright/compliance/sbom.md",
+        "CHANGELOG-unreleased.d/fix/some-drop.md",
+    ]
+    all_generated, reason = tier.classify_generated_only(changed)
+    assert all_generated is True
+    assert reason == "no reviewable content - all 3 paths are generated artifacts"
+
+
+def test_one_sensitive_path_among_generated_ones_blocks_the_carve_out():
+    changed = [
+        ".shipwright/compliance/dashboard.md",
+        ".shipwright/compliance/sbom.md",
+        ".github/workflows/ci.yml",
+    ]
+    all_generated, reason = tier.classify_generated_only(changed)
+    assert all_generated is False
+    assert reason == ""
+
+
+def test_one_reviewable_source_path_blocks_the_carve_out():
+    changed = [".shipwright/compliance/dashboard.md", "plugins/shipwright-security/scripts/tools/pr_review.py"]
+    all_generated, reason = tier.classify_generated_only(changed)
+    assert all_generated is False
+
+
+def test_empty_or_truncated_changed_paths_never_classify_true():
+    assert tier.classify_generated_only([])[0] is False
+    assert tier.classify_generated_only(
+        [".shipwright/compliance/dashboard.md", "sensitive_path_list_truncated"]
+    )[0] is False
+
+
+def test_cli_emits_all_generated_outputs(tmp_path, capsys):
+    changed = tmp_path / "changed.txt"
+    changed.write_text(".shipwright/compliance/dashboard.md\n.shipwright/compliance/sbom.md\n", encoding="utf-8")
+    exit_code = tier.main([
+        "--changed-paths-file", str(changed),
+        "--labels-json", "[]",
+        "--review-record-file", str(tmp_path / "reviews.json"),
+    ])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "all_generated=true" in out
+    assert "no reviewable content - all 2 paths are generated artifacts" in out
+
+
 def test_cli_treats_a_malformed_review_record_file_as_missing(tmp_path, capsys):
     changed = tmp_path / "changed.txt"
     changed.write_text(f"{PATH}\n", encoding="utf-8")

@@ -1,0 +1,16 @@
+{
+  "section": "iterate-2026-09-10-pr-review-generated-only",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py",
+      "line": 58,
+      "finding": "decide_gate's all_generated success branch was checked before the waiver-consumption-failure branch. A PR whose only changed path is a corroborated review-record file (.shipwright/planning/iterate/<run>/reviews.json, itself is_generated_path) can have all_generated=True and needs_review=False at once; if the waiver-consumption step then fails, the all_generated branch matched first and posted success, masking the failure test_failed_waiver_consumption_cannot_post_a_green_gate exists to prevent.",
+      "suggestion": "Reorder the waiver-consumption-failure check before the all_generated short-circuit; add a regression test combining all_generated=True with needs_review=False and waiver_consumed_ok=False.",
+      "status": "fixed",
+      "fix": "Swapped the two branches in decide_gate (plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py), documented the reordering rationale in the docstring, and added test_all_generated_waived_pr_with_a_failed_waiver_consumption_still_fails to test_pr_review_gate_verdict.py. Full affected-test run: 57 passed. Lint clean."
+    }
+  ],
+  "other_axes": "Security (shell-injection), trust-boundary derivation, architecture, readability, and performance all reviewed clean per the reviewer's report — no other findings."
+}

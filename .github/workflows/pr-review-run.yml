@@ -121,6 +121,16 @@ jobs:
 
       # The tier decision lives HERE, not in stage 1, and reads only API data.
       # Stage 1's copy of these rules would be attacker-editable.
+      #
+      # This step also emits `all_generated` / `all_generated_reason` —
+      # `review_record_tier.classify_generated_only`'s verdict on whether
+      # EVERY changed path is a producer-generated artifact (dashboards,
+      # changelog drops, triage stores, ...) and NONE is a sensitive path.
+      # When true, the "Run Tier-3 PR review" step below never executes (no
+      # model call over content nobody wrote) and the final verdict step
+      # posts `success` naming why, instead of the required `PR Review`
+      # context failing every time on a PR that carries no reviewable
+      # logic — see iterate-2026-09-10-pr-review-generated-only.
       - name: Decide the tier from trusted API data
         id: tier
         env:
@@ -223,7 +233,8 @@ jobs:
         id: review
         if: >-
           github.event.workflow_run.conclusion == 'success' &&
-          steps.tier.outputs.needs_review == 'true'
+          steps.tier.outputs.needs_review == 'true' &&
+          steps.tier.outputs.all_generated != 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -267,6 +278,8 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           NEEDS_REVIEW: ${{ steps.tier.outputs.needs_review }}
           TIER_REASON: ${{ steps.tier.outputs.reason }}
+          ALL_GENERATED: ${{ steps.tier.outputs.all_generated }}
+          ALL_GENERATED_REASON: ${{ steps.tier.outputs.all_generated_reason }}
           CONSUME_WAIVER_OUTCOME: ${{ steps.consume_waiver.outcome }}
           TIER_OUTCOME: ${{ steps.tier.outcome }}
           REVIEW_OUTCOME: ${{ steps.review.outcome }}
@@ -323,18 +336,37 @@ jobs:
               -f target_url="$RUN_URL" >/dev/null
             exit 1
           fi
-          if [ "$STAGE1_CONCLUSION" != "success" ]; then
-            state=failure; desc="preparation stage failed — nothing was reviewed"
-          elif [ "$TIER_OUTCOME" != "success" ]; then
-            state=failure; desc="could not determine whether a review was required"
-          elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" != "success" ]; then
-            state=failure; desc="review waiver consumption failed — review required"
-          elif [ "$REVIEW_OUTCOME" = "success" ]; then
-            state=success; desc="reviewed — no blocking findings"
-          elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" = "success" ]; then
-            state=success; desc="$TIER_REASON"
-          else
-            state=failure; desc="review blocked or did not complete"
+          # The verdict composition itself lives in a tested Python function
+          # (plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py),
+          # not inline here — see its docstring for why: this is the seam
+          # where a regression could quietly turn a real review failure into a
+          # green status, and inline bash logic drifts silently in a way a
+          # unit-tested function does not.
+          # `|| gate_out=""` is load-bearing under this step's `set -e`: a
+          # bare `gate_out=$(cmd)` with no failing `cmd` aborts the whole step
+          # right here on a non-zero exit (verified: `set -e; x=$(false)`
+          # does NOT reach the next line), which would skip the `gh api
+          # .../statuses` call below entirely — an absent status still blocks
+          # the merge (FR-01.17 (E)2), but silently, with none of the
+          # diagnostic fallback this step is written to produce. The `||`
+          # keeps the assignment itself always-succeeding so the existing
+          # empty-state guard below actually runs and posts an explicit
+          # `failure` (external code-review cascade, medium finding).
+          gate_out=$(uv run plugins/shipwright-security/scripts/tools/decide_pr_review_gate.py \
+            --stage1-conclusion "$STAGE1_CONCLUSION" \
+            --tier-outcome "$TIER_OUTCOME" \
+            --all-generated "$ALL_GENERATED" \
+            --all-generated-reason "$ALL_GENERATED_REASON" \
+            --needs-review "$NEEDS_REVIEW" \
+            --consume-waiver-outcome "$CONSUME_WAIVER_OUTCOME" \
+            --review-outcome "$REVIEW_OUTCOME" \
+            --tier-reason "$TIER_REASON") || gate_out=""
+          state=$(printf '%s\n' "$gate_out" | sed -n 's/^state=//p')
+          desc=$(printf '%s\n' "$gate_out" | sed -n 's/^desc=//p')
+          if [ "$state" != "success" ] && [ "$state" != "failure" ]; then
+            # The composition script itself must never be able to post a
+            # status by producing no/garbled output.
+            state=failure; desc="gate decision script produced no output"
           fi
           gh api "repos/$REPO/statuses/$HEAD_SHA" \
             -f state="$state" \

@@ -211,15 +211,23 @@ class TestStage2:
         assert '--trusted-head-approval' in stage2
 
     def test_failed_waiver_consumption_cannot_post_a_green_gate(self, stage2):
-        """The sole required status must treat DELETE failure as review-required."""
+        """The sole required status must treat DELETE failure as review-required.
+
+        The branch ordering this used to assert on text position now lives as
+        early-return structure in `pr_review_gate_verdict.decide_gate` (see
+        `test_pr_review_gate_verdict.py`), which is a stronger guarantee than a
+        text-index comparison. This test keeps the shape checks that remain
+        the workflow's own: the waiver-consumption step exists and feeds the
+        tested composition function, rather than deciding the verdict inline.
+        """
         assert 'id: consume_waiver' in stage2
         assert 'CONSUME_WAIVER_OUTCOME: ${{ steps.consume_waiver.outcome }}' in stage2
-        failure = 'elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" != "success" ]; then'
-        green = 'elif [ "$NEEDS_REVIEW" = "false" ] && [ "$CONSUME_WAIVER_OUTCOME" = "success" ]; then'
-        assert failure in stage2 and green in stage2
-        assert stage2.index(failure) < stage2.index(green)
+        assert 'decide_pr_review_gate.py' in stage2, (
+            "the gate verdict must go through the tested composition "
+            "function, not inline bash the workflow alone could drift from"
+        )
+        assert '--consume-waiver-outcome "$CONSUME_WAIVER_OUTCOME"' in stage2
         assert '"$NEEDS_REVIEW" != "true"' not in stage2
-
 
         assert 'gh api --method DELETE "repos/$REPO/issues/$PR_NUMBER/labels/skip-pr-review"' in stage2
         assert "issues: write" in stage2
@@ -232,6 +240,9 @@ class TestStage2:
             "stage 2 must not consume stage 1's artifact — a fork could upload "
             "a benign diff and collect a green status for different code"
         )
+
+    # Generated-only-gate shape assertions moved to
+    # test_pr_review_generated_only_gate_shape.py (file-size guideline).
 
 
 # ---------------------------------------------------------------------------
