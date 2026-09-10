@@ -114,25 +114,44 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/tests/_elicitation_discovery.py",
+          "line": 64,
+          "finding": "discover_elicitation_reference_docs() and doc_cites_the_module() only caught UnicodeDecodeError on read_text(), not a TOCTOU OSError -- RESOLVED in round 2 by widening both except clauses to (UnicodeDecodeError, OSError).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": "shared/requirement-elicitation.md",
+          "line": 87,
+          "finding": "The 'recommended answer' discovery-marker contract lived only in the test helper's docstring, invisible to a future doc author writing a new elicitation-surface reference doc -- RESOLVED in round 2 by adding a pointer sentence in section 2 of the production SSoT.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-10T12:57:25.994030+00:00",
-      "disposition": "campaign-mode runner has no Agent tool; the orchestrator runs the internal code-reviewer cascade at 3f-bis before merge, not this runner",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T13:39:04.766145+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-campaign-cascade",
       "parse_status": null,
       "raw_excerpt": null
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-10T12:57:26.108048+00:00",
-      "disposition": "campaign-mode runner has no Agent tool; the orchestrator runs the doubt-reviewer at 3f-bis before merge, not this runner",
-      "recorded_by": "none",
+      "completed_at": "2026-09-10T13:39:04.868870+00:00",
+      "disposition": "test-only drift-test infrastructure change, no migrations/async-concurrency/cross-plugin-import/irreversible-ops touch (build Step 6 doubt-reviewer trigger) -- orchestrator judgment, campaign req3-09-p4-grill-glossary P4.3",
+      "recorded_by": "orchestrator-campaign-cascade",
       "parse_status": null,
       "raw_excerpt": null
     },
@@ -200,13 +219,13 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
-      "provider": null,
-      "completed_at": "2026-09-10T12:57:25.861063+00:00",
-      "disposition": "campaign-mode runner has no Agent tool; the orchestrator runs the spec-reviewer HARD-GATE at 3f-bis before merge, not this runner",
-      "recorded_by": "none",
+      "provider": "spec-reviewer-subagent",
+      "completed_at": "2026-09-10T13:37:06.190002+00:00",
+      "disposition": null,
+      "recorded_by": "orchestrator-campaign-cascade",
       "parse_status": null,
       "raw_excerpt": null
     },
