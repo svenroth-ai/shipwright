@@ -247,8 +247,7 @@ def test_spec_paths_are_the_union_of_both_manifests(repo):
 # --------------------------------------------------------------------------
 
 def test_two_spec_files_minting_the_same_ac_id_at_head_raises_read_error(repo):
-    """No reviewer asked for this at spec time -- found during build, Stage-3
-    doubt review. ``dict.update`` across the ``_spec_paths`` loop is
+    """Stage-3 doubt review, medium. ``dict.update`` across the ``_spec_paths`` loop is
     last-write-wins: a SECOND spec file added in this same PR that re-anchors
     an ALREADY-EDITED ``(fr_id, ac_id)`` with its OLD text used to silently
     overwrite the genuine edit's digest, reverting ``head_minted`` back to

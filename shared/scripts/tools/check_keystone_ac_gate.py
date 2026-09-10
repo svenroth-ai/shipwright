@@ -213,8 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         payload["base_manifest_absent"] = base_warning
 
     if verdict.removed_with_bindings:
-        # No reviewer asked for this -- found during build, Stage-3 doubt review,
-        # low. Report-only by design (see the module-level comment on
+        # Stage-3 doubt review, low. Report-only by design (see the module-level comment on
         # `removed_with_bindings`'s home arm), which means a bare exit 0 with
         # this list buried in JSON is otherwise invisible in a green CI log --
         # an operator has to already know to look for it.

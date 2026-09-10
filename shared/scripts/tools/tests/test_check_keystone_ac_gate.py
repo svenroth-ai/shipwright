@@ -88,12 +88,13 @@ def test_the_json_carries_the_report_only_lists_p3_7_consumes(repo, capsys):
 
 
 def test_removing_a_bound_ac_outright_is_reported_but_does_not_block(repo, capsys):
-    """No reviewer asked for this -- found during build, Stage-3 doubt review,
-    low. `removed_with_bindings` is report-only (design §7); this pins that it
-    is populated, non-blocking, and surfaced as a stderr annotation (otherwise
-    invisible in a green exit-0 CI log) when a criterion carrying a live test
-    binding at base disappears from the spec outright -- not merely edited, the
-    ``changed``-only ``binding_removed`` gap Doubt 2's neighbour disclosed."""
+    """Stage-3 doubt review, low. `removed_with_bindings` is report-only (design
+    §7); this pins that it is populated, non-blocking, and surfaced as a stderr
+    annotation (otherwise invisible in a green exit-0 CI log) when a criterion
+    carrying a live test binding at base disappears from the spec outright --
+    not merely edited, the ``changed``-only ``binding_removed`` gap the external
+    plan review (glm medium + openai high, found from opposite directions) disclosed
+    and §7 records."""
     head = _commit_spec(
         repo, BASE_SPEC.replace("- [AC01] The widget must fizz.\n", ""), "delete AC01")
     base = _git("rev-parse", "HEAD~1", cwd=repo)

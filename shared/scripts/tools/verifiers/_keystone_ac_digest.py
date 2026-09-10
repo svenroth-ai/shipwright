@@ -153,7 +153,8 @@ def ac_change_set(
             if prior != rel_path:
                 raise ReadError(
                     f"{fr_id} is heading-anchored in both {prior!r} and {rel_path!r} at head -- "
-                    "one spec file, one namespace today (design §7)."
+                    "an FR id must anchor to exactly one spec path, never reused across documents "
+                    "(design §5.1)."
                 )
         head_fr_digests.update(h_fr_digests)
         # NON-EMPTY criteria lists only. `read_all` returns a key for EVERY
