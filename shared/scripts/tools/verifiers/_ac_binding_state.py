@@ -102,6 +102,13 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
       ("proceed with a trivially-empty change set AND a warning"). Any AC
       the manifest still binds under that FR correctly surfaces as
       ``orphaned`` (there are now zero minted ids to match against).
+    * An active FR with NO ``spec_path`` recorded at all (``spec_path_by_fr``
+      never enters it into ``spec_text_by_path``, so it has no read outcome
+      to react to) also gets a WARNING, not a silent skip, whenever it still
+      carries an AC binding — same "excluded, not misreported" contract as
+      the ``""`` case above, for a real producer this is currently unreachable
+      (every manifest-generated FR sets ``spec_path``), but the reader does
+      not assume that.
     * ``None`` (a genuine read fault) or untrustworthy markers
       (``ac_identity.AcIdentityError`` — malformed/duplicate) at this text
       RAISE :class:`ReadError` — matching P3.6's own HEAD-side treatment
@@ -144,7 +151,14 @@ def read_binding_state(spec_text_by_path: dict[str, str | None], manifest: dict)
     for node in active_requirements(manifest):
         fr_id = node.get("id")
         if not isinstance(fr_id, str) or fr_id not in readable_frs:
-            continue  # excluded, not misreported — see the warning above
+            acs = node.get("acs") if isinstance(fr_id, str) else None
+            if isinstance(acs, dict) and acs:
+                state.warnings.append(
+                    f"{fr_id}: no spec_path recorded for this requirement in the manifest; "
+                    f"{len(acs)} AC binding(s) under it excluded from this run's orphan check "
+                    "(not misreported as orphaned)."
+                )
+            continue
         acs = node.get("acs")
         if not isinstance(acs, dict):
             continue

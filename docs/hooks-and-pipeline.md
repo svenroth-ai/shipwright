@@ -3504,11 +3504,13 @@ still exists, so there is no backlog to grandfather. It runs two arms: (1) a
 current-state scan for a manifest binding recorded under an AC id the spec
 no longer mints (catches outright deletion and id rotation directly); (2) a
 base-vs-head comparison catching a binding dropped on an AC whose criterion
-TEXT this PR never touched (closes the "two-PR unbind sequence" — drop a
+TEXT this PR never touched — detecting the "two-PR unbind sequence" (drop a
 `@covers` tag's `/ACnn` suffix in one PR, edit the now-unbound criterion in
-a later one — at its origin, the first PR, rather than waiting for the
-second). Both arms are documented in the script's own module docstring,
-including why arm 1 alone does not close the two-PR sequence.
+a later one) at its origin, the first PR, whenever the base manifest's own
+record of the binding is trustworthy, not unconditionally, since arm 2's only
+evidence is that stale-by-construction base artifact. Both arms are
+documented in the script's own module docstring, including why arm 1 alone
+does not close the two-PR sequence.
 
 Neither feeder check is mirrored by `scripts/verify_local.py`, for the same
 structural reason as the Keystone gate (`CI_ONLY_GATES` in that script).

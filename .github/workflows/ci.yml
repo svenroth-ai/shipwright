@@ -466,9 +466,11 @@ jobs:
         # whose AC vanished" is HARD from day one — no baseline, because nothing
         # has ever validated a @covers tag's AC id still exists, so there is no
         # legacy backlog to grandfather. Catches three named shapes (two-PR
-        # unbind sequence, outright deletion, id rotation — P3.6 design doc §7 /
-        # §10 item 8b, triage card trg-f68795d2): see the script's own module
-        # docstring for the two-arm mechanism.
+        # unbind sequence -- whenever the base manifest's own record of the
+        # binding is trustworthy, not unconditionally; outright deletion; id
+        # rotation -- P3.6 design doc §7 / §10 item 8b, triage card
+        # trg-f68795d2): see the script's own module docstring for the
+        # two-arm mechanism.
         #
         # Same ordering + pull_request-only reasoning as the two gates above.
         if: github.event_name == 'pull_request'
