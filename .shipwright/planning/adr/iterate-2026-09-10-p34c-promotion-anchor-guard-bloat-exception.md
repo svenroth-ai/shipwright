@@ -1,4 +1,4 @@
-# ADR: Grandfather promote_required_layers.py + its test files as a bloat exception
+# ADR: Grandfather promote_required_layers.py + its supporting files as a bloat exception
 
 ## Context
 
@@ -27,21 +27,30 @@ test in it exercises the same three closely-related functions in
 doubt-review-cascade, carries the same out-of-scope-churn objection as
 splitting the other two.
 
+`shared/scripts/lib/promotion_evidence_staleness.py` itself crossed 300 lines
+one round later still — the fix for the Tier-3 PR review's BLOCKing finding
+(a dirty/untracked working-tree edit to a bound test file was invisible to
+the commit-only diff this guard relied on) added a fourth function,
+`dirty_or_untracked_paths`. Same shape as the third file above: genuinely
+new debt, added to close a real gap found by review, in a single-purpose
+module already exempted for the same reason.
+
 ## Decision
 
-Grandfather all three files into `shipwright_bloat_baseline.json` with
+Grandfather all four files into `shipwright_bloat_baseline.json` with
 `state="exception"` at their current sizes, referencing this ADR. A future
 iterate that meaningfully extends any of them again is free to revisit
 whether a split is warranted then.
 
 ## Consequences
 
-All three files stay exempt from the anti-ratchet gate at their current
+All four files stay exempt from the anti-ratchet gate at their current
 size; growing any of them further in a FUTURE iterate re-trips the gate and
 must be justified fresh, not silently absorbed into this exception. Growth
-within THIS SAME iterate (the doubt-review round's own fixes, landing
-before this ADR's baseline entries are first written) is the normal shape
-of "baseline refresh is the last step," not a fresh trip.
+within THIS SAME iterate (the doubt-review round's own fixes, and the
+subsequent PR-review round's own fix, all landing before this ADR's baseline
+entries are first written) is the normal shape of "baseline refresh is the
+last step," not a fresh trip.
 
 ## Rejected alternatives
 

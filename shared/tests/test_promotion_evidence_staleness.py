@@ -13,6 +13,7 @@ from lib.promotion_evidence_staleness import (
     _looks_like_test_path,
     bound_test_files,
     changed_paths_between,
+    dirty_or_untracked_paths,
     evidence_stale_since_anchor,
 )
 
@@ -310,6 +311,54 @@ def test_changed_paths_between_returns_none_on_a_non_sha_commit_without_running_
 def test_changed_paths_between_returns_none_on_git_failure(tmp_path):
     # Not a git repo at all, and not even valid commit-ish arguments.
     assert changed_paths_between("a" * 40, "b" * 40, project_root=tmp_path) is None
+
+
+def test_dirty_or_untracked_paths_empty_on_a_clean_tree(tmp_path):
+    project = _init_repo(tmp_path)
+    _commit(project, {"a.py": "1"}, "only commit")
+    assert dirty_or_untracked_paths(project_root=project) == set()
+
+
+def test_dirty_or_untracked_paths_reports_an_uncommitted_edit_to_a_tracked_file(tmp_path):
+    project = _init_repo(tmp_path)
+    _commit(project, {"tests/test_a.py": "def test_a(): assert True\n"}, "commit")
+    (project / "tests" / "test_a.py").write_text("def test_a(): pass\n", encoding="utf-8")
+    assert dirty_or_untracked_paths(project_root=project) == {"tests/test_a.py"}
+
+
+def test_dirty_or_untracked_paths_reports_a_staged_edit(tmp_path):
+    project = _init_repo(tmp_path)
+    _commit(project, {"tests/test_a.py": "def test_a(): assert True\n"}, "commit")
+    (project / "tests" / "test_a.py").write_text("def test_a(): pass\n", encoding="utf-8")
+    _git(project, "add", "-A")
+    assert dirty_or_untracked_paths(project_root=project) == {"tests/test_a.py"}
+
+
+def test_dirty_or_untracked_paths_reports_a_new_untracked_test_file(tmp_path):
+    project = _init_repo(tmp_path)
+    _commit(project, {"a.py": "1"}, "only commit")
+    (project / "tests").mkdir()
+    (project / "tests" / "test_new.py").write_text("def test_new(): assert True\n", encoding="utf-8")
+    assert dirty_or_untracked_paths(project_root=project) == {"tests/test_new.py"}
+
+
+def test_dirty_or_untracked_paths_returns_none_on_git_failure(tmp_path):
+    assert dirty_or_untracked_paths(project_root=tmp_path) is None
+
+
+def test_anchor_fallback_treats_an_uncommitted_edit_to_a_bound_test_as_invalidating():
+    # This is the fix for the Tier-3 PR review BLOCK on this iterate's own PR:
+    # `changed_paths_between` only diffs COMMITS, so an operator's own
+    # uncommitted edit to a bound test file must be caught some other way --
+    # `dirty_or_untracked_paths` is what `promote_required_layers.py` unions
+    # into `changed` before calling this function; prove the union alone
+    # (with no committed diff at all) is sufficient to flag staleness.
+    node = {
+        "id": "FR-01.01", "spec_path": "spec.md",
+        "tests": {"unit": [{"path": "tests/test_bound.py::test_x"}]},
+    }
+    dirty = {"tests/test_bound.py"}  # as `dirty_or_untracked_paths` would report it
+    assert evidence_stale_since_anchor(node, node, node, {"spec.md"}, dirty) is True
 
 
 def test_reason_code_constant_is_the_documented_string():

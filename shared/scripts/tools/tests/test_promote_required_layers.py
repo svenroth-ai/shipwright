@@ -999,6 +999,42 @@ def test_anchor_promotion_succeeds_when_nothing_invalidating_changed_since_the_a
     assert entry["anchor_commit"] == anchor_sha
 
 
+def test_anchor_promotion_is_refused_when_a_bound_test_file_is_dirty_but_uncommitted(tmp_path, monkeypatch):
+    # Tier-3 PR review, blocking (this iterate's own PR): this tool is never
+    # invoked from CI, only by a human operator against whatever working
+    # tree they have. Identical to the "succeeds" test above -- HEAD moves
+    # on with an unrelated committed change -- except the bound test file
+    # `t` also has an UNCOMMITTED edit sitting in the working tree at the
+    # moment this runs. `changed_paths_between(anchor..HEAD)` alone would
+    # see nothing (the edit was never committed); the fix
+    # (`dirty_or_untracked_paths`, unioned in by `main()`) must still catch
+    # it and refuse the promotion.
+    requirements = {"01::FR-01.01": _node("FR-01.01")}
+    row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"
+    project = _write_project(tmp_path, requirements, spec_rows=row)
+    anchor_sha = _git(project, "rev-parse", "HEAD").strip()
+
+    (project / "unrelated.txt").write_text("x", encoding="utf-8")
+    _git(project, "add", "-A")
+    _git(project, "commit", "-q", "-m", "unrelated change")
+
+    (project / "t").write_text("weakened, but never committed", encoding="utf-8")
+
+    _mock_anchor_and_evidence(
+        monkeypatch, anchor_status="found", anchor_commit=anchor_sha, anchor_depth=1,
+        anchor_requirements=requirements,
+    )
+
+    rc = mod.main(["--project-root", str(project), "--run-id", "iterate-2026-09-10-p34c-test"])
+    assert rc == 0
+
+    spec = (project / _SPEC_RELPATH).read_text(encoding="utf-8")
+    assert "(inferred)" in spec  # never promoted
+
+    ledger = load_ledger(ledger_path(project))
+    assert "FR-01.01" not in ledger["decisions"]
+
+
 def test_anchor_promotion_is_refused_when_a_bound_test_file_changed_since_the_anchor(tmp_path, monkeypatch):
     requirements = {"01::FR-01.01": _node("FR-01.01")}
     row = "| FR-01.01 | Adopted | x | Must | Does a thing. | code | unit (inferred) |"

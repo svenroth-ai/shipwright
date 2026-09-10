@@ -108,6 +108,7 @@ from lib.manifest_at_commit import (  # noqa: E402
 from lib.promotion_evidence_staleness import (  # noqa: E402
     REASON_EVIDENCE_STALE_SINCE_ANCHOR,
     changed_paths_between,
+    dirty_or_untracked_paths,
     evidence_stale_since_anchor,
 )
 from tools.verifiers._layer_coverage_core import collision_display_ids  # noqa: E402
@@ -588,12 +589,24 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 if anchor_evidence.status == "confirmed":
                     found_changed_paths = changed_paths_between(anchor.commit, sha, project_root=project_root)
+                    # Tier-3 PR review (blocking): this tool is never invoked
+                    # from CI -- a human-operated CLI, run against whatever
+                    # working tree the operator happens to have. The commit
+                    # diff above cannot see an uncommitted/untracked edit to
+                    # a bound test file, so union in everything dirty right
+                    # now too (same fail-closed contract, same "widen, never
+                    # narrow" direction -- see `dirty_or_untracked_paths`'s
+                    # own docstring).
+                    if found_changed_paths is not None:
+                        dirty = dirty_or_untracked_paths(project_root=project_root)
+                        found_changed_paths = None if dirty is None else found_changed_paths | dirty
                     if found_changed_paths is not None:
                         evidence = anchor_evidence
                         anchor_commit = anchor.commit
                         anchor_manifest = found_anchor_manifest
                         changed_paths = found_changed_paths
-                    # else: could not diff anchor..HEAD -- degrade, same as above.
+                    # else: could not diff anchor..HEAD (or read working-tree
+                    # dirty state) -- degrade, same as above.
                 # anchor_evidence.status in ("error", "unavailable") -> `evidence`
                 # stays the original tip "unavailable"; nothing to anchor to
                 # after all. Both degrade the same way (Stage-3 doubt review,

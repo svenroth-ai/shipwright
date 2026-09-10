@@ -844,6 +844,13 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/lib/promotion_evidence_staleness.py",
+      "limit": 300,
+      "current": 309,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md"
+    },
+    {
       "path": "shared/scripts/lib/review_record_schema.py",
       "limit": 300,
       "current": 313,
@@ -972,7 +979,7 @@
     {
       "path": "shared/scripts/tools/promote_required_layers.py",
       "limit": 300,
-      "current": 689,
+      "current": 702,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md"
     },
@@ -1021,7 +1028,7 @@
     {
       "path": "shared/scripts/tools/tests/test_promote_required_layers.py",
       "limit": 300,
-      "current": 1365,
+      "current": 1401,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md"
     },
@@ -1434,7 +1441,7 @@
     {
       "path": "shared/tests/test_promotion_evidence_staleness.py",
       "limit": 300,
-      "current": 316,
+      "current": 365,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-10-p34c-promotion-anchor-guard-bloat-exception.md"
     },

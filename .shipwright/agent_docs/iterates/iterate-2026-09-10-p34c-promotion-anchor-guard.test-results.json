@@ -4,8 +4,8 @@
     "date": "2026-09-10",
     "unit": {
       "status": "passed",
-      "passed": 17863,
-      "total": 17922
+      "passed": 17870,
+      "total": 17929
     },
     "integration": {
       "status": "passed",
@@ -29,9 +29,9 @@
       "surface": "cli",
       "runner": "uv run pytest shared/scripts/tools/tests/test_promote_required_layers.py -v",
       "exit_code": 0,
-      "tests_run": 47,
-      "evidence_path": ".shipwright/runs/f0-2fa10c2c922c/f0-diagnostics/aebd86e5c93a/ac1b5c09-91d1d3c9068143bfac1dc29649e841cd.json",
-      "timestamp": "2026-09-10T19:18:28Z"
+      "tests_run": 48,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-10-p34c-promotion-anchor-guard/surface_verification.json",
+      "timestamp": "2026-09-10T20:19:31Z"
     },
     "test_completeness": {
       "status": "complete",
@@ -115,11 +115,16 @@
           "behavior": "append_decision/record_ledger_entries carry anchor_commit when given, omit it when absent",
           "disposition": "tested",
           "evidence": "shared/tests/test_layer_promotion_ledger.py, shared/tests/test_layer_promotion_apply.py (4 cases) PASSED"
+        },
+        {
+          "behavior": "An anchored promotion is refused when a bound test file has an UNCOMMITTED or untracked edit at invocation time, even though the committed anchor..HEAD diff shows nothing -- closes the Tier-3 PR review's BLOCKing finding that this tool (never invoked from CI, only run by a human operator) only ever diffed committed history",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_promotion_evidence_staleness.py::test_dirty_or_untracked_paths_reports_an_uncommitted_edit_to_a_tracked_file, ::test_dirty_or_untracked_paths_reports_a_staged_edit, ::test_dirty_or_untracked_paths_reports_a_new_untracked_test_file, ::test_dirty_or_untracked_paths_empty_on_a_clean_tree, ::test_dirty_or_untracked_paths_returns_none_on_git_failure, ::test_anchor_fallback_treats_an_uncommitted_edit_to_a_bound_test_as_invalidating, and end-to-end via shared/scripts/tools/tests/test_promote_required_layers.py::test_anchor_promotion_is_refused_when_a_bound_test_file_is_dirty_but_uncommitted PASSED"
         }
       ],
       "counts": {
-        "testable": 16,
-        "tested": 16,
+        "testable": 17,
+        "tested": 17,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -130,14 +135,14 @@
     }
   },
   "coverage": {
-    "total": 87.86,
+    "total": 87.85,
     "measured_tier": "repo",
     "source": "combined coverage.xml (all plugins + shared + integration)",
-    "measured_at": "2026-09-10T19:18:28Z"
+    "measured_at": "2026-09-10T20:19:17Z"
   },
   "source_state": {
     "run_id": "iterate-2026-09-10-p34c-promotion-anchor-guard",
-    "commit": "ba15091766e72f3452b09a6dadf5004122a67b1f",
+    "commit": "0f354c1330cc0c76c9a68fe5e276e67d784989bc",
     "dirty": true,
     "base": null,
     "release": null

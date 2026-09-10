@@ -119,6 +119,45 @@ def changed_paths_between(
     return {line.strip() for line in result.stdout.splitlines() if line.strip()}
 
 
+def dirty_or_untracked_paths(*, project_root: Path | str) -> set[str] | None:
+    """Every repo-relative path with content differing from committed
+    ``HEAD`` right now — staged, unstaged, or untracked — via ``git status
+    --porcelain``. ``None`` on any git failure, matching
+    :func:`changed_paths_between`'s own fail-closed contract.
+
+    Exists because this tool is never invoked from CI (Tier-3 PR review,
+    blocking) — a human-operated CLI, so an uncommitted/untracked edit to a
+    bound test file is invisible to :func:`changed_paths_between`'s
+    commit-only diff, and the promotion this guard protects writes a
+    durable ledger entry CI later trusts without re-checking evidence. The
+    caller unions this into the committed diff before
+    :func:`evidence_stale_since_anchor` — widen, never narrow, reusing that
+    function's own logic rather than a parallel check."""
+    try:
+        result = subprocess.run(  # nosec B603,B607 - fixed argv, shell=False
+            [
+                "git", "-C", str(project_root), "status", "--porcelain=v1",
+                "--no-renames", "--untracked-files=all",
+            ],
+            capture_output=True, text=True, timeout=_GIT_TIMEOUT_SECONDS,
+            encoding="utf-8", errors="replace", check=False, shell=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    paths: set[str] = set()
+    for line in result.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        path = line[3:].strip()
+        if path.startswith('"') and path.endswith('"') and len(path) >= 2:
+            path = path[1:-1]
+        if path:
+            paths.add(path)
+    return paths
+
+
 def _looks_like_test_path(path: str) -> bool:
     """Whether ``path`` is shaped like a Python test file by this repo's own
     convention (``tests/`` directories collected by pytest; ``test_*.py``/
@@ -261,6 +300,7 @@ __all__ = [
     "REASON_EVIDENCE_STALE_SINCE_ANCHOR",
     "bound_test_files",
     "changed_paths_between",
+    "dirty_or_untracked_paths",
     "evidence_stale_since_anchor",
 ]
 
