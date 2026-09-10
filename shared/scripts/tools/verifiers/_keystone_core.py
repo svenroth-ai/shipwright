@@ -87,6 +87,16 @@ def evaluate_keystone(change_set, head_manifest: dict, base_manifest: dict) -> K
     ``change_set`` is a ``_keystone_ac_digest.AcChangeSet``; it is duck-typed
     here (attribute access only) so this module stays import-light and testable
     with a simple stub.
+
+    ``change_set.new_frs_without_criteria`` is assumed ALREADY suppressed for
+    everything except the reader-divergence exclusion this function re-applies
+    below (Stage-3 doubt review, second pass, low; found during build): a
+    caller populating it directly must ALSO withhold an FR whose new criteria
+    are unminted (``unminted_changed`` already covers it under a different
+    key) and withhold the whole arm when no spec text was read at all
+    (``_keystone_divergence.resolve_new_frs_without_criteria``'s own two
+    suppressions) -- this evaluator does not, and cannot, re-derive either
+    from the change set alone.
     """
     verdict = KeystoneVerdict(warnings=list(getattr(change_set, "warnings", []) or []))
 

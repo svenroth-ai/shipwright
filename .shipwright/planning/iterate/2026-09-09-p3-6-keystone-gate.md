@@ -988,7 +988,16 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   create a PR with no commits. Not fixed here because the alternative — exiting 0 on "I could not
   tell" — is precisely the fail-open this design refuses, and because `_merge_base` is shared with
   the P3.3/P3.5 gates and is not p3.6's to re-shape. Local reproduction takes an explicit
-  `--base-sha`, which the flag exists for.
+  `--base-sha`, which the flag exists for. **The bullet above covers only a full-SHA
+  `--head-sha` (Stage-3 doubt review, second pass, low).** `_merge_base`'s self-base rejection is a
+  STRING comparison (`mb.strip() != commit`) against whatever was passed, so a SYMBOLIC `--head-sha`
+  (e.g. `HEAD`, invoked at a commit that is its own merge-base) does not trip it: `base_sha` resolves
+  to the commit's own full SHA, which is unequal to the literal string `"HEAD"`, so the guard passes
+  and both sides read the SAME commit — a **silent false green** (`status: clean`, empty change set),
+  the opposite of this bullet's documented exit 2. `github.sha` in CI is always a full SHA, so this
+  is unreachable there; a person reproducing a verdict by hand with `--head-sha HEAD` is the exposed
+  case, and this bullet — read alone — would mislead them into trusting the false green as evidence
+  of nothing having tripped the merge-base guard.
 - **Retiring a requirement *while* editing its criterion reports `binding_removed`, whose remedy is
   then unactionable** (external code review, glm low). `_links_for` counts ACTIVE nodes only — a
   deliberate fail-closed fix in its own right — so flipping `status` to `retired` in the same PR
@@ -996,10 +1005,11 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   still exists. The outcome **blocks**, so nothing is let through; only the message misroutes, and
   a reviewer reading the JSON sees the retirement in the same diff. Not fixed because the fix costs
   a fourth reason code and a fourth arm, for a flow this repo has never performed — a cost
-  independent of `_keystone_core.py`'s current line count (239 after the Stage-2 code-review fix
-  named the reduction's missing link ids, §12.1i finding 6; no longer at the 300-line limit that
-  was the stated reason when this was first written). Recorded so that the first real occurrence
-  is a two-line follow-up rather than a mystery.
+  independent of `_keystone_core.py`'s current line count (249 after the Stage-3 doubt review's
+  second pass added the arm-2 suppression contract to `evaluate_keystone`'s docstring; 239 after the
+  earlier Stage-2 code-review fix named the reduction's missing link ids, §12.1i finding 6; no longer
+  at the 300-line limit that was the stated reason when this was first written). Recorded so that the
+  first real occurrence is a two-line follow-up rather than a mystery.
 - **The `failed` HARD arm is practically unreachable from `ci.yml` itself, only from the unit-test
   fixtures that exercise the pure evaluator directly** (Stage-3 doubt review, informational).
   `ci.yml`'s test steps run under `set -e`: a real test
@@ -1027,6 +1037,36 @@ and is not evidence of a defect; the *false-red* count is the number that matter
   same "one vocabulary: LINK COUNTS" scope §5.3's tables already commit this gate to, and the
   identity-level question ("does this test still cover what it claims to") is p3.7(b)'s orphan
   detector's, not a count-based structural check's.
+- **The base-side digest maps are protected from a second-spec-path collision only TRANSITIVELY, by
+  the head-side guard, not by a guard of their own** (Stage-3 doubt review, second pass, low).
+  `head_minted_from`/`head_fr_digest_from` raise `ReadError` if a second spec path re-claims an
+  already-minted `(fr_id, ac_id)` or FR id at HEAD; `base_minted`/`base_fr_digests` have no
+  equivalent and are plain last-write-wins across `sorted(spec_paths)`. The only reason this cannot
+  produce a false-clean base-digest overwrite **inside a gated PR** is that the HEAD guard forbids
+  that base state from ever being *created* by one — but `pull_request`-only gating (the bullet
+  above naming a direct push as ungated) means that invariant does not hold for history in general.
+  A base commit reached via an ungated push, or predating this gate, could already carry the
+  collision; a later, properly-gated PR editing one of the two spec paths would then read a
+  poisoned `base_minted`/`base_fr_digests`, silently erasing a `changed` verdict from the base side
+  — the same erasure §12.1g's Doubt 2 closed on the head side. Not fixed: doing so symmetrically
+  (keep-first + a warning, since base leniency must survive, never `ReadError`) is real work for a
+  hazard that is dormant today — every requirement in this repo names exactly one `spec_path` — and
+  is recorded here so it is not treated as ruled out. If a second `spec_path` is ever introduced,
+  this bullet is the reason to add the base-side guard before, not after.
+- **The spec-side git read has no regular-file/mode check, unlike its sibling reader for the base
+  manifest** (Stage-3 doubt review, second pass, low). `read_base_manifest` routes through
+  `git_blob_read.read_committed_text`, built specifically because a type-only check would hand a
+  symlink's or a tree's content to the caller as if it were file text. `spec_text_at` (this PR's own
+  primary input) performs `git cat-file -e` + `git show` with no such check: a `spec_path` that
+  resolves to a symlink or a tree at either commit reads as that link's target string or a tree
+  listing, not as absent (`""`) or unreadable (`None`) — so `spec_text_was_read` reads True on
+  content that was never real spec text, with no warning. Every minted AC on that side would then
+  read as `removed` (report-only), never `changed`, at exit 0. Not introduced by this PR — the
+  reader predates it — but this PR is what promotes it from an advisory FR-digest input to a
+  blocking merge gate's primary one, without picking the safer, already-proven-in-repo reader for
+  the input that now matters more. Not fixed: no `spec_path` in this repo has ever named a symlink
+  or a directory, and routing through `read_committed_text` here is a larger change than this
+  disclosure, deferred rather than folded into an already-long review chain.
 
 ---
 
@@ -1649,6 +1689,37 @@ Findings 1 and 2 were left exactly as the reviewer itself framed them — a card
 respectively — rather than reopening a fix chain that has already run to three consecutive
 single-issue rounds on this same area. Findings 3-6 were cheap, text-only or naming-only changes with
 no risk of introducing a new divergence, so all four were fixed in this same pass.
+
+### 12.1r Stage-3 doubt review, second pass (after Stage 1 round 21 and Stage 2's fourth pass, both clean)
+
+With Stage 1 (21 rounds) and Stage 2 (4 passes) both converged and clean, and substantial new logic
+landed since the only prior doubt pass (§12.1g — the `spec_text_was_read` suppression mechanism, its
+warning, and the `_keystone_divergence` module), a second Stage-3 doubt review was run to check for
+hidden coupling and boundary-contract gaps neither review stage is positioned to find. It found **4
+low doubts, 0 high/medium** — the first doubt pass had found one high and one medium; this one found
+nothing above low, which is itself informative after 21+4 rounds of scrutiny on the same code.
+
+| # | Severity | Doubt | Disposition |
+|---|---|---|---|
+| 1 | low | The base-side digest maps (`base_minted`, `base_fr_digests`) have no collision guard of their own — the head-side guard (§12.1g Doubt 2's fix) protects them only TRANSITIVELY, by forbidding a gated PR from creating the colliding base state, an invariant that does not hold for an ungated push or pre-gate history. | **Disclosed, not fixed.** New §7 bullet: dormant today (one `spec_path` per requirement, repo-wide), and a symmetric guard is real work for a hazard that requires a second `spec_path` to exist at all. Recorded as the reason to add the guard if that ever changes, not ruled out. |
+| 2 | low | `spec_text_at` (this PR's primary git-read input) has no regular-file/mode check, unlike its sibling `git_blob_read.read_committed_text` (used for the base manifest) — a `spec_path` resolving to a symlink or tree would read as that link's target/listing rather than as absent or unreadable. Pre-existing, but this PR promotes the weaker reader to a blocking gate's primary input. | **Disclosed, not fixed.** New §7 bullet: no `spec_path` in this repo has ever named anything but a regular file; routing through the safer reader is a larger change than warranted this late in an already-long review chain. |
+| 3 | low | §7's existing "invoked locally at its own merge-base" bullet covers only a full-SHA `--head-sha`; a SYMBOLIC one (e.g. `HEAD`) bypasses `_merge_base`'s string-comparison self-base guard, producing a silent false green (not the documented exit 2) for the most natural local-reproduction command. `github.sha` in CI is always a full SHA, so CI is unaffected. | **Fixed via disclosure.** The existing §7 bullet extended in place to state the symbolic-ref case and its opposite failure mode, so the bullet is no longer partial. |
+| 4 | low | `evaluate_keystone`'s docstring advertised the evaluator as a clean, stub-testable seam without stating that it only re-applies ONE of arm 2's three suppressions (the reader-divergence exclusion) — a second `AcChangeSet` producer (an F11 adapter, a test stub) populating `new_frs_without_criteria` directly would silently inherit none of the other two, reproducing exactly the false-HARD-block class this cascade spent rounds 12-21 closing. | **Fixed.** One paragraph added to the docstring stating the contract explicitly: the two OTHER suppressions live in `_keystone_divergence.resolve_new_frs_without_criteria` and are NOT re-derived here. |
+
+Four specific angles the reviewer was asked to attack came back clean, and are worth recording since a
+negative result is real evidence here, not merely an absence of positive findings: the two arm-call
+ordering dependency degrades gracefully rather than silently (`_keystone_core` independently
+re-suppresses diverged FRs; `unminted_changed` is fully built before either arm call runs); the reader-
+divergence arm needs no "was text read" guard of its own, since an empty spec text makes its loop a
+provable no-op; the already-carded finding `trg-6769326b` has no worse variant (one correction to its
+rationale only, not its disposition); and the `""`/`None` three-way contract is respected at every
+downstream call site, with the one imprecise case (empty-but-present conflated with absent) landing on
+the conservative side, never a false verdict.
+
+`_keystone_core.py`'s line-count citation in §7 (retirement-while-editing bullet) was updated from 239
+to 249 to reflect this pass's docstring addition — the fourth time a line-count citation in this
+document has needed a same-pass correction, and the first time it was corrected in the SAME commit
+that caused it rather than discovered by a later review round.
 
 ### 12.2 Self-Review (Step 3.6, against the BUILD)
 
