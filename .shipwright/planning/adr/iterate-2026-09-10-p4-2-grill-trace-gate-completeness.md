@@ -245,3 +245,39 @@ new tests in `shared/tests/test_grill_trace_fr_coverage.py`,
 `shared/tests/test_verify_grill_trace_completeness_integration.py`, and
 `plugins/shipwright-run/tests/test_phase_validators_project.py`; doc update
 in `shared/grill-trace-format.md` §5.
+
+## Round 5 — PR #705 Tier-3 review, second pass — doc-drift fix (P4.2, this round)
+
+The required Tier-3 PR reviewer posted another fresh BLOCK verdict. This time
+the finding was purely prose: Round 4's severity fix
+(`check_fr_trace_coverage()` → `Severity.WARNING`) was correct and left
+untouched, but `plugins/shipwright-project/skills/project/references/step-8-completion.md`'s
+own item-7 prose was never updated to match — it still described a
+non-zero exit (including the `fr_trace_coverage` case) as uniformly
+blocking ("**This BLOCKS phase completion... not advisory**", "Do not
+attempt to mark the project phase complete while this gate is red"),
+contradicting the code it describes.
+
+**Fix (documentation only, no severity/logic change):** reworded
+`step-8-completion.md` item 7 to split the gate's checks into two
+explicit severity buckets — **ERROR** (`grill_trace_coverage`, the four
+closed-vocabulary STOPs, `glossary_source_available`,
+`glossary_delta_declared`, `malformed_trace`, `malformed_context`; these
+genuinely block `update-step`) and **WARNING** (`fr_trace_coverage` alone;
+visible in every report, routed to an `inform`-level note, does not block).
+Checked `SKILL.md` (lines ~225-239, the same sensitive-path bundle the
+reviewer cited): it never names `fr_trace_coverage` at all and its
+blocking-conditions list only enumerates the four STOPs plus
+`grill_trace_coverage`, so no stale wording was present there — no edit
+needed. Verified `shared/grill-trace-format.md` §5 (updated in Round 4)
+is already accurate and consistent with the corrected `step-8-completion.md`
+wording — no duplicate edit made. No test asserts on this doc's prose (only
+`test_skill_references_link.py`, which checks the reference link resolves,
+not its content) — none added for a pure prose fix, per the sub-iterate's
+own instruction.
+
+**Verification:** `uvx ruff@0.15.15 check .` clean; `shared/tests` (10329
+passed, 32 skipped, 0 failed), `plugins/shipwright-project/tests` (64
+passed), `plugins/shipwright-run/tests` (564 passed) all green; F11
+(`verify_iterate_finalization.py`) and `scripts/verify_local.py` run before
+push.
