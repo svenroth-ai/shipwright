@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-p3-8-rewritability-advisory",
+  "date": "2026-09-11",
+  "section": "Iterate - feature: M7 rewritability-advisory (campaign req3-04c-ac-identity-wave2, sub-iterate p3.8)",
+  "title": "Advisory FR-rationale-link check via a run_id proxy, never a hard gate",
+  "context": "M7's spec status was prose rule, unclear if real -- verify, do not assume. Verified first: neither decision_drop.schema.json nor requirement_model.py carries any field linking an FR id to a decision-drop/ADR in either direction. That absence is itself the M7 finding, not a gap to close with a new schema field (out of scope for an advisory check; campaign D7 rules out an LLM/judgement substitute).",
+  "decision": "Classify each FR as linked/unlinked/could_not_determine via the nearest real mechanical signal: a work_completed event naming the FR carries a run_id (adr_id), and that same run_id appearing on a decision-drop or aggregated decision_log.md ADR counts as linked. New shared/scripts/lib/rewritability_links.py does the classification; new Group I check I9 renders it, unconditionally advisory (pass, never fail).",
+  "consequences": "Reader-visible rendering states the proxy nature explicitly (co-occurring rationale, not a verified per-requirement link) so it is not mistaken for a stronger claim. Three outcomes, never two: no recorded change is could_not_determine, never silently folded into unlinked. Known gaps: run-level not FR-level proxy; Run-ID bullet only exists on ADRs from 2026-05-16 on; a direct FR-ADR schema field is deferred, named not built.",
+  "rationale": "",
+  "rejected": "A direct FR-ADR schema field change (real producer/consumer ripple, out of scope for an advisory measurement sub-iterate). An LLM/judgement-based link verifier (campaign D7 rules this out for a mechanical detective check). Promoting M7 to a hard gate (explicitly against the design spec's own instruction that M7 stays advisory).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-10-p3-8-rewritability-advisory.md"
+}
