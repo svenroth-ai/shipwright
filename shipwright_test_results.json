@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
-    "date": "2026-09-07",
+    "run_id": "iterate-2026-09-11-pr-review-evidence-filter-gap",
+    "date": "2026-09-11",
     "unit": {
       "status": "passed",
-      "passed": 17569,
-      "total": 17627
+      "passed": 18039,
+      "total": 18098
     },
     "integration": {
       "status": "passed",
-      "passed": 530,
-      "total": 530
+      "passed": 534,
+      "total": 534
     },
     "pgtap": {
       "status": "not_run"
@@ -29,81 +29,61 @@
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "monorepo tooling change (a new AC-provenance backfill script + its own tests); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0)."
+      "justification": "Pure library-logic change (path classifier regexes) verified by the plugin's own unit test suite, 1028 passed; not a running app surface -- no UI/API/CLI entry point of its own, consumed only by a GitHub Actions workflow step."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "footnote-slug uniqueness is computed DOCUMENT-WIDE, not per-FR, so a slug repeating across FRs is dropped everywhere",
+          "behavior": "is_generated_path hides the closed 3-name reply family (spec/code/doubt_review_reply.json), anchored to exactly one run-directory segment",
           "disposition": "tested",
-          "evidence": "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_drops_a_slug_unique_per_fr_but_reused_across_frs PASSED"
+          "evidence": "test_pr_review_evidence_filter_gap.py::test_review_reply_and_external_raw_siblings_are_excluded, ::test_reply_and_external_hiding_requires_a_run_directory_segment PASSED"
         },
         {
-          "behavior": "a slug unique within one FR and absent elsewhere is kept",
+          "behavior": "is_generated_path hides external-*review*.json/.md siblings under the same run-directory anchoring, including .md raw transcripts",
           "disposition": "tested",
-          "evidence": "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_keeps_a_slug_unique_within_a_single_fr_and_absent_elsewhere PASSED"
+          "evidence": "test_pr_review_evidence_filter_gap.py::test_raw_review_transcripts_in_markdown_are_also_excluded PASSED"
         },
         {
-          "behavior": "a file claimed by two different (fr_id, ac_id) pairs is dropped from both, never arbitrarily resolved",
+          "behavior": "self-review-payload.json is excluded from BOTH is_generated_path and is_safe_to_skip_review (payload sent TO a review, not a transcript OF one)",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_backfill_ac_provenance_cli.py::test_a_file_claimed_by_two_different_acs_is_dropped_from_both PASSED"
+          "evidence": "test_pr_review_evidence_filter_gap.py::test_self_review_payload_stays_reviewable, test_pr_review_generated_skip_review.py::test_self_review_payload_is_NOT_safe_to_skip PASSED"
         },
         {
-          "behavior": "an untagged test gets a new AC-scoped covers() tag inserted",
+          "behavior": "is_safe_to_skip_review matches ONLY reviews.json, anchored to one run-directory segment, case-sensitively",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_inserts_a_new_ac_scoped_tag_on_an_untagged_test PASSED"
+          "evidence": "test_pr_review_generated_skip_review.py::test_review_evidence_files_stay_safe_to_skip, ::test_a_mixed_case_basename_borrows_neither_hide_nor_skip PASSED"
         },
         {
-          "behavior": "an existing bare FR-only covers() tag is widened to the derived AC, and only the real decorator line changes (never a lookalike string in a docstring/comment/assertion)",
+          "behavior": "the reply family and external family are hidden from the model but never skip-safe -- a PR touching only one still gets a real review call",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_apply_skips.py::test_apply_upgrades_only_rewrites_the_real_decorator_never_lookalike_text PASSED"
+          "evidence": "test_pr_review_generated_skip_review.py::test_review_evidence_siblings_are_hidden_but_NOT_safe_to_skip PASSED"
         },
         {
-          "behavior": "a test already tagged for a different FR is never touched",
+          "behavior": "an attacker-chosen filename (evil_reply.json, external-my-own-review-of-this.json) is never skip-safe, and a reply-shaped attacker name is not even hidden",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_never_touches_a_test_already_tagged_for_something_else PASSED"
+          "evidence": "test_pr_review_generated_skip_review.py::test_an_attacker_chosen_reply_or_external_name_is_NOT_safe_to_skip, ::test_an_attacker_chosen_reply_name_is_not_even_hidden_after_round_2 PASSED"
         },
         {
-          "behavior": "re-running the write pass against its own output is a no-op (idempotent, no duplicate tags)",
+          "behavior": "lookalike/boundary paths (.bak suffix, bare-top-level, over-nested for both reply and external families) are rejected by the anchored regexes",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_is_idempotent_on_rerun PASSED"
+          "evidence": "test_pr_review_generated_skip_review.py::test_a_lookalike_suffix_does_not_borrow_the_closed_match, ::test_review_evidence_skip_is_anchored_to_exactly_one_run_segment PASSED"
         },
         {
-          "behavior": "a post-write orphan tag (resolves to no minted AC) rolls back every file this run touched, byte-for-byte, before a non-zero exit",
+          "behavior": "pre-existing legacy review-evidence shape, agent-doc exclusions, and canonical-basename anchoring are unchanged -- no regression",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_main_rolls_back_every_touched_file_when_an_orphan_tag_is_written PASSED"
-        },
-        {
-          "behavior": "the git join (Run-ID trailer -> commit -> added test files) resolves against a real repo, including the exact-trailer-line match that rejects a prefix-slug false-positive",
-          "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli_git.py::test_commits_for_run_id_does_not_cross_match_a_prefix_slug PASSED"
-        },
-        {
-          "behavior": "derive()/main() end-to-end against a real 2-commit repo produces the exact candidate/no_commit_found/no_added_test_file_in_commit status split",
-          "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli_git.py::test_derive_end_to_end_against_a_real_repo PASSED"
-        },
-        {
-          "behavior": "a shallow clone is refused rather than silently under-reporting history",
-          "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli_git.py::test_main_refuses_a_shallow_clone PASSED"
-        },
-        {
-          "behavior": "a candidate file that is non-Python, absent at HEAD, or unreadable (invalid UTF-8) is skipped with a named reason, never silently dropped or crashed on",
-          "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_apply_skips.py::test_apply_upgrades_skips_a_non_python_candidate_file, ..._skips_a_file_absent_at_head, ..._skips_an_unreadable_file ALL PASSED"
+          "evidence": "plugins/shipwright-security/tests/ full suite 1028 passed, 7 skipped (all pre-existing test_pr_review_filter.py / test_pr_review_generated_skip_review.py assertions unchanged)"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   },
@@ -114,8 +94,8 @@
     "measured_at": "2026-09-02T15:32:00Z"
   },
   "source_state": {
-    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
-    "commit": "263c9197e6428134ad4e97c55384bf5dad89cbc1",
+    "run_id": "iterate-2026-09-11-pr-review-evidence-filter-gap",
+    "commit": "3afa0051f704f36d1d0771e15091bb8e92b24af2",
     "dirty": true,
     "base": null,
     "release": null

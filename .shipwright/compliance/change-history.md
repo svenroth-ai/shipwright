@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-09-10T07:37:15.967899+00:00
-Source-State: run=iterate-2026-09-10-p4-2-grill-trace-gate base=4a37d59474dc
-Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
-Total commits: 1485
+Generated: 2026-09-11T14:12:07.704292+00:00
+Source-State: run=iterate-2026-09-11-pr-review-evidence-filter-gap
+Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
+Total commits: 1503
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 509
-    "feat" : 400
-    "chore" : 265
-    "docs" : 156
-    "refactor" : 89
-    "test" : 37
+    "fix" : 515
+    "feat" : 402
+    "chore" : 269
+    "docs" : 159
+    "refactor" : 90
+    "test" : 39
     "ci" : 18
     "other" : 9
     "perf" : 1
@@ -23,10 +23,16 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 509 commits
+### Fixes (fix) — 515 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-11 | triage | local status always outranks a foreign status in read_all_items (#724) | 8492d65b5946 |
+| 2026-09-11 | compliance | widen P3.7 feeder (a) AC ratchet gate to run on push (#723) | 7c53a46b20ec |
+| 2026-09-11 | compliance | one-time rollout transition rule for check_binding_completeness (#721) | c6bf0805c7dc |
+| 2026-09-11 | security | post success, not fail-closed, on all-generated PR-review gate (#712) | 58393a4e768c |
+| 2026-09-10 | iterate | warn on individually-unread spec paths in keystone AC gate (#713) | 67c6436b1d81 |
+| 2026-09-10 | security | close keystone gate verifier sensitive-path parity gap (#715) | c9db09c192a9 |
 | 2026-09-10 | project | address external review findings on grill-trace gate (P4.2) (#705) | 4a37d59474dc |
 | 2026-09-10 | adopt | backfill phase_tasks[] into already-adopted configs (P4.04 s2b) (#701) | 05b79bb3ddc9 |
 | 2026-09-09 | main | update PR-review canary literal for the new backtick-wrapped render shape (#698) | 40d1e8ce30ff |
@@ -537,10 +543,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 400 commits
+### Features (feat) — 402 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-10 | compliance | keystone AC gate's post-merge detective arm (ruling Q5) (#716) | ef8e0357ddd2 |
+| 2026-09-10 | compliance | P3.7 feeder AC-binding gates (ratchet + orphan-binding hard check) (#711) | 3da41105c489 |
 | 2026-09-10 | compliance | keystone AC gate — a changed criterion must have re-run its tests green (P3.6) (#702) | 7d57df67c184 |
 | 2026-09-10 | run | retarget v1 update_step onto phase_tasks[], drop write-once fields (#706) | 9c445b7f85ce |
 | 2026-09-10 | project | write CONTEXT.md domain glossary as terms are sharpened (P4.1) (#699) | c80ef34047dd |
@@ -942,10 +950,14 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 265 commits
+### Chores (chore) — 269 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-11 | triage | sweep 8 outbox append(s) into branch | 3afa0051f704 |
+| 2026-09-11 | triage | resolve trg-aedcfe7b (binding-completeness rollout transition) | 3a162d3e3364 |
+| 2026-09-11 | iterate | re-measure the REQ-3 AC-evidence ledger and make 7 lines explicit (#719) | 4a977c53f5fd |
+| 2026-09-10 | compliance | refresh evidence documents as of 4a37d59474dc (#707) | ac0b998c722f |
 | 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
 | 2026-09-01 | release | v0.33.1 (#667) | 77d10de1c32a |
 | 2026-08-29 | docs | sync guide.md with grade plugin, compliance groups A-I, traceability tagging (#663) | 31517fe72604 |
@@ -1212,10 +1224,13 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 156 commits
+### Documentation (docs) — 159 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-11 | iterate | survey FR-01.NN test seams for the req3-05 backfill campaign (t0) (#720) | 8aa946525121 |
+| 2026-09-10 | — | document npx bootstrapper as the recommended plugins+WebUI install path (#714) | 35b9a643d822 |
+| 2026-09-10 | triage | file three deferred follow-up cards from PR #702 (P3.6) (#708) | 8f78b93be251 |
 | 2026-08-10 | — | remove expired refactoring-churn warning from README (#626) | 005f7bfe5843 |
 | 2026-08-09 | — | add threshold-based guide to keeping token cost controllable (#621) | 58cda771438f |
 | 2026-08-08 | — | track Codex operating policy (#612) | fd457249d575 |
@@ -1373,10 +1388,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 89 commits
+### Refactoring (refactor) — 90 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-10 | iterate | anchor Layers-promotion to the newest verified ancestor (P3.4c) (#717) | b77f42a62efe |
 | 2026-09-09 | compliance | strip minted [ACnn] marker at lib.fr_criteria's own seam (#695) | 57373430ad09 |
 | 2026-08-31 | security | swap Tier-3 PR-review gate to DeepSeek with reused ZDR routing (#666) | c50bdd7fecd5 |
 | 2026-08-27 | discovery | S2b pass C -- explicit finding, include_iterate convergence, posix separators (#660) | 396067c331f7 |
@@ -1467,10 +1483,12 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 37 commits
+### Tests (test) — 39 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-10 | requirement-elicitation | drift-pin Sec.0/Sec.4/Sec.5 rules (P4.4) (#710) | 15929f80801b |
+| 2026-09-10 | elicitation | discover requirement-elicitation citing docs dynamically (P4.3) (#709) | 439ab768fbbc |
 | 2026-08-26 | compliance | pin fr_criteria.py parsing widenings, fix table description exemption (#650) | ec777034800c |
 | 2026-08-10 | shared | normalize Windows worktree path aliases (#628) | 5243930c7299 |
 | 2026-08-09 | security | cover review_record_tier CLI path and needs-review label (#624) | e425fb14795f |
@@ -1562,7 +1580,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1485 |
+| Total commits | 1503 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1485 |
+| Human-authored commits | 1503 |
 

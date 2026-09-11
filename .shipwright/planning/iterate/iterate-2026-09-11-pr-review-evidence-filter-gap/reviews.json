@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-pr-review-evidence-filter-gap",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T13:24:21.184919+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach ·",
+          "file": null,
+          "line": null,
+          "finding": "Mini-plan step 3 (and \"Files to create/modify\") still describes the original widening — \"`[^/]_reply\\.json`\", widening `_REVIEW_EVIDENCE_RE` — while steps 7–10 describe the later closed-set/anchored design. Step 3 was never retro-updated, so the plan contains contradictory regex descriptions if read linearly.",
+          "suggestion": "Rewrite step 3 to state the final shape (legacy piece + `_REVIEW_EVIDENCE_RE_RUN_ANCHORED` + `_REVIEW_EVIDENCE_SKIP_RE`, exact three-name reply set), or mark it explicitly superseded by steps 7–10. The ACs in the spec are already correct; only the mini-plan lags.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security ·",
+          "file": null,
+          "line": null,
+          "finding": "The hide-side `external-[^/]review[^/]` wildcard remains attacker-creatable: a malicious PR could add `.shipwright/planning/iterate/<run>/external-my-review.json` containing reviewer-verdict text and have it hidden from the reviewer's view, suppressing visibility (though not skipping the gate). This is disclosed and matches AC1's explicit decision, so it's accepted — but the disclosure should note it in AC1 text directly, which it does. No action strictly needed.",
+          "suggestion": "Optionally require `external-` filenames to also not match `SHIPWRIGHT_VERDICT`-bearing content — but that's the deferred content/provenance redesign; agree it's out of scope here.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case ·",
+          "file": null,
+          "line": null,
+          "finding": "The closed reply set `{spec,code,doubt}_review_reply.json` is closed against this repo's history. If a future iterate introduces a fourth review stage (e.g. `security_review_reply.json`), its transcript will silently not be hidden and will re-trigger the exact PR #722 BLOCK loop. The run-anchoring tests won't catch this — it fails only in production.",
+          "suggestion": "Add a comment in `pr_review_generated.py` instructing that any new reply stage must extend both the hide-side and skip-side sets; consider a cheap canary test enumerating the producers (grep for `_reply.json` writers in the test suite) so adding a stage without updating the set fails loudly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk ·",
+          "file": null,
+          "line": null,
+          "finding": "AC3 relies on the full 1000+ suite passing, but the pre-existing unanchored legacy branch (`reviews.json` hide-side, `[^/]-external-...` hide-side) is deliberately left loose (Internal Plan Review decline). This is consistent and hide-only, so risk is contained — noted only for completeness.",
+          "suggestion": "None; the \"Round 2\" comment block guarding against a future merge of the loose and anchored pieces adequately mitigates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "AC2 expands the required-check bypass to three new path-only signals: `{spec,code,doubt}_review_reply.json`. Exact basenames are not provenance. A contributor who can add files under `.shipwright/planning/iterate/<chosen-run>/` can create one of these names and cause `is_safe_to_skip_review` to return true without a model review. The plan itself acknowledges that run directory names and artifact naming are not tool-enforced, so the claim that these shapes are safe to skip is unsupported.",
+          "suggestion": "Keep the new reply and external transcript shapes hide-only. Do not add reply files to `_REVIEW_EVIDENCE_SKIP_RE` unless the gate can verify trusted provenance/content (for example, a signed or tool-authenticated record written by `record_review_pass.py`). This is also the materially simpler fix for the immediate circular-evidence bug.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The stated objective is to prevent reviewer-transcript text from entering the model context. Skipping the review gate for reply files is a separate behavioral change, not necessary to achieve that objective, and it creates the security concern above.",
+          "suggestion": "Narrow this iterate to `is_generated_path` plus regression tests. Preserve the existing skip behavior, including its existing `reviews.json` handling, until trusted review-evidence production is designed separately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on regex classification of diff paths but does not explicitly require validation against the actual path representation passed by `filter_generated_paths` (normalized repository-relative POSIX paths). An anchored expression could silently fail if callers pass a leading `./`, Windows separators, or an absolute path.",
+          "suggestion": "Add one integration-level unit test through `filter_generated_paths` using a realistic changed-file path, or document and assert the path-normalization contract at the classifier boundary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The open `external-[^/]review[^/]` hide pattern intentionally permits attacker-chosen names within a run directory. That is acceptable only because it is hide-only, but it can still conceal a manually authored file from the review model.",
+          "suggestion": "Keep it strictly out of every skip path, retain explicit negative tests for lookalikes and nested paths, and add a short test showing an external-shaped file still results in a review invocation when it is the only changed file.  Overall, the hide/skip split and run-directory anchoring are sound, but the proposed skip-set expansion is an unjustified new authorization boundary. Resolve that before implementation; the filter fix itself can remain small and well-contained.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "glm+openai",
+      "completed_at": "2026-09-11T13:23:39.448326+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category:** approach · **Severity:** low\n  **Finding:** Mini-plan step 3 (and \"Files to create/modify\") still describes the *original* widening — \"`[^/]*_reply\\.json`\", widening `_REVIEW_EVIDENCE_RE` — while steps 7–10 describe the later closed-set/anchored design. Step 3 was never retro-updated, so the plan contains contradictory regex descriptions if read linearly.\n  **Suggestion:** Rewrite step 3 to state the final shape (legacy piece + `_REVIEW_EVIDENCE_RE_RUN_ANCHORED` + `_REVIEW_EVIDENCE_SKIP_RE`, exact three-name reply set), or mark it explicitly superseded by steps 7–10. The ACs in the spec are already correct; only the mini-plan lags.\n\n- **Category:** security · **Severity:** low\n  **Finding:** The hide-side `external-[^/]*review[^/]*` wildcard remains attacker-creatable: a malicious PR could add `.shipwright/planning/iterate/<run>/external-my-review.json` containing reviewer-verdict text and have it hidden from the reviewer's view, suppressing visibility (though not skipping the gate). This is disclosed and matches AC1's explicit decision, so it's accepted — but the disclosure should note it in AC1 text directly, which it does. No action strictly needed.\n  **Suggestion:** Optionally require `external-` filenames to also not match `SHIPWRIGHT_VERDICT`-bearing content — but that's the deferred content/provenance redesign; agree it's out of scope here.\n\n- **Category:** edge-case · **Severity:** low\n  **Finding:** The closed reply set `{spec,code,doubt}_review_reply.json` is closed against *this repo's* history. If a future iterate introduces a fourth review stage (e.g. `security_review_reply.json`), its transcript will silently not be hidden and will re-trigger the exact PR #722 BLOCK loop. The run-anchoring tests won't catch this — it fails only in production.\n  **Suggestion:** Add a comment in `pr_review_generated.py` instructing that any new reply stage must extend both the hide-side and skip-side sets; consider a cheap […truncated]\n\n[openai] 1. **Category:** security  \n   **Severity:** high  \n   **Finding:** AC2 expands the required-check bypass to three new path-only signals: `{spec,code,doubt}_review_reply.json`. Exact basenames are not provenance. A contributor who can add files under `.shipwright/planning/iterate/<chosen-run>/` can create one of these names and cause `is_safe_to_skip_review` to return true without a model review. The plan itself acknowledges that run directory names and artifact naming are not tool-enforced, so the claim that these shapes are safe to skip is unsupported.  \n   **Suggestion:** Keep the new reply and external transcript shapes hide-only. Do not add reply files to `_REVIEW_EVIDENCE_SKIP_RE` unless the gate can verify trusted provenance/content (for example, a signed or tool-authenticated record written by `record_review_pass.py`). This is also the materially simpler fix for the immediate circular-evidence bug.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The stated objective is to prevent reviewer-transcript text from entering the model context. Skipping the review gate for reply files is a separate behavioral change, not necessary to achieve that objective, and it creates the security concern above.  \n   **Suggestion:** Narrow this iterate to `is_generated_path` plus regression tests. Preserve the existing skip behavior, including its existing `reviews.json` handling, until trusted review-evidence production is designed separately.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The plan relies on regex classification of diff paths but does not explicitly require validation against the actual path representation passed by `filter_generated_paths` (normalized repository-relative POSIX paths). An anchored expression could silently fail if callers pass a leading `./`, Windows separators, or an absolute path.  \n   **Suggestion:** Add one integration-level unit test through `filter_generated_paths` using a realistic  […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+          "line": 205,
+          "finding": "`_REVIEW_EVIDENCE_SKIP_RE` is compiled with `re.IGNORECASE` (also true of `_REVIEW_EVIDENCE_RE_RUN_ANCHORED`). This directly contradicts the pattern's own comment ('EXACT basenames, deliberately zero wildcards') and AC2's whole point after three review rounds of tightening: on a case-sensitive filesystem (the Linux GitHub Actions runner this gate runs on), an attacker-authored `.shipwright/planning/iterate/<dir>/REVIEWS.JSON` still matches and is classified skip-safe, even though the real producer only ever writes lowercase `reviews.json`. Not discussed in any of the 4 documented review rounds, not covered by any test.",
+          "suggestion": "Drop re.IGNORECASE from both patterns; add a regression test asserting a differently-cased REVIEWS.JSON / Spec_Review_Reply.JSON is neither hidden nor skip-safe.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+          "line": 247,
+          "finding": "is_safe_to_skip_review's docstring says 'in two ways' but this iterate added a third enumerated reason (item 3), so the lead-in understates its own content.",
+          "suggestion": "Update the lead-in to 'in three ways'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+          "line": 204,
+          "finding": "_REVIEW_EVIDENCE_SKIP_RE hardcodes the literal .shipwright/planning/iterate/ prefix instead of reusing the existing _REVIEW_EVIDENCE_PREFIX constant, risking silent drift between the two regexes if the prefix ever changes.",
+          "suggestion": "Build the skip regex from re.escape(_REVIEW_EVIDENCE_PREFIX).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+          "line": 68,
+          "finding": "The comment blocks largely re-narrate the round-by-round review history already preserved in the iterate spec — duplicated provenance rather than a concise statement of current behavior.",
+          "suggestion": "Optional: trim to operative invariants, let the spec carry the historical narrative.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T13:30:21.402189+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary_and_contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: is_safe_to_skip_review's review-evidence anchoring is now closed and provenance-safe end to end. — The function's _GENERATED_PREFIXES check (pre-existing, not touched by this diff) is a plain directory-prefix match with no closed-set anchoring, the same attacker-controlled-filename-with-no-provenance class this diff's own review series spent its effort closing elsewhere in the same function. Predates this diff; filed as a tracked follow-up (triage trg-dd297923) rather than fixed inline, out of scope for this small dedicated iterate.",
+          "suggestion": "A follow-up iterate anchoring _GENERATED_PREFIXES the same way the basename and review-evidence sets were anchored, or explicitly disclosing and accepting the risk with stated reasoning.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary_and_contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Round 3's path-normalization verification (openai's finding) established the anchored regex is validated against the real path shape for is_safe_to_skip_review. — The verification traced _section_paths in pr_review_diff_filter.py, which backs is_generated_path (hide side), not is_safe_to_skip_review's real consumer (classify_generated_only, fed by the GitHub Actions workflow's gh api call). Traced the correct chain myself: the conclusion holds (repo-relative POSIX, no leading ./), but the recorded verification named the wrong consumer. Spec corrected; no code change needed.",
+          "suggestion": "Corrected the Round 3 spec entry with the actual consumer and trace (done).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T13:36:41.508722+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py",
+          "line": 70,
+          "finding": "The hide-but-not-skip regression test covers only external `.json` transcripts. AC2 explicitly requires `external-review.md` files to be hidden but not skip-safe; a regression that mistakenly added only Markdown transcripts to the skip set would still pass.",
+          "suggestion": "Add at least one `external-…review….md` filename (for example `external-plan-review.md`) to this test’s loop and assert both classifications.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_evidence_filter_gap.py",
+          "line": 72,
+          "finding": "The run-directory anchoring test checks an extra-nested reply file but not an extra-nested `external-review` file. A broken external branch allowing two or more directory segments while retaining the reply branch’s anchoring would pass.",
+          "suggestion": "Add a negative case such as `.shipwright/planning/iterate/a/b/external-code-review.md`.  The implementation otherwise matches the requested hide/skip separation and preserves the intended legacy matcher behavior. Ship with the targeted coverage fixes. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "glm+openai",
+      "completed_at": "2026-09-11T13:40:34.621246+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] I traced each regex against each test path and each AC. Findings:\n\n**Verification detail:**\n\n1. **AC1** — `_REVIEW_EVIDENCE_RE_RUN_ANCHORED` (`^[^/]+/((spec|code|doubt)_review_reply\\.json|external-[^/]*review[^/]*\\.(json|md))$`) correctly requires exactly one run segment: the alternatives contain no `/` (all wildcard classes are `[^/]*`), so `a/b/name` cannot match while `[^/]+` is capped at `a`. The closed three-name reply set, `.md` siblings, bare-top-level and deeper-nested negatives, and `self-review-payload.json` exclusion are all present and pinned by tests. The legacy piece stays loose per the spec's explicit \"declined\" decision.\n\n2. **AC2** — `_REVIEW_EVIDENCE_SKIP_RE` is built from `re.escape(_REVIEW_EVIDENCE_PREFIX) + r\"[^/]+/reviews\\.json$\"` and used with `.match`, so it's fully anchored, lowercase-only, and matches only `reviews.json` one segment deep. Every other shape is hidden-but-not-skippable, pinned by `test_review_evidence_siblings_are_hidden_but_NOT_safe_to_skip`. `self-review-payload.json` returns False from both functions, pinned.\n\n3. **AC3** — the legacy `_REVIEW_EVIDENCE_RE` alternation is semantically identical to the old single-line pattern (same alternation, just reformatted); `is_generated_path`'s restructured branch checks both regexes under the same prefix guard, so legacy matches behave identically. `_GENERATED_AGENT_DOCS` and basename anchoring untouched. No caller-visible signature changes; the spec's grep confirms only `filter_generated_paths` consumes `is_generated_path`.\n\n4. **AC4** — the module comments and the rewritten docstring (now \"three ways\") cover both the skip-safety reasoning and the deliberate `self-review-payload.json` exclusion.\n\n**Minor observations, not defects:**\n- The spec text claims the skip set is \"unchanged from before this iterate\", but pre-iterate `is_safe_to_skip_review` shared `_REVIEW_EVIDENCE_RE`, so legacy `X-external-Y-review.json` files under the prefix were previously skip-safe and now  […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: `plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py:70`\n- Finding: The hide-but-not-skip regression test covers only external `.json` transcripts. AC2 explicitly requires `external-*review*.md` files to be hidden but not skip-safe; a regression that mistakenly added only Markdown transcripts to the skip set would still pass.\n- Suggestion: Add at least one `external-…review….md` filename (for example `external-plan-review.md`) to this test’s loop and assert both classifications.\n\n- Category: test\n- Severity: low\n- File: `plugins/shipwright-security/tests/test_pr_review_evidence_filter_gap.py:72`\n- Finding: The run-directory anchoring test checks an extra-nested reply file but not an extra-nested `external-*review*` file. A broken external branch allowing two or more directory segments while retaining the reply branch’s anchoring would pass.\n- Suggestion: Add a negative case such as `.shipwright/planning/iterate/a/b/external-code-review.md`.\n\nThe implementation otherwise matches the requested hide/skip separation and preserves the intended legacy matcher behavior. Ship with the targeted coverage fixes.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T13:43:15.109091+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T13:08:02.105346+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
