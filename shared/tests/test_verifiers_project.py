@@ -602,14 +602,15 @@ def test_check_basis_forbids_assumed_catches_a_qualified_assumed_cell(tmp_path):
     assert "FR-01.01" in r.detail
 
 
-def test_check_no_empty_split_ignores_an_unsafe_split_name(tmp_path):
-    """External code review (round 3, medium, openai): a malformed
-    manifest naming a non-string, absolute, or traversal split name must
-    not crash the validator — a MIXED manifest (one valid name alongside
-    several unsafe ones) filters the unsafe entries and keeps checking the
-    valid subset, rather than reaching ``planning_dir / name`` with a bad
-    value. (An all-unsafe manifest is a different, louder case — see
-    ``test_check_no_empty_split_fails_loud_when_every_declared_name_is_unsafe``.)"""
+def test_check_no_empty_split_fails_loud_on_a_mixed_manifest(tmp_path):
+    """External Tier-3 review, PR #729: a MIXED manifest (one valid name
+    alongside several unsafe ones) used to silently filter the unsafe
+    entries and pass on the valid subset — a manifest containing
+    ``01-a`` and ``../escape`` read as though only ``01-a`` were
+    declared, letting the unsafe entry evade every gate. It must instead
+    fail loud, same as an all-unsafe manifest, not crash the validator
+    (non-string / absolute / traversal names are still handled without
+    reaching ``planning_dir / name`` with a bad value)."""
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"splits": [
             {"name": "01-a"},
@@ -628,7 +629,8 @@ def test_check_no_empty_split_ignores_an_unsafe_split_name(tmp_path):
         encoding="utf-8",
     )
     r = check_no_empty_split(tmp_path)  # must not raise
-    assert r.ok is True
+    assert r.ok is False
+    assert "invalid/unsafe" in r.detail
 
 
 def test_check_no_empty_split_fails_loud_when_every_declared_name_is_unsafe(tmp_path):

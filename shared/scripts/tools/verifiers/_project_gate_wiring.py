@@ -66,14 +66,12 @@ def _declared_split_names(
     empty set is a real, valid "zero splits declared" answer, distinct from
     that. ``manifest_error`` is set whenever the manifest exists but cannot
     be trusted as a split list — parse failure, a non-list ``splits`` value,
-    or every declared name being invalid/unsafe — external code review
-    (e2-checks-project-elicitation, round 3 medium + round 4 medium×2,
-    both reviewers): each of these used to fall through to "zero splits"
-    and every spec-text gate passed vacuously, exactly the silent-pass
-    failure mode round 1's unreadable-spec.md fix closed for a different
-    file. A manifest with SOME valid names and some invalid ones still
-    returns the valid subset — only total unreadability is loud, matching
-    ``no_empty_split``'s own per-split (not per-manifest) granularity.
+    or ANY declared name being invalid/unsafe (external code review,
+    e2-checks-project-elicitation rounds 3-4; external Tier-3 review,
+    PR #729): each used to fall through to "zero splits" or a silently-
+    dropped subset, letting every spec-text gate pass vacuously over the
+    rejected names. A mixed manifest is loud too now — a single unsafe
+    entry must not evade the four gates just because a sibling was valid.
 
     External code review (round 2, high, both reviewers independently):
     directory enumeration under ``.shipwright/planning/`` cannot tell a
@@ -130,8 +128,11 @@ def _declared_split_names(
             # "declared zero splits" (SKIPPED) rather than "every declared
             # split was invalid" (loud failure).
             rejected.append(s if not isinstance(s, dict) else raw_name)
-    if rejected and not names:
-        return None, f"every declared split entry was invalid/unsafe: {rejected!r}"
+    if rejected:
+        # External Tier-3 review, PR #729: a mixed manifest used to silently
+        # drop rejected entries and check only the valid subset, letting an
+        # unsafe declared name (e.g. `../escape`) evade every gate.
+        return None, f"declared split entry(ies) invalid/unsafe: {rejected!r}"
     return names, None
 
 
