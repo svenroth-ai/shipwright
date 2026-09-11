@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-09-10T07:37:15.967899+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-09-10-p4-2-grill-trace-gate base=4a37d59474dc
-Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
+Generated: 2026-09-11T02:05:49.768047+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-09-11-e1-checks-plan-design base=1af9ce7f4b30
+Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 
 ## Summary
 

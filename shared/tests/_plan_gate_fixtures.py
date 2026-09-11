@@ -12,15 +12,20 @@ WELL_FORMED = (
     "# Section: {name}\n\n"
     "Requirements: {frs}\n\n"
     "## Overview\nDoes the thing.\n\n"
+    "## Prerequisites\nNone.\n\n"
     "## Implementation Steps\n1. one\n2. two\n\n"
     "## Tests First\n- a unit test\n"
 )
 
 #: What a section written before any of this looked like: the old template's
-#: headings, and no requirement field.
+#: headings, and no requirement field. The section-writer template has
+#: written a ``## Prerequisites`` heading for a long time already (FR-01.03
+#: #9's gap was the missing CHECK, not missing content), so "well-formed
+#: except for the newer `Requirements:` field" still carries one.
 LEGACY = (
     "# Section: {name}\n\n"
     "## Overview\nDoes the thing.\n\n"
+    "## Prerequisites\nNone.\n\n"
     "## Implementation Steps\n1. one\n2. two\n\n"
     "## Tests First\n- a unit test\n"
 )

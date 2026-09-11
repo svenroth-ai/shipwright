@@ -234,7 +234,7 @@ See [step-8-completion.md](references/step-8-completion.md) for the completion b
 
 ## Step 8.5: Design Review Loop
 
-See [review-loop.md](references/review-loop.md) for the complete review loop flow (Option A: Finalize with FR-Coverage Gate + Spec Backflow, Option B: Process Feedback, Option C: Pause, Decision Log Format, Flow Diagram).
+See [review-loop.md](references/review-loop.md) for the complete review loop flow (Option A: Finalize with the Design Gates command (`check-design-gates.py --gate all`, FR-01.04 #1–#6/#8/#11) + Spec Backflow, Option B: Process Feedback with the Iteration Gate (#9), Option C: Pause, Decision Log Format, Flow Diagram).
 
 ---
 
