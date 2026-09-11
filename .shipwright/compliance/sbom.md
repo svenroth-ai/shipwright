@@ -1,8 +1,8 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-09-11T01:01:18.002331+00:00 (dependency versions resolved from uv.lock)
-Source-State: run=iterate-2026-09-11-ac-ratchet-push-observe
-Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
+Generated: 2026-09-10T07:37:15.967899+00:00 (dependency versions resolved from uv.lock)
+Source-State: run=iterate-2026-09-10-p4-2-grill-trace-gate base=4a37d59474dc
+Consistency-audit: last run 2026-07-28 (44 days earlier) — FAIL
 
 ## Summary
 
@@ -11,7 +11,7 @@ Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 | Runtime dependencies | 7 (deduplicated) |
 | Dev dependencies | 5 |
 | Total packages | 12 |
-| Licenses resolved | 7 / 12 |
+| Licenses resolved | 12 / 12 |
 | Unique licenses | 3 (Apache-2.0, MIT, PSFL) |
 | Copyleft licenses | 0 |
 
@@ -19,10 +19,9 @@ Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 
 ```mermaid
 pie title License Distribution (all 12 packages)
-    "Apache-2.0" : 4
-    "MIT" : 2
+    "MIT" : 6
+    "Apache-2.0" : 5
     "PSFL" : 1
-    "unknown" : 5
 ```
 
 ## Runtime Dependencies
@@ -41,13 +40,13 @@ pie title License Distribution (all 12 packages)
 
 | Package | Version | License |
 |---------|---------|---------|
-| diff-cover | 10.3.0 | - |
-| pytest | 9.0.3 | - |
-| pytest | 9.1.1 | - |
-| pytest-cov | 7.1.0 | - |
-| pytest-mock | 3.15.1 | - |
+| diff-cover | 10.3.0 | Apache-2.0 |
+| pytest | 9.0.3 | MIT |
+| pytest | 9.1.1 | MIT |
+| pytest-cov | 7.1.0 | MIT |
+| pytest-mock | 3.15.1 | MIT |
 
 ## License Compliance
 
-**5 dependency(ies) could not be resolved in this scan** - license unverified; verify before distribution.
+No license concerns: all 12 packages resolved (0 unknown, 0 copyleft).
 

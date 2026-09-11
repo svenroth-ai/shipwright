@@ -18,6 +18,7 @@ from ._layer_coverage_ac import changed_criteria_ids
 from ._layer_coverage_binding import evaluate_binding_completeness
 from ._layer_coverage_core import CrossLayerVerdict
 from ._layer_coverage_regen import _merge_base, regenerate_base_head
+from ._layer_coverage_rollout import rollout_manifest
 from .common import CheckResult, Severity
 
 _NAME = "binding completeness (behaviour change → binding names the highest observed layer)"
@@ -48,9 +49,32 @@ def check_binding_completeness(project_root: Path, run_id: str, commit_hash: str
         if ac_error:
             return _lc._infra_result(name, complexity, ac_error)
         verdict = evaluate_binding_completeness(base, head, ac_changed)
+        if verdict.hard:
+            # Lazy: the rollout snapshot is a full archive+build of a third,
+            # potentially old commit (same cost class as the base/head builds
+            # above) — only worth paying when there is a candidate HARD gap
+            # for it to possibly downgrade (trg-aedcfe7b transition rule).
+            # `rollout_manifest` never raises (see its own docstring), so a
+            # failure here degrades to `None` (no grace), never an infra error.
+            rollout = rollout_manifest(project_root, commit_hash)
+            if rollout is not None:
+                verdict = evaluate_binding_completeness(base, head, ac_changed, rollout)
     except Exception as exc:  # noqa: BLE001 — surface as ERROR at medium+, never a silent crash
         return _lc._infra_result(name, complexity, f"regeneration error: {type(exc).__name__}")
     return _binding_result(name, verdict)
+
+
+def _advisory_tag(gap) -> str:
+    """The per-gap parenthetical in an advisory message: the transition rule
+    (trg-aedcfe7b) downgrades a HARD gap without changing ``source`` (an
+    ``explicit``-sourced gap can now land in ``advisory`` too), so reusing
+    ``g.source`` verbatim there would misleadingly read as if the FR were
+    legacy-sourced. Every other advisory reason (legacy source, collision)
+    keeps printing the real ``source`` value, unchanged from before this
+    rule existed."""
+    if gap.reason == "BINDING_INCOMPLETE_TRANSITION":
+        return "pre-rollout transition grace"
+    return gap.source
 
 
 def _binding_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
@@ -67,13 +91,13 @@ def _binding_result(name: str, verdict: CrossLayerVerdict) -> CheckResult:
             "highest layer a test actually proved passing",
         )
     if verdict.advisory:
-        gaps = "; ".join(f"{g.display}: omits {g.layer} ({g.source})" for g in verdict.advisory[:6])
+        gaps = "; ".join(f"{g.display}: omits {g.layer} ({_advisory_tag(g)})" for g in verdict.advisory[:6])
         if len(verdict.advisory) > 6:
             gaps += f" (+{len(verdict.advisory) - 6} more)"
         return CheckResult(
             name, False,
             f"{len(verdict.advisory)} FR(s) have higher-layer evidence than their binding names "
-            "but are legacy/collision (advisory): " + gaps,
+            "but are legacy/collision/pre-rollout (advisory): " + gaps,
             severity=Severity.WARNING.value, strict_exempt=True,
         )
     return CheckResult(

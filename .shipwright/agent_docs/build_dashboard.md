@@ -1,36 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-09-11 01:01 UTC | Session: f0795a6a-1599-4487-a967-b745574eaea4 | Run: iterate-2026-09-11-ac-ratchet-push-observe
+> Updated: 2026-09-07 19:24 UTC | Session: 15fd6d45-71fa-4173-b47c-feb187f3d914 | Run: iterate-2026-09-07-p3-4-tagging-backfill
 
-## Recent Changes (603 iterations)
+## Recent Changes (580 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | AC coverage ratchet CI gate now also runs on push to main, closing the same-PR self-grandfathering escape via a push-only baseline-growth signal | 18522/18581 |  | infra | 2026-09-11 |
-| change | Add the keystone AC gate's own verifier source (check_keystone_ac_gate.py + verifiers/_keystone_*.py) to SENSITIVE_PATH_RE so an edit to its logic alone gets the same mandatory-review treatment as an edit to ci.yml. | 18325/18384 |  | tooling | 2026-09-10 |
-| change | Anchor Layers-promotion to the newest CI-verified ancestor commit when HEAD itself is not verified, with staleness re-verification per FR. | 18397/18456 |  | FR-01.11 | 2026-09-10 |
-| feature | Keystone AC gate's post-merge detective arm (ruling Q5): classify_commit composes resolve_ci_verification/resolve_execution_evidence to judge an already-merged commit against CI-verified trunk evidence, distinct from the preventive gate's own same-run producer. | 18344/18403 |  | FR-01.11 | 2026-09-10 |
-| feature | Pin Sec.0's load-bearing-order claim, Sec.4's glossary cross-check trigger, and Sec.5's minimum-two-scenarios rule in shared/requirement-elicitation.md against silent drift; append Sec.0's heading to REQUIRED_SECTIONS. | 18860/18918 |  | FR-01.16 | 2026-09-10 |
-| feature | Replace the hardcoded CITING_DOCS tuple in test_requirement_elicitation_refs.py with dynamic discovery of reference docs carrying the elicitation-surface marker, per FR-01.16 AC09. | 18856/18914 |  | FR-01.16 | 2026-09-10 |
-| feature | P3.7: two feeder AC-binding CI gates, deliberately asymmetric -- AC coverage ratchet (anti-ratcheted) and orphan AC binding (hard from day one) | 895/914 |  | FR-01.11 | 2026-09-10 |
-| change | PR-review gate posts success (not a fail-closed failure) for PRs whose changed paths are entirely producer-generated artifacts | 10384/10385 |  | infra | 2026-09-10 |
-| change | Retarget the v1 update_step path onto phase_tasks[], then drop current_step/completed_steps (both writers and the schema block) | 14977/15027 |  | tooling | 2026-09-10 |
-| feature | Add write_grill_trace.py (producer) + grill_trace_format.py (data model/reader) writing one grill-trace evidence record per elicited requirement (shared/grill-trace-format.md), wired into /shipwright-project's interview-protocol.md; new blocking Step 8 gate verify_grill_trace_completeness.py enforces DESIGN.md's four closed-vocabulary STOPs plus grill_trace_coverage/fr_trace_coverage guards, reading through P4.1's context_md_format.read_terms() (P4.2). | 10840/10872 |  | FR-01.16 | 2026-09-10 |
-| change | design_checks.py's adopted-repo design-skip gate, compliance_compliance.py's Cmp1 dashboard-coverage heuristic, and convert_configs_to_events.py's one-time migration tool now read run_config.phase_tasks[] as their primary progress signal instead of the write-once current_step/completed_steps fields | 11488/11488 |  | tooling | 2026-09-10 |
-| change | state.py::detect_current_phase, update_build_dashboard.py, and the two handoff/suggest-iterate hooks now read run_config.phase_tasks[] as their primary progress signal instead of the write-once current_step/completed_steps fields | 10652/10652 |  | tooling | 2026-09-10 |
-| bug | backfill phase_tasks[] into a shipwright_run_config.json adopted before s2 landed, so migrated readers stop rendering its adoption-era phases as skipped | 17955/18013 |  | tooling | 2026-09-09 |
-| change | shipwright-adopt seeds a phase_tasks[] entry per completed_steps phase, marked establishedAtAdoption, for future adoptions | 17693/17751 |  | tooling | 2026-09-09 |
-| feature | keystone AC gate: a changed acceptance criterion must have re-run its bound tests green in this CI run | 11530/11572 |  | FR-01.11 | 2026-09-09 |
-| bug | Normalize object-shaped PR-review findings to prose before rendering, instead of stringifying them into a raw Python dict repr | 18160/18219 |  | tooling | 2026-09-09 |
-| change | deliver_pr.py: terminal non-converging halt (exit 8) when the PR-review gate repeats the same finding | 17660/17719 |  | tooling | 2026-09-09 |
-| change | Strip the minted [ACnn] marker inside lib.fr_criteria's own text-extraction seam (new lib._criteria_text module) instead of teaching each of its nine downstream readers (fr_hygiene and siblings, spec_parser, fr_criterion_shape, layer-coverage detectors, group_i_criteria) the marker's shape. Closes P3.4's doubt review (#689) before P3.6 lands. | 10951/10985 |  | tooling | 2026-09-09 |
-| change | compliance dashboard mermaid.py phase strip reads phase_tasks[] instead of write-once current_step/completed_steps | 17632/17690 |  | compliance | 2026-09-09 |
-| feature | Execution-tier CI evidence binding for per-FR Layers promotion (P3.5 restart) | 17844/17902 |  | FR-01.11 | 2026-09-09 |
-| feature | Add write_context_term.py, a producer that writes/updates a target project's CONTEXT.md domain glossary, wired into /shipwright-project's interview protocol so a sharpened term lands during the same interview turn (P4.1). | 17651/17715 |  | FR-01.16 | 2026-09-09 |
-| feature | CI-provenance attestation predicate for traceability-manifest verification (P3.4c) | 17629/17687 |  | FR-01.11 | 2026-09-09 |
 | feature | Wire P3.1-P3.3's dormant AC-identity infrastructure into the real monorepo spec.md: mint [ACnn] ids on every existing criterion, then mechanically derive and hand-map @covers(FR/AC) test tags from provenance-footnote-to-commit joins (13 files, 137 mechanical + 20 hand-mapped tags), regenerating the v4 traceability manifest with real per-AC coverage data. WebUI repo's own backfill is a separate, sibling unit (w4) in a different repo -- untouched here. | 18099/18157 |  | FR-01.01, FR-01.07, FR-01.11 | 2026-09-07 |
 | feature | F11 binding-completeness gate (P3.3): reject a behaviour-changed FR's binding when it names a lower test layer than its own executed-passing evidence proves; reconcile the evidence ledger's row numbering against spec.md's (E) bullets | 0/0 |  | compliance | 2026-09-07 |
 | feature | AC-scoped @covers tag grammar + test-traceability manifest v4 | 0/0 |  | compliance | 2026-09-07 |
-| bug | Fix bloat-gate Stop hook blocking an orchestrator's own turn completion on a background subagent's in-flight, uncommitted oversize edit when they share a git worktree and session id. | 8/8 |  | infra | 2026-09-07 |
 | bug | Fold sibling-worktree triage decisions into a main tree's own read | 0/0 |  | tooling | 2026-09-07 |
 | bug | JS/TS-aware test-weakening detector for the main-repair safety gate | 17363/17422 (59 skipped) |  | FR-01.19 | 2026-09-07 |
 | feature | AC-id minting/reading tool for the shipped FR heading+bullet shape (dormant, not yet wired into any consumer) | 0/0 |  | tooling | 2026-09-06 |
@@ -610,7 +587,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-09-11 | Unit: 17988/18047 | Integration: 534/534 | Smoke: not_run | (iterate)
+Last run: 2026-09-07 | Unit: 17569/17627 | Integration: 530/530 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,0 +1,79 @@
+{
+  "run_id": "iterate-2026-09-11-e0-ledger-accounting",
+  "date": "2026-09-10T23:33:40.692807Z",
+  "event_at": "2026-09-10T23:32:51.979016+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/e0-ledger-accounting",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-06-enforcement-mono/sub-iterates/e0-ledger-accounting.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-e0-ledger-accounting",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "each of the 8 canonical status tags is counted once per backtick-quoted occurrence",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_counts_each_canonical_status_once_per_occurrence PASSED"
+      },
+      {
+        "behavior": "a qualified status (`enforced, tested`) never double-counts as its bare prefix (`enforced`)",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_qualified_status_does_not_double_count_as_bare_enforced PASSED"
+      },
+      {
+        "behavior": "a row that splits its promise across two statuses contributes to both categories",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_split_row_contributes_to_both_halves PASSED"
+      },
+      {
+        "behavior": "the 5-category backlog line excludes bare `enforced` and `no-oracle`",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_backlog_line_excludes_enforced_and_no_oracle PASSED"
+      },
+      {
+        "behavior": "main() reads a ledger file and reports counts as JSON",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_main_reads_a_file_and_reports_json PASSED"
+      },
+      {
+        "behavior": "main() returns exit 2 with a stderr error on an unreadable ledger path",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_main_reports_infra_error_on_missing_file PASSED"
+      },
+      {
+        "behavior": "the human-readable (non-JSON) output path shows the backlog line",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_main_human_readable_output_shows_the_backlog_line PASSED"
+      },
+      {
+        "behavior": "a legend-shaped block and a summary-shaped block each inflate every status they name by exactly +1 (the documented, accepted imprecision)",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_legend_and_summary_style_text_inflates_by_a_known_fixed_amount PASSED"
+      },
+      {
+        "behavior": "the real ledger's 'Re-measured' header paragraph stays in sync with the script's live measurement of the real file",
+        "disposition": "tested",
+        "evidence": "test_measure_ac_evidence_ledger.py::test_real_ledger_header_matches_the_live_measurement PASSED"
+      },
+      {
+        "behavior": "the counting function is robust to a UTF-8 BOM, CRLF line endings, and non-ASCII text adjacent to a status token (the ledger's real on-disk shape)",
+        "disposition": "tested",
+        "evidence": "confidence-calibration probe (Step 3.8), not a committed test: uv run python one-liner against count_statuses()/main() with BOM+CRLF+non-ASCII fixtures, all clean -- see result.json reviews.confidence_calibration"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure documentation-accounting change (a new read-only re-measurement script + its own tests, and hand edits to a planning ledger's prose); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the shared/scripts/tools/tests suite (951 passed, 19 skipped, 2 deselected) plus verify_local.py's mirrored CI gates."
+  }
+}

@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-e0-ledger-accounting",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:14:39.055379+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The re-measured counts (47/19/16/36/50 = 168) don't obviously reconcile with the stated 1714 lines or the card's 44/15/10/25 = 94. The plan doesn't state what the remaining lines are (headers, prose, non-AC content) or how ambiguous lines are classified. Without a stated reconciliation rule, the count script and the header numbers can silently diverge from the ledger content.",
+          "suggestion": "Have the count script emit a breakdown including an \"unclassified/other\" bucket so total ledger lines reconcile, and state the reconciliation in the header.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Any other line a reader-of-lines cannot resolve\" is subjective and unbounded — the plan enumerates seven known lines but leaves open-ended remediation with no detection method. The count script can't find these; they'll be found by manual reading, which is exactly the failure mode the change is trying to eliminate.",
+          "suggestion": "Either bound the scope to the seven enumerated lines for this pass, or add a script check that flags any AC line lacking an inline class+card annotation, so future unresolvable lines are detected mechanically rather than by \"a reader.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The count script's classification rules (prompt-only mechanisable vs. judgement, enforced-untested vs. unimplemented) are not specified. These distinctions are the whole basis of the counts, and they'll be re-run later — if the rules aren't pinned, the next measurement may use different criteria and the counts won't be comparable.",
+          "suggestion": "Commit the classification heuristics as comments or a rules file alongside the script, and note known limitations (e.g., which classes require human judgement).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Editing lines to add inline assignments changes line content in a 1714-line monolithic ledger. If any tooling or other documents reference lines by content or line number, they could silently break.",
+          "suggestion": "Confirm nothing cross-references the ledger by line number before editing; content anchors are safer.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Acceptance criterion \"Every line names its class and owning card\" is stated as a checkbox but has no verification mechanism — it depends on the count script detecting annotations, which isn't specified as a check it performs.",
+          "suggestion": "Make the script's exit status fail when any AC line lacks class+card annotation, so the criterion is checkable, not aspirational.  No security concerns — this is a documentation/tooling change with no runtime surface.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan restates the requested outcome but does not define the line-level annotation format, ownership/card identifier source, or how the script derives each class. Without a stable, machine-readable convention, the “every line” and repeatable-count requirements cannot be verified reliably.",
+          "suggestion": "Specify a compact canonical marker for each ledger entry (for example, `Class: enforced-tested | Card: e0`) and make the script validate and count exactly that marker.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "It does not identify existing consumers of the ledger—such as scripts, links, documentation conventions, or review tooling—that may depend on the current prose-based structure. Changing line formats could silently break those consumers.",
+          "suggestion": "Search for references to the ledger and its current classification language before editing; update affected tooling or preserve compatible formatting where needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Any other line a reader-of-lines cannot resolve” is subjective, while the acceptance criterion requires every line to be assigned. The plan has no audit process for multiline requirements, headings, examples, exceptions, blank lines, or entries whose ownership is shared or ambiguous.",
+          "suggestion": "Define what constitutes a countable ledger line and require the script to fail on unclassified entries, invalid classes, missing cards, duplicate identifiers, and ambiguous/multiline records.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The stated re-measured counts are treated as input, but the plan does not require the committed script to reproduce them from the final edited ledger. Manual edits can easily cause the header, body annotations, and reported totals to drift.",
+          "suggestion": "Run the script against the final ledger and have it either generate the header counts or verify them in CI/a documented validation command.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "No specific application security exposure is introduced, but a committed counting script could become unsafe or unreliable if it evaluates ledger content or follows arbitrary paths.",
+          "suggestion": "Keep it dependency-free where practical; parse text as data only, use a fixed relative ledger path, and return non-zero on malformed input.  Overall, the change direction is sound, but the proposal needs an explicit annotation contract and a verifiable measurement workflow before implementation. The primary risk is producing manually maintained labels and counts that appear complete but cannot be consistently re-measured.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T23:13:16.480654+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The re-measured counts (47/19/16/36/50 = 168) don't obviously reconcile with the stated 1714 lines or the card's 44/15/10/25 = 94. The plan doesn't state what the remaining lines are (headers, prose, non-AC content) or how ambiguous lines are classified. Without a stated reconciliation rule, the count script and the header numbers can silently diverge from the ledger content.\n  **Suggestion:** Have the count script emit a breakdown including an \"unclassified/other\" bucket so total ledger lines reconcile, and state the reconciliation in the header.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** \"Any other line a reader-of-lines cannot resolve\" is subjective and unbounded — the plan enumerates seven known lines but leaves open-ended remediation with no detection method. The count script can't find these; they'll be found by manual reading, which is exactly the failure mode the change is trying to eliminate.\n  **Suggestion:** Either bound the scope to the seven enumerated lines for this pass, or add a script check that flags any AC line lacking an inline class+card annotation, so future unresolvable lines are detected mechanically rather than by \"a reader.\"\n\n- **Category: dependency — Severity: low**\n  **Finding:** The count script's classification rules (prompt-only mechanisable vs. judgement, enforced-untested vs. unimplemented) are not specified. These distinctions are the whole basis of the counts, and they'll be re-run later — if the rules aren't pinned, the next measurement may use different criteria and the counts won't be comparable.\n  **Suggestion:** Commit the classification heuristics as comments or a rules file alongside the script, and note known limitations (e.g., which classes require human judgement).\n\n- **Category: risk — Severity: low**\n  **Finding:** Editing lines to add inline assignments changes line content in a 1714-line monolithic ledger. I […truncated]\n\n[openai] 1. Category: approach  \n   Severity: high  \n   Finding: The mini-plan restates the requested outcome but does not define the line-level annotation format, ownership/card identifier source, or how the script derives each class. Without a stable, machine-readable convention, the “every line” and repeatable-count requirements cannot be verified reliably.  \n   Suggestion: Specify a compact canonical marker for each ledger entry (for example, `Class: enforced-tested | Card: e0`) and make the script validate and count exactly that marker.\n\n2. Category: dependency  \n   Severity: medium  \n   Finding: It does not identify existing consumers of the ledger—such as scripts, links, documentation conventions, or review tooling—that may depend on the current prose-based structure. Changing line formats could silently break those consumers.  \n   Suggestion: Search for references to the ledger and its current classification language before editing; update affected tooling or preserve compatible formatting where needed.\n\n3. Category: edge-case  \n   Severity: high  \n   Finding: “Any other line a reader-of-lines cannot resolve” is subjective, while the acceptance criterion requires every line to be assigned. The plan has no audit process for multiline requirements, headings, examples, exceptions, blank lines, or entries whose ownership is shared or ambiguous.  \n   Suggestion: Define what constitutes a countable ledger line and require the script to fail on unclassified entries, invalid classes, missing cards, duplicate identifiers, and ambiguous/multiline records.\n\n4. Category: risk  \n   Severity: medium  \n   Finding: The stated re-measured counts are treated as input, but the plan does not require the committed script to reproduce them from the final edited ledger. Manual edits can easily cause the header, body annotations, and reported totals to drift.  \n   Suggestion: Run the script against the final ledger and have it either generate the header counts or verify them in […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 144,
+          "finding": "An explicit --project-root can be silently overridden by the DEFAULT_LEDGER_RELPATH fallback when the resolved path is not a file, reporting a confident measurement of the wrong ledger.",
+          "suggestion": "Only fall back when --project-root was not explicitly passed; add coverage for both arms.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py",
+          "line": 88,
+          "finding": "test_backlog_line_excludes_enforced_and_no_oracle re-implements production filtering logic inline, making the backlog dict assertion tautological.",
+          "suggestion": "Drive the assertion through measure_mod.measure(text) on a small fixture ledger instead of re-deriving the expected dict.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 116,
+          "finding": "New '19 judgement' count sits two paragraphs above pre-existing 'six genuine judgement rows' text with no bridging clause.",
+          "suggestion": "Add one sentence reconciling 19 vs six.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 113,
+          "finding": "Header doesn't point to the test that enforces it staying accurate.",
+          "suggestion": "Add a pointer sentence naming test_real_ledger_header_matches_the_live_measurement.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/agent_docs/iterates/iterate-2026-09-11-e0-ledger-accounting.test-results.json",
+          "line": 80,
+          "finding": "Behavior #10 disposition is 'tested' but its evidence string says it was only a confidence-calibration probe, not a committed test.",
+          "suggestion": "Either commit the probe as a real test or re-record the disposition as untested_testable.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 133,
+          "finding": "--help description is truncated mid-sentence and --project-root lacks a help string / Usage:: mention.",
+          "suggestion": "Add an explicit description= and help= text.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 18,
+          "finding": "Docstring paragraphs 2-3 restate the ledger header's rationale nearly verbatim (reducibility D, advisory, downgraded under G5 - different audiences).",
+          "suggestion": "Optional: trim to a pointer at the ledger paragraph.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T23:51:12.214746+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:51:12.363875+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (no migrations/async/cross-plugin-imports/irreversible-ops surface); Stage 2 passed at 3f-bis",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` (~line 176, FR-01.02 table, row 3)",
+          "line": null,
+          "finding": "The spec names seven lines that must carry their class and owning card on the line: FR-01.02 #3 and #7, FR-01.03 #3b, FR-01.04 #1 and #4, FR-01.08 #6b, FR-01.15 #6. The diff edits FR-01.02 #3b (not #3, which appears in context unchanged and still names no owner), never touches FR-01.02 #7, and does not visibly edit FR-01.03 #3b. Several of the seven enumerated lines therefore still cannot be resolved by a reader-of-lines — the primary acceptance criterion is only partially implemented.",
+          "suggestion": "Go back through the spec's exact list of seven lines and add the inline assignment to each (including FR-01.02 #3 and #7 and FR-01.03 #3b), not just the rows the diff happened to reach.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "same file, FR-01.03 #7, FR-01.04 #1/#4, FR-01.08 #6b, FR-01.15 #6 rows",
+          "line": null,
+          "finding": "For the lines that were edited, the \"assignment\" is frequently \"uncarded / no card owed / per-plugin work unit (uncarded)\". The spec's acceptance criterion says every line names \"its class and its owning card on the line itself\" — \"no card owed\" is an owner but arguably not a card, and several of these remain judgement calls dressed as annotations. Combined with the missed lines above, AC-1 is at best loosely satisfied.",
+          "suggestion": "Either amend the spec to accept \"explicitly uncarded with a stated reason\" as an assignment, or actually file/assign cards for those rows; be consistent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py:132-158` (`test_real_ledger_header_matches_the_live_measurement`)",
+          "line": null,
+          "finding": "The drift test is circular with respect to accuracy: the header numbers and the live measurement both come from the same file via the same (self-admittedly imprecise) flat-text method. If the method is systematically inflated — and the script's own docstring concedes the legend table and the End-check summary table each contribute a constant number of non-criterion matches — the test still passes while the header carries numbers that don't represent criterion rows. The docstring claims cross-validation against the operator's hand count, but no test pins that; a change that double-counts legend occurrences would pass all tests.",
+          "suggestion": "Add a fixture that reproduces a mini ledger (legend + summary + N rows) with known expected per-category counts, pinning the exact inflation the method introduces, so at least the bias is captured and any regression in it fails a test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py` — `CANONICAL_STATUSES` comment claims \"longest-alternative-first\"",
+          "line": null,
+          "finding": "The list is not strictly longest-first globally (e.g. `prompt-only (mechanisable)` precedes `enforced, partly tested` by length in reverse), it only needs longest-first within the `enforced` family, which it is. The consume-on-match `sub` approach is correct, so this is a comment inaccuracy rather than a counting bug — but note a genuine edge: overlapping backticks. A string like ``` `enforced` ``` inside a longer code span such as ` ``enforced` (patched` `` cannot arise from backtick pairs, so the regex is safe here. No action needed beyond the comment.",
+          "suggestion": "Reword the comment to \"enforced family ordered longest-first\" to avoid future reordering breaking the invariant.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "measure_ac_evidence_ledger.py` — `main()`, `--project-root` default `Path(\".\")",
+          "line": null,
+          "finding": "The default path resolution depends on the process CWD; run from any directory other than the repo root (e.g. `uv run shared/scripts/tools/...` from a nested dir, or via an IDE test runner), the default silently falls into the `OSError → exit 2` branch even when the file exists. The drift test sidesteps this by computing `_REPO_ROOT` from `__file__`, but the tool itself — the thing the spec says \"the next pass re-measures with\" — is CWD-fragile.",
+          "suggestion": "Fall back to resolving the ledger relative to the script's own location when the CWD-relative path doesn't exist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "test_measure_ac_evidence_ledger.py:118-126` (`test_main_reports_infra_error_on_missing_file`)",
+          "line": null,
+          "finding": "The error path emits JSON to stderr even when `--json` was not passed; also no test covers the non-JSON human-readable output path at all (`format_backlog_line` is tested via a dict literal, but `main`'s default formatting is never exercised end-to-end). Minor, but the human output is what the ledger instructs people to run.",
+          "suggestion": "Add one test of plain `main([\"--file\", ...])` capturing stdout, and make the error message plain text when `--json` is absent.  Positive notes: the deliberate un-backticking of the header paragraph (so the script doesn't count its own header) is correct and the reasoning is documented; the sequential-consume counting correctly avoids the bare-`enforced` double-count; the drift test against the real ledger is a genuinely good guard.  Overall assessment: ship-with-fixes — the script and its tests are sound, but the diff demonstrably misses two-to-three of the seven lines the spec explicitly enumerates, so the central acceptance criterion is not met.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 176,
+          "finding": "The required owning-card assignment is not present: this row explicitly says `uncarded`. The same non-assignment pattern appears in the other changed rows as “no card owed,” “uncarded,” or “no card filed,” which contradicts the acceptance criterion that every line names its owning card on that line.",
+          "suggestion": "Assign each affected line a concrete card identifier, or amend the specification to explicitly permit a defined non-card owner category and make that category part of the acceptance criterion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 98,
+          "finding": "The script counts every backtick-quoted status phrase anywhere in the document, including legends, summaries, and prose, rather than the assignments on ledger lines. It therefore cannot re-measure the line-level ledger counts required by this change, and ordinary documentation edits can change the reported backlog without changing any criterion.",
+          "suggestion": "Parse the actual criterion records/rows and count their explicit class markers; fail or report unassigned/malformed ledger entries so the count is tied to the required per-line accounting.  Ship-with-fixes: the header and committed script are present, but the implementation deliberately avoids both required properties—concrete owning-card assignment and line-based re-measurement. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T23:24:17.964012+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] **Findings**\n\n- Category: spec\n  Severity: high\n  File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` (~line 176, FR-01.02 table, row 3)\n  Finding: The spec names seven lines that must carry their class and owning card *on the line*: FR-01.02 #3 and #7, FR-01.03 #3b, FR-01.04 #1 and #4, FR-01.08 #6b, FR-01.15 #6. The diff edits FR-01.02 #3b (not #3, which appears in context unchanged and still names no owner), never touches FR-01.02 #7, and does not visibly edit FR-01.03 #3b. Several of the seven enumerated lines therefore still cannot be resolved by a reader-of-lines — the primary acceptance criterion is only partially implemented.\n  Suggestion: Go back through the spec's exact list of seven lines and add the inline assignment to each (including FR-01.02 #3 and #7 and FR-01.03 #3b), not just the rows the diff happened to reach.\n\n- Category: spec\n  Severity: medium\n  File: same file, FR-01.03 #7, FR-01.04 #1/#4, FR-01.08 #6b, FR-01.15 #6 rows\n  Finding: For the lines that were edited, the \"assignment\" is frequently \"uncarded / no card owed / per-plugin work unit (uncarded)\". The spec's acceptance criterion says every line names \"its class and its owning card on the line itself\" — \"no card owed\" is an owner but arguably not a card, and several of these remain judgement calls dressed as annotations. Combined with the missed lines above, AC-1 is at best loosely satisfied.\n  Suggestion: Either amend the spec to accept \"explicitly uncarded with a stated reason\" as an assignment, or actually file/assign cards for those rows; be consistent.\n\n- Category: test\n  Severity: medium\n  File: `shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py:132-158` (`test_real_ledger_header_matches_the_live_measurement`)\n  Finding: The drift test is circular with respect to *accuracy*: the header numbers and the live measurement both come from the same file via the same (self-admittedly imprecise) flat-text method. If the method is systemat […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md:176`  \n  Finding: The required owning-card assignment is not present: this row explicitly says `uncarded`. The same non-assignment pattern appears in the other changed rows as “no card owed,” “uncarded,” or “no card filed,” which contradicts the acceptance criterion that every line names its owning card on that line.  \n  Suggestion: Assign each affected line a concrete card identifier, or amend the specification to explicitly permit a defined non-card owner category and make that category part of the acceptance criterion.\n\n- Category: spec  \n  Severity: high  \n  File: `shared/scripts/tools/measure_ac_evidence_ledger.py:98`  \n  Finding: The script counts every backtick-quoted status phrase anywhere in the document, including legends, summaries, and prose, rather than the assignments on ledger lines. It therefore cannot re-measure the line-level ledger counts required by this change, and ordinary documentation edits can change the reported backlog without changing any criterion.  \n  Suggestion: Parse the actual criterion records/rows and count their explicit class markers; fail or report unassigned/malformed ledger entries so the count is tied to the required per-line accounting.\n\nShip-with-fixes: the header and committed script are present, but the implementation deliberately avoids both required properties—concrete owning-card assignment and line-based re-measurement.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:45:08.869246+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:13:22.206904+00:00",
+      "disposition": "campaign sub-iterate: plan review is external-only (external_review.py --mode iterate); no internal plan-reviewer subagent pass exists for this track (documented gap, iteration-reviews.md)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
