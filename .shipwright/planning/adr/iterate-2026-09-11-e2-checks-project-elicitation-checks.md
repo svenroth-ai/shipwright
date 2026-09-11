@@ -251,6 +251,28 @@ already treats as one legitimate case, not distinguished from a
 key-omitted config; and the #8b drift test's substring-pin fragility
 repeats round 7's own `logged, not acted on` note verbatim.
 
+## Required Tier-3 PR Review BLOCK #2 (PR #729, post extension-scope fix)
+
+Re-run on the extension-scope fix's own commit returned `BLOCK` again, on
+an unrelated pre-existing function: `_is_safe_split_name`'s `..`/`.`
+segment check parsed a candidate split name with the host-native
+`Path(name).parts`. A name like `"foo\..\..\escape"` splits into a single
+literal part on POSIX (backslash is not a separator there) and was judged
+safe, passing the traversal check — but a declared split name is data
+committed to the repo and later joined by whichever OS actually reads the
+manifest. The same name, read on a host where backslash IS a separator
+(Windows — this repo's own primary dev platform), resolves outside
+`.shipwright/planning/`. The function already checked absolute-path forms
+against BOTH `PurePosixPath` and `PureWindowsPath` (rounds 4-6, above) —
+the `..`/`.` segment check was the one path that had not been given the
+same both-conventions treatment. **Fixed** by checking segments under both
+`PurePosixPath(name).parts` and `PureWindowsPath(name).parts`, rejecting if
+either contains `..` or `.`. A backslash-embedded single `.` (e.g.
+`"foo\.\escape"`) is NOT flagged — pathlib silently normalizes single-dot
+segments out of `.parts` under both conventions, and a `.` segment cannot
+itself escape a directory the way `..` can, so there is nothing there to
+catch.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading

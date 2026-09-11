@@ -1,12 +1,11 @@
 """Filesystem-facing wiring for ``_project_gate_extras.py``'s four pure
 gate functions, split out of ``project_checks.py`` the moment that file
-crossed the 300-LOC bloat-baseline guideline adding them (same precedent as
+crossed the 300-LOC bloat-baseline guideline (same precedent as
 ``grill_trace_glossary.py`` splitting out of
 ``verify_grill_trace_completeness.py``). Each ``check_*`` here reads
 whatever filesystem state its gate needs and adapts the pure ``GateResult``
-into a ``CheckResult``; ``project_checks.run_project_checks`` calls all
-four in sequence, exactly like it calls ``check_grill_trace_completeness``.
-"""
+into a ``CheckResult``; ``project_checks.run_project_checks`` calls all four
+in sequence, exactly like it calls ``check_grill_trace_completeness``."""
 
 from __future__ import annotations
 
@@ -42,7 +41,10 @@ def _is_safe_split_name(name: object) -> bool:
     — has a root, no drive) names, neither of which pathlib calls
     "absolute" on Windows (it requires BOTH), but either re-anchors
     ``planning_dir / name`` away from the planning tree when joined —
-    checked for directly via ``PureWindowsPath``'s own ``.drive``/``.root``."""
+    checked for directly via ``PureWindowsPath``'s own ``.drive``/``.root``.
+    Tier-3 review (PR #729): ``..``/``.`` segments were checked via the
+    host-native ``Path(name).parts``, so a backslash-traversal name stayed
+    one literal part on POSIX and passed; checked under both conventions now."""
     if not isinstance(name, str) or not name:
         return False
     if PurePosixPath(name).is_absolute() or PureWindowsPath(name).is_absolute():
@@ -50,8 +52,13 @@ def _is_safe_split_name(name: object) -> bool:
     win = PureWindowsPath(name)
     if win.drive or win.root:
         return False
-    parts = Path(name).parts
-    return bool(parts) and ".." not in parts and "." not in parts
+    posix_parts = PurePosixPath(name).parts
+    if not posix_parts:
+        return False
+    for parts in (posix_parts, win.parts):
+        if ".." in parts or "." in parts:
+            return False
+    return True
 
 
 def _declared_split_names(
@@ -76,12 +83,10 @@ def _declared_split_names(
     External code review (round 2, high, both reviewers independently):
     directory enumeration under ``.shipwright/planning/`` cannot tell a
     split dir from a reserved non-split one (``campaigns/``, ``adr/``,
-    ``iterate/``, ``grill-traces/``, ``01-adopted/`` for adopt-mode, and
-    whatever else gets added later) — an ever-growing exclusion list
-    chases every new reserved dir forever. The manifest is the one place
-    that already knows which dirs ARE splits; reading it is not a parallel
-    interpretation of "split", it is THE interpretation, shared with the
-    existing WARNING-severity check.
+    ``iterate/``, ``grill-traces/``, ``01-adopted/``, ...) — an
+    ever-growing exclusion list chases every new reserved dir forever.
+    The manifest already knows which dirs ARE splits; reading it is THE
+    interpretation, shared with the existing WARNING-severity check.
     """
     data = read_run_config(project_root)
     path = project_root / "shipwright_project_config.json"
@@ -149,12 +154,11 @@ def _read_spec_texts(project_root: Path) -> tuple[dict[str, str], list[str]]:
 
     Enumerates from the project's OWN ``splits`` manifest (round 2's fix,
     see ``_declared_split_names``), not the planning directory's raw
-    contents — a directory-enumeration approach cannot distinguish a real
-    split from a reserved non-split dir. Confirmed against the real
-    producer (``split-heuristics.md`` line 47): even a single-unit project
-    always gets a named split dir (``01-{project-name}/spec.md``), never a
-    bare root-level ``spec.md`` — so a manifest with zero declared splits
-    genuinely means "no requirements written yet", not a missed layout."""
+    contents — directory enumeration can't distinguish a real split from a
+    reserved non-split dir. Confirmed against ``split-heuristics.md`` line
+    47: even a single-unit project always gets a named split dir, never a
+    bare root-level ``spec.md`` — so zero declared splits genuinely means
+    "no requirements written yet", not a missed layout."""
     names, manifest_error = _declared_split_names(project_root)
     if manifest_error:
         return {}, [manifest_error]
@@ -220,17 +224,14 @@ def check_basis_forbids_assumed(project_root: Path) -> CheckResult:
 
     **NOT scoped to greenfield, unlike #11.** Round 5 added an
     extension-scope skip, reasoning #4's greenfield text and #15's
-    allow-with-settlement text both scope to a freshly-authored
-    project. Required Tier-3 PR review (PR #729) found that stale
-    after the round-1 spec-review REJECT: the merged function no
-    longer enforces #4's literally-greenfield "never appears" ban
-    (reverted, stricter than the ledger's ceiling) — it enforces ONLY
-    #15's form obligation ("name what would settle `assumed`"), which
-    carries no greenfield qualifier of its own. An extension run still
-    runs an interview (a PO is present, same as greenfield) — unlike
-    `/shipwright-adopt`, which has nobody to ask — so #15 is reachable
-    there too, unlike #11's unrelated (pre-existing files) skip. Fixed
-    by removing the skip."""
+    allow-with-settlement text both scope to a freshly-authored project.
+    Required Tier-3 PR review (PR #729) found that stale after the round-1
+    spec-review REJECT: the merged function no longer enforces #4's
+    literally-greenfield ban (reverted, stricter than the ledger's
+    ceiling) — it enforces ONLY #15's un-scoped form obligation ("name
+    what would settle `assumed`"). An extension run still runs an
+    interview (a PO is present) — unlike `/shipwright-adopt` — so #15 is
+    reachable there too, unlike #11's unrelated skip. Fixed by removing it."""
     name = "Basis column forbids bare 'assumed' (FR-01.02 #4/#15)"
     _scope, error, _config_exists = _read_project_scope(project_root, name)
     if error:

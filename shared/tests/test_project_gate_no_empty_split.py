@@ -153,6 +153,16 @@ def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():
     assert _is_safe_split_name("01-a") is True
 
 
+def test_is_safe_split_name_rejects_backslash_traversal_on_any_host_os():
+    """Required Tier-3 PR review (PR #729): the ``..``/``.`` segment check
+    used to parse ``name`` with the host-native ``Path``, so a backslash
+    traversal name stayed one literal part on POSIX (backslash isn't a
+    separator there) and was judged safe — but the name is committed data
+    later joined by whichever OS reads the manifest, where backslash IS a
+    separator. Must be rejected regardless of which OS runs this check."""
+    assert _is_safe_split_name("foo\\..\\..\\escape") is False
+
+
 def test_check_no_empty_split_fails_loud_when_splits_is_not_a_list(tmp_path):
     """External code review (round 4, medium, openai): ``"splits": 1``
     (a scalar) used to raise ``TypeError`` iterating a non-iterable during
