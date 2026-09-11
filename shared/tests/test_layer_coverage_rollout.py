@@ -101,6 +101,15 @@ def _clear_cache():
     clear_rollout_cache()
 
 
+def test_gate_rollout_epoch_matches_the_documented_boundary_instant():
+    # Pins the comment above (`_AT_ROLLOUT == GATE_ROLLOUT_AT_EPOCH, to the second`)
+    # as a real assertion rather than an unverified claim.
+    import datetime
+
+    boundary = datetime.datetime.fromisoformat(_AT_ROLLOUT)
+    assert int(boundary.timestamp()) == GATE_ROLLOUT_AT_EPOCH
+
+
 def test_resolve_rollout_commit_finds_a_commit_strictly_before_cutoff(tmp_path):
     root = tmp_path / "repo"
     _init(root)
