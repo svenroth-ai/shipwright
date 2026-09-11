@@ -114,7 +114,7 @@ def test_apply_drops_all_lines_of_multi_status_item(tmp_path: Path):
     triage.mark_status(tmp_path, m, new_status="snoozed", by="user", reason="later")
     _dismiss(tmp_path, m, by="auditDetector", reason="auditResolved")
     triage_gc.main(["--project-root", str(tmp_path), "--apply"])
-    raw = triage._iter_raw_lines(tmp_path)
+    raw = triage._iter_local_lines(tmp_path)
     # Header only — every append/status line for m removed; no orphan status.
     assert [r for r in raw if r.get("id") == m] == []
     assert raw[0].get("schema") == "triage"
@@ -160,7 +160,7 @@ def test_apply_preserves_header_and_validates(tmp_path: Path):
         _dismiss(tmp_path, i, by="auditDetector", reason="auditResolved")
     keep = _add(tmp_path, title="keep", dedup="kk")
     triage_gc.apply_gc(tmp_path, triage_gc.plan_gc(tmp_path)["drop_ids"])
-    raw = triage._iter_raw_lines(tmp_path)
+    raw = triage._iter_local_lines(tmp_path)
     assert raw[0].get("schema") == "triage"
     assert {i["id"] for i in triage.read_all_items(tmp_path)} == {keep}
 
@@ -186,7 +186,7 @@ def test_apply_does_not_fold_outbox_into_tracked(tmp_path: Path):
     """D1 boundary guard: GC compacts the TRACKED store only — it must NOT
     fold OUTBOX lines into the tracked log.
 
-    Regression risk: making ``_iter_raw_lines`` union-aware would otherwise
+    Regression risk: making ``_iter_local_lines`` union-aware would otherwise
     make ``apply_gc`` rewrite the tracked log from the union, materializing the
     gitignored outbox buffer into the tracked log — re-introducing the exact
     main-tree drift D1 exists to prevent. GC operates on the durable store;

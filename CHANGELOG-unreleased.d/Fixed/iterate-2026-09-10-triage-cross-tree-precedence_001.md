@@ -1,0 +1,1 @@
+triage.read_all_items no longer lets an abandoned sibling worktree's stale reopen resurrect a card already dismissed/promoted/parked locally — a local status decision now always outranks a same-id foreign status event, regardless of timestamp
