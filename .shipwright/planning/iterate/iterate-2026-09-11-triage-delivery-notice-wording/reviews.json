@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-triage-delivery-notice-wording",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:07.578531+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:19.617887+00:00",
+      "disposition": "trivial complexity — Review Record cascade is n/a auto per the Phase Matrix; docstring-only change with no risk flags",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:19.617887+00:00",
+      "disposition": "trivial complexity — Review Record cascade is n/a auto per the Phase Matrix; docstring-only change with no risk flags",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:19.617887+00:00",
+      "disposition": "trivial complexity — Review Record cascade is n/a auto per the Phase Matrix; docstring-only change with no risk flags",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:19.617887+00:00",
+      "disposition": "trivial complexity — Review Record cascade is n/a auto per the Phase Matrix; docstring-only change with no risk flags",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:19.617887+00:00",
+      "disposition": "trivial complexity — Review Record cascade is n/a auto per the Phase Matrix; docstring-only change with no risk flags",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:08:19.617887+00:00",
+      "disposition": "trivial complexity — Review Record cascade is n/a auto per the Phase Matrix; docstring-only change with no risk flags",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

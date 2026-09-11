@@ -1,0 +1,23 @@
+{
+  "run_id": "iterate-2026-09-11-triage-delivery-notice-wording",
+  "date": "2026-09-11T15:11:41.525285Z",
+  "event_at": "2026-09-11T15:11:14.246744+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "keyword",
+  "branch": "iterate/triage-delivery-notice-wording",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-triage-delivery-notice-wording",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "trivial complexity, docstring-only change (no behavior touched) -- Test Completeness Ledger is auto n/a per the Phase Matrix."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "docstring-only wording clarification in a Python library module; no startable web/CLI surface of its own -- verification is the unit test suite itself (F0)."
+  },
+  "declared_removals": []
+}

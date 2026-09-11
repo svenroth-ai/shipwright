@@ -142,6 +142,13 @@ CI_ONLY_GATES = {
         "pull_request-only trust boundary its arm-2 base/head comparison needs a "
         "merge base for."
     ),
+    "Check-body suspects (advisory, non-blocking)": (
+        "Same structural reason as the Keystone gate above (reads the SAME regenerated "
+        "traceability manifest), plus the same pull_request-only, merge-base-dependent "
+        "base/head comparison as the Orphan AC binding gate's arm 2. Not itself a merge "
+        "gate — its own CLI returns exit 0 unconditionally — but it is still a bespoke "
+        "CI check with no local equivalent of the freshly-regenerated manifest to read."
+    ),
 }
 
 
