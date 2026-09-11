@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-ac-ratchet-push-observe",
+  "date": "2026-09-11",
+  "section": "CI / P3.7 feeder (a)",
+  "title": "Run the AC coverage ratchet gate on push to main as well as pull_request",
+  "context": "The P3.7 feeder (a) ratchet (shipwright_ac_coverage_baseline.json) only ran inside pull_request CI, so it was observed exactly once in its lifecycle — never again after merge (trg-e69bf1ba, bundling trg-91532c29).",
+  "decision": "Widen the AC coverage ratchet (gate) step's if: condition to also fire on push to main (no merge base needed), and add a push-only --check-baseline-growth --parent-sha <before-sha> flag that diffs the baseline file's own committed bytes against the push's pre-image, since re-running the plain comparison alone detects nothing new (external review, openai, HIGH).",
+  "consequences": "A same-PR self-grandfathered baseline entry now shows up as red on main the very next push instead of staying silently unreviewed forever, but that run is detective (not a required PR check) and self-clears the push after — a missed alarm gets no further signal. An AC that regresses (bound then unbound again) without touching the baseline file's bytes stays NOT closed — tracked as an open follow-up per feeder-checks.md §7.",
+  "rationale": "Mirrors the bloat baseline's continuous re-measurement rather than a second provenance mechanism, per the operator's own dismissal note bundling trg-91532c29 into this card; the baseline-growth diff is the minimal addition needed to make that mechanism actually detect something, per external code review.",
+  "rejected": "A rolling/persisted resolution ledger with cross-run memory, closing the later-regression case too — real design work, deliberately deferred; the operator's note says to check whether the simpler push-trigger fix already covers it before building one, and it only partially does.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

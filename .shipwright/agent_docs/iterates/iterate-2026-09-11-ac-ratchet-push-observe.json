@@ -1,0 +1,84 @@
+{
+  "run_id": "iterate-2026-09-11-ac-ratchet-push-observe",
+  "date": "2026-09-11T01:01:54.452200Z",
+  "event_at": "2026-09-11T01:01:18.002331+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/ac-ratchet-push-observe",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-ac-ratchet-push-observe",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a same-PR --write that self-grandfathers a newly-unbound AC into the baseline is reported as growth vs. the parent commit",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_ac_baseline_growth.py::test_a_newly_grandfathered_entry_is_reported PASSED"
+      },
+      {
+        "behavior": "a stable/shrinking baseline, and the commit that first introduces the baseline file, are never reported as growth",
+        "disposition": "tested",
+        "evidence": "test_ac_baseline_growth.py::test_a_stable_baseline_reports_no_growth, ::test_shrinking_the_baseline_is_not_growth, ::test_the_commit_that_first_introduces_the_baseline_is_not_growth ALL PASSED"
+      },
+      {
+        "behavior": "a multi-commit push needs the push's own before-SHA, not bare HEAD~1, to see growth from an earlier commit in the push",
+        "disposition": "tested",
+        "evidence": "test_ac_baseline_growth.py::test_a_multi_commit_push_needs_the_before_sha_not_bare_head_tilde_1 PASSED"
+      },
+      {
+        "behavior": "an unresolvable --parent-sha (e.g. an all-zeros before on a new branch) fails open with a warning, distinct from a real parent that simply predates the baseline (silent bootstrap)",
+        "disposition": "tested",
+        "evidence": "test_ac_baseline_growth.py::test_an_unresolvable_parent_sha_fails_open_with_a_warning, ::test_a_repo_with_no_parent_commit_fails_open_with_a_warning PASSED"
+      },
+      {
+        "behavior": "a genuine git-level read fault at the parent commit (path shadowed by a directory) is distinguished from absence and warns instead of silently bootstrapping",
+        "disposition": "tested",
+        "evidence": "test_ac_baseline_growth.py::test_a_baseline_shadowed_by_a_directory_at_the_parent_warns_not_bootstraps PASSED"
+      },
+      {
+        "behavior": "a non-UTF-8 byte in a historically-committed parent baseline never raises -- the growth check stays on the fail-open path",
+        "disposition": "tested",
+        "evidence": "test_ac_baseline_growth.py::test_a_non_utf8_parent_baseline_does_not_raise PASSED"
+      },
+      {
+        "behavior": "a --baseline path outside --project-root, and a corrupt/unparseable/wrong-shape parent baseline, all fail open with a warning",
+        "disposition": "tested",
+        "evidence": "test_ac_baseline_growth.py::test_a_baseline_path_outside_project_root_fails_open, ::test_an_unparseable_parent_baseline_fails_open_with_a_warning PASSED"
+      },
+      {
+        "behavior": "the CLI rejects --check-baseline-growth combined with --write, and surfaces growth-check warnings in the payload without blocking a clean run",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_check_ac_coverage_ratchet.py::test_check_baseline_growth_rejects_combination_with_write, ::test_check_baseline_growth_warnings_surface_without_blocking PASSED"
+      },
+      {
+        "behavior": "the payload shape is unchanged (no baseline_grew_since_parent key) when --check-baseline-growth is omitted, so existing PR-time consumers see no diff",
+        "disposition": "tested",
+        "evidence": "test_check_ac_coverage_ratchet.py::test_check_baseline_growth_omitted_leaves_payload_shape_unchanged PASSED"
+      },
+      {
+        "behavior": "the ci.yml AC coverage ratchet step's trigger now covers pull_request AND push-to-main, its run command carries the exact --check-baseline-growth --parent-sha expression only on push, and both sibling gates (Keystone, Orphan AC binding) stay pull_request-only with unchanged read-only job permissions",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_ci_yml_ac_ratchet_push_trigger.py (8 tests) ALL PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 10,
+      "tested": 10,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "CI workflow + gate-script change (widen the AC coverage ratchet trigger to push, add a push-only baseline-growth auxiliary signal); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite (real-git-repo fixtures) plus the CI YAML shape tests (F0)."
+  },
+  "declared_removals": []
+}
