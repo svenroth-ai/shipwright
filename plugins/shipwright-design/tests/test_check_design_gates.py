@@ -173,9 +173,7 @@ def test_an_external_script_reference_fails(project):
     )
     code, out = run_gates(project, "standalone")
     assert code == 1
-    assert _problems(out, "standalone") == [
-        "screens/01-login.html: external reference https://cdn.example.com/x.js"
-    ]
+    assert _problems(out, "standalone") == ["screens/01-login.html: external reference https://cdn.example.com/x.js"]
 
 
 def test_an_allowed_font_cdn_reference_passes(project):
@@ -193,14 +191,18 @@ def _git(cwd, *args):
     return subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True, check=True)
 
 
+def _git_init(project):
+    _git(project, "init", "-q")
+    _git(project, "config", "user.email", "test@test.invalid")
+    _git(project, "config", "user.name", "Test")
+
+
 def test_uploads_passes_without_git(project):
     assert run_gates(project, "uploads")[0] == 0
 
 
 def test_a_modified_upload_fails(project):
-    _git(project, "init", "-q")
-    _git(project, "config", "user.email", "test@test.invalid")
-    _git(project, "config", "user.name", "Test")
+    _git_init(project)
     upload = project / ".shipwright" / "designs" / "uploads" / "brand.md"
     upload.write_text("x\n", encoding="utf-8")
     _git(project, "add", "-A")
@@ -228,9 +230,7 @@ def test_no_round_file_is_a_no_op(project):
 
 
 def test_a_flagged_screen_left_untouched_fails(project, tmp_path):
-    _git(project, "init", "-q")
-    _git(project, "config", "user.email", "test@test.invalid")
-    _git(project, "config", "user.name", "Test")
+    _git_init(project)
     _git(project, "add", "-A")
     _git(project, "commit", "-q", "-m", "init")
     round_path = tmp_path / "design-feedback-round1.md"
@@ -241,9 +241,7 @@ def test_a_flagged_screen_left_untouched_fails(project, tmp_path):
 
 
 def test_a_flagged_screen_actually_touched_passes(project, tmp_path):
-    _git(project, "init", "-q")
-    _git(project, "config", "user.email", "test@test.invalid")
-    _git(project, "config", "user.name", "Test")
+    _git_init(project)
     _git(project, "add", "-A")
     _git(project, "commit", "-q", "-m", "init")
     (project / ".shipwright" / "designs" / "screens" / "01-login.html").write_text(
@@ -262,9 +260,7 @@ def test_boundary_passes_without_git(project):
 
 
 def test_boundary_fails_on_a_production_path(project):
-    _git(project, "init", "-q")
-    _git(project, "config", "user.email", "test@test.invalid")
-    _git(project, "config", "user.name", "Test")
+    _git_init(project)
     src = project / "src"
     src.mkdir()
     (src / "app.py").write_text("print('hi')\n", encoding="utf-8")

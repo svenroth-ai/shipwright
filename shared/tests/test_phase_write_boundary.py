@@ -27,7 +27,7 @@ def _init_repo(tmp_path: Path) -> Path:
 
 
 # --------------------------------------------------------------------------- #
-# find_boundary_violations — pure prefix logic
+# find_boundary_violations — directory-prefix vs exact-file matching
 # --------------------------------------------------------------------------- #
 
 
