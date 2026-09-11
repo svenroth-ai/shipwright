@@ -168,6 +168,26 @@ def test_existing_open_pr_skips_push_and_reports_not_delivered(monkeypatch, repo
     assert any("did not ship it" in w for w in sweep_warnings(result))
 
 
+def test_malformed_gh_list_response_is_treated_as_no_existing_pr(monkeypatch, repo):
+    """External review, PR #725 round 4: gh_json's output could be a
+    well-formed JSON document of the WRONG shape (a mapping instead of a
+    list) — _existing_promotion_pr must never raise on it, just treat it as
+    'no existing PR found' and proceed with delivery."""
+    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
+    monkeypatch.setattr(subprocess, "run", _stub_run(gh_list_result={"unexpected": "shape"}))
+    result = run_layer_promotion_sweep(repo, "iterate-x", "main")
+    assert result.status == "delivered"
+
+
+def test_gh_list_response_with_non_mapping_rows_is_treated_as_no_existing_pr(monkeypatch, repo):
+    """Same boundary, the list-of-wrong-shape-rows variant: a row that isn't
+    itself a mapping must be skipped, never raise past _existing_promotion_pr."""
+    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
+    monkeypatch.setattr(subprocess, "run", _stub_run(gh_list_result=["not-a-mapping"]))
+    result = run_layer_promotion_sweep(repo, "iterate-x", "main")
+    assert result.status == "delivered"
+
+
 def test_push_failure_still_resets_local_branch(monkeypatch, repo):
     pre_sha = _head_sha(repo)
     (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")

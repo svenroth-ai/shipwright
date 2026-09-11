@@ -68,9 +68,17 @@ def _existing_promotion_pr(worktree_path: Path, default_branch: str) -> str:
          "--json", "url,headRefName", "--limit", "100", *_repo_args(worktree_path)],
         cwd=worktree_path,
     )
-    for row in rows or []:
+    # gh_json already degrades a non-zero exit or unparseable stdout to None,
+    # but a well-formed JSON document of the WRONG shape (not a list, or a
+    # list of non-mapping entries) would still reach an unguarded .get() and
+    # raise past this "always returns" boundary (external review, PR #725).
+    if not isinstance(rows, list):
+        return ""
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
         if str(row.get("headRefName") or "").startswith(BRANCH_PREFIX):
-            return row.get("url") or ""
+            return str(row.get("url") or "")
     return ""
 
 
