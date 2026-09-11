@@ -151,29 +151,20 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 2,
+      "findings_count": 1,
       "findings": [
         {
           "severity": "low",
-          "category": "test-coverage",
-          "file": "shared/tests/test_design_gate_extras_stage2_review.py",
-          "line": 158,
-          "finding": "The empty-chrome-definition regression test used a valid non-nav HTML fixture, but the literally-empty string (what the caller's _read() yields for an unreadable file) shares the same code path and was not pinned.",
-          "suggestion": "Parametrize the test over both the empty string and the no-nav-markup HTML.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
           "category": "readability",
-          "file": "shared/scripts/lib/design_gate_extras.py",
-          "line": 35,
-          "finding": "screen_declares_nav is a public cross-module import used by check-design-gates.py but was absent from __all__, unlike every other exported gate function.",
-          "suggestion": "Add screen_declares_nav to __all__.",
+          "file": "plugins/shipwright-plan/tests/test_check_plan_gates.py",
+          "line": 44,
+          "finding": "The regression test's docstring attributed its cwd-must-exist deviation from run_gates() to Windows, but subprocess.run raises before the script starts on a nonexistent cwd on every platform.",
+          "suggestion": "Drop the Windows qualifier; describe it as an all-platforms constraint so a future maintainer doesn't simplify it back to run_gates() on Linux CI.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-11T07:40:44.534513+00:00",
+      "completed_at": "2026-09-11T07:56:19.906086+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
