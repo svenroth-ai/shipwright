@@ -243,7 +243,8 @@ def test_red_in_parallel_and_red_serially_fails_the_gate(tmp_path, monkeypatch):
 @pytest.mark.covers("FR-01.11/AC08")
 @pytest.mark.parametrize("fault_rc", [2, 3, 4, 5])
 def test_a_reproducing_infra_fault_fails_the_gate(tmp_path, monkeypatch, fault_rc):
-    """AC08: a repeated fault still fails the gate — nothing is laundered."""
+    """AC08: a DETERMINISTIC fault (rc 5 = nothing collected, usage error, ...)
+    reproduces on the retry and must still STOP the gate — nothing is laundered."""
     script = {u: [0, 0] for u in ("shipwright-alpha", "shared/tests",
                                   "shared/scripts/tests", "shared/scripts/tools/tests")}
     script["integration-tests"] = [fault_rc, fault_rc]
@@ -256,7 +257,9 @@ def test_a_reproducing_infra_fault_fails_the_gate(tmp_path, monkeypatch, fault_r
 
 @pytest.mark.covers("FR-01.11/AC08")
 def test_a_transient_infra_fault_recovers_but_is_reported(tmp_path, monkeypatch):
-    """AC08: a transient fault recovers on retry (18 concurrent `uv`s race)."""
+    """AC08: 18 concurrent `uv` processes CREATE infra faults serial runs never had
+    (hardlink races in the shared cache). Refusing them a retry would just trade a
+    race-induced false STOP for an infra-induced one. It recovers — loudly."""
     script = {u: [0, 0] for u in ("shipwright-alpha", "shared/tests",
                                   "shared/scripts/tests", "shared/scripts/tools/tests")}
     script["integration-tests"] = [2, 0]   # fault, then clean

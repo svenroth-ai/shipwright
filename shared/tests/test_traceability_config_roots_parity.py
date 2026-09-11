@@ -41,12 +41,17 @@ def _load_root_conftest():
 
 
 def _configured_test_root_dirs() -> set[Path]:
+    """Mirror ``configured_test_roots``'s (``_test_links_io.py``) entry-skip rules —
+    a ``**`` entry or a non-string/empty entry is skipped there too — so this parity
+    guard can't pass by being more permissive than the collector it is pinning."""
     config = json.loads(
         (REPO_ROOT / "shipwright_compliance_config.json").read_text(encoding="utf-8")
     )
     entries = config["traceability"]["test_roots"]
     resolved: set[Path] = set()
     for entry in entries:
+        if not isinstance(entry, str) or not entry or "**" in entry:
+            continue
         resolved.update(p.resolve() for p in REPO_ROOT.glob(entry) if p.is_dir())
     return resolved
 
@@ -57,6 +62,11 @@ def test_every_discovered_shared_root_is_in_the_traceability_scan():
     configured = _configured_test_root_dirs()
 
     shared_roots = {r for r in discovered if r.is_relative_to(REPO_ROOT / "shared")}
+    assert shared_roots, (
+        "expected at least one ADR-044 pytest root under shared/ — if "
+        "discover_test_roots regressed to finding none, this guard must fail "
+        "loudly instead of vacuously passing"
+    )
     missing = sorted(
         r.relative_to(REPO_ROOT).as_posix()
         for r in shared_roots
