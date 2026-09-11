@@ -15,6 +15,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from lib.review_record import (  # noqa: E402
@@ -83,7 +85,10 @@ def _hostile_record():
     return record
 
 
+@pytest.mark.covers("FR-01.11/AC11")
 def test_record_survives_a_round_trip_unchanged(tmp_path):
+    """AC11: what each review pass found is written down for that run and
+    can be read back later, instead of surviving only as prose."""
     written = _hostile_record()
     write_record(tmp_path, RUN_ID, written)
 
@@ -92,6 +97,7 @@ def test_record_survives_a_round_trip_unchanged(tmp_path):
     assert read_back == written
 
 
+@pytest.mark.covers("FR-01.11/AC11")
 def test_findings_survive_verbatim(tmp_path):
     write_record(tmp_path, RUN_ID, _hostile_record())
     findings = read_record(tmp_path, RUN_ID)["reviews"]["code"]["findings"]

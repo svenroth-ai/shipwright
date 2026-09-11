@@ -13,6 +13,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 # APPENDED, not inserted at 0 — `shared/tests/tools/` exists, so putting this directory
@@ -62,7 +64,11 @@ def _unarmable_host(**kw):
     return _Host(**kw)
 
 
+@pytest.mark.covers("FR-01.11/AC21")
 def test_a_green_current_branch_is_merged_here_and_confirmed():
+    """AC21: the base branch is not protected, so the host cannot arm — the
+    change is merged once every check the host actually ran has passed,
+    instead of being left open for a person to merge by hand."""
     host = _unarmable_host(pr_views=[_open_pr(), {"state": "MERGED"}], sha=SHA)
     result = _deliver(host, _watcher(_ready()))
     assert (result["status"], result["exit_code"]) == ("merged", EXIT_DELIVERED)
@@ -79,10 +85,13 @@ def test_the_merge_is_pinned_to_the_verified_commit():
     assert SHA in merge_call
 
 
+@pytest.mark.covers("FR-01.11/AC25")
 def test_a_refresh_pushes_reverifies_and_waits_again_before_merging():
-    """The invariant: what merges is what was verified. A refresh mid-wait creates
-    a commit the F11 verifier never saw, so it is re-verified and the NEW head's
-    checks must report before the merge."""
+    """AC25: a change that fell behind while waiting is first brought up to
+    date and checked again, and what gets merged is exactly what was
+    checked. The invariant: what merges is what was verified. A refresh
+    mid-wait creates a commit the F11 verifier never saw, so it is
+    re-verified and the NEW head's checks must report before the merge."""
     refreshes = iter([{"ok": True, "pushed": True}, {"ok": True, "pushed": False}])
     host = _unarmable_host(pr_views=[_open_pr(oid="b" * 40), {"state": "MERGED"}],
                            sha="b" * 40)
@@ -216,6 +225,7 @@ def test_a_host_error_while_watching_is_exit_five_not_a_crash():
         assert "could not be read" in result["reason"]
 
 
+@pytest.mark.covers("FR-01.11/AC25")
 def test_a_behind_branch_triggers_a_refresh_instead_of_waiting_forever():
     """The state readiness computes must be ACTED on. `refresh_needed` returned as
     `pending` would poll a BEHIND branch to the 1800s timeout — the very failure mode

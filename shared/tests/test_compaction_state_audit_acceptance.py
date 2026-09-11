@@ -31,6 +31,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STOP_HOOK = REPO_ROOT / "shared" / "scripts" / "hooks" / "generate_handoff_on_stop.py"
 RECORD_REVIEW_PASS = REPO_ROOT / "shared" / "scripts" / "tools" / "record_review_pass.py"
@@ -109,9 +111,13 @@ def _seed_mid_phase_fixture(project_root: Path) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.11/AC29")
 def test_ac3a_record_review_pass_show_reports_interrupted_cascade(tmp_path):
-    """AC-3a — the canonical resume signal (B1's own instruction) must come
-    back correct from a cold subprocess reading only reviews.json."""
+    """FR-01.11/AC29 — a change interrupted partway through review passes is
+    picked back up by naming every review pass still open, read from the
+    same record each pass writes to. AC-3a — the canonical resume signal
+    (B1's own instruction) must come back correct from a cold subprocess
+    reading only reviews.json."""
     project_root = tmp_path
     _init_git_repo_on_iterate_branch(project_root)
     _seed_mid_phase_fixture(project_root)
@@ -130,6 +136,7 @@ def test_ac3a_record_review_pass_show_reports_interrupted_cascade(tmp_path):
     assert reviews["doubt"]["status"] == "pending"
 
 
+@pytest.mark.covers("FR-01.11/AC29")
 def test_ac3b_stop_hook_handoff_surfaces_interrupted_cascade(tmp_path):
     """AC-3b — the same signal, rendered into the handoff a human or a
     differently-triggered resume reads, produced by the real Stop-hook
@@ -158,6 +165,7 @@ def test_ac3b_stop_hook_handoff_surfaces_interrupted_cascade(tmp_path):
     assert "Review cascade interrupted" in content
 
 
+@pytest.mark.covers("FR-01.11/AC29")
 def test_ac3a_and_ac3b_agree_on_which_types_are_pending(tmp_path):
     """Both paths must name the SAME pending set from the SAME fixture —
     the renderer is a convenience view over the same reviews.json B1 reads

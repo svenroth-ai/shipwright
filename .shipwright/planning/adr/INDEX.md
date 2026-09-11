@@ -121,3 +121,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Mechanisable checks for the 18 flagged FR-01.03 / FR-01.04 lines](iterate-2026-09-11-e1-checks-plan-design.md)
 - [ADR — Mechanised checks for FR-01.02 (/shipwright-project) and FR-01.16 (elicitation)](iterate-2026-09-11-e2-checks-project-elicitation-checks.md)
 - [t0 seam survey — review findings ledger (campaign req3-05-test-backfill-mono)](iterate-2026-09-11-t0-seam-survey-findings.md)
+- [ADR spec-ref: FR-01.11 AC backfill (t1, req3-05-test-backfill-mono)](iterate-2026-09-11-t1-iterate-surface-fr-01-11-ac-backfill.md)

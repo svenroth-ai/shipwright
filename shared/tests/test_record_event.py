@@ -13,6 +13,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
@@ -218,16 +220,19 @@ class TestFrOrChangeTypeGate:
         event = self._iterate_event(new_frs=["FR-02.07"])
         assert _fr_or_change_type_gate_error(event) is None
 
+    @pytest.mark.covers("FR-01.11/AC04")  # a deliberate none_reason passes
     def test_iterate_with_change_type_and_none_reason_passes(self):
         event = self._iterate_event(change_type="tooling", none_reason="CI fix")
         assert _fr_or_change_type_gate_error(event) is None
 
+    @pytest.mark.covers("FR-01.11/AC03")  # no FR + no reason is rejected
     def test_iterate_without_any_classification_rejected(self):
         event = self._iterate_event()
         err = _fr_or_change_type_gate_error(event)
         assert err is not None
         assert err["error"] == "fr_gate_unclassified"
 
+    @pytest.mark.covers("FR-01.11/AC04")
     def test_change_type_without_none_reason_rejected(self):
         event = self._iterate_event(change_type="tooling")
         err = _fr_or_change_type_gate_error(event)
@@ -274,6 +279,7 @@ class TestFrOrChangeTypeGate:
                 f"{event_type} should bypass FR gate"
             )
 
+    @pytest.mark.covers("FR-01.11/AC03")
     def test_main_exits_1_when_gate_rejects(self, tmp_path, capsys):
         """CLI integration: rejecting events return exit 1, write nothing."""
         from record_event import main

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-t1-iterate-surface",
+  "date": "2026-09-11",
+  "section": "Campaign req3-05-test-backfill-mono, sub-iterate t1 (FR-01.11)",
+  "title": "Bind FR-01.11's 27 unbound ACs to existing tests; fix AC-coverage manifest scan gap",
+  "context": "27 FR-01.11 ACs (AC01-16,19-29) had no @pytest.mark.covers binding. t0's seam survey named 2 test roots (plugins/shipwright-iterate/tests, shared/tests); AC08/AC09's real implementation lives only in a 3rd, already-canonical ADR-044 root (shared/scripts/tools/tests).",
+  "decision": "Tagged 24 of 27 unbound ACs onto existing tests in t0's 2 roots; AC12 left unbound-with-reason (Exception 4). Accepted a 3rd-root deviation for AC08/AC09 (seam is shared/scripts/tools/tests, canonical ADR-044 root) -- Exception 3 in the seam survey, accepted by the campaign owner for t1 specifically. Widened traceability.test_roots to the full ADR-044 list, letting the manifest regen see AC08/AC09's tags. Wrote 2 new tests where none existed (AC20, AC22). Full detail: --spec-ref.",
+  "consequences": "unbound 259->233 (26 of 27 target ACs bound; AC12 left unbound-with-reason, Exception 4); zero new orphans. Bumped test_record_event.py's ADR-092 exception 501->507 (4 decorator lines). Split test_surface_verification.py's 2 new tests into a sibling file instead of bumping it (honest Ousterhout argument impossible for a flat file). Added test_traceability_config_roots_parity.py so this gap can't reopen. Fixed a sbom/dashboard mismatch via `uv sync --extra dev`. Full detail: --spec-ref.",
+  "rationale": "The campaign owner reviewed and accepted the 3rd-root deviation for t1 specifically (2026-09-11) -- that ruling, not a self-cited t0 recommendation scoped to other units, is the authority. Precedent exists for FR-01.20 (3 roots) and FR-01.14 (2 roots incl. this same 3rd root).",
+  "rejected": "Skipping AC08/AC09 (spec forbids leaving an AC unbound without a recorded reason, and a real seam DOES exist); duplicating AC08/AC09's behavior into shared/tests as a new harness (violates 'no new harness where one fits').",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-11-t1-iterate-surface-fr-01-11-ac-backfill.md"
+}
