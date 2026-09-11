@@ -231,11 +231,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T14:02:47.178331+00:00",
-      "disposition": "runner has no Agent tool — cascade delegated to orchestrator at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "completed_at": "2026-09-11T15:05:03.350102+00:00",
+      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis (PR #729): (1) AC-1 line #15 — basis_forbids_assumed (_project_gate_extras.py:78-111) bans ALL 'assumed' Basis cells (bare + qualified) in greenfield with no settlement carve-out, inverting the binding rule at shared/fr-authoring.md:256 ('assumed is never bare... available only together with what would settle it') and shared/requirement-elicitation.md:387-397, and contradicting the producer instructions at plugins/shipwright-project/skills/project/references/spec-generation.md:232-254/467 which are unedited by this diff. (2) AC-1 line #4 — same gate blocks the exact worked greenfield example those producer docs print verbatim, and the producer docs were not reconciled. (3) Row #3b (and #2, #4) in the AC-evidence ledger cite drift-test evidence at shared/tests/test_requirement_elicitation_rigor.py, but the named tests actually live in shared/tests/test_requirement_elicitation_refs.py (lines 161/177/192) -- wrong-file citations. Delivery stopped; PR #729 left open for human/agent repair -- narrow the gate to the un-settled case the rule actually forbids, or amend the three binding docs in-diff and re-state the ledger row honestly; also fix the 3 wrong-file ledger citations.",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
