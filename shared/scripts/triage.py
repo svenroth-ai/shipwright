@@ -222,29 +222,14 @@ def _append_ids_at(path: Path) -> set[str]:
         if isinstance(ln, dict) and ln.get("event") == "append"
     }
 
-def _iter_raw_lines(project_root: Path | str) -> list[dict]:
-    """Tolerant union reader — tracked, THEN outbox, THEN foreign, file order.
-
-    The tracked/outbox union (campaign 2026-06-08-triage-outbox-delivery / D1)
-    makes background producer appends + status-flips that land in the outbox
-    visible to every Python consumer immediately, without a sweep. Resolution
-    is by id in :func:`read_all_items`, so a line present in both (post-sweep,
-    pre-GC) collapses to one item.
-
-    The foreign tail (measured 2026-09-06, trg-5e0b9b16 / trg-e85c5c8e) adds
-    status/amend events from a SIBLING worktree's tracked log — never an
-    append, never a worktree's own outbox (see :mod:`lib.triage_cross_tree`'s
-    boundary note). Appended last, so on a timestamp tie the FOREIGN event
-    wins pass 2's ``(ts, file-order)`` sort — same pure-chronological,
-    no-origin-privilege rule as the tracked-then-outbox tie-break above. Safe
-    regardless: `pendingDelivery` (:mod:`lib.triage_delivery`) answers
-    "delivered" via canonical-content comparison against `tracked`, not via
-    which physical copy this tie-break picks. Empty unless main tree.
-    """
+def _iter_local_lines(project_root: Path | str) -> list[dict]:
+    """Tolerant union reader — tracked THEN outbox, file order (D1), no
+    foreign tail. :func:`read_all_items` reads this and the foreign lines
+    (:mod:`lib.triage_cross_tree`) separately so its pass 2 can tell them
+    apart and apply origin precedence (see that docstring)."""
     out: list[dict] = []
     for path in (_triage_path(project_root), _outbox_path(project_root)):
         out.extend(_iter_raw_lines_at(path))
-    out.extend(load_shared_lib("triage_cross_tree").foreign_status_and_amend_records(project_root))
     return out
 
 # ---------------------------------------------------------------------------
@@ -812,9 +797,40 @@ def read_all_items(
     stops an OUTBOX `append` (status:triage) clobbering a TRACKED status
     flip; (2) ts-primary ordering preserves the single-file "later line
     wins" contract across files (external review, OpenAI #5 / Gemini #1).
+
+    **Local status always outranks a foreign status (fixed 2026-09-10,
+    trg-74ef24ce).** A SIBLING's `status` event applies only when this tree's
+    OWN tracked+outbox union has no `status` event for that id — a local
+    decision can never be reopened by a sibling regardless of timestamp; a
+    foreign status still fills the gap for an id never locally decided.
+    Measured harm: an abandoned worktree's stale reopen outranked a dismiss
+    already on `origin/main` purely by timestamp. `amend` is unscoped by this
+    rule — local or foreign, it stays purely chronological (no `status` to
+    reopen).
     """
     _defer, _amend, _flds = _load_triage_defer(), _load_triage_amend(), _load_triage_fields()
-    raw_lines = [r for r in _iter_raw_lines(project_root) if isinstance(r, dict)]
+    local_lines = [r for r in _iter_local_lines(project_root) if isinstance(r, dict)]
+    # Only a VALID local status counts as "decided" — mirrors pass 2's own
+    # tolerant-skip below and `lib.triage_delivery`'s parallel filter, so a
+    # corrupted local record can't block a legitimate foreign gap-fill.
+    local_status_ids = {
+        r["id"] for r in local_lines
+        if r.get("event") == "status"
+        and isinstance(r.get("id"), str)
+        and r.get("newStatus") in STATUSES
+    }
+    # Precedence rule (see docstring): drop a foreign `status` for an id this
+    # tree has already decided locally, before it ever reaches pass 2.
+    foreign_lines = [
+        r for r in load_shared_lib("triage_cross_tree").foreign_status_and_amend_records(project_root)
+        if isinstance(r, dict)
+        and not (
+            r.get("event") == "status"
+            and isinstance(r.get("id"), str)
+            and r["id"] in local_status_ids
+        )
+    ]
+    raw_lines = local_lines + foreign_lines
 
     # Pass 1 — every append establishes a base record (union of both files).
     resolved: dict[str, dict] = {}

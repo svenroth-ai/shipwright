@@ -136,9 +136,10 @@ def foreign_undelivered_from_records(
     :func:`lib.triage_cross_tree.foreign_records_by_branch`. Cross-tree
     counterpart of :func:`undelivered_from_records` (kept separate so that
     function's own tests/callers stay untouched) — same canonical-delivered
-    check, extended with a third source ordered exactly as
-    :func:`triage.read_all_items` orders it: tracked, outbox, then foreign
-    (``triage._iter_raw_lines``), by ``(ts, position)``. An id whose deciding
+    check, extended with a third source ordered tracked, outbox, then foreign,
+    by ``(ts, position)`` — delivery facts, not resolved status, so this
+    deliberately skips `read_all_items`'s local-wins rule (see
+    :mod:`lib.triage_cross_tree`'s docstring). An id whose deciding
     event is already canonically present in ``tracked`` (e.g. after that
     branch merged) is absent here even if a stale copy lingers in a foreign
     log and technically wins a timestamp tie by position — see the canonical

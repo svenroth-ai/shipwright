@@ -34,6 +34,15 @@ outbox, that clone's own undecided buffer. Only a MAIN tree reads its
 siblings; a linked worktree never does (no ``.worktrees`` of its own in the
 normal layout).
 
+**Local-outranks-foreign precedence (fixed 2026-09-10, trg-74ef24ce) lives in
+`triage.read_all_items`, not here** — this module hands its caller every
+foreign `status`/`amend` record it finds and applies no precedence itself, by
+design (see "reported, never delivered" above). `cross_tree_delivery_facts`
+below is UNCHANGED by that fix and must stay that way: a sibling's
+undelivered decision is still correctly reported as pending even after this
+tree's own tracked log has since overridden it — a true statement about
+delivery, not a status the board should show.
+
 **No expiry, by design constraint, not oversight** (Stage-3 doubt review,
 finding 3). Whether a branch is abandoned vs. still in flight is a question
 only ``git`` can answer (is it merged?), and this module never shells out.

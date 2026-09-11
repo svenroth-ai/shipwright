@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-10-triage-cross-tree-precedence",
+  "date": "2026-09-11",
+  "section": "Iterate — bug: triage cross-tree status precedence",
+  "title": "Local status always outranks a foreign status",
+  "context": "read_all_items ordered status/amend events by (ts, file-order) with no origin precedence; a stale reopen in an abandoned sibling worktree outranked a real dismiss on origin/main.",
+  "decision": "A foreign status event applies only when this tree's own tracked+outbox union has no status event for that id; amend stays purely chronological.",
+  "consequences": "A local decision can never be reopened by a stale sibling regardless of timestamp; a foreign status still fills a gap for an id never locally decided.",
+  "rationale": "Local truth must be authoritative over an unmerged/abandoned worktree's foreign tail, which is advisory data by lib.triage_cross_tree's own design.",
+  "rejected": "Filtering at the lib.triage_cross_tree source layer instead of in read_all_items -- would invert the module boundary that module already documents.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-10-triage-cross-tree-precedence-bloat-exception.md"
+}
