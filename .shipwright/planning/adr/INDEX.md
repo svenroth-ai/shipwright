@@ -117,6 +117,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Retarget the v1 update_step path onto phase_tasks\[\], then drop current_step/completed_steps](iterate-2026-09-10-s5-retarget-v1-then-drop.md)
 - [ADR: Bloat exception — grow `shared/scripts/triage.py` to 909 lines (extends ADR-121)](iterate-2026-09-10-triage-cross-tree-precedence-bloat-exception.md)
 - [One-time rollout transition grace for check_binding_completeness](iterate-2026-09-11-binding-completeness-rollout-transition.md)
+- [CI supply-chain ack authorship guard](iterate-2026-09-11-ci-supplychain-ack-authorship-decision.md)
 - [Mechanisable checks for the 18 flagged FR-01.03 / FR-01.04 lines](iterate-2026-09-11-e1-checks-plan-design.md)
 - [ADR — Mechanised checks for FR-01.02 (/shipwright-project) and FR-01.16 (elicitation)](iterate-2026-09-11-e2-checks-project-elicitation-checks.md)
 - [t0 seam survey — review findings ledger (campaign req3-05-test-backfill-mono)](iterate-2026-09-11-t0-seam-survey-findings.md)

@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-p3-8-rewritability-advisory",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T22:09:41.942163+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "design",
+          "file": null,
+          "line": null,
+          "finding": "Consider emitting a per-FR proxy-link count (how many of its changing runs have rationale) in the detail text, not just linked/unlinked, so a reader can gauge confidence.",
+          "suggestion": "A per-FR sub-table, if ever needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "design",
+          "file": null,
+          "line": null,
+          "finding": "Splitting group_i_rewritability.py out 'the moment the addition first crossed 300 lines' is slightly premature abstraction for a small renderer.",
+          "suggestion": "Acceptable as-is; mirrors the established pattern, so it's consistent rather than novel.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "could_not_determine will likely dominate the first-run output; if I9 rendered one line per FR, an advisory check with ~all-FR 'unknown' output would read as noise and be ignored. Verify the rendering aggregates rather than dumping every FR.",
+          "suggestion": "Confirm the rendering shape aggregates (one dashboard row per audit run) rather than one line per FR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The Run-ID: regex against decision_log.md could false-positive-match inside a fenced code block, blockquote, or table cell rather than a real bullet.",
+          "suggestion": "Verify empirically against the real decision_log.md, or anchor the regex to the aggregator's actual bullet shape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "EventLogUnreadable renders as pass naming the failure -- ensure this is visually distinct from a genuine 'all linked' pass so a broken log is not mistaken for a clean bill of health.",
+          "suggestion": "Lead the unreadable-log message with a distinct marker such as 'NOT EVALUATED'.",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Read-only, fixed relative paths, no new trust boundary; CI/workflow non-touch correctly sidesteps the supply-chain constraint.",
+          "suggestion": "None.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": null,
+          "line": null,
+          "finding": "The 'linked' signal as planned is run-level, not FR-level -- an FR would read as linked whenever ANY decision drop exists for a run that touched it, even if the drop's rationale is about a different FR the same run also changed. This risks false reassurance, the opposite of M7's intended signal.",
+          "suggestion": "State the proxy nature explicitly in the rendered dashboard text itself, not only in a docstring a reader may never open.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": null,
+          "line": null,
+          "finding": "'Never fails a build' is only substantiated for EventLogUnreadable in the plan; the decision-drop directory / decision_log.md reads could still raise on a permission error, encoding fault, or an unexpected parser exception, crashing the audit.",
+          "suggestion": "Wrap the decision-drop directory scan in try/except OSError, degrading to an empty set rather than propagating.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "Presence of a decision-drop file / Run-ID bullet is treated as rationale evidence without checking the content is non-blank -- a placeholder or hand-edited empty drop would count as linked.",
+          "suggestion": "Require a non-blank decision field before counting a run_id as carrying rationale.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "design",
+          "file": null,
+          "line": null,
+          "finding": "The plan knowingly adds a fourth independent decision-drop directory-scanning loop because the existing helper (decision_drops_index._pending_drops) is private -- duplicating file-discovery/parsing semantics that must now be kept in sync by hand.",
+          "suggestion": "Promote a narrow public wrapper around the existing private function instead of writing a new scan.  Overall assessment: ship-with-fixes -- the advisory/pass wiring meets the 'never fails a build' requirement in spirit, but the run-level-vs-FR-level proxy semantics and the untested directory-read failure path need addressing before this reports a trustworthy signal.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T22:08:59.910161+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] The M7 rewritability-advisory design is sound: it verifies the linkage does not exist as a first-class field before building a proxy, states the proxy nature explicitly, keeps I9 unconditionally advisory, and reuses the existing event-log reader and decision-drop scanner rather than re-implementing them.\n\n- Category: design\n  Severity: low\n  Finding: Consider emitting a per-FR proxy-link count (how many of its changing runs have rationale) in the detail text, not just linked/unlinked, so a reader can gauge confidence.\n  Suggestion: A per-FR sub-table, if ever needed.\n- Category: design\n  Severity: low\n  Finding: Splitting group_i_rewritability.py out 'the moment the addition first crossed 300 lines' is slightly premature abstraction for a small renderer.\n  Suggestion: Acceptable as-is; mirrors the established pattern, so it's consistent rather than novel.\n- Category: correctness\n  Severity: medium\n  Finding: could_not_determine will likely dominate the first-run output; if I9 rendered one line per FR, an advisory check with ~all-FR 'unknown' output would read as noise and be ignored. Verify the rendering aggregates rather than dumping every FR.\n  Suggestion: Confirm the rendering shape aggregates (one dashboard row per audit run) rather than one line per FR.\n- Category: edge-case\n  Severity: low\n  Finding: The **Run-ID:** regex against decision_log.md could false-positive-match inside a fenced code block, blockquote, or table cell rather than a real bullet.\n  Suggestion: Verify empirically against the real decision_log.md, or anchor the regex to the aggregator's actual bullet shape.\n- Category: correctness\n  Severity: low\n  Finding: EventLogUnreadable renders as pass naming the failure -- ensure this is visually distinct from a genuine 'all linked' pass so a broken log is not mistaken for a clean bill of health.\n  Suggestion: Lead the unreadable-log message with a distinct marker such as 'NOT EVALUATED'.\n- Category: security\n  Severity: informational\n   […truncated]\n\n[openai] - Category: bug\n  Severity: HIGH\n  Finding: The 'linked' signal as planned is run-level, not FR-level -- an FR would read as linked whenever ANY decision drop exists for a run that touched it, even if the drop's rationale is about a different FR the same run also changed. This risks false reassurance, the opposite of M7's intended signal.\n  Suggestion: State the proxy nature explicitly in the rendered dashboard text itself, not only in a docstring a reader may never open.\n- Category: bug\n  Severity: HIGH\n  Finding: 'Never fails a build' is only substantiated for EventLogUnreadable in the plan; the decision-drop directory / decision_log.md reads could still raise on a permission error, encoding fault, or an unexpected parser exception, crashing the audit.\n  Suggestion: Wrap the decision-drop directory scan in try/except OSError, degrading to an empty set rather than propagating.\n- Category: correctness\n  Severity: medium\n  Finding: Presence of a decision-drop file / Run-ID bullet is treated as rationale evidence without checking the content is non-blank -- a placeholder or hand-edited empty drop would count as linked.\n  Suggestion: Require a non-blank decision field before counting a run_id as carrying rationale.\n- Category: design\n  Severity: medium\n  Finding: The plan knowingly adds a fourth independent decision-drop directory-scanning loop because the existing helper (decision_drops_index._pending_drops) is private -- duplicating file-discovery/parsing semantics that must now be kept in sync by hand.\n  Suggestion: Promote a narrow public wrapper around the existing private function instead of writing a new scan.\n\nOverall assessment: ship-with-fixes -- the advisory/pass wiring meets the 'never fails a build' requirement in spirit, but the run-level-vs-FR-level proxy semantics and the untested directory-read failure path need addressing before this reports a trustworthy signal.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T22:09:11.557826+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T22:09:16.969026+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/rewritability_links.py (~line 175, the `run_id = _clean(event.get(\"adr_id\") or event.get(\"run_id\")); if not run_id: continue` branch)",
+          "line": null,
+          "finding": "A `work_completed` event that names FRs in `affected_frs`/`new_frs` but carries no `adr_id`/`run_id` is skipped entirely, so a requirement whose ONLY recorded change is such an event classifies as `could_not_determine` rather than `unlinked`. That conflates \"no recorded change\" with \"change recorded but unattributable,\" which the module's own three-outcome discipline says are materially different claims. The event-log reader predates this change so its guarantees are unknown here, but the module silently narrows its own \"recorded changes\" set.",
+          "suggestion": "Either skip only the run-id extraction and still record the FR as having a change with an empty run-id set (→ unlinked), or at minimum document this misclassification alongside the other named limitations in §6.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/rewritability_links.py, `_RUN_ID_BULLET_RE",
+          "line": null,
+          "finding": "The regex matches `Run-ID:` anywhere in `decision_log.md` (prose, tables, fenced blocks), not only on aggregator bullets. This is disclosed in the plan doc (§5a finding 8) and empirically checked against this repo, so it is a disclosed residual — but note the regex also isn't anchored to line start, so it's slightly broader than even the plan's description (\"bullet\") suggests.",
+          "suggestion": "Consider anchoring with `^-\\s\\\\Run-ID:\\\\` in MULTILINE mode, which matches the aggregator's observed output; low priority given the disclosure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_audit_group_i_rewritability.py",
+          "line": null,
+          "finding": "No test covers the preview-cap rendering (>5 unlinked ids), the `EventLogUnreadable` branch of `rewritability_detail` at the Group I wiring level, or the mixed linked+unlinked rendering. The unreadable-log branch in `group_i_rewritability.py` — the \"never fails a build\" guarantee's most fragile part — is only unit-tested indirectly (the shared-lib test proves propagation, but nothing proves the renderer's except-clause catches `rw.EventLogUnreadable` specifically, e.g. if `load_shared_lib` returned a module without that attribute the except would raise `AttributeError` before evaluating).",
+          "suggestion": "Add one Group-I-level test that monkeypatches the loaded module's `scan_fr_rationale_links` to raise `EventLogUnreadable` and asserts the \"NOT EVALUATED\" detail and `pass` status.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-compliance/scripts/audit/group_i_rewritability.py, all-empty branch",
+          "line": null,
+          "finding": "If `fr_ids` is empty (or every FR classifies `linked`), the \"all N requirement(s)…\" message fires even when N is 0 or when `unlinked`/`could_not_determine` are empty because there are no FRs at all, producing \"all 0 requirement(s) with recorded changes were changed in a run that also recorded a decision-drop/ADR\" — misleading phrasing for a vacuous case.",
+          "suggestion": "Guard the all-empty branch with `if scan.linked:` or emit a distinct \"no requirements in catalog\" wording.  No security issues (read-only, fixed relative paths), no regressions to existing callers (`pending_drops` is an additive wrapper; `_ADVISORY_CHECKS`/`_CHECKS` additions are backward-compatible; the updated integration test and docs correctly reflect the new I9 id).  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[shared/scripts/lib/rewritability_links.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-r1qcxpso\\shared\\scripts\\lib\\rewritability_links.py:80)",
+          "line": null,
+          "finding": "_RUN_ID_BULLET_RE` matches `Run-ID:` anywhere in `decision_log.md`, including ADR prose or fenced examples. An unrelated ADR containing `Run-ID: run-a` can make requirements changed in `run-a` appear linked, so I9 fails to report genuinely unlinked requirements.",
+          "suggestion": "Parse only actual Run-ID bullet lines (for example, an anchored multiline regex matching `^- Run-ID: <id>$`) and add a test containing the marker in ADR body/fenced text.  Overall assessment: ship-with-fixes. The advisory/pass wiring meets the “never fails a build” requirement, but this false-positive path undermines the required reporting signal.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T22:09:05.090290+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Overall the diff is well-built: both ACs are implemented (I9 reports unlinked requirements with a three-outcome classification, and is unconditionally advisory via `_ADVISORY_CHECKS` plus the hardcoded `pass` status in `_rewritability_finding`), error paths are handled, and the tests exercise behavior (linked/unlinked/unknown outcomes, unreadable-directory degradation, blank-decision rejection, EventLogUnreadable propagation) rather than just calling functions. Findings below are refinements, not blockers.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/rewritability_links.py (~line 175, the `run_id = _clean(event.get(\"adr_id\") or event.get(\"run_id\")); if not run_id: continue` branch)\n  Finding: A `work_completed` event that names FRs in `affected_frs`/`new_frs` but carries no `adr_id`/`run_id` is skipped entirely, so a requirement whose ONLY recorded change is such an event classifies as `could_not_determine` rather than `unlinked`. That conflates \"no recorded change\" with \"change recorded but unattributable,\" which the module's own three-outcome discipline says are materially different claims. The event-log reader predates this change so its guarantees are unknown here, but the module silently narrows its own \"recorded changes\" set.\n  Suggestion: Either skip only the run-id extraction and still record the FR as having a change with an empty run-id set (→ unlinked), or at minimum document this misclassification alongside the other named limitations in §6.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/rewritability_links.py, `_RUN_ID_BULLET_RE`\n  Finding: The regex matches `**Run-ID:**` anywhere in `decision_log.md` (prose, tables, fenced blocks), not only on aggregator bullets. This is disclosed in the plan doc (§5a finding 8) and empirically checked against this repo, so it is a disclosed residual — but note the regex also isn't anchored to line start, so it's slightly broader than even the plan's description (\"bu […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: [shared/scripts/lib/rewritability_links.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-r1qcxpso\\shared\\scripts\\lib\\rewritability_links.py:80)\n- Finding: `_RUN_ID_BULLET_RE` matches `**Run-ID:**` anywhere in `decision_log.md`, including ADR prose or fenced examples. An unrelated ADR containing `**Run-ID:** run-a` can make requirements changed in `run-a` appear linked, so I9 fails to report genuinely unlinked requirements.\n- Suggestion: Parse only actual Run-ID bullet lines (for example, an anchored multiline regex matching `^- **Run-ID:** <id>$`) and add a test containing the marker in ADR body/fenced text.\n\nOverall assessment: ship-with-fixes. The advisory/pass wiring meets the “never fails a build” requirement, but this false-positive path undermines the required reporting signal.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T22:09:11.421431+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T22:09:21.835959+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

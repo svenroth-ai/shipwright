@@ -13,12 +13,54 @@ while omitting it starves ``check_ci_supplychain_ack`` (both ERROR), and
 ``restore_derived_to_head`` reverted the ack during ordinary finalization
 (iterate-2026-07-28-ci-ack-per-run-home).
 
+**Operator-only, now checked, not just documented (trg-33d30377 / PR #718).** A
+campaign sub-iterate runner that hits `touches_ci_supplychain` at Step 3.4 must
+STOP and hand back — the ack certifies that a human reasoned about a
+trust-boundary change, and a runner authoring its own permission slip is exactly
+the failure the gate exists to catch (webui #285). That rule used to live only in
+prose (`references/campaign-mode.md`); a runner that simply called this CLI
+anyway produced an ack that satisfied every check downstream, because run
+binding, content binding and field shape all validate a self-written ack
+perfectly — authorship was the one property never checked. This CLI now refuses
+to run at all while `SHIPWRIGHT_LOOP_UNIT_ID` is set in its own process
+environment: that variable is injected around any active autonomous-loop unit
+(this campaign's own runner, or an unrelated `shipwright-build --autonomous`
+one — see :mod:`tools.ci_supplychain_authorship_guard`) and reaches its
+Bash-tool subprocesses via
+`capture_session_id.py`'s `CLAUDE_ENV_FILE` write (the SessionStart hook's
+`additionalContext` alone is text shown to the model, not an OS environment, so
+it cannot be what this guard reads) — see
+:func:`refuse_if_campaign_runner_context`. It is never set for a standalone
+iterate. **It can still be present for the wrong reason** (nothing unsets it
+after a runner returns — copy Step 3b's `export` into your own terminal and
+you get refused too; `unset SHIPWRIGHT_LOOP_UNIT_ID` first), and it is a
+mitigation, not a cryptographic guarantee: `unset` before invoking this CLI
+still defeats it. What it closes is the observed failure — a runner reaching
+for this CLI still carrying the context that names it as one. Checked in both
+`build_ack` and `write_ack` (doubt review: `write_ack` is independently
+reachable, so the check belongs at the actual write, not only its one
+documented caller). Every ack also stamps `provenance` (`"worktree"` or
+`"commit"`); ``check_ci_supplychain_ack`` rejects one lacking it. A
+squash-merge/rebase after recording rewrites the commit SHA and invalidates a
+`"commit"`-provenance ack's `provenance_ref` — re-record post-rewrite.
+
+**Two ways to name the content (trg-33d30377's third finding).** The default —
+no `--commit` — fingerprints the WORKING TREE, for the pre-F6 window the CI
+change is designed to be acknowledged in. Once that change is already
+COMMITTED (the operator is acting later, or the working tree has moved on),
+the working-tree view sees nothing and the CLI has nothing to fingerprint —
+before this flag existed it refused with "no acknowledgement is needed", which
+was actively wrong when one plainly was. Pass `--commit <ref>` to fingerprint
+that commit's branch diff instead (the same `merge-base..<ref>` view the F11
+verifier itself recomputes), so an already-committed CI change stays
+acknowledgeable from any later session.
+
 Run it AFTER the final `shipwright_test_results.json` write (F5) and BEFORE the
 F6 commit stages it: at that point the CI change lives in the WORKING TREE, which
-is what this tool fingerprints. The F11 verifier re-fingerprints the committed
-content, so any edit to a CI file between recording and committing invalidates the
-ack — deliberately, because the recorded sentence would otherwise describe a
-change that no longer exists.
+is what this tool fingerprints by default. The F11 verifier re-fingerprints the
+committed content, so any edit to a CI file between recording and committing
+invalidates the ack — deliberately, because the recorded sentence would
+otherwise describe a change that no longer exists.
 
 Usage::
 
@@ -26,6 +68,11 @@ Usage::
       --project-root . --run-id iterate-YYYY-MM-DD-slug \\
       --consistent-with "ADR-042" \\
       --statement "GitHub-owned actions stay on mutable tags; third-party SHA-pinned."
+
+    # Already committed — fingerprint the commit's branch diff instead:
+    uv run shared/scripts/tools/record_ci_supplychain_ack.py \\
+      --project-root . --run-id iterate-YYYY-MM-DD-slug --commit HEAD \\
+      --consistent-with "ADR-042" --statement "..."
 """
 
 from __future__ import annotations
@@ -54,7 +101,14 @@ from tools.verifiers.ci_supplychain_ack_store import (  # noqa: E402
     is_safe_run_id,
     wrap_ack,
 )
-from tools.verifiers.git_helpers import _run_git  # noqa: E402
+from tools.verifiers.git_blob_read import (  # noqa: E402
+    GitReadError,
+    committed_bytes_reader,
+)
+from tools.verifiers.git_helpers import _iterate_changed_paths, _run_git  # noqa: E402
+from tools.ci_supplychain_authorship_guard import (  # noqa: E402
+    refuse_if_campaign_runner_context,
+)
 
 
 def worktree_ci_paths(project_root: Path) -> list[str]:
@@ -82,20 +136,89 @@ def worktree_ci_paths(project_root: Path) -> list[str]:
     return _ci_paths(paths)
 
 
-def build_ack(project_root: Path, run_id: str, consistent_with: str, statement: str) -> dict:
-    """Compute the run- and content-bound acknowledgement block."""
-    ci_paths = worktree_ci_paths(project_root)
-    if not ci_paths:
+def commit_ci_paths(project_root: Path, commit: str) -> list[str]:
+    """CI-boundary paths on the branch diff at ``commit`` — the F11 verifier's own
+    ``merge-base..commit`` view (:func:`_iterate_changed_paths`), reused rather than
+    re-derived so the two can never independently drift on what "changed" means."""
+    changed = _iterate_changed_paths(project_root, commit)
+    if changed is None:
         raise SystemExit(
-            "the working tree touches no CI supply-chain file — no acknowledgement "
-            "is needed (and recording one would only plant a stale ack for later)"
+            f"cannot obtain the branch diff for {commit!r} — refusing to compute "
+            "a fingerprint over content this tool could not see"
         )
+    return _ci_paths(changed)
+
+
+def _resolve_commit(project_root: Path, ref: str) -> str:
+    """Resolve ``ref`` to a full commit SHA. A symbolic ref (``HEAD``, a moving
+    branch name) recorded verbatim as ``provenance_ref`` would make the ack's own
+    audit trail non-reproducible — it would keep meaning "whatever HEAD was" even
+    after HEAD moves on (external review, Branch A)."""
+    rc, out, _ = _run_git(project_root, "rev-parse", "--verify", f"{ref}^{{commit}}")
+    if rc != 0 or not out.strip():
+        raise SystemExit(
+            f"--commit {ref!r} does not resolve to a commit — refusing to record "
+            "an acknowledgement against a ref this tool could not pin down"
+        )
+    return out.strip()
+
+
+def build_ack(
+    project_root: Path, run_id: str, consistent_with: str, statement: str,
+    commit: str | None = None,
+) -> dict:
+    """Compute the run- and content-bound acknowledgement block.
+
+    Default (``commit`` is ``None``) fingerprints the WORKING TREE — the pre-F6
+    window this was designed for. Passing ``commit`` instead fingerprints that
+    commit's branch diff, for a CI change that is already committed (trg-33d30377's
+    third finding: the working-tree view sees nothing once F6 has run, and refusing
+    with "no acknowledgement is needed" was actively wrong in that case).
+
+    Defense in depth: also refuses inside a campaign runner context here, not
+    only in ``main()`` — mirrors ``write_ack``'s own ``is_safe_run_id`` guard, so
+    a future caller that reaches this function without going through the CLI
+    inherits the refusal rather than a silent gap (external review, Branch A).
+    """
+    refuse_if_campaign_runner_context()
+    if commit:
+        commit = _resolve_commit(project_root, commit)
+        where = f"commit {commit!r}"
+        ci_paths = commit_ci_paths(project_root, commit)
+        reader = committed_bytes_reader(project_root, commit)
+        provenance, provenance_ref = "commit", commit
+    else:
+        where = "the working tree"
+        ci_paths = worktree_ci_paths(project_root)
+        reader = worktree_reader(project_root)
+        provenance, provenance_ref = "worktree", None
+    if not ci_paths:
+        suggestion = (
+            "" if commit else
+            " — if this CI change is already committed, pass --commit <ref> to "
+            "acknowledge the committed content instead"
+        )
+        raise SystemExit(
+            f"{where} touches no CI supply-chain file — no acknowledgement is "
+            f"needed (and recording one would only plant a stale ack for later){suggestion}"
+        )
+    try:
+        fingerprint = ci_supplychain_fingerprint(ci_paths, reader)
+    except GitReadError as exc:
+        # Mirrors the verifier's own posture: a read failure must never be hashed
+        # as "<absent>", the value a genuinely deleted path gets.
+        raise SystemExit(
+            f"could not read committed content for {where} ({exc}) — refusing to "
+            "compute a fingerprint over content this tool could not see"
+        ) from exc
     return {
         "run_id": run_id,
-        "paths_fingerprint": ci_supplychain_fingerprint(ci_paths, worktree_reader(project_root)),
+        "paths_fingerprint": fingerprint,
         "consistent_with": consistent_with.strip(),
         "statement": statement.strip(),
         "ci_paths": ci_paths,
+        "provenance": provenance,
+        "provenance_ref": provenance_ref,
     }
 
 
@@ -111,7 +234,12 @@ def write_ack(project_root: Path, run_id: str, ack: dict) -> Path:
 
     Written atomically: an interrupted write would otherwise leave a half-file
     that fails the gate for a reason unrelated to the CI change itself.
+
+    Guarded here too (doubt review, trg-33d30377): this is the function that
+    actually touches disk and is importable on its own, bypassing
+    ``build_ack``'s guard entirely if called directly with a hand-built dict.
     """
+    refuse_if_campaign_runner_context()
     if not is_safe_run_id(run_id):
         raise SystemExit(
             f"run id {run_id!r} is not a single safe path component — it becomes a "
@@ -143,19 +271,26 @@ def main(argv: list[str] | None = None) -> int:
                          "an iterate-YYYY-MM-DD-slug run id, or #NNN)")
     ap.add_argument("--statement", required=True,
                     help="what this change does to the CI trust boundary")
+    ap.add_argument("--commit", default=None,
+                    help="fingerprint this commit's branch diff instead of the "
+                         "working tree — for a CI change that is already committed")
     args = ap.parse_args(argv)
 
+    # Cheapest, most certain rejection FIRST — before any git call or path
+    # computation. No override: this refusal is unconditional.
+    refuse_if_campaign_runner_context()
+
     root = Path(args.project_root).resolve()
-    # Cheapest, most certain rejection FIRST. Validating it only inside write_ack
-    # meant an unsafe run id on a tree with no CI change was reported as "touches
-    # no CI supply-chain file" — the wrong diagnosis (Stage-2 review). The guard in
-    # write_ack stays as the API-level one for non-CLI callers.
+    # Validating it only inside write_ack meant an unsafe run id on a tree with no
+    # CI change was reported as "touches no CI supply-chain file" — the wrong
+    # diagnosis (Stage-2 review). The guard in write_ack stays as the API-level
+    # one for non-CLI callers.
     if not is_safe_run_id(args.run_id):
         raise SystemExit(
             f"run id {args.run_id!r} is not a single safe path component — it "
             "becomes a directory name under .shipwright/planning/iterate/"
         )
-    ack = build_ack(root, args.run_id, args.consistent_with, args.statement)
+    ack = build_ack(root, args.run_id, args.consistent_with, args.statement, args.commit)
     path = write_ack(root, args.run_id, ack)
     print(json.dumps({"written": str(path), "ci_supplychain_ack": ack}, indent=2))
     return 0

@@ -71,6 +71,18 @@ def drop_dir(project_root: Path | str) -> Path:
     return Path(project_root) / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
+def pending_drops(dd: Path) -> list[tuple[str, dict]]:
+    """Public entry point for ``(filename, payload)`` pairs — see
+    ``_pending_drops`` for the full contract (this is that function, exposed).
+
+    Added for ``lib/rewritability_links.py`` (Group I9, campaign
+    req3-04c-ac-identity-wave2 p3.8, external plan review finding) so a
+    FOURTH independent copy of this directory scan was not needed — see that
+    module's docstring for the earlier reasoning this promotion replaces.
+    """
+    return _pending_drops(dd)
+
+
 def _pending_drops(dd: Path) -> list[tuple[str, dict]]:
     """``(filename, payload)`` for every pending drop in ``dd``, sorted by the
     drop's own ``date`` field (filename as tiebreaker) — NOT filename order.

@@ -1,0 +1,1 @@
+CI supply-chain acknowledgement can no longer be self-authored by an autonomous campaign or build-loop runner; the writer now refuses mechanically (not just by prose rule) while a loop unit is active, and gains a `--commit` mode so an operator can still record the ack for an already-committed CI change.
