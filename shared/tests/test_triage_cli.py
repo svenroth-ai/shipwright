@@ -130,6 +130,7 @@ def test_list_strips_control_chars_from_payload(project: Path) -> None:
     assert "normal text" in result.stdout
 
 
+@pytest.mark.covers("FR-01.14/AC03")
 def test_list_hides_dismissed_and_promoted_items(
     project: Path, triage_item_with_payload: str,
 ) -> None:

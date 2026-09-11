@@ -17,6 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 
 _WORKTREE = Path(__file__).resolve().parents[2]
 _SHARED_SCRIPTS = _WORKTREE / "shared" / "scripts"
@@ -31,7 +32,6 @@ from triage import (  # noqa: E402
 
 AGGREGATOR = _WORKTREE / "shared" / "scripts" / "tools" / "aggregate_triage.py"
 TRIAGE_MD = Path(".shipwright") / "agent_docs" / "triage_inbox.md"
-
 
 def _run_aggregator(project_root: Path, now: str = "2026-05-11T13:00:00Z") -> str:
     """Run the CLI; return stdout. Markdown is written to the file too."""
@@ -53,7 +53,6 @@ def _run_aggregator(project_root: Path, now: str = "2026-05-11T13:00:00Z") -> st
     )
     return (project_root / TRIAGE_MD).read_text(encoding="utf-8")
 
-
 # --- Empty / bootstrap state ---------------------------------------------
 
 def test_empty_project_yields_empty_skeleton(tmp_path: Path) -> None:
@@ -62,7 +61,6 @@ def test_empty_project_yields_empty_skeleton(tmp_path: Path) -> None:
     assert "No triage items pending" in md
     # Counts line shows zeros
     assert "Total: 0" in md
-
 
 def test_header_only_file_yields_empty_skeleton(tmp_path: Path) -> None:
     """File exists but only contains the schema header."""
@@ -75,7 +73,6 @@ def test_header_only_file_yields_empty_skeleton(tmp_path: Path) -> None:
     )
     md = _run_aggregator(tmp_path)
     assert "No triage items pending" in md
-
 
 # --- launchPayload rendering (iterate-2026-05-20-triage-launch-surface) ----
 
@@ -119,6 +116,7 @@ def test_legacy_item_without_payload_renders_today_format(tmp_path: Path) -> Non
     assert "Promote:" in md
 
 
+@pytest.mark.covers("FR-01.14/AC05")
 def test_github_action_unit_missing_payload_renders_visible_placeholder(
     tmp_path: Path,
 ) -> None:
@@ -213,6 +211,7 @@ def test_only_triage_status_shown(tmp_path: Path) -> None:
 
 # --- Severity sort + grouping --------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC24")
 def test_severity_sort_within_source(tmp_path: Path) -> None:
     append_triage_item(tmp_path, source="phaseQuality", severity="low",
                        kind="bug", title="low-item", detail="d")
@@ -243,6 +242,7 @@ def test_grouped_by_source(tmp_path: Path) -> None:
 
 # --- Top-50 cap ----------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC24")
 def test_top_50_cap(tmp_path: Path) -> None:
     for i in range(60):
         append_triage_item(tmp_path, source="phaseQuality", severity="medium",

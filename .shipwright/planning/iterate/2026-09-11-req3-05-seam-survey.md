@@ -164,7 +164,7 @@ exact AC, or add a new qualified tag — do not assume the bare tag already "cou
 | FR-01.11 | /shipwright-iterate | 29 / 27 | `plugins/shipwright-iterate/tests` (plugin-specific mechanics); `shared/tests` for cross-cutting infra ACs the whole pipeline shares (merge-state, revert-detection — Finding 1); AC08/AC09 need a third root — **see Named Exception 3**; AC12's ordering clause has no seam yet — **see Named Exception 4** | `test_diff_risk_recheck.py`, `test_sub_iterate_runner_*`, `test_classify_complexity.py`, `test_campaign*.py` | `shared/tests/test_pr_blockers_merge_state.py` → `AC17`; `shared/tests/test_silent_revert*.py` → `AC18` | t1 |
 | FR-01.12 | /shipwright-preview | 9 / 9 | **No plugin-owned implementation module — see Named Exception 1.** Route through `shared/scripts/tests` for the sub-behaviors it actually orchestrates (dev-server, browser verify) | `shared/scripts/tests/test_browser_verify.py`, `test_detect_frontend_changes.py`; `shared/scripts/dev_server/` has no test dir of its own yet — check before adding one | none yet | t8 |
 | FR-01.13 | /shipwright-adopt | 8 / 6 | `plugins/shipwright-adopt/tests` | `test_adopt_evidence_disclosure.py`, `test_skill_md_env_scaffold.py` | → `AC05` (`test_skill_md_env_scaffold.py`), `AC08` (`test_adopt_evidence_disclosure.py`) | t8 |
-| FR-01.14 | Triage Inbox | 29 / 29 | `shared/tests` (primary — 86 existing triage test files); `shared/scripts/tools/tests` for the CLI-tool layer (`triage_add.py`, `triage_cli.py`, `triage_repair.py`) — **two ADR-044 roots, one unit** | `shared/tests/test_github_api_artifact.py`, `test_drift_triage_emit.py`, `test_security_triage_emit.py`, `test_performance_triage_emit.py`; `shared/scripts/tools/tests/test_suite_race_triage.py` | none yet | t2 |
+| FR-01.14 | Triage Inbox | 29 / 29 | `shared/tests` (primary — 86 existing triage test files); `shared/scripts/tools/tests` for the CLI-tool layer (`triage_add.py`, `triage_cli.py`, `triage_repair.py`) — **two ADR-044 roots, one unit** | `shared/tests/test_github_api_artifact.py`, `test_drift_triage_emit.py`, `test_security_triage_emit.py`, `test_performance_triage_emit.py`; `shared/scripts/tools/tests/test_suite_race_triage.py` | AC26 has no deterministic surface — **see Named Exception 5** | t2 |
 | FR-01.15 | Cross-repo output contract | 8 / 8 | `shared/tests` — but see **Named Exception 2**: no CLI gate script exists yet, only library-level modules | `shared/scripts/lib/contract_baseline.py`, `contract_skeleton.py`; tests: `test_contract_skeleton.py`, `test_cross_repo_contract_documented.py` | none yet | t9 |
 | FR-01.16 | Guided requirement elicitation | 10 / 10 | `shared/tests` (single root — see harness column; code review confirmed AC09 is provable here alone, not a 3rd/4th root) | `shared/tests/test_requirement_elicitation_rigor.py`, `test_requirement_elicitation_discovery.py`, `test_requirement_elicitation_refs.py`; `_elicitation_discovery.py` (shared harness) globs `plugins/*/skills/*/references/*.md` directly from the shared root (see `shared/tests/_elicitation_discovery.py:61`), so AC09's "which capabilities are bound" check across the three invoking surfaces (`shipwright-project`, `shipwright-adopt`, `shipwright-iterate`) is read as doc content from `shared/tests` — it does NOT require running those plugins' own test suites or adding roots | none yet | t6 |
 | FR-01.17 | Independent re-check on the code host | 7 / 7 | `shared/tests` — CI/PR-review surface; the "code host" itself cannot run inside a test, so the existing seam treats `.github/workflows/*.yml` content + the gate scripts that decide merge-readiness as the observable boundary | `shared/tests/test_pr_review_convergence.py`, `test_pr_review_fail_closed.py`, `test_pr_review_fork_trust.py`, `test_check_ci_supplychain_*`, `_pr_review_workflows.py` (fixture reading real workflow YAML) | none yet | t9 |
@@ -358,6 +358,29 @@ future unit reads this note rather than re-deriving the split); a future unit sh
 `FR-01.11/AC12` only once clause (a) has an actual enforcement seam to assert against — wiring
 the internal reviewer arm into the iterate's plan-review path so that it actually runs before
 the external pass, rather than being an unused fallback, is the fix that would create one.
+
+### Exception 5 — FR-01.14 AC26 (no deterministic surface, found during t2 execution)
+
+`FR-01.14/AC26` ("the Triage Inbox is explicitly not a plan") is a
+definitional/policy guarantee about what the Triage Inbox *is not* — the same
+class of AC as Exception 1's "no seam" rows (FR-01.12 AC02/AC03/AC07/AC09):
+there is no deterministic surface anywhere in the codebase that implements or
+enforces "this is not a plan"; it is a documentation/scope claim, not
+executable behavior. No amount of grepping the `shared/tests` or
+`shared/scripts/tools/tests` roots surfaces a candidate seam, because none
+exists — attaching a test to some nearby triage behavior would prove that
+behavior, not this claim.
+
+**Concrete machine outcome:** do NOT tag `FR-01.14/AC26`. It stays in
+`shipwright_ac_coverage_baseline.json`'s `unbound` list, with this section as
+its recorded reason (the same Named-Exception mechanism Exception 1 and
+Exception 4 already use for the campaign's other "no seam exists" ACs — not a
+new convention). The run's own F3 decision drop
+(`iterate-2026-09-11-t2-triage-inbox_001.json`) carries the same reasoning in
+its `decision` field; this section is the durable, campaign-wide record a
+future unit or auditor would actually look at (external plan review, openai +
+glm, medium: a decision-drop alone is not sufficient for a claim the
+acceptance criterion itself calls a "recorded reason").
 
 ## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
 

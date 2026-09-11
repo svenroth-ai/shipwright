@@ -32,11 +32,9 @@ from tools.triage_promote import (  # noqa: E402
 
 PROMOTE_CLI = _WORKTREE / "shared" / "scripts" / "tools" / "triage_promote.py"
 
-
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     return tmp_path
-
 
 @pytest.fixture
 def triage_item(project: Path) -> str:
@@ -92,6 +90,7 @@ def test_sanitize_accepts_at_limit() -> None:
 
 # --- promote() happy path ----------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC04")
 def test_promote_happy_path(project: Path, triage_item: str) -> None:
     result = promote(
         project, item_id=triage_item, task_ref="EXT:linear-ENG-7",
@@ -109,6 +108,7 @@ def test_promote_happy_path(project: Path, triage_item: str) -> None:
     assert item["statusReason"] == "manualPromote"
 
 
+@pytest.mark.covers("FR-01.14/AC03")
 def test_promote_with_reason(project: Path, triage_item: str) -> None:
     promote(
         project, item_id=triage_item, task_ref="EXT:asana-1",

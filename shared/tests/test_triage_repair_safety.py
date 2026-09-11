@@ -87,6 +87,7 @@ def test_file_with_invalid_utf8_is_reported_but_not_rewritten(tmp_path: Path) ->
     assert p.read_bytes() == before, "undecodable bytes must not be destroyed"
 
 
+@pytest.mark.covers("FR-01.14/AC22")
 def test_wholly_unrecoverable_file_is_not_emptied(tmp_path: Path) -> None:
     """Rewriting to zero bytes would drop the schema header and wedge the sweep."""
     project = _project(tmp_path)

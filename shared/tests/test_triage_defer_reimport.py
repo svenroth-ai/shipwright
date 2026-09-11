@@ -86,6 +86,7 @@ def test_idempotent_append_uses_one_instant_captured_inside_its_lock(
     )
 
 
+@pytest.mark.covers("FR-01.14/AC07")
 def test_a_park_that_is_not_due_suppresses_the_re_import(
     tmp_path: Path,
 ) -> None:

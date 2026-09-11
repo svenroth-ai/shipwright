@@ -89,7 +89,6 @@ def test_anything_that_is_not_exactly_yyyy_mm_dd_is_refused(raw) -> None:
 def test_the_day_before_the_revisit_date_is_not_due() -> None:
     assert is_due("2026-09-01", date(2026, 8, 31)) is False
 
-
 def test_the_revisit_date_itself_is_due() -> None:
     """`>=`, not `>`: an operator who says 'bring this back on Sept 1' wants it
     ON Sept 1. Both external reviewers raised this boundary independently."""
@@ -99,7 +98,6 @@ def test_the_revisit_date_itself_is_due() -> None:
 def test_the_day_after_the_revisit_date_is_due() -> None:
     assert is_due("2026-09-01", date(2026, 9, 2)) is True
 
-
 @pytest.mark.parametrize(
     "raw", [None, "", "not-a-date", "2026-02-30", 42],
     ids=["missing", "empty", "prose", "impossible", "int"],
@@ -108,7 +106,6 @@ def test_an_unreadable_revisit_value_is_never_due(raw) -> None:
     """AC-7's conservative direction. An unreadable date must not silently
     re-open an entry; it stays parked, visible, and reversible."""
     assert is_due(raw, date(2099, 1, 1)) is False
-
 
 def test_now_utc_is_timezone_aware_and_utc() -> None:
     """The one clock read in the whole lifecycle. A naive local datetime here
@@ -136,7 +133,11 @@ def test_a_park_whose_date_has_not_arrived_still_reads_as_parked() -> None:
     assert item[DUE_FIELD] is False
 
 
+@pytest.mark.covers("FR-01.14/AC07")
 def test_a_park_whose_date_has_passed_reads_as_open() -> None:
+    """`apply_revisit_expiry` is what `triage.py`'s `read_all_items` calls to
+    resolve the current view, so this proves the actual resurfacing AC07
+    claims, not just the `is_due()` predicate (PR review, openai, high)."""
     [item] = apply_revisit_expiry([_parked("trg-a", "2026-09-01")],
                                   today=date(2026, 9, 2))
     assert item["status"] == "triage"

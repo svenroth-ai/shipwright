@@ -37,11 +37,9 @@ from triage import (  # noqa: E402
     read_all_items,
 )
 
-
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     return tmp_path
-
 
 @pytest.fixture
 def project_with_spaces(tmp_path: Path) -> Path:
@@ -49,7 +47,6 @@ def project_with_spaces(tmp_path: Path) -> Path:
     p = tmp_path / "AI Backup - Documents" / "shipwright"
     p.mkdir(parents=True)
     return p
-
 
 # --- Round-trip: every field producer→file→consumer ---------------------
 
@@ -173,6 +170,7 @@ def test_mark_status_appends_never_mutates(project: Path) -> None:
 
 # --- Mixed-status / aggregator-shape probes -----------------------------
 
+@pytest.mark.covers("FR-01.14/AC01")
 def test_mixed_statuses_all_returned(project: Path) -> None:
     """read_all_items returns ALL items (filtering is the aggregator's job)."""
     a = append_triage_item(project, source="phaseQuality", severity="high",
@@ -228,6 +226,7 @@ def test_corrupt_line_then_status_event_still_resolves(project: Path) -> None:
 
 # --- File lock: in-process contention -----------------------------------
 
+@pytest.mark.covers("FR-01.14/AC20")
 def test_concurrent_appends_thread_pool(project: Path) -> None:
     """8 threads append in parallel — all 8 lines visible, no torn writes."""
     def _append(idx: int) -> str:
@@ -532,6 +531,7 @@ def test_idempotent_window_none_dedups_across_age(project: Path) -> None:
     assert second is None  # age-independent dedup still fires
 
 
+@pytest.mark.covers("FR-01.14/AC02")
 def test_idempotent_concurrency_under_lock(project: Path) -> None:
     """HIGH-1 from code review: dedup-scan + append are atomic under lock.
 
