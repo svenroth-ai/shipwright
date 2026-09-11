@@ -83,7 +83,7 @@ here (external plan review, openai, high — see disposition #2 below).
 | AC04 | shared | `test_triage_promote.py::test_promote_happy_path` |
 | AC05 | shared | `test_github_triage_action_units.py::test_import_findings_emits_action_units_not_per_finding`; `test_triage_aggregator.py::test_github_action_unit_missing_payload_renders_visible_placeholder` |
 | AC06 | shared | `test_github_triage.py::test_import_findings_auto_resolves_fixed_alert`, `::test_failed_fetch_does_not_resolve_items` |
-| AC07 | shared | `test_triage_defer_lifecycle.py::test_the_day_after_the_revisit_date_is_due`; `test_triage_defer_reimport.py::test_a_park_that_is_not_due_suppresses_the_re_import` |
+| AC07 | shared (corrected — see Tier-3 PR-Review finding below) | `test_triage_defer_lifecycle.py::test_a_park_whose_date_has_passed_reads_as_open` (retagged from the `is_due()` predicate test — proves the resolved-view resurfacing itself); `test_triage_defer_reimport.py::test_a_park_that_is_not_due_suppresses_the_re_import` |
 | AC08 | shared (corrected — see disposition #3 below) | `test_triage_defer_producer_coverage.py::test_the_phase_quality_backlog_closes_a_parked_entry` (retagged — see "Stage-1 spec-review REJECT" below) |
 | AC09 | shared | `test_triage_defer_cli.py::test_unpark_puts_a_parked_entry_back_and_clears_its_date` |
 | AC10 | shared | `test_triage_delivery_visibility.py::test_status_flip_only_in_the_outbox_is_undelivered`, `::test_pending_delivery_field_is_unchanged` |
@@ -130,9 +130,12 @@ paired-clause rows:
   asserts a failed fetch leaves existing open items untouched (a fetch error
   must never be read as "everything is fixed").
 - **AC07** (revisit-date lifecycle: due vs. not-due) — a positive/negative
-  pair: `test_the_day_after_the_revisit_date_is_due` and
-  `test_a_park_that_is_not_due_suppresses_the_re_import` assert both edges of
-  the same date comparison.
+  pair: `test_a_park_whose_date_has_passed_reads_as_open` and
+  `test_a_park_that_is_not_due_suppresses_the_re_import` assert both edges;
+  the positive side is bound to the resolved-view function (`apply_revisit_expiry`,
+  called from `triage.py`'s `read_all_items`) rather than the bare `is_due()`
+  predicate, so it proves the entry actually reopens, not just that the date
+  math says it should (Tier-3 PR-review finding — see below).
 - **AC12** (secrets never written verbatim to the triage file) —
   `test_secret_value_never_written_to_triage_file` asserts the raw secret
   string is absent from the written JSONL; `test_secrets_action_unit_payload_is_whitelist_only`
@@ -279,4 +282,16 @@ Reviewed against the full `origin/main` merge-base diff (`76ca8abd3`..`HEAD`,
 | 2 | glm | low | `risk_recheck.json` says `plan_review_required: true`, but `reviews.json`'s `plan` row (before this correction) was dispositioned as a rule-driven skip under the 100-LOC threshold — an internal contradiction | accepted-and-fixed by this run's very purpose — that stale disposition is exactly the bookkeeping error this correction replaces; `reviews.json`'s `plan` row is being re-recorded `completed` in this same pass (see Step 4 below), removing the contradiction |
 | 3 | glm | low | The F3 decision drop cites t0's seam survey by assertion, not by quoting/pointing at the actual row, weakening auditability | acknowledged, not re-opened — the already-committed F3 decision drop is an immutable per-run artifact this correction does not reopen (out of the narrow review-bookkeeping scope authorized for this run); the exact row is now quoted verbatim in this mini-plan's "Cited seam" section, closing the auditability gap going forward |
 | 4 | glm | low | `test_completeness.counts` in the F5c iterate record shows `untestable: 0`/28-of-28, while the decision drop treats AC26 as untestable-with-reason — the two artifacts don't visibly agree on the denominator (28 vs. 29) | acknowledged, not modified — F5/F5c is a different, already-finalized ledger this run's narrow scope (review bookkeeping only, no F0–F6 redo) does not reopen; flagged to the operator as a possible ledger-accuracy follow-up (whether AC26 should appear as `untestable: 1` rather than being excluded from the counted denominator) |
-| 5 | glm | low | `test_the_day_after_the_revisit_date_is_due` (AC07) is a one-line predicate assertion; the reviewer could not independently confirm from the diff alone that the "due → item actually resurfaces" positive integration path (as opposed to just the boolean predicate) is proven somewhere | acknowledged, not re-derived — the finding is explicitly hedged ("may be"), and re-verifying AC-to-test proof depth is a re-derivation of AC bindings, which this run's orchestrator explicitly excluded from scope. AC07's binding already passed Stage-1 spec-review; a fresh depth audit belongs to a new review pass, not this bookkeeping correction |
+| 5 | glm | low | `test_the_day_after_the_revisit_date_is_due` (AC07) is a one-line predicate assertion; the reviewer could not independently confirm from the diff alone that the "due → item actually resurfaces" positive integration path (as opposed to just the boolean predicate) is proven somewhere | now fixed (escalated to a HIGH blocking finding at the Tier-3 PR-review stage and fixed there) — AC07 is retagged onto `test_a_park_whose_date_has_passed_reads_as_open`, which exercises `apply_revisit_expiry` (the function `read_all_items` calls to resolve the current view) and asserts the item's status flips from `snoozed` to `triage`; see the Tier-3 PR-Review section below |
+
+## Tier-3 PR-Review Findings (Step 8, post-merge-base CI gate)
+
+Reviewed the full diff at the trusted head SHA by `openai/gpt-5.6-luna`.
+First pass (commit `723d32aa0`, after the scope-note reconciliation above):
+`decision=block`.
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| 1 | high (blocking) | AC07 was bound to `test_the_day_after_the_revisit_date_is_due`, which only asserts `is_due(...) is True` — it does not verify a due parked item actually resurfaces through the resolved-view/reimport path, so the coverage baseline claimed more than the test proves | accepted-and-fixed — retagged AC07 onto `test_a_park_whose_date_has_passed_reads_as_open`, which calls `apply_revisit_expiry` (the same function `triage.py`'s `read_all_items` uses to resolve the current view) and asserts the item's `status` flips from `snoozed` to `triage` and `DUE_FIELD` is `True` — this proves the actual resurfacing, not just the date predicate it's built from. No baseline change: AC07 was and remains bound, only the cited test changed |
+| — | comment | `risk_recheck.plan_review_required: true` while the canonical review artifact wasn't updated in this diff, and the reviewer suggests reconciling that in the campaign's authoritative metadata rather than the retroactive mini-plan | acknowledged — `reviews.json`'s `plan` row already carries `completed` with the real payload (see Step 3.5 section above); this mini-plan documents the same facts for human readability, it isn't the source of record |
+| — | comment | AC26 remains represented only by a prose exception in the seam survey; suggests a machine-validated exception mapping or sidecar the coverage ratchet can consume | acknowledged, not fixed — same open, campaign-wide schema gap as disposition #4/#11/#17 above; a cross-cutting change spanning every prior "no seam" exception (Exception 1, 4, 5), not a t2-scoped fix |
