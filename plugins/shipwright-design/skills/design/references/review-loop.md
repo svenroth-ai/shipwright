@@ -44,13 +44,26 @@ so Option B parses it identically regardless of how it was produced:
 
 ## Option A — Finalize
 
-**FR-Coverage Gate** (verify before finalizing):
-- Read the spec's Functional Requirements that have UI relevance
-- Verify each UI-relevant FR has at least one screen in `.shipwright/designs/design-manifest.md`
-- If an FR is genuinely backend-only (no screen will ever exist for it), record it under
-  `## Non-UI FRs` in the manifest with the deciding ADR, per Step 6 — do not invent a screen for it
-- Verify `.shipwright/designs/visual-guidelines.md` exists and contains: Colors, Typography, Spacing
-- If uncovered FRs or missing guidelines → fix before proceeding to Spec Backflow
+**Design Gates** (run before finalizing — non-zero exit means STOP):
+
+```bash
+uv run "{plugin_root}/scripts/checks/check-design-gates.py" \
+  --project-root "$(pwd)" --gate all
+```
+
+This is a single command for all of FR-01.04's mechanisable criteria:
+
+| Gate | Checks |
+|---|---|
+| `fr-coverage` | Every UI-relevant FR has ≥1 screen in `design-manifest.md` (or is recorded under `## Non-UI FRs` with a deciding ADR, per Step 6) — do not invent a screen for a genuinely backend-only FR |
+| `tokens` | `visual-guidelines.md` exists AND actually carries non-empty Colours, Typography, Spacing content |
+| `flows` | A multi-screen app shows ≥1 flow between its screens |
+| `chrome` | Every screen's nav targets match `chrome-definition.md`'s (screens with no nav markup — auth/Layout-C — are exempt) |
+| `standalone` | No screen references an external `src`/`href` outside the one allowed Google Fonts CDN |
+| `uploads` | No supplied (git-committed) upload was modified after being supplied |
+| `boundary` | This session's own changes touch only `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`, or `CHANGELOG-unreleased.d/` |
+
+Fix whatever a failing gate names, then re-run before proceeding to Spec Backflow.
 
 **Requirement Write-Back Gate** (blocks Option A — non-zero exit means STOP):
 
@@ -150,6 +163,17 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 2. Parse it: identify screens with status **CHANGES** or **REJECTED**
 3. Identify **global changes** (changes that affect multiple screens — e.g. color shifts, icon style changes, nav label renames). Apply these to ALL screens, not just flagged ones.
 4. Revise only flagged screens — use the snippet assembly process from Step 4
+
+   **Iteration Gate** (FR-01.04 #9 — feedback regenerates only that screen):
+
+   ```bash
+   uv run "{plugin_root}/scripts/checks/check-design-gates.py" \
+     --project-root "$(pwd)" --gate iteration --round ".shipwright/designs/design-feedback-round{N}.md"
+   ```
+
+   Fails if a CHANGES/REJECTED screen was NOT actually regenerated. A drive-by
+   change touching an unflagged screen too only warns — Chrome Change
+   Propagation legitimately touches every screen in the same round.
 5. **Behaviour-vs-appearance read (per round — REQUIRED).** Before backflow, go
    through this round's feedback and decide, item by item, whether it changed
    **what a screen or flow does** or only **how it looks**. Behaviour is: a step

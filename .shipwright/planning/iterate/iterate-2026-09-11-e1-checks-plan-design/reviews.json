@@ -1,0 +1,343 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-e1-checks-plan-design",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:12:38.913278+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The change bundles three distinct kinds of work into one sub-iterate: (a) flipping 3 already-enforced ledger rows, (b) new deterministic checks, and (c) a data-model fix to `screen_registry.py` (the `linked_frs` gap plus a new `<!-- Requirements: ... -->` convention). The registry change is a prerequisite for the design-side FR-coverage checks, not a check itself — it changes how screen metadata is authored across the project, which outlives this change.",
+          "suggestion": "Either split the registry fix into its own preceding commit/sub-iterate (so the convention can be reviewed and existing screens backfilled before the checks that depend on it land), or at minimum record the new HTML-comment convention in an ADR/README alongside the code. Note also: if existing screens haven't been retrofitted with the `<!-- Requirements: ... -->` comments, check #1/#4 will fail on every legacy screen — confirm a backfill step exists or the check reports \"no FR links found\" distinctly from \"FRs not covered.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "phase_write_boundary.py` is described as \"git-status-based.\" Git status is inherently environment-sensitive: pre-existing dirty files, rebase-in-progress, worktrees, and CI checkouts with staged changes all produce false positives/negatives. Since it's shared by both plugins and gates finalize flows (Option A in `review-loop.md`), a false positive blocks finalization.",
+          "suggestion": "Define precisely what it inspects (paths under the current phase dir only? untracked vs modified?) and test the dirty-worktree-unrelated-files case explicitly. Consider narrowing to `git status --porcelain -- <phase paths>` so unrelated dirt is invisible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The `sys.path` / `importlib.util` workaround for `screen_registry.py` is described as resolving a known module-name collision, but it's a fragile private-module hack whose failure mode (a future refactor reintroducing `sys.modules['lib']` binding) will be silent and hard to diagnose.",
+          "suggestion": "Since this is a real architectural hazard (ADR-045), consider renaming the plugin's local `lib` package or restructuring the shared import surface once, rather than working around it at one call site. At minimum, add a regression test asserting the shared package imports correctly after the plugin check script runs in the same process/subprocess.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Two new shared libs (`plan_gate_extras.py`, `design_gate_extras.py`) live in `shared/scripts/lib/` but are consumed by plugin-specific CLIs. `plan_gate_extras` is single-consumer; if `design_gate_extras` likewise only serves `check-design-gates.py`, \"shared\" is the wrong layer — it creates two places to look for a plugin's logic.",
+          "suggestion": "If genuinely single-plugin, place them under the respective plugin's `scripts/lib/` and keep only genuinely dual-use code (`phase_write_boundary.py`) in shared. If shared placement is deliberate (test reuse across plugins), say so in the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "HTML-comment-based FR parsing is whitespace/format-sensitive and invisible in rendered HTML — typos (`Requirements:` vs `Requirement:`, missing `-->`) fail silently to \"no FRs linked.\"",
+          "suggestion": "Have `parse_screen_linked_frs` emit a warning when a screen has zero FR links (likely authoring error rather than intent), and include malformed-comment fixtures in the unit tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan claims the `add --frs` CLI advertised in `screen_registry.py`'s docstring \"was never implemented\" — but if any existing scripts or docs reference it, removing/contradicting that docstring leaves dangling expectations.",
+          "suggestion": "Grep for `--frs` usages and update the docstring to document the HTML-comment convention instead.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "review-loop.md` rewiring (Options A and B) changes an operator-facing workflow document in the same commit as the CLIs it references. If the design check CLI has any environment assumptions (git repo root, session artifact paths), the loop breaks at finalize time, not test time.",
+          "suggestion": "Ensure the integration tests run the CLI from a non-repo-root cwd and against a session fixture matching what `review-loop.md` actually produces.  No security concerns: read-only checks over local artifacts; the only input parsing (HTML comments, git status output) is non-privileged.  Overall: The approach is sound and appropriately disciplined (deterministic checks per D7, check-first-test-second, explicit downgrades recorded). The main revisions needed are separating the registry data-model fix from the check work, hardening the git-status boundary check against dirty-worktree false positives, and reconsidering the importlib workaround in favor of a one-time structural fix.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A git-status “phase write boundary” check will see unrelated pre-existing changes and the current iterate’s own checker, tests, and ledger edits. Without a baseline or explicit allowlist, it will either falsely fail legitimate work or be weakened until it no longer protects the boundary.",
+          "suggestion": "Define the boundary relative to a captured session baseline (or an explicit changed-path manifest) and test clean, pre-dirty, allowed-write, and forbidden-write cases. Make the checker report exact offending paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Adding `parse_screen_linked_frs` and an HTML-comment convention does not by itself repair existing design artifacts or the advertised `add --frs` workflow. FR coverage will remain incomplete unless every relevant existing screen is annotated and every registry construction path invokes the parser.",
+          "suggestion": "Identify and migrate all current screen HTML files, define behavior for absent/malformed/duplicate `Requirements:` comments, and either implement `add --frs` or correct/remove its misleading documentation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Several “pure” checks—especially review-key honesty and findings addressed—need a canonical input format and disposition model. Otherwise keyword or identifier presence can mark a finding as addressed without an actionable resolution, accepted risk, or tracked follow-up.",
+          "suggestion": "Specify the required review/finding schema, accepted dispositions, and required links to the change or tracking item; downgrade any remaining semantic judgement portion with its reason.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Loading `screen_registry.py` directly via `importlib` may avoid one `lib` collision but can create duplicate-module behavior or break relative imports, and its result can depend on the caller’s working directory.",
+          "suggestion": "Establish one tested import boundary in the shared verifier package (or invoke a stable public registry API) and run integration tests from arbitrary working directories for both plugin CLIs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not state how checks handle multiple FRs per screen, retired/unknown FR IDs, duplicate requirements comments, missing uploads, renamed flagged screens, or a screen that legitimately changes shared assets. These are likely in iterative design work.",
+          "suggestion": "Define validation and diagnostics for each case, normalize FR identifiers, and make the “flagged screen only” rule compare an explicit permitted set that can include declared shared assets.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "“Flip those citing existing evidence” needs to be atomic with the new checks and tests; otherwise the ledger can claim enforcement based on stale test locations or a checker not invoked by the documented workflow.",
+          "suggestion": "Add a ledger-oriented test or review checklist that verifies each enforced row names its check command and test evidence, including the three pre-existing plan rows.  Overall, the approach is directionally sound and appropriately avoids LLM-gated validation, but the boundary semantics and design-registry migration need to be specified before implementation to avoid false confidence and false failures.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-11T01:11:42.085272+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  **Finding:** The change bundles three distinct kinds of work into one sub-iterate: (a) flipping 3 already-enforced ledger rows, (b) new deterministic checks, and (c) a data-model fix to `screen_registry.py` (the `linked_frs` gap plus a new `<!-- Requirements: ... -->` convention). The registry change is a prerequisite for the design-side FR-coverage checks, not a check itself — it changes how screen metadata is authored across the project, which outlives this change.\n  **Suggestion:** Either split the registry fix into its own preceding commit/sub-iterate (so the convention can be reviewed and existing screens backfilled before the checks that depend on it land), or at minimum record the new HTML-comment convention in an ADR/README alongside the code. Note also: if existing screens haven't been retrofitted with the `<!-- Requirements: ... -->` comments, check #1/#4 will fail on every legacy screen — confirm a backfill step exists or the check reports \"no FR links found\" distinctly from \"FRs not covered.\"\n\n- **Category: risk — Severity: medium**\n  **Finding:** `phase_write_boundary.py` is described as \"git-status-based.\" Git status is inherently environment-sensitive: pre-existing dirty files, rebase-in-progress, worktrees, and CI checkouts with staged changes all produce false positives/negatives. Since it's shared by both plugins and gates finalize flows (Option A in `review-loop.md`), a false positive blocks finalization.\n  **Suggestion:** Define precisely what it inspects (paths under the current phase dir only? untracked vs modified?) and test the dirty-worktree-unrelated-files case explicitly. Consider narrowing to `git status --porcelain -- <phase paths>` so unrelated dirt is invisible.\n\n- **Category: approach — Severity: medium**\n  **Finding:** The `sys.path` / `importlib.util` workaround for `screen_registry.py` is described as resolving a known module-name collision, but it's a fragile  […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** A git-status “phase write boundary” check will see unrelated pre-existing changes and the current iterate’s own checker, tests, and ledger edits. Without a baseline or explicit allowlist, it will either falsely fail legitimate work or be weakened until it no longer protects the boundary.  \n   **Suggestion:** Define the boundary relative to a captured session baseline (or an explicit changed-path manifest) and test clean, pre-dirty, allowed-write, and forbidden-write cases. Make the checker report exact offending paths.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Adding `parse_screen_linked_frs` and an HTML-comment convention does not by itself repair existing design artifacts or the advertised `add --frs` workflow. FR coverage will remain incomplete unless every relevant existing screen is annotated and every registry construction path invokes the parser.  \n   **Suggestion:** Identify and migrate all current screen HTML files, define behavior for absent/malformed/duplicate `Requirements:` comments, and either implement `add --frs` or correct/remove its misleading documentation.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Several “pure” checks—especially review-key honesty and findings addressed—need a canonical input format and disposition model. Otherwise keyword or identifier presence can mark a finding as addressed without an actionable resolution, accepted risk, or tracked follow-up.  \n   **Suggestion:** Specify the required review/finding schema, accepted dispositions, and required links to the change or tracking item; downgrade any remaining semantic judgement portion with its reason.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Loading `screen_registry.py` directly via `importlib` may avoid one `lib` collision but can create duplicate-module behavior or break relative imports, and its result can depend on t […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:11:53.124096+00:00",
+      "disposition": "runner has no Agent tool; code-reviewer cascade delegated to the orchestrator (campaign-mode.md 3f-bis, before merge)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:11:53.248323+00:00",
+      "disposition": "runner has no Agent tool; doubt-reviewer cascade delegated to the orchestrator (campaign-mode.md 3f-bis, before merge)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug / spec",
+          "file": "plugins/shipwright-plan/skills/plan/SKILL.md` (Step 9 snippet) and `plugins/shipwright-plan/skills/plan/references/step-9-completion.md",
+          "line": null,
+          "finding": "Both new invocations pass `--planning-dir` and `--plugin-root` but omit `--project-root`, which defaults to `\".\"` (cwd). `boundary_gate` calls `git_dirty_paths(project_root)`; if the agent's cwd is not the project's git worktree, `git -C` fails → `[]` → gate passes with zero evidence. Same for the decision-log path in `sections_gate` (`_decision_log_text` reads `<cwd>/.shipwright/agent_docs/decision_log.md`) and the review config in `review_gate`. The design-side `check-design-gates.py` made `--project-root` required — the plan side did the opposite and then didn't pass it in its own docs. Ironically, the new test `test_the_cli_is_independent_of_the_caller_s_working_directory` in the design suite pins exactly the property the plan-side snippets violate.",
+          "suggestion": "Either make `--project-root` required in `check-plan-gates.py` (matching the design CLI) or add it to both SKILL.md / step-9-completion.md snippets. Also consider failing (not silently passing) when `--project-root` resolves to a non-git directory while `--gate boundary` was explicitly requested.  2. Adding `## Prerequisites` to `quality_problems` breaks the shared phase verifier for every pre-existing plan",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": "shared/scripts/lib/plan_section_quality.py` (new `PREREQUISITE_HEADINGS` / `quality_problems` branch), consumed by `shared/scripts/tools/verifiers/plan_gate_checks.py:check_section_quality",
+          "line": null,
+          "finding": "The verifier is documented as lenient toward splits written before these formats existed, but `check_section_quality` calls the same `quality_problems`, which now hard-fails any section lacking a `## Prerequisites` heading. Every existing project's sections predate this convention (the diff itself had to edit the `LEGACY` fixture in `shared/tests/_plan_gate_fixtures.py` to add the heading just to keep existing tests green — that's the regression visible in the diff). No downgrade/migration path was recorded for this, and no test covers a legacy section missing only the prerequisites heading through the verifier (only through the strict in-session gate, where failing is intended).",
+          "suggestion": "Either make `check_section_quality` warn (not fail) on missing prerequisites for pre-existing plans, or record in the ledger that this intentionally breaks old plans and ship a migration.  3. `git_dirty_paths` drops the old side of renames — a production file moved into `.shipwright/` escapes the boundary gate",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug / edge-case",
+          "file": "shared/scripts/lib/phase_write_boundary.py`, `raw = raw.split(\" -> \", 1)[-1]",
+          "line": null,
+          "finding": "Porcelain rename output is `R  old -> new`; keeping only the new path means renaming `src/app.py` → `.shipwright/notes.md` shows only the allowed destination, and the disappearance of the production path is never flagged. The exact scenario the criterion exists to catch (a planning/design session touching production paths) has an evasion route. Also, `.gitignore`d files never appear in `--porcelain`, so writes to ignored production paths are invisible.",
+          "suggestion": "Keep both sides of a rename (`old` for deletion-checking, `new` for addition-checking). At minimum, document the ignored-file gap as accepted scope like the no-baseline gap already is.  4. `standalone_html_violations` misses single-quoted and protocol-relative references",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/design_gate_extras.py`, `_EXTERNAL_REF_RE = re.compile(r'(?:src|href)=\"(https?://[^\"]+)\"')",
+          "line": null,
+          "finding": "Only double-quoted `https?://` URLs are matched. `src='//cdn.example.com/x.js'`, `src=\"//cdn.example.com/x.js\"` (protocol-relative), and `url(https://…)` in inline styles all pass. Since the HTML is agent-generated this is partly theoretical, but the criterion (#6, \"no external deps\") is trivially bypassable by generated output that uses these forms — and generated LLM HTML routinely uses single quotes.",
+          "suggestion": "Broaden the regex to accept both quote styles and `//`-prefixed URLs; consider a CSS `url(` check.  5. Iteration gate gives a false failure if the regenerated screens were already committed",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "plugins/shipwright-design/scripts/checks/check-design-gates.py`, `iteration_gate` (`modified = git_dirty_paths(project_root)`)",
+          "line": null,
+          "finding": "The gate's evidence is uncommitted changes only. If the agent regenerates the flagged screens and commits them (or any tooling stages them) before running the iteration gate, `git status --porcelain` is clean and every flagged screen reports \"not actually regenerated\" — a hard false failure blocking the loop. The `phase_write_boundary.py` docstring asserts \"artifacts are still uncommitted at the point either phase's completion gate runs\", but the iteration gate runs mid-loop (Option B), not at completion, where that assumption is weakest.",
+          "suggestion": "Compare against `HEAD~1..` or the round's recorded commit, or at least fall back to \"modified OR changed since the round file's export timestamp\".  6. `uploads_preserved` path extraction is fragile",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/design_gate_extras.py`, `line[3:].strip()` and the `if line and line[0] in \"MU\" or (...)` condition",
+          "line": null,
+          "finding": "The `and`-before-`or` precedence happens to produce correct behaviour today, but it reads as two unrelated clauses and one operator reorder away from counting every untracked file as \"modified\". `.strip()` on the path also corrupts paths with meaningful leading/trailing spaces and does not unquote `git`'s quoted-path output (`\"a b.md\"` keeps its quotes), so a modified upload with a space in its name reports a quoted non-matching filename.",
+          "suggestion": "Parenthesise explicitly, use `line[3:]` with `os.path` handling / git's `-z` output, and unquote C-quoted paths.  7. Manifest output format change may affect existing consumers",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "plugins/shipwright-design/scripts/lib/screen_registry.py`, `frs = \", \".join(s.get(\"linked_frs\") or []) or \"none\"",
+          "line": null,
+          "finding": "The \"Linked FRs\" cell previously rendered empty; it now renders `none`. Any downstream parser that distinguishes \"linked\" from \"not linked\" by empty-string (or mines FR ids from the cell) will now see the token `none`. The diff doesn't show `check_design_fr_coverage`'s manifest-parsing side, so this is unverified — confirm no consumer treats `none` as data.",
+          "suggestion": "Check `check_design_fr_coverage` / any manifest readers handle the literal `none`; add a test if so.  8. Test relies on `tmp_path` not being inside a git worktree",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-design/tests/test_check_design_gates.py`, `test_a_clean_project_passes_every_gate` / `test_boundary_passes_without_git`; `plugins/shipwright-plan/tests/test_check_plan_gates.py`, `test_boundary_passes_on_a_non_git_project",
+          "line": null,
+          "finding": "These \"clean project passes\" assertions depend on the system temp dir being outside any git repo. In CI configurations where `TMPDIR` is set inside the checkout (or the workspace itself is a repo and tmp is redirected), untracked test files under `tmp_path` become visible to `git status` in a parent worktree and the boundary gate fails, breaking the suite non-deterministically.",
+          "suggestion": "Have the fixture `git init` its own repo with an initial commit so the boundary evidence is deterministic, and assert pass against a known-clean repo rather than \"no repo\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/plan_gate_extras.py",
+          "line": 62,
+          "finding": "FR-01.03 #1 says “No review key ⇒ stops and asks,” but `review_key_honesty` explicitly treats `missing_keys` as a passing state. The only enforced case is the converse—keys available with a skipped marker—so missing credentials can still let the review gate pass.",
+          "suggestion": "Make the review gate fail with an actionable “configure keys or explicitly obtain a user decision” result when the computed status is `missing_keys`, unless a recorded, explicit opt-out is part of the requirement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-design/scripts/checks/check-design-gates.py",
+          "line": 139,
+          "finding": "The shared-chrome gate passes when `chrome-definition.md` is absent. That means a multi-screen design can satisfy “Shared chrome from one definition” without either a definition or any comparison.",
+          "suggestion": "Require a chrome definition whenever the project has screens requiring shared navigation, or record a structured exemption for designs where shared chrome is genuinely inapplicable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/design_gate_extras.py:172-183",
+          "line": null,
+          "finding": "The standalone-HTML check only recognizes double-quoted, lowercase `src`/`href` attributes, and the allowlist uses substring matching. Valid HTML such as `<script src='https://cdn.example.com/x.js'>` bypasses it; so does a hostile URL containing `fonts.googleapis.com` in its path/query.",
+          "suggestion": "Parse HTML attributes or use a robust case-insensitive attribute regex supporting both quote styles, then compare the parsed URL hostname exactly against the allowlist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/design_gate_extras.py:104-114",
+          "line": null,
+          "finding": "The flow check only counts files. Any arbitrary or empty HTML file in `flows/` satisfies a multi-screen app, without showing a journey or connecting any screens. This does not enforce “Flows between journey screens are shown.”",
+          "suggestion": "Require each flow to identify the screens/journey it covers and verify that referenced screen files exist; at minimum reject empty flow artifacts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-design/scripts/checks/check-design-gates.py:177-185",
+          "line": null,
+          "finding": "The iteration gate compares feedback targets with the entire current dirty worktree, not changes made after that feedback round began. A screen modified before the round is treated as regenerated for the round, so feedback can be left unaddressed while the gate passes.",
+          "suggestion": "Capture a per-round baseline before revision and compare against it, or require/record the revision commit or content hash for each flagged screen.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/plan_gate_extras.py:122-145",
+          "line": null,
+          "finding": "The findings gate only counts `External Review — {split}` section labels. It neither verifies that an entry contains an actual resolution nor that it addresses a distinct finding, so duplicated or empty entries can satisfy “addressed or rejected-with-reason.”",
+          "suggestion": "Require each finding to have an identifier and validate a corresponding decision-log entry with a non-empty resolution/rejection reason.  Overall assessment: ship-with-fixes. Several newly claimed enforced criteria can pass without enforcing their stated guarantees. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-11T01:27:49.043645+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. The gate invocations in SKILL.md never pass `--project-root` — the boundary gate can silently pass**\n- Category: bug / spec\n- Severity: high\n- File: `plugins/shipwright-plan/skills/plan/SKILL.md` (Step 9 snippet) and `plugins/shipwright-plan/skills/plan/references/step-9-completion.md`\n- Finding: Both new invocations pass `--planning-dir` and `--plugin-root` but omit `--project-root`, which defaults to `\".\"` (cwd). `boundary_gate` calls `git_dirty_paths(project_root)`; if the agent's cwd is not the project's git worktree, `git -C` fails → `[]` → **gate passes with zero evidence**. Same for the decision-log path in `sections_gate` (`_decision_log_text` reads `<cwd>/.shipwright/agent_docs/decision_log.md`) and the review config in `review_gate`. The design-side `check-design-gates.py` made `--project-root` *required* — the plan side did the opposite and then didn't pass it in its own docs. Ironically, the new test `test_the_cli_is_independent_of_the_caller_s_working_directory` in the design suite pins exactly the property the plan-side snippets violate.\n- Suggestion: Either make `--project-root` required in `check-plan-gates.py` (matching the design CLI) or add it to both SKILL.md / step-9-completion.md snippets. Also consider failing (not silently passing) when `--project-root` resolves to a non-git directory while `--gate boundary` was explicitly requested.\n\n**2. Adding `## Prerequisites` to `quality_problems` breaks the shared phase verifier for every pre-existing plan**\n- Category: regression\n- Severity: high\n- File: `shared/scripts/lib/plan_section_quality.py` (new `PREREQUISITE_HEADINGS` / `quality_problems` branch), consumed by `shared/scripts/tools/verifiers/plan_gate_checks.py:check_section_quality`\n- Finding: The verifier is documented as *lenient toward splits written before these formats existed*, but `check_section_quality` calls the same `quality_problems`, which now hard-fails any section lacking a `## Prerequisites` headi […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: `shared/scripts/lib/plan_gate_extras.py:62`  \n  Finding: FR-01.03 #1 says “No review key ⇒ stops and asks,” but `review_key_honesty` explicitly treats `missing_keys` as a passing state. The only enforced case is the converse—keys available with a skipped marker—so missing credentials can still let the review gate pass.  \n  Suggestion: Make the review gate fail with an actionable “configure keys or explicitly obtain a user decision” result when the computed status is `missing_keys`, unless a recorded, explicit opt-out is part of the requirement.\n\n- Category: spec  \n  Severity: high  \n  File: `plugins/shipwright-design/scripts/checks/check-design-gates.py:139`  \n  Finding: The shared-chrome gate passes when `chrome-definition.md` is absent. That means a multi-screen design can satisfy “Shared chrome from one definition” without either a definition or any comparison.  \n  Suggestion: Require a chrome definition whenever the project has screens requiring shared navigation, or record a structured exemption for designs where shared chrome is genuinely inapplicable.\n\n- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/lib/design_gate_extras.py:172-183`  \n  Finding: The standalone-HTML check only recognizes double-quoted, lowercase `src`/`href` attributes, and the allowlist uses substring matching. Valid HTML such as `<script src='https://cdn.example.com/x.js'>` bypasses it; so does a hostile URL containing `fonts.googleapis.com` in its path/query.  \n  Suggestion: Parse HTML attributes or use a robust case-insensitive attribute regex supporting both quote styles, then compare the parsed URL hostname exactly against the allowlist.\n\n- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/lib/design_gate_extras.py:104-114`  \n  Finding: The flow check only counts files. Any arbitrary or empty HTML file in `flows/` satisfies a multi-screen app, without showing a journey or connecting any screens. This d […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:11:53.008087+00:00",
+      "disposition": "Stage 1 Repo Scout is the orchestrator's step, not reached by the sub-iterate runner",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:11:52.888272+00:00",
+      "disposition": "plan review has no internal arm — external-only (external_review.py --mode iterate); documented gap, iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

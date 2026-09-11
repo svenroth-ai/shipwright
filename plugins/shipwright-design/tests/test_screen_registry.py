@@ -1,7 +1,12 @@
 """Tests for screen registry."""
 
 
-from screen_registry import generate_manifest, scan_designs_dir, write_manifest
+from screen_registry import (
+    generate_manifest,
+    parse_screen_linked_frs,
+    scan_designs_dir,
+    write_manifest,
+)
 
 
 def test_scan_empty_dir(tmp_path):
@@ -113,6 +118,63 @@ def test_generate_manifest_preserves_non_ui_frs_section_at_end_of_file(tmp_proje
 
     content = generate_manifest(designs, "My App", "supabase-nextjs")
     assert "FR-09.01 — ADR-010 (webhook, no screen)" in content
+
+
+# ---------------------------------------------------------------------------
+# parse_screen_linked_frs / linked_frs wiring — FR-01.04 #1 / #4
+# ---------------------------------------------------------------------------
+
+
+def test_a_screen_declaring_requirements_is_parsed(tmp_path):
+    f = tmp_path / "01-login.html"
+    f.write_text(
+        "<!-- Requirements: FR-01.02, FR-01.05 -->\n<html><body>Login</body></html>",
+        encoding="utf-8",
+    )
+    assert parse_screen_linked_frs(f) == ["FR-01.02", "FR-01.05"]
+
+
+def test_a_screen_with_no_comment_links_nothing(tmp_path):
+    f = tmp_path / "01-login.html"
+    f.write_text("<html><body>Login</body></html>", encoding="utf-8")
+    assert parse_screen_linked_frs(f) == []
+
+
+def test_a_malformed_token_in_the_comment_is_dropped_not_mined(tmp_path):
+    f = tmp_path / "01-login.html"
+    f.write_text("<!-- Requirements: FR-01.02x, FR-01.05 -->\n<html></html>", encoding="utf-8")
+    assert parse_screen_linked_frs(f) == ["FR-01.05"]
+
+
+def test_a_missing_file_yields_no_links_rather_than_raising(tmp_path):
+    assert parse_screen_linked_frs(tmp_path / "nope.html") == []
+
+
+def test_scan_populates_linked_frs_from_the_screen_comment(tmp_project_with_designs):
+    designs = tmp_project_with_designs / ".shipwright" / "designs"
+    (designs / "screens" / "01-login.html").write_text(
+        "<!-- Requirements: FR-01.02 -->\n<html><body>Login</body></html>", encoding="utf-8"
+    )
+    result = scan_designs_dir(designs)
+    login = next(s for s in result["screens"] if s["name"] == "login")
+    assert login["linked_frs"] == ["FR-01.02"]
+
+
+def test_generate_manifest_renders_linked_frs_in_the_table(tmp_project_with_designs):
+    designs = tmp_project_with_designs / ".shipwright" / "designs"
+    (designs / "screens" / "01-login.html").write_text(
+        "<!-- Requirements: FR-01.02, FR-01.05 -->\n<html></html>", encoding="utf-8"
+    )
+    content = generate_manifest(designs, "My App", "supabase-nextjs")
+    login_row = next(line for line in content.splitlines() if "| login |" in line)
+    assert "FR-01.02, FR-01.05" in login_row
+
+
+def test_generate_manifest_renders_none_for_an_unlinked_screen(tmp_project_with_designs):
+    designs = tmp_project_with_designs / ".shipwright" / "designs"
+    content = generate_manifest(designs, "My App", "supabase-nextjs")
+    login_row = next(line for line in content.splitlines() if "| login |" in line)
+    assert "| none |" in login_row
 
 
 def test_scan_ignores_non_html(tmp_path):

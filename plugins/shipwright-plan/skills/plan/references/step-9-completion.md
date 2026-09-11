@@ -2,14 +2,17 @@
 
 **Verification (all must pass before "phase complete"):**
 
-Gates 5–8 are one command. Run it and fix what it names — do not eyeball them:
+Gates 5–11 are one command. `--plugin-root` is required (not merely
+accepted) — gate 11 reads this plugin's own `config.json` through it and
+silently skips itself without it. Run it and fix what it names — do not
+eyeball them:
 
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
-  --planning-dir "{planning_dir}" --gate sections
+  --planning-dir "{planning_dir}" --project-root "$(pwd)" --plugin-root {plugin_root} --gate sections
 ```
 
-Non-zero exit = STOP. The same four gates run again inside `_validate_plan`
+Non-zero exit = STOP. The same gates run again inside `_validate_plan`
 below, so skipping this only defers the failure to a worse moment.
 
 1. plan.md exists with SECTION_MANIFEST
@@ -18,8 +21,9 @@ below, so skipping this only defers the failure to a worse moment.
 4. E2E test plan exists (if enabled)
 5. **Section Quality Gate** — each section file says what it is for
    (`## Overview`), lists **at least 2** implementation steps
-   (`## Implementation Steps`), and states how it will be tested
-   (`## Tests First`).
+   (`## Implementation Steps`), states how it will be tested
+   (`## Tests First`), and names its prerequisites (`## Prerequisites`,
+   FR-01.03 #9 — write `None` if there truly are none).
 6. **FR Coverage Check** — every live requirement in the split's `spec.md` is
    named by at least one section's `Requirements:` line. An uncovered
    requirement → assign it to a section, or add one.
@@ -30,10 +34,33 @@ below, so skipping this only defers the failure to a worse moment.
    `SECTION_MANIFEST` must appear **earlier** in the manifest than the section
    naming it. Declaration format: [section-index.md](section-index.md).
    `check-sections.py` (Step 7) fails this too.
+9. **Decision Recorded** (FR-01.03 #8) — a Plan-phase decision-log entry
+   (`- **Section:** Plan Interview — {split_name}` or another
+   Plan-phase-tagged section) exists for this split.
+10. **Findings Addressed** (FR-01.03 #10) — every finding Step 5's external
+    review marker recorded (`findings_count`) has a matching
+    `External Review — {split_name}` decision-log entry.
+11. **E2E Journeys Named** (FR-01.03 #11) — a UI project's
+    `claude-plan-e2e.md` names at least one `### Flow N: ...`-style heading,
+    not merely exists.
 
 Gates 5–7 are *lenient in the verifier* toward splits written before these
 formats existed (they warn instead of failing), but `check-plan-gates.py` is
 strict: a plan written now complies.
+
+**Boundary gate** (FR-01.03 #7 — planning writes no production code, runs no
+tests), a separate invocation since it checks the whole session rather than
+`{planning_dir}`:
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --project-root "$(pwd)" --gate boundary
+```
+
+Fails if this session's own uncommitted changes touch anything outside
+`.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`,
+or `CHANGELOG-unreleased.d/`. A non-git project passes trivially — nothing to
+check against.
 
 ---
 

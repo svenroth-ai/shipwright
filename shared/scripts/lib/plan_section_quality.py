@@ -12,7 +12,12 @@ forbids in prose and nothing enforced.
 Two things live here:
 
 * **shape** — a section says what it is for, lists at least two implementation
-  steps, and states how it will be tested (:func:`quality_problems`);
+  steps, states how it will be tested, AND names its prerequisites
+  (:func:`quality_problems` — the last part is FR-01.03 #9, "a section is
+  self-contained": ``section-splitting.md``'s own template names
+  ``## Prerequisites`` as where cross-section dependencies and required
+  packages/files are written in prose, but nothing checked the section
+  actually said anything there);
 * **linkage** — both coverage directions (:func:`coverage_report`).
 
 Linkage is read from one explicit ``Requirements:`` field, never from a prose
@@ -46,6 +51,10 @@ __all__ = [
 PURPOSE_HEADINGS = ("overview", "purpose", "description", "goal")
 STEP_HEADINGS = ("implementation steps", "implementation", "steps")
 TEST_HEADINGS = ("tests first", "test strategy", "tests", "testing", "test plan")
+#: FR-01.03 #9 — "names prereqs". ``section-splitting.md``'s template heading
+#: is literally "Prerequisites"; "Dependencies" is accepted too since a
+#: SECTION_MANIFEST dependency line uses that word for the same idea.
+PREREQUISITE_HEADINGS = ("prerequisites", "dependencies")
 
 _HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+(?P<title>.+?)\s*#*\s*$")
 _LIST_ITEM_RE = re.compile(r"^\s*(?:\d+[.)]|[-*+])\s+\S")
@@ -71,6 +80,10 @@ class SectionQuality:
     has_purpose: bool = False
     step_count: int = 0
     has_tests: bool = False
+    #: FR-01.03 #9 — a non-empty ``## Prerequisites``/``## Dependencies`` body.
+    #: A section with nothing to presuppose still names that explicitly
+    #: ("None") rather than omitting the heading — see :func:`quality_problems`.
+    has_prerequisites: bool = False
     requirements: tuple[str, ...] = ()
     #: Tokens in the field that are not canonical FR ids. Reported rather than
     #: mined for an id inside them, so a typo surfaces instead of silently
@@ -149,6 +162,7 @@ def parse_section_file(path: Path | str) -> SectionQuality:
     purpose_body = _body_for(headings, PURPOSE_HEADINGS)
     steps_body = _body_for(headings, STEP_HEADINGS)
     tests_body = _body_for(headings, TEST_HEADINGS)
+    prerequisites_body = _body_for(headings, PREREQUISITE_HEADINGS)
 
     step_count = 0
     if steps_body:
@@ -164,6 +178,7 @@ def parse_section_file(path: Path | str) -> SectionQuality:
         has_purpose=bool(purpose_body and purpose_body.strip()),
         step_count=step_count,
         has_tests=bool(tests_body and tests_body.strip()),
+        has_prerequisites=bool(prerequisites_body and prerequisites_body.strip()),
         requirements=requirements,
         malformed_requirements=malformed,
         declares_requirements=match is not None,
@@ -200,8 +215,30 @@ def collect_sections(split_dir: Path) -> list[SectionQuality]:
     return [parse_section_file(p) for p in sorted(sections_dir.glob("*.md"))]
 
 
-def quality_problems(section: SectionQuality) -> list[str]:
-    """What this section fails to say. Empty means it says all three.
+def prerequisite_problem(section: SectionQuality) -> list[str]:
+    """FR-01.03 #9's own check, split out from :func:`core_quality_problems`
+    so a caller can gate its adoption independently (external code review,
+    iterate-2026-09-11-e1-checks-plan-design): the compliance verifier
+    (`plan_gate_checks.check_section_quality`) is documented as lenient
+    toward sections written before a format existed, and it decides
+    "adopted this format" per split via ``uses_known_shape`` — which
+    intentionally does NOT include prerequisites (a section already
+    well-formed under the pre-existing three-heading convention should not
+    retroactively count as "adopted prerequisites" just because it has an
+    Overview). Without this split, the verifier's single `adopted` flag
+    would hard-fail every pre-existing plan on a heading that did not exist
+    when it was written — the opposite of "lenient toward the past"."""
+    if not section.has_prerequisites:
+        return [
+            f"{section.name}: does not name its prerequisites — FR-01.03 #9 "
+            f"(expected a non-empty '## Prerequisites', 'None' if there are none)"
+        ]
+    return []
+
+
+def core_quality_problems(section: SectionQuality) -> list[str]:
+    """The original three (purpose/steps/tests), excluding #9. Empty means
+    it says all three.
 
     Each problem names the missing part *and* the heading that would supply
     it, so the fix is obvious from the failure alone.
@@ -223,6 +260,17 @@ def quality_problems(section: SectionQuality) -> list[str]:
             f"(expected a non-empty '## Tests First')"
         )
     return problems
+
+
+def quality_problems(section: SectionQuality) -> list[str]:
+    """All four checks together — purpose/steps/tests plus prerequisites
+    (#9). Empty means it says all four. The strict in-session gate
+    (``check-plan-gates.py``) uses this union unmodified: unlike the
+    compliance verifier, it runs against a plan being written *now*, which
+    has no excuse to be missing any of the four. See
+    :func:`prerequisite_problem`'s docstring for why the verifier instead
+    calls the two halves separately."""
+    return core_quality_problems(section) + prerequisite_problem(section)
 
 
 def coverage_report(

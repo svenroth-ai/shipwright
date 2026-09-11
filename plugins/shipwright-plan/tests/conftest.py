@@ -64,6 +64,25 @@ def planning_with_sections(planning_with_plan):
 
 
 @pytest.fixture
+def planning(tmp_path):
+    """A planning split whose every gate passes — for
+    ``test_check_plan_gates{,_sections}.py``. Defined here (not imported from
+    ``_check_plan_gates_support.py``) so it is auto-available to every test
+    module without ruff flagging the same-named test-function parameter as
+    shadowing an import (F811)."""
+    from ._check_plan_gates_support import _build_planning
+    return _build_planning(tmp_path)
+
+
+@pytest.fixture
+def bare_planning_dir(tmp_path):
+    """A minimal planning dir under the canonical ``.shipwright/planning/``
+    location, for the boundary-gate tests in ``test_check_plan_gates.py``."""
+    from ._check_plan_gates_support import _build_bare_planning_dir
+    return _build_bare_planning_dir(tmp_path)
+
+
+@pytest.fixture
 def sample_prompts(plugin_root):
     """Verify prompt files exist."""
     system = plugin_root / "prompts" / "plan_reviewer" / "system"

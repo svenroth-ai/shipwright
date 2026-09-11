@@ -185,7 +185,7 @@ compliance `W5` ask, through one shared evaluator.
 
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
-  --planning-dir "{planning_dir}" --gate review
+  --planning-dir "{planning_dir}" --project-root "$(pwd)" --gate review
 ```
 
 Non-zero exit = STOP. It fails when Step 5 left no marker, or the marker
@@ -252,23 +252,17 @@ See [step-9-completion.md](references/step-9-completion.md) for the full procedu
 checklist and the C1+C2+C3+C4 + `phase_history` canon block (C5 skipped by
 policy: plan is internal decomposition, not user-facing).
 
-**Verification gates (all must pass).** Gates 5–8 are one command — run it:
+**Verification gates (all must pass) — 11 gates + a boundary check, full
+list and commands in [step-9-completion.md](references/step-9-completion.md):**
 
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
-  --planning-dir "{planning_dir}" --gate sections
+  --planning-dir "{planning_dir}" --project-root "$(pwd)" --plugin-root {plugin_root} --gate sections
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \
+  --planning-dir "{planning_dir}" --project-root "$(pwd)" --gate boundary
 ```
 
-1. plan.md exists with SECTION_MANIFEST
-2. All declared sections have files
-3. Interview transcript exists
-4. E2E test plan exists (if enabled)
-5. Section Quality (`## Overview` + ≥2 `## Implementation Steps` + `## Tests First`)
-6. FR Coverage (every live FR named by ≥1 section's `Requirements:` line)
-7. Section Trace (every section names ≥1 live FR — no work nobody asked for)
-8. Dependency Order (every declared dependency numbered before its user)
-
-Non-zero exit = STOP. `_validate_plan` re-runs 5–8, so skipping defers it.
+Non-zero exit on either = STOP. `_validate_plan` re-runs both, so skipping defers it.
 
 **Phase complete:** set `SHIPWRIGHT_RUN_ID`, then run
 `write-plan-config.py --status complete`, `record_event.py`,
