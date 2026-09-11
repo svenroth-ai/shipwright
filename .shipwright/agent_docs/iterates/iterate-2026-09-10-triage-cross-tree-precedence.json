@@ -1,0 +1,89 @@
+{
+  "run_id": "iterate-2026-09-10-triage-cross-tree-precedence",
+  "date": "2026-09-11T01:45:51.314392Z",
+  "event_at": "2026-09-11T01:45:13.819477+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/triage-cross-tree-precedence",
+  "spec": ".shipwright/planning/iterate/2026-09-10-triage-cross-tree-precedence.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-triage-cross-tree-precedence",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Local status at T1 always wins over a chronologically-later foreign status at T2>T1 for the same id",
+        "disposition": "tested",
+        "evidence": "test_a_chronologically_later_foreign_status_cannot_override_a_local_decision PASSED"
+      },
+      {
+        "behavior": "Local status wins an exact-timestamp tie against a foreign status (no tie to break)",
+        "disposition": "tested",
+        "evidence": "test_a_local_status_wins_an_exact_timestamp_tie_against_a_foreign_status PASSED"
+      },
+      {
+        "behavior": "Foreign status still fills a gap for an id with no local status event",
+        "disposition": "tested",
+        "evidence": "test_a_dismiss_recorded_only_in_a_worktree_resolves_as_dismissed_on_main PASSED"
+      },
+      {
+        "behavior": "A local decision living in the OUTBOX only (not yet tracked) still blocks a foreign override -- D1 union",
+        "disposition": "tested",
+        "evidence": "test_a_local_decision_in_the_outbox_only_still_blocks_a_foreign_override PASSED"
+      },
+      {
+        "behavior": "A malformed local status event (invalid newStatus) does not block a legitimate foreign gap-fill",
+        "disposition": "tested",
+        "evidence": "test_a_malformed_local_status_event_does_not_block_a_legitimate_foreign_gap_fill PASSED"
+      },
+      {
+        "behavior": "amend (local or foreign) stays purely chronological even when the id has a local status decision",
+        "disposition": "tested",
+        "evidence": "test_a_foreign_amend_still_resolves_purely_chronologically_even_when_the_id_has_a_local_status PASSED"
+      },
+      {
+        "behavior": "A local+foreign amend exact-timestamp tie still resolves by file order (unaffected by the new rule)",
+        "disposition": "tested",
+        "evidence": "test_a_local_and_foreign_amend_tie_still_resolves_by_file_order_not_origin PASSED"
+      },
+      {
+        "behavior": "Multiple foreign status events for a never-locally-decided id still resolve chronologically among themselves",
+        "disposition": "tested",
+        "evidence": "test_multiple_foreign_status_events_for_a_never_decided_id_still_resolve_chronologically PASSED"
+      },
+      {
+        "behavior": "A foreign append never seeds an item this tree never created (pre-existing guarantee, unaffected)",
+        "disposition": "tested",
+        "evidence": "test_a_foreign_append_never_seeds_an_item_this_tree_never_created PASSED (regression guard)"
+      },
+      {
+        "behavior": "read_all_items composes the local reader and the cross-tree sibling reader end to end",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_read_all_items_composes_local_and_sibling_stores_for_ids_never_locally_decided PASSED"
+      },
+      {
+        "behavior": "A foreign status event with a non-string (unhashable) id does not crash the read -- external code review (glm) crash-guard finding",
+        "disposition": "tested",
+        "evidence": "test_a_foreign_status_with_a_non_string_id_does_not_crash_the_read PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "bug fix inside triage.py's in-process read_all_items resolution logic; no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0)."
+  }
+}
