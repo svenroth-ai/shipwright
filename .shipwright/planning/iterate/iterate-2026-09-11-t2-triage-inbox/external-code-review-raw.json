@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "- Category: spec  \n  Severity: high  \n  File: `.shipwright/agent_docs/decision-drops/iterate-2026-09-11-t2-triage-inbox_001.json:7`  \n  Finding: The stated seam is `shared/tests` plus `shared/scripts/tools/tests`, while this unit\u2019s specification assigns the sole test root as `shared/scripts/tests` and requires one pytest/JUnit invocation for that root. The diff adds no coverage marker in `shared/scripts/tests` and provides no JUnit artifact/evidence for that required root, so the claimed coverage is outside the specified seam.  \n  Suggestion: Reconcile this with the actual t0 seam-survey row. If `shared/scripts/tests` is the binding seam, place/prove the applicable AC tests there and run exactly that root with its JUnit XML; otherwise update the governing seam assignment before accepting these bindings.\n\nOverall assessment: ship-with-fixes; the marker additions appear mechanically safe, but the submitted evidence does not meet the specification\u2019s required test-root/seam constraint.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "- Category: spec\n- Severity: low\n- File: `.shipwright/planning/iterate/iterate-2026-09-11-t2-triage-inbox/reviews.json` (risk_recheck says `plan_review_required: true`)\n- Finding: `risk_recheck.json` records `plan_review_required: true` yet the plan review is dispositioned as a rule-driven skip below the 100-LOC trigger. The two records contradict each other (either the flag should be false, or the skip is overriding a required review).\n- Suggestion: Reconcile \u2014 if the rule computes the trigger, set `plan_review_required` from the same rule, or record why a required review was skipped.\n\n- Category: spec\n- Severity: low\n- File: `shared/tests/...` (tagged tests) vs. spec \"Test root(s): shared/scripts/tests (34 files)\"\n- Finding: The spec names `shared/scripts/tests` as the cluster's test root, but every tagged test lives in `shared/tests` or `shared/scripts/tools/tests`. The decision drop claims t0's seam survey assigned those roots, so this may be a spec-text simplification \u2014 but the binding constraint says \"cite the row t0 produced rather than re-deciding the seam,\" and the drop cites t0 only by assertion, not by quoting/pointing at the row.\n- Suggestion: Include the actual t0 seam-row reference (file/id) in the decision drop so the seam choice is auditable, as the campaign rule requires.\n\n- Category: spec\n- Severity: low\n- File: `.shipwright/agent_docs/iterates/iterate-2026-09-11-t2-triage-inbox.json` \u2014 `test_completeness.counts`\n- Finding: The counts block reports `untestable: 0` and 28 testable/tested, yet the decision drop records AC26 as untestable-with-reason. The counts should reflect 1 untestable (29 total) so the iterate record is self-consistent with the drop and the baseline (which correctly retains AC26 in `unbound`).\n- Suggestion: Update the counts/enumeration to include AC26 as untestable with the recorded reason.\n\n- Category: test\n- Severity: low\n- File: `shared/tests/test_triage_defer_lifecycle.py` \u2014 `test_the_day_after_the_revisit_date_is_due` tagged `FR-01.14/AC07`\n- Finding: This is a single one-line assertion on a pure date predicate; without the AC text visible it is impossible for a reviewer to confirm it \"PROVEs\" AC07 alone (the paired reimport-suppression test helps, but the lifecycle half of a defer/revisit AC \u2014 e.g. the item actually reappearing when due \u2014 may be covered only by the not-due direction).\n- Suggestion: Verify against the AC text that the \"due \u2192 item resurfaces\" positive path is asserted somewhere and tagged; if not, tag the test that does assert it.\n\nEverything else checks out: the baseline diff removes exactly the 28 FR-01.14 entries with zero unrelated movement, AC26 is left in `unbound` with the decision drop as its recorded reason (satisfying the spec's \"or a recorded reason\" clause), no new harness or test files were introduced, no production code changed, and markers are added to tests that already exercise the corresponding behaviors. The changes are mechanical `@pytest.mark.covers` annotations plus metadata; no correctness, security, or regression risk in the tagged code paths.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "revise",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
