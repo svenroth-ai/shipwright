@@ -77,6 +77,16 @@ earlier draft of this caveat could have been misread as licensing a second, juni
 invocation as part of the recorded run — it does not; run the spot-check, throw it away, then
 run the real `--junitxml` invocation once per root as ADR-044 requires).
 
+**Known false-positive source (Stage-2 code review, medium):** the `grep` in step 3 above
+will match `shared/scripts/tools/tests/test_backfill_ac_provenance_*.py` (e.g.
+`test_backfill_ac_provenance_cli.py:91,116,128,129,168`,
+`test_backfill_ac_provenance_apply_skips.py:36,41,44,46,89`) — these contain literal
+`covers("FR-01.NN")` / `covers("FR-01.NN/ACnn")` strings as the backfill tool's OWN test
+fixture data (source text the tool rewrites, and decoy strings inside docstrings/comments/
+assertions it must NOT touch), not real `@pytest.mark.covers` bindings on tests the file
+itself is collected under. Do not count a hit in this file as precedent for any FR/AC pair;
+t1-t9 should skip it when scanning grep output rather than each rediscovering this by hand.
+
 ## Key findings (read before using the table)
 
 **Finding 1 — the FR's plugin title is not always its test root.** campaign.md's framing
@@ -156,7 +166,7 @@ exact AC, or add a new qualified tag — do not assume the bare tag already "cou
 | FR-01.13 | /shipwright-adopt | 8 / 6 | `plugins/shipwright-adopt/tests` | `test_adopt_evidence_disclosure.py`, `test_skill_md_env_scaffold.py` | → `AC05` (`test_skill_md_env_scaffold.py`), `AC08` (`test_adopt_evidence_disclosure.py`) | t8 |
 | FR-01.14 | Triage Inbox | 29 / 29 | `shared/tests` (primary — 86 existing triage test files); `shared/scripts/tools/tests` for the CLI-tool layer (`triage_add.py`, `triage_cli.py`, `triage_repair.py`) — **two ADR-044 roots, one unit** | `shared/tests/test_github_api_artifact.py`, `test_drift_triage_emit.py`, `test_security_triage_emit.py`, `test_performance_triage_emit.py`; `shared/scripts/tools/tests/test_suite_race_triage.py` | none yet | t2 |
 | FR-01.15 | Cross-repo output contract | 8 / 8 | `shared/tests` — but see **Named Exception 2**: no CLI gate script exists yet, only library-level modules | `shared/scripts/lib/contract_baseline.py`, `contract_skeleton.py`; tests: `test_contract_skeleton.py`, `test_cross_repo_contract_documented.py` | none yet | t9 |
-| FR-01.16 | Guided requirement elicitation | 10 / 10 | `shared/tests` (the shared method itself); the three surfaces that invoke it (`shipwright-project`, `shipwright-adopt`, `shipwright-iterate`) for AC09's "which capabilities are bound" check | `shared/tests/test_requirement_elicitation_rigor.py`, `test_requirement_elicitation_discovery.py`, `test_requirement_elicitation_refs.py`, `_elicitation_discovery.py` (shared harness) | none yet | t6 |
+| FR-01.16 | Guided requirement elicitation | 10 / 10 | `shared/tests` (single root — see harness column; code review confirmed AC09 is provable here alone, not a 3rd/4th root) | `shared/tests/test_requirement_elicitation_rigor.py`, `test_requirement_elicitation_discovery.py`, `test_requirement_elicitation_refs.py`; `_elicitation_discovery.py` (shared harness) globs `plugins/*/skills/*/references/*.md` directly from the shared root (see `shared/tests/_elicitation_discovery.py:61`), so AC09's "which capabilities are bound" check across the three invoking surfaces (`shipwright-project`, `shipwright-adopt`, `shipwright-iterate`) is read as doc content from `shared/tests` — it does NOT require running those plugins' own test suites or adding roots | none yet | t6 |
 | FR-01.17 | Independent re-check on the code host | 7 / 7 | `shared/tests` — CI/PR-review surface; the "code host" itself cannot run inside a test, so the existing seam treats `.github/workflows/*.yml` content + the gate scripts that decide merge-readiness as the observable boundary | `shared/tests/test_pr_review_convergence.py`, `test_pr_review_fail_closed.py`, `test_pr_review_fork_trust.py`, `test_check_ci_supplychain_*`, `_pr_review_workflows.py` (fixture reading real workflow YAML) | none yet | t9 |
 | FR-01.18 | /shipwright-grade | 8 / 8 | `plugins/shipwright-grade/tests` | `test_grade_cli.py` (real CLI entry point), `test_authoritative.py`, `test_negative_fixtures.py`, `test_network_policy.py` (consent-gating ACs) | none yet | t7 |
 | FR-01.19 | Recovery of a broken shared branch | 10 / 10 | `plugins/shipwright-iterate/tests` (main-repair mechanics); `shared/tests` for the shared assertion-weakening / size-limit gate (Finding 1) | `plugins/shipwright-iterate/tests/test_main_repair_hooks.py`; `shared/tests/test_assertion_weakening.py`; bloat/size-crossing ACs (AC08) need the anti-ratchet gate tests (`shared/tests` bloat family, see `shared/glossary.md`) | none yet | t9 |
@@ -255,6 +265,16 @@ medium: "do not let t9 claim completion... through library-only tests") — reco
 the specific residual guarantee named above, and file a tracked follow-up (triage card or
 decision-drop) for the missing gate script + its CI wiring, naming an owner rather than
 leaving the gap only as prose in this survey.
+
+**Concrete machine outcome (Stage-2 code review, medium — the "partially" language above was
+ambiguous about the actual `unbound`-list action; stated explicitly here so t9 does not
+guess):** for AC02 specifically — despite the comparison FUNCTION being unit-testable today
+— **do NOT tag `FR-01.15/AC02`** (i.e. do not remove it from `shipwright_ac_coverage_baseline.json`'s
+`unbound` list). The AC's own text asks about the gate *running on a real diff*, which the
+library unit test does not exercise; tagging it now would mark the AC bound while its actual
+behavior remains unproven. Leave AC02 in `unbound`, citing this section's residual-gate
+reason, until the gate script exists and a test invokes it against a real diff. The identical
+rule applies to AC03 and AC06 for the same reason (column above: "no" / not provable now).
 
 ## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
 

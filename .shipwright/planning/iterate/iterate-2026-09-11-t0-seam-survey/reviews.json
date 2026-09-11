@@ -141,15 +141,53 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/agent_docs/decision-drops/iterate-2026-09-11-t0-seam-survey_001.json",
+          "line": 8,
+          "finding": "decision drop consequences field still says only t8/t9 despite corrective pass widening escalation to t4/t5/t8/t9",
+          "suggestion": "update consequences to name all four units",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md",
+          "line": 159,
+          "finding": "FR-01.16 row's test-root column conflates implementation surfaces (project/adopt/iterate) with test roots, possibly under-reporting t6 at 2 roots when it may be 4",
+          "suggestion": "resolve explicitly: either shared/tests alone proves AC09 (move surface-naming to harness column) or raise t6's count and add to flagged-deviation paragraph",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md",
+          "line": 56,
+          "finding": "prescribed precedent-discovery grep produces false positives against shared/scripts/tools/tests/test_backfill_ac_provenance_*.py fixture literals",
+          "suggestion": "add caveat naming that file as a known false-positive source",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md",
+          "line": 44,
+          "finding": "FR-01.15/AC02 given contradictory instructions with no machine-resolvable outcome (tag vs not-tag)",
+          "suggestion": "state explicitly whether AC02 stays in unbound or is tagged",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-10T23:28:38.760096+00:00",
-      "disposition": "delegated_to_orchestrator — the sub-iterate runner's tools (Read, Write, Edit, Bash, Glob, Grep) exclude Agent, so it cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; the campaign orchestrator runs it at 3f-bis before merge and promotes this row with --force per shared/prompts/campaign-mode.md.",
-      "recorded_by": "none",
+      "completed_at": "2026-09-11T12:10:12.431117+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
@@ -245,15 +283,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T00:28:08.266674+00:00",
-      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: (1) survey under-reports its own campaign root-count-cap conflict for t4/t5 (only t8/t9 escalated in triage card trg-ff6ea5f0), defeating the seam survey's one-repo-wide-answer purpose per campaign.md:40 + t0-seam-survey.md:5,15; (2) this branch's sole commit e95c49cd7 deletes an unrelated iterate's evidence ledger (.shipwright/agent_docs/iterates/iterate-2026-08-26-b-pure-hardening.json) out of scope for a read-only survey. Full citations: .shipwright/runs/sub_iterate-20260910-230649/t0/spec_review_reject.txt. Delivery stopped; PR #720 left open for human repair.",
+      "completed_at": "2026-09-11T12:04:42.747204+00:00",
+      "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
