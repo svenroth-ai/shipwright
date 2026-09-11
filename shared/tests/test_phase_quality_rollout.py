@@ -43,7 +43,7 @@ _ORCH_LIB = _PROJECT_ROOT / "plugins" / "shipwright-run" / "scripts" / "lib"
 if str(_ORCH_LIB) not in sys.path:
     sys.path.insert(0, str(_ORCH_LIB))
 
-from hooks import capture_session_id as cs  # noqa: E402
+from hooks import session_start_phase_quality as sq  # noqa: E402
 from lib import phase_quality as pq  # noqa: E402
 
 import orchestrator  # noqa: E402
@@ -194,12 +194,12 @@ def test_read_latest_finding_none_on_greenfield(proj: Path):
 def test_inject_mode_default_on(monkeypatch):
     """Post-epic default: injection is ON unless explicitly opted out."""
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
-    assert cs._phase_quality_inject_enabled() is True
+    assert sq.phase_quality_inject_enabled() is True
 
 
 def test_inject_mode_off_when_audit_only(monkeypatch):
     monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", "audit_only")
-    assert cs._phase_quality_inject_enabled() is False
+    assert sq.phase_quality_inject_enabled() is False
 
 
 @pytest.mark.parametrize("value,expected", [
@@ -212,7 +212,7 @@ def test_inject_mode_off_when_audit_only(monkeypatch):
 def test_inject_mode_audit_only_is_only_disabler(monkeypatch, value, expected):
     """audit_only is the only value that disables injection; default ON."""
     monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", value)
-    assert cs._phase_quality_inject_enabled() is expected
+    assert sq.phase_quality_inject_enabled() is expected
 
 
 def test_collect_tier1_fails_is_raw_uncapped():
@@ -233,7 +233,7 @@ def test_collect_tier1_fails_is_raw_uncapped():
         "  - **C1** no phase_completed event",
         "",
     ])
-    fails = cs._collect_tier1_fails(text)
+    fails = sq._collect_tier1_fails(text)
     assert [f["id"] for f in fails] == ["W5", "W6", "W7", "I1", "I2", "I3", "C1"]
 
 
@@ -250,7 +250,7 @@ def test_collect_tier1_fails_filters_tier2():
         "  - **C1** event missing",
         "",
     ])
-    fails = cs._collect_tier1_fails(text)
+    fails = sq._collect_tier1_fails(text)
     ids = [f["id"] for f in fails]
     assert "T2" not in ids
     assert "Q1" not in ids
@@ -262,7 +262,7 @@ def test_collect_tier1_fails_filters_tier2():
 
 def test_collect_tier1_fails_empty_on_no_fail_block():
     text = "## build — run-1\n- audited_at: x\n"
-    assert cs._collect_tier1_fails(text) == []
+    assert sq._collect_tier1_fails(text) == []
 
 
 def test_format_injection_contains_phase_and_ids():
@@ -270,7 +270,7 @@ def test_format_injection_contains_phase_and_ids():
         {"id": "W5", "phase": "plan", "run": "r1", "evidence": "review missing"},
         {"id": "W6", "phase": "changelog", "run": "r2", "evidence": "no tag"},
     ]
-    text = cs._format_injection(fails)
+    text = sq._format_injection(fails)
     assert "W5" in text
     assert "plan" in text
     assert "W6" in text
@@ -284,7 +284,7 @@ def test_build_injection_returns_empty_when_mode_audit_only(tmp_path, monkeypatc
     _write_summary(tmp_path, (
         "## build — run-1\n- open FAILs:\n  - **W6** no tag\n"
     ))
-    assert cs._build_phase_quality_injection(str(tmp_path)) == ""
+    assert sq.build_phase_quality_injection(str(tmp_path)) == ""
 
 
 def test_build_injection_reads_summary_by_default(tmp_path, monkeypatch):
@@ -299,7 +299,7 @@ def test_build_injection_reads_summary_by_default(tmp_path, monkeypatch):
         "- open FAILs:\n"
         "  - **W6** no git tag\n"
     ))
-    text = cs._build_phase_quality_injection(str(tmp_path))
+    text = sq.build_phase_quality_injection(str(tmp_path))
     assert text
     assert "W6" in text
     assert "build" in text
@@ -308,7 +308,7 @@ def test_build_injection_reads_summary_by_default(tmp_path, monkeypatch):
 def test_build_injection_no_summary_file(tmp_path, monkeypatch):
     """Default mode on + missing summary → empty string (silent no-op)."""
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
-    assert cs._build_phase_quality_injection(str(tmp_path)) == ""
+    assert sq.build_phase_quality_injection(str(tmp_path)) == ""
 
 
 # ---------------------------------------------------------------------------
@@ -413,7 +413,7 @@ def test_injection_silent_when_cwd_is_monorepo_root(tmp_path: Path, monkeypatch)
     monkeypatch.chdir(tmp_path)  # cwd is strict ancestor of subdir
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
     monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
-    assert cs._build_phase_quality_injection(str(subdir)) == ""
+    assert sq.build_phase_quality_injection(str(subdir)) == ""
 
 
 def test_injection_fires_from_managed_subdir(tmp_path: Path, monkeypatch):
@@ -422,7 +422,7 @@ def test_injection_fires_from_managed_subdir(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
     monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
-    text = cs._build_phase_quality_injection(str(tmp_path))
+    text = sq.build_phase_quality_injection(str(tmp_path))
     assert text
     assert "W6" in text
 
@@ -435,7 +435,7 @@ def test_injection_fires_from_descendant_of_project_root(tmp_path: Path, monkeyp
     monkeypatch.chdir(src)
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
     monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
-    text = cs._build_phase_quality_injection(str(tmp_path))
+    text = sq.build_phase_quality_injection(str(tmp_path))
     assert text
     assert "W6" in text
 
@@ -448,6 +448,6 @@ def test_injection_fires_when_env_var_explicit_opt_in(tmp_path: Path, monkeypatc
     monkeypatch.chdir(tmp_path)  # cwd is strict ancestor
     monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(subdir))
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
-    text = cs._build_phase_quality_injection(str(subdir))
+    text = sq.build_phase_quality_injection(str(subdir))
     assert text
     assert "W6" in text

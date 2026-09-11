@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import json
 import os
-import re
+import shlex
 import sys
 from pathlib import Path
 
@@ -44,6 +44,17 @@ _SHARED_SCRIPTS = Path(__file__).resolve().parents[1]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
+# Sibling module in this same hooks/ dir — flat import, matching
+# check_required_checks_hook.py's required_checks_state convention.
+_HOOKS_DIR = Path(__file__).resolve().parent
+if str(_HOOKS_DIR) not in sys.path:
+    sys.path.insert(0, str(_HOOKS_DIR))
+
+from session_start_phase_quality import (  # noqa: E402
+    build_phase_quality_injection,
+    phase_quality_inject_enabled,
+)
+
 
 def _resolve_root() -> str:
     """Find the Shipwright project root, tolerating subdirectory layouts."""
@@ -52,161 +63,6 @@ def _resolve_root() -> str:
         return str(resolve_project_root())
     except (ImportError, ValueError):
         return os.getcwd()
-
-
-# Default ON: injection is enabled unless the user explicitly opts out
-# via SHIPWRIGHT_PHASE_QUALITY_MODE=audit_only. Plan § 9.1 originally
-# defaulted this OFF during the 6-week staggered rollout; post-epic the
-# calculus flipped to "trust the rollback lever, ship the signal" for
-# small/solo setups.
-_OFF_MODE = "audit_only"
-
-# Cap at 5 FAILs so a full phase-cluster (e.g. C1 + I1-I3 + W3) can
-# surface in one SessionStart without blowing Claude's first-response
-# context budget. Plan § 4.3 / R20 originally specified 3; raised after
-# rollout to 5 for better phase coverage while staying below the
-# "wall-of-text" threshold.
-_MAX_INJECTED_FAILS = 5
-
-# Tier-2 IDs that MUST never reach injection (even if the summary file
-# contains them). Mirrors TIER_2_CHECK_IDS in shared.scripts.lib.phase_quality.
-_TIER_2_IDS: frozenset[str] = frozenset({
-    "W1", "I4", "T2", "Q1", "S3", "S4", "S5", "S7", "S9", "S10",
-    "Cmp1", "D2",
-})
-
-# Match a bullet like `  - **W2** evidence text here.` in the summary
-# file (written by rewrite_session_findings_summary).
-_FAIL_BULLET_RE = re.compile(
-    r"^\s{2,}- \*\*(?P<id>[A-Za-z][A-Za-z0-9]*\d+)\*\* (?P<evidence>.+)$"
-)
-_RUN_HEADER_RE = re.compile(r"^##\s+(?P<phase>[A-Za-z]+) — (?P<run>\S+)\s*$")
-
-
-def _phase_quality_inject_enabled() -> bool:
-    """Return True unless SHIPWRIGHT_PHASE_QUALITY_MODE == audit_only.
-
-    Default ON — injection is the normal mode post-epic. The env var is
-    the documented opt-out lever (``audit_only`` → silent-file-only,
-    no SessionStart noise).
-    """
-    mode = os.environ.get("SHIPWRIGHT_PHASE_QUALITY_MODE", "").strip().lower()
-    return mode != _OFF_MODE
-
-
-def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
-    """Parse the findings digest (``_findings.md``) and return its Tier-1 FAILs.
-
-    The summary file groups runs under ``## {phase} — {run_id}`` headers
-    and lists open FAILs as bulleted lines under ``- open FAILs:``.
-    Multiple runs might be present; we read them in file order (newest
-    first since rewrite_session_findings_summary sorts by ``audited_at``
-    descending). A FAIL id in ``_TIER_2_IDS`` is filtered out. RAW parse — each
-    FAIL keeps its ``run`` id so the caller applies the sentinel-run policy
-    (mirrors the writer's ``load_findings`` vs ``load_actionable_findings``).
-    """
-    fails: list[dict[str, str]] = []
-    current_phase = ""
-    current_run = ""
-    in_fails_section = False
-
-    for raw in summary_text.splitlines():
-        header = _RUN_HEADER_RE.match(raw)
-        if header:
-            current_phase = header.group("phase")
-            current_run = header.group("run")
-            in_fails_section = False
-            continue
-        stripped = raw.strip()
-        if stripped.startswith("- open FAILs:"):
-            in_fails_section = True
-            continue
-        if not in_fails_section:
-            continue
-        if stripped and not stripped.startswith("-"):
-            # End of the fails block.
-            in_fails_section = False
-            continue
-        m = _FAIL_BULLET_RE.match(raw)
-        if not m:
-            continue
-        check_id = m.group("id")
-        if check_id in _TIER_2_IDS:
-            continue
-        fails.append({
-            "id": check_id,
-            "phase": current_phase,
-            "run": current_run,
-            "evidence": m.group("evidence").strip(),
-        })
-    return fails
-
-
-def _format_injection(fails: list[dict[str, str]]) -> str:
-    """Return the additionalContext block shown at SessionStart."""
-    count = len(fails)
-    lines = [
-        f"[Shipwright Phase-Quality] Letzte Phase(n) hatten {count} "
-        f"offene Tier-1 FAIL(s):",
-    ]
-    for f in fails:
-        phase = f["phase"] or "unknown"
-        evidence = f["evidence"]
-        lines.append(f"• {f['id']} ({phase}): {evidence}")
-    lines.append(
-        "Bitte vor weiteren Schritten adressieren — oder override via "
-        "SHIPWRIGHT_SKIP_QUALITY_CHECK + SHIPWRIGHT_AUDIT_OVERRIDE_REASON "
-        "dokumentieren."
-    )
-    return "\n".join(lines)
-
-
-def _build_phase_quality_injection(project_root: str) -> str:
-    """Return the injection string, or empty when not applicable."""
-    if not _phase_quality_inject_enabled():
-        return ""
-    pr = Path(project_root)
-    # Monorepo auto-descent guard — mirrors the audit hook. If cwd is a
-    # strict ancestor of project_root (resolver auto-descended into a
-    # managed subfolder while the user worked at a parent level), skip
-    # injection to avoid off-scope Tier-1 FAIL noise. Explicit opt-in via
-    # SHIPWRIGHT_PROJECT_ROOT env var pointing exactly at project_root.
-    try:
-        from lib.phase_quality import (
-            cwd_is_strict_ancestor_of,
-            project_root_was_explicitly_selected,
-        )
-    except ImportError:
-        pass
-    else:
-        cwd = Path.cwd()
-        if cwd_is_strict_ancestor_of(cwd, pr) \
-                and not project_root_was_explicitly_selected(pr):
-            return ""
-    # The findings summary is a transient derived cache under the gitignored
-    # skill-compliance dir (relocated in iterate-2026-06-09 so idle main stays
-    # clean). Follow the SSoT constant; if phase_quality can't be imported in
-    # this minimal hook context there is nothing meaningful to inject.
-    try:
-        from lib.phase_quality import SUMMARY_PATH as _PQ_SUMMARY_REL
-        from lib.phase_quality import is_sentinel_run
-    except ImportError:
-        return ""
-    summary_path = pr / _PQ_SUMMARY_REL
-    try:
-        text = summary_path.read_text(encoding="utf-8")
-    except (FileNotFoundError, OSError):
-        return ""
-    # Actionability policy (mirrors the writer's load_actionable_findings): drop
-    # sentinel-run snapshots so a stale on-Stop-only digest can't cry wolf at
-    # SessionStart, THEN cap — so sentinels can't starve real FAILs out of the
-    # budget (iterate-2026-06-15-sessionstart-sentinel-filter).
-    fails = [
-        f for f in _collect_tier1_fails(text) if not is_sentinel_run(f.get("run"))
-    ][:_MAX_INJECTED_FAILS]
-    if not fails:
-        return ""
-    return _format_injection(fails)
 
 
 def main() -> int:
@@ -250,7 +106,7 @@ def main() -> int:
     # dropped. Only the block is gated — env context is emitted every time.
     # audit_only short-circuits before claiming so the opt-out leaves no
     # cache file. Non-blocking; injection errors never propagate.
-    if _phase_quality_inject_enabled():
+    if phase_quality_inject_enabled():
         try:
             from lib.event_once import claim_once
             claim_path = (
@@ -262,7 +118,7 @@ def main() -> int:
             may_emit = True
         if may_emit:
             try:
-                injection = _build_phase_quality_injection(project_root)
+                injection = build_phase_quality_injection(project_root)
             except Exception:  # noqa: BLE001
                 injection = ""
             if injection:
@@ -276,19 +132,58 @@ def main() -> int:
             }
         }))
 
-    # CLAUDE_ENV_FILE fallback so SHIPWRIGHT_SESSION_ID reaches bash subprocesses.
+    # CLAUDE_ENV_FILE fallback so these vars reach bash subprocesses —
+    # additionalContext alone does not (it is text shown to the model, not an
+    # OS environment). SHIPWRIGHT_LOOP_UNIT_ID joined SESSION_ID here
+    # (trg-33d30377 / iterate-2026-09-11-ci-supplychain-ack-authorship): a
+    # campaign runner script — record_ci_supplychain_ack.py's authorship
+    # guard — reads it via plain `os.environ.get`, i.e. exactly the channel
+    # this fallback exists to fill; the additionalContext-only propagation a
+    # few lines up reaches the MODEL's awareness, never a Bash-tool
+    # subprocess's real environment, so a guard relying on that alone would
+    # be silently inert for the one scenario it exists to catch.
+    #
+    # SYNCED, not merely appended (doubt review, trg-33d30377): unlike
+    # SESSION_ID, LOOP_UNIT_ID changes value — or disappears — across a
+    # session's lifetime (set for a runner's unit, absent once it returns).
+    # An earlier append-only version left a stale `export
+    # SHIPWRIGHT_LOOP_UNIT_ID=<old unit>` line in place forever once any
+    # unit had run, which could make the guard's own documented recovery
+    # path ("act from the orchestrator's own shell once the unit has
+    # returned") unreachable if CLAUDE_ENV_FILE is shared across that
+    # session's Bash-tool calls. Each SessionStart now rewrites this file's
+    # line for each tracked var to match this hook's own CURRENT ambient
+    # environment exactly — present with a new value replaces the old line;
+    # absent removes any existing line for it.
     env_file = os.environ.get("CLAUDE_ENV_FILE")
     if env_file:
+        # None = "must not be exported here" (removes any stale line instead
+        # of leaving it). shlex.quote: both values are environment-sourced
+        # (harness-controlled in the intended flow), but nothing upstream
+        # enforces a safe charset before this write — campaign-mode.md Step
+        # 3b has the orchestrator interpolate a JSON `id` field straight
+        # into a literal `export` line. An unquoted value containing shell
+        # metacharacters would execute arbitrary content the next time this
+        # file is sourced.
+        desired: dict[str, str | None] = {
+            "SHIPWRIGHT_SESSION_ID": session_id,
+            "SHIPWRIGHT_LOOP_UNIT_ID": os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID") or None,
+        }
         try:
-            existing = ""
             try:
                 with open(env_file, encoding="utf-8") as f:
-                    existing = f.read()
+                    existing_lines = f.readlines()
             except FileNotFoundError:
-                pass
-            if f"SHIPWRIGHT_SESSION_ID={session_id}" not in existing:
-                with open(env_file, "a", encoding="utf-8") as f:
-                    f.write(f"export SHIPWRIGHT_SESSION_ID={session_id}\n")
+                existing_lines = []
+            prefixes = tuple(f"export {name}=" for name in desired)
+            kept = [ln for ln in existing_lines if not ln.startswith(prefixes)]
+            new_lines = [
+                f"export {name}={shlex.quote(value)}\n"
+                for name, value in desired.items() if value is not None
+            ]
+            if kept != existing_lines or new_lines:
+                with open(env_file, "w", encoding="utf-8") as f:
+                    f.writelines(kept + new_lines)
         except OSError:
             pass
 
