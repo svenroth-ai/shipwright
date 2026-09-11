@@ -1,0 +1,24 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "concurrency (shared-file retention/pruning machinery) + irreversible operation (unlink of other runs' entry files)",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "boundary & contract / hidden coupling",
+      "claim_under_doubt": "the ADR's review claim that a repo-wide grep confirmed no other production doc or code states the cap value",
+      "finding": "shared/scripts/tools/verifiers/iterate_checks.py's _no_entry_detail() (two call sites) still hardcoded '50-entry retention window' in operator-facing diagnostic text -- a sixth production-code location, missed by the initial grep and by the internal plan review's follow-up.",
+      "disposition": "fixed",
+      "resolution": "_no_entry_detail() now imports ITERATE_RETENTION and f-strings it in; added test_no_entry_detail_diagnostic_states_current_cap as a sixth guarded location in test_retention_cap_headroom.py. Verified via direct smoke-test (prints '200-entry retention window') and shared/tests/test_iterate_checks_record_boundary.py (9 passed) + the full cap-headroom suite (7 passed)."
+    },
+    {
+      "severity": "low",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "raising ITERATE_RETENTION fully resolves the cross-branch scatter-pruning problem",
+      "finding": "The bump only raises the threshold at which the same per-branch, stale-on-disk-view eviction logic fires; if concurrent branch fan-out ever approaches ~200 unpinned entries again, the identical symptom reappears at a higher watermark.",
+      "disposition": "no_change_needed",
+      "resolution": "Already substantively addressed: the ADR states a concrete revisit trigger (unpinned count on origin/main approaching ~150) naming the declined main-only-retention alternative as the next escalation. Doubt-reviewer confirmed it could not disprove that this was accounted for -- the residual note (the trigger is manual/observational, not automated) is accepted as-is; wiring an automated alert is a larger scope than this run and not requested."
+    }
+  ],
+  "core_mechanics_confirmed": "The reviewer independently verified _write_entries_directly() produces entries indistinguishable to _apply_retention's sort/eviction logic from ones written through the real transaction, and that the strengthened survivor-set assertion in test_retention_does_not_prune_during_migration has no off-by-one error (211 pre-retention, oldest 11 evicted, survivors = idx 11..209 + new = 200)."
+}
