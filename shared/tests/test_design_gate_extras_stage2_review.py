@@ -7,6 +7,7 @@ that file's own size budget.
 import subprocess
 from pathlib import Path
 
+import pytest
 from lib.design_gate_extras import (
     chrome_nav_targets_consistent,
     standalone_html_violations,
@@ -149,13 +150,15 @@ def test_a_scheme_relative_reference_with_no_slashes_is_still_caught():
     ) == ["https:/evil.example/x.js"]
 
 
-def test_an_empty_chrome_definition_does_not_exempt_a_screen_with_real_nav():
+@pytest.mark.parametrize("empty_chrome", ["", "<p>no nav markup here</p>"])
+def test_a_chrome_definition_with_no_nav_targets_does_not_exempt_real_screen_nav(empty_chrome):
     """External Tier-3 review, PR #726 round 9: an EXISTING but empty/
     malformed `chrome-definition.md` (no recognized nav targets) was
     treated as "nothing to compare" — passing every screen regardless of
     its own nav markup. A screen that plainly uses nav-item/topnav-link
-    still has to draw it from a real shared definition."""
-    empty_chrome = "<p>no nav markup here</p>"
+    still has to draw it from a real shared definition. Covers both the
+    literally-empty string (what an unreadable file collapses to) and
+    valid-but-nav-less HTML, since both share this code path."""
     screen = '<a href="02-dashboard.html" class="nav-item">Dashboard</a>'
     result = chrome_nav_targets_consistent(empty_chrome, screen)
     assert result.ok is False

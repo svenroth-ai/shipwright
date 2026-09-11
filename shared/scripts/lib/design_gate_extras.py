@@ -38,6 +38,7 @@ __all__ = [
     "flows_present_for_multi_screen_app",
     "iteration_touched_flagged_screens",
     "parse_feedback_round",
+    "screen_declares_nav",
     "standalone_html_violations",
     "uploads_preserved",
     "visual_tokens_present",
