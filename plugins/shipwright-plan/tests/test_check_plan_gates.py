@@ -31,6 +31,12 @@ def test_a_missing_planning_dir_is_a_usage_error(tmp_path):
     assert out["error"] == "planning_dir_not_found"
 
 
+def test_a_missing_plugin_root_dir_is_a_usage_error(planning, tmp_path):
+    code, out = run_gates(planning, "sections", plugin_root=tmp_path / "no-such-plugin")
+    assert code == 2
+    assert out["error"] == "plugin_root_not_found"
+
+
 def test_project_root_is_required_not_defaulted_to_cwd(planning):
     """External code review, iterate-2026-09-11-e1-checks-plan-design: a
     silently-defaulted cwd let --gate boundary read an empty git evidence
@@ -159,13 +165,11 @@ def test_gate_selection_runs_only_what_was_asked_for(planning, no_e2e_plugin_roo
     ] == ["review", "sections", "boundary"]
 
 
-def test_plugin_root_is_required_for_the_sections_and_all_gates(planning):
+def test_plugin_root_is_required_for_the_all_gate_too(planning):
     """External code review, iterate-2026-09-11-e1-checks-plan-design: a
     silently-optional --plugin-root let gate #11 (E2E journeys) skip without
-    a trace instead of failing the usage."""
-    code, out = run_gates(planning, "sections")
-    assert code == 2
-    assert out["error"] == "plugin_root_required"
+    a trace instead of failing the usage. The `sections`-only case is
+    covered in test_check_plan_gates_sections.py, next to gate #11."""
     code, out = run_gates(planning, "all")
     assert code == 2
     assert out["error"] == "plugin_root_required"

@@ -4,8 +4,8 @@
 
 Gates 5–11 are one command. `--plugin-root` is required (not merely
 accepted) — gate 11 reads this plugin's own `config.json` through it and
-silently skips itself without it. Run it and fix what it names — do not
-eyeball them:
+refuses to run (usage error, exit 2) without it. Run it and fix what it
+names — do not eyeball them:
 
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py \

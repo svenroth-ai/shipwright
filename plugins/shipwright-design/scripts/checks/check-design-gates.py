@@ -194,22 +194,15 @@ def uploads_gate(project_root: Path, designs_dir: Path) -> dict:
 def iteration_gate(project_root: Path, designs_dir: Path, round_path: Path | None) -> dict:
     """FR-01.04 #9.
 
-    **Known scope (external plan/code review, iterate-2026-09-11-e1-checks-
-    plan-design):** evidence is `git_dirty_paths` — the WORKING TREE's
-    current uncommitted state, not a snapshot from when this round began.
-    Called right after Option B revises the flagged screens (before any
-    commit), so in the intended call site "modified since the round began"
-    and "currently dirty" coincide. If a caller commits the revision before
-    running this gate, it would false-fail (evidence gone); if a caller ran
-    it long after an unrelated earlier commit, it could false-pass (this
-    round's own edit already landed in that commit, not in the working
-    tree). A per-round baseline snapshot (mirroring
-    `record_requirement_impact.py --snapshot-baseline`) would close this,
-    but is out of scope for this bounded enforcement pass — call this gate
-    promptly, before committing, same as `phase_write_boundary.py`'s
-    documented assumption.
+    **Known scope** (external review, iterate-2026-09-11-e1-checks-plan-
+    design): evidence is `git_dirty_paths` — the WORKING TREE's current
+    dirty state, not a per-round baseline snapshot. Call this promptly,
+    right after Option B revises the flagged screens and before any commit
+    — same assumption `phase_write_boundary.py` documents — or it can
+    false-fail (committed already) or false-pass (an unrelated later dirty
+    state).
     """
-    if round_path is None or not round_path.exists():
+    if round_path is None:
         return _gate("iteration", True, "no feedback round file given — nothing to check")
     entries = parse_feedback_round(_read(round_path))
     flagged = [f for f, status in entries if status in ("CHANGES", "REJECTED")]
@@ -263,6 +256,14 @@ def main() -> int:
                        "invocation — silently no-op'ing here would bypass the "
                        "flagged-screen check. --gate all still no-ops without "
                        "--round (Option A finalization has no round file yet).",
+        }, indent=2))
+        return 2
+    if round_path is not None and not round_path.exists():
+        # A given-but-wrong path must not collapse into the "not given"
+        # no-op — same bypass class, reached via a bad round number.
+        print(json.dumps({
+            "success": False, "error": "round_not_found",
+            "message": f"--round file does not exist: {round_path}",
         }, indent=2))
         return 2
 

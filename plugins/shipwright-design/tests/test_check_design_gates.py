@@ -224,9 +224,8 @@ ROUND_FILE = (
 )
 
 
-def test_gate_all_still_no_ops_without_round(project):
-    """Explicit --gate iteration's usage error is in the tier3-review file."""
-    assert run_gates(project, "all")[0] == 0
+# round-related regression tests (usage error, all-gate exemption) live in
+# test_check_design_gates_tier3_review.py — kept out of this file's budget.
 
 
 def test_a_flagged_screen_left_untouched_fails(project, tmp_path):

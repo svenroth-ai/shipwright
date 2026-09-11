@@ -6,7 +6,7 @@ not a gate — this is the command, so Step 6's "STOP" and Step 9's
 "verification gates (all must pass)" have something to run.
 
     uv run check-plan-gates.py --planning-dir <path> --project-root <path> \
-        [--plugin-root <path>] [--gate review|sections|boundary|all]
+        --plugin-root <path> [--gate review|sections|boundary|all]
 
 ``--gate review`` (Step 6)
     The external review step must have ended by a recorded route, and any
@@ -23,9 +23,9 @@ not a gate — this is the command, so Step 6's "STOP" and Step 9's
     a UI project's E2E plan names >=1 flow, via config.json (#11).
 
 ``--gate boundary`` (#7 — planning writes no production code)
-    Every path this session changed must fall under an allowed planning-phase
-    prefix (see ``PLAN_ALLOWED_PREFIXES`` below). Requires ``--project-root``
-    to be a git worktree; a non-git project skips it (nothing to check against).
+    Every changed path must fall under an allowed planning-phase prefix (see
+    ``PLAN_ALLOWED_PREFIXES``). Non-git ``--project-root`` skips it (nothing
+    to check against).
 
 Strict by design — unlike the phase verifier, which is lenient toward plans
 written before these formats existed, this runs against the plan being
@@ -208,8 +208,7 @@ def sections_gate(planning_dir: Path, project_root: Path, plugin_root: Path) -> 
     if not findings.ok:
         problems.append(findings.detail)
 
-    # FR-01.03 #11 — a UI project's E2E plan names its journeys. main() has
-    # already refused to call this without a plugin_root (usage error).
+    # FR-01.03 #11 — a UI project's E2E plan names its journeys.
     expect_e2e = is_e2e_enabled(load_global_config(plugin_root))
     e2e = e2e_journeys_named(planning_dir / "claude-plan-e2e.md", expect_e2e)
     if not e2e.ok:
@@ -225,11 +224,8 @@ def sections_gate(planning_dir: Path, project_root: Path, plugin_root: Path) -> 
 
 def boundary_gate(project_root: Path) -> dict:
     """FR-01.03 #7 — planning writes no production code, runs no tests.
-
-    Reads the session's own uncommitted change set; a project that is not a
-    git worktree yields no evidence and passes trivially — there is nothing
-    to check against, not a violation.
-    """
+    Reads the session's own uncommitted change set; a non-git project
+    yields no evidence and passes trivially, not a violation."""
     changed = git_dirty_paths(project_root)
     violations = find_boundary_violations(changed, list(PLAN_ALLOWED_PREFIXES))
     if violations:
@@ -247,15 +243,13 @@ def main() -> int:
     parser.add_argument(
         "--project-root", required=True,
         help="Project root for decision_log.md, git evidence, and review-config "
-             "overrides. Required (matches check-design-gates.py) — a cwd "
-             "default let --gate boundary read empty git evidence and "
-             "false-pass (external review, iterate-2026-09-11-e1).",
+             "overrides — a cwd default let --gate boundary false-pass on "
+             "empty git evidence (external review, iterate-2026-09-11-e1).",
     )
     parser.add_argument(
         "--plugin-root", default=None,
-        help="Plugin root, for gate #11 to read config.json's e2e_test_plan "
-             "setting. Required for --gate sections/all (usage error if "
-             "omitted); the boundary-only invocation has no use for it.",
+        help="Plugin root, for gate #11's config.json. Required for --gate "
+             "sections/all (usage error if omitted).",
     )
     parser.add_argument("--gate", choices=GATES, default="all")
     args = parser.parse_args()
@@ -275,6 +269,12 @@ def main() -> int:
             "success": False, "error": "plugin_root_required",
             "message": "--plugin-root is required for --gate sections/all: "
                        "gate #11 must not silently skip (external review).",
+        }, indent=2))
+        return 2
+    if plugin_root is not None and not plugin_root.is_dir():
+        print(json.dumps({
+            "success": False, "error": "plugin_root_not_found",
+            "message": f"not a directory: {plugin_root}",
         }, indent=2))
         return 2
 

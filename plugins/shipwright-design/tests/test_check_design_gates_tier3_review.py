@@ -56,9 +56,7 @@ def test_a_relative_round_path_resolves_against_project_root_not_cwd(tmp_path):
 def test_an_explicit_iteration_gate_without_round_is_a_usage_error(tmp_path):
     """External code review, iterate-2026-09-11-e1-checks-plan-design: an
     explicit --gate iteration used to silently no-op without --round,
-    bypassing the flagged-screen check instead of failing the usage. --gate
-    all must still no-op (Option A finalization has no round file yet) —
-    covered separately in test_check_design_gates.py."""
+    bypassing the flagged-screen check instead of failing the usage."""
     project = tmp_path / "project"
     project.mkdir()
     cmd = [sys.executable, SCRIPT, "--project-root", str(project), "--gate", "iteration"]
@@ -66,3 +64,34 @@ def test_an_explicit_iteration_gate_without_round_is_a_usage_error(tmp_path):
     assert proc.returncode == 2, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
     out = json.loads(proc.stdout)
     assert out["error"] == "round_required"
+
+
+def test_gate_all_still_no_ops_without_round(tmp_path):
+    """--gate all has no round file at Option A finalization time — unlike
+    the explicit iteration gate above, that must stay a silent no-op. Other
+    gates in --gate all may still fail on this bare project; only the
+    iteration row is under test here."""
+    project = tmp_path / "project"
+    project.mkdir()
+    cmd = [sys.executable, SCRIPT, "--project-root", str(project), "--gate", "all"]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    out = json.loads(proc.stdout)
+    row = next(g for g in out["gates"] if g["gate"] == "iteration")
+    assert row["ok"] and "no feedback round" in row["detail"]
+
+
+def test_a_round_path_that_does_not_exist_is_a_usage_error(tmp_path):
+    """A GIVEN but wrong ``--round`` path (bad round number, not yet
+    written) used to collapse into the same silent no-op as omitting
+    ``--round`` entirely — the same bypass class round_required closes,
+    reached through a different input (code review, PR #726 round 6)."""
+    project = tmp_path / "project"
+    project.mkdir()
+    cmd = [
+        sys.executable, SCRIPT, "--project-root", str(project), "--gate", "iteration",
+        "--round", "design-feedback-round9.md",
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 2, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    out = json.loads(proc.stdout)
+    assert out["error"] == "round_not_found"
