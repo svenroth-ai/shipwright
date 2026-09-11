@@ -21,12 +21,17 @@ filesystem-facing wiring (`_project_gate_wiring.py`), wired into
 `project_checks.run_project_checks()` — the same dispatcher
 `update-step --step project` already blocks on:
 
-- **#4 + #15 merged** — `basis_forbids_assumed`: no active FR row's
-  `Basis` cell may read a bare or qualified `assumed` in a greenfield
-  spec (extends P4.2's already-shipped, already-absolute grill-trace-layer
-  ban to the FR-row layer, resolving the ledger's own self-flagged
-  #4/#15 contradiction by picking the simpler, no-oracle-required rule).
-  Skipped for `scope: "extension"` (added round 5 review).
+- **#4 + #15 merged** — `basis_forbids_assumed`: a QUALIFIED `assumed`
+  cell (e.g. `assumed: nobody could answer`) is always banned — the
+  settlement belongs in an acceptance criterion, not smuggled into the
+  Basis cell. A BARE `assumed` cell is banned only when the row carries
+  zero acceptance criteria — `assumed` is legal per `fr-authoring.md`
+  §4a but never bare, so the mechanical form obligation is "paired with
+  a recorded criterion", not "absent altogether" (revised post-merge,
+  see Stage-1 Spec-Review below; the original round shipped an outright
+  ban copied from P4.2's grill-trace layer, which was stricter than the
+  ledger's own decided ceiling). Skipped for `scope: "extension"` (added
+  round 5 review).
 - **#5** — `criteria_free_of_implementation_detail`: reuses I1's own
   detector against every active FR's acceptance CRITERIA text, not just
   the Name column I1 already covered.
@@ -130,12 +135,34 @@ probes were run this iterate (CLAUDE.md/agent_docs existence-checking and
 the project-config JSON reads are plain file-existence/JSON-parse checks
 with no format-ambiguity to probe).
 
+## Stage-1 Spec-Review REJECT (post-merge with main, PR #729)
+
+Stage-1 spec-reviewer REJECTed the shipped `basis_forbids_assumed`: an
+outright ban on Basis=`assumed` is stricter than FR-01.02 #4's own
+recorded ceiling ("only where the answer could not be obtained", not
+"never"), and contradicts `fr-authoring.md` §4a, `requirement-elicitation.md`
+§8's context-dependent availability table, and `spec-generation.md`'s
+worked FR-01.05 example — all three keep greenfield `assumed` legal
+when paired with a named settlement. Verified genuine (not fabricated)
+by re-reading the three cited documents directly. Operator decision:
+narrow the gate, not the docs — the docs are deliberate and mutually
+consistent; a gate stricter than the decided ceiling is the defect.
+Fixed by keeping the qualifier-smuggling ban (unconditional) and
+replacing the bare-`assumed` outright ban with the form obligation the
+docs actually state — presence of at least one acceptance criterion on
+the row, not a judgement about the criterion's content (see the revised
+`_project_gate_extras.basis_forbids_assumed` docstring for why a
+mechanical check stops at presence, not aboutness).
+
 ## Rejected Alternatives
 
 - A second, weaker "does this AC name a settlement" semantic oracle for
-  #15 — no deterministic aboutness check exists; extending the existing
-  absolute grill-trace-layer ban to the FR-row layer was the buildable,
-  already-operator-decided alternative (this ADR's #4/#15 resolution).
+  #15 — no deterministic aboutness check exists; checking for the
+  PRESENCE of an acceptance criterion on an `assumed` row (not its
+  content) is the buildable ceiling a mechanical gate can honestly reach
+  (see the Stage-1 Spec-Review REJECT above — the ADR's original
+  resolution, an outright ban borrowed from P4.2's grill-trace layer,
+  was reverted for being stricter than the ledger's own decided ceiling).
 - Directory enumeration under `.shipwright/planning/` for split discovery
   — abandoned in round 2 after two independent reviewers found it cannot
   distinguish a real split from a reserved non-split dir; replaced with

@@ -52,6 +52,20 @@ def test_basis_forbids_assumed_fails_on_a_bare_assumed_cell():
     assert "01-x/spec.md" in result.detail
 
 
+def test_basis_forbids_assumed_passes_on_a_bare_assumed_cell_with_a_criterion():
+    """Revised post-merge (Stage-1 spec-review REJECT, PR #729): a bare
+    ``assumed`` cell paired with a recorded acceptance criterion is legal
+    per ``fr-authoring.md`` §4a — the original round's outright ban was
+    stricter than FR-01.02 #4's own decided ceiling."""
+    text = (
+        _HEADER + _row("FR-01.01", "assumed") + "\n### FR-01.01\n"
+        "- (E) Given the PO confirms scope, when the spec is revised, "
+        "then this row's Basis is updated to interview.\n"
+    )
+    result = ext.basis_forbids_assumed({"spec.md": text})
+    assert result.ok is True
+
+
 def test_basis_forbids_assumed_ignores_a_positional_basis_column():
     """Only a NAMED Basis column is scored — mirrors ``fr_basis``'s own
     contract that a legacy/unnamed cell never claimed to be a basis."""

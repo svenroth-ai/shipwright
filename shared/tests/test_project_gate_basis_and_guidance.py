@@ -31,7 +31,11 @@ def test_check_basis_forbids_assumed_skips_when_no_spec_yet(tmp_path):
     assert r.is_skipped
 
 
-def test_check_basis_forbids_assumed_fails_on_a_bare_assumed_cell(tmp_path):
+def test_check_basis_forbids_assumed_fails_on_a_bare_assumed_cell_with_no_criteria(tmp_path):
+    """Revised post-merge (Stage-1 spec-review REJECT, PR #729): a bare
+    ``assumed`` cell is only a hit when the row carries NO acceptance
+    criterion at all — ``assumed`` with nothing to settle it is exactly
+    the silent-assuming the docs ban, per ``fr-authoring.md`` §4a."""
     _write_splits_config(tmp_path, ["01-a"])
     split = tmp_path / ".shipwright" / "planning" / "01-a"
     split.mkdir(parents=True)
@@ -43,6 +47,32 @@ def test_check_basis_forbids_assumed_fails_on_a_bare_assumed_cell(tmp_path):
     r = check_basis_forbids_assumed(tmp_path)
     assert r.ok is False
     assert "FR-01.01" in r.detail
+
+
+def test_check_basis_forbids_assumed_passes_on_a_bare_assumed_cell_paired_with_a_criterion(tmp_path):
+    """Revised post-merge (Stage-1 spec-review REJECT, PR #729): the
+    original round shipped an outright ban on Basis='assumed', stricter
+    than FR-01.02 #4's own recorded ceiling and contradicting
+    ``fr-authoring.md``/``requirement-elicitation.md``/``spec-generation.md``,
+    all of which keep greenfield ``assumed`` legal when paired with a
+    named settlement. A recorded acceptance criterion on the row is the
+    mechanical form obligation the docs actually state — this gate
+    cannot and does not judge whether the criterion truly names a
+    settlement (no deterministic 'aboutness' oracle exists), only that
+    one is present."""
+    _write_splits_config(tmp_path, ["01-a"])
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget export | Must | export widgets | assumed |\n\n"
+        "### FR-01.01\n"
+        "- (E) Given the PO confirms the export scope, when the spec is "
+        "revised, then this row's Basis is updated to interview.\n",
+        encoding="utf-8",
+    )
+    r = check_basis_forbids_assumed(tmp_path)
+    assert r.ok is True
 
 
 def test_check_basis_forbids_assumed_fails_loud_on_a_declared_but_missing_spec(tmp_path):
@@ -103,6 +133,31 @@ def test_check_basis_forbids_assumed_catches_a_qualified_assumed_cell(tmp_path):
         "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
         "| FR-01.01 | widget export | Must | export widgets | "
         "assumed: nobody could answer |\n",
+        encoding="utf-8",
+    )
+    r = check_basis_forbids_assumed(tmp_path)
+    assert r.ok is False
+    assert "FR-01.01" in r.detail
+
+
+def test_check_basis_forbids_assumed_fails_on_a_qualified_cell_even_with_a_criterion(tmp_path):
+    """Revised post-merge (Stage-1 spec-review REJECT, PR #729): the
+    bare-``assumed``-with-a-criterion carve-out does NOT extend to a
+    qualified cell — ``fr-authoring.md`` §4a is explicit that the Basis
+    cell takes one bare vocabulary value; a settlement belongs in an
+    acceptance criterion, never smuggled into the Basis cell itself, so
+    a qualified cell stays banned regardless of what criteria the row
+    also carries."""
+    _write_splits_config(tmp_path, ["01-a"])
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget export | Must | export widgets | "
+        "assumed: nobody could answer |\n\n"
+        "### FR-01.01\n"
+        "- (E) Given the PO confirms the export scope, when the spec is "
+        "revised, then this row's Basis is updated to interview.\n",
         encoding="utf-8",
     )
     r = check_basis_forbids_assumed(tmp_path)

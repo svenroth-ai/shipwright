@@ -8,21 +8,30 @@ returning functions over already-read spec text, composed by
 ``starting_guidance_present`` (which, like ``design_gate_extras.uploads_preserved``,
 needs the project root directly).
 
-* :func:`basis_forbids_assumed` — **#4 + #15, merged 2026-09-11.** #4's own
-  text ("Reworded 2026-07-24 to the greenfield teeth ... we banned
-  'assumed' for greenfield") and #15's later retro-pass amendment
-  ("the basis stays available but only together with what would settle
-  it") name a real tension the ledger itself flags as unresolved
-  ("Both scenarios hit a contradiction the phase carries with itself").
-  Rather than build a semantic "does this AC actually name a settlement"
-  oracle (no deterministic check for aboutness exists — the campaign's own
-  abort condition), this keeps the simpler, already-operator-decided,
-  already-shipped-at-the-grill-trace-layer rule (P4.2's
-  ``check_greenfield_assumed`` — "no exceptions in this surface"): a
-  greenfield spec's ``Basis`` column may never read a bare ``assumed``.
-  Extending the SAME absolute ban to the FR-row layer, not inventing a
-  second rule, is the buildable half of both #4 and #15 — see the ledger
-  entry for the full resolution note.
+* :func:`basis_forbids_assumed` — **#4 + #15, revised 2026-09-11 (Stage-1
+  spec-review REJECT on PR #729).** The first cut copied P4.2's
+  grill-trace-layer "no exceptions" ban wholesale to the FR-row layer — an
+  outright ban on Basis=``assumed``. That is stricter than the
+  already-operator-decided ceiling FR-01.02 #4 itself records: "only where
+  the answer could not be obtained", not "never". ``fr-authoring.md``
+  §4a, ``requirement-elicitation.md`` §8 (its three-row availability
+  table — availability is context-dependent, e.g. ``/shipwright-adopt``
+  legitimately has nobody to ask) and ``spec-generation.md``'s worked
+  FR-01.05 example are unanimous and deliberate: ``assumed`` is legal,
+  ``assumed`` is never BARE — it is available only paired with what would
+  settle it, and that settlement belongs in an ACCEPTANCE CRITERION on the
+  same row, never smuggled into the Basis cell itself. So the gate keeps
+  its qualifier-smuggling half (``assumed: <reason>`` stays a malformed,
+  banned cell — the settlement is in the wrong place) and replaces the
+  outright ban on a bare ``assumed`` cell with the FORM obligation the
+  docs actually state: the row must carry at least one acceptance
+  criterion. Whether that criterion actually NAMES a settlement (vs. a
+  vapid "someone should check this") is a judgement call about
+  reachability this module's own docstring already rules out building an
+  oracle for (no deterministic "aboutness" check exists) — checking for
+  *some* recorded criterion is as far as a mechanical gate can honestly
+  go, and is documented as such rather than silently pretending to verify
+  content.
 * :func:`criteria_free_of_implementation_detail` — **#5** "No
   symbol/path/ADR/verb in the sentence." ``fr_hygiene_detectors.violations``
   (I1) already exists but is applied only to the FR Name/Description
@@ -81,14 +90,26 @@ def basis_forbids_assumed(spec_texts: dict[str, str]) -> GateResult:
     NAMED ``Basis`` column are scored (mirrors ``fr_basis``'s own contract —
     a legacy ``Source`` cell never claimed to be a basis).
 
-    Catches both a bare ``assumed`` cell (``fr_basis`` kind ``known``) and a
-    QUALIFIED one like ``assumed: nobody could answer`` (kind ``malformed``
-    — ``fr_basis`` rejects the qualifier as a parse error, not as a basis
-    value, so its own vocabulary check alone doesn't ban it). External code
-    review (e2-checks-project-elicitation, round 3, low, GLM): the ban is
-    "no exceptions" — a malformed-but-recognizably-assumed cell is exactly
-    the qualifier-smuggling loophole that wording exists to close, not a
-    different problem this gate can ignore."""
+    Two independent failure shapes, not one ban:
+
+    1. A QUALIFIED ``assumed`` cell (``fr_basis`` kind ``malformed``, e.g.
+       ``assumed: nobody could answer``) is always a hit, regardless of
+       criteria. ``fr-authoring.md`` §4a: the Basis cell takes one bare
+       vocabulary value; a settlement written INTO the cell is smuggled
+       into the wrong place even when a real settlement exists elsewhere —
+       this is what closes the qualifier-smuggling loophole (external code
+       review, e2-checks-project-elicitation round 3, low, GLM).
+    2. A BARE ``assumed`` cell (``fr_basis`` kind ``known``) is a hit ONLY
+       when the row carries zero acceptance criteria. ``assumed`` is legal
+       — ``fr-authoring.md`` §4a / ``requirement-elicitation.md`` §8 — but
+       "never bare": it must be paired with a criterion naming what would
+       settle it. This gate cannot judge whether a given criterion truly
+       names a settlement (no deterministic "aboutness" oracle exists, per
+       this module's own docstring) or is a vapid "someone should check
+       this" — that is a judgement about reachability, not a shape a
+       regex can see. Checking for the PRESENCE of a criterion is the
+       honest mechanical ceiling; it does not, and must not, pretend to
+       verify the criterion's content."""
     hits: list[str] = []
     for path, text in spec_texts.items():
         for row in fr_table_reader.read_active_fr_rows(text):
@@ -100,15 +121,21 @@ def basis_forbids_assumed(spec_texts: dict[str, str]) -> GateResult:
                 verdict.kind == "malformed"
                 and verdict.value.strip().lower().startswith("assumed")
             )
-            if is_bare_assumed or is_qualified_assumed:
-                hits.append(f"{path}:{row.id}")
+            if is_qualified_assumed:
+                hits.append(f"{path}:{row.id} (settlement smuggled into the Basis cell)")
+            elif is_bare_assumed and not fr_criteria.has_criteria(text, row.id, strict=False):
+                hits.append(f"{path}:{row.id} (assumed with no acceptance criterion)")
     if hits:
         return GateResult(
             False,
-            f"Basis='assumed' in a greenfield /shipwright-project spec (banned, "
-            f"no exceptions — matches P4.2's grill-trace-layer rule): {hits}",
+            f"Basis='assumed' without a named settlement in a greenfield "
+            f"/shipwright-project spec: {hits}",
         )
-    return GateResult(True, "no Basis cell reads 'assumed' across every spec")
+    return GateResult(
+        True,
+        "every 'assumed' Basis cell (if any) is paired with an acceptance "
+        "criterion, and none smuggles its settlement into the Basis cell itself",
+    )
 
 
 # --------------------------------------------------------------------------- #
