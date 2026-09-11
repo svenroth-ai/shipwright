@@ -44,6 +44,7 @@ _TOOLS = Path(__file__).resolve().parent
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
+from verifiers._ac_baseline_growth import baseline_grown_since_parent  # noqa: E402
 from verifiers._ac_binding_state import read_binding_state, spec_path_by_fr  # noqa: E402
 from verifiers._keystone_ac_digest import MANIFEST_RELPATH, ReadError, require_manifest_shape  # noqa: E402
 from verifiers.stdio import ensure_utf8_stdout  # noqa: E402
@@ -180,16 +181,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--write", action="store_true",
                          help="(re)generate the baseline from the CURRENT unbound population "
                               "instead of gating; exits 0")
+    parser.add_argument("--check-baseline-growth", action="store_true",
+                         help="ALSO block if the baseline's own committed bytes grew since "
+                              "--parent-sha (push-only auxiliary signal for a same-PR self-"
+                              "grandfathered entry, trg-91532c29/trg-e69bf1ba finding 6; see "
+                              "verifiers/_ac_baseline_growth.py for what this does and does "
+                              "not close). Rejected combined with --write.")
+    parser.add_argument("--parent-sha", default=None,
+                         help="the commit to diff the baseline against for "
+                              "--check-baseline-growth — pass the push event's `before` SHA "
+                              "in CI (covers every commit a multi-commit push introduced, not "
+                              "just the immediate parent). Defaults to resolving HEAD~1 for "
+                              "local/manual invocation.")
     args = parser.parse_args(argv)
+    if args.write and args.check_baseline_growth:
+        # External code review (glm, low): a subtle, silently-ambiguous
+        # combination — growth computed against a baseline this same run is
+        # about to overwrite — is worse than a loud usage error.
+        parser.error("--check-baseline-growth cannot be combined with --write")
     project_root = Path(args.project_root).resolve()
     baseline_path = args.baseline or (project_root / BASELINE_RELPATH)
     try:
-        return _run_gate(project_root, baseline_path, args.write)
+        return _run_gate(project_root, baseline_path, args.write, args.check_baseline_growth,
+                          args.parent_sha)
     except Exception as exc:  # last-resort fault boundary, same pattern the family uses
         return _emit(_infra(f"unexpected gate fault: {exc!r}"), EXIT_INFRA)
 
 
-def _run_gate(project_root: Path, baseline_path: Path, write: bool) -> int:
+def _run_gate(project_root: Path, baseline_path: Path, write: bool,
+              check_growth: bool = False, parent_sha: str | None = None) -> int:
     try:
         head_manifest = _read_head_manifest(project_root)
         spec_texts = _read_worktree_spec_texts(project_root, head_manifest)
@@ -215,23 +235,45 @@ def _run_gate(project_root: Path, baseline_path: Path, write: bool) -> int:
     # binding, OR it was deleted/renumbered out of the minted population entirely (Stage-2
     # code review, low: this field cannot distinguish the two; both read as "resolved").
     resolved = sorted(baselined - unbound)
+    warnings = list(state.warnings)
+
+    grown: list[str] = []
+    if check_growth:
+        grown, growth_warnings = baseline_grown_since_parent(
+            project_root, baseline_path, baselined, parent_sha,
+        )
+        warnings += growth_warnings
+
     payload = {
         "gate": "ac_coverage_ratchet",
         "unbound_count": len(unbound),
         "baseline_count": len(baselined),
         "new_unbound": new_violations,
         "resolved_since_baseline": resolved,
-        "warnings": state.warnings,
+        "warnings": warnings,
     }
-    if new_violations:
+    if check_growth:
+        payload["baseline_grew_since_parent"] = grown
+    if new_violations or grown:
         payload["status"] = "blocked"
-        payload["remedy"] = (
-            "the AC(s) in `new_unbound` have no test binding and are not in the grandfathered "
-            f"baseline ({baseline_path}). Either bind them (add a `@covers FR-xx/ACnn` tag to "
-            "the test(s) that exercise them), or — if this is genuinely pre-existing backlog "
-            "the baseline missed — regenerate it via `--write` and commit the result in this "
-            "same PR with a stated reason."
-        )
+        remedies = []
+        if new_violations:
+            remedies.append(
+                "the AC(s) in `new_unbound` have no test binding and are not in the "
+                f"grandfathered baseline ({baseline_path}). Either bind them (add a "
+                "`@covers FR-xx/ACnn` tag to the test(s) that exercise them), or — if this is "
+                "genuinely pre-existing backlog the baseline missed — regenerate it via "
+                "`--write` and commit the result in this same PR with a stated reason."
+            )
+        if grown:
+            remedies.append(
+                "the AC(s) in `baseline_grew_since_parent` were newly added to the committed "
+                "baseline in THIS commit — a PR unbinding an AC and grandfathering it via "
+                "`--write` in the same PR. Bind the AC instead of grandfathering it, or get "
+                "the grandfathering explicitly re-reviewed and re-pushed with a stated reason "
+                "rather than letting it land silently."
+            )
+        payload["remedy"] = " ".join(remedies)
         return _emit(payload, EXIT_BLOCKED)
     payload["status"] = "clean"
     return _emit(payload, EXIT_OK)

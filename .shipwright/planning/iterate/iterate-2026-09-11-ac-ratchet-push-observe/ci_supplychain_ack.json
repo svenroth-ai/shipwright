@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-ac-ratchet-push-observe",
+  "ci_supplychain_ack": {
+    "run_id": "iterate-2026-09-11-ac-ratchet-push-observe",
+    "paths_fingerprint": "b507358d702281d7875e8afc82f2d6729d31184002c96f46b9e897b90a9c3e7d",
+    "consistent_with": "iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted",
+    "statement": "Widens the AC coverage ratchet (gate) step's trigger from pull_request-only to also push-to-main (feeder a only; no merge base needed), and adds a push-only --check-baseline-growth --parent-sha <before-sha> flag diffing the baseline file's own committed bytes against the push's pre-image via the repo's hardened git_blob_read helpers (Stage-3 doubt review: a raw git show risked an uncaught UnicodeDecodeError turning an infra fault into a red main). Uses the push's before SHA (not bare HEAD~1) for multi-commit pushes; the before SHA is double-quoted in the run line for consistency with sibling gates. This surfaces a same-PR self-grandfathered entry as a red push run but does not durably close it (detective, self-clearing next push, disclosed as such). Same job, same read-only permissions (contents: read) - no write-back. Does NOT close a later regression of an already-baselined AC that never touches the baseline file; disclosed as an open follow-up.",
+    "ci_paths": [
+      ".github/workflows/ci.yml"
+    ]
+  }
+}
