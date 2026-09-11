@@ -18,6 +18,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ITERATION_PLANNING_MD = (
     REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate"
@@ -43,8 +45,11 @@ def test_mini_plan_protocol_heading_present() -> None:
     )
 
 
+@pytest.mark.covers("FR-01.11/AC27")
 def test_no_small_tier_no_file_exemption_remains() -> None:
-    """The regression this test exists to catch: reintroducing a
+    """AC27: a small-sized change's plan is saved to a file like every
+    larger change's plan is, instead of existing only for the length of the
+    conversation. The regression this test exists to catch: reintroducing a
     small-complexity carve-out that skips persisting the file."""
     text = ITERATION_PLANNING_MD.read_text(encoding="utf-8")
     body = _extract_mini_plan_protocol_body(text)

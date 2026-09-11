@@ -1,0 +1,103 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-11-pr-review-evidence-filter-gap",
+    "date": "2026-09-11",
+    "unit": {
+      "status": "passed",
+      "passed": 18039,
+      "total": 18098
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Pure library-logic change (path classifier regexes) verified by the plugin's own unit test suite, 1028 passed; not a running app surface -- no UI/API/CLI entry point of its own, consumed only by a GitHub Actions workflow step."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "is_generated_path hides the closed 3-name reply family (spec/code/doubt_review_reply.json), anchored to exactly one run-directory segment",
+          "disposition": "tested",
+          "evidence": "test_pr_review_evidence_filter_gap.py::test_review_reply_and_external_raw_siblings_are_excluded, ::test_reply_and_external_hiding_requires_a_run_directory_segment PASSED"
+        },
+        {
+          "behavior": "is_generated_path hides external-*review*.json/.md siblings under the same run-directory anchoring, including .md raw transcripts",
+          "disposition": "tested",
+          "evidence": "test_pr_review_evidence_filter_gap.py::test_raw_review_transcripts_in_markdown_are_also_excluded PASSED"
+        },
+        {
+          "behavior": "self-review-payload.json is excluded from BOTH is_generated_path and is_safe_to_skip_review (payload sent TO a review, not a transcript OF one)",
+          "disposition": "tested",
+          "evidence": "test_pr_review_evidence_filter_gap.py::test_self_review_payload_stays_reviewable, test_pr_review_generated_skip_review.py::test_self_review_payload_is_NOT_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "is_safe_to_skip_review matches ONLY reviews.json, anchored to one run-directory segment, case-sensitively",
+          "disposition": "tested",
+          "evidence": "test_pr_review_generated_skip_review.py::test_review_evidence_files_stay_safe_to_skip, ::test_a_mixed_case_basename_borrows_neither_hide_nor_skip PASSED"
+        },
+        {
+          "behavior": "the reply family and external family are hidden from the model but never skip-safe -- a PR touching only one still gets a real review call",
+          "disposition": "tested",
+          "evidence": "test_pr_review_generated_skip_review.py::test_review_evidence_siblings_are_hidden_but_NOT_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "an attacker-chosen filename (evil_reply.json, external-my-own-review-of-this.json) is never skip-safe, and a reply-shaped attacker name is not even hidden",
+          "disposition": "tested",
+          "evidence": "test_pr_review_generated_skip_review.py::test_an_attacker_chosen_reply_or_external_name_is_NOT_safe_to_skip, ::test_an_attacker_chosen_reply_name_is_not_even_hidden_after_round_2 PASSED"
+        },
+        {
+          "behavior": "lookalike/boundary paths (.bak suffix, bare-top-level, over-nested for both reply and external families) are rejected by the anchored regexes",
+          "disposition": "tested",
+          "evidence": "test_pr_review_generated_skip_review.py::test_a_lookalike_suffix_does_not_borrow_the_closed_match, ::test_review_evidence_skip_is_anchored_to_exactly_one_run_segment PASSED"
+        },
+        {
+          "behavior": "pre-existing legacy review-evidence shape, agent-doc exclusions, and canonical-basename anchoring are unchanged -- no regression",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/ full suite 1028 passed, 7 skipped (all pre-existing test_pr_review_filter.py / test_pr_review_generated_skip_review.py assertions unchanged)"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-pr-review-evidence-filter-gap",
+    "commit": "3afa0051f704f36d1d0771e15091bb8e92b24af2",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

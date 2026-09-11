@@ -202,7 +202,7 @@ def _run(tmp_path, monkeypatch, script, xdist=None):
 _GREEN = ("shipwright-alpha", "shared/scripts/tests", "shared/scripts/tools/tests",
           "integration-tests")
 
-
+@pytest.mark.covers("FR-01.11/AC08")
 def test_red_in_parallel_but_green_serially_is_a_RACE_not_a_stop(tmp_path, monkeypatch):
     script = {u: [0, 0] for u in _GREEN}
     script["shared/tests"] = [1, 0]  # red parallel, green serial
@@ -238,11 +238,11 @@ def test_red_in_parallel_and_red_serially_fails_the_gate(tmp_path, monkeypatch):
     assert bad.retry_kind == mod.RETRY_SERIAL
     assert bad.seconds == pytest.approx(0.02)
 
-
+@pytest.mark.covers("FR-01.11/AC08")
 @pytest.mark.parametrize("fault_rc", [2, 3, 4, 5])
 def test_a_reproducing_infra_fault_fails_the_gate(tmp_path, monkeypatch, fault_rc):
-    """A DETERMINISTIC fault (rc 5 = nothing collected, usage error, ...) reproduces on
-    the retry and must still STOP the gate — nothing is laundered."""
+    """AC08: a DETERMINISTIC fault (rc 5 = nothing collected, usage error, ...)
+    reproduces on the retry and must still STOP the gate — nothing is laundered."""
     script = {u: [0, 0] for u in ("shipwright-alpha", "shared/tests",
                                   "shared/scripts/tests", "shared/scripts/tools/tests")}
     script["integration-tests"] = [fault_rc, fault_rc]
@@ -252,11 +252,11 @@ def test_a_reproducing_infra_fault_fails_the_gate(tmp_path, monkeypatch, fault_r
     bad = next(r for r in result.results if r.unit_id == "integration-tests")
     assert bad.outcome == INFRA and bad.race is False
 
-
+@pytest.mark.covers("FR-01.11/AC08")
 def test_a_transient_infra_fault_recovers_but_is_reported(tmp_path, monkeypatch):
-    """18 concurrent `uv` processes CREATE infra faults serial runs never had (hardlink
-    races in the shared cache). Refusing them a retry would just trade a race-induced
-    false STOP for an infra-induced one. It recovers — loudly."""
+    """AC08: 18 concurrent `uv` processes CREATE infra faults serial runs never had
+    (hardlink races in the shared cache). Refusing them a retry would just trade a
+    race-induced false STOP for an infra-induced one. It recovers — loudly."""
     script = {u: [0, 0] for u in ("shipwright-alpha", "shared/tests",
                                   "shared/scripts/tests", "shared/scripts/tools/tests")}
     script["integration-tests"] = [2, 0]   # fault, then clean

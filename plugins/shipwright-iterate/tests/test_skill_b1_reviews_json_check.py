@@ -19,6 +19,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILL_MD = REPO_ROOT / "plugins" / "shipwright-iterate" / "skills" / "iterate" / "SKILL.md"
 
@@ -37,7 +39,12 @@ def test_b1_heading_present() -> None:
     )
 
 
+@pytest.mark.covers("FR-01.11/AC29")
 def test_b1_names_the_direct_reviews_json_read() -> None:
+    """AC29: a change interrupted partway through review passes is picked
+    back up by reporting every review pass still open, read from the same
+    record each pass writes to — the behavioral half is
+    `shared/tests/test_compaction_state_audit_acceptance.py`."""
     text = SKILL_MD.read_text(encoding="utf-8")
     body = _extract_b1_body(text)
     assert "record_review_pass.py" in body and "show" in body, (

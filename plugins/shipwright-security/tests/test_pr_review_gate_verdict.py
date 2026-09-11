@@ -50,11 +50,15 @@ def test_all_generated_but_review_step_never_reached_also_posts_success():
 
 
 def test_all_generated_waived_pr_with_a_failed_waiver_consumption_still_fails():
-    """Stage-2 code review finding: a PR whose only changed path is a
-    corroborated review-record file (itself `is_generated_path`) can have
-    `all_generated=True` and `needs_review=False` at once. If the
-    waiver-consumption step then fails (a transient API error), that failure
-    must win over the all_generated carve-out — never a masked green status.
+    """Stage-2 code review finding: `all_generated=True` and
+    `needs_review=False` could once both hold for a PR whose only changed
+    path was a corroborated `reviews.json`. Round 4 of
+    iterate-2026-09-11-pr-review-evidence-filter-gap removed that path's
+    `is_safe_to_skip_review` grant, making the combination currently
+    unreachable through the real workflow — this pins it anyway as
+    defense-in-depth: if the waiver-consumption step ever fails (a transient
+    API error) while it somehow holds, that failure must win over the
+    all_generated carve-out — never a masked green status.
     """
     state, desc = decide_gate(**_base(
         all_generated=True,

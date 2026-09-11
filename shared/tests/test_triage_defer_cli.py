@@ -61,6 +61,7 @@ def _one(project: Path, item_id: str) -> dict:
 # Part 4 — un-park (AC-14, AC-15)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC09")
 def test_unpark_puts_a_parked_entry_back_and_clears_its_date(
     tmp_path: Path,
 ) -> None:
@@ -150,6 +151,7 @@ def test_the_terminal_listing_shows_every_parked_entry_at_exactly_the_cap(
     assert "more deferred" not in out
 
 
+@pytest.mark.covers("FR-01.14/AC11")
 def test_the_terminal_listing_elides_and_says_so_one_past_the_cap(
     tmp_path: Path,
 ) -> None:
@@ -168,6 +170,7 @@ def test_the_rendered_document_caps_and_elides_the_same_way(
     assert f"and 3 more deferred (showing first {DEFERRED_TOP_N})" in md
 
 
+@pytest.mark.covers("FR-01.14/AC11")
 def test_the_two_human_surfaces_show_the_SAME_entries(tmp_path: Path) -> None:
     """AC-22. Both cap at the same number, so they must also agree on WHICH —
     otherwise an operator reading one and then the other sees two backlogs."""

@@ -42,6 +42,11 @@ def repo(tmp_path: Path) -> Path:
 
 
 def test_unset_resolves_to_inherit_with_source_unset(repo: Path) -> None:
+    """Proves only FR-01.11/AC12's model-config clause, not its ordering clause
+    (independent reviewer runs before any outside second opinion) -- see
+    seam-survey.md Named Exception 4. Not tagged: tagging would mark AC12
+    bound while the ordering half remains unproven (Stage-1 spec-review
+    finding, iterate-2026-09-11-t1-iterate-surface)."""
     resolved, source = resolve_model_tier("review", repo)
     assert resolved == "inherit"
     assert source == "unset"
@@ -75,8 +80,12 @@ def test_explicit_inherit_flag_is_source_flag_not_unset(repo: Path) -> None:
 
 
 def test_plan_review_role_resolves_independently_of_review(repo: Path) -> None:
-    """plan_review is its own role — a project pinning `review` to a cheaper
-    tier must not silently drag the plan reviewer down with it."""
+    """Proves only FR-01.11/AC12's model-config clause (see note above the
+    other AC12 test in this file for why neither test is tagged): the plan
+    review's independent reviewer runs on a Claude model
+    configurable per project. plan_review is its own role — a project
+    pinning `review` to a cheaper tier must not silently drag the plan
+    reviewer down with it."""
     (repo / "shipwright_model_config.json").write_text(
         json.dumps({"review": "sonnet", "plan_review": "opus"}), encoding="utf-8",
     )

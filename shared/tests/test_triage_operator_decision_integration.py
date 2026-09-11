@@ -65,6 +65,7 @@ def _open_drift_item(project_root: Path, finding: str) -> str:
 
 
 @pytest.mark.integration
+@pytest.mark.covers("FR-01.14/AC27")
 def test_operator_dismiss_wins_against_a_concurrent_drift_sweep(
     project: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

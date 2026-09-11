@@ -16,6 +16,8 @@ import sys
 import warnings
 from pathlib import Path
 
+import pytest
+
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
@@ -43,6 +45,7 @@ def _damaged(tmp_path: Path, name: str = "store.jsonl") -> Path:
 # Corruption is retrievable as data
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC21")
 def test_store_corruption_reports_the_damaged_span(tmp_path: Path) -> None:
     fragments = store_corruption(_damaged(tmp_path))
     assert len(fragments) == 1
@@ -119,6 +122,7 @@ def test_corruption_notice_is_ascii_safe(tmp_path: Path) -> None:
 # The reader keeps its records, and reports through the non-suppressible path
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC21")
 def test_reader_still_returns_the_valid_neighbour(tmp_path: Path) -> None:
     """Recovering corruption as data must not cost the records around it."""
     path = _damaged(tmp_path)

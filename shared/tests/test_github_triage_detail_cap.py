@@ -55,6 +55,7 @@ def _pr(*, title: str = "fix things", branch: str = "main") -> dict:
 # AC-7 — the failing-check entry is capped like its two siblings
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC19")
 @pytest.mark.parametrize("field", ["name", "branch", "url"])
 def test_failing_check_detail_is_capped_whatever_grows(field: str) -> None:
     unit = ci_action_unit(_ci_run(**{field: "x" * 5000}), owner_repo=OWNER_REPO)
@@ -63,6 +64,7 @@ def test_failing_check_detail_is_capped_whatever_grows(field: str) -> None:
     assert unit["detail"].endswith("…")
 
 
+@pytest.mark.covers("FR-01.14/AC19")
 def test_failing_check_cap_matches_the_proposed_change_cap() -> None:
     """The card's ask in one assertion: the same cap, not merely *a* cap."""
     ci = ci_action_unit(_ci_run(name="n" * 5000), owner_repo=OWNER_REPO)

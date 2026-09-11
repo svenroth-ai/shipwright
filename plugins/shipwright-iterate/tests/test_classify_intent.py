@@ -16,11 +16,16 @@ from classify_intent import SIMPLIFY_KEYWORDS, SIMPLIFY_PHRASES, classify
 
 
 class TestIntentClassification:
+    """AC02: a change's KIND (feature / change / bug) is detected so the
+    process can route and scale accordingly."""
+
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_feature_keywords(self):
         result = classify("add a new search feature to the course list")
         assert result["type"] == "feature"
         assert result["confidence"] > 0.5
 
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_change_keywords(self):
         result = classify("refactor the sidebar component to use different layout")
         assert result["type"] == "change"
@@ -81,6 +86,7 @@ class TestSimplifyMode:
     def test_every_simplify_phrase_triggers_mode(self, phrase):
         assert classify(f"{phrase} the parser module")["mode"] == "simplify"
 
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_bug_keywords(self):
         result = classify("fix the broken login page error")
         assert result["type"] == "bug"

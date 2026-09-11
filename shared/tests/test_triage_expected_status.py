@@ -58,6 +58,7 @@ def _status_of(root: Path, item_id: str) -> str | None:
 # AC-1 / AC-2 — the precondition refuses, inside the lock, without writing
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC28")
 def test_precondition_refuses_a_decided_item(tmp_path: Path) -> None:
     """Executes the `raise StatusPreconditionError(...)` line in `mark_status`.
 

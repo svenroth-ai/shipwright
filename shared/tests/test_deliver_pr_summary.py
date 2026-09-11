@@ -10,6 +10,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -18,13 +20,17 @@ from tools.deliver_pr import summary  # noqa: E402
 
 # --- the closing line ---------------------------------------------------------
 
+@pytest.mark.covers("FR-01.11/AC23")
 def test_the_summary_names_who_merged_and_on_what_evidence():
+    """AC23: a change merged by the tool rather than by the host is reported
+    by naming who merged it and how many checks the host actually ran."""
     merged_here = {"status": "merged", "merged_by": "shipwright",
                    "checks_observed": 3, "checks_passed": 3}
     assert "merged by Shipwright itself" in summary(merged_here)
     assert "3 passing check(s)" in summary(merged_here)
 
 
+@pytest.mark.covers("FR-01.11/AC23")
 def test_the_summary_counts_passes_not_rollup_entries():
     """SKIPPED and NEUTRAL count as passes for the merge DECISION (a needs:-skipped
     required job is a pass) but they are not EVIDENCE. Reporting entries let an

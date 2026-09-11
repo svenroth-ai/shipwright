@@ -104,10 +104,15 @@ def _runner_phases() -> set[str]:
     return set(re.findall(r"(?m)^\s*-\s*\*\*(F[0-9][0-9a-z.]*)", body))
 
 
-@pytest.mark.covers("FR-01.11")
+@pytest.mark.covers("FR-01.11/AC01")
 def test_runner_carries_every_required_finalization_phase():
     """Forward: a phase omitted here is omitted by every sub-iterate of every
-    campaign, and no later phase fills it."""
+    campaign, and no later phase fills it.
+
+    AC01: a change reaches build+test+review+record inside ONE run — this is
+    the registry that proves the runner actually carries every finalization
+    phase (build already ran by Step 3; F0-F6 here are test/review/record),
+    without the whole pipeline having to be invoked again."""
     missing = sorted(RUNNER_REQUIRED - _runner_phases())
     assert not missing, (
         f"sub-iterate-runner.md no longer names {missing}. A campaign "
