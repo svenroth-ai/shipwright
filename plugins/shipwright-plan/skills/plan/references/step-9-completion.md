@@ -14,9 +14,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
 
 Non-zero exit = STOP. The phase-completion validator (`_validate_plan`, via
 `plan_checks.run_plan_checks`) re-runs gates 5-8 below (dependency order, FR
-coverage, section trace, section quality) — but leniently, warning instead of
-blocking on a split written before this format existed. It never re-runs
-gates 9-11 (decision recorded, findings addressed, E2E journeys), and never
+coverage, section trace, section quality). FR coverage, section trace and
+section quality warn instead of blocking on a split written before this
+format existed; dependency order has no such legacy branch — it is
+vacuously satisfied when nothing is declared. It never re-runs gates 9-11
+(decision recorded, findings addressed, E2E journeys), and never
 runs the boundary check. This command is the only strict, complete run of
 all of them; fix what it names now rather than counting on that backstop.
 
