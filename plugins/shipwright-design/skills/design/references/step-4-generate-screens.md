@@ -28,7 +28,13 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - SVG stroke icons (no emojis — premium, abstract feel)
    - Do NOT modify the sidebar, topbar, or footer — those come from `chrome-definition.md`.
 7. **Unique elements** — Write from scratch ONLY for content that doesn't match any snippet (custom visualizations, domain-specific widgets, unique layouts).
-8. **Save** to `.shipwright/designs/screens/{NN}-{name}.html`
+8. **Save** to `.shipwright/designs/screens/{NN}-{name}.html`. Before saving,
+   add `<!-- Requirements: FR-01.02, FR-01.05 -->` near the top of the file,
+   naming the FRs this screen serves — the same mapping confirmed with the
+   user in Step 3's screen list. This is what `screen_registry.parse_screen_linked_frs`
+   reads to populate the manifest's Linked FRs column (Step 6) and what the
+   FR-Coverage Gate (`review-loop.md` Option A) checks; a screen saved
+   without it is invisible to both.
 
 ## Design Context References
 

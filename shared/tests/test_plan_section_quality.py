@@ -28,6 +28,9 @@ Requirements: FR-01.03, FR-01.05
 ## Overview
 Exposes the planning artifacts over HTTP.
 
+## Prerequisites
+- Depends on 01-auth for the session middleware.
+
 ## Implementation Steps
 1. Add the route module.
 2. Wire the serializer.
@@ -57,6 +60,7 @@ def test_a_well_formed_section_parses(tmp_path):
     assert s.has_tests
     assert s.requirements == ("FR-01.03", "FR-01.05")
     assert s.declares_requirements
+    assert s.has_prerequisites
     assert quality_problems(s) == []
 
 
@@ -153,9 +157,41 @@ def test_missing_test_strategy_is_named(tmp_path):
     assert any("tested" in p for p in problems)
 
 
-def test_a_section_in_an_unrecognised_shape_reports_all_three(tmp_path):
+# ---------------------------------------------------------------------------
+# has_prerequisites / quality_problems — FR-01.03 #9 (self-contained section)
+# ---------------------------------------------------------------------------
+
+
+def test_missing_prerequisites_is_named(tmp_path):
+    body = "# S\n\n## Overview\nx\n\n## Implementation Steps\n1. a\n2. b\n\n## Tests First\n- t\n"
+    problems = quality_problems(parse_section_file(_write(tmp_path, "01-a", body)))
+    assert any("prerequisites" in p for p in problems)
+    assert any("Prerequisites" in p for p in problems)  # names the heading it wanted
+
+
+def test_a_prerequisites_heading_that_says_none_still_counts(tmp_path):
+    body = (
+        "# S\n\n## Overview\nx\n\n## Prerequisites\nNone\n\n"
+        "## Implementation Steps\n1. a\n2. b\n\n## Tests First\n- t\n"
+    )
+    s = parse_section_file(_write(tmp_path, "01-a", body))
+    assert s.has_prerequisites is True
+    assert quality_problems(s) == []
+
+
+def test_dependencies_is_an_accepted_synonym_for_prerequisites(tmp_path):
+    body = "# S\n\n## Dependencies\nRequires 01-auth.\n"
+    assert parse_section_file(_write(tmp_path, "01-a", body)).has_prerequisites is True
+
+
+def test_an_empty_prerequisites_heading_body_is_not_a_prerequisite(tmp_path):
+    body = "# S\n\n## Overview\nx\n\n## Prerequisites\n\n## Implementation Steps\n1. a\n2. b\n"
+    assert parse_section_file(_write(tmp_path, "01-a", body)).has_prerequisites is False
+
+
+def test_a_section_in_an_unrecognised_shape_reports_all_four(tmp_path):
     s = parse_section_file(_write(tmp_path, "01-a", "# S\n\nJust prose, no headings.\n"))
-    assert len(quality_problems(s)) == 3
+    assert len(quality_problems(s)) == 4
     assert s.uses_known_shape is False
 
 
