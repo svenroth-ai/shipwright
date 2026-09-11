@@ -231,29 +231,26 @@ def uploads_preserved(project_root: Path, uploads_dir: Path) -> GateResult:
     """
     try:
         rel_uploads = uploads_dir.resolve().relative_to(project_root.resolve()).as_posix()
+    except ValueError:
+        return GateResult(False, f"uploads dir {uploads_dir} is outside project root {project_root}")
+    try:
         proc = subprocess.run(
             ["git", "-C", str(project_root), "status", "--porcelain", "--", rel_uploads],
             capture_output=True, text=True, check=False,
         )
-    except (OSError, FileNotFoundError, ValueError):
+    except (OSError, FileNotFoundError):
         return GateResult(True, "no git evidence available")
     if proc.returncode != 0:
         return GateResult(True, "no git evidence available")
 
-    # X in "MU" (staged modify/unmerged) OR (Y == 'M' AND X != 'A') is
-    # "modified" — X != 'A' excludes "AM" (staged-add then edited again
-    # pre-commit), still a never-committed file, not "supplied" (Stage-2
-    # review). Unquote a C-quoted path (git double-quotes a space/non-ASCII
-    # byte in a path).
+    # X in "MU" (staged modify/unmerged) OR (Y=='M' AND X!='A', excludes "AM"
+    # staged-add-then-edited, not "supplied" — Stage-2) is "modified".
     modified = [
         line[3:].strip().strip('"') for line in proc.stdout.splitlines()
         if line and ((line[0] in "MU") or (len(line) > 1 and line[1] == "M" and line[0] != "A"))
     ]
     if modified:
-        return GateResult(
-            False,
-            f"{len(modified)} uploaded file(s) modified after being supplied: {modified[:3]}",
-        )
+        return GateResult(False, f"{len(modified)} uploaded file(s) modified after being supplied: {modified[:3]}")
     return GateResult(True, "no supplied upload was modified")
 
 

@@ -47,7 +47,7 @@ def test_a_relative_round_path_resolves_against_project_root_not_cwd(tmp_path):
         "--round", "design-feedback-round1.md",
     ]
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", cwd=str(unrelated_cwd))
+    assert proc.returncode == 1, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
     out = json.loads(proc.stdout)
-    assert proc.returncode == 1, out
     problems = next(g for g in out["gates"] if g["gate"] == "iteration")["problems"]
     assert "01-login.html" in problems[0]
