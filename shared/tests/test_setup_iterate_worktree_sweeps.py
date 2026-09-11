@@ -137,7 +137,15 @@ def test_layer_promotion_sweep_runs_before_selfheal_and_outbox_sweep(monkeypatch
         return LayerPromotionSweepResult(status="no_change")
 
     monkeypatch.setattr(siw, "run_layer_promotion_sweep", _stub)
-    code, payload = siw.setup(str(work), "layer-sweep-order", "iterate-20260911-layer-sweep-order")
+    env_ci = os.environ.get("CI")
+    os.environ["CI"] = ""  # interactive session, not CI — self-heal/outbox must actually fire
+    try:
+        code, payload = siw.setup(str(work), "layer-sweep-order", "iterate-20260911-layer-sweep-order")
+    finally:
+        if env_ci is None:
+            os.environ.pop("CI", None)
+        else:
+            os.environ["CI"] = env_ci
     assert code == 0, payload
 
     assert len(seen_subjects_at_call_time) == 1
