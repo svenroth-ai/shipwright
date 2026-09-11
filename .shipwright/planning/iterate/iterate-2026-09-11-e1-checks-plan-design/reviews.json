@@ -150,24 +150,25 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T01:11:53.124096+00:00",
-      "disposition": "runner has no Agent tool; code-reviewer cascade delegated to the orchestrator (campaign-mode.md 3f-bis, before merge)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-11T03:59:27.585926+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T01:11:53.248323+00:00",
-      "disposition": "runner has no Agent tool; doubt-reviewer cascade delegated to the orchestrator (campaign-mode.md 3f-bis, before merge)",
+      "completed_at": "2026-09-11T03:59:32.982694+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (no migrations, async/concurrency, cross-plugin imports, or irreversible ops — regex/git-status logic in shared plan/design gate libs); Stage 2 passed at 3f-bis.",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
