@@ -41,9 +41,9 @@ def test_a_missing_project_root_dir_is_a_usage_error(planning, tmp_path):
     """External Tier-3 review, PR #726 round 9: --project-root was resolved
     but never validated as a directory, so a typo'd root made
     git_dirty_paths() return no evidence and --gate boundary falsely pass.
-    A subprocess `cwd` must itself exist (Windows), so this calls the
-    script directly rather than through `run_gates` (whose `cwd` follows
-    `project_root`)."""
+    subprocess.run raises before the script even starts if `cwd` does not
+    exist (all platforms), so this calls the script directly rather than
+    through `run_gates` (whose `cwd` follows `project_root`)."""
     proc = subprocess.run(
         [
             sys.executable, SCRIPT,
