@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-triage-delivery-notice-wording",
+  "date": "2026-09-11",
+  "section": "Iterate — change: triage delivery-notice wording",
+  "title": "Clarify format_pending_delivery_notice cannot imply a live flip",
+  "context": "The precedence fix (iterate-2026-09-10) added a local-wins rule to read_all_items but the delivery-notice docstring was untouched.",
+  "decision": "Document that the notice never signals a live risk to an already-shown local decision; only a real merge can change it.",
+  "consequences": "No behavior change; clearer maintainer-facing docs, avoiding a future misreading of the local-wins asymmetry.",
+  "rationale": "Follow-up item from the precedence fix's own plan+external review, filed to prevent stale docs from misleading a future reader.",
+  "rejected": "Rewording the user-facing NOTE string too — rejected as unnecessary scope: the ambiguity was in the docstring read by maintainers, not the CLI text, and tests pin exact substrings of that string.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

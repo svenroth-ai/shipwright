@@ -521,6 +521,36 @@ jobs:
         if: github.event_name == 'pull_request'
         run: uv run shared/scripts/tools/check_orphan_ac_binding.py --project-root . --head-sha "${{ github.sha }}"
 
+      - name: Check-body suspects (advisory, non-blocking)
+        # The third, lower-priority item P3.7's own sub-iterate spec named and
+        # explicitly deferred (design
+        # .shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md,
+        # "Deferred" section), delivered here bundled with P3.8 (provenance:
+        # trg-33a474e2, filed by P3.7's own runner and amended by an operator
+        # to bundle in trg-c2329759, p3.8's own tracker card, which was then
+        # dismissed into it -- see the design doc's Section 12). Same class
+        # as P3.6's own design doc names in §7
+        # and P3.8's own sub-iterate spec restates: "mechanics raise a flag, a
+        # human decides" -- an AC whose own criterion text is UNCHANGED but a
+        # test bound to it had its BODY edited in this diff is a SIGNAL for a
+        # human to judge (refactor vs. quiet weakening), never a verdict.
+        #
+        # Deliberately NOT named "...(gate)" and carries no word from
+        # check_ci_gate_coverage.GATE_NAME_KEYWORDS (same reasoning as "Check
+        # traceability manifest against a fresh regeneration" above): this
+        # step must never be mistaken for a merge gate. Its own CLI
+        # (check_test_body_suspects.py) returns exit 0 UNCONDITIONALLY --
+        # clean, an advisory finding, and an infra fault all report via the
+        # JSON payload, never via the process exit code -- so there is no
+        # `continue-on-error` here either; the guarantee lives in the script,
+        # not the YAML.
+        #
+        # Same ordering + pull_request-only reasoning as the three gates
+        # above (reads the same regenerated traceability manifest + real git
+        # history for the base/head comparison).
+        if: github.event_name == 'pull_request'
+        run: uv run shared/scripts/tools/check_test_body_suspects.py --project-root . --head-sha "${{ github.sha }}"
+
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml
   # when the WebUI was extracted into its own repo (v0.4.0, 2026-04-24).
