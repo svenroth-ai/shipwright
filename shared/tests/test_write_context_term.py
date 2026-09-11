@@ -20,7 +20,7 @@ def read(p: Path) -> str:
 
 # find_context_file() was inlined into main() (code review, P4.1); its
 # --project-root -> CONTEXT.md resolution is now covered end-to-end by
-# test_write_context_term_cli.py::test_wired_cli_sharpens_a_term_into_context_md.
+# test_write_context_term_cli.py::test_legacy_cli_flags_sharpen_a_term_into_context_md.
 
 
 # ---------------------------------------------------------------------------

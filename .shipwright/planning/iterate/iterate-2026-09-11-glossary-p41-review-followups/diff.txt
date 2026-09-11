@@ -1,0 +1,219 @@
+diff --git a/shared/scripts/tools/_write_context_term_cli.py b/shared/scripts/tools/_write_context_term_cli.py
+index 6b7e2473e..a2a62240d 100644
+--- a/shared/scripts/tools/_write_context_term_cli.py
++++ b/shared/scripts/tools/_write_context_term_cli.py
+@@ -35,9 +35,14 @@ def build_arg_parser(description: str) -> argparse.ArgumentParser:
+                               "project_name/summary — the sanctioned way to pass "
+                               "free text from an interview (see module docstring); "
+                               "mutually exclusive with the flags below")
+-    parser.add_argument("--term", default=None)
+-    parser.add_argument("--definition", default=None)
+-    parser.add_argument("--avoid", default=None)
++    _legacy_warning = (
++        "legacy flag for trusted, non-shell-composed values only — never "
++        "substitute free interview text here (a single quote breaks the "
++        "shell quoting); use --payload-file for that"
++    )
++    parser.add_argument("--term", default=None, help=_legacy_warning)
++    parser.add_argument("--definition", default=None, help=_legacy_warning)
++    parser.add_argument("--avoid", default=None, help=_legacy_warning)
+     parser.add_argument("--clear-avoid", action="store_true",
+                          help="delete an existing --avoid line (omitting --avoid keeps it)")
+     parser.add_argument("--project-name", default="", help="only used if CONTEXT.md is new")
+diff --git a/shared/scripts/tools/context_md_format.py b/shared/scripts/tools/context_md_format.py
+index d2ba34db2..7236abc9d 100644
+--- a/shared/scripts/tools/context_md_format.py
++++ b/shared/scripts/tools/context_md_format.py
+@@ -162,7 +162,12 @@ def parse_language_entries(body: list[str]) -> list[dict]:
+     definition rather than left to become an orphaned raw block that
+     injects a spurious blank line on re-render (doubt-reviewer D3, P4.1
+     Stage-3 review; ``shared/context-format.md`` §2's own worked
+-    ``Cancellation`` example wraps this way)."""
++    ``Cancellation`` example wraps this way). A continuation line following
++    an ``_Avoid_`` line is absorbed into the avoid text the same way — an
++    un-absorbed wrap left a hidden line-start occurrence of whatever bolded
++    term the wrap happened to start with, which ``term_markup_count`` then
++    counted as a real duplicate heading (P4.1 final-review deferred
++    finding)."""
+     entries: list[dict] = []
+     i = 0
+     n = len(body)
+@@ -191,8 +196,13 @@ def parse_language_entries(body: list[str]) -> list[dict]:
+         if i < n:
+             am = _AVOID_RE.match(body[i])
+             if am:
+-                avoid = am.group(1)
++                avoid_parts = [am.group(1)]
+                 i += 1
++                while i < n and body[i].strip() and not _TERM_RE.match(body[i]) \
++                        and not _AVOID_RE.match(body[i]):
++                    avoid_parts.append(body[i].strip())
++                    i += 1
++                avoid = " ".join(avoid_parts)
+         entries.append({
+             "term": term,
+             "definition": " ".join(definition_parts),
+diff --git a/shared/scripts/tools/write_context_term.py b/shared/scripts/tools/write_context_term.py
+index a9e62e8bd..804a697f9 100644
+--- a/shared/scripts/tools/write_context_term.py
++++ b/shared/scripts/tools/write_context_term.py
+@@ -139,8 +139,9 @@ def upsert_term(
+         avoid = sanitize_field(avoid)
+         if not avoid:
+             raise ValueError(
+-                "--avoid must not be blank — omit it to keep an existing "
+-                "_Avoid_ line, or use --clear-avoid to delete one"
++                "'avoid' must not be blank — omit it (or pass null in "
++                "--payload-file) to keep an existing _Avoid_ line, or set "
++                "clear_avoid/--clear-avoid to delete one"
+             )
+     if not term:
+         raise ValueError("--term must not be blank")
+@@ -251,7 +252,7 @@ def main() -> int:
+     # non-ASCII error (e.g. a duplicate-heading path) raises UnicodeEncodeError
+     # instead of a clean exit 1.
+     if hasattr(sys.stderr, "reconfigure"):
+-        sys.stderr.reconfigure(errors="replace")
++        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+ 
+     parser = build_arg_parser(__doc__.split("\n")[0])
+     args = parser.parse_args()
+diff --git a/shared/tests/test_requirement_elicitation_discovery.py b/shared/tests/test_requirement_elicitation_discovery.py
+index 10d9f7d45..c0667d93d 100644
+--- a/shared/tests/test_requirement_elicitation_discovery.py
++++ b/shared/tests/test_requirement_elicitation_discovery.py
+@@ -25,6 +25,7 @@ the reverse check's purpose.
+ 
+ from __future__ import annotations
+ 
++import re
+ import sys
+ from pathlib import Path
+ 
+@@ -274,3 +275,17 @@ def test_project_interview_protocol_wires_the_context_producer():
+         "whole point of --payload-file: no shell ever parses free "
+         "interview text, closing the quote-breakout vulnerability"
+     )
++    # A --term-shaped invocation belongs only in prose as a warning example
++    # (the "never hand-assemble a --term '<value>' shell invocation" line
++    # above) — never inside a fenced bash block an agent could copy and
++    # actually run (P4.1 final-review deferred finding: the doc guard above
++    # checked --payload-file was present but never checked a --term-shaped
++    # snippet was absent from the runnable blocks).
++    fenced_bash_blocks = re.findall(r"```bash\n(.*?)```", body, re.DOTALL)
++    assert fenced_bash_blocks, "expected at least one fenced bash block wiring the producer"
++    for block in fenced_bash_blocks:
++        assert "--term" not in block, (
++            f"a --term-shaped bash snippet must never appear in a fenced "
++            f"code block — --payload-file is the only sanctioned runnable "
++            f"invocation; found in: {block!r}"
++        )
+diff --git a/shared/tests/test_write_context_term.py b/shared/tests/test_write_context_term.py
+index 4926c4c06..bd0ce414f 100644
+--- a/shared/tests/test_write_context_term.py
++++ b/shared/tests/test_write_context_term.py
+@@ -20,7 +20,7 @@ def read(p: Path) -> str:
+ 
+ # find_context_file() was inlined into main() (code review, P4.1); its
+ # --project-root -> CONTEXT.md resolution is now covered end-to-end by
+-# test_write_context_term_cli.py::test_wired_cli_sharpens_a_term_into_context_md.
++# test_write_context_term_cli.py::test_legacy_cli_flags_sharpen_a_term_into_context_md.
+ 
+ 
+ # ---------------------------------------------------------------------------
+diff --git a/shared/tests/test_write_context_term_cli.py b/shared/tests/test_write_context_term_cli.py
+index facf429bd..a50c94af4 100644
+--- a/shared/tests/test_write_context_term_cli.py
++++ b/shared/tests/test_write_context_term_cli.py
+@@ -37,7 +37,7 @@ def _run(*args: str) -> subprocess.CompletedProcess:
+     )
+ 
+ 
+-def test_wired_cli_sharpens_a_term_into_context_md(tmp_path):
++def test_legacy_cli_flags_sharpen_a_term_into_context_md(tmp_path):
+     proc = _run(
+         "--project-root", str(tmp_path),
+         "--term", "Order",
+@@ -59,7 +59,7 @@ def test_wired_cli_sharpens_a_term_into_context_md(tmp_path):
+     assert '_Avoid_ "cart" for a confirmed order — a cart is unconfirmed.' in content
+ 
+ 
+-def test_wired_cli_second_sharpened_term_does_not_corrupt_first(tmp_path):
++def test_legacy_cli_flags_second_sharpened_term_does_not_corrupt_first(tmp_path):
+     first = _run(
+         "--project-root", str(tmp_path),
+         "--term", "Order",
+diff --git a/shared/tests/test_write_context_term_duplicates.py b/shared/tests/test_write_context_term_duplicates.py
+index 4ae083d91..c0027dd83 100644
+--- a/shared/tests/test_write_context_term_duplicates.py
++++ b/shared/tests/test_write_context_term_duplicates.py
+@@ -76,6 +76,41 @@ def test_normal_resharpen_of_a_well_formed_entry_is_not_flagged(tmp_path):
+     assert read(ctx).count("**Order**") == 1
+ 
+ 
++def test_wrapped_avoid_line_cross_referencing_another_term_is_not_flagged(tmp_path):
++    """A hand-authored ``_Avoid_`` line that word-wraps onto a second
++    physical line, where that second line happens to START with a bolded
++    cross-reference to another term, used to orphan the wrapped remainder
++    into its own unparsed raw block (only a term's *definition* absorbed a
++    continuation line; its ``_Avoid_`` text did not). ``term_markup_count``
++    then counted that orphaned line-start ``**Cart**`` as a real duplicate
++    occurrence, and a fresh entry for "Cart" always added a second, so
++    upserting "Cart" was permanently rejected — with no hand-edit recovery
++    path available mid-interview (P4.1 final review, deferred finding).
++    The ``_Avoid_`` text must absorb its own wrapped continuation line the
++    same way a definition already does, so the reference never lands at a
++    line start in the first place."""
++    ctx = tmp_path / "CONTEXT.md"
++    ctx.write_text(
++        "# CONTEXT.md — Acme domain glossary\n\nAcme.\n\n"
++        "## Language\n\n"
++        "**Order** — a customer's confirmed purchase.\n"
++        "_Avoid_ using this term for anything resembling a\n"
++        "**Cart** that has not been confirmed yet.\n\n"
++        "## Relationships\n\n## Flagged ambiguities\n",
++        encoding="utf-8",
++    )
++
++    result = upsert_term(ctx, term="Cart", definition="an unconfirmed collection of items.")
++
++    assert result["status"] == "appended"
++    content = read(ctx)
++    assert (
++        "_Avoid_ using this term for anything resembling a **Cart** "
++        "that has not been confirmed yet." in content
++    )
++    assert "**Cart** — an unconfirmed collection of items." in content
++
++
+ def test_legitimate_bold_cross_reference_in_another_entry_is_not_flagged(tmp_path):
+     """A term legitimately reappears bold as a cross-reference inside
+     ANOTHER entry's definition prose (``context-format.md``'s own worked
+diff --git a/shared/tests/test_write_context_term_payload.py b/shared/tests/test_write_context_term_payload.py
+index e1224bede..6dc90bcba 100644
+--- a/shared/tests/test_write_context_term_payload.py
++++ b/shared/tests/test_write_context_term_payload.py
+@@ -135,6 +135,23 @@ def test_payload_file_missing_path_is_rejected(tmp_path):
+     assert "cannot read --payload-file" in proc.stderr
+ 
+ 
++def test_payload_file_blank_avoid_error_names_the_payload_field(tmp_path):
++    """A payload caller never typed ``--avoid``/``--clear-avoid`` — those are
++    CLI flag spellings. An error naming *only* the flags (not the payload's
++    own ``"avoid"``/``"clear_avoid"`` JSON keys) left a payload-file caller
++    unable to map the message back to what it actually sent (P4.1 final
++    review, deferred finding). The message stays shared between both
++    invocation styles, so it now names the payload spelling alongside the
++    flag, not instead of it."""
++    payload_path = tmp_path / "payload.json"
++    _write_payload(payload_path, {"term": "Order", "definition": "v1", "avoid": "   "})
++    proc = _run("--project-root", str(tmp_path), "--payload-file", str(payload_path))
++    assert proc.returncode == 1
++    assert "'avoid'" in proc.stderr
++    assert "clear_avoid" in proc.stderr
++    assert "--payload-file" in proc.stderr
++
++
+ def test_payload_file_combined_with_term_flag_is_rejected(tmp_path):
+     payload_path = tmp_path / "payload.json"
+     _write_payload(payload_path, {"term": "Order", "definition": "a confirmed purchase."})

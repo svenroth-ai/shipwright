@@ -135,6 +135,23 @@ def test_payload_file_missing_path_is_rejected(tmp_path):
     assert "cannot read --payload-file" in proc.stderr
 
 
+def test_payload_file_blank_avoid_error_names_the_payload_field(tmp_path):
+    """A payload caller never typed ``--avoid``/``--clear-avoid`` — those are
+    CLI flag spellings. An error naming *only* the flags (not the payload's
+    own ``"avoid"``/``"clear_avoid"`` JSON keys) left a payload-file caller
+    unable to map the message back to what it actually sent (P4.1 final
+    review, deferred finding). The message stays shared between both
+    invocation styles, so it now names the payload spelling alongside the
+    flag, not instead of it."""
+    payload_path = tmp_path / "payload.json"
+    _write_payload(payload_path, {"term": "Order", "definition": "v1", "avoid": "   "})
+    proc = _run("--project-root", str(tmp_path), "--payload-file", str(payload_path))
+    assert proc.returncode == 1
+    assert "'avoid'" in proc.stderr
+    assert "clear_avoid" in proc.stderr
+    assert "--payload-file" in proc.stderr
+
+
 def test_payload_file_combined_with_term_flag_is_rejected(tmp_path):
     payload_path = tmp_path / "payload.json"
     _write_payload(payload_path, {"term": "Order", "definition": "a confirmed purchase."})

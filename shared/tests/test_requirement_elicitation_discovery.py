@@ -25,6 +25,7 @@ the reverse check's purpose.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -274,3 +275,17 @@ def test_project_interview_protocol_wires_the_context_producer():
         "whole point of --payload-file: no shell ever parses free "
         "interview text, closing the quote-breakout vulnerability"
     )
+    # A --term-shaped invocation belongs only in prose as a warning example
+    # (the "never hand-assemble a --term '<value>' shell invocation" line
+    # above) — never inside a fenced bash block an agent could copy and
+    # actually run (P4.1 final-review deferred finding: the doc guard above
+    # checked --payload-file was present but never checked a --term-shaped
+    # snippet was absent from the runnable blocks).
+    fenced_bash_blocks = re.findall(r"```bash\r?\n(.*?)```", body, re.DOTALL)
+    assert fenced_bash_blocks, "expected at least one fenced bash block wiring the producer"
+    for block in fenced_bash_blocks:
+        assert "--term" not in block, (
+            f"a --term-shaped bash snippet must never appear in a fenced "
+            f"code block — --payload-file is the only sanctioned runnable "
+            f"invocation; found in: {block!r}"
+        )
