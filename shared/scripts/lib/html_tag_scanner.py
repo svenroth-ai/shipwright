@@ -24,7 +24,13 @@ class _TagAttrCollector(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self._record(attrs)
 
-    handle_startendtag = handle_starttag
+    def handle_comment(self, data: str) -> None:
+        # An interpreter-dependent comment-closing quirk can hide a real
+        # tag inside malformed markup (e.g. `<!--><script src=...>...-->`,
+        # external review, PR #726 round 8b) — rescan the comment body too
+        # so the gate fails CLOSED rather than trusting the parser's idea
+        # of where the comment ends.
+        self.tags.extend(parse_tags(data))
 
     def _record(self, attrs: list[tuple[str, str | None]]) -> None:
         seen: dict[str, str] = {}

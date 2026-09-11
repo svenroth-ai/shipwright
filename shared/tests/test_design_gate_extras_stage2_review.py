@@ -123,3 +123,27 @@ def test_a_duplicated_attribute_resolves_first_wins():
     prior rounds were blocked on."""
     html = '<script src="https://evil.example/x.js" src="local.js"></script>'
     assert standalone_html_violations(html) == ["https://evil.example/x.js"]
+
+
+def test_a_leading_space_or_backslash_authority_reference_is_still_caught():
+    """Round-8b code review: the whitespace-strip and backslash-normalize
+    hardening had no regression test — reverting either left the suite
+    green. The RAW (unnormalized) value is what gets reported."""
+    spaced = '<script src=" https://cdn.example.com/x.js"></script>'
+    assert standalone_html_violations(spaced) == [" https://cdn.example.com/x.js"]
+
+    backslashed = '<script src="https:\\\\cdn.example.com\\x.js"></script>'
+    assert standalone_html_violations(backslashed) == ["https:\\\\cdn.example.com\\x.js"]
+
+
+def test_a_scheme_relative_reference_with_no_slashes_is_still_caught():
+    """Round-8b code review: deciding "external" by leading-slash count
+    missed the WHATWG special-scheme forms a real browser also resolves
+    externally — `https:evil.example` (zero slashes) and
+    `https:/evil.example` (one) both load from `evil.example`."""
+    assert standalone_html_violations(
+        '<script src="https:evil.example/x.js"></script>'
+    ) == ["https:evil.example/x.js"]
+    assert standalone_html_violations(
+        '<script src="https:/evil.example/x.js"></script>'
+    ) == ["https:/evil.example/x.js"]

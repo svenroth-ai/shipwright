@@ -31,10 +31,25 @@ def test_a_self_closing_tag_is_also_captured():
     assert tags[0]["src"] == "logo.png"
 
 
-def test_comments_and_script_bodies_are_not_parsed_as_tags():
-    html = "<!-- <a href='fake.html'>not a tag</a> --><a href='real.html'>real</a>"
+def test_commented_out_markup_is_still_scanned_fail_closed():
+    """A commented-out tag is still picked up: a gate that must fail closed
+    cannot trust a parser's idea of where a comment ends (external review,
+    PR #726 round 8b — see the abrupt-close regression test below)."""
+    html = "<!-- <a href='fake.html'>commented</a> --><a href='real.html'>real</a>"
     tags = parse_tags(html)
-    assert [t.get("href") for t in tags] == ["real.html"]
+    assert [t.get("href") for t in tags] == ["fake.html", "real.html"]
+
+
+def test_an_abruptly_closed_empty_comment_does_not_hide_the_tag_after_it():
+    """``<!-->`` is a complete (if malformed) empty comment per the HTML5
+    tokenizer, but stdlib ``HTMLParser`` on the CI-pinned interpreter
+    swallows everything up to the NEXT ``-->`` instead — hiding a real
+    ``<script src=...>`` inside what looks like one long comment. Confirmed
+    empirically on the pinned 3.11 interpreter (external review, PR #726
+    round 8b)."""
+    html = '<!--><script src="https://evil.example/x.js"></script>-->'
+    tags = parse_tags(html)
+    assert any(t.get("src") == "https://evil.example/x.js" for t in tags)
 
 
 def test_attribute_names_are_lowercased():

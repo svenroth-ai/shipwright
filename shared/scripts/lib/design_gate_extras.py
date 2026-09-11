@@ -33,8 +33,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from .html_tag_scanner import parse_tags
+    from .html_tag_scanner import parse_tags  # loaded as lib.design_gate_extras (shared/tests)
 except ImportError:
+    # loaded as top-level design_gate_extras — check-design-gates.py puts
+    # shared/scripts/lib itself on sys.path.
     from html_tag_scanner import parse_tags
 
 __all__ = [
@@ -181,20 +183,28 @@ def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str)
 #: "no external dependencies except optional CDN font").
 _ALLOWED_EXTERNAL_HOSTS = ("fonts.googleapis.com", "fonts.gstatic.com")
 
-#: Matched against a stripped, backslash-normalised copy of the value —
-#: leading whitespace and a backslash-separated authority are both accepted
-#: by real URL parsers, so both must count as external here too.
-_ABSOLUTE_OR_PROTOCOL_RELATIVE_RE = re.compile(r'^(?:https?:)?//', re.IGNORECASE)
+_WHITESPACE_STRIP_RE = re.compile(r"[\t\n\r]")
 
 
-def _hostname(url: str) -> str:
-    """The URL's host, exactly — never a substring match (a hostile URL
-    embedding an allowed host in its path/query, e.g.
-    ``https://evil.example/?=fonts.googleapis.com``, must not pass)."""
+def _external_host(raw: str) -> str | None:
+    """The value's hostname if external (``http``/``https`` or protocol-
+    relative), else ``None``. Decided by SCHEME, not leading-slash count —
+    a real browser also resolves ``https:evil.example`` (0 slashes) and
+    ``https:/evil.example`` (1) externally (round 8b). Tab/newline are
+    stripped from anywhere in the value, not just the ends, since a literal
+    one inside a quoted attribute is valid HTML. Never a substring match —
+    ``https://evil.example/?=fonts.googleapis.com`` must not pass."""
     from urllib.parse import urlparse
 
-    normalized = url.strip().replace("\\", "/")
-    parsed = urlparse(normalized if "://" in normalized else f"https:{normalized}")
+    normalized = _WHITESPACE_STRIP_RE.sub("", raw).strip().replace("\\", "/")
+    if not normalized:
+        return None
+    if normalized.startswith("//"):
+        parsed = urlparse(f"https:{normalized}")
+    else:
+        parsed = urlparse(normalized)
+        if parsed.scheme not in ("http", "https"):
+            return None
     return (parsed.hostname or "").lower()
 
 
@@ -207,10 +217,9 @@ def standalone_html_violations(html: str) -> list[str]:
             raw = attrs.get(name)
             if not raw:
                 continue
-            normalized = raw.strip().replace("\\", "/")
-            if _ABSOLUTE_OR_PROTOCOL_RELATIVE_RE.match(normalized):
-                if _hostname(normalized) not in _ALLOWED_EXTERNAL_HOSTS:
-                    violations.append(raw)
+            host = _external_host(raw)
+            if host is not None and host not in _ALLOWED_EXTERNAL_HOSTS:
+                violations.append(raw)
     return violations
 
 
