@@ -7,7 +7,11 @@ that file's own size budget.
 import subprocess
 from pathlib import Path
 
-from lib.design_gate_extras import chrome_nav_targets_consistent, uploads_preserved
+from lib.design_gate_extras import (
+    chrome_nav_targets_consistent,
+    standalone_html_violations,
+    uploads_preserved,
+)
 
 
 def _git(cwd, *args):
@@ -72,3 +76,22 @@ def test_the_git_pathspec_is_repo_relative_not_absolute(tmp_path, monkeypatch):
     design_gate_extras.uploads_preserved(repo, repo / ".shipwright" / "designs" / "uploads")
     pathspec = captured["argv"][-1]
     assert pathspec == ".shipwright/designs/uploads"
+
+
+def test_nav_item_not_first_in_the_class_attribute_is_still_matched():
+    """External Tier-3 review, PR #726 round 8: anchoring the class value to
+    START with `nav-item`/`topnav-link` false-PASSed `class="active nav-item"`
+    as having no nav markup at all."""
+    chrome = '<a href="02-dashboard.html" class="nav-item active">Dashboard</a>'
+    screen = '<a href="99-secret.html" class="active nav-item">Secret</a>'
+    result = chrome_nav_targets_consistent(chrome, screen)
+    assert result.ok is False
+    assert "99-secret.html" in result.detail
+
+
+def test_an_unquoted_external_reference_is_still_caught():
+    """External Tier-3 review, PR #726 round 8: a quote-only pattern let
+    valid unquoted HTML (`<script src=https://evil.example/x.js>`) bypass
+    the standalone gate entirely."""
+    html = "<script src=https://cdn.example.com/lib.js></script>"
+    assert standalone_html_violations(html) == ["https://cdn.example.com/lib.js"]

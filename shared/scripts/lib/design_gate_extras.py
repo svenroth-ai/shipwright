@@ -128,39 +128,45 @@ def flows_present_for_multi_screen_app(screen_count: int, flow_count: int) -> Ga
 # #5 — shared chrome from one definition
 # --------------------------------------------------------------------------- #
 
-#: Either quote style — double-quote-only false-PASSed single-quoted nav
-#: markup via the "no nav markup" exempt branch (Stage-2 review; same gap
-#: `_EXTERNAL_REF_RE` above was hardened against). Named groups: each
-#: alternative needs its own quote backreference.
-_NAV_HREF_RE = re.compile(
-    r'''class=(?P<q1>["'])(?:nav-item|topnav-link)[^"']*(?P=q1)[^>]*href=(?P<q2>["'])(?P<href_a>[^"']+)(?P=q2)'''
-    r'''|href=(?P<q3>["'])(?P<href_b>[^"']+)(?P=q3)[^>]*class=(?P<q4>["'])(?:nav-item|topnav-link)[^"']*(?P=q4)''',
-)
+#: One tag at a time, then attribute-by-attribute — the earlier single regex
+#: anchored ``nav-item``/``topnav-link`` to the START of the class value, so
+#: ``class="active nav-item"`` (the target class not first) false-PASSed as
+#: having no nav (external Tier-3 review, PR #726 round 8).
+_TAG_RE = re.compile(r"<[^>]+>")
+_ATTR_RE = re.compile(r'''([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))''')
+
+
+def _tag_attrs(tag: str) -> dict[str, str]:
+    return {
+        name.lower(): dq if dq else (sq if sq else uq)
+        for name, dq, sq, uq in _ATTR_RE.findall(tag)
+    }
 
 
 def _nav_targets(html: str) -> set[str]:
-    return {m.group("href_a") or m.group("href_b") for m in _NAV_HREF_RE.finditer(html)}
+    targets = set()
+    for tag in _TAG_RE.findall(html):
+        attrs = _tag_attrs(tag)
+        classes = attrs.get("class", "").split()
+        if ("nav-item" in classes or "topnav-link" in classes) and attrs.get("href"):
+            targets.add(attrs["href"])
+    return targets
 
 
 def screen_declares_nav(html: str) -> bool:
     """Whether a screen's markup carries any ``nav-item``/``topnav-link``
-    anchor at all. Used to tell "no chrome definition because this project
-    genuinely has no shared chrome" apart from "no chrome definition despite
-    screens plainly using one" (external code review,
-    iterate-2026-09-11-e1-checks-plan-design's high finding on #5)."""
+    anchor at all — tells "genuinely no shared chrome" apart from "no chrome
+    definition despite screens plainly using one" (external review)."""
     return bool(_nav_targets(html))
 
 
 def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str) -> GateResult:
     """**#5** — a screen's nav targets (the set of ``href`` values on its
     ``nav-item``/``topnav-link`` anchors) must be the SAME SET the chrome
-    definition declares. Byte-identical markup is not required — icons,
-    labels and the single ``active`` class differ by design — but a screen
-    naming a different set of targets did not draw from the one definition.
-
-    Screens with no nav markup at all (Layout C / auth screens copy only the
-    logo, per ``step-4-generate-screens.md``) are exempt — nothing to compare.
-    """
+    definition declares. Byte-identical markup is not required — icons and
+    labels differ by design — but a different target set did not draw from
+    the one definition. Screens with no nav markup (Layout C / auth) are
+    exempt — nothing to compare."""
     chrome_targets = _nav_targets(chrome_definition_html)
     if not chrome_targets:
         return GateResult(True, "chrome definition declares no nav targets to compare")
@@ -184,17 +190,10 @@ def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str)
 #: "no external dependencies except optional CDN font").
 _ALLOWED_EXTERNAL_HOSTS = ("fonts.googleapis.com", "fonts.gstatic.com")
 
-#: Matches src="..." / href='...' (either quote style, case-insensitive
-#: attribute name) whose value is an absolute ``http(s)://`` URL or a
-#: protocol-relative ``//host/...`` reference. External code review
-#: (iterate-2026-09-11-e1-checks-plan-design) caught the original
-#: double-quote-only, ``https?://``-only pattern: agent-generated HTML
-#: routinely uses single quotes, and a protocol-relative reference is just
-#: as external.
-_EXTERNAL_REF_RE = re.compile(
-    r'''(?:src|href)\s*=\s*(["'])((?:https?:)?//[^"']+)\1''',
-    re.IGNORECASE,
-)
+#: A quote-only pattern false-PASSed an unquoted ``src=https://evil...``
+#: (valid HTML) as non-external (external Tier-3 review, PR #726 round 8) —
+#: ``_tag_attrs`` above already tokenizes quoted AND unquoted values alike.
+_ABSOLUTE_OR_PROTOCOL_RELATIVE_RE = re.compile(r'^(?:https?:)?//', re.IGNORECASE)
 
 
 def _hostname(url: str) -> str:
@@ -211,9 +210,13 @@ def standalone_html_violations(html: str) -> list[str]:
     """**#6** — every external ``src``/``href`` reference outside the one
     allowed font-CDN exception. Empty list means the file is standalone."""
     violations = []
-    for _quote, url in _EXTERNAL_REF_RE.findall(html):
-        if _hostname(url) not in _ALLOWED_EXTERNAL_HOSTS:
-            violations.append(url)
+    for tag in _TAG_RE.findall(html):
+        attrs = _tag_attrs(tag)
+        for name in ("src", "href"):
+            url = attrs.get(name)
+            if url and _ABSOLUTE_OR_PROTOCOL_RELATIVE_RE.match(url):
+                if _hostname(url) not in _ALLOWED_EXTERNAL_HOSTS:
+                    violations.append(url)
     return violations
 
 
