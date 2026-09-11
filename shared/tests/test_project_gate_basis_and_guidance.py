@@ -182,6 +182,28 @@ def test_check_criteria_free_of_implementation_detail_fails_on_a_symbol(tmp_path
     assert "FR-01.01" in r.detail
 
 
+def test_check_criteria_free_of_implementation_detail_skips_when_no_spec_yet(tmp_path):
+    """Stage-2 code review (round 3, PR #729, low): the docstring on
+    ``test_check_basis_forbids_assumed_fails_loud_on_a_declared_but_missing_spec``
+    claimed the OTHER two gates sharing ``_read_spec_texts`` needed the same
+    proof they don't silently pass — only ``basis_forbids_assumed`` actually
+    got it. This closes the gap for ``criteria_free_of_implementation_detail``."""
+    r = check_criteria_free_of_implementation_detail(tmp_path)
+    assert r.ok is True
+    assert r.is_skipped
+
+
+def test_check_criteria_free_of_implementation_detail_fails_loud_on_a_declared_but_missing_spec(tmp_path):
+    """Stage-2 code review (round 3, PR #729, low): companion to the above —
+    a declared split whose spec.md was never written must fail loud, not
+    read as "no criteria to check" (vacuous pass)."""
+    _write_splits_config(tmp_path, ["01-a"])
+    r = check_criteria_free_of_implementation_detail(tmp_path)
+    assert r.ok is False
+    assert "unreadable/missing" in r.detail
+    assert "01-a" in r.detail
+
+
 def test_check_starting_guidance_present_skips_extension_scope(tmp_path):
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"scope": "extension"}), encoding="utf-8",

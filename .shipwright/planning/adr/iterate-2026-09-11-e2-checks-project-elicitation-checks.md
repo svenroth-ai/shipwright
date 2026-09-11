@@ -196,6 +196,20 @@ example the round-2 reviewer cited
 (`test_worked_example_assumed_row_has_its_settlement_criterion`); #15b
 cites all three rather than duplicating coverage.
 
+## Stage-2 Code Review (round 3, PR #729, post spec-review-round-3 PASS)
+
+Ran after Stage-1 spec-reviewer's round-3 PASS explicitly cleared Stage 2 to
+proceed. Four findings, all verified genuine by reading the cited source
+directly (`_project_gate_wiring.py`, `fr_basis.py`'s `classify()`,
+`fr_criteria.py`'s docstring, the wiring test file's own docstrings):
+
+| # | Finding (severity) | Disposition |
+|---|---|---|
+| 1 | `check_criteria_free_of_implementation_detail` (#5) and `check_no_empty_split` (#10) have no extension-scope skip, unlike `check_basis_forbids_assumed`/`check_starting_guidance_present` (medium) | deferred to triage `trg-9583d3a8` — the ledger's own #5/#10 text does not state "greenfield only" the way #4/#15/#11 do, so the correct treatment (extension-scope skip vs. touched-rows-only vs. a one-time rollout marker per the `check_binding_completeness` precedent, commit `c6bf0805c`) is a genuine design decision outside this round's scope, not a mechanical fix |
+| 2 | `is_qualified_assumed`'s `verdict.value.startswith("assumed")` also matches an unrelated out-of-vocabulary typo with no word boundary (e.g. glued `assumedallowed`), which `fr_basis` classifies under its OTHER `malformed` branch ("not in the vocabulary") — not the qualifier-smuggling one (low) | accepted-and-fixed — switched to checking `verdict.note` (the field that textually names which malformed branch fired); added regression test `test_basis_forbids_assumed_ignores_an_unrelated_malformed_cell`. **Self-caught follow-on bug**, not part of the reviewer's finding: the fix's first pass checked `verdict.reason` instead of `verdict.note` — `BasisVerdict` is `(kind, value, reason="", note="")` and the descriptive text is populated into `note`, `reason` stays `""` on both `malformed` branches (it is populated only for `other`). Caught by re-running the affected tests before commit; corrected to `verdict.note` |
+| 3 | `fr_criteria.py`'s docstring claim of "exactly two, both commented" `strict=False` callers is stale — this diff added two more without updating it (low) | accepted-and-fixed — docstring now enumerates all four callers; inline comments added at both new call sites in `_project_gate_extras.py` |
+| 4 | A test docstring claimed "the other two gates" sharing `_read_spec_texts` got a missing/unreadable-spec regression test, but only `basis_forbids_assumed` actually did — `criteria_free_of_implementation_detail` never got one (low) | accepted-and-fixed — added `test_check_criteria_free_of_implementation_detail_skips_when_no_spec_yet` and `..._fails_loud_on_a_declared_but_missing_spec` |
+
 ## Rejected Alternatives
 
 - A second, weaker "does this AC name a settlement" semantic oracle for

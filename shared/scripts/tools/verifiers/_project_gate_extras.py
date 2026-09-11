@@ -117,13 +117,25 @@ def basis_forbids_assumed(spec_texts: dict[str, str]) -> GateResult:
                 continue
             verdict = fr_basis.classify(row.basis_cell)
             is_bare_assumed = verdict.kind == "known" and verdict.value == "assumed"
+            # Stage-2 code review (round 3, PR #729, low): a raw
+            # `.startswith("assumed")` on `verdict.value` also matches an
+            # unrelated out-of-vocabulary typo with no word boundary (e.g.
+            # a glued "assumedallowed"), which `fr_basis` classifies under
+            # its OTHER `malformed` branch ("not in the vocabulary") — not
+            # the qualifier-smuggling one. `verdict.note` textually names
+            # which branch fired (`` `assumed` takes no qualifier... ``
+            # only for the true qualifier case — `reason` is always "" on
+            # both `malformed` branches, it is populated only for `other`),
+            # so checking `note` instead of `value` cannot cross the two.
             is_qualified_assumed = (
                 verdict.kind == "malformed"
-                and verdict.value.strip().lower().startswith("assumed")
+                and verdict.note.startswith("`assumed`")
             )
             if is_qualified_assumed:
                 hits.append(f"{path}:{row.id} (settlement smuggled into the Basis cell)")
-            elif is_bare_assumed and not fr_criteria.has_criteria(text, row.id, strict=False):
+            elif is_bare_assumed and not fr_criteria.has_criteria(
+                text, row.id, strict=False,  # fr_criteria.py: legacy label-paragraph exception
+            ):
                 hits.append(f"{path}:{row.id} (assumed with no acceptance criterion)")
     if hits:
         return GateResult(
@@ -147,6 +159,7 @@ def criteria_free_of_implementation_detail(spec_texts: dict[str, str]) -> GateRe
     hits: list[str] = []
     for path, text in spec_texts.items():
         for row in fr_table_reader.read_active_fr_rows(text):
+            # fr_criteria.py: legacy label-paragraph exception
             for criterion in fr_criteria.criteria_for(text, row.id, strict=False):
                 found = fr_hygiene_detectors.violations(criterion)
                 if found:

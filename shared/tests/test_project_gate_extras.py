@@ -87,6 +87,19 @@ def test_basis_forbids_assumed_catches_a_qualified_assumed_cell():
     assert "FR-01.01" in result.detail
 
 
+def test_basis_forbids_assumed_ignores_an_unrelated_malformed_cell():
+    """Stage-2 code review (round 3, PR #729, low): a glued out-of-vocabulary
+    typo with no word boundary after "assumed" (``fr_basis`` classifies it
+    under its OTHER ``malformed`` branch, "not in the vocabulary") must not
+    be mislabeled "settlement smuggled into the Basis cell" by a raw
+    ``.startswith("assumed")`` on the value — this gate polices the
+    assumed/settlement rule, not general vocabulary validity, which is a
+    different check's job."""
+    text = _HEADER + _row("FR-01.01", "assumedallowed")
+    result = ext.basis_forbids_assumed({"spec.md": text})
+    assert result.ok is True
+
+
 def test_basis_forbids_assumed_across_multiple_specs_names_every_hit():
     text_a = _HEADER + _row("FR-01.01", "assumed")
     text_b = _HEADER + _row("FR-02.01", "assumed")
