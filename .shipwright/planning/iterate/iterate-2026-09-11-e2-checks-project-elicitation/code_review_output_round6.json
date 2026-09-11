@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: `shared/scripts/tools/verifiers/_project_gate_wiring.py` \u2014 `_declared_split_names`, the `isinstance(data, dict)` guard / `splits = None \u2192 []` line\n  Finding: A syntactically-valid-but-non-object `shipwright_project_config.json` (e.g. `[]`, `\"hello\"`, `5`, `null`) parses fine, fails the `isinstance(data, dict)` check, `splits` becomes `None \u2192 []`, and the function returns `(set(), None)` \u2014 i.e. \"zero splits declared.\" All three spec-text gates (`check_basis_forbids_assumed`, `check_criteria_free_of_implementation_detail`, `check_no_empty_split`) then return SKIPPED/\"no spec.md written yet,\" passing vacuously over a corrupt manifest. This is exactly the silent-pass failure mode the module's own docstrings (rounds 3\u20135 fixes) say they closed \u2014 but the non-object case was only fixed in `_read_project_scope`, not here. Notably, the test suite already covers `[]` and `null` for the scope reader but has no equivalent test for the splits reader.\n  Suggestion: In `_declared_split_names`, when the project config exists and parses to a non-dict, return `(None, \"...is not a JSON object\")` instead of treating it as zero splits (or reuse a shared \"parse-and-shape-check the config\" helper with `_read_project_scope` so both readers fail identically). Add a test with `[]`/`null` asserting `check_no_empty_split` fails loud.\n\n- Category: edge-case\n  Severity: low\n  File: `_project_gate_wiring.py` \u2014 `_is_safe_split_name`\n  Finding: Windows drive-relative names like `C:foo` (and reserved device names like `CON`, `NUL`) pass `_is_safe_split_name`: `PureWindowsPath(\"C:foo\").is_absolute()` is `False`, and `Path(name).parts` on a POSIX host yields a single non-dot part. On a Windows host, `planning_dir / \"C:foo\"` re-anchors to the current drive of the planning dir \u2014 the same class of bug the docstring says the dual-PurePath check was added to close.\n  Suggestion: Also reject any name containing `:` or matching Windows reserved device names (a cheap `\":\" in name` check covers the drive-relative case).\n\n- Category: edge-case\n  Severity: low\n  File: `_declared_split_names`\n  Finding: When the project config exists, the `read_run_config` result assigned on the first line is unconditionally overwritten \u2014 but if the project config does **not** exist and `read_run_config` returns a dict with a bogus/non-list `splits` (e.g. `\"splits\": 1`), the fallback path correctly fails loud via the `isinstance(splits, list)` guard; however if the run-config fallback returns an empty dict for an *existing but empty* project config (`{}`), the function returns `(set(), None)` \u2192 all gates SKIPPED even though a manifest exists with no `splits` key at all, which is indistinguishable from \"config not written.\" Minor inconsistency with the `config_exists` distinction `_read_project_scope` carefully makes.\n  Suggestion: Treat \"project config exists but has no `splits` key\" as a distinct outcome (error or explicit skip-with-reason) rather than folding it into \"no manifest yet.\"\n\n## Test quality\n\nThe test suite is genuinely strong: pure-function tests assert failure details (row IDs, paths), wiring tests cover unreadable spec.md (directory trick), missing spec.md, malformed/non-list/non-object manifests, extension-scope skips, and the C4 citation is proven rather than asserted. The one blind spot is the non-object-config-for-splits case above; everything else the docstrings claim is exercised.\n\n## Spec compliance\n\nThe ledger rows are consistent with the stated ACs: 9 rows enforced or split-with-reason (#4/#15 merged, #5, #10+#10b, #11, plus #8 floor cited; FR-01.16 C, #3+#3b, #6), and none of the judgement halves (8b, 10b, 3b) get a gate \u2014 each is drift-tested instead. Ledger arithmetic and citations check out against the diff's own content.\n\nOverall: sound work with thorough review-hardened tests; one real fail-loud gap (non-object project config reaching the splits reader) should be closed before this matches its own documented invariants.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug  \n  Severity: medium  \n  File: [shared/scripts/tools/verifiers/_project_gate_wiring.py:47](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-ztu3valu/shared/scripts/tools/verifiers/_project_gate_wiring.py:47)  \n  Finding: `_is_safe_split_name` accepts Windows rooted paths such as `\\\\outside\\\\spec`. `PureWindowsPath(...).is_absolute()` is false for a rooted path with no drive, but joining it to `planning_dir` re-roots it on the current drive. The subsequent `relative_to(project_root)` can raise rather than returning a failed `CheckResult`, and the verifier may access a spec outside the project tree.  \n  Suggestion: Reject any Windows path with a root (`PureWindowsPath(name).root`) as well as drive-qualified absolute paths; add a test for `\\\\outside` (and preferably `\\outside`) names.\n\n- Category: bug  \n  Severity: medium  \n  File: [shared/scripts/tools/verifiers/_project_gate_wiring.py:98](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-ztu3valu/shared/scripts/tools/verifiers/_project_gate_wiring.py:98)  \n  Finding: A syntactically valid but non-object `shipwright_project_config.json` (for example `[]` or `null`) is treated as an empty split manifest by `_declared_split_names`. Consequently the #5 and #10 gates return `SKIPPED` instead of failing as unverifiable, contrary to the module\u2019s stated fail-loud behavior. The existing non-object tests exercise only the scope-aware #4 and #11 checks.  \n  Suggestion: Require `data` to be a `dict` before reading `splits` and return a manifest error otherwise. Add direct tests showing #5 and #10 fail on `[]` and `null`.\n\nShip-with-fixes: the intended gates are wired and broadly tested, but malformed manifest input can still bypass checks or crash the verifier.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

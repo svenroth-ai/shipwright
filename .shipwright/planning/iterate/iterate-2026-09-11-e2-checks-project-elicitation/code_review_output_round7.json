@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_project_gate_wiring.py \u2014 `check_basis_forbids_assumed` vs `check_starting_guidance_present`\n  Finding: Inconsistent handling of \"config not yet written\": `check_starting_guidance_present` returns SKIPPED when `config_exists` is False, but `check_basis_forbids_assumed` enforces the greenfield path in that state (scope is None either way). In practice both end up SKIPPED because `_read_spec_texts` finds no splits without a manifest, so behavior converges, but the two gates express the same state differently \u2014 a future refactor that gives `_read_spec_texts` another source will diverge them.\n  Suggestion: Make both gates return SKIPPED on `not config_exists`, or document why #4 legitimately differs.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_project_gate_extras.py \u2014 `basis_forbids_assumed`, qualified-assumed branch\n  Finding: `verdict.value.strip().lower().startswith(\"assumed\")` over-matches any malformed cell beginning with the word (e.g. `assumed-x` or `Assumedly: whatever`). Since these are all `malformed` Basis cells that `fr_basis` already rejects, the over-match is arguably desired (fail-closed), but it's worth noting the check is prefix-matching, not value-matching.\n  Suggestion: If intentional, a one-line comment saying \"any malformed cell starting with 'assumed' is treated as qualifier-smuggling\" would prevent a future 'tightening'. No code change strictly needed.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_project_gate_extras.py \u2014 `test_split_heuristics_still_demands_cohesive_purpose`\n  Finding: The drift test for #10b asserts only that the literal substring `\"Cohesive purpose\"` appears anywhere in a ~large reference doc. A reworded doc that drops the actual rule (e.g. \"parts should each have one purpose\" without the pinned heading) still passes; conversely the heading surviving with gutted body also passes. Same weakness applies to the #8b drift test's `\"linked from the\"` / `\"an ADR, linked\"` substring pins, though those at least pin two phrasings.\n  Suggestion: Pin the full sentence containing the rule (e.g. regex for the sentence around \"Cohesive purpose\") so a reword breaks the test, which is the point of a drift test.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_project_gate_wiring.py \u2014 `_declared_split_names`\n  Finding: When `shipwright_project_config.json` does not exist, the code falls back to `read_run_config(project_root)` and reads its `splits`. If a run config exists with a `splits` key (plausible shape overlap), gates will evaluate against run-config split names, while `_read_project_scope` in the same module treats a missing project config as \"no scope known\". The two readers can disagree about the same project state. This is speculative (depends on `read_run_config`'s actual shape) but the asymmetry is real.\n  Suggestion: Either confirm `read_run_config` never carries `splits`, or gate the fallback explicitly.\n\nSpec compliance: the 9 named lines are all resolved in the ledger (FR-01.02 #4, #15 (merged), #5, #8/#8b (split), #10/#10b (split), #11; FR-01.16 C, #3/#3b (split), #6), each either enforced, closed-by-citation, or downgraded with the D7 abort-condition rationale. No judgement line (#4b, #6 of .02, #3b, 10b, 8b, FR-01.16 #1/#2/#7) is given a gate. The wiring into `run_project_checks` matches the ledger's claims, and the fail-loud handling of corrupt manifests / unsafe split names / unreadable specs is genuinely well covered by tests (including the missing-spec.md, non-object-JSON, and traversal-name cases). No security issues: path traversal and drive/root-relative names are filtered, no secrets, no injection sinks.\n\nOverall: ship-as-is; the findings above are refinements, none block.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: bug  \n  Severity: medium  \n  File: `shared/scripts/tools/verifiers/_project_gate_wiring.py:126`  \n  Finding: A manifest containing both valid and unsafe split names silently drops the unsafe entries and returns success. This lets a declared-but-invalid split evade all four new spec-based gates; the added test explicitly locks in that behavior.  \n  Suggestion: Return a failing `CheckResult` whenever any declared split entry is invalid/unsafe, while optionally also reporting checks for valid entries.\n\n- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/tools/verifiers/_project_gate_wiring.py:218`  \n  Finding: The merged #4/#15 check is skipped for every `scope == \"extension\"` project. #4 is explicitly greenfield-only, but #15\u2019s requirement\u2014an unconfirmed-assumption basis must name what would settle it\u2014has no extension carve-out. An extension can therefore retain `Basis: assumed` with no settlement and pass.  \n  Suggestion: Keep the absolute `assumed` ban greenfield-only, but enforce #15 separately for extensions, or explicitly update the governing requirement to make #15 greenfield-only.\n\nShip-with-fixes: the main gate wiring is sound, but these scope and manifest-validation paths leave declared requirements unenforced.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

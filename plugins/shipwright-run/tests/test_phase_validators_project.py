@@ -43,15 +43,22 @@ validate_phase = _module.validate_phase
 
 
 def _seed_basic_project(root: Path) -> None:
-    """Minimum fields for the legacy (pre-12.1) path to succeed."""
-    (root / "shipwright_project_config.json").write_text(
-        json.dumps({
-            "status": "complete",
-            "splits": [{"name": "01-auth", "status": "complete"}],
-        })
-    )
+    """Minimum fields for the legacy (pre-12.1) path to succeed. scope=
+    "extension" skips the new #11 guidance check (no CLAUDE.md/agent_docs
+    modeled here); spec.md carries one FR row so the new #10 empty-split
+    check doesn't itself redden this fixture (req3-06-enforcement-mono e2)."""
+    (root / "shipwright_project_config.json").write_text(json.dumps({
+        "status": "complete", "scope": "extension",
+        "splits": [{"name": "01-auth", "status": "complete"}],
+    }))
     (root / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
-    (root / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text("# spec\n")
+    (root / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text(
+        "# spec\n\n"
+        "| ID | Name | Priority | Description | Basis |\n"
+        "|---|---|---|---|---|\n"
+        "| FR-01.01 | some capability | Must | a plain-language capability "
+        "description | interview |\n"
+    )
 
 
 def _seed_canon_artifacts(root: Path, *, run_id: str = "project-20260414-x") -> None:

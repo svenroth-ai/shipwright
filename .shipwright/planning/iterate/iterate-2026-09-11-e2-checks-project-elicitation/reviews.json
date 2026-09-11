@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-e2-checks-project-elicitation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T14:29:45.469494+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Two existing happy-path fixtures were modified (`seed_canon_project`, `_seed_basic_project`) to satisfy the new gates, including stamping `scope: \"extension\"` to bypass the `starting_guidance_present` check. Changing fixtures to keep old tests green after adding gates is the classic way to silently weaken coverage — and the `extension` escape hatch specifically means those fixtures no longer exercise the new guidance check at all in those suites.",
+          "suggestion": "Add dedicated fixtures for the new gates (greenfield with/without CLAUDE.md/agent_docs, empty vs non-empty) in this change's own tests, and assert in a comment or assertion why the legacy fixtures use `extension` scope. If the only tests for #11 are the new ones, say so explicitly — don't rely on the old suites for coverage they no longer provide.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "criteria_free_of_implementation_detail` (#5) reuses I1's detector against the full CRITERIA text, where I1 only ran it against the Name column. Detector heuristics (HTTP-verb, code-symbol, file-path, ADR-number, iterate-slug patterns) have very different false-positive rates over prose than over short titles — e.g., legitimate acceptance criteria like \"the CLI returns a 404\" or \"per ADR-007's decision\" may now redden existing projects on upgrade.",
+          "suggestion": "Run the new check against the real project corpus before wiring it in as a blocking gate; if false positives appear, either tighten patterns for CRITERIA context or land it as warning-severity first.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Merging ledger lines #4 and #15 by extending the existing absolute ban to the FR-row layer resolves a recorded self-contradiction by policy, but the ledger rationale for #15 (allow-with-settlement) isn't being contradicted-and-closed, just silently overridden. Same for #8, where one half is citation-only and the other is downgraded — the \"already enforced, never cited\" claim should be verified, not assumed.",
+          "suggestion": "Record the #4/#15 merge decision explicitly on the ledger with the reason, and add a test or manual citation proving `check_c4_decision_log_has_phase_adr` actually fires on the #8 scenario (a regression test would be cheap insurance against it being citation-only-but-broken).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "no_empty_split` (#10) checks \"≥1 active FR row\" — but nothing is stated about how \"declared split\" is detected, or what happens for specs whose split declaration format drifts. If the split declaration itself isn't verified, the check can silently pass vacuously.",
+          "suggestion": "Include a negative test where a split is declared with zero active FR rows (rows commented/deactivated) to prove the check can actually fail, not just pass.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The FR-01.16 half is citation-only work predicated on campaign `req3-09-p4-grill-glossary` having merged — but the ledger status cells being stale suggests verification hygiene here is weak. If any cited check (e.g., `check_grill_trace_coverage`) has known gaps or is warning-only rather than blocking, the \"enforced\" citation would be wrong.",
+          "suggestion": "When correcting the ledger cells, note for each whether the cited check is blocking or advisory; a drift/citation test asserting the function exists and is wired into the blocking dispatcher would pin it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "basis_forbids_assumed` is specified only for a “bare `assumed`” cell. Without a normalized exact-value rule, harmless formatting variants (`Assumed`, trailing punctuation/whitespace, Markdown emphasis) can bypass the intended greenfield prohibition.",
+          "suggestion": "Define and test canonical Basis-cell normalization, then reject an exact normalized `assumed` value in greenfield scope. Keep other text out of scope unless a deterministic policy is explicitly defined.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes “active FR row,” “declared split,” and greenfield/extension scope are already unambiguous and consistently parsed by the project verifier. Those predicates determine every new gate, but their source of truth and behavior for malformed/missing tables are not stated.",
+          "suggestion": "Reuse the existing canonical parser/scope resolver rather than add parallel interpretation. Add tests for missing FR table, malformed row, no active rows, and every supported split declaration form.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Updating old happy-path fixtures to `scope: \"extension\"` bypasses the new starting-guidance gate in broad existing-path tests. This can preserve green tests while leaving the primary greenfield behavior insufficiently exercised.",
+          "suggestion": "Retain the extension fixture updates where accurate, but add explicit greenfield tests for each missing/empty required guidance file and one fully populated passing case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The added two-module split (`_project_gate_extras.py` plus `_project_gate_wiring.py`) may be needless if the existing dispatcher already contains filesystem-facing check adapters. Four small checks do not inherently require a new wiring layer.",
+          "suggestion": "Put pure checks alongside the established project-check helpers and wire them directly through the existing pattern unless the repository already uses this exact pure-check/adapter structure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“A declared split’s `spec.md` must carry ≥1 active FR row” needs a clear failure mode for a declared split with a missing/unreadable `spec.md`, and for a spec whose rows are all inactive. Otherwise this can produce an unclear parser failure or accidentally pass by not visiting the split.",
+          "suggestion": "Make missing/unparseable split specs explicit failing results with an actionable path; test empty, all-inactive, and one-active-row cases.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The FR-01.16 closure is based on cited pre-existing checks and stale-ledger correction, but the plan does not state a regression assertion tying those ledger status/reason updates to the cited checks. A later edit could silently reopen the evidence gap.",
+          "suggestion": "Add or update the ledger/drift test to assert the specific enforcement citations and the two judgement downgrades with their reasons.  Overall, the approach is directionally sound and sensibly avoids fake semantic gates, but it needs explicit predicate semantics and targeted greenfield/split test coverage before it is safe to merge. No material new security exposure is apparent from read-only local artifact validation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-11T14:02:38.019397+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: medium**\n**Finding:** Two existing happy-path fixtures were modified (`seed_canon_project`, `_seed_basic_project`) to satisfy the new gates, including stamping `scope: \"extension\"` to bypass the `starting_guidance_present` check. Changing fixtures to keep old tests green after adding gates is the classic way to silently weaken coverage — and the `extension` escape hatch specifically means those fixtures no longer exercise the new guidance check at all in those suites.\n**Suggestion:** Add dedicated fixtures for the new gates (greenfield with/without CLAUDE.md/agent_docs, empty vs non-empty) in this change's own tests, and assert in a comment or assertion why the legacy fixtures use `extension` scope. If the only tests for #11 are the new ones, say so explicitly — don't rely on the old suites for coverage they no longer provide.\n\n**Category: edge-case — Severity: medium**\n**Finding:** `criteria_free_of_implementation_detail` (#5) reuses I1's detector against the full CRITERIA text, where I1 only ran it against the Name column. Detector heuristics (HTTP-verb, code-symbol, file-path, ADR-number, iterate-slug patterns) have very different false-positive rates over prose than over short titles — e.g., legitimate acceptance criteria like \"the CLI returns a 404\" or \"per ADR-007's decision\" may now redden existing projects on upgrade.\n**Suggestion:** Run the new check against the real project corpus before wiring it in as a blocking gate; if false positives appear, either tighten patterns for CRITERIA context or land it as warning-severity first.\n\n**Category: approach — Severity: low**\n**Finding:** Merging ledger lines #4 and #15 by extending the existing absolute ban to the FR-row layer resolves a recorded self-contradiction by policy, but the ledger rationale for #15 (allow-with-settlement) isn't being contradicted-and-closed, just silently overridden. Same for #8, where one half is citation-only and the other is downg […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `basis_forbids_assumed` is specified only for a “bare `assumed`” cell. Without a normalized exact-value rule, harmless formatting variants (`Assumed`, trailing punctuation/whitespace, Markdown emphasis) can bypass the intended greenfield prohibition.  \n   **Suggestion:** Define and test canonical Basis-cell normalization, then reject an exact normalized `assumed` value in greenfield scope. Keep other text out of scope unless a deterministic policy is explicitly defined.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan assumes “active FR row,” “declared split,” and greenfield/extension scope are already unambiguous and consistently parsed by the project verifier. Those predicates determine every new gate, but their source of truth and behavior for malformed/missing tables are not stated.  \n   **Suggestion:** Reuse the existing canonical parser/scope resolver rather than add parallel interpretation. Add tests for missing FR table, malformed row, no active rows, and every supported split declaration form.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Updating old happy-path fixtures to `scope: \"extension\"` bypasses the new starting-guidance gate in broad existing-path tests. This can preserve green tests while leaving the primary greenfield behavior insufficiently exercised.  \n   **Suggestion:** Retain the extension fixture updates where accurate, but add explicit greenfield tests for each missing/empty required guidance file and one fully populated passing case.\n\n4. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The added two-module split (`_project_gate_extras.py` plus `_project_gate_wiring.py`) may be needless if the existing dispatcher already contains filesystem-facing check adapters. Four small checks do not inherently require a new wiring layer.  \n   **Suggestion:** Put pure checks alongside the established pr […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T14:02:47.287529+00:00",
+      "disposition": "runner has no Agent tool — cascade delegated to orchestrator at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T14:02:47.390961+00:00",
+      "disposition": "runner has no Agent tool — cascade delegated to orchestrator at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_project_gate_wiring.py — `check_basis_forbids_assumed` vs `check_starting_guidance_present",
+          "line": null,
+          "finding": "Inconsistent handling of \"config not yet written\": `check_starting_guidance_present` returns SKIPPED when `config_exists` is False, but `check_basis_forbids_assumed` enforces the greenfield path in that state (scope is None either way). In practice both end up SKIPPED because `_read_spec_texts` finds no splits without a manifest, so behavior converges, but the two gates express the same state differently — a future refactor that gives `_read_spec_texts` another source will diverge them.",
+          "suggestion": "Make both gates return SKIPPED on `not config_exists`, or document why #4 legitimately differs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras.py — `basis_forbids_assumed`, qualified-assumed branch",
+          "line": null,
+          "finding": "verdict.value.strip().lower().startswith(\"assumed\")` over-matches any malformed cell beginning with the word (e.g. `assumed-x` or `Assumedly: whatever`). Since these are all `malformed` Basis cells that `fr_basis` already rejects, the over-match is arguably desired (fail-closed), but it's worth noting the check is prefix-matching, not value-matching.",
+          "suggestion": "If intentional, a one-line comment saying \"any malformed cell starting with 'assumed' is treated as qualifier-smuggling\" would prevent a future 'tightening'. No code change strictly needed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_project_gate_extras.py — `test_split_heuristics_still_demands_cohesive_purpose",
+          "line": null,
+          "finding": "The drift test for #10b asserts only that the literal substring `\"Cohesive purpose\"` appears anywhere in a ~large reference doc. A reworded doc that drops the actual rule (e.g. \"parts should each have one purpose\" without the pinned heading) still passes; conversely the heading surviving with gutted body also passes. Same weakness applies to the #8b drift test's `\"linked from the\"` / `\"an ADR, linked\"` substring pins, though those at least pin two phrasings.",
+          "suggestion": "Pin the full sentence containing the rule (e.g. regex for the sentence around \"Cohesive purpose\") so a reword breaks the test, which is the point of a drift test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_project_gate_wiring.py — `_declared_split_names",
+          "line": null,
+          "finding": "When `shipwright_project_config.json` does not exist, the code falls back to `read_run_config(project_root)` and reads its `splits`. If a run config exists with a `splits` key (plausible shape overlap), gates will evaluate against run-config split names, while `_read_project_scope` in the same module treats a missing project config as \"no scope known\". The two readers can disagree about the same project state. This is speculative (depends on `read_run_config`'s actual shape) but the asymmetry is real.",
+          "suggestion": "Either confirm `read_run_config` never carries `splits`, or gate the fallback explicitly.  Spec compliance: the 9 named lines are all resolved in the ledger (FR-01.02 #4, #15 (merged), #5, #8/#8b (split), #10/#10b (split), #11; FR-01.16 C, #3/#3b (split), #6), each either enforced, closed-by-citation, or downgraded with the D7 abort-condition rationale. No judgement line (#4b, #6 of .02, #3b, 10b, 8b, FR-01.16 #1/#2/#7) is given a gate. The wiring into `run_project_checks` matches the ledger's claims, and the fail-loud handling of corrupt manifests / unsafe split names / unreadable specs is genuinely well covered by tests (including the missing-spec.md, non-object-JSON, and traversal-name cases). No security issues: path traversal and drive/root-relative names are filtered, no secrets, no injection sinks.  Overall: ship-as-is; the findings above are refinements, none block.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_project_gate_wiring.py",
+          "line": 126,
+          "finding": "A manifest containing both valid and unsafe split names silently drops the unsafe entries and returns success. This lets a declared-but-invalid split evade all four new spec-based gates; the added test explicitly locks in that behavior.",
+          "suggestion": "Return a failing `CheckResult` whenever any declared split entry is invalid/unsafe, while optionally also reporting checks for valid entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_project_gate_wiring.py",
+          "line": 218,
+          "finding": "The merged #4/#15 check is skipped for every `scope == \"extension\"` project. #4 is explicitly greenfield-only, but #15’s requirement—an unconfirmed-assumption basis must name what would settle it—has no extension carve-out. An extension can therefore retain `Basis: assumed` with no settlement and pass.",
+          "suggestion": "Keep the absolute `assumed` ban greenfield-only, but enforce #15 separately for extensions, or explicitly update the governing requirement to make #15 greenfield-only.  Ship-with-fixes: the main gate wiring is sound, but these scope and manifest-validation paths leave declared requirements unenforced.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-11T14:28:34.574118+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_project_gate_wiring.py — `check_basis_forbids_assumed` vs `check_starting_guidance_present`\n  Finding: Inconsistent handling of \"config not yet written\": `check_starting_guidance_present` returns SKIPPED when `config_exists` is False, but `check_basis_forbids_assumed` enforces the greenfield path in that state (scope is None either way). In practice both end up SKIPPED because `_read_spec_texts` finds no splits without a manifest, so behavior converges, but the two gates express the same state differently — a future refactor that gives `_read_spec_texts` another source will diverge them.\n  Suggestion: Make both gates return SKIPPED on `not config_exists`, or document why #4 legitimately differs.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/_project_gate_extras.py — `basis_forbids_assumed`, qualified-assumed branch\n  Finding: `verdict.value.strip().lower().startswith(\"assumed\")` over-matches any malformed cell beginning with the word (e.g. `assumed-x` or `Assumedly: whatever`). Since these are all `malformed` Basis cells that `fr_basis` already rejects, the over-match is arguably desired (fail-closed), but it's worth noting the check is prefix-matching, not value-matching.\n  Suggestion: If intentional, a one-line comment saying \"any malformed cell starting with 'assumed' is treated as qualifier-smuggling\" would prevent a future 'tightening'. No code change strictly needed.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_project_gate_extras.py — `test_split_heuristics_still_demands_cohesive_purpose`\n  Finding: The drift test for #10b asserts only that the literal substring `\"Cohesive purpose\"` appears anywhere in a ~large reference doc. A reworded doc that drops the actual rule (e.g. \"parts should each have one purpose\" without the pinned heading) still passes; conversely the heading surviving with gutted body also passes.  […truncated]\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: `shared/scripts/tools/verifiers/_project_gate_wiring.py:126`  \n  Finding: A manifest containing both valid and unsafe split names silently drops the unsafe entries and returns success. This lets a declared-but-invalid split evade all four new spec-based gates; the added test explicitly locks in that behavior.  \n  Suggestion: Return a failing `CheckResult` whenever any declared split entry is invalid/unsafe, while optionally also reporting checks for valid entries.\n\n- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/tools/verifiers/_project_gate_wiring.py:218`  \n  Finding: The merged #4/#15 check is skipped for every `scope == \"extension\"` project. #4 is explicitly greenfield-only, but #15’s requirement—an unconfirmed-assumption basis must name what would settle it—has no extension carve-out. An extension can therefore retain `Basis: assumed` with no settlement and pass.  \n  Suggestion: Keep the absolute `assumed` ban greenfield-only, but enforce #15 separately for extensions, or explicitly update the governing requirement to make #15 greenfield-only.\n\nShip-with-fixes: the main gate wiring is sound, but these scope and manifest-validation paths leave declared requirements unenforced.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T14:02:47.178331+00:00",
+      "disposition": "runner has no Agent tool — cascade delegated to orchestrator at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T14:02:47.070145+00:00",
+      "disposition": "no internal arm exists for plan review (project_plan_review_has_no_internal_arm) — documented permanent gap, never promoted",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
