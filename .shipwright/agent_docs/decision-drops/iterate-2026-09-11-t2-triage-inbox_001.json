@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-t2-triage-inbox",
+  "date": "2026-09-11",
+  "section": "req3-05-test-backfill-mono t2",
+  "title": "Backfill AC-proving tests for FR-01.14's 29 unbound ACs",
+  "context": "FR-01.14 (Triage Inbox) had 29/29 ACs unbound in shipwright_ac_coverage_baseline.json. Per t0's seam survey the cluster's seam is shared/tests (primary) plus shared/scripts/tools/tests for the CLI-tool layer -- two ADR-044 roots, one unit, exactly as t0 assigned.",
+  "decision": "Bound 28 of 29 ACs to existing, already-passing tests via @pytest.mark.covers(\"FR-01.14/ACnn\") -- no new test files, no new harness. AC26 (\"the Triage Inbox is explicitly not a plan\") is a definitional/policy guarantee with no deterministic surface to assert against (same class as FR-01.12 Exception 1's AC02/AC03/AC07/AC09) -- left unbound in the regenerated baseline rather than forced onto a test that would not prove it.",
+  "consequences": "shipwright_ac_coverage_baseline.json unbound count: 233 -> 205 (28 removed, all FR-01.14, verified via diff against the pre-change baseline -- zero unrelated movement). AC26 remains unbound with this drop as its recorded reason.",
+  "rationale": "Backfill campaign rule: bind to an existing seam, never invent a new one; a test must actually prove the AC, not merely be shaped around the current implementation. Each binding was verified by reading the target test's body against the AC's exact text before tagging.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

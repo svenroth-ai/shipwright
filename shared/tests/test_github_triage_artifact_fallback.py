@@ -154,7 +154,7 @@ def _append_events(project_root: Path) -> list[dict]:
 # AC-1, AC-5 — artifact path emits when cs_alerts is None
 # ---------------------------------------------------------------------------
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC14")
 def test_artifact_emits_when_cs_alerts_unavailable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -185,7 +185,7 @@ def test_artifact_emits_when_cs_alerts_unavailable(
     assert result["by_source"].get("gh-security:artifact") == 1
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC14")
 def test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -230,7 +230,7 @@ def test_artifact_skipped_when_owner_repo_none(
     assert result["by_source"].get("gh-security:artifact", 0) == 0
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC17")
 def test_artifact_skipped_when_no_run_available(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -247,7 +247,7 @@ def test_artifact_skipped_when_no_run_available(
     assert not any(a["dedupKey"].startswith("gh-security") for a in appends)
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC17")
 def test_artifact_skipped_when_download_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -498,7 +498,7 @@ def test_artifact_detail_renders_per_source_counts(
     assert "unavailable" in detail.lower() or "code-scanning" in detail.lower()
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC18")
 def test_artifact_detail_does_not_leak_raw_finding_strings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -540,7 +540,7 @@ def test_artifact_detail_does_not_leak_raw_finding_strings(
         )
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC18")
 def test_artifact_detail_respects_length_cap(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

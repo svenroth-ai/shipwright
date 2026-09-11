@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-pr-review-evidence-filter-gap",
+  "date": "2026-09-11",
+  "section": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+  "title": "Split hide-vs-skip review-evidence matching, closed and case-sensitive",
+  "context": "PR #722's PR-review gate BLOCKed because spec_review_reply.json and external-code-review-raw.json (tool-written review transcripts) weren't excluded from the diff shown to the reviewer, risking a fake-approval injection read as real.",
+  "decision": "Widened the hide-side match (is_generated_path) to an anchored, mostly-closed set; kept the skip-side match (is_safe_to_skip_review, licenses a zero-model-call gate pass) at reviews.json only, narrower than even its pre-iterate shape, and case-sensitive.",
+  "consequences": "New reviewer-transcript files no longer trigger circular review; the gate-bypass surface did not grow — it shrank, since the skip set is now closed instead of sharing the hide side's wildcard.",
+  "rationale": "Five review rounds (internal plan, 3x external plan, code, doubt, external code, spec) each converged toward narrower skip-safety; hide and skip have different stakes and must not share a regex.",
+  "rejected": "Adding the closed reply-file set to skip-safety too (reverted after external review round 3: exact basename is not provenance); enumerating a closed external-*review* set (no fixed producer filename exists).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

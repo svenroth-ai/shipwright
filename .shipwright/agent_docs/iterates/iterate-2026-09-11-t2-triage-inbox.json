@@ -1,0 +1,173 @@
+{
+  "run_id": "iterate-2026-09-11-t2-triage-inbox",
+  "date": "2026-09-11T20:01:10.017900Z",
+  "event_at": "2026-09-11T19:58:33.680036+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t2-triage-inbox",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t2-triage-inbox.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-t2-triage-inbox",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "FR-01.14/AC01 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_storage.py::test_mixed_statuses_all_returned PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC02 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_storage.py::test_idempotent_concurrency_under_lock PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC03 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_promote.py::test_promote_with_reason; test_triage_cli.py::test_list_hides_dismissed_and_promoted_items PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC04 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_promote.py::test_promote_happy_path PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC05 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage_action_units.py::test_import_findings_emits_action_units_not_per_finding; test_triage_aggregator.py::test_github_action_unit_missing_payload_renders_visible_placeholder PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC06 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage.py::test_import_findings_auto_resolves_fixed_alert, ::test_failed_fetch_does_not_resolve_items PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC07 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_defer_lifecycle.py::test_the_day_after_the_revisit_date_is_due; test_triage_defer_reimport.py::test_a_park_that_is_not_due_suppresses_the_re_import PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC08 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_defer_lifecycle.py::test_a_producer_may_close_an_open_or_a_parked_entry PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC09 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_defer_cli.py::test_unpark_puts_a_parked_entry_back_and_clears_its_date PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC10 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_delivery_visibility.py::test_status_flip_only_in_the_outbox_is_undelivered, ::test_pending_delivery_field_is_unchanged PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC11 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_defer_cli.py::test_the_terminal_listing_elides_and_says_so_one_past_the_cap, ::test_the_two_human_surfaces_show_the_SAME_entries PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC12 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage.py::test_secret_value_never_written_to_triage_file; test_github_triage_action_units.py::test_secrets_action_unit_payload_is_whitelist_only PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC13 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage.py::test_gh_available_false_when_gh_missing, ::test_hook_gh_unavailable_exits_zero PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC14 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_emits_when_cs_alerts_unavailable, ::test_sast_gated_but_prompt_fetched_when_cs_alerts_succeeds PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC15 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage_prompt_artifact.py::test_sast_findings_stay_gated_when_code_scanning_available PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC16 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_api_artifact.py::test_latest_security_workflow_run_freshness_gate_default_14d, ::test_latest_security_workflow_run_picks_first_fresh_skipping_stale PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC17 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_skipped_when_no_run_available, ::test_artifact_skipped_when_download_fails PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC18 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage_artifact_fallback.py::test_artifact_detail_does_not_leak_raw_finding_strings, ::test_artifact_detail_respects_length_cap PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC19 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_github_triage_detail_cap.py::test_failing_check_detail_is_capped_whatever_grows, ::test_failing_check_cap_matches_the_proposed_change_cap PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC20 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_storage.py::test_concurrent_appends_thread_pool PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC21 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_corruption_visibility.py::test_store_corruption_reports_the_damaged_span, ::test_reader_still_returns_the_valid_neighbour PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC22 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_repair.py::test_report_mode_never_mutates, ::test_apply_quarantines_unrecoverable_text_verbatim; test_triage_repair_safety.py::test_wholly_unrecoverable_file_is_not_emptied PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC23 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_gc.py::test_plan_drops_machine_keeps_human, ::test_promoted_and_open_never_dropped PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC24 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_aggregator.py::test_top_50_cap, ::test_severity_sort_within_source PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC25 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_suite_race_triage.py::test_a_confirmed_race_is_written_to_the_tracked_store, ::test_the_card_says_what_was_measured_and_claims_no_cause; test_suite_race_cli.py::test_a_green_run_that_could_not_record_the_race_exits_three PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC27 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_operator_decision_integration.py::test_operator_dismiss_wins_against_a_concurrent_drift_sweep PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC28 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_expected_status.py::test_precondition_refuses_a_decided_item PASSED"
+      },
+      {
+        "behavior": "FR-01.14/AC29 is proven by an existing, executable test at the seam t0's survey named for this cluster (shared/tests + shared/scripts/tools/tests)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_cli_amend.py::test_amend_positional_id_happy_path, ::test_amend_exits_2_on_contentless_call; test_triage_amend.py::test_apply_amend_records_amended_by_and_at PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 28,
+      "tested": 28,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 28,
+      "covered_acs": 28
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "test-backfill unit binding existing FR-01.14 ACs to existing tests + a coverage-baseline regen; no startable web/dev-server/CLI surface of its own -- verification is the unit-test suite itself (F0), run across the 2 touched ADR-044 roots (shared/tests, shared/scripts/tools/tests) per t0's seam survey."
+  },
+  "declared_removals": []
+}

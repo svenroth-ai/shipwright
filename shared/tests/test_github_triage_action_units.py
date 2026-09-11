@@ -33,7 +33,6 @@ import github_api  # noqa: E402
 import github_triage  # noqa: E402
 from triage import append_triage_item, read_all_items  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Fixture alerts (trimmed to fields the mappers actually read)
 # ---------------------------------------------------------------------------
@@ -92,7 +91,6 @@ CI_FAILED = {
 }
 
 OWNER_REPO = "acme/foo"
-
 
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
@@ -224,6 +222,7 @@ def test_security_action_unit_returns_none_when_owner_repo_none() -> None:
 # AC-2 (secret-scanning) — whitelist-only payload (review finding #9)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC12")
 def test_secrets_action_unit_payload_is_whitelist_only() -> None:
     item = github_triage.secrets_action_unit(
         secret_scanning=[SS_ONE, SS_TWO], owner_repo=OWNER_REPO,
@@ -310,6 +309,7 @@ def test_ci_action_unit_returns_none_when_owner_repo_none() -> None:
 # AC-1 — import_findings emits ONE action-unit per category (not per finding)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC05")
 def test_import_findings_emits_action_units_not_per_finding(
     project: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

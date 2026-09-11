@@ -42,6 +42,7 @@ def item_id(project: Path) -> str:
     )
 
 
+@pytest.mark.covers("FR-01.14/AC29")
 def test_amend_positional_id_happy_path(project: Path, item_id: str) -> None:
     result = _run([
         "--project-root", str(project),
@@ -69,6 +70,7 @@ def test_amend_only_a_single_field_leaves_the_rest_untouched(project: Path, item
     assert item["title"] == "original title"
 
 
+@pytest.mark.covers("FR-01.14/AC29")
 def test_amend_exits_2_on_contentless_call(project: Path, item_id: str) -> None:
     result = _run(["--project-root", str(project), "amend", item_id])
     assert result.returncode == 2
