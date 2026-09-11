@@ -32,6 +32,11 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+try:
+    from .html_tag_scanner import parse_tags
+except ImportError:
+    from html_tag_scanner import parse_tags
+
 __all__ = [
     "GateResult",
     "chrome_nav_targets_consistent",
@@ -128,28 +133,14 @@ def flows_present_for_multi_screen_app(screen_count: int, flow_count: int) -> Ga
 # #5 — shared chrome from one definition
 # --------------------------------------------------------------------------- #
 
-#: One tag at a time, then attribute-by-attribute — the earlier single regex
-#: anchored ``nav-item``/``topnav-link`` to the START of the class value, so
-#: ``class="active nav-item"`` (the target class not first) false-PASSed as
-#: having no nav (external Tier-3 review, PR #726 round 8).
-_TAG_RE = re.compile(r"<[^>]+>")
-_ATTR_RE = re.compile(r'''([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))''')
-
-
-def _tag_attrs(tag: str) -> dict[str, str]:
-    return {
-        name.lower(): dq if dq else (sq if sq else uq)
-        for name, dq, sq, uq in _ATTR_RE.findall(tag)
-    }
-
 
 def _nav_targets(html: str) -> set[str]:
     targets = set()
-    for tag in _TAG_RE.findall(html):
-        attrs = _tag_attrs(tag)
+    for attrs in parse_tags(html):
         classes = attrs.get("class", "").split()
-        if ("nav-item" in classes or "topnav-link" in classes) and attrs.get("href"):
-            targets.add(attrs["href"])
+        href = attrs.get("href")
+        if href and ("nav-item" in classes or "topnav-link" in classes):
+            targets.add(href)
     return targets
 
 
@@ -190,9 +181,9 @@ def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str)
 #: "no external dependencies except optional CDN font").
 _ALLOWED_EXTERNAL_HOSTS = ("fonts.googleapis.com", "fonts.gstatic.com")
 
-#: A quote-only pattern false-PASSed an unquoted ``src=https://evil...``
-#: (valid HTML) as non-external (external Tier-3 review, PR #726 round 8) —
-#: ``_tag_attrs`` above already tokenizes quoted AND unquoted values alike.
+#: Matched against a stripped, backslash-normalised copy of the value —
+#: leading whitespace and a backslash-separated authority are both accepted
+#: by real URL parsers, so both must count as external here too.
 _ABSOLUTE_OR_PROTOCOL_RELATIVE_RE = re.compile(r'^(?:https?:)?//', re.IGNORECASE)
 
 
@@ -202,7 +193,8 @@ def _hostname(url: str) -> str:
     ``https://evil.example/?=fonts.googleapis.com``, must not pass)."""
     from urllib.parse import urlparse
 
-    parsed = urlparse(url if "://" in url else f"https:{url}")
+    normalized = url.strip().replace("\\", "/")
+    parsed = urlparse(normalized if "://" in normalized else f"https:{normalized}")
     return (parsed.hostname or "").lower()
 
 
@@ -210,13 +202,15 @@ def standalone_html_violations(html: str) -> list[str]:
     """**#6** — every external ``src``/``href`` reference outside the one
     allowed font-CDN exception. Empty list means the file is standalone."""
     violations = []
-    for tag in _TAG_RE.findall(html):
-        attrs = _tag_attrs(tag)
+    for attrs in parse_tags(html):
         for name in ("src", "href"):
-            url = attrs.get(name)
-            if url and _ABSOLUTE_OR_PROTOCOL_RELATIVE_RE.match(url):
-                if _hostname(url) not in _ALLOWED_EXTERNAL_HOSTS:
-                    violations.append(url)
+            raw = attrs.get(name)
+            if not raw:
+                continue
+            normalized = raw.strip().replace("\\", "/")
+            if _ABSOLUTE_OR_PROTOCOL_RELATIVE_RE.match(normalized):
+                if _hostname(normalized) not in _ALLOWED_EXTERNAL_HOSTS:
+                    violations.append(raw)
     return violations
 
 
@@ -227,11 +221,9 @@ def standalone_html_violations(html: str) -> list[str]:
 
 def uploads_preserved(project_root: Path, uploads_dir: Path) -> GateResult:
     """**#8** — an uploaded mockup, once committed, must never show as
-    MODIFIED. Uses git's own status as the historical record rather than a
-    hand-rolled baseline file. New files (never-yet-committed uploads) and
-    deletions are not this criterion's concern — only "was a supplied file
-    changed" is.
-    """
+    MODIFIED. Uses git's own status as the historical record. New files
+    (never-yet-committed) and deletions are not this criterion's concern —
+    only "was a supplied file changed" is."""
     try:
         rel_uploads = uploads_dir.resolve().relative_to(project_root.resolve()).as_posix()
     except ValueError:
@@ -280,10 +272,9 @@ def iteration_touched_flagged_screens(
 ) -> GateResult:
     """**#9** — every screen flagged CHANGES/REJECTED in this round must
     actually have been touched. Extra modified files beyond the flagged set
-    are reported as a warning, not a failure: Chrome Change Propagation
-    legitimately touches every screen in the same round, and that is not
-    distinguishable from a drive-by change without reading the decision log.
-    """
+    are a warning, not a failure: Chrome Change Propagation legitimately
+    touches every screen in one round, indistinguishable from a drive-by
+    change without reading the decision log."""
     modified = set(git_modified_files)
     untouched = [f for f in flagged_files if f not in modified]
     if untouched:

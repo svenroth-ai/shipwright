@@ -91,7 +91,35 @@ def test_nav_item_not_first_in_the_class_attribute_is_still_matched():
 
 def test_an_unquoted_external_reference_is_still_caught():
     """External Tier-3 review, PR #726 round 8: a quote-only pattern let
-    valid unquoted HTML (`<script src=https://evil.example/x.js>`) bypass
-    the standalone gate entirely."""
+    valid unquoted HTML (`<script src=https://cdn.example.com/lib.js>`)
+    bypass the standalone gate entirely."""
     html = "<script src=https://cdn.example.com/lib.js></script>"
     assert standalone_html_violations(html) == ["https://cdn.example.com/lib.js"]
+
+
+def test_a_greater_than_inside_a_quoted_attribute_does_not_truncate_the_tag():
+    """Round-8 code review: a hand-rolled `<[^>]+>` tag regex is not
+    quote-aware, so a `>` inside an EARLIER quoted attribute (e.g. an inline
+    arrow-function handler) truncated the "tag" and silently dropped every
+    attribute after it — including the very `src`/`class` this gate exists
+    to check."""
+    standalone = (
+        '<a onclick="items.map(i => i)" href="99-secret.html" class="nav-item">Secret</a>'
+    )
+    chrome = '<a href="02-dashboard.html" class="nav-item active">Dashboard</a>'
+    result = chrome_nav_targets_consistent(chrome, standalone)
+    assert result.ok is False
+    assert "99-secret.html" in result.detail
+
+    html = '<script onclick="i => i" src="https://cdn.example.com/lib.js"></script>'
+    assert standalone_html_violations(html) == ["https://cdn.example.com/lib.js"]
+
+
+def test_a_duplicated_attribute_resolves_first_wins():
+    """Round-8 code review: a dict built by iterating (name, value) pairs
+    collapses to LAST-wins on a duplicate attribute; the HTML spec (and
+    every browser) is FIRST-wins — a browser loading the first `src` while
+    the gate checks the second is a false pass in exactly the direction six
+    prior rounds were blocked on."""
+    html = '<script src="https://evil.example/x.js" src="local.js"></script>'
+    assert standalone_html_violations(html) == ["https://evil.example/x.js"]
