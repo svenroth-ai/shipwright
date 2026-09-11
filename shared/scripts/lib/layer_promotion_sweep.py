@@ -189,9 +189,19 @@ def run_layer_promotion_sweep(
             promoted=promoted, escalated=escalated,
         )
     pre_sha = pre_sha_result.stdout.strip()
+    if not pre_sha:
+        return LayerPromotionSweepResult(
+            status="error",
+            reason="pre_sha_rev_parse_failed: rev-parse HEAD exited 0 with empty stdout",
+            promoted=promoted, escalated=escalated,
+        )
 
     add = run_git_soft(["add", "--", *paths], cwd=worktree_path)
     if add.returncode != 0:
+        # `git add` with multiple pathspecs can partially stage before hitting
+        # the one that fails — roll back rather than leave that residue for a
+        # later, unrelated commit to pick up.
+        _rollback_staged(worktree_path, pre_sha)
         return LayerPromotionSweepResult(
             status="error", reason=f"add_failed: {add.stderr.strip()[:300]}",
             promoted=promoted, escalated=escalated,

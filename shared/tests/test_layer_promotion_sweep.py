@@ -184,6 +184,72 @@ def test_unreadable_pre_sha_bails_before_staging(monkeypatch, repo):
     assert staged.strip() == ""  # git add never ran
 
 
+def test_empty_pre_sha_stdout_bails_before_staging(monkeypatch, repo):
+    """PR #725 external review comment: a `rev-parse HEAD` that exits 0 with
+    empty stdout (malformed but not itself an error) must still be treated
+    as an unusable rollback target and bail before staging, same as an
+    actual rev-parse failure."""
+    report = {
+        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
+        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
+    }
+    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
+    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
+
+    real_run_git_soft = sweep_mod.run_git_soft
+
+    def _fake_run_git_soft(args, *a, **kw):
+        if args[:2] == ["rev-parse", "HEAD"]:
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        return real_run_git_soft(args, *a, **kw)
+
+    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+    assert result.status == "error"
+    assert "pre_sha_rev_parse_failed" in result.reason
+
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"], cwd=repo, capture_output=True, text=True,
+    ).stdout
+    assert staged.strip() == ""  # git add never ran
+
+
+def test_add_failure_rolls_back_partially_staged_residue(monkeypatch, repo):
+    """PR #725 external review: ``git add -- a b`` can stage ``a`` before
+    failing on ``b`` (e.g. a bad pathspec) — the add-failure path must roll
+    back exactly like the commit-failure path does, never leave the
+    partial stage for a later, unrelated commit to sweep up."""
+    report = {
+        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
+        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
+    }
+    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
+    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
+
+    real_run_git_soft = sweep_mod.run_git_soft
+
+    def _fake_run_git_soft(args, *a, **kw):
+        if args[:1] == ["add"]:
+            # Actually stage spec.md (the partial success), then report the
+            # whole invocation as failed — mirrors a real `git add` that
+            # stages some pathspecs before erroring on another.
+            real_run_git_soft(["add", "--", "spec.md"], *a, **kw)
+            return subprocess.CompletedProcess(
+                ["git", *args], 128, "", "fatal: pathspec did not match any files"
+            )
+        return real_run_git_soft(args, *a, **kw)
+
+    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "error"
+    assert "add_failed" in result.reason
+    porcelain = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True,
+    ).stdout
+    assert porcelain.strip() == ""  # rolled back — spec.md's partial stage did not survive
+
+
 def test_commit_failure_rolls_back_staged_residue(repo):
     """A failed commit must not leave staged residue behind for a later,
     unrelated commit to sweep up — forced via a real failing pre-commit
