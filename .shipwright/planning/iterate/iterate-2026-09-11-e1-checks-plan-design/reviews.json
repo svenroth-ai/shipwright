@@ -151,42 +151,15 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 5,
+      "findings_count": 2,
       "findings": [
         {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/scripts/lib/html_tag_scanner.py",
-          "line": 19,
-          "finding": "Comment/CDATA skipping was fail-open and Python-version-dependent: on the CI-pinned interpreter, an abruptly-closed empty comment (`<!-->`) swallows everything up to the NEXT `-->` as one comment, hiding a real `<script src=...>` tag inside it. Confirmed empirically.",
-          "suggestion": "Override handle_comment to rescan the comment body as tags too, so the gate fails closed regardless of the parser's comment-closing behavior.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/scripts/lib/design_gate_extras.py",
-          "line": 187,
-          "finding": "Deciding \"external\" by leading-slash count missed WHATWG special-scheme forms a real browser also resolves externally: `https:evil.example` (0 slashes) and `https:/evil.example` (1) both load from evil.example. Confirmed empirically both bypassed the gate.",
-          "suggestion": "Decide by scheme via urlparse instead of counting leading slashes.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
+          "severity": "low",
           "category": "test-coverage",
           "file": "shared/tests/test_design_gate_extras_stage2_review.py",
-          "line": 92,
-          "finding": "The whitespace-leading and backslash-authority URL hardening from round 8 had no regression test anywhere; reverting it left the suite green.",
-          "suggestion": "Add regression tests pinning both normalized forms, verified via revert-and-restore.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "shared/scripts/lib/html_tag_scanner.py",
-          "line": 27,
-          "finding": "`handle_startendtag = handle_starttag` is redundant — HTMLParser's default handle_startendtag already delegates to handle_starttag.",
-          "suggestion": "Delete the alias line.",
+          "line": 158,
+          "finding": "The empty-chrome-definition regression test used a valid non-nav HTML fixture, but the literally-empty string (what the caller's _read() yields for an unreadable file) shares the same code path and was not pinned.",
+          "suggestion": "Parametrize the test over both the empty string and the no-nav-markup HTML.",
           "source": "code-reviewer"
         },
         {
@@ -194,13 +167,13 @@
           "category": "readability",
           "file": "shared/scripts/lib/design_gate_extras.py",
           "line": 35,
-          "finding": "The try/except sibling-module import (needed because this module loads both as `lib.design_gate_extras` under pytest and as a bare top-level module via check-design-gates.py's sys.path manipulation) carried no comment naming the two loading contexts, unlike sibling modules using the same idiom.",
-          "suggestion": "Annotate each branch with which loading context it serves.",
+          "finding": "screen_declares_nav is a public cross-module import used by check-design-gates.py but was absent from __all__, unlike every other exported gate function.",
+          "suggestion": "Add screen_declares_nav to __all__.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-11T07:22:34.874162+00:00",
+      "completed_at": "2026-09-11T07:40:44.534513+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
