@@ -82,7 +82,8 @@ class LayerGap:
     layer: str
     priority: str
     source: str
-    reason: str        # MISSING | ambiguous_fanout
+    reason: str        # MISSING | ambiguous_fanout | BINDING_INCOMPLETE
+                       # | BINDING_INCOMPLETE_TRANSITION (binding-completeness gate only)
 
 
 def route_gap_severity(*, ambiguous: bool, source: str) -> str:

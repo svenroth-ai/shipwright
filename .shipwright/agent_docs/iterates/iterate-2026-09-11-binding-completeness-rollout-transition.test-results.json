@@ -1,0 +1,141 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-11-binding-completeness-rollout-transition",
+    "date": "2026-09-11",
+    "unit": {
+      "status": "passed",
+      "passed": 10481,
+      "total": 10514
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure Python verifier logic + git-history resolution inside the Shipwright framework itself; no startable web/cli/api surface for a target project exists to run against (same as the original P3.3 change and every sibling gate in this family) -- verification is the unit + real-git integration test suite itself."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A behaviour-changed, previously-explicit FR whose value at HEAD is a superset of the rollout snapshot's value routes ADVISORY (source-agnostic)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_binding_transition.py::test_transition_grace_downgrades_an_unchanged_explicit_binding, ::test_transition_grace_is_source_agnostic_for_a_promoted_binding PASSED"
+        },
+        {
+          "behavior": "A widening edit since rollout still gets grace",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_transition.py::test_transition_grace_survives_a_widening_edit_since_rollout PASSED"
+        },
+        {
+          "behavior": "A narrowing edit since rollout forfeits grace",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_transition.py::test_transition_grace_withheld_when_binding_narrowed_since_rollout PASSED"
+        },
+        {
+          "behavior": "An empty rollout-snapshot value is not a value that already existed (vacuous-subset guard)",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_transition.py::test_transition_grace_withheld_when_rollout_value_was_empty PASSED"
+        },
+        {
+          "behavior": "FR absent from the rollout snapshot, or no rollout snapshot at all, forfeits grace",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_transition.py::test_transition_grace_withheld_when_fr_absent_from_rollout_snapshot, ::test_transition_grace_withheld_with_no_rollout_snapshot_at_all PASSED"
+        },
+        {
+          "behavior": "A repurposed FR id (title mismatch) does not inherit a predecessor's grace",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_transition.py::test_transition_grace_withheld_when_title_shows_fr_was_repurposed PASSED"
+        },
+        {
+          "behavior": "A collision gap never consults the rollout snapshot; pure binding_predates_rollout matrix",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_transition.py::test_transition_grace_never_applies_to_a_collision_gap, ::test_binding_predates_rollout_pure_helper_matrix PASSED"
+        },
+        {
+          "behavior": "Wrapper wiring: a HARD gap downgrades to advisory end-to-end via layer_coverage_binding.py",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_binding_wrapper.py::test_wrapper_transition_grace_downgrades_hard_gap_to_advisory PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit finds a commit strictly before / exactly at the cutoff instant, on real pinned-date git history",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_rollout.py::test_resolve_rollout_commit_finds_a_commit_strictly_before_cutoff, ::test_resolve_rollout_commit_accepts_a_commit_exactly_at_the_boundary_instant PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None for a repo born entirely after rollout (greenfield, AC3)",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_rollout.py::test_resolve_rollout_commit_none_when_repo_born_entirely_after_rollout PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None for a genuinely shallow clone (verified via --is-shallow-repository)",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_rollout.py::test_resolve_rollout_commit_none_for_a_shallow_clone PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None for an empty/garbage commit hash",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_rollout.py::test_resolve_rollout_commit_none_for_empty_commit_hash PASSED"
+        },
+        {
+          "behavior": "rollout_manifest builds a snapshot from the resolved pre-rollout commit, keyed by FR id",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_rollout.py::test_rollout_manifest_builds_a_snapshot_from_the_resolved_pre_rollout_commit PASSED"
+        },
+        {
+          "behavior": "rollout_manifest is evidence-independent for required_layers/required_layers_source",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_rollout.py::test_rollout_build_is_evidence_independent_for_required_layers PASSED"
+        },
+        {
+          "behavior": "rollout_manifest returns None when no rollout commit resolves; caches by (root, commit)",
+          "disposition": "tested",
+          "evidence": "test_layer_coverage_rollout.py::test_rollout_manifest_none_when_no_rollout_commit_resolves, ::test_rollout_manifest_caches_by_root_and_commit PASSED"
+        },
+        {
+          "behavior": "Empirical dry-run: synthetic fixture shows a real 2->1 hard-count delta (AC6)",
+          "disposition": "tested",
+          "evidence": "dry_run_fixture.py executed: BEFORE (rollout=None) hard=2 advisory=0 -> AFTER (transition rule applied) hard=1 advisory=1"
+        }
+      ],
+      "counts": {
+        "testable": 16,
+        "tested": 16,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-binding-completeness-rollout-transition",
+    "commit": "1e65e0fa74b102f725b082f5d29961a9764f812c",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
