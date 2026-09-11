@@ -22,6 +22,7 @@ from ._layer_coverage_core import (
     CrossLayerVerdict,
     LayerGap,
     _active_nodes,
+    _norm_title,
     behavior_changed_keys,
     collision_display_ids,
     criteria_changed_keys,
@@ -69,8 +70,90 @@ def _highest_ok_layer(coverage: dict) -> str | None:
     return max(ok_layers, key=lambda layer: _LAYER_RANK.get(layer, -1))
 
 
+def binding_predates_rollout(rollout: dict | None, key: str, head_node: dict) -> bool:
+    """True when ``head_node``'s declared ``required_layers`` at ``key`` is
+    already covered by what THIS repo's own history shows for that same
+    requirement at check_binding_completeness's own rollout instant
+    (trg-aedcfe7b) — the one-time transition grace for an explicit binding
+    that predates the gate, so an unrelated later touch does not HARD-block
+    on staleness the gate could never have flagged when the binding was
+    written.
+
+    **Deliberately source-agnostic.** This does NOT require the rollout
+    snapshot's ``required_layers_source`` to already be ``"explicit"`` —
+    only that the VALUE was already there. The measured motivating
+    population (external plan review, P3.3 follow-up, glm) is exactly the
+    case this would otherwise miss: a binding promoted ``inferred_legacy`` ->
+    ``explicit`` on/around the gate's own rollout day, whose declared layers
+    did not change at the moment of promotion. Gating grace on the
+    HISTORICAL source label would deny it to precisely the FRs this rule
+    exists to protect, since a value-preserving relabel is not the operator
+    "writing a new binding under the gate's watch" — it is metadata catching
+    up with a fact that already existed. A binding minted or NARROWED after
+    rollout is still judged normally: it fails the subset check below.
+
+    **Monotonic-improvement-preserving, not exact-match.** Grace survives a
+    post-rollout edit that WIDENS the declared layers (the rollout value is
+    a subset of, not merely equal to, the current one) — an exact-match rule
+    would otherwise punish an operator who partially improved a stale
+    binding harder than one who left it untouched (internal plan review,
+    opus). Only a NARROWING or an unrelated value replacement forfeits
+    grace. This also means an evidence-gated auto-promotion
+    (``promote_required_layers.py``, P3.5) that only ever widens a binding's
+    declared layers cannot itself revoke grace it would otherwise carry.
+
+    **Requires a genuinely NON-EMPTY rollout value** (external code review,
+    P3.3 follow-up, openai, HIGH): the empty set is a subset of every set, so
+    an FR that existed at rollout with NO declared ``required_layers`` at all
+    would otherwise vacuously satisfy the subset check against ANY binding
+    minted at head — granting grace to a binding that is, in substance,
+    brand new. An empty rollout value means no binding existed yet, which is
+    the same "genuinely new" case an absent rollout key already denies grace
+    to (see the class docstring above) — it must not be treated as a value
+    that "already existed".
+
+    **Title-matched, not key-matched alone.** A manifest key can outlive the
+    requirement it names (a folded/repurposed FR keeping its id per
+    ``shared/fr-authoring.md`` §3) — comparing :func:`_norm_title` too (the
+    same identity signal :func:`behavior_changed_keys` already trusts) stops
+    an unrelated predecessor's rollout-era value from being credited to a
+    same-key successor requirement.
+
+    **Disclosed trade-off** (internal plan review, opus, medium): exact
+    title match is a blunter instrument than strictly needed for the
+    repurposed-FR case above — an ordinary wording tweak to the FR's
+    description (a typo fix, a clarity edit, unrelated to the binding
+    itself) forfeits grace forever, even though the ``required_layers``
+    value genuinely still predates the gate. Accepted rather than fixed:
+    the FR-authoring convention has no separate immutable identity token to
+    compare instead (a repurposed id keeps its OWN id, by definition), and
+    ``behavior_changed_keys`` already treats a title edit as a real
+    behaviour-change signal for the same reason — the two would need to
+    diverge to fix this, adding a second identity notion this gate family
+    does not otherwise have.
+
+    ``rollout is None`` (no snapshot resolvable — see
+    ``_layer_coverage_rollout``'s module docstring for why that is the safe
+    default, not an error) grants no grace, same as a key absent from the
+    rollout snapshot (the FR did not exist there — genuinely minted after
+    rollout)."""
+    if rollout is None:
+        return False
+    rnode = (rollout.get("requirements") or {}).get(key)
+    if not isinstance(rnode, dict):
+        return False
+    if _norm_title(rnode) != _norm_title(head_node):
+        return False
+    rollout_layers = set(rnode.get("required_layers") or ())
+    if not rollout_layers:
+        return False  # an empty value is not a value that "already existed" — see above
+    head_layers = set(head_node.get("required_layers") or ())
+    return rollout_layers <= head_layers
+
+
 def evaluate_binding_completeness(
     base: dict, head: dict, ac_changed_ids: set[str] | None = None,
+    rollout: dict | None = None,
 ) -> CrossLayerVerdict:
     """Each behaviour-changed FR's binding must include the highest executed-passing
     layer this run's evidence shows (P3.3).
@@ -85,6 +168,11 @@ def evaluate_binding_completeness(
     legacy source is ADVISORY (the pre-rollout valve — today's entire manifest is
     ``inferred_legacy``), and a collision display id is ADVISORY regardless
     (fail-closed vs a false-red on a structurally-ambiguous id).
+
+    A HARD-routed gap gets one more chance: :func:`binding_predates_rollout`
+    against the optional ``rollout`` snapshot (trg-aedcfe7b's transition
+    rule). ``rollout`` defaults to ``None`` — every pre-existing call site,
+    including every test written before this rule existed, is unaffected.
 
     No gap when ``required_layers`` already names a layer at least as high as
     the highest executed-passing one, or when the node has no executed-passing
@@ -115,12 +203,14 @@ def evaluate_binding_completeness(
         source = node.get("required_layers_source") or "__missing__"
         priority = node.get("priority", "Must")
         ambiguous = disp in collisions
-        gap = LayerGap(
-            disp, key, highest_ok, priority, source,
-            "ambiguous_fanout" if ambiguous else "BINDING_INCOMPLETE",
-        )
-        getattr(verdict, route_gap_severity(ambiguous=ambiguous, source=source)).append(gap)
+        severity = route_gap_severity(ambiguous=ambiguous, source=source)
+        reason = "ambiguous_fanout" if ambiguous else "BINDING_INCOMPLETE"
+        if severity == "hard" and binding_predates_rollout(rollout, key, node):
+            severity = "advisory"
+            reason = "BINDING_INCOMPLETE_TRANSITION"
+        gap = LayerGap(disp, key, highest_ok, priority, source, reason)
+        getattr(verdict, severity).append(gap)
     return verdict
 
 
-__all__ = ["evaluate_binding_completeness"]
+__all__ = ["binding_predates_rollout", "evaluate_binding_completeness"]
