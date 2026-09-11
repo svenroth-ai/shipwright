@@ -152,7 +152,14 @@ def findings_addressed(decision_log_text: str, split_name: str, findings_count: 
 # #11 — E2E journeys named
 # --------------------------------------------------------------------------- #
 
-_FLOW_HEADING_RE = re.compile(r"^\s{0,3}#{2,6}\s+.*flow.*$", re.IGNORECASE | re.MULTILINE)
+#: Stage-2 code review, iterate-2026-09-11-e1-checks-plan-design: the
+#: original `.*flow.*` pattern matched ANY heading containing "flow" as a
+#: substring (`## Workflow Notes`, `## Overflow Handling`), not a numbered
+#: journey — silently defeating the guarantee. `\bFlow\s+\d+` requires
+#: "Flow" to start a word (so it can't match inside "Workflow"/"Overflow")
+#: and be followed by a number, matching the `### Flow N: ...` shape the
+#: docs actually promise.
+_FLOW_HEADING_RE = re.compile(r"^\s{0,3}#{2,6}\s+.*\bFlow\s+\d+\b", re.IGNORECASE | re.MULTILINE)
 
 
 def e2e_journeys_named(e2e_plan_path: Path, expect_e2e: bool) -> GateResult:

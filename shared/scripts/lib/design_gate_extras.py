@@ -128,14 +128,18 @@ def flows_present_for_multi_screen_app(screen_count: int, flow_count: int) -> Ga
 # #5 — shared chrome from one definition
 # --------------------------------------------------------------------------- #
 
+#: Either quote style — double-quote-only false-PASSed single-quoted nav
+#: markup via the "no nav markup" exempt branch (Stage-2 review; same gap
+#: `_EXTERNAL_REF_RE` above was hardened against). Named groups: each
+#: alternative needs its own quote backreference.
 _NAV_HREF_RE = re.compile(
-    r'class="(?:nav-item|topnav-link)[^"]*"[^>]*href="([^"]+)"'
-    r"|href=\"([^\"]+)\"[^>]*class=\"(?:nav-item|topnav-link)[^\"]*\"",
+    r'''class=(?P<q1>["'])(?:nav-item|topnav-link)[^"']*(?P=q1)[^>]*href=(?P<q2>["'])(?P<href_a>[^"']+)(?P=q2)'''
+    r'''|href=(?P<q3>["'])(?P<href_b>[^"']+)(?P=q3)[^>]*class=(?P<q4>["'])(?:nav-item|topnav-link)[^"']*(?P=q4)''',
 )
 
 
 def _nav_targets(html: str) -> set[str]:
-    return {a or b for a, b in _NAV_HREF_RE.findall(html) if (a or b)}
+    return {m.group("href_a") or m.group("href_b") for m in _NAV_HREF_RE.finditer(html)}
 
 
 def screen_declares_nav(html: str) -> bool:
@@ -235,15 +239,14 @@ def uploads_preserved(project_root: Path, uploads_dir: Path) -> GateResult:
     if proc.returncode != 0:
         return GateResult(True, "no git evidence available")
 
-    # Explicitly parenthesised (external code review, iterate-2026-09-11-
-    # e1-checks-plan-design flagged the un-parenthesised `and`-before-`or`
-    # as one reorder away from misreading): X in "MU" (staged modify or
-    # unmerged conflict) OR Y == 'M' (unstaged modify) is "modified";
-    # unquote a C-quoted path (git wraps a path containing a space or
-    # non-ASCII byte in double quotes).
+    # X in "MU" (staged modify/unmerged) OR (Y == 'M' AND X != 'A') is
+    # "modified" — X != 'A' excludes "AM" (staged-add then edited again
+    # pre-commit), still a never-committed file, not "supplied" (Stage-2
+    # review). Unquote a C-quoted path (git double-quotes a space/non-ASCII
+    # byte in a path).
     modified = [
         line[3:].strip().strip('"') for line in proc.stdout.splitlines()
-        if line and ((line[0] in "MU") or (len(line) > 1 and line[1] == "M"))
+        if line and ((line[0] in "MU") or (len(line) > 1 and line[1] == "M" and line[0] != "A"))
     ]
     if modified:
         return GateResult(

@@ -188,3 +188,19 @@ def test_a_file_naming_a_flow_passes(tmp_path):
     )
     result = e2e_journeys_named(p, expect_e2e=True)
     assert result.ok is True
+
+
+def test_a_flow_shaped_word_with_no_number_does_not_count(tmp_path):
+    """Stage-2 code review, iterate-2026-09-11-e1-checks-plan-design: the
+    original `.*flow.*` regex matched any heading containing "flow" as a
+    substring ("## Workflow Notes", "## Overflow Handling"), not a
+    numbered journey — silently defeating the guarantee this gate exists
+    to add."""
+    p = tmp_path / "claude-plan-e2e.md"
+    p.write_text(
+        "# E2E Test Plan\n\n## Workflow Notes\n\n## Overflow Handling\n- steps\n",
+        encoding="utf-8",
+    )
+    result = e2e_journeys_named(p, expect_e2e=True)
+    assert result.ok is False
+    assert "names no flow" in result.detail
