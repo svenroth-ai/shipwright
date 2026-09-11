@@ -15,6 +15,17 @@ def plugin_root():
 
 
 @pytest.fixture
+def no_e2e_plugin_root(tmp_path):
+    """A minimal plugin root with E2E disabled — for tests that need a
+    non-None --plugin-root (now required for --gate sections/all) but are
+    not themselves testing the E2E-journeys check."""
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "config.json").write_text('{"e2e_test_plan": {"enabled": false}}\n', encoding="utf-8")
+    return root
+
+
+@pytest.fixture
 def tmp_planning(tmp_path):
     """Create a temporary planning directory with sections subdir."""
     planning = tmp_path / ".shipwright" / "planning"

@@ -16,15 +16,11 @@ not a gate — this is the command, so Step 6's "STOP" and Step 9's
     the **key-honesty** check (FR-01.03 #1): if external-review keys are
     actually available right now, the marker may not record a silent skip.
 
-``--gate sections`` (Step 9)
-    Section files exist for the manifest; the numbering agrees with the
-    declared dependencies; every requirement lands in a section; every
-    section traces back to a requirement; every section says what it is for,
-    lists at least two steps, states how it is tested, and names its
-    prerequisites (#9). Also runs: a planning decision was logged with its
-    reasoning (#8); every recorded review finding — external or internal,
-    whichever carried the gate — was addressed or rejected-with-reason
-    (#10); a UI project's E2E plan names at least one flow (#11).
+``--gate sections`` (Step 9, requires ``--plugin-root`` — usage error without it)
+    Manifest/dependency/coverage/trace/quality checks (#9); a planning
+    decision was logged (#8); every review finding — external or internal,
+    whichever carried the gate — addressed or rejected-with-reason (#10);
+    a UI project's E2E plan names >=1 flow, via config.json (#11).
 
 ``--gate boundary`` (#7 — planning writes no production code)
     Every path this session changed must fall under an allowed planning-phase
@@ -94,8 +90,7 @@ PLAN_ALLOWED_PREFIXES = (
 
 
 def _gate(name: str, ok: bool, detail: str, problems: list[str] | None = None) -> dict:
-    """A failing gate always names at least one problem — an empty list would
-    read as "nothing wrong" to anyone rendering the result."""
+    """A failing gate always names >=1 problem — else it reads as clean."""
     if not ok and not problems:
         problems = [detail]
     return {"gate": name, "ok": ok, "detail": detail, "problems": problems or []}
@@ -176,7 +171,7 @@ def _marker_findings_count(planning_dir: Path) -> int:
         return 0
 
 
-def sections_gate(planning_dir: Path, project_root: Path, plugin_root: Path | None) -> dict:
+def sections_gate(planning_dir: Path, project_root: Path, plugin_root: Path) -> dict:
     """Step 9 — everything that must be true of the section set."""
     parsed = parse_section_manifest(planning_dir / "plan.md")
     if not parsed.is_valid:
@@ -213,14 +208,12 @@ def sections_gate(planning_dir: Path, project_root: Path, plugin_root: Path | No
     if not findings.ok:
         problems.append(findings.detail)
 
-    # FR-01.03 #11 — a UI project's E2E plan names its journeys. Only checked
-    # when a plugin root was given: without it there is no config to decide
-    # whether this project even expects an E2E plan.
-    if plugin_root is not None:
-        expect_e2e = is_e2e_enabled(load_global_config(plugin_root))
-        e2e = e2e_journeys_named(planning_dir / "claude-plan-e2e.md", expect_e2e)
-        if not e2e.ok:
-            problems.append(e2e.detail)
+    # FR-01.03 #11 — a UI project's E2E plan names its journeys. main() has
+    # already refused to call this without a plugin_root (usage error).
+    expect_e2e = is_e2e_enabled(load_global_config(plugin_root))
+    e2e = e2e_journeys_named(planning_dir / "claude-plan-e2e.md", expect_e2e)
+    if not e2e.ok:
+        problems.append(e2e.detail)
 
     return _gate(
         "sections", not problems,
@@ -260,8 +253,9 @@ def main() -> int:
     )
     parser.add_argument(
         "--plugin-root", default=None,
-        help="Plugin root, for the E2E-journeys check (#11) to read config.json's "
-             "e2e_test_plan setting. Omitted → that sub-check is skipped.",
+        help="Plugin root, for gate #11 to read config.json's e2e_test_plan "
+             "setting. Required for --gate sections/all (usage error if "
+             "omitted); the boundary-only invocation has no use for it.",
     )
     parser.add_argument("--gate", choices=GATES, default="all")
     args = parser.parse_args()
@@ -276,6 +270,13 @@ def main() -> int:
 
     project_root = Path(args.project_root).resolve()
     plugin_root = Path(args.plugin_root).resolve() if args.plugin_root else None
+    if plugin_root is None and args.gate in ("sections", "all"):
+        print(json.dumps({
+            "success": False, "error": "plugin_root_required",
+            "message": "--plugin-root is required for --gate sections/all: "
+                       "gate #11 must not silently skip (external review).",
+        }, indent=2))
+        return 2
 
     results = []
     if args.gate in ("review", "all"):

@@ -18,8 +18,8 @@ from tests._check_plan_gates_support import SCRIPT, _problems, run_gates
 # test-function parameters (ruff F811).
 
 
-def test_a_clean_plan_passes_every_gate(planning):
-    code, out = run_gates(planning)
+def test_a_clean_plan_passes_every_gate(planning, no_e2e_plugin_root):
+    code, out = run_gates(planning, plugin_root=no_e2e_plugin_root)
     assert code == 0, out
     assert out["success"] is True
     assert out["failed"] == []
@@ -149,12 +149,29 @@ def test_a_skip_with_no_key_available_is_not_a_false_skip(planning):
     assert run_gates(planning, "review")[0] == 0
 
 
-def test_gate_selection_runs_only_what_was_asked_for(planning):
+def test_gate_selection_runs_only_what_was_asked_for(planning, no_e2e_plugin_root):
     assert [g["gate"] for g in run_gates(planning, "review")[1]["gates"]] == ["review"]
-    assert [g["gate"] for g in run_gates(planning, "sections")[1]["gates"]] == ["sections"]
-    assert [g["gate"] for g in run_gates(planning, "all")[1]["gates"]] == [
-        "review", "sections", "boundary",
-    ]
+    assert [
+        g["gate"] for g in run_gates(planning, "sections", plugin_root=no_e2e_plugin_root)[1]["gates"]
+    ] == ["sections"]
+    assert [
+        g["gate"] for g in run_gates(planning, "all", plugin_root=no_e2e_plugin_root)[1]["gates"]
+    ] == ["review", "sections", "boundary"]
+
+
+def test_plugin_root_is_required_for_the_sections_and_all_gates(planning):
+    """External code review, iterate-2026-09-11-e1-checks-plan-design: a
+    silently-optional --plugin-root let gate #11 (E2E journeys) skip without
+    a trace instead of failing the usage."""
+    code, out = run_gates(planning, "sections")
+    assert code == 2
+    assert out["error"] == "plugin_root_required"
+    code, out = run_gates(planning, "all")
+    assert code == 2
+    assert out["error"] == "plugin_root_required"
+    # boundary/review alone still don't need it.
+    assert run_gates(planning, "review")[0] == 0
+    assert run_gates(planning, "boundary")[0] == 0
 
 
 # --- the boundary gate (FR-01.03 #7) ----------------------------------------

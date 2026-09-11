@@ -1,5 +1,4 @@
-"""The in-session design gates — FR-01.04's mechanisable criteria, as a
-command (mirror of shipwright-plan's ``check-plan-gates.py`` tests)."""
+"""The in-session design gates — FR-01.04's mechanisable criteria, as a command."""
 
 import json
 import subprocess
@@ -225,8 +224,9 @@ ROUND_FILE = (
 )
 
 
-def test_no_round_file_is_a_no_op(project):
-    assert run_gates(project, "iteration")[0] == 0
+def test_gate_all_still_no_ops_without_round(project):
+    """Explicit --gate iteration's usage error is in the tier3-review file."""
+    assert run_gates(project, "all")[0] == 0
 
 
 def test_a_flagged_screen_left_untouched_fails(project, tmp_path):

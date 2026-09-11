@@ -256,6 +256,15 @@ def main() -> int:
 
     designs_dir = project_root / DESIGNS_DIRNAME
     round_path = (project_root / args.round).resolve() if args.round else None
+    if round_path is None and args.gate == "iteration":
+        print(json.dumps({
+            "success": False, "error": "round_required",
+            "message": "--round is required for an explicit --gate iteration "
+                       "invocation — silently no-op'ing here would bypass the "
+                       "flagged-screen check. --gate all still no-ops without "
+                       "--round (Option A finalization has no round file yet).",
+        }, indent=2))
+        return 2
 
     results = []
     if args.gate in ("fr-coverage", "all"):

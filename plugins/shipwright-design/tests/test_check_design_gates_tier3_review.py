@@ -51,3 +51,18 @@ def test_a_relative_round_path_resolves_against_project_root_not_cwd(tmp_path):
     out = json.loads(proc.stdout)
     problems = next(g for g in out["gates"] if g["gate"] == "iteration")["problems"]
     assert "01-login.html" in problems[0]
+
+
+def test_an_explicit_iteration_gate_without_round_is_a_usage_error(tmp_path):
+    """External code review, iterate-2026-09-11-e1-checks-plan-design: an
+    explicit --gate iteration used to silently no-op without --round,
+    bypassing the flagged-screen check instead of failing the usage. --gate
+    all must still no-op (Option A finalization has no round file yet) —
+    covered separately in test_check_design_gates.py."""
+    project = tmp_path / "project"
+    project.mkdir()
+    cmd = [sys.executable, SCRIPT, "--project-root", str(project), "--gate", "iteration"]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 2, f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+    out = json.loads(proc.stdout)
+    assert out["error"] == "round_required"
