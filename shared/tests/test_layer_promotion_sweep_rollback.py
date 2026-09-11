@@ -15,6 +15,7 @@ import pytest
 
 import lib.layer_promotion_sweep as sweep_mod
 from lib.layer_promotion_sweep import run_layer_promotion_sweep
+from lib.layer_promotion_sweep_result import sweep_warnings
 
 
 def _git(args, cwd):
@@ -64,6 +65,7 @@ def _stub_run(*, promote_returncode=0, promote_stdout="{}", promote_stderr=""):
             '{"promoted": [{"fr": "FR-01.01"}], "written_spec_paths": [1]}',
             id="written_spec_paths-not-strings",
         ),
+        pytest.param('{"promoted": [{"fr": 1}]}', id="fr-not-a-string"),
     ],
 )
 def test_syntactically_valid_but_malformed_report_is_a_reported_error(monkeypatch, repo, bad_stdout):
@@ -201,6 +203,36 @@ def test_add_failure_rolls_back_partially_staged_residue(monkeypatch, repo):
         ["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True,
     ).stdout
     assert porcelain.strip() == ""  # rolled back — spec.md's partial stage did not survive
+
+
+def test_add_failure_with_a_failing_rollback_reports_rollback_failed(monkeypatch, repo):
+    """External review, PR #725: ``_rollback_staged`` discarded the reset's
+    own returncode, so a rollback that ITSELF failed after ``add_failed``
+    still reported an ordinary ``error`` — implying a clean rollback that
+    never happened. Must escalate to the loud ``rollback_failed`` instead,
+    exactly like the delivery-side reset check already does."""
+    report = {
+        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
+        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
+    }
+    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
+    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
+
+    real_run_git_soft = sweep_mod.run_git_soft
+
+    def _fake_run_git_soft(args, *a, **kw):
+        if args[:1] == ["add"]:
+            return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: pathspec did not match any files")
+        if args[:2] == ["reset", "--hard"]:
+            return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: reset failed")
+        return real_run_git_soft(args, *a, **kw)
+
+    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "rollback_failed"
+    assert "add_failed" in result.reason
+    assert any("CRITICAL" in w for w in sweep_warnings(result))
 
 
 def test_commit_failure_rolls_back_staged_residue(repo):

@@ -127,8 +127,10 @@ def _extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
     if not isinstance(report, dict):
         raise ValueError(f"report is not a JSON object (got {type(report).__name__})")
     raw_promoted = report.get("promoted") or []
-    if not isinstance(raw_promoted, list) or not all(isinstance(d, dict) for d in raw_promoted):
-        raise ValueError("'promoted' is not a list of objects")
+    if not isinstance(raw_promoted, list) or not all(
+        isinstance(d, dict) and isinstance(d.get("fr", ""), str) for d in raw_promoted
+    ):
+        raise ValueError("'promoted' is not a list of objects with a string 'fr'")
     raw_escalated = report.get("escalated") or []
     if not isinstance(raw_escalated, list):
         raise ValueError("'escalated' is not a list")
@@ -138,14 +140,29 @@ def _extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
     return [d.get("fr", "") for d in raw_promoted], len(raw_escalated), written_paths
 
 
-def _rollback_staged(worktree_path: Path, pre_sha: str) -> None:
-    """Best-effort undo of a staged-but-not-committed write, so a failed
-    ``add``/``commit`` never leaves residue for a later, unrelated commit to
-    sweep up. Deliberately swallows its own outcome: the caller already
-    returns ``status="error"`` either way, and this is strictly better-effort
-    cleanup on top of that, never a second failure mode to report."""
-    if pre_sha:
-        run_git_soft(["reset", "--hard", pre_sha], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
+def _rollback_staged(worktree_path: Path, pre_sha: str) -> bool:
+    """Undo a staged-but-not-committed write, so a failed ``add``/``commit``
+    never leaves residue for a later, unrelated commit to sweep up. Returns
+    whether the reset itself succeeded — a caller must escalate to
+    ``rollback_failed`` when it did not, since an ordinary ``error`` status
+    implies a clean rollback that never actually happened (external review,
+    PR #725)."""
+    if not pre_sha:
+        return False
+    reset = run_git_soft(["reset", "--hard", pre_sha], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
+    return reset.returncode == 0
+
+
+def _error_after_rollback(
+    worktree_path: Path, pre_sha: str, reason: str, promoted: list[str], escalated: int,
+) -> LayerPromotionSweepResult:
+    """Roll back staged/committed residue and report the outcome: ``error``
+    if the rollback itself succeeded, the loud ``rollback_failed`` if it did
+    not — the one outcome where the residue may still be sitting on this
+    branch."""
+    ok = _rollback_staged(worktree_path, pre_sha)
+    status = "error" if ok else "rollback_failed"
+    return LayerPromotionSweepResult(status=status, reason=reason, promoted=promoted, escalated=escalated)
 
 
 def run_layer_promotion_sweep(
@@ -225,10 +242,8 @@ def run_layer_promotion_sweep(
         # `git add` with multiple pathspecs can partially stage before hitting
         # the one that fails — roll back rather than leave that residue for a
         # later, unrelated commit to pick up.
-        _rollback_staged(worktree_path, pre_sha)
-        return LayerPromotionSweepResult(
-            status="error", reason=f"add_failed: {add.stderr.strip()[:300]}",
-            promoted=promoted, escalated=escalated,
+        return _error_after_rollback(
+            worktree_path, pre_sha, f"add_failed: {add.stderr.strip()[:300]}", promoted, escalated,
         )
 
     # Gate the commit on a REAL staged delta (mirrors lib.sweep_outbox's same
@@ -236,11 +251,7 @@ def run_layer_promotion_sweep(
     # nothing staged even though the tool reported a write.
     staged = run_git_soft(["diff", "--cached", "--quiet", "--", *paths], cwd=worktree_path)
     if staged.returncode == TIMEOUT_RETURNCODE:
-        _rollback_staged(worktree_path, pre_sha)
-        return LayerPromotionSweepResult(
-            status="error", reason="git_timeout: diff --cached",
-            promoted=promoted, escalated=escalated,
-        )
+        return _error_after_rollback(worktree_path, pre_sha, "git_timeout: diff --cached", promoted, escalated)
     if staged.returncode == 0:
         return LayerPromotionSweepResult(status="no_change", promoted=promoted, escalated=escalated)
     if staged.returncode != 1:
@@ -248,11 +259,10 @@ def run_layer_promotion_sweep(
         # exists" — any OTHER nonzero (128 = a real git error, e.g. a corrupt
         # index) is a genuine failure, not a delta, and must roll back rather
         # than proceed to commit whatever got staged (external review, PR #725).
-        _rollback_staged(worktree_path, pre_sha)
-        return LayerPromotionSweepResult(
-            status="error",
-            reason=f"diff_cached_failed: exit {staged.returncode}: {staged.stderr.strip()[:300]}",
-            promoted=promoted, escalated=escalated,
+        return _error_after_rollback(
+            worktree_path, pre_sha,
+            f"diff_cached_failed: exit {staged.returncode}: {staged.stderr.strip()[:300]}",
+            promoted, escalated,
         )
 
     subject = f"chore(compliance): promote {len(promoted)} FR Layer(s) from confirmed CI evidence"
@@ -260,15 +270,10 @@ def run_layer_promotion_sweep(
         ["commit", "-m", subject, "--", *paths], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
     )
     if commit.returncode == TIMEOUT_RETURNCODE:
-        _rollback_staged(worktree_path, pre_sha)
-        return LayerPromotionSweepResult(
-            status="error", reason="commit_timeout", promoted=promoted, escalated=escalated,
-        )
+        return _error_after_rollback(worktree_path, pre_sha, "commit_timeout", promoted, escalated)
     if commit.returncode != 0:
-        _rollback_staged(worktree_path, pre_sha)
-        return LayerPromotionSweepResult(
-            status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}",
-            promoted=promoted, escalated=escalated,
+        return _error_after_rollback(
+            worktree_path, pre_sha, f"commit_failed: {commit.stderr.strip()[:300]}", promoted, escalated,
         )
 
     status, reason, pr_url, branch = deliver_as_own_pr(worktree_path, default_branch, pre_sha, subject)
