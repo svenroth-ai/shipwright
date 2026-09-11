@@ -116,6 +116,7 @@ def test_the_drift_detector_closes_a_parked_drift_entry(
 # phase-quality backlog
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC08")
 def test_the_phase_quality_backlog_closes_a_parked_entry(
     tmp_path: Path,
 ) -> None:

@@ -261,7 +261,6 @@ def test_sorting_does_not_mutate_the_caller_list() -> None:
     assert [i["id"] for i in items] == ["trg-b", "trg-a"]
 
 
-@pytest.mark.covers("FR-01.14/AC08")
 def test_a_producer_may_close_an_open_or_a_parked_entry() -> None:
     """AC-10: one declared answer, so a producer added later cannot hold a
     different one. `dismissed` and `promoted` are NOT in it — a producer never
