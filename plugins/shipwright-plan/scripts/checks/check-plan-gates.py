@@ -22,9 +22,9 @@ not a gate — this is the command, so Step 6's "STOP" and Step 9's
     section traces back to a requirement; every section says what it is for,
     lists at least two steps, states how it is tested, and names its
     prerequisites (#9). Also runs: a planning decision was logged with its
-    reasoning (#8); every recorded external-review finding was addressed or
-    rejected-with-reason (#10); a UI project's E2E plan names at least one
-    flow (#11).
+    reasoning (#8); every recorded review finding — external or internal,
+    whichever carried the gate — was addressed or rejected-with-reason
+    (#10); a UI project's E2E plan names at least one flow (#11).
 
 ``--gate boundary`` (#7 — planning writes no production code)
     Every path this session changed must fall under an allowed planning-phase
