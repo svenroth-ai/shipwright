@@ -323,7 +323,8 @@ existing tests, no new harness). That owner decision, not t1's own citation, is 
 deviation authorized. Triage card `trg-ff6ea5f0` (amended alongside this correction) records
 t1 as resolved-by-owner, distinct from t4/t5/t8/t9, whose own confirmation is expected but not
 yet finalized as of this writing. The F3 decision-drop for `iterate-2026-09-11-t1-iterate-surface`
-carries the same reasoning in its `consequences` field.
+carries the same reasoning in its `decision` and `rationale` fields (its `consequences` field
+carries only the corrected AC-count/unbound-count numbers).
 
 **Second-order fix this exposed:** binding those two ACs' tags requires
 `.shipwright/compliance/test-traceability.json` to be regenerated from a tree the collector
