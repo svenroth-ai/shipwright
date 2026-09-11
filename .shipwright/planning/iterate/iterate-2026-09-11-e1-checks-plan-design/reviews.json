@@ -151,15 +151,33 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_phase_write_boundary.py",
+          "line": 30,
+          "finding": "Section banner still read \"find_boundary_violations — pure prefix logic\" after the fix added exact-file matching semantics.",
+          "suggestion": "Rename the banner to reflect both matching modes.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-design/tests/test_check_design_gates.py",
+          "line": 176,
+          "finding": "The diff bundles the allowlist bypass fix with an unrelated CodeQL-false-positive assertion rewrite in a different plugin's test.",
+          "suggestion": "Non-blocking; both hunks trace to review findings from the same iterate.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-11T03:59:27.585926+00:00",
+      "completed_at": "2026-09-11T05:47:55.849195+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null,
-      "model_tier": "opus"
+      "raw_excerpt": null
     },
     "doubt": {
       "review_type": "doubt",
