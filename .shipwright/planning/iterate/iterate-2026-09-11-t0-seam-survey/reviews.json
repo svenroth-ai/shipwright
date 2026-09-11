@@ -191,12 +191,12 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-10T23:28:38.908556+00:00",
-      "disposition": "delegated_to_orchestrator — the sub-iterate runner's tools (Read, Write, Edit, Bash, Glob, Grep) exclude Agent, so it cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; the campaign orchestrator runs it at 3f-bis before merge and promotes this row with --force per shared/prompts/campaign-mode.md.",
+      "completed_at": "2026-09-11T12:13:44.271476+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (pure docs/JSON finalization artifacts, no migrations/async-concurrency/cross-plugin-imports/irreversible ops); Stage 2 passed at 3f-bis",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
