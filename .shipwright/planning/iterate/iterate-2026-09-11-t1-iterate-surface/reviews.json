@@ -133,38 +133,10 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
-      "findings": [
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/tests/test_traceability_config_roots_parity.py",
-          "line": 59,
-          "finding": "no non-empty guard on shared_roots; test passes vacuously if discover_test_roots ever returns nothing under shared/",
-          "suggestion": "assert shared_roots non-empty before computing missing",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "correctness",
-          "file": "shared/tests/test_traceability_config_roots_parity.py",
-          "line": 43,
-          "finding": "parity test re-implements production resolver incompletely (plain glob, doesn't skip ** entries like production does), so a future config edit using ** would pass this guard while blinding the real collector again",
-          "suggestion": "resolve through the production function or mirror its ** and empty-entry skip rules",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "medium",
-          "category": "readability",
-          "file": "shared/scripts/tools/tests/test_run_test_suite.py",
-          "line": 240,
-          "finding": "LOC-cap-driven edits deleted hard-won rationale comments (why a race is not retried, why an executable line is pinned) in three files, replacing with terser AC restatements",
-          "suggestion": "restore rationale, document cap trade-offs in ADR consequences where genuinely space-constrained",
-          "source": "code-reviewer"
-        }
-      ],
+      "findings_count": 0,
+      "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T18:12:27.985971+00:00",
+      "completed_at": "2026-09-11T18:23:39.269975+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -173,15 +145,16 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T14:10:43.474894+00:00",
-      "disposition": "runner cannot spawn subagents; delegated_to_orchestrator per campaign-mode.md 3f-bis",
-      "recorded_by": "none",
+      "completed_at": "2026-09-11T18:19:56.231265+00:00",
+      "disposition": "No migrations, async/concurrency, cross-plugin imports, or irreversible ops in the diff (test files + a compliance-config JSON edit + docs). Stage-3 trigger conditions not met.",
+      "recorded_by": "orchestrator",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "inherit"
     },
     "external_code": {
       "review_type": "external_code",
