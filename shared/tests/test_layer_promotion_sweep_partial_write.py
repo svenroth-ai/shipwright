@@ -75,6 +75,28 @@ def test_partial_write_before_timeout_is_cleaned_up(monkeypatch, repo):
     assert porcelain.strip() == ""
 
 
+def test_preexisting_untracked_file_survives_rollback_after_timeout(monkeypatch, repo):
+    """External review, PR #725 round 7: a blanket ``git clean -fd`` would
+    delete untracked content that predates this sweep entirely, not just
+    residue the promotion tool itself created. The untracked baseline is
+    now captured before the subprocess ever runs so a later rollback's
+    cleanup only ever removes what's NEW."""
+    (repo / "pre_existing_scratch.md").write_text("do not delete me\n", encoding="utf-8")
+
+    def _fake(cmd, *args, **kwargs):
+        if len(cmd) >= 2 and str(cmd[1]).endswith("promote_required_layers.py"):
+            (repo / "new_fr_spec.md").write_text("partial\n", encoding="utf-8")
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=120.0)
+        return _REAL_RUN(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", _fake)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "skipped"
+    assert (repo / "pre_existing_scratch.md").read_text(encoding="utf-8") == "do not delete me\n"
+    assert not (repo / "new_fr_spec.md").exists()  # the genuine partial write IS still cleaned
+
+
 def test_partial_write_before_malformed_stdout_is_cleaned_up(monkeypatch, repo):
     """Same partial-write hazard as above, but on the non-JSON-stdout path —
     a subprocess can write real files to disk and still produce unusable

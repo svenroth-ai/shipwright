@@ -93,6 +93,9 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.git_base import HOOK_GIT_TIMEOUT, TIMEOUT_RETURNCODE, run_git_soft  # noqa: E402
 from lib.layer_promotion_delivery import deliver_as_own_pr  # noqa: E402
 from lib.layer_promotion_ledger import DEFAULT_LEDGER_RELPATH  # noqa: E402
+from lib.layer_promotion_rollback import bail as _bail  # noqa: E402
+from lib.layer_promotion_rollback import extract_report_fields as _extract_report_fields  # noqa: E402
+from lib.layer_promotion_rollback import untracked_paths as _untracked_paths  # noqa: E402
 from lib.layer_promotion_sweep_result import (  # noqa: E402
     LayerPromotionSweepResult,
     sweep_warnings,
@@ -115,68 +118,6 @@ _PROMOTE_SUBPROCESS_TIMEOUT = 120.0
 _REPORT_EXIT_CODES = (0, 3)
 
 
-def _extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
-    """Validate the ``promote_required_layers.py`` report shape and pull out
-    the three fields this module reads. ``json.loads`` only rejects a
-    syntactically invalid document — a syntactically valid but wrong-shaped
-    one (a JSON list, ``null``, or a ``promoted`` entry that isn't an object)
-    would otherwise reach an unguarded ``.get()`` and raise past this
-    module's own never-raises boundary (external review, PR #725). Raises
-    :class:`ValueError` with a short reason for any invalid shape; never
-    raises anything else."""
-    if not isinstance(report, dict):
-        raise ValueError(f"report is not a JSON object (got {type(report).__name__})")
-    raw_promoted = report.get("promoted") or []
-    if not isinstance(raw_promoted, list) or not all(
-        isinstance(d, dict) and isinstance(d.get("fr", ""), str) for d in raw_promoted
-    ):
-        raise ValueError("'promoted' is not a list of objects with a string 'fr'")
-    raw_escalated = report.get("escalated") or []
-    if not isinstance(raw_escalated, list):
-        raise ValueError("'escalated' is not a list")
-    written_paths = report.get("written_spec_paths") or []
-    if not isinstance(written_paths, list) or not all(isinstance(p, str) for p in written_paths):
-        raise ValueError("'written_spec_paths' is not a list of strings")
-    return [d.get("fr", "") for d in raw_promoted], len(raw_escalated), written_paths
-
-
-def _rollback_staged(worktree_path: Path, pre_sha: str) -> bool:
-    """Undo any write the promotion subprocess left behind — staged or not,
-    tracked or a brand-new untracked file — so a failed ``add``/``commit``,
-    or a subprocess that partially wrote the ledger/spec before timing out
-    or reporting something unusable, never leaves residue for a later,
-    unrelated commit to sweep up. ``reset --hard`` alone only reverts
-    already-tracked content; ``clean -fd`` is what removes a newly-written
-    file the tool created but this module never got as far as staging
-    (external review, PR #725 round 6). Returns whether the cleanup fully
-    succeeded — a caller must escalate to ``rollback_failed`` when it did
-    not, since an ordinary terminal status implies a clean rollback that
-    never actually happened (external review, PR #725)."""
-    if not pre_sha:
-        return False
-    reset = run_git_soft(["reset", "--hard", pre_sha], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
-    if reset.returncode != 0:
-        return False
-    clean = run_git_soft(["clean", "-fd"], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
-    return clean.returncode == 0
-
-
-def _bail(
-    worktree_path: Path, pre_sha: str, status: str, reason: str, promoted: list[str], escalated: int,
-) -> LayerPromotionSweepResult:
-    """Every non-decisive return path funnels through here once ``pre_sha``
-    is known: unconditionally roll the worktree back to it — cheap and safe
-    even when nothing was actually written, since ``reset --hard`` onto the
-    current HEAD and ``clean -fd`` on an already-clean tree are both no-ops
-    — before reporting the given ``status``. Escalates to the loud
-    ``rollback_failed`` when the rollback itself does not succeed, the one
-    outcome where residue might still be sitting on this branch."""
-    ok = _rollback_staged(worktree_path, pre_sha)
-    if not ok:
-        return LayerPromotionSweepResult(status="rollback_failed", reason=reason, promoted=promoted, escalated=escalated)
-    return LayerPromotionSweepResult(status=status, reason=reason, promoted=promoted, escalated=escalated)
-
-
 def run_layer_promotion_sweep(
     worktree_path: Path, run_id: str, default_branch: str = "main",
 ) -> LayerPromotionSweepResult:
@@ -191,14 +132,19 @@ def run_layer_promotion_sweep(
     if os.environ.get(_NO_FETCH_ENV) == "1":
         return LayerPromotionSweepResult(status="skipped", reason=f"{_NO_FETCH_ENV}=1 — offline")
 
-    # Captured BEFORE the subprocess ever runs, not after parsing its report:
-    # the tool can write the ledger/spec directly to the worktree's
+    # Both captured BEFORE the subprocess ever runs, not after parsing its
+    # report: the tool can write the ledger/spec directly to the worktree's
     # filesystem before timing out, exiting oddly, or emitting something
     # unparseable, and every one of those early returns must still be able
     # to roll that partial write back — an unknown rollback target is the
     # one state this module must never create, since it is exactly what
     # could leave promotion residue sitting on the iterate's own branch for
     # a later, unrelated commit to sweep up (external review, PR #725 round 6).
+    # ``pre_untracked`` is what keeps that rollback's cleanup scoped to only
+    # what the subprocess itself newly wrote — see its use in
+    # ``lib.layer_promotion_rollback.rollback_staged`` (round 7): a blanket
+    # ``git clean -fd`` would delete unrelated untracked content that
+    # predates this sweep entirely.
     pre_sha_result = run_git_soft(["rev-parse", "HEAD"], cwd=worktree_path)
     if pre_sha_result.returncode != 0:
         return LayerPromotionSweepResult(
@@ -209,6 +155,7 @@ def run_layer_promotion_sweep(
         return LayerPromotionSweepResult(
             status="error", reason="pre_sha_rev_parse_failed: rev-parse HEAD exited 0 with empty stdout",
         )
+    pre_untracked = _untracked_paths(worktree_path)
 
     try:
         # encoding="utf-8", errors="replace" (not text=True's locale-default
@@ -223,32 +170,38 @@ def run_layer_promotion_sweep(
             timeout=_PROMOTE_SUBPROCESS_TIMEOUT,
         )
     except subprocess.TimeoutExpired:
-        return _bail(worktree_path, pre_sha, "skipped", "promote_required_layers timed out", [], 0)
+        return _bail(worktree_path, pre_sha, pre_untracked, "skipped", "promote_required_layers timed out", [], 0)
     except OSError as exc:
-        return _bail(worktree_path, pre_sha, "skipped", f"promote_required_layers could not start: {exc}", [], 0)
+        return _bail(
+            worktree_path, pre_sha, pre_untracked, "skipped",
+            f"promote_required_layers could not start: {exc}", [], 0,
+        )
 
     if proc.returncode not in _REPORT_EXIT_CODES:
         return _bail(
-            worktree_path, pre_sha, "skipped",
+            worktree_path, pre_sha, pre_untracked, "skipped",
             (proc.stdout.strip() or proc.stderr.strip() or f"exit {proc.returncode}")[:300], [], 0,
         )
 
     try:
         report = json.loads(proc.stdout)
     except ValueError:
-        return _bail(worktree_path, pre_sha, "error", "promote_required_layers produced non-JSON stdout", [], 0)
+        return _bail(
+            worktree_path, pre_sha, pre_untracked, "error",
+            "promote_required_layers produced non-JSON stdout", [], 0,
+        )
 
     try:
         promoted, escalated, written_paths = _extract_report_fields(report)
     except ValueError as exc:
-        return _bail(worktree_path, pre_sha, "error", f"malformed report: {exc}", [], 0)
+        return _bail(worktree_path, pre_sha, pre_untracked, "error", f"malformed report: {exc}", [], 0)
 
     # The tool writes the ledger unconditionally whenever ANY FR is promoted
     # (its own "ledger BEFORE spec.md" ordering) even on a run that, for
     # every promoted FR, hit SKIP_LIVE_CELL_HAS_RESIDUAL_TEXT and so wrote no
     # spec.md — gate on EITHER signal, not just ``written_spec_paths``.
     if not promoted and not written_paths:
-        return _bail(worktree_path, pre_sha, "no_change", "", promoted, escalated)
+        return _bail(worktree_path, pre_sha, pre_untracked, "no_change", "", promoted, escalated)
 
     paths = [*written_paths, DEFAULT_LEDGER_RELPATH]
 
@@ -257,23 +210,26 @@ def run_layer_promotion_sweep(
         # `git add` with multiple pathspecs can partially stage before hitting
         # the one that fails — roll back rather than leave that residue for a
         # later, unrelated commit to pick up.
-        return _bail(worktree_path, pre_sha, "error", f"add_failed: {add.stderr.strip()[:300]}", promoted, escalated)
+        return _bail(
+            worktree_path, pre_sha, pre_untracked, "error",
+            f"add_failed: {add.stderr.strip()[:300]}", promoted, escalated,
+        )
 
     # Gate the commit on a REAL staged delta (mirrors lib.sweep_outbox's same
     # guard): an EOL-only rewrite of an already-tracked spec.md can leave
     # nothing staged even though the tool reported a write.
     staged = run_git_soft(["diff", "--cached", "--quiet", "--", *paths], cwd=worktree_path)
     if staged.returncode == TIMEOUT_RETURNCODE:
-        return _bail(worktree_path, pre_sha, "error", "git_timeout: diff --cached", promoted, escalated)
+        return _bail(worktree_path, pre_sha, pre_untracked, "error", "git_timeout: diff --cached", promoted, escalated)
     if staged.returncode == 0:
-        return _bail(worktree_path, pre_sha, "no_change", "", promoted, escalated)
+        return _bail(worktree_path, pre_sha, pre_untracked, "no_change", "", promoted, escalated)
     if staged.returncode != 1:
         # `git diff --cached --quiet` uses exit 1 for "a real staged delta
         # exists" — any OTHER nonzero (128 = a real git error, e.g. a corrupt
         # index) is a genuine failure, not a delta, and must roll back rather
         # than proceed to commit whatever got staged (external review, PR #725).
         return _bail(
-            worktree_path, pre_sha, "error",
+            worktree_path, pre_sha, pre_untracked, "error",
             f"diff_cached_failed: exit {staged.returncode}: {staged.stderr.strip()[:300]}", promoted, escalated,
         )
 
@@ -282,9 +238,12 @@ def run_layer_promotion_sweep(
         ["commit", "-m", subject, "--", *paths], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
     )
     if commit.returncode == TIMEOUT_RETURNCODE:
-        return _bail(worktree_path, pre_sha, "error", "commit_timeout", promoted, escalated)
+        return _bail(worktree_path, pre_sha, pre_untracked, "error", "commit_timeout", promoted, escalated)
     if commit.returncode != 0:
-        return _bail(worktree_path, pre_sha, "error", f"commit_failed: {commit.stderr.strip()[:300]}", promoted, escalated)
+        return _bail(
+            worktree_path, pre_sha, pre_untracked, "error",
+            f"commit_failed: {commit.stderr.strip()[:300]}", promoted, escalated,
+        )
 
     status, reason, pr_url, branch = deliver_as_own_pr(worktree_path, default_branch, pre_sha, subject)
     return LayerPromotionSweepResult(

@@ -13,6 +13,7 @@ import subprocess
 
 import pytest
 
+import lib.layer_promotion_rollback as rollback_mod
 import lib.layer_promotion_sweep as sweep_mod
 from lib.layer_promotion_sweep import run_layer_promotion_sweep
 from lib.layer_promotion_sweep_result import sweep_warnings
@@ -218,16 +219,21 @@ def test_add_failure_with_a_failing_rollback_reports_rollback_failed(monkeypatch
     monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
     (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
 
-    real_run_git_soft = sweep_mod.run_git_soft
+    real_sweep_run_git_soft = sweep_mod.run_git_soft
+    real_rollback_run_git_soft = rollback_mod.run_git_soft
 
-    def _fake_run_git_soft(args, *a, **kw):
+    def _fake_sweep_run_git_soft(args, *a, **kw):
         if args[:1] == ["add"]:
             return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: pathspec did not match any files")
+        return real_sweep_run_git_soft(args, *a, **kw)
+
+    def _fake_rollback_run_git_soft(args, *a, **kw):
         if args[:2] == ["reset", "--hard"]:
             return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: reset failed")
-        return real_run_git_soft(args, *a, **kw)
+        return real_rollback_run_git_soft(args, *a, **kw)
 
-    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
+    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_sweep_run_git_soft)
+    monkeypatch.setattr(rollback_mod, "run_git_soft", _fake_rollback_run_git_soft)
     result = run_layer_promotion_sweep(repo, "iterate-x")
 
     assert result.status == "rollback_failed"
