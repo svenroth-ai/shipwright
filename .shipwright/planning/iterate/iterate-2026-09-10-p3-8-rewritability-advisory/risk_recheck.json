@@ -3,7 +3,7 @@
   "run_id": "iterate-2026-09-10-p3-8-rewritability-advisory",
   "risk_recheck": {
     "changed_file_count": 47,
-    "diff_loc": 4301,
+    "diff_loc": 4229,
     "risk_flags": [
       "touches_ci_supplychain"
     ],

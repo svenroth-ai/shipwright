@@ -3,9 +3,11 @@
 deferred) by P3.7's own sub-iterate spec (campaign
 ``req3-04c-ac-identity-wave2``; design:
 ``.shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md``), delivered
-here bundled with P3.8 (provenance: ``trg-d03a239d``, filed at p3.8's own
-finalization after the original bundling-authorization card id could not be
-found in the tracked triage store).
+here bundled with P3.8 (provenance: ``trg-33a474e2``, filed by P3.7's own
+runner and amended by an operator to bundle in ``trg-c2329759``, p3.8's own
+"don't lose this sub-iterate" tracker, which was then dismissed into it — see
+the design doc's Section 12 for the full provenance trail, including
+``trg-d03a239d``, filed before the real authorization card surfaced).
 
 Design: ``.shipwright/planning/iterate/2026-09-10-p3-8-rewritability-advisory.md``,
 addendum section (bundled build).

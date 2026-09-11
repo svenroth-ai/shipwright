@@ -3519,9 +3519,10 @@ structural reason as the Keystone gate (`CI_ONLY_GATES` in that script).
 `Check-body suspects (advisory, non-blocking)`
 (`shared/scripts/tools/check_test_body_suspects.py`) is the third, lower-priority
 item P3.7's own sub-iterate spec named and explicitly deferred, delivered
-bundled with P3.8 (provenance: `trg-d03a239d`, filed at p3.8's own
-finalization after the original bundling-authorization card id could not be
-found in the tracked triage store). Same class of check P3.6's own
+bundled with P3.8 (provenance: `trg-33a474e2`, filed by P3.7's own runner and
+amended by an operator to bundle in `trg-c2329759`, p3.8's own tracker card,
+which was then dismissed into it — see the iterate design doc's Section 12
+for the full provenance trail). Same class of check P3.6's own
 design doc names in §7 and P3.8's own sub-iterate spec restates: "mechanics
 raise a flag, a human decides." It flags an acceptance criterion whose own
 text is UNCHANGED between base and head, that has a test bound to it whose

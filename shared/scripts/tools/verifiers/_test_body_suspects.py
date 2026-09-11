@@ -2,9 +2,11 @@
 sub-iterate spec named and explicitly deferred (campaign
 ``req3-04c-ac-identity-wave2``; design:
 ``.shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md``, "Deferred"
-section), delivered here bundled with p3.8 (provenance: ``trg-d03a239d``,
-filed at p3.8's own finalization after the original bundling-authorization
-card id could not be found in the tracked triage store).
+section), delivered here bundled with p3.8 (provenance: ``trg-33a474e2``,
+filed by P3.7's own runner and amended by an operator to bundle in
+``trg-c2329759``, p3.8's own tracker card, which was then dismissed into it —
+see the design doc's Section 12; ``trg-d03a239d`` was filed before the real
+authorization card surfaced).
 
 **ADVISORY, never a hard gate — by the same class-level rule P3.6's own
 design doc names (§7) and P3.8's own sub-iterate spec restates verbatim:

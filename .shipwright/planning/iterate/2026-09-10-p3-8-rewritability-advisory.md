@@ -255,14 +255,24 @@ P3.7's two feeder checks in `.github/workflows/ci.yml`. Its own CLI returns exit
 accident (strictly weaker trust posture than its P3.7 siblings, never stronger). Documented
 alongside those siblings in `docs/hooks-and-pipeline.md`.
 
-**Provenance correction.** The code, CI comment, and docs originally cited a triage card id as
-the bundling authorization; that id does not exist in this repo's tracked `triage.jsonl` (neither
-this worktree's copy nor the main tree's) and triage ids are randomly minted, so it could not be
-reproduced. Rather than ship an unverifiable citation, this run filed a real replacement card,
-`trg-d03a239d`, documenting the gap and the decision to keep (not revert) the bundled work — it is
-real, tested (`test_check_test_body_suspects.py`, `test_test_body_suspects.py`, both green in this
-run's own F0), documented, and CI-acked for this run_id
+**Provenance, corrected twice over.** The code, CI comment, and docs originally cited
+`trg-c2329759` as the bundling authorization. That id is real, but it is NOT the authorization
+card — it is p3.8's own "don't lose this sub-iterate" tracker (filed 2026-09-10T22:29Z, source
+`cli`, after the campaign umbrella card `trg-3be88962` was dismissed once p3.1-p3.7 had merged).
+It did not exist in either tree's TRACKED `triage.jsonl` at the time this run searched, so a first
+pass (below) treated it as lost and filed a replacement, `trg-d03a239d`. A later check of the
+main tree's gitignored `triage.outbox.jsonl` (not previously checked — a real gap in that first
+pass, not merely a stricter search) found the true story: an operator amended a THIRD, older,
+already-tracked card, `trg-33a474e2` (filed by **P3.7's own runner**, 2026-09-10T14:59Z, naming
+this exact deferred check), to explicitly bundle `trg-c2329759` into it and then dismissed the
+latter — the real, pre-existing authorization for this bundling decision, sitting in the main
+tree's outbox, undelivered to this worktree at the time either pass ran. All four citations now
+name `trg-33a474e2` as the authorization, `trg-c2329759` as the tracker bundled into it, and
+`trg-d03a239d` as the (superseded, but not wrong) record filed before the real card surfaced. The
+bundled work itself was never in doubt: real, tested (`test_check_test_body_suspects.py`,
+`test_test_body_suspects.py`, both green in this run's own F0), documented, and CI-acked for this
+run_id
 (`.shipwright/planning/iterate/iterate-2026-09-10-p3-8-rewritability-advisory/ci_supplychain_ack.json`,
-`consistent_with: "#711"`). All four citations were updated to `trg-d03a239d` in the same commit.
-Recorded as a second F3 decision drop (`..._002.json`, separate from M7's own `..._001.json`) and
-a second F4 changelog drop (`..._002.md`), since this is a materially separate concern from M7.
+`consistent_with: "#711"`). Recorded as a second F3 decision drop (`..._002.json`, separate from
+M7's own `..._001.json`) and a second F4 changelog drop (`..._002.md`), since this is a materially
+separate concern from M7.
