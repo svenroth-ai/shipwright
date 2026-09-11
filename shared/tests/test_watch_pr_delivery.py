@@ -12,6 +12,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -237,9 +239,13 @@ def test_exit_code_for_pending_is_unchanged():
     assert wpd._exit_code("closed") == 3
 
 
+@pytest.mark.covers("FR-01.11/AC16")
 def test_pending_report_names_the_cause_in_plain_words():
-    """What the operator actually reads. The old line said only that it timed
-    out; this one has to say what is holding the PR up."""
+    """AC16: the report names what is holding the merge up — conversations
+    still unresolved, required checks that never reported, the host's own
+    blocked verdict — rather than only how long it waited. What the operator
+    actually reads. The old line said only that it timed out; this one has
+    to say what is holding the PR up."""
     result = {
         "status": "pending", "timed_out": True,
         "blockers": {
@@ -257,7 +263,10 @@ def test_pending_report_names_the_cause_in_plain_words():
     assert "required_check_never_reported: PR Review" in line
 
 
+@pytest.mark.covers("FR-01.11/AC16")
 def test_pending_report_says_which_sources_it_could_not_check():
+    """AC16: anything that could not be checked is said to be unchecked,
+    never counted as clear."""
     result = {
         "status": "pending", "timed_out": True,
         "blockers": {"merge_state_status": "", "blocking": False, "causes": [],

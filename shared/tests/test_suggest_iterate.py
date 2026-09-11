@@ -256,7 +256,10 @@ class TestHookIntegration:
             errors="replace",
         )
 
+    @pytest.mark.covers("FR-01.11/AC10")
     def test_no_config_exits_silently(self, tmp_path):
+        """AC10: in a directory that is not a Shipwright project, the offer
+        stays silent and changes nothing."""
         result = self._run_hook("run tests please", str(tmp_path))
         assert result.returncode == 0
         assert result.stdout.strip() == ""
@@ -271,7 +274,10 @@ class TestHookIntegration:
         assert result.returncode == 0
         assert result.stdout.strip() == ""
 
+    @pytest.mark.covers("FR-01.11/AC10")
     def test_completed_pipeline_routes_to_test(self, tmp_path):
+        """AC10: the plugin is enabled, the user types an ordinary prompt,
+        and the right next step is offered."""
         result = self._run_hook("run the tests again", str(tmp_path), config={"status": "complete"})
         assert result.returncode == 0
         output = json.loads(result.stdout)

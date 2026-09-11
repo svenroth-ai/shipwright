@@ -4,6 +4,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 
 # Add scripts/lib to path
 sys.path.insert(
@@ -85,26 +86,27 @@ class TestDetectRiskFlags:
         assert "mandatory_review" in migration_flag["enforces"]
         assert "down_sql" in migration_flag["enforces"]
 
-
 # --- Scope estimation ---
 
-
-class TestEstimateScope:
+class TestEstimateScope:  # AC02: change SIZE is detected; process scales to match
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_large_keywords(self):
         assert estimate_scope("implement multi-language i18n support") == "large"
 
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_medium_keywords(self):
         assert estimate_scope("add a search filter on the dashboard") == "medium"
 
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_small_keywords(self):
         assert estimate_scope("add a loading spinner to the list") == "small"
 
+    @pytest.mark.covers("FR-01.11/AC02")
     def test_trivial_default(self):
         assert estimate_scope("fix button color") == "trivial"
 
     def test_empty_message(self):
         assert estimate_scope("") == "trivial"
-
 
 # --- Cross-split detection ---
 
@@ -145,9 +147,7 @@ class TestDetectCrossSplit:
         assert "01" in result["splits"]
         assert "02" in result["splits"]
 
-
 # --- Full classification ---
-
 
 class TestClassify:
     def test_trivial_no_risk(self):

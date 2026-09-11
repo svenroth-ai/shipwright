@@ -22,6 +22,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts" / "tools"))
@@ -61,9 +63,12 @@ def _progress_block(run_id: str) -> str:
 
 # --- the defect this replaces -------------------------------------------------
 
+@pytest.mark.covers("FR-01.11/AC19")
 def test_an_old_file_naming_this_run_passes(tmp_path):
-    """The regression. A handoff written 3 hours ago still describes THIS run —
-    time spent waiting on CI is not staleness."""
+    """AC19: the check is decided by whether the record names the run, never
+    by how recently the file was written. The regression. A handoff written
+    3 hours ago still describes THIS run — time spent waiting on CI is not
+    staleness."""
     path = _write(tmp_path, _canon(RUN))
     old = time.time() - 3 * 60 * 60
     os.utime(path, (old, old))
@@ -74,6 +79,7 @@ def test_an_old_file_naming_this_run_passes(tmp_path):
     assert "mtime" not in result.detail.lower()
 
 
+@pytest.mark.covers("FR-01.11/AC19")
 def test_a_brand_new_file_naming_another_run_fails(tmp_path):
     """The mirror. Freshly written is not the same as about this run — a
     worktree checkout resets mtime on a handoff belonging to someone else."""

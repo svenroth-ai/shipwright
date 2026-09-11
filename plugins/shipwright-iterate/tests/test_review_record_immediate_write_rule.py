@@ -82,8 +82,12 @@ def test_site_extracts(label, path, extractor) -> None:
     assert body, f"Could not extract the {label} section — probe regex may need updating."
 
 
+@pytest.mark.covers("FR-01.11/AC28")
 @pytest.mark.parametrize("label,path,extractor", SITES, ids=[s[0] for s in SITES])
 def test_site_carries_immediate_write_mandate(label, path, extractor) -> None:
+    """AC28: a reviewer's reply is written down before anything else happens,
+    so a session interruption right after a reviewer answers can never lose
+    what it found."""
     text = path.read_text(encoding="utf-8")
     body = _normalize_ws(extractor(text))
     assert MANDATE_MARKER in body, (
