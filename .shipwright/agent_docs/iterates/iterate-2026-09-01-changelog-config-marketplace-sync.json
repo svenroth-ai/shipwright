@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-01-changelog-config-marketplace-sync",
+  "date": "2026-09-01T10:55:11.380127Z",
+  "event_at": "2026-08-31T15:18:56.540882+00:00",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/changelog-config-marketplace-sync",
+  "spec": "FR-01.09",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-01-changelog-config-marketplace-sync"
+}
