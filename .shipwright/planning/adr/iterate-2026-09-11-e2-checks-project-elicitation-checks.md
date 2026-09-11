@@ -210,6 +210,56 @@ directly (`_project_gate_wiring.py`, `fr_basis.py`'s `classify()`,
 | 3 | `fr_criteria.py`'s docstring claim of "exactly two, both commented" `strict=False` callers is stale — this diff added two more without updating it (low) | accepted-and-fixed — docstring now enumerates all four callers; inline comments added at both new call sites in `_project_gate_extras.py` |
 | 4 | A test docstring claimed "the other two gates" sharing `_read_spec_texts` got a missing/unreadable-spec regression test, but only `basis_forbids_assumed` actually did — `criteria_free_of_implementation_detail` never got one (low) | accepted-and-fixed — added `test_check_criteria_free_of_implementation_detail_skips_when_no_spec_yet` and `..._fails_loud_on_a_declared_but_missing_spec` |
 
+## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
+
+Two findings, both verified genuine by direct reproduction / doc-reading
+before acting on either:
+
+1. **HIGH — `basis_forbids_assumed`'s criterion-presence check
+   (`fr_criteria.has_criteria(..., strict=False)`) can be satisfied by a
+   bullet that is not an acceptance criterion at all** (a "Related links"
+   list, or any other bullet list under the same FR heading, however
+   unrelated), because `strict=False`'s "skip a legacy label paragraph"
+   widening has no way to distinguish that paragraph's content from
+   arbitrary prose. Reproduced directly: a bare `assumed` row followed by
+   unrelated prose and an unrelated bullet list passes the gate.
+   **Attempted fix, then reverted**: scoping `strict=False` to only the
+   FIRST contiguous bullet run in the block (closing the "two separate
+   bullet lists, the later one satisfies the check" sub-case) broke two
+   pre-existing, deliberately-tested behaviors in the SAME shared function
+   — `test_a_nested_fr_heading_still_gets_its_own_digest_entry` and
+   `test_a_bare_hash_with_no_trailing_space_does_not_terminate_the_region`
+   (`shared/tests/test_layer_coverage_criteria_anchoring.py`) — both of
+   which pool MULTIPLE bullet runs within one anchored block on purpose
+   (`iter_anchored_blocks`'s own docstring: "over-firing, this module's
+   preferred failure direction, not a bug", Stage-3 doubt review,
+   2026-08-25). Reverted; `fr_criteria.py` is unchanged from the Stage-2
+   commit. **Disposition: this is the SAME "presence, not aboutness"
+   ceiling #15b already names**, now understood more precisely — the
+   presence check inherits a SHARED library's explicit, tested,
+   pre-existing design preference for over-counting, and narrowing it here
+   would require either breaking that contract for its two original
+   callers (I6, the cross-layer fold gate) or building the semantic
+   "is this really an acceptance criterion" classifier the operator's
+   original instruction and the campaign's D7 rule already rule out. Not
+   fixed; the #15b downgrade language already covers this stronger
+   adversarial form, since both are "presence proves nothing about
+   aboutness."
+2. **MEDIUM — `starting_guidance_present` (#11) checks 4 files, but
+   `step-8-completion.md`/`SKILL.md`'s own checklist item 4 says "all 5
+   files"** — `project-scaffolding.md`'s "Files to Generate" section (the
+   actual Step-7 producer contract this gate mirrors) lists only 4:
+   CLAUDE.md + 3 agent_docs files. A candidate 5th file
+   (`session_handoff.md`) is generated later by the Stop hook, not
+   scaffolded by Step 7, so it is not guaranteed to exist by the time
+   Step 8 runs — adding it to the gate risks a false-positive red on a
+   freshly-scaffolded project. The "5 files" text predates this
+   sub-iterate (traces to an unrelated P4.2 commit and, before that, the
+   original SKILL.md split) and resolving it needs a human decision
+   (stale prose vs. a genuinely missing 5th file). **Deferred to triage
+   `trg-a287d575`**; the gate stays matched to the actual current Step-7
+   producer contract rather than guessing at a 5th file to check.
+
 ## Rejected Alternatives
 
 - A second, weaker "does this AC name a settlement" semantic oracle for

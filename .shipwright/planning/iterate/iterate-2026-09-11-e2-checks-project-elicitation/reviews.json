@@ -181,13 +181,32 @@
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": "2026-09-11T14:02:47.390961+00:00",
-      "disposition": "runner has no Agent tool — cascade delegated to orchestrator at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras.py",
+          "line": null,
+          "finding": "Claim under doubt: basis_forbids_assumed's criterion-presence check (fr_criteria.has_criteria(..., strict=False)) correctly detects that an assumed row carries an acceptance criterion. — A bare assumed row followed by unrelated prose and an unrelated bullet list (e.g. a 'Related links' section) also satisfies has_criteria(strict=False), since strict=False's legacy-label-paragraph widening cannot distinguish that paragraph's content from arbitrary prose. Reproduced directly. Attempted fix (scoping strict=False to the first contiguous bullet run) reverted: it broke two pre-existing, deliberately-tested behaviors in the same shared function (test_a_nested_fr_heading_still_gets_its_own_digest_entry, test_a_bare_hash_with_no_trailing_space_does_not_terminate_the_region), which pool multiple bullet runs on purpose ('over-firing, this module's preferred failure direction, not a bug'). Disposition: this is the same presence-not-aboutness ceiling ledger row #15b already names, extended to a stronger adversarial form; not independently fixable without either breaking the shared library's tested contract for its other two callers, or building the semantic aboutness oracle the campaign's D7 rule and the operator's original instruction already rule out.",
+          "suggestion": "Not resolved by design; documented as an accepted residual of the presence-only floor in the sub-iterate ADR.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras.py",
+          "line": null,
+          "finding": "Claim under doubt: starting_guidance_present (#11) fully enforces Step 8's own completion checklist for the agent_docs directory. — step-8-completion.md and SKILL.md's checklist item 4 says the agent_docs directory must have 'all 5 files', but project-scaffolding.md's own Files-to-Generate section (the actual Step-7 producer contract this gate mirrors) lists only 4: CLAUDE.md + 3 agent_docs files. A candidate 5th file (session_handoff.md) is generated later by the Stop hook, not scaffolded by Step 7, so is not guaranteed present when Step 8 runs -- adding it risks a false-positive red on a freshly-scaffolded project. The '5 files' text predates this sub-iterate. Deferred to triage trg-a287d575 for a human decision (stale prose vs. a genuinely missing 5th file); the gate stays matched to the current, actual Step-7 producer contract.",
+          "suggestion": "Deferred to triage trg-a287d575 -- requires confirming intended Step-7/Step-8 file-count contract, not a mechanical fix.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "claude",
+      "completed_at": "2026-09-11T20:37:55.931015+00:00",
+      "disposition": "2 findings: 1 (high) documented as an accepted residual of the presence-not-aboutness floor (same class as ledger #15b), not independently fixable; 1 (medium) deferred to triage trg-a287d575, a pre-existing Step-7/Step-8 doc-vs-producer file-count drift.",
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
