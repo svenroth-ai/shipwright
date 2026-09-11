@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-e0-ledger-accounting",
+  "date": "2026-09-11",
+  "section": "campaign req3-06-enforcement-mono, sub-iterate e0",
+  "title": "Re-measure the AC-evidence ledger by flat text count, not a per-row parser",
+  "context": "The ledger's backlog counts (44/15/10/25) were stale from the campaign's own start; nobody had re-run the count since the 2026-07-26 end-check, and the document has ~200 criteria across a dozen hand-written table shapes with no stable schema.",
+  "decision": "Count every backtick-quoted canonical status phrase across the whole document (shared/scripts/tools/measure_ac_evidence_ledger.py), rather than parsing table structure per row. Cross-checked exact against the operator's 2026-09-06 hand re-measurement (47/19/16/36/50).",
+  "consequences": "The count includes the legend's and the End-check summary's own backtick occurrences (a documented, constant, accepted imprecision) and moves if prose ever backticks a status phrase outside a table cell. A committed test asserts the ledger header and the script's live output stay in sync.",
+  "rationale": "",
+  "rejected": "A structural per-row table parser: rejected because the ledger's tables take a different ad-hoc shape in nearly every section, so a parser would need one rule per shape and silently break on the next new one. A hard per-row ownership-annotation gate (both external code reviewers' top suggestion): rejected as out of scope for this bounded accounting pass — it would require reformatting ~150 pre-existing rows that already resolve via the legend's documented default routing.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/campaigns/req3-06-enforcement-mono/sub-iterates/e0-ledger-accounting.md"
+}
