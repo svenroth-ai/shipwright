@@ -16,6 +16,79 @@
   },
   "test_completeness": {
     "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "Refuses to write while SHIPWRIGHT_LOOP_UNIT_ID is set (worktree mode), no file left behind",
+        "disposition": "tested",
+        "evidence": "test_refuses_inside_an_active_campaign_runner_context PASSED"
+      },
+      {
+        "behavior": "Refuses in --commit mode too",
+        "disposition": "tested",
+        "evidence": "test_refuses_in_commit_mode_too PASSED"
+      },
+      {
+        "behavior": "No-op when the var is unset (standalone iterate path)",
+        "disposition": "tested",
+        "evidence": "test_allows_when_loop_unit_id_is_unset PASSED"
+      },
+      {
+        "behavior": "--commit mode fingerprints the branch diff and the F11 verifier accepts it",
+        "disposition": "tested",
+        "evidence": "test_commit_mode_acknowledges_already_committed_content PASSED"
+      },
+      {
+        "behavior": "Worktree mode still stamps provenance: worktree, provenance_ref: null",
+        "disposition": "tested",
+        "evidence": "test_worktree_mode_stamps_provenance_worktree PASSED"
+      },
+      {
+        "behavior": "Commit mode stamps provenance: commit, provenance_ref: <resolved sha>",
+        "disposition": "tested",
+        "evidence": "test_commit_mode_acknowledges_already_committed_content, test_commit_ref_is_resolved_to_a_full_sha PASSED"
+      },
+      {
+        "behavior": "Per-run ack missing provenance is rejected by the F11 verifier; an inconsistent provenance/provenance_ref pair is also rejected",
+        "disposition": "tested",
+        "evidence": "test_verifier_rejects_an_ack_missing_the_provenance_stamp, test_per_run_ack_without_provenance_is_rejected, test_per_run_ack_with_inconsistent_provenance_pair_is_rejected PASSED"
+      },
+      {
+        "behavior": "Legacy-location ack missing provenance still passes (grandfathered)",
+        "disposition": "tested",
+        "evidence": "test_legacy_ack_without_provenance_is_still_accepted PASSED"
+      },
+      {
+        "behavior": "Already-committed CI change: working-tree mode names --commit in its refusal instead of falsely claiming no acknowledgement is needed",
+        "disposition": "tested",
+        "evidence": "test_refuses_with_a_pointer_to_commit_once_the_ci_change_is_committed PASSED"
+      },
+      {
+        "behavior": "cross_component integration composition: writer CLI + F11 verifier + real git fixtures compose end to end under the new guard and the new content mode",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "test_commit_mode_acknowledges_already_committed_content, test_round_trip_cli_write_commit_verifier_read PASSED"
+      },
+      {
+        "behavior": "write_ack() itself refuses a hand-built ack dict that bypasses build_ack() entirely, leaving no file behind (doubt review)",
+        "disposition": "tested",
+        "evidence": "test_write_ack_refuses_a_hand_built_dict_bypassing_build_ack PASSED"
+      },
+      {
+        "behavior": "SHIPWRIGHT_LOOP_UNIT_ID (not only SHIPWRIGHT_SESSION_ID) is synced into CLAUDE_ENV_FILE: appended when set, removed when absent, replaced (not accumulated) when the value changes across units",
+        "disposition": "tested",
+        "evidence": "test_claude_env_file_receives_loop_unit_id, test_claude_env_file_omits_loop_unit_id_when_unset, test_claude_env_file_clears_stale_loop_unit_id_when_next_absent, test_claude_env_file_replaces_loop_unit_id_value_not_accumulates PASSED"
+      },
+      {
+        "behavior": "A value with shell metacharacters is shell-quoted before being written into CLAUDE_ENV_FILE, not written raw (code review, security)",
+        "disposition": "tested",
+        "evidence": "test_claude_env_file_quotes_shell_metacharacters PASSED"
+      },
+      {
+        "behavior": "No regression in the pre-existing ack/deadlock/per-run-home/phase-quality tests, or the sub-iterate-runner Step 3.4 contract tests, after two bloat-gate-driven module splits",
+        "disposition": "tested",
+        "evidence": "full shared/tests/ (10602 passed, 0 failed) + plugins/shipwright-iterate/tests test_sub_iterate_runner_step_3_4.py + test_sub_iterate_runner_contract.py PASSED"
+      }
+    ],
     "counts": {
       "testable": 14,
       "tested": 14,
