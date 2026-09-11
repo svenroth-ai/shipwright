@@ -147,3 +147,16 @@ def test_a_scheme_relative_reference_with_no_slashes_is_still_caught():
     assert standalone_html_violations(
         '<script src="https:/evil.example/x.js"></script>'
     ) == ["https:/evil.example/x.js"]
+
+
+def test_an_empty_chrome_definition_does_not_exempt_a_screen_with_real_nav():
+    """External Tier-3 review, PR #726 round 9: an EXISTING but empty/
+    malformed `chrome-definition.md` (no recognized nav targets) was
+    treated as "nothing to compare" — passing every screen regardless of
+    its own nav markup. A screen that plainly uses nav-item/topnav-link
+    still has to draw it from a real shared definition."""
+    empty_chrome = "<p>no nav markup here</p>"
+    screen = '<a href="02-dashboard.html" class="nav-item">Dashboard</a>'
+    result = chrome_nav_targets_consistent(empty_chrome, screen)
+    assert result.ok is False
+    assert "02-dashboard.html" in result.detail

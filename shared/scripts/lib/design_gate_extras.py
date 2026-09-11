@@ -1,28 +1,21 @@
 """Six /shipwright-design gates the ledger walk found nowhere in code
 (``.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md``,
-FR-01.04). Each function is named for, and enforces, exactly one criterion:
+FR-01.04). Each function enforces exactly one criterion:
 
-* :func:`visual_tokens_present` — **#2** "Design tokens (colours/typography/
-  spacing) exist as one definition." Existence of ``visual-guidelines.md``
-  was checked (file presence); its CONTENT never was.
-* :func:`flows_present_for_multi_screen_app` — **#3** "Flows between journey
-  screens are shown." Nothing required a flow to exist at all once a project
-  has more than one screen — the floor this enforces.
-* :func:`chrome_nav_targets_consistent` — **#5** "Shared chrome from one
-  definition." ``chrome-definition.md`` is a prompt artifact; nothing
-  checked a screen actually drew its navigation from it.
-* :func:`standalone_html_violations` — **#6** "Mockups open standalone in a
-  browser." A grep for an external ``src=``/``href=`` reference outside the
-  one allowed font-CDN exception.
-* :func:`uploads_preserved` — **#8** "Supplied mockups preserved, only
-  missing generated." Uses git as the historical record rather than a
-  hand-rolled baseline file: an uploaded file must never show as *modified*.
-* :func:`iteration_touched_flagged_screens` — **#9** "Feedback regenerates
-  only that screen." The *at-least* direction is hard-enforced (every
-  flagged screen was actually touched); a *drive-by* change to an unflagged
-  screen is reported as a warning, not a hard failure, because Chrome Change
-  Propagation (``iteration-mode.md``) is a legitimate reason for every screen
-  to change in the same round.
+* :func:`visual_tokens_present` — **#2** design tokens exist as one
+  definition (file presence was checked before; its content never was).
+* :func:`flows_present_for_multi_screen_app` — **#3** a multi-screen app
+  must show >=1 flow between its screens.
+* :func:`chrome_nav_targets_consistent` — **#5** shared chrome from one
+  definition — a screen's nav must actually draw from it.
+* :func:`standalone_html_violations` — **#6** mockups open standalone in a
+  browser — no external ``src``/``href`` outside the one font-CDN exception.
+* :func:`uploads_preserved` — **#8** supplied mockups preserved (git as the
+  historical record: an uploaded file must never show as *modified*).
+* :func:`iteration_touched_flagged_screens` — **#9** feedback regenerates
+  only that screen (every flagged screen touched is hard-enforced; a
+  drive-by change beyond it is a warning — Chrome Change Propagation is a
+  legitimate reason for every screen to change in one round).
 """
 
 from __future__ import annotations
@@ -154,16 +147,22 @@ def screen_declares_nav(html: str) -> bool:
 
 
 def chrome_nav_targets_consistent(chrome_definition_html: str, screen_html: str) -> GateResult:
-    """**#5** — a screen's nav targets (the set of ``href`` values on its
-    ``nav-item``/``topnav-link`` anchors) must be the SAME SET the chrome
-    definition declares. Byte-identical markup is not required — icons and
-    labels differ by design — but a different target set did not draw from
-    the one definition. Screens with no nav markup (Layout C / auth) are
-    exempt — nothing to compare."""
+    """**#5** — a screen's nav targets (``href`` values on its ``nav-item``/
+    ``topnav-link`` anchors) must be the SAME SET the chrome definition
+    declares — byte-identical markup isn't required, a different target set
+    is. No-nav screens (Layout C / auth) are exempt. An EXISTING but empty/
+    malformed definition is NOT itself an exemption — a screen that plainly
+    uses nav markup still has to draw it from somewhere (round 9)."""
     chrome_targets = _nav_targets(chrome_definition_html)
-    if not chrome_targets:
-        return GateResult(True, "chrome definition declares no nav targets to compare")
     screen_targets = _nav_targets(screen_html)
+    if not chrome_targets:
+        if screen_targets:
+            return GateResult(
+                False,
+                f"chrome definition declares no nav targets, but the screen "
+                f"declares {sorted(screen_targets)} — not drawn from it",
+            )
+        return GateResult(True, "chrome definition declares no nav targets to compare")
     if not screen_targets:
         return GateResult(True, "screen has no nav markup (e.g. an auth/Layout-C screen) — exempt")
     if screen_targets != chrome_targets:
