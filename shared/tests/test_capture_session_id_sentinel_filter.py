@@ -66,7 +66,7 @@ _MIXED_DIGEST = (
 def test_collect_tier1_fails_is_raw_parse_keeps_sentinel():
     """Design pin: the raw parser does NOT filter sentinels — it preserves every
     FAIL with its run id so the caller can apply the actionability policy."""
-    from hooks.capture_session_id import _collect_tier1_fails
+    from hooks.session_start_phase_quality import _collect_tier1_fails
 
     fails = _collect_tier1_fails(_MIXED_DIGEST)
 
@@ -76,7 +76,9 @@ def test_collect_tier1_fails_is_raw_parse_keeps_sentinel():
 
 def test_injection_drops_sentinel_keeps_real(monkeypatch, tmp_path):
     """The consumer drops the sentinel-run FAIL and keeps the real-run one."""
-    from hooks.capture_session_id import _build_phase_quality_injection
+    from hooks.session_start_phase_quality import (
+        build_phase_quality_injection as _build_phase_quality_injection,
+    )
 
     _write_digest(tmp_path, _MIXED_DIGEST)
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
@@ -92,7 +94,9 @@ def test_injection_drops_sentinel_keeps_real(monkeypatch, tmp_path):
 
 def test_injection_empty_for_sentinel_only_digest(monkeypatch, tmp_path):
     """A digest whose only FAILs are sentinel-run snapshots injects nothing."""
-    from hooks.capture_session_id import _build_phase_quality_injection
+    from hooks.session_start_phase_quality import (
+        build_phase_quality_injection as _build_phase_quality_injection,
+    )
 
     _write_digest(
         tmp_path,
@@ -108,7 +112,9 @@ def test_injection_empty_for_sentinel_only_digest(monkeypatch, tmp_path):
 def test_injection_keeps_real_run_unchanged(monkeypatch, tmp_path):
     """Control: a non-sentinel digest still surfaces its Tier-1 FAIL (no
     over-filtering / regression of the existing path)."""
-    from hooks.capture_session_id import _build_phase_quality_injection
+    from hooks.session_start_phase_quality import (
+        build_phase_quality_injection as _build_phase_quality_injection,
+    )
 
     _write_digest(
         tmp_path,
@@ -147,7 +153,9 @@ def test_injection_cap_applied_after_filter_no_starvation(monkeypatch, tmp_path)
     """The 5-FAIL injection cap is applied AFTER the sentinel filter, so a stale
     digest with >5 sentinel FAILs ahead of a real one cannot starve the real
     FAIL out of the budget (would regress if the cap moved back into the parser)."""
-    from hooks.capture_session_id import _build_phase_quality_injection
+    from hooks.session_start_phase_quality import (
+        build_phase_quality_injection as _build_phase_quality_injection,
+    )
 
     _write_digest(
         tmp_path,
@@ -171,7 +179,9 @@ def test_injection_caps_nonsentinel_at_five(monkeypatch, tmp_path):
     """R20 (relocated to the consumer): at most 5 Tier-1 FAILs are injected — a
     >5 NON-sentinel digest is capped to the first 5 (coverage that moved out of
     the parser when the cap became a builder-side policy)."""
-    from hooks.capture_session_id import _build_phase_quality_injection
+    from hooks.session_start_phase_quality import (
+        build_phase_quality_injection as _build_phase_quality_injection,
+    )
 
     _write_digest(
         tmp_path,

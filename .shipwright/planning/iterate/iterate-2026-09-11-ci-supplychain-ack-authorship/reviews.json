@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-ci-supplychain-ack-authorship",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:31:51.524833+00:00",
+      "disposition": "Re-read the full diff (11 modified + 6 new files) after the spec/code/doubt cascade and all fixes landed. Confirmed: every file under the 300-line bloat gate, ruff clean across the touched set, 98/98 targeted tests green, no stale references to the two extracted modules (ci_supplychain_authorship_guard.py, session_start_phase_quality.py) anywhere in the tree, and the iterate spec's Fix/AC/Ledger/Review sections match what was actually built. No further changes needed.",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:31:41.369491+00:00",
+      "disposition": "External Branch A plan review (--mode iterate over the mini-plan, --mode architecture over architecture_brief.md) already completed earlier in this same run, before a mid-session context compaction. Findings, verdicts, and triage decisions are documented in the iterate spec's ## External LLM Review section (provenance/provenance_ref validation tightened per the iterate-mode leg; architecture-mode's provenance-necessity suggestion declined with rationale). The raw provider JSON needed for record_review_pass's structured external-review-json parser was not preserved across the compaction, so this pass cannot be replayed through the tool; recording not_run rather than fabricating a payload.",
+      "recorded_by": "external_review.py",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 1741,
+          "finding": "The capture_session_id.py hook's own reference section still documented only SHIPWRIGHT_SESSION_ID being appended to CLAUDE_ENV_FILE.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/hooks/capture_session_id.py",
+          "line": 308,
+          "finding": "Values written into CLAUDE_ENV_FILE were unescaped; a value with shell metacharacters could inject arbitrary shell content when the file is sourced.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/record_ci_supplychain_ack.py",
+          "line": 186,
+          "finding": "`where` was computed from the unresolved --commit ref before it was reassigned to the resolved SHA, so error messages showed the wrong value.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T15:18:03.106352+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary and contract",
+          "file": "shared/scripts/tools/record_ci_supplychain_ack.py",
+          "line": null,
+          "finding": "Claim under doubt: provenance-consistency plus build_ack's guard means an ack cannot be produced except through record_ci_supplychain_ack.py — write_ack() — the function that actually writes the file — called refuse_if_campaign_runner_context() nowhere; only build_ack() and CLI main() did. A hand-built ack dict passed straight to write_ack() bypassed both.",
+          "suggestion": "add the guard call to write_ack() itself",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency and ordering",
+          "file": "shared/scripts/hooks/capture_session_id.py",
+          "line": null,
+          "finding": "Claim under doubt: the operator recovery path (act from the orchestrator's own shell once the unit has returned) is reliably reachable — CLAUDE_ENV_FILE's SHIPWRIGHT_LOOP_UNIT_ID write was append-only-if-different-value, never removed a stale line once a var became absent, so a prior unit's export could linger indefinitely and block the documented recovery path if the file is shared across a session.",
+          "suggestion": "sync the export lines to the hook's current ambient environment each SessionStart, clearing lines for vars that are now absent",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling and blast radius",
+          "file": "shared/scripts/tools/ci_supplychain_authorship_guard.py",
+          "line": null,
+          "finding": "Claim under doubt: SHIPWRIGHT_LOOP_UNIT_ID unambiguously identifies an active campaign sub-iterate runner — shipwright-build's --autonomous loop sets the same var around its own section-builder spawn (autonomous-loop.md Step 3b), unrelated to campaigns, so the guard's docs/messages described a narrower trigger surface than actually exists.",
+          "suggestion": "broaden the guard's language to name any autonomous-loop unit, not only campaign runners",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T15:30:28.967124+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:31:55.991292+00:00",
+      "disposition": "External code review is Advisory (Override Classes table, SKILL.md) — freely skippable. Substituted by a more thorough internal cascade for this change: spec-reviewer (PASS), code-reviewer (3 findings, all fixed), doubt-reviewer (3 findings incl. 2 HIGH, all fixed with regression tests), plus two external Branch A plan-review calls already run at design time (--mode iterate, --mode architecture; see ## External LLM Review in the iterate spec). No live external-code-review call made this pass.",
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:12:35.329710+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T15:31:02.316585+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

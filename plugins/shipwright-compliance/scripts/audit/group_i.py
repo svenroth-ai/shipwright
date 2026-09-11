@@ -14,6 +14,10 @@ own requirement, and duplicate FR IDs.
   shaped (`fr-authoring.md` §3b)
 - I8 — a `/shipwright-adopt` TBD acceptance-criteria placeholder that has
   survived >= 90 days (git history, no stamped state)
+- I9 — a requirement whose recorded changes (`shipwright_events.jsonl`) never
+  co-occur with a decision-drop / ADR run_id (M7 "Rewritability" — advisory,
+  never a gate; see `shared/scripts/lib/rewritability_links.py` for the
+  interpretation this proxies)
 
 **Advisory by construction, not by luck.** The three prose checks (I1/I2/I3)
 never emit ``status="fail"``, because a failing finding feeds
@@ -46,6 +50,7 @@ from scripts.audit.audit_adapters import (
     load_shared_lib,
 )
 from scripts.audit.group_i_criteria import frs_with_malformed_criteria, frs_without_criteria
+from scripts.audit.group_i_rewritability import rewritability_detail
 from scripts.audit.group_i_tbd_age import DEFAULT_THRESHOLD_DAYS, frs_with_stale_tbd
 
 # Detectors live in the pure sibling module; re-exported here so callers and
@@ -77,15 +82,17 @@ _CHECKS: tuple[tuple[str, str, str], ...] = (
     ("I6", "FR without acceptance criteria", "LOW"),
     ("I7", "FR criterion not in the prescribed Given/when/then shape", "LOW"),
     ("I8", "Stale TBD acceptance-criteria placeholder", "MEDIUM"),
+    ("I9", "Requirement with no linked rationale (M7 Rewritability)", "LOW"),
 )
 
-#: I5's, I6's, I7's and I8's display names, bound by NAME rather than by
+#: I5's, I6's, I7's, I8's and I9's display names, bound by NAME rather than by
 #: `_CHECKS[n][1]`. The positional form silently relabels the check if anyone
-#: reorders `_CHECKS`, and all four are referenced away from their tuple.
+#: reorders `_CHECKS`, and all five are referenced away from their tuple.
 _I5_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I5")
 _I6_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I6")
 _I7_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I7")
 _I8_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I8")
+_I9_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I9")
 
 #: I1/I2/I3 are prose heuristics over legacy specs, so they report WITHOUT
 #: ``status="fail"``: a failing finding feeds ``AuditReport.any_fail``, which
@@ -118,7 +125,13 @@ _I8_NAME = next(name for cid, name, _sev in _CHECKS if cid == "I8")
 #: definition something nobody has come back to — so it must never redden a
 #: dormant adopted repo's CI. It is a visibility signal (MEDIUM severity, so it
 #: sorts above the LOW prose checks in a dashboard) for triage, never a gate.
-_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6", "I7", "I8"})
+#: I9 is advisory by explicit spec instruction, not by inference from the
+#: pattern above: M7 in the campaign design spec states "M7 bleibt advisory,
+#: kein Hart-Gate" outright — an ADR requirement for every requirement would
+#: be bloat, and the check only PROXIES the real question (see
+#: `rewritability_links.py`'s module docstring), so a false positive is
+#: expected and must never cost a build.
+_ADVISORY_CHECKS = frozenset({"I1", "I2", "I3", "I6", "I7", "I8", "I9"})
 
 
 def _finding(check_id: str, name: str, severity: str, status: str, detail: str) -> Finding:
@@ -176,6 +189,22 @@ def _basis_finding(rows: list[FrRow]) -> Finding:
             + ", ".join(other[:_PREVIEW_CAP]),
         )
     return _report("I5", _I5_NAME, "MEDIUM", [], noun)
+
+
+def _rewritability_finding(project_root: Path, rows: list[FrRow]) -> Finding:
+    """I9 (M7 "Rewritability") — does a requirement's recorded history carry
+    a linked rationale (ADR / decision-drop)?
+
+    Advisory unconditionally, by explicit spec instruction rather than by the
+    usual "legacy prose can clean up gradually" reasoning the other advisory
+    checks rest on — see ``_ADVISORY_CHECKS``' comment and
+    ``rewritability_links.py``'s module docstring for the proxy this measures
+    and its named limitations. Rendering (including the never-``fail``,
+    unreadable-log branch) lives in the pure sibling ``group_i_rewritability``
+    — see that module's docstring for why it is a separate file.
+    """
+    detail = rewritability_detail(project_root, (r.id for r in rows))
+    return _finding("I9", _I9_NAME, "LOW", "pass", detail)
 
 
 def run(
@@ -241,4 +270,5 @@ def run(
         _report("I8", _I8_NAME, "MEDIUM",
                 frs_with_stale_tbd(project_root, rows, threshold_days=DEFAULT_THRESHOLD_DAYS),
                 f"FR(s) with a TBD placeholder open >= {DEFAULT_THRESHOLD_DAYS} days"),
+        _rewritability_finding(project_root, rows),
     ]

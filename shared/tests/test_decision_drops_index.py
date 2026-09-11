@@ -12,6 +12,7 @@ from pathlib import Path
 
 from lib.decision_drops_index import (
     _pending_drops,
+    pending_drops,
     render_decision_drops_index,
     render_recent_drops_summary,
 )
@@ -42,6 +43,16 @@ def test_a_pending_drop_is_listed(tmp_path):
     out = render_decision_drops_index(dd)
     assert "iterate-x_001.json" in out
     assert "My decision" in out
+
+
+def test_public_pending_drops_matches_the_private_implementation(tmp_path):
+    """``pending_drops`` was promoted to public for ``rewritability_links.py``
+    (Group I9) so that caller does not carry a fourth independent copy of
+    this same directory scan — it must return exactly what the internal
+    renderer already reads."""
+    dd = tmp_path / "decision-drops"
+    _drop(dd, "iterate-x_001.json", title="My decision")
+    assert pending_drops(dd) == _pending_drops(dd)
 
 
 def test_missing_title_falls_back_to_a_decision_snippet(tmp_path):

@@ -116,34 +116,6 @@ def test_existing_matching_session_id_omits_reassignment(monkeypatch):
     assert "SHIPWRIGHT_PLUGIN_ROOT=/fake/root" in context
 
 
-def test_claude_env_file_receives_session_id(monkeypatch, tmp_path):
-    """SHIPWRIGHT_SESSION_ID must be appended to CLAUDE_ENV_FILE so
-    bash subprocesses inherit it (additionalContext alone does not)."""
-    env_file = tmp_path / "env.sh"
-    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
-    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", "/fake/root")
-    monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
-
-    _run(json.dumps({"session_id": "env-test-id"}))
-
-    content = env_file.read_text(encoding="utf-8")
-    assert "export SHIPWRIGHT_SESSION_ID=env-test-id" in content
-
-
-def test_claude_env_file_idempotent(monkeypatch, tmp_path):
-    """Re-running the hook with the same session id must not duplicate the export."""
-    env_file = tmp_path / "env.sh"
-    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
-    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", "/fake/root")
-    monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
-
-    _run(json.dumps({"session_id": "same-id"}))
-    _run(json.dumps({"session_id": "same-id"}))
-
-    content = env_file.read_text(encoding="utf-8")
-    assert content.count("SHIPWRIGHT_SESSION_ID=same-id") == 1
-
-
 def test_resolve_project_root_via_subdirectory(monkeypatch, tmp_path):
     """When cwd has no marker but exactly one child does, project root
     should resolve to that child (monorepo subdirectory support)."""

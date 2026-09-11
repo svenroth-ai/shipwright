@@ -193,7 +193,7 @@ def test_fv2_group_i_skips_every_check_on_empty():
     """
     findings = _probe("group_i_empty", "absent")
     assert {f["check_id"] for f in findings} == {
-        "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8",
+        "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9",
     }
     assert {f["status"] for f in findings} == {"skip"}  # FROZEN-BUG (FV-2)
     # The state is now named rather than generic -- S5's half of FV-2.

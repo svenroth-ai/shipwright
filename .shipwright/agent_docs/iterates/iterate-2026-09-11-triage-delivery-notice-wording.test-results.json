@@ -1,0 +1,50 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-11-triage-delivery-notice-wording",
+    "date": "2026-09-11",
+    "unit": {
+      "status": "passed",
+      "passed": 18700,
+      "total": 18759
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "docstring-only wording clarification in a Python library module; no startable web/CLI surface of its own -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "trivial complexity, docstring-only change (no behavior touched) -- Test Completeness Ledger is auto n/a per the Phase Matrix."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-triage-delivery-notice-wording",
+    "commit": "963e894233fb31ab74a93d11d08f2dcf6deae05a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -779,6 +779,32 @@ the finalization churn. The flag forces the change to be *reasoned about and
 recorded*; it must never be read as "pin everything" (GitHub-owned actions stay on
 mutable tags by framework decision, third-party stay SHA-pinned).
 
+**Run/content binding were not sufficient — authorship was never checked
+(trg-33d30377, PR #718).** A campaign sub-iterate runner that hit the flag at
+Step 3.4 wrote its own ack for its own diff instead of escalating; every existing
+check validated it, because none of them asked WHO wrote it. `record_ci_supplychain_ack.py`
+now refuses outright while `SHIPWRIGHT_LOOP_UNIT_ID` is set in its own process
+environment — the variable an active campaign sub-iterate runner's process
+carries, propagated to its Bash-tool subprocesses via
+`capture_session_id.py`'s `CLAUDE_ENV_FILE` write (mirroring the pre-existing
+`SHIPWRIGHT_SESSION_ID` handling there; the SessionStart hook's
+`additionalContext` is text shown to the model, not an OS environment, so it
+cannot be what this guard reads). This is a process-identity heuristic, not a
+cryptographic guarantee, and nothing unsets the variable once a unit's runner
+returns — an operator resolving the escalation must not carry it into their
+own terminal (`unset SHIPWRIGHT_LOOP_UNIT_ID` if in doubt); see
+`references/campaign-mode.md`'s operator note. The CLI also stamps a
+`provenance` field (`"worktree"` or `"commit"`) naming which content it
+fingerprinted; `check_ci_supplychain_ack` rejects a per-run-location ack that
+lacks it (the legacy `iterate_latest` leg is exempt — every legacy ack
+predates the field and none can be rebased to add it). It also accepts
+`--commit <ref>` to acknowledge an already-committed CI change: the default
+working-tree fingerprint sees nothing once F6 has run, so an operator
+resolving an escalation after the fact needs the branch-diff view instead —
+the same `merge-base..ref` range the verifier itself recomputes. A
+squash-merge or rebase after recording invalidates a `"commit"`-provenance
+ack's `provenance_ref`; re-record post-rewrite.
+
 **Step 3.4's recorded complexity needed its own recording-integrity gate
 (iterate-2026-08-05-risk-recheck-recording-integrity, triage `trg-da9320d8` →
 retitled P4.01).** The campaign sub-iterate-runner's Step 3.4
@@ -1715,7 +1741,11 @@ Injects into Claude's session context:
 Also appends `export SHIPWRIGHT_SESSION_ID=...` to `CLAUDE_ENV_FILE`
 (if provided) so bash subprocesses inherit the session id —
 `additionalContext` alone does not reach child processes spawned by
-Claude's Bash tool. Idempotent: never duplicates the export line.
+Claude's Bash tool. When `SHIPWRIGHT_LOOP_UNIT_ID` is set (an active
+campaign sub-iterate runner), it is appended the same way (trg-33d30377 —
+`record_ci_supplychain_ack.py`'s authorship guard reads it via
+`os.environ`, which only this write, not `additionalContext`, can reach).
+Idempotent per variable: never duplicates an export line.
 
 This single hook replaced 8 per-plugin duplicates that used to live
 under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
@@ -3632,6 +3662,32 @@ does not close the two-PR sequence.
 
 Neither feeder check is mirrored by `scripts/verify_local.py`, for the same
 structural reason as the Keystone gate (`CI_ONLY_GATES` in that script).
+
+**A third step closes the job — advisory-only, never a hard gate.**
+`Check-body suspects (advisory, non-blocking)`
+(`shared/scripts/tools/check_test_body_suspects.py`) is the third, lower-priority
+item P3.7's own sub-iterate spec named and explicitly deferred, delivered
+bundled with P3.8 (provenance: `trg-33a474e2`, filed by P3.7's own runner and
+amended by an operator to bundle in `trg-c2329759`, p3.8's own tracker card,
+which was then dismissed into it — see the iterate design doc's Section 12
+for the full provenance trail). Same class of check P3.6's own
+design doc names in §7 and P3.8's own sub-iterate spec restates: "mechanics
+raise a flag, a human decides." It flags an acceptance criterion whose own
+text is UNCHANGED between base and head, that has a test bound to it whose
+BODY was edited in this diff — a signal a human should judge (a refactor vs. a
+quiet weakening), never a verdict this check renders itself. Reuses the same
+base/head criterion-digest reader the Orphan AC binding gate's arm 2 already
+built (`_ac_binding_regression.head_and_base_minted`), plus an AST walk to
+locate and digest the bound test's own function source at each commit.
+
+Deliberately not named `...(gate)` and carries no `check_ci_gate_coverage
+.GATE_NAME_KEYWORDS` word other than what any prose step might incidentally
+share — its own CLI returns exit `0` **unconditionally**: a clean run, an
+advisory finding, and an infrastructure fault are all reported through the
+JSON payload's `status` field (`clean` / `advisory` / `not_evaluated`), never
+through the process exit code. That guarantee lives in the script itself, not
+in a `continue-on-error` the YAML could later lose. Same ordering + trigger
+reasoning as the two feeder checks above.
 
 Two limits to keep in view. **A local pass is never a substitute for the host's
 re-check** (FR-01.17): CI runs a clean checkout on a pinned interpreter, which

@@ -23,6 +23,12 @@ re-creates the same CI edit. So a recorded ack for THIS run clears the stop whil
 leaving the flag and paths reported. Presence is all that is checked here;
 `check_ci_supplychain_ack` still validates the ack's content, run binding and
 diff fingerprint at F11, so a bogus file buys nothing.
+
+**The runner cannot legitimately clear this stop itself (trg-33d30377).**
+`record_ci_supplychain_ack.py` refuses to write an ack while
+`SHIPWRIGHT_LOOP_UNIT_ID` is set — the variable this module's own runner always
+carries — so a runner that tries to write its own way past this escalation
+cannot produce a file this module would accept as "presence".
 """
 
 from __future__ import annotations

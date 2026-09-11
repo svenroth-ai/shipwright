@@ -21,6 +21,13 @@ committing. Both were false-greens by construction.
 
 Where the ack LIVES and how it is loaded is :mod:`ci_supplychain_ack_store`;
 reading committed content safely is :mod:`git_blob_read`.
+
+Run binding and content binding are necessary but were not sufficient: a
+campaign sub-iterate runner satisfied both by writing its own ack for its own
+diff (trg-33d30377 / PR #718) — authorship was the one property never checked.
+``record_ci_supplychain_ack.py`` now refuses to run inside an active campaign
+runner's own context and stamps a ``provenance`` field naming which content it
+fingerprinted; :func:`_validate_fields` here rejects an ack that lacks it.
 """
 
 from __future__ import annotations
@@ -85,6 +92,12 @@ _MIN_STATEMENT_CHARS = 20
 _MIN_REF_CHARS = 3
 _MIN_STATEMENT_WORDS = 5
 
+#: `record_ci_supplychain_ack.py` stamps one of these naming which content it
+#: fingerprinted (trg-33d30377). An ack lacking the field cannot have come from
+#: that CLI — it was hand-assembled, or predates the stamp — so it is rejected
+#: rather than silently treated as equally trustworthy.
+_KNOWN_PROVENANCE = frozenset({"worktree", "commit"})
+
 
 def _is_ci_supplychain(changed_files: list[str] | None) -> bool:
     for path in changed_files or []:
@@ -127,8 +140,18 @@ def ci_supplychain_fingerprint(changed_files, content_reader) -> str:
     return content_fingerprint(_ci_paths(changed_files), content_reader)
 
 
-def _validate_fields(ack: dict) -> str | None:
-    """Return a human-readable reason the ack is invalid, or ``None`` if it is."""
+def _validate_fields(ack: dict, source: str = "") -> str | None:
+    """Return a human-readable reason the ack is invalid, or ``None`` if it is.
+
+    ``source`` gates the `provenance` requirement: it applies to the per-run
+    location (``"commit"`` / ``"worktree"``) only, never to a ``"legacy"`` /
+    ``"legacy-worktree"`` ack. The legacy leg is a read-only compatibility path
+    for branches that recorded an ack before it even had a `provenance` field to
+    stamp — "branches that recorded the ack the old way must not red-line at F11
+    for a reason they cannot act on without a rebase" is the whole reason that
+    leg exists (iterate-2026-07-28-ci-ack-per-run-home), and nothing writes NEW
+    acks there any more for the requirement to usefully gate.
+    """
     ref = ack.get("consistent_with")
     stmt = ack.get("statement")
     if not isinstance(ref, str) or len(ref.strip()) < _MIN_REF_CHARS:
@@ -148,6 +171,31 @@ def _validate_fields(ack: dict) -> str | None:
             f"`statement` must be a sentence, not padding "
             f"(at least {_MIN_STATEMENT_WORDS} words)"
         )
+    if not source.startswith("legacy"):
+        provenance = ack.get("provenance")
+        if provenance not in _KNOWN_PROVENANCE:
+            return (
+                "acknowledgement carries no `provenance` stamp naming which content "
+                f"it fingerprinted (expected one of {sorted(_KNOWN_PROVENANCE)}) — "
+                "it was not written by record_ci_supplychain_ack.py, or predates "
+                "trg-33d30377; re-record it with that CLI"
+            )
+        # `provenance` alone is a label; `provenance_ref` must agree with it or the
+        # pair is inconsistent metadata a hand-edited ack could carry regardless of
+        # the CLI's own invariant (external review, Branch A). Content binding
+        # (the fingerprint check above) is still what actually licenses the diff —
+        # this only keeps the audit trail honest.
+        ref = ack.get("provenance_ref")
+        if provenance == "worktree" and ref is not None:
+            return (
+                "`provenance` is \"worktree\" but `provenance_ref` is not null — "
+                "an inconsistent pair record_ci_supplychain_ack.py never writes"
+            )
+        if provenance == "commit" and not (isinstance(ref, str) and ref.strip()):
+            return (
+                "`provenance` is \"commit\" but `provenance_ref` names no commit — "
+                "an inconsistent pair record_ci_supplychain_ack.py never writes"
+            )
     return None
 
 
@@ -283,7 +331,7 @@ def check_ci_supplychain_ack(
             "different set of CI files, so it cannot license this one",
         )
 
-    invalid = _validate_fields(ack)
+    invalid = _validate_fields(ack, source)
     if invalid:
         return CheckResult(name, False, f"CI supply-chain acknowledgement is not usable: {invalid}")
 

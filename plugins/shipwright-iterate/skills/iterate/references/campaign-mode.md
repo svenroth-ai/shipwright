@@ -397,4 +397,35 @@ itself:**
 it certifies that a human reasoned about a trust-boundary change, and a runner
 authoring its own permission slip is precisely the failure the gate exists to
 catch (webui #285 reversed an accepted-risk posture unnoticed *through* a full
-medium iterate with external plan review).
+medium iterate with external plan review). **This is now checked, not only
+stated in prose** (trg-33d30377 / PR #718 — a runner called the CLI directly
+anyway, and run binding + content binding validated its self-written ack
+perfectly): `record_ci_supplychain_ack.py` refuses outright while
+`SHIPWRIGHT_LOOP_UNIT_ID` is set in its own process environment — the variable
+an active autonomous-loop unit's process carries (this campaign loop's own
+sub-iterate runner, or `shipwright-build`'s unrelated `--autonomous` loop
+around its `section-builder` — both set the same var, and refusing either is
+correct: no unattended unit should self-author this ack) and an operator's
+own terminal does not. **This is a process-identity heuristic, not a
+cryptographic guarantee** — it distinguishes "am I the runner process" from
+"am I not," nothing stronger; it cannot distinguish two humans, or catch a
+runner that unsets the variable before calling the CLI. Propagation to the
+runner's own Bash-tool subprocesses goes through
+`capture_session_id.py`'s `CLAUDE_ENV_FILE` write, the one channel this
+codebase uses to guarantee a hook-observed env var reaches a subprocess the
+Bash tool spawns (mirrors the pre-existing `SHIPWRIGHT_SESSION_ID` handling
+there) — additionalContext alone (text shown to the model) does not reach a
+subprocess's real environment. **Operators: do not `export
+SHIPWRIGHT_LOOP_UNIT_ID` yourself when resolving an escalation** — step 3b's
+`export` is this orchestrator's own shorthand for what the harness sets on
+the *spawned runner's* process, not an instruction to type in your own
+terminal. If you are debugging inside a worktree where it might already be
+set (e.g. copied from 3b, or inherited from a prior shell), `unset
+SHIPWRIGHT_LOOP_UNIT_ID` before running `record_ci_supplychain_ack.py` — the
+guard cannot tell that export apart from a real runner's. The CLI also
+accepts `--commit <ref>` to acknowledge a CI change that is already
+committed (the working-tree fingerprint the runner uses pre-F6 sees nothing
+once it is), so the operator's path stays reachable after the fact too. A
+squash-merge or rebase that rewrites the committed SHA after the ack is
+recorded invalidates `provenance_ref` along with it — re-record post-rewrite,
+the same way a content-fingerprint change already requires.
