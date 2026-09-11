@@ -294,6 +294,25 @@ sections above have been reworded to describe what was found and changed
 in ordinary past-tense narration, without changing any of the underlying
 facts.
 
+## Tier-3 review history — run-config fallback, falsy case (PR #729)
+
+A fourth review pass, over the commit addressing the two points above,
+found the run-config fallback fix from the previous round incomplete: it
+gated the new shape check on `data` being truthy (`elif data and not
+isinstance(data, dict)`), so a FALSY non-dict run-config — `[]`, `""`, or
+`0` — still fell through to the existing `not path.exists() and not data`
+early return and read as "no manifest yet" (SKIPPED). `read_run_config`
+returns `{}` (also falsy) for a genuinely missing or unparseable file, and
+truthiness alone cannot distinguish that legitimate "nothing here" case
+from a present-but-malformed one — the two need to be told apart by type,
+not by truthiness. The check now applies to any non-dict `data`
+regardless of truthiness, since `{}` (a dict) is the only shape
+`read_run_config` returns for its own "nothing to report" case. The same
+pass raised one non-blocking `Comment` — `test_verifiers_project.py`'s
+dispatcher-level test only asserts the four gate names are present rather
+than exercising the guidance gate's actual merge-blocking behavior via a
+full-app fixture — recorded here, not acted on this round.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading

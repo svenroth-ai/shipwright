@@ -94,19 +94,20 @@ def _declared_split_names(
         except (json.JSONDecodeError, OSError) as exc:
             return None, f"shipwright_project_config.json could not be parsed: {exc}"
         if not isinstance(data, dict):
-            # Round 6: a syntactically valid but non-object config (``[]``,
-            # ``null``, a bare scalar) used to fall through to "zero splits
-            # declared" (SKIPPED) here, even though the SAME non-object
-            # case already fails loud in ``_read_project_scope``.
+            # Round 6: a syntactically valid but non-object config used to
+            # fall through to "zero splits declared" (SKIPPED) here, even
+            # though the SAME case already fails loud in ``_read_project_scope``.
             return None, (
                 f"shipwright_project_config.json is a {type(data).__name__}, "
                 f"expected a JSON object"
             )
-    elif data and not isinstance(data, dict):
-        # Tier-3 PR review (PR #729): the run-config FALLBACK path never
-        # validated ``data``'s shape like the project-config branch above —
-        # a malformed, truthy non-dict run-config fell through to
-        # ``splits=[]``, SKIPPED, instead of failing loud.
+    elif not isinstance(data, dict):
+        # Tier-3 review (PR #729, 2 rounds): the run-config FALLBACK never
+        # validated ``data``'s shape like the branch above — a malformed
+        # non-dict run-config fell through to ``splits=[]``, SKIPPED. Round
+        # 1 gated on ``data`` being truthy, missing a FALSY non-dict
+        # (``[]``); ``read_run_config`` returns ``{}`` for a genuinely
+        # missing file, so any OTHER non-dict here is malformed content.
         return None, (
             f"shipwright_run_config.json is a {type(data).__name__}, "
             f"expected a JSON object"
@@ -130,10 +131,9 @@ def _declared_split_names(
             names.add(raw_name)
         else:
             # Every non-dict entry, and every dict entry whose "name" is
-            # missing / null / empty / unsafe, is recorded (round 5): a
-            # FALSY name used to be filtered before being counted as
-            # rejected, so an all-null manifest read as "zero splits"
-            # rather than "every declared split was invalid".
+            # missing/null/empty/unsafe, is recorded (round 5): a FALSY
+            # name used to be filtered before being counted as rejected,
+            # misreading an all-null manifest as "zero splits declared".
             rejected.append(s if not isinstance(s, dict) else raw_name)
     if rejected:
         # Tier-3 review, PR #729: a mixed manifest used to silently drop

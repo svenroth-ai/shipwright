@@ -156,6 +156,20 @@ def test_check_no_empty_split_fails_loud_on_non_object_run_config_fallback(tmp_p
     assert "expected a JSON object" in r.detail
 
 
+def test_check_no_empty_split_fails_loud_on_an_empty_non_object_run_config_fallback(tmp_path):
+    """Tier-3 PR review (PR #729, round 2 on this same fix): the first fix
+    above gated on ``data`` being truthy, so a FALSY non-dict run-config
+    (``[]`` here) still fell through to the ``not data`` early return —
+    read as "no manifest yet" (SKIPPED) rather than malformed content,
+    since ``read_run_config`` returns ``{}`` (also falsy) for a genuinely
+    missing file and the two were not distinguished by truthiness alone."""
+    (tmp_path / "shipwright_run_config.json").write_text("[]", encoding="utf-8")
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "expected a JSON object" in r.detail
+
+
 def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():
     """External code review (round 6, low+medium, both reviewers
     independently): ``is_absolute()`` alone misses Windows DRIVE-relative
