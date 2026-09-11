@@ -260,25 +260,25 @@ def format_pending_delivery_notice(
 
     A **summary**, not a per-row marker, because the case that matters most is not
     on the list at all: an item dismissed or promoted while its status event stayed
-    buffered resolves to a terminal status, so it drops out of both sections
-    and reads as decided-and-done. A marker can only annotate rows that are still
-    rendered; a count can report the ones that vanished. The text therefore says
-    "in this store", never "shown here".
+    buffered resolves to a terminal status, dropping out of both sections and
+    reading as decided-and-done. A marker can only annotate rows still rendered;
+    a count can report the ones that vanished — hence "in this store", never "shown here".
 
     The wording says "not committed to any branch" / "not yet merged here", never
     "not on origin" or "reached origin": all this can prove is what this reading
-    tree's own tracked store, and its known siblings, currently hold.
+    tree's own tracked store, and its known siblings, currently hold — and never a
+    live risk to the resolution shown above: `read_all_items`'s local-wins rule
+    (:mod:`lib.triage_cross_tree`) bars a sibling's timestamp from ever reopening a
+    local decision, so reversing one shown here takes an actual merge, not a race.
 
     ``origin_branches`` (optional) names, for an id whose decision this reader
     found on a SIBLING worktree rather than in its own gitignored outbox, which
     branch holds it (see :mod:`lib.triage_cross_tree`). An id absent from it is
     the original, plainer case — still only in this clone's outbox.
 
-    Every character is ASCII — ids and branch names via ``ascii()`` because they
-    come from a file any producer may append to, and the surrounding literal by
-    hand — so the line is safe on a Windows cp1252 console without depending on
-    the caller having reconfigured the stream. The id list is capped so a
-    deliberately large outbox cannot flood the terminal.
+    Every character is ASCII — ids/branch names via ``ascii()`` (producer-supplied
+    text), the rest by hand — safe on a Windows cp1252 console without a
+    reconfigured stream. The id list is capped so a large outbox cannot flood it.
     """
     if not item_ids:
         return None
