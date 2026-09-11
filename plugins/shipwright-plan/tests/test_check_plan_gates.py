@@ -37,6 +37,27 @@ def test_a_missing_plugin_root_dir_is_a_usage_error(planning, tmp_path):
     assert out["error"] == "plugin_root_not_found"
 
 
+def test_a_missing_project_root_dir_is_a_usage_error(planning, tmp_path):
+    """External Tier-3 review, PR #726 round 9: --project-root was resolved
+    but never validated as a directory, so a typo'd root made
+    git_dirty_paths() return no evidence and --gate boundary falsely pass.
+    A subprocess `cwd` must itself exist (Windows), so this calls the
+    script directly rather than through `run_gates` (whose `cwd` follows
+    `project_root`)."""
+    proc = subprocess.run(
+        [
+            sys.executable, SCRIPT,
+            "--planning-dir", str(planning),
+            "--project-root", str(tmp_path / "no-such-root"),
+            "--gate", "boundary",
+        ],
+        capture_output=True, text=True, cwd=str(tmp_path),
+    )
+    out = json.loads(proc.stdout)
+    assert proc.returncode == 2
+    assert out["error"] == "project_root_not_found"
+
+
 def test_project_root_is_required_not_defaulted_to_cwd(planning):
     """External code review, iterate-2026-09-11-e1-checks-plan-design: a
     silently-defaulted cwd let --gate boundary read an empty git evidence

@@ -8,29 +8,22 @@ not a gate — this is the command, so Step 6's "STOP" and Step 9's
     uv run check-plan-gates.py --planning-dir <path> --project-root <path> \
         --plugin-root <path> [--gate review|sections|boundary|all]
 
-``--gate review`` (Step 6)
-    The external review step must have ended by a recorded route, and any
-    disagreement between the two reviewers must have been decided. The
-    judgement comes from ``review_marker.evaluate_review_state`` — the same
-    function the resume gate and the ``W5`` compliance check use. Also runs
-    the **key-honesty** check (FR-01.03 #1): if external-review keys are
-    actually available right now, the marker may not record a silent skip.
+``--gate review`` (Step 6) — the external review step must have ended by a
+recorded route, and any reviewer disagreement decided (via
+``review_marker.evaluate_review_state``, shared with the resume gate and the
+``W5`` compliance check). Also runs the **key-honesty** check (FR-01.03 #1):
+a marker may not record a silent skip while keys are actually available.
 
-``--gate sections`` (Step 9, requires ``--plugin-root`` — usage error without it)
-    Manifest/dependency/coverage/trace/quality checks (#9); a planning
-    decision was logged (#8); every review finding — external or internal,
-    whichever carried the gate — addressed or rejected-with-reason (#10);
-    a UI project's E2E plan names >=1 flow, via config.json (#11).
+``--gate sections`` (Step 9, requires ``--plugin-root``) — manifest/
+dependency/coverage/trace/quality (#9); a decision was logged (#8); every
+review finding addressed or rejected-with-reason (#10); a UI project's E2E
+plan names >=1 flow (#11).
 
-``--gate boundary`` (#7 — planning writes no production code)
-    Every changed path must fall under an allowed planning-phase prefix (see
-    ``PLAN_ALLOWED_PREFIXES``). Non-git ``--project-root`` skips it (nothing
-    to check against).
+``--gate boundary`` (#7 — planning writes no production code) — every
+changed path must fall under an allowed planning-phase prefix (see
+``PLAN_ALLOWED_PREFIXES``); non-git ``--project-root`` skips it.
 
-Strict by design — unlike the phase verifier, which is lenient toward plans
-written before these formats existed, this runs against the plan being
-written *now*, which has no excuse.
-
+Strict by design (unlike the lenient phase verifier — this plan has no excuse).
 Exit codes: ``0`` all gates passed · ``1`` a gate failed · ``2`` bad usage.
 """
 
@@ -243,8 +236,8 @@ def main() -> int:
     parser.add_argument(
         "--project-root", required=True,
         help="Project root for decision_log.md, git evidence, and review-config "
-             "overrides — a cwd default let --gate boundary false-pass on "
-             "empty git evidence (external review, iterate-2026-09-11-e1).",
+             "overrides — a cwd default let --gate boundary false-pass on empty "
+             "git evidence (external review).",
     )
     parser.add_argument(
         "--plugin-root", default=None,
@@ -263,6 +256,13 @@ def main() -> int:
         return 2
 
     project_root = Path(args.project_root).resolve()
+    if not project_root.is_dir():
+        print(json.dumps({
+            "success": False, "error": "project_root_not_found",
+            "message": f"not a directory: {project_root}",
+        }, indent=2))
+        return 2
+
     plugin_root = Path(args.plugin_root).resolve() if args.plugin_root else None
     if plugin_root is None and args.gate in ("sections", "all"):
         print(json.dumps({
