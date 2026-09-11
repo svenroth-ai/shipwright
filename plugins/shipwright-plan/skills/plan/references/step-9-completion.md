@@ -42,9 +42,10 @@ all of them; fix what it names now rather than counting on that backstop.
 9. **Decision Recorded** (FR-01.03 #8) — a Plan-phase decision-log entry
    (`- **Section:** Plan Interview — {split_name}` or another
    Plan-phase-tagged section) exists for this split.
-10. **Findings Addressed** (FR-01.03 #10) — every finding Step 5's external
-    review marker recorded (`findings_count`) has a matching
-    `External Review — {split_name}` decision-log entry.
+10. **Findings Addressed** (FR-01.03 #10) — every finding Step 5's marker
+    recorded (`findings_count`) has a matching `External Review —
+    {split_name}` **or** `Internal Plan Review — {split_name}` decision-log
+    entry — whichever review actually carried the gate.
 11. **E2E Journeys Named** (FR-01.03 #11) — a UI project's
     `claude-plan-e2e.md` names at least one `### Flow N: ...`-style heading,
     not merely exists.
