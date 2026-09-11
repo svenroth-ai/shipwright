@@ -98,9 +98,43 @@ autonomous run hunting for oracles that cannot exist (D7). All are now split.
 
 **The result is the useful part: overwhelmingly mechanisable.** (Counts here are
 the 2026-07-25 sweep's; the end-check re-derived the whole distribution — see
-*End-check* at the foot of this document.) The
+*End-check* at the foot of this document, and the **re-measurement below** for
+the current numbers.) The
 prompt-only set is overwhelmingly *buildable*, so an enforcement run has real
 targets rather than a wall of "needs a human to read it".
+
+**Re-measured 2026-09-11 (sub-iterate `e0-ledger-accounting`, campaign
+`req3-06-enforcement-mono`) — mechanically, not by hand.** The card that
+opened this campaign carried 44/15/10/25 for these same four categories;
+those numbers were already stale the day the campaign started, because
+nothing had re-counted since the 2026-07-26 end-check below and every walk
+since then (`.01`, `.09`'s addendum, the retro scenario pass, later
+minting) changed rows without anyone re-running the count. Current count,
+reproducible at any time via `uv run
+shared/scripts/tools/measure_ac_evidence_ledger.py`:
+
+**47** prompt-only/mechanisable · **19** prompt-only/judgement ·
+**16** enforced-untested · **36** unimplemented · **50**
+enforced-tested (see the script's own docstring on why these five category
+names are deliberately written *without* their backtick form here — the
+same backtick phrases the legend and the End-check table already use, so
+counting this paragraph too would inflate every future re-measurement by
+one). **What is actually counted:** every backtick-quoted occurrence of a
+canonical status phrase anywhere in this file — table rows, the legend,
+the End-check summary, and any prose that quotes one — not a structural
+parse of "one criterion, one row". That is a known, accepted imprecision
+(external code review, both providers, 2026-09-11): the number moves if a
+future edit backticks a status phrase in prose rather than a table cell,
+same as it always could have by hand. It is still the right tool for what
+this document is used for — a backlog size for the enforcement campaign —
+because building a parser that recognises "a real criterion row" across
+this document's dozen different hand-written table shapes is a bigger,
+more fragile undertaking than the imprecision it would remove; a
+follow-up ledger-format migration to a machine-checkable per-row marker is
+real future work, not this bounded accounting pass. Work from *these*
+numbers, not the card's. The script is committed precisely so the next
+pass re-measures instead of trusting this paragraph once it, too, goes
+stale.
 
 The six genuine `judgement` rows, and why no gate may be built for them —
 each needs reading comprehension, so its honest ceiling is a drift test that the
@@ -139,7 +173,7 @@ setup-planning-session}.py`, `scripts/lib/sections.py`,
 | 1 | No review key ⇒ stops and asks | `prompt-only (mechanisable)` | Status IS computed in code (`get_external_review_status`), but `is_external_review_enabled` has **no production caller** — only tests. `external_review.py` itself skips gracefully with no keys. Acting on it is the agent's job. |
 | 2 | Route recorded; dividing refuses without it | `prompt-only (mechanisable)` (in-session) | The in-session gate is prompt text. See #6 for the enforced half. |
 | 3 | Every requirement lands in ≥1 section | `prompt-only (mechanisable)` | **Zero code.** `check-sections.py` only checks declared sections have files. No FR-coverage logic anywhere in the plugin. |
-| 3b | Every section traces back to ≥1 requirement | `unimplemented` | **Newly added by this round.** Not claimed anywhere before — found by the negative-space pass. A section records no requirement link at all (`section-index.md`: the manifest is a bare `NN-slug` list), so a plan can add work nobody asked for and nothing notices. Constitution forbids exactly this (YAGNI). Note this is also what makes #3 uncheckable: there is no link data in either direction. |
+| 3b | Every section traces back to ≥1 requirement | `unimplemented` → per-plugin triage item (`shipwright-plan`, uncarded — see "Feeds the per-plugin triage item" below) | **Newly added by this round.** Not claimed anywhere before — found by the negative-space pass. A section records no requirement link at all (`section-index.md`: the manifest is a bare `NN-slug` list), so a plan can add work nobody asked for and nothing notices. Constitution forbids exactly this (YAGNI). Note this is also what makes #3 uncheckable: there is no link data in either direction. |
 | 4 | Each section: purpose, ≥2 steps, test strategy | `prompt-only (mechanisable)` | **Zero code.** No section-quality logic anywhere in the plugin. |
 | 5 | a section **names which others it presupposes**; the numbering never places a prerequisite after its user | `unimplemented`, `mechanisable` → `trg-88f721be` | **rewritten 2026-07-25 (scenario).** Was `no-oracle`: the manifest is a flat `NN-slug` list, so dependencies were **not expressible** and nothing could establish the promise. The module's remedy for a no-oracle is to change the *writing* — declaring the dependency is what makes the order checkable |
 | 6 | Resumes where it stopped; unreviewed plan sent back | `enforced, untested` | `setup-planning-session.py:71-72` forces `resume_step = 5` when `plan.md` exists but the marker does not — comment states the intent. Also audited by `plan_compliance.check_w5_external_review_marker`. No test found pinning the marker-missing branch specifically. |
@@ -175,12 +209,12 @@ exist in that catalogue, not how the interview behaves.
 |---|---|---|---|
 | 1 | Every described capability is present | `prompt-only (judgement)` | Comparing interview to catalogue is reading comprehension. Drift-test the instruction; no gate (D7). |
 | 2 | Nothing invented that was not asked for | `prompt-only (judgement)` | Same. This is the YAGNI mirror the constitution already requires in prose. |
-| 3 | Every requirement has confirmed criteria; none unelaborated | `unimplemented` | **Nothing anywhere obliges a requirement to have criteria** — grep across the repo returns zero. Proof: 7 rows read `TBD` from May until this campaign. Operator decision: **strict for greenfield** — the person is present. |
+| 3 | Every requirement has confirmed criteria; none unelaborated | `unimplemented` → per-plugin work unit (`shipwright-project`, uncarded — see "Feeds the per-plugin work unit" below) | **Nothing anywhere obliges a requirement to have criteria** — grep across the repo returns zero. Proof: 7 rows read `TBD` from May until this campaign. Operator decision: **strict for greenfield** — the person is present. |
 | 4 | Basis recorded, and `assumed` does not appear (greenfield) | `prompt-only (mechanisable)` | **Reworded 2026-07-24** to the greenfield teeth after the operator caught that the old wording sanctioned `assumed` — which we banned for greenfield. That basis *is recorded* is enforced (`I5`), but `assumed` is a **valid** `I5` value, so nothing forbids it appearing in a greenfield catalogue. The greenfield-only ban is buildable: grep the Basis column of a `/shipwright-project` spec for `assumed` → must be empty. Pairs with module §8/§12. |
 | 4b | Every requirement's six context dimensions walked, none left blank | `prompt-only (judgement)` | **Added 2026-07-24** — the measurable proxy for "got everything out". Splits from FR-01.16: *discovery* completeness (did the interview find everything a deeper grill would) is **unmeasurable** — no oracle against unknown ground truth — and is FR-01.16's method guarantee, recorded `untestable` in Phase 1. *Recording* completeness (does each requirement show all six angles were considered) is checkable per requirement — partly mechanisable (is there an out-of-scope line? a rationale link where a hard-to-reverse choice was made?), mostly judgement. Nothing enforces it today. |
 | 5 | No symbol/path/ADR/verb in the sentence | `prompt-only (mechanisable)` | Audit `I1` flags names, but advisory and name-only. A deterministic check over the whole sentence is buildable. |
 | 6 | Plain language, full guarantee | `prompt-only (judgement)` | Reading comprehension — `I2` is advisory. Drift-test only. |
-| 7 | Domain glossary (`CONTEXT.md`) exists | `unimplemented` → **Phase 3, already designed** | Nothing creates it, and **no card is owed**: Phase 1 shipped the format and the binding citation in project/adopt/iterate (drift-tested); Phase 3's grill-trace gate makes it *unavoidable* rather than merely instructed — **undefined term → STOP**, where undefined means absent from both the framework glossary and `CONTEXT.md`, plus a `glossary_delta` recording where each sharpened term was written. A file someone *should* create stays empty; a file you cannot finish without fills itself. |
+| 7 | Domain glossary (`CONTEXT.md`) exists | `unimplemented` → **no card owed**, owned by Phase 3's grill-trace gate (already designed) | Nothing creates it, and **no card is owed**: Phase 1 shipped the format and the binding citation in project/adopt/iterate (drift-tested); Phase 3's grill-trace gate makes it *unavoidable* rather than merely instructed — **undefined term → STOP**, where undefined means absent from both the framework glossary and `CONTEXT.md`, plus a `glossary_delta` recording where each sharpened term was written. A file someone *should* create stays empty; a file you cannot finish without fills itself. |
 | 8 | Hard-to-reverse rationale recorded + linked | `prompt-only (mechanisable)` | `write_decision_log.py` exists; nothing requires calling it, and nothing checks the link back. |
 | 9 | Assumptions-first stated back before questions | `enforced` | **Real and drift-tested** — `test_assumptions_first_block.py` pins the block + its firing point. The one guarantee here that is genuinely built. Borrowed from `addyosmani/agent-skills` (MIT). |
 | 10 | Divided into cohesive parts, or single-unit | `prompt-only (mechanisable)` | `split-heuristics.md` states the rule incl. "single-unit is not a failure". No code checks split cohesion; a floor on split count/shape is partly buildable. |
@@ -211,10 +245,10 @@ only real code is the manifest generator and a visual-guidelines existence check
 
 | # | Criterion (short) | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | Every user-facing requirement has ≥1 screen | `unimplemented` (data) / `prompt-only (mechanisable)` (gate) | The FR-Coverage gate lives in `review-loop.md` (prompt). **It has no data to check against:** `screen_registry.ScreenEntry.linked_frs` is never populated — `scan_designs_dir` derives screens from filenames only, and the `add --frs` subcommand the module docstring advertises **is not implemented** (`main()` has only `list` + `write-manifest`). So the manifest's "Linked FRs" column always renders empty. Same shape as the plan section→FR gap. |
+| 1 | Every user-facing requirement has ≥1 screen | `unimplemented` (data) / `prompt-only (mechanisable)` (gate) → per-plugin work unit (`shipwright-design`, uncarded — see "Feeds the per-plugin work unit" below) | The FR-Coverage gate lives in `review-loop.md` (prompt). **It has no data to check against:** `screen_registry.ScreenEntry.linked_frs` is never populated — `scan_designs_dir` derives screens from filenames only, and the `add --frs` subcommand the module docstring advertises **is not implemented** (`main()` has only `list` + `write-manifest`). So the manifest's "Linked FRs" column always renders empty. Same shape as the plan section→FR gap. |
 | 2 | Design tokens (colours/typography/spacing) exist as one definition | `prompt-only (mechanisable)` | `scan_designs_dir` sets `has_visual_guidelines` from **file existence** only. That the file contains the three token groups is checked in `review-loop.md` (prompt). Existence is enforced-ish; content is prompt. |
 | 3 | Flows between journey screens are shown | `prompt-only (mechanisable)` | **New criterion (negative-space).** `scan_designs_dir` lists `flows/*.html` if present, but nothing requires a flow per journey; generation is prompt (SKILL Step 5). |
-| 4 | Each user-facing requirement records its screen | `unimplemented` (manifest) / `prompt-only (mechanisable)` (spec writeback) | The structured link is the same dead `linked_frs` as #1. The spec-side writeback ("FR → screen") is prompt (`review-loop.md` Spec Backflow). So the traceability the build needs is not captured structurally anywhere. |
+| 4 | Each user-facing requirement records its screen | `unimplemented` (manifest) / `prompt-only (mechanisable)` (spec writeback) → same per-plugin work unit as #1 (`shipwright-design`, uncarded — one fix closes both) | The structured link is the same dead `linked_frs` as #1. The spec-side writeback ("FR → screen") is prompt (`review-loop.md` Spec Backflow). So the traceability the build needs is not captured structurally anywhere. |
 | 5 | Shared chrome from one definition | `prompt-only (mechanisable)` | `chrome-definition.md` is a prompt artifact; nothing checks screens actually draw from it. |
 | 6 | Mockups open standalone in a browser | `prompt-only (mechanisable)` | A property of generated HTML; nothing verifies no external `src`/CDN/deps. A grep-for-external-refs check is buildable. |
 | 7 | Look approved by a person before the rest | `enforced` | **Corrected 2026-07-24** — this is not prompt-only. `gate_catalog.json` sets `design.preview-approval` to `orchestrator-approve` with `default_answer: null` → the gate cannot auto-resolve even in autonomous mode; a human must approve. |
@@ -534,7 +568,7 @@ dangerous kind — a safety net that reports success while doing nothing.**
 | 4 | the app is contacted to prove it is alive; no answer = failed release | `enforced` (smoke) + `prompt-only (mechanisable)` (the branch) | **tail rewritten** — it used to promise the failure "returns it to the previous working state", which is the broken path |
 | 5 | a failed stored-data check offers the same way back; overriding needs a written record | `enforced` (verifier) + `prompt-only (mechanisable)` (offer) | `migration_verifier` is the strongest thing here — 308 src / 347 test lines, deliberately never invokes rollback itself. Note the opt-out: a migration with no verification block is `skipped=True, all_passed=True` |
 | 6 | every supported target has a **documented** way back, in a checked shape | `enforced` (docs) | **was "documented AND operable"** — operable is false for the shipped target's version-revert. Rewritten to the documentation half, which is real: discipline doc + per-target profiles + schema + validator |
-| 6b | stopping the broken app is reported as stopping it, not as a completed restore | `unimplemented` | **new (negative space)** — the clone path stops the environment, returns `next_steps` for a human (verify clone, update DNS, delete env) and reports `success: True` |
+| 6b | stopping the broken app is reported as stopping it, not as a completed restore | `unimplemented` → per-plugin work unit (`shipwright-deploy`, uncarded — no `trg-` id filed) | **new (negative space)** — the clone path stops the environment, returns `next_steps` for a human (verify clone, update DNS, delete env) and reports `success: True` |
 | 7 | a return to the previous state announces itself and is recorded | `prompt-only (mechanisable)` | |
 | 8 | an operator-requested return confirms first, then proves the app is alive | `prompt-only (mechanisable)` | |
 
@@ -1049,7 +1083,7 @@ projects merely because the plugin side is newer than the observer).
 | 3 | **a part the reader relies on becoming optional is breaking, though no field disappeared** | `enforced, tested` | **added.** Every container carries an explicit kind, so gaining a null arm reads as a retype. Without it the payload still parses and the reader still crashes — the one class nobody notices in time |
 | 4 | **a weak pin declares that it is weak** | `enforced, tested` | **added.** A list that happened to be empty, a value only ever seen absent: those paths are surfaced and asserted absent, so "always absent" is never shipped as a promise the sample was not in a position to make |
 | 5 | **checked against what the reader actually fetches — the real command, the real bytes** | `unimplemented` → `trg-c7e5835b` | **added.** The check exists and is complete; it is referenced by **no** workflow, **no** test and **no** document. Everything upstream can be correct while a wrapper or a changed invocation alters what leaves the building, and only this reads that |
-| 6 | the producing capability states plainly that it has an outside reader | `enforced` (two of three) + `unimplemented` (the third) | **promoted from the description into a criterion.** Adopt and grade declare it in their skill; the traceability manifest declares it only in a test-support docstring — the one contract with a live reader is the one nobody announced |
+| 6 | the producing capability states plainly that it has an outside reader | `enforced` (two of three) + `unimplemented` (the third) → **no card filed, by design**: a single one-line declaration to add inside `shipwright-compliance`'s traceability-manifest generator, deliberately left uncarded because filing it separately would mirror the enforcement list onto the board (see below) | **promoted from the description into a criterion.** Adopt and grade declare it in their skill; the traceability manifest declares it only in a test-support docstring — the one contract with a live reader is the one nobody announced |
 | 7 | **out of scope: the contract binds this side only** | `enforced` by construction | **out-of-scope, added.** How a reader behaves on a version it does not know is the receiving side's requirement |
 
 **The consumer half moved out, on the rule this round wrote at `.13`.** A
