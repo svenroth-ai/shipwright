@@ -7,7 +7,13 @@ the canonical directory; this module is parameter-driven).
 
 Usage:
     uv run screen_registry.py list --designs-dir <path>
-    uv run screen_registry.py add --designs-dir <path> --name <name> --type <screen|flow|upload> --file <path> --frs <FR-01.01,FR-01.02>
+
+A screen links to the requirement(s) it implements via an
+``<!-- Requirements: FR-01.02, FR-01.05 -->`` HTML comment near the top of
+its own file (see ``parse_screen_linked_frs``) — mirroring the plan phase's
+``Requirements:`` section field. There is no ``add --frs`` CLI subcommand;
+an earlier draft of this docstring advertised one, but the comment
+convention above is what ``main()`` and every caller actually use.
 """
 
 import argparse
@@ -19,6 +25,39 @@ from pathlib import Path
 
 
 _NON_UI_FRS_SECTION_RE = re.compile(r"(## Non-UI FRs\s*\n.*?)(?=\n## |\Z)", re.DOTALL)
+
+# FR-01.04 #1 / #4 — a screen names the requirement(s) it implements via an
+# HTML comment near the top of the file, mirroring the plan phase's
+# `Requirements:` section field (`plan_section_quality.py`). Before this, a
+# screen's `linked_frs` was never populated anywhere — `generate_manifest`
+# always rendered an empty "Linked FRs" cell, so the compliance C1 gate
+# (`check_design_fr_coverage`) had no data to compare against for any real
+# project, and the same gap made the design phase's own in-session
+# FR-Coverage Gate (`review-loop.md` Option A) unenforceable too.
+_SCREEN_REQUIREMENTS_RE = re.compile(
+    r"<!--\s*Requirements:\s*(?P<ids>[^>]*?)\s*-->", re.IGNORECASE
+)
+_FR_ID_RE = re.compile(r"^FR-\d{1,3}\.\d{1,3}$")
+
+
+def parse_screen_linked_frs(html_path: Path) -> list[str]:
+    """Read the ``<!-- Requirements: FR-01.02, FR-01.05 -->`` comment out of
+    a generated screen/flow HTML file. Returns ``[]`` if the file is
+    unreadable or carries no such comment — a screen predating this
+    convention is simply unlinked, not an error."""
+    try:
+        content = html_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return []
+    match = _SCREEN_REQUIREMENTS_RE.search(content)
+    if not match:
+        return []
+    ids: list[str] = []
+    for token in match.group("ids").split(","):
+        fr = token.strip()
+        if _FR_ID_RE.match(fr) and fr not in ids:
+            ids.append(fr)
+    return ids
 
 
 def _read_existing_non_ui_frs_section(manifest_path: Path) -> str | None:
@@ -65,6 +104,7 @@ def scan_designs_dir(designs_dir: Path) -> dict:
                         "name": match.group(2),
                         "file": f"screens/{f.name}",
                         "status": "complete",
+                        "linked_frs": parse_screen_linked_frs(f),
                     })
 
     flows_dir = designs_dir / "flows"
@@ -127,7 +167,7 @@ def generate_manifest(designs_dir: Path, project_name: str = "", profile_name: s
         lines.append("| # | Screen | File | Status | Linked FRs |")
         lines.append("|---|--------|------|--------|-----------|")
         for s in inventory["screens"]:
-            frs = s.get("linked_frs", "")
+            frs = ", ".join(s.get("linked_frs") or []) or "none"
             lines.append(f"| {s['number']:02d} | {s['name']} | {s['file']} | {s['status']} | {frs} |")
     else:
         lines.append("No screens generated yet.")

@@ -1,0 +1,158 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-11-e1-checks-plan-design",
+    "date": "2026-09-11",
+    "unit": {
+      "status": "passed",
+      "passed": 18079,
+      "total": 18137
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest plugins/shipwright-design/tests -q",
+      "tests_run": 67,
+      "exit_code": 0
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "FR-01.03 #1 - a review key IS available but the Step-5 marker still records a skipped_* route (false skip) is caught",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_gate_extras.py + plugins/shipwright-plan/tests/test_check_plan_gates.py :: review_key_honesty cases PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #2 - Step 6 blocks non-zero on a missing review marker or an undecided disagreement",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_check_plan_gates.py + shared/tests/test_review_marker.py PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #3 - every FR named by no plan section is listed as a coverage problem",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_section_quality.py + plugins/shipwright-plan/tests/test_check_plan_gates.py :: coverage_report cases PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #4 - a section missing purpose / <2 steps / no test strategy is flagged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_section_quality.py + shared/tests/test_verifiers_plan.py :: core_quality_problems cases PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #7 - a planning session that wrote outside its allowed prefixes (incl. a git rename INTO an allowed prefix) is flagged",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_write_boundary.py + plugins/shipwright-plan/tests/test_check_plan_gates.py PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #8 - a split with zero Plan-phase-tagged decision-log entries fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_gate_extras.py :: decisions_recorded cases PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #9 - a section with no non-empty ## Prerequisites is flagged ONLY when the split has already adopted the shape elsewhere (independent adoption signal, not the pre-existing core-quality one)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_section_quality.py (4 new cases) + shared/tests/test_verifiers_plan_gates.py :: test_a_split_that_never_adopted_prerequisites_warns_not_fails, test_one_section_naming_prerequisites_holds_the_whole_split_to_it PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #10 - the Step-5 marker's findings_count vs the number of External Review decision-log entries for the split are compared",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_gate_extras.py :: findings_addressed cases PASSED"
+        },
+        {
+          "behavior": "FR-01.03 #11 - claude-plan-e2e.md must exist AND contain a ### Flow N: heading, not merely exist",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plan_gate_extras.py :: e2e_journeys_named cases PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #1/#4 - a screen's <!-- Requirements: ... --> comment populates linked_frs both ways (fr-coverage AND the manifest's Linked FRs column)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-design/tests/test_screen_registry.py :: test_scan_populates_linked_frs_from_the_screen_comment, test_generate_manifest_renders_linked_frs_in_the_table PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #2 - visual-guidelines.md existing but missing non-empty Colours/Typography/Spacing content fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_design_gate_extras.py :: visual_tokens_present cases PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #3 - a multi-screen session with 0 flows fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_design_gate_extras.py :: flows_present_for_multi_screen_app cases PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #5 - a screen's nav-target set diverging from chrome-definition.md fails; a project with real shared nav but no chrome-definition.md also fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_design_gate_extras.py + plugins/shipwright-design/tests/test_check_design_gates.py :: chrome_nav_targets_consistent + no_chrome_definition cases PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #6 - an external src/href (single or double quoted, absolute or protocol-relative, exact-hostname-checked) outside the Google Fonts exception fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_design_gate_extras.py :: standalone_html_violations cases (incl. hostile-URL-embedding-allowed-host regression) PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #8 - a supplied upload showing as git-modified after being committed fails",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_design_gate_extras.py :: uploads_preserved cases PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #9 - a CHANGES/REJECTED-flagged screen not actually regenerated fails; a drive-by change beyond the flagged set only warns",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_design_gate_extras.py :: iteration_touched_flagged_screens cases PASSED"
+        },
+        {
+          "behavior": "FR-01.04 #11 - a design session writing outside its allowed prefixes fails (shared phase_write_boundary reused against the design allowlist)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_write_boundary.py + plugins/shipwright-design/tests/test_check_design_gates.py PASSED"
+        },
+        {
+          "behavior": "check-plan-gates.py silently defaulting --project-root to cwd (letting the boundary gate false-pass with zero evidence) is refused",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-plan/tests/test_check_plan_gates.py :: test_project_root_is_required_not_defaulted_to_cwd PASSED"
+        },
+        {
+          "behavior": "a production-path git rename INTO an allowed-prefix destination must not make the OLD production path disappear from boundary evidence",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_phase_write_boundary.py :: test_a_rename_reports_both_the_old_and_new_path PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 19,
+        "tested": 19,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 18,
+        "covered_acs": 18
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.9,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-11T02:02:10Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-e1-checks-plan-design",
+    "commit": "4a977c53f5fdf9867a648a2b5eeda246fc082350",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -106,47 +106,20 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 4,
+      "findings_count": 1,
       "findings": [
         {
-          "severity": "high",
-          "category": "security",
-          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
-          "line": 205,
-          "finding": "`_REVIEW_EVIDENCE_SKIP_RE` is compiled with `re.IGNORECASE` (also true of `_REVIEW_EVIDENCE_RE_RUN_ANCHORED`). This directly contradicts the pattern's own comment ('EXACT basenames, deliberately zero wildcards') and AC2's whole point after three review rounds of tightening: on a case-sensitive filesystem (the Linux GitHub Actions runner this gate runs on), an attacker-authored `.shipwright/planning/iterate/<dir>/REVIEWS.JSON` still matches and is classified skip-safe, even though the real producer only ever writes lowercase `reviews.json`. Not discussed in any of the 4 documented review rounds, not covered by any test.",
-          "suggestion": "Drop re.IGNORECASE from both patterns; add a regression test asserting a differently-cased REVIEWS.JSON / Spec_Review_Reply.JSON is neither hidden nor skip-safe.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
+          "severity": "medium",
           "category": "readability",
-          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
-          "line": 247,
-          "finding": "is_safe_to_skip_review's docstring says 'in two ways' but this iterate added a third enumerated reason (item 3), so the lead-in understates its own content.",
-          "suggestion": "Update the lead-in to 'in three ways'.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "architecture",
-          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
-          "line": 204,
-          "finding": "_REVIEW_EVIDENCE_SKIP_RE hardcodes the literal .shipwright/planning/iterate/ prefix instead of reusing the existing _REVIEW_EVIDENCE_PREFIX constant, risking silent drift between the two regexes if the prefix ever changes.",
-          "suggestion": "Build the skip regex from re.escape(_REVIEW_EVIDENCE_PREFIX).",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "readability",
-          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
-          "line": 68,
-          "finding": "The comment blocks largely re-narrate the round-by-round review history already preserved in the iterate spec — duplicated provenance rather than a concise statement of current behavior.",
-          "suggestion": "Optional: trim to operative invariants, let the spec carry the historical narrative.",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py",
+          "line": 54,
+          "finding": "decide_gate()'s docstring illustrated the waiver-failure guard with an example (a PR whose only changed path is a corroborated reviews.json) that Round 4's removal of reviews.json's skip-safety makes structurally unreachable through the real workflow.",
+          "suggestion": "Update the docstring's example (and the matching test docstring) to note the combination is retained as defense-in-depth against a future loosening of classify_generated_only/decide(), not as a currently-reachable real-world case.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-11T13:30:21.402189+00:00",
+      "completed_at": "2026-09-11T15:52:23.559821+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
@@ -162,8 +135,8 @@
           "category": "boundary_and_contract",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: is_safe_to_skip_review's review-evidence anchoring is now closed and provenance-safe end to end. — The function's _GENERATED_PREFIXES check (pre-existing, not touched by this diff) is a plain directory-prefix match with no closed-set anchoring, the same attacker-controlled-filename-with-no-provenance class this diff's own review series spent its effort closing elsewhere in the same function. Predates this diff; filed as a tracked follow-up (triage trg-dd297923) rather than fixed inline, out of scope for this small dedicated iterate.",
-          "suggestion": "A follow-up iterate anchoring _GENERATED_PREFIXES the same way the basename and review-evidence sets were anchored, or explicitly disclosing and accepting the risk with stated reasoning.",
+          "finding": "Claim under doubt: is_safe_to_skip_review is now actually safe end to end. — _GENERATED_PREFIXES (pre-existing, not touched by this diff) still grants zero-model-call skip on a bare directory-prefix match with no content/provenance check, the same class Round 4 just closed for reviews.json. One of those four prefixes was traced to a concrete downstream consumer that trusts its content without independent verification. Pre-existing, out of scope for this small dedicated iterate; the existing tracked follow-up (triage trg-dd297923) was amended with this concrete-consumer evidence rather than fixed inline.",
+          "suggestion": "A follow-up iterate anchoring or disclose-and-accepting _GENERATED_PREFIXES per entry, starting with the prefix that has a confirmed consumer, following the pattern this iterate used for its own categories.",
           "source": "doubt-reviewer"
         },
         {
@@ -171,13 +144,13 @@
           "category": "boundary_and_contract",
           "file": null,
           "line": null,
-          "finding": "Claim under doubt: Round 3's path-normalization verification (openai's finding) established the anchored regex is validated against the real path shape for is_safe_to_skip_review. — The verification traced _section_paths in pr_review_diff_filter.py, which backs is_generated_path (hide side), not is_safe_to_skip_review's real consumer (classify_generated_only, fed by the GitHub Actions workflow's gh api call). Traced the correct chain myself: the conclusion holds (repo-relative POSIX, no leading ./), but the recorded verification named the wrong consumer. Spec corrected; no code change needed.",
-          "suggestion": "Corrected the Round 3 spec entry with the actual consumer and trace (done).",
+          "finding": "Claim under doubt: Every _GENERATED_PREFIXES entry besides the one traced above is fine to leave as-is. — Same unanchored shape on the other two _GENERATED_PREFIXES entries, with weaker (not concretely traced) evidence of a fail-closed consumer. Disclosed alongside the high finding above, same disposition.",
+          "suggestion": "Confirm during the same follow-up iterate whether any consumer trusts these two without independent verification.",
           "source": "doubt-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-11T13:36:41.508722+00:00",
+      "completed_at": "2026-09-11T15:52:55.237480+00:00",
       "disposition": null,
       "recorded_by": "doubt-reviewer",
       "parse_status": null,

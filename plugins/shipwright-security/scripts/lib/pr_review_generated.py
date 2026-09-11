@@ -94,9 +94,9 @@ _GENERATED_BASENAMES = frozenset({
 # reviews", not "planning docs are uninteresting".
 #
 # THESE REGEXES ARE FOR `is_generated_path` (HIDE-FROM-THE-MODEL) ONLY. They
-# are NOT reused for the skip-the-gate-entirely decision below; see
-# `_REVIEW_EVIDENCE_SKIP_RE` and the Internal Plan Review note on
-# `is_safe_to_skip_review` for why that needs a materially narrower rule.
+# are NOT reused for the skip-the-gate-entirely decision below — as of Round 4,
+# NO review-evidence path grants skip-safety at all (see the note above
+# `is_safe_to_skip_review`'s definition).
 #
 # Split in two, not one, after external plan review (glm + openai,
 # iterate-2026-09-11-pr-review-evidence-filter-gap) independently converged
@@ -120,13 +120,11 @@ _GENERATED_BASENAMES = frozenset({
 # match, while the actual producer only ever writes three: a `git log
 # --diff-filter=A -- "*_reply.json"` survey across every branch in this repo
 # found `spec_review_reply.json` / `code_review_reply.json` /
-# `doubt_review_reply.json` and nothing else. Closed to that exact set —
-# matching what `_REVIEW_EVIDENCE_SKIP_RE` below already required for the
-# higher-stakes skip decision. `external-[^/]*review[^/]*` keeps its wildcard
-# on the RUN-ANCHORED branch too: `external_review.py` prints to stdout with
-# no fixed output name (see `_REVIEW_EVIDENCE_SKIP_RE`'s own comment), so no
+# `doubt_review_reply.json` and nothing else. Closed to that exact set.
+# `external-[^/]*review[^/]*` keeps its wildcard on the RUN-ANCHORED branch
+# too: `external_review.py` prints to stdout with no fixed output name, so no
 # closed set can be drawn for that family without breaking legitimate future
-# runs.
+# runs. (Neither alternative is ever skip-safe, as of Round 4 — see below.)
 _REVIEW_EVIDENCE_PREFIX = ".shipwright/planning/iterate/"
 _REVIEW_EVIDENCE_RE = re.compile(
     r"(^|/)("
@@ -146,72 +144,27 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
 # THIS repo's history, not the review cascade's name space in the abstract.
 # If a future review stage is added (e.g. a `security_review_reply.json`),
 # its transcript will NOT be hidden from the reviewing model by default —
-# extend this alternative (hide side) when that happens. It never needs
-# extending on the skip side: see `_REVIEW_EVIDENCE_SKIP_RE`'s Round 3 note
-# for why reply files are deliberately never skip-safe, new stage or not.
+# extend this alternative (hide side) when that happens. There is no
+# skip-side set to extend any more (see the Round 4 note below).
 
-# The CLOSED, ANCHORED set used ONLY by `is_safe_to_skip_review` below —
-# EXACT basenames, deliberately zero wildcards.
-#
-# Internal Plan Review, high-severity finding on
-# iterate-2026-09-11-pr-review-evidence-filter-gap: `_REVIEW_EVIDENCE_RE`
-# above matches ANY `*_reply.json` / `external-...review....json` basename at
-# ANY depth under the review-evidence prefix, with no schema or provenance
-# check. Sharing it verbatim with `is_safe_to_skip_review` — which decides
-# whether the PR-REVIEW GATE ITSELF may post `success` with no model call —
-# meant a PR whose only changed file was an attacker-authored
-# `evil_reply.json`, or even `external-my-own-review-of-this.json`, would skip
-# review entirely on a filename an attacker fully controls.
-#
-# `external_review.py` does not itself dictate an output filename (it prints
-# to stdout; the calling agent picks where to save it), so there is no fixed
-# convention to draw a closed `external-...` set from — the survey behind this
-# fix found 15+ distinct historical basenames for that one file. Rather than
-# widen the closed set with an unenforceable wildcard, `external-*review*`
-# files are deliberately EXCLUDED here: `is_generated_path` still hides them
-# from the model (lower stakes — a section is skipped, but every other
-# changed file, if any, is still reviewed), while a PR whose only changed
-# file is one of these still goes through the review step for real (which,
-# seeing only generated/hidden content, approves trivially) rather than
-# posting `success` with no model call at all. Only `reviews.json`, written
-# by `record_review_pass.py` at one fixed path, is in this set — a
-# PRE-EXISTING acceptance (see the "Round 3" note below), though this
-# iterate narrows it further: before this iterate `is_safe_to_skip_review`
-# shared `_REVIEW_EVIDENCE_RE` verbatim, so the legacy
-# `[^/]*-external-[^/]*review[^/]*\.json` shape (unanchored, any depth) was
-# ALSO skip-safe — external code review (glm) caught this spec-narrative
-# gap. Anchored to exactly one run-directory segment (no bare top-level
-# file, no deeper nesting) — never the shape the tool writes.
-#
-# Round 3 of external plan review (openai, high severity, after Round 2's
-# hide-side tightening) on iterate-2026-09-11-pr-review-evidence-filter-gap:
-# an earlier version of this fix ALSO added the closed
-# `{spec,code,doubt}_review_reply.json` set here, reasoning it was exact and
-# tool-adjacent enough to match `reviews.json`'s existing treatment. openai
-# correctly identified this as an unforced, unjustified expansion: an EXACT
-# basename is not PROVENANCE — nothing stops an attacker from hand-crafting
-# a file with one of these three names, in a self-chosen run directory, with
-# forged `SHIPWRIGHT_VERDICT: approve` content, and the PR's only changed
-# file being that one forgery would then skip review with zero model call.
-# Critically, this was never *needed*: the origin bug (PR #722's BLOCK) was
-# entirely about the REVIEWER SEEING these files, i.e. the hide side
-# (`is_generated_path` / `_REVIEW_EVIDENCE_RE_RUN_ANCHORED`) — nothing in
-# this iterate's scope required the reply-file family to also be skip-safe.
-# Reverted: the reply files now get the SAME treatment
-# `external-*review*` files already had — hidden from the model, but a PR
-# whose only changed file is one of them still goes through a real (if
-# trivial) review call rather than an automatic skip. This is the simpler,
-# more conservative fix openai suggested, and it leaves
-# `_REVIEW_EVIDENCE_SKIP_RE` matching ONLY `reviews.json` — narrower than
-# even its pre-iterate shape (see the narrowing note just above).
-#
-# code-reviewer (high): this pattern and `_REVIEW_EVIDENCE_RE_RUN_ANCHORED`
-# were `re.IGNORECASE`, contradicting "EXACT basenames, zero wildcards" —
-# `REVIEWS.JSON` (never produced by the real tool) would borrow skip-safety
-# on a case-sensitive CI runner. Removed from both; see the pinning test.
-_REVIEW_EVIDENCE_SKIP_RE = re.compile(
-    re.escape(_REVIEW_EVIDENCE_PREFIX) + r"[^/]+/reviews\.json$"
-)
+# NO review-evidence path is skip-safe, as of Round 4 (the live PR-review gate's
+# own bot, on this iterate's own PR #727 — the tool built to enforce this rule
+# caught the rule's last remaining gap by exercising it for real). Rounds 1-3
+# (see `is_safe_to_skip_review`'s docstring below) narrowed this set from "share
+# `_REVIEW_EVIDENCE_RE` verbatim" down to "`reviews.json` only, run-anchored,
+# exact basename" — and Round 4 found that floor was still unsafe: an EXACT
+# PATH is not PROVENANCE any more than an exact basename is. A contributor's own
+# PR can commit `.shipwright/planning/iterate/<self-chosen-run>/reviews.json`
+# with forged `SHIPWRIGHT_VERDICT: approve` content — nothing here checks WHO
+# wrote the file or that its content came from `record_review_pass.py` — and a
+# PR whose only changed file is that forgery would skip the review gate with
+# zero model call. The fix is to stop granting skip-safety by path at all,
+# not to chase a fourth narrower pattern: the origin bug (PR #722) only ever
+# needed review evidence HIDDEN from the model (`is_generated_path` /
+# `_REVIEW_EVIDENCE_RE_RUN_ANCHORED`, unaffected by this), never SKIP-safe.
+# Real provenance validation (verifying `reviews.json` was actually produced
+# by the tool, not merely path-shaped like its output) is a materially larger
+# change than this fix and is out of scope here.
 
 
 def is_generated_path(path: str) -> bool:
@@ -274,27 +227,17 @@ def is_safe_to_skip_review(path: str) -> bool:
     they are directory-anchored structured artifacts, not the free-form
     agent-instruction surface the exclusion above targets.
 
-    3. Uses `_REVIEW_EVIDENCE_SKIP_RE`, NOT `_REVIEW_EVIDENCE_RE` /
-       `_REVIEW_EVIDENCE_RE_RUN_ANCHORED`, for review evidence. Internal Plan
-       Review, high-severity finding on
-       iterate-2026-09-11-pr-review-evidence-filter-gap: `is_generated_path`'s
-       run-anchored regex matches `*_reply.json` / `external-...review....json`
-       basenames — reusing it here would let a PR whose only changed file is
-       an attacker-chosen name skip review entirely. `_REVIEW_EVIDENCE_SKIP_RE`
-       is a run-directory-anchored match on `reviews.json` ONLY (see its own
-       comment — Round 3 of external plan review found that even the closed
-       `{spec,code,doubt}_review_reply.json` set this function used to also
-       include was an unforced expansion of the same bypass, since an exact
-       basename is not provenance). Every review-evidence file besides
-       `reviews.json` — the reply family AND `external-*review*` — is hidden
-       from the model but NOT skip-safe: a PR touching only one still goes
-       through a real (if trivial) review call rather than an automatic
-       skip. `self-review-payload.json` stays un-skippable too, being
-       unmatched by every regex.
+    3. Grants NO review-evidence path skip-safety at all, not even
+       `reviews.json` — see the "Round 4" comment above `is_safe_to_skip_review`
+       for why: an exact path match is not provenance, and a contributor's own
+       PR can commit a forged `reviews.json` at a self-chosen run directory.
+       Every review-evidence file (`reviews.json`, the reply family,
+       `external-*review*`, `self-review-payload.json`) is hidden from the
+       model (`is_generated_path`, unaffected) but NEVER skip-safe: a PR
+       touching only one still goes through a real (if trivial) review call
+       rather than an automatic skip.
     """
     p = (path or "").strip()
     if any(p.startswith(pre) for pre in _GENERATED_PREFIXES):
-        return True
-    if _REVIEW_EVIDENCE_SKIP_RE.match(p):
         return True
     return p in _SKIP_REVIEW_CANONICAL_BASENAME_PATHS

@@ -36,8 +36,9 @@ from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
 from lib.plan_manifest import parse_manifest, validate_dependency_order  # noqa: E402
 from lib.plan_section_quality import (  # noqa: E402
     collect_sections,
+    core_quality_problems,
     coverage_report,
-    quality_problems,
+    prerequisite_problem,
 )
 
 __all__ = [
@@ -195,8 +196,8 @@ def check_section_traces_to_requirement(project_root: Path) -> CheckResult:
 
 
 def check_section_quality(project_root: Path) -> CheckResult:
-    """Every section says what it is for, lists >=2 steps, and states how it
-    will be tested."""
+    """Every section says what it is for, lists >=2 steps, states how it
+    will be tested, and names its prerequisites (FR-01.03 #9)."""
     name = "sections state purpose, steps and test strategy"
     splits = find_planning_split_dirs(Path(project_root))
     if not splits:
@@ -214,12 +215,24 @@ def check_section_quality(project_root: Path) -> CheckResult:
         # Deciding per section would let one unrecognised file in an otherwise
         # modern split slip by as "legacy".
         adopted = any(s.uses_known_shape for s in sections)
+        # Prerequisites (#9) is gated by its OWN adoption signal, separate from
+        # `adopted` above (external code review, iterate-2026-09-11-e1-checks-
+        # plan-design): `uses_known_shape` deliberately excludes prerequisites,
+        # so a split written under the pre-existing three-heading convention —
+        # `adopted=True` on Overview/Steps/Tests alone — would otherwise be
+        # hard-failed (`drift`) on a heading that did not exist when it was
+        # written, which is exactly the "lenient toward the past" promise this
+        # module makes everywhere else.
+        adopted_prerequisites = any(s.has_prerequisites for s in sections)
         for section in sections:
-            problems = quality_problems(section)
-            if not problems:
-                continue
-            target = drift if adopted else legacy
-            target.extend(f"{split.name}/{p}" for p in problems)
+            core = core_quality_problems(section)
+            if core:
+                target = drift if adopted else legacy
+                target.extend(f"{split.name}/{p}" for p in core)
+            prereq = prerequisite_problem(section)
+            if prereq:
+                target = drift if adopted_prerequisites else legacy
+                target.extend(f"{split.name}/{p}" for p in prereq)
 
     if legacy and not drift:
         legacy = [

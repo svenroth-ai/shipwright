@@ -1,4 +1,6 @@
-"""The in-session gates — Step 6's STOP and Step 9's checklist, as a command.
+"""The in-session gates — Step 6's STOP and the boundary check, as a
+command. Step 9's section gates are split out into
+``test_check_plan_gates_sections.py`` (300-LOC guideline).
 
 Strict on purpose: unlike the phase verifier, which is lenient toward plans
 written before these formats existed, this runs against the plan being
@@ -8,68 +10,16 @@ written now.
 import json
 import subprocess
 import sys
-from pathlib import Path
 
-import pytest
+from tests._check_plan_gates_support import SCRIPT, _problems, run_gates
 
-SCRIPT = str(
-    Path(__file__).resolve().parent.parent / "scripts" / "checks" / "check-plan-gates.py"
-)
-
-WELL_FORMED = (
-    "# Section: {name}\n\n"
-    "Requirements: {frs}\n\n"
-    "## Overview\nDoes the thing.\n\n"
-    "## Implementation Steps\n1. one\n2. two\n\n"
-    "## Tests First\n- a unit test\n"
-)
+# `planning` and `bare_planning_dir` fixtures come from conftest.py — no
+# import needed, and importing them here would shadow the same-named
+# test-function parameters (ruff F811).
 
 
-def run_gates(planning_dir: Path, gate: str = "all") -> tuple[int, dict]:
-    proc = subprocess.run(
-        [sys.executable, SCRIPT, "--planning-dir", str(planning_dir), "--gate", gate],
-        capture_output=True, text=True, encoding="utf-8",
-    )
-    try:
-        return proc.returncode, json.loads(proc.stdout)
-    except json.JSONDecodeError:  # pragma: no cover - diagnostic path
-        raise AssertionError(f"non-JSON stdout: {proc.stdout!r} / {proc.stderr!r}")
-
-
-@pytest.fixture
-def planning(tmp_path):
-    """A planning split whose every gate passes."""
-    d = tmp_path / "01-auth"
-    (d / "sections").mkdir(parents=True)
-    (d / "spec.md").write_text(
-        "# Spec\n\n| ID | Requirement | Priority |\n| FR-01.01 | thing | Must |\n",
-        encoding="utf-8",
-    )
-    (d / "plan.md").write_text(
-        "# Plan\n\n<!-- SECTION_MANIFEST\n01-a\n02-b: 01-a\nEND_MANIFEST -->\n",
-        encoding="utf-8",
-    )
-    for name in ("01-a", "02-b"):
-        (d / "sections" / f"{name}.md").write_text(
-            WELL_FORMED.format(name=name, frs="FR-01.01"), encoding="utf-8"
-        )
-    (d / "external_review_state.json").write_text(
-        json.dumps({
-            "status": "completed",
-            "provider": "openrouter",
-            "verdicts": {"gemini": "approve", "openai": "revise"},
-        }),
-        encoding="utf-8",
-    )
-    return d
-
-
-def _problems(out: dict, gate: str) -> list[str]:
-    return next(g for g in out["gates"] if g["gate"] == gate)["problems"]
-
-
-def test_a_clean_plan_passes_every_gate(planning):
-    code, out = run_gates(planning)
+def test_a_clean_plan_passes_every_gate(planning, no_e2e_plugin_root):
+    code, out = run_gates(planning, plugin_root=no_e2e_plugin_root)
     assert code == 0, out
     assert out["success"] is True
     assert out["failed"] == []
@@ -79,6 +29,46 @@ def test_a_missing_planning_dir_is_a_usage_error(tmp_path):
     code, out = run_gates(tmp_path / "nope")
     assert code == 2
     assert out["error"] == "planning_dir_not_found"
+
+
+def test_a_missing_plugin_root_dir_is_a_usage_error(planning, tmp_path):
+    code, out = run_gates(planning, "sections", plugin_root=tmp_path / "no-such-plugin")
+    assert code == 2
+    assert out["error"] == "plugin_root_not_found"
+
+
+def test_a_missing_project_root_dir_is_a_usage_error(planning, tmp_path):
+    """External Tier-3 review, PR #726 round 9: --project-root was resolved
+    but never validated as a directory, so a typo'd root made
+    git_dirty_paths() return no evidence and --gate boundary falsely pass.
+    subprocess.run raises before the script even starts if `cwd` does not
+    exist (all platforms), so this calls the script directly rather than
+    through `run_gates` (whose `cwd` follows `project_root`)."""
+    proc = subprocess.run(
+        [
+            sys.executable, SCRIPT,
+            "--planning-dir", str(planning),
+            "--project-root", str(tmp_path / "no-such-root"),
+            "--gate", "boundary",
+        ],
+        capture_output=True, text=True, cwd=str(tmp_path),
+    )
+    out = json.loads(proc.stdout)
+    assert proc.returncode == 2
+    assert out["error"] == "project_root_not_found"
+
+
+def test_project_root_is_required_not_defaulted_to_cwd(planning):
+    """External code review, iterate-2026-09-11-e1-checks-plan-design: a
+    silently-defaulted cwd let --gate boundary read an empty git evidence
+    set and pass with nothing checked. Required now, matching
+    check-design-gates.py."""
+    proc = subprocess.run(
+        [sys.executable, SCRIPT, "--planning-dir", str(planning), "--gate", "review"],
+        capture_output=True, text=True,
+    )
+    assert proc.returncode == 2
+    assert "--project-root" in proc.stderr
 
 
 # --- the review gate (Step 6) -----------------------------------------------
@@ -160,69 +150,81 @@ def test_a_marker_whose_stored_block_disagrees_with_its_verdicts_blocks(planning
     assert run_gates(planning, "review")[0] == 1
 
 
-# --- the section gates (Step 9) ---------------------------------------------
+# --- the review gate's key-honesty check (Step 6, FR-01.03 #1) -------------
 
 
-def test_a_prerequisite_after_its_user_fails(planning):
-    (planning / "plan.md").write_text(
-        "# Plan\n\n<!-- SECTION_MANIFEST\n01-a: 02-b\n02-b\nEND_MANIFEST -->\n",
+def test_a_skip_while_a_key_is_actually_available_is_a_false_skip(planning):
+    (planning / "external_review_state.json").write_text(
+        json.dumps({"status": "skipped_user_opt_out", "reason": "offline demo"}),
         encoding="utf-8",
     )
-    code, out = run_gates(planning, "sections")
+    code, out = run_gates(planning, "review", extra_env={"OPENROUTER_API_KEY": "sk-test-fake"})
     assert code == 1
-    assert any("numbered after it" in p for p in _problems(out, "sections"))
+    assert any("silently skipped" in p for p in _problems(out, "review"))
 
 
-def test_an_uncovered_requirement_fails(planning):
-    (planning / "spec.md").write_text(
-        "# Spec\n\n| ID | Requirement | Priority |\n"
-        "| FR-01.01 | thing | Must |\n| FR-01.02 | other thing | Must |\n",
+def test_a_completed_review_is_honest_even_when_a_key_is_available(planning):
+    code, out = run_gates(planning, "review", extra_env={"OPENROUTER_API_KEY": "sk-test-fake"})
+    assert code == 0, out
+
+
+def test_a_skip_with_no_key_available_is_not_a_false_skip(planning):
+    (planning / "external_review_state.json").write_text(
+        json.dumps({"status": "skipped_user_opt_out", "reason": "offline demo"}),
         encoding="utf-8",
     )
-    code, out = run_gates(planning, "sections")
-    assert code == 1
-    assert any("FR-01.02" in p and "no section" in p for p in _problems(out, "sections"))
+    assert run_gates(planning, "review")[0] == 0
 
 
-def test_a_section_serving_no_requirement_fails(planning):
-    (planning / "sections" / "02-b.md").write_text(
-        "# Section: 02-b\n\n## Overview\nWork nobody asked for.\n\n"
-        "## Implementation Steps\n1. one\n2. two\n\n## Tests First\n- t\n",
-        encoding="utf-8",
-    )
-    code, out = run_gates(planning, "sections")
-    assert code == 1
-    assert any("02-b" in p and "no live requirement" in p for p in _problems(out, "sections"))
-
-
-def test_an_ill_formed_section_fails_even_in_a_new_plan(planning):
-    """No leniency in session: a section written today has no excuse."""
-    (planning / "sections" / "02-b.md").write_text(
-        "# Section: 02-b\n\nRequirements: FR-01.01\n\nJust prose.\n", encoding="utf-8"
-    )
-    code, out = run_gates(planning, "sections")
-    assert code == 1
-    problems = _problems(out, "sections")
-    assert sum(1 for p in problems if p.startswith("02-b")) == 3
-
-
-def test_a_declared_but_unwritten_section_fails(planning):
-    (planning / "sections" / "02-b.md").unlink()
-    code, out = run_gates(planning, "sections")
-    assert code == 1
-    assert any("declared but not written: 02-b" in p for p in _problems(out, "sections"))
-
-
-def test_an_unparseable_manifest_reports_the_parse_errors(planning):
-    (planning / "plan.md").write_text(
-        "# Plan\n\n<!-- SECTION_MANIFEST\nBad Name\nEND_MANIFEST -->\n", encoding="utf-8"
-    )
-    code, out = run_gates(planning, "sections")
-    assert code == 1
-    assert any("Invalid section name" in p for p in _problems(out, "sections"))
-
-
-def test_gate_selection_runs_only_what_was_asked_for(planning):
+def test_gate_selection_runs_only_what_was_asked_for(planning, no_e2e_plugin_root):
     assert [g["gate"] for g in run_gates(planning, "review")[1]["gates"]] == ["review"]
-    assert [g["gate"] for g in run_gates(planning, "sections")[1]["gates"]] == ["sections"]
-    assert [g["gate"] for g in run_gates(planning, "all")[1]["gates"]] == ["review", "sections"]
+    assert [
+        g["gate"] for g in run_gates(planning, "sections", plugin_root=no_e2e_plugin_root)[1]["gates"]
+    ] == ["sections"]
+    assert [
+        g["gate"] for g in run_gates(planning, "all", plugin_root=no_e2e_plugin_root)[1]["gates"]
+    ] == ["review", "sections", "boundary"]
+
+
+def test_plugin_root_is_required_for_the_all_gate_too(planning):
+    """External code review, iterate-2026-09-11-e1-checks-plan-design: a
+    silently-optional --plugin-root let gate #11 (E2E journeys) skip without
+    a trace instead of failing the usage. The `sections`-only case is
+    covered in test_check_plan_gates_sections.py, next to gate #11."""
+    code, out = run_gates(planning, "all")
+    assert code == 2
+    assert out["error"] == "plugin_root_required"
+    # boundary/review alone still don't need it.
+    assert run_gates(planning, "review")[0] == 0
+    assert run_gates(planning, "boundary")[0] == 0
+
+
+# --- the boundary gate (FR-01.03 #7) ----------------------------------------
+
+
+def test_boundary_passes_on_a_non_git_project(planning):
+    code, out = run_gates(planning, "boundary")
+    assert code == 0, out
+
+
+def test_boundary_passes_when_only_shipwright_paths_changed(bare_planning_dir):
+    assert run_gates(bare_planning_dir, "boundary")[0] == 0
+
+
+def test_boundary_passes_with_the_early_in_progress_plan_config(tmp_path, bare_planning_dir):
+    """Stage-1 spec review, iterate-2026-09-11-e1-checks-plan-design: SKILL.md's
+    First Action E writes ``shipwright_plan_config.json`` to the project root
+    on EVERY session (not only at completion), so the boundary gate must
+    allow it or it fails on every real plan session."""
+    (tmp_path / "shipwright_plan_config.json").write_text("{}\n", encoding="utf-8")
+    code, out = run_gates(bare_planning_dir, "boundary")
+    assert code == 0, _problems(out, "boundary")
+
+
+def test_boundary_fails_on_a_production_path(tmp_path, bare_planning_dir):
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("print('hi')\n", encoding="utf-8")
+    code, out = run_gates(bare_planning_dir, "boundary")
+    assert code == 1
+    assert any("src/app.py" in p for p in _problems(out, "boundary"))

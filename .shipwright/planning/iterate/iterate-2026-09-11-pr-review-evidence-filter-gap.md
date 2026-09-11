@@ -1,7 +1,8 @@
 # iterate-2026-09-11-pr-review-evidence-filter-gap
 
 **Status:** implemented (all review passes completed — self, plan-internal,
-plan-external x3, code, doubt, external-code, spec — see review sections
+plan-external x3, code, doubt, external-code, spec, plus a Round 4 fix from
+the live PR-review gate on this iterate's own PR #727 — see review sections
 below; F0 green, F0.5/F1 clean)
 **Type:** bug
 **Complexity:** medium (classifier, keyword `prior_source`)
@@ -68,28 +69,24 @@ the final code — see `## Spec Review` disposition below (recorded as the
    2 left that one open, matching AC2's existing skip-side treatment of the
    same family) but never skip-safe. `self-review-payload.json` in the same
    directory still returns `False` from both functions.
-2. ✓ **AC2 (is_safe_to_skip_review, checked not inherited — revised after
-   Internal Plan Review and External Plan Review Round 3, see below;
-   narrative corrected after External Code Review, see that section).**
-   Only `reviews.json` returns `True` from `is_safe_to_skip_review`
-   (anchored to exactly one run-directory segment). Before this iterate,
-   `is_safe_to_skip_review` shared `_REVIEW_EVIDENCE_RE` verbatim with the
-   hide side, so the legacy `[^/]*-external-[^/]*review[^/]*\.json` shape
-   (unanchored, any depth) was ALSO skip-safe pre-iterate — this iterate
-   narrows that too, strictly toward safety, not merely restoring the old
-   shape. Every other review-evidence shape from AC1 (the
-   `{spec,code,doubt}_review_reply.json` reply family AND the
+2. ✓ **AC2 (is_safe_to_skip_review — revised after Internal Plan Review,
+   External Plan Review Round 3, and Round 4, see below; narrative corrected
+   after External Code Review, see that section).** NO review-evidence path
+   returns `True` from `is_safe_to_skip_review` any more — not even
+   `reviews.json`. Every review-evidence shape from AC1 (`reviews.json`, the
+   `{spec,code,doubt}_review_reply.json` reply family, and the
    `external-*review*.json`/`.md` raw-transcript files) is hidden from the
    model (`is_generated_path`) but does NOT skip the gate — a PR touching
-   only one of these still gets a real (if trivial) review call. An earlier
-   revision of this AC also added the reply family to the skip set,
-   reasoning it was as exact and tool-adjacent as `reviews.json`; Round 3
-   external review correctly identified that as an unforced expansion of
-   the gate-bypass surface (an exact basename is not provenance, and fixing
-   PR #722 never required it), so it was reverted. `self-review-payload.json`
-   returns `False` from both functions. This narrower scope than AC1 is
-   pinned by dedicated tests, not left to accidentally pass or silently
-   inherit AC1's breadth.
+   only one of these still gets a real (if trivial) review call.
+   `self-review-payload.json` returns `False` from both functions. Two
+   earlier revisions of this AC each added something to the skip set —
+   first the reply family (Round 3 reverted, below), then kept only
+   `reviews.json` itself — before Round 4 (the live PR-review gate's own
+   bot, on this iterate's own PR #727) found even that floor unsafe: an
+   exact PATH is not PROVENANCE, and a contributor's own PR can commit a
+   forged `reviews.json` at a self-chosen run directory. This narrower
+   scope than AC1 is pinned by dedicated tests, not left to accidentally
+   pass or silently inherit AC1's breadth.
 3. ✓ **AC3 (regression coverage, no weakening).** All pre-existing tests in
    `plugins/shipwright-security/tests/test_pr_review_filter.py` and
    `test_pr_review_generated_skip_review.py` continue to pass — the legacy
@@ -474,3 +471,97 @@ the final code — see `## Spec Review` disposition below (recorded as the
   ACs). Re-ran full suite (1028 passed), lint, and LOC after fixing — all
   clean. No further review round needed: both fixes are additive test
   coverage plus a documentation correction, not new design decisions.
+
+## Round 4 — the live PR-review gate, on this iterate's own PR #727
+- **Ran:** yes (not a spawned reviewer — the actual CI "PR Review" Required
+  Check on PR #727, exercising this exact code against a real diff)
+- **Summary:** After PR #727 was pushed and `deliver_pr.py` armed auto-merge,
+  the gate posted two consecutive BLOCK verdicts. The first (14:15 UTC)
+  repeated a finding already fixed by prior rounds (the hide-side
+  `external-*review*` wildcard, already disclosed/accepted — see Round 3).
+  The second (14:24 UTC, after that PR's own regenerated diff) found a NEW,
+  real gap: `_REVIEW_EVIDENCE_SKIP_RE` still granted skip-safety to any
+  repo-supplied `.shipwright/planning/iterate/<run>/reviews.json`, but
+  neither the run directory nor the file's content is tool-enforced or
+  authenticated — a contributor's own PR could commit a forged `reviews.json`
+  with fabricated `SHIPWRIGHT_VERDICT: approve` content and skip the review
+  gate with zero model call. `deliver_pr.py`'s non-converging circuit
+  breaker (two consecutive BLOCKs sharing a recurring finding — both about
+  this same regex family trusting path over provenance) correctly stopped
+  and refused to re-push blindly, handing the decision to the operator.
+- **Findings:**
+  - security/high — `_REVIEW_EVIDENCE_SKIP_RE` grants skip-safe status to
+    any PR-supplied `reviews.json` at a self-chosen run directory, content
+    unverified. **fix, operator-authorized** — presented the operator two
+    remediation options (real provenance/content validation vs. removing
+    the skip-shortcut entirely) plus accepting the risk; the operator
+    delegated the choice. Removed `_REVIEW_EVIDENCE_SKIP_RE` and its call
+    site from `is_safe_to_skip_review` entirely — no review-evidence path
+    is skip-safe any more, full stop. Chosen over building real provenance
+    validation (a materially larger, genuinely out-of-scope change — the
+    same class of expansion Round 3 already rejected once) because the
+    origin bug (PR #722) never needed the skip-shortcut at all, only the
+    hide side (`is_generated_path`, unaffected by this fix). Cost: a PR
+    whose only changed file is `reviews.json` now gets one real (trivial)
+    review call instead of a free zero-call pass — the same trade-off
+    already accepted for every other review-evidence shape since Round 3.
+- **Status:** 1 fixed (high, operator-authorized removal of the
+  skip-shortcut). Updated `pr_review_generated.py`'s comments and
+  `is_safe_to_skip_review`'s docstring; updated
+  `test_pr_review_generated_skip_review.py` (renamed
+  `test_review_evidence_files_stay_safe_to_skip` to assert the opposite,
+  folded the now-dead anchoring/lookalike-suffix tests into one
+  `test_review_evidence_is_never_safe_to_skip_in_any_shape`). Full plugin
+  suite re-run (1027 passed, 7 skipped — one net test removed via the fold),
+  lint clean, both files under the 300-line guideline.
+
+## Round 4 — code review and doubt review on the operator-authorized fix
+- **Ran:** yes, both (`shipwright-build:code-reviewer`,
+  `shipwright-build:doubt-reviewer`) against the Round 4 diff, per this
+  repo's standing review-cascade grant.
+- **Code review summary:** No defect in the diff itself. One real,
+  cross-file finding: `pr_review_gate_verdict.py`'s `decide_gate` docstring
+  (and its matching test's docstring) illustrated the waiver-failure-must-
+  win-over-all_generated guard with an example — "a PR whose only changed
+  path is a corroborated `reviews.json`" — that Round 4's own fix makes
+  structurally unreachable (`needs_review=False` now requires `reviews.json`
+  among the changed paths, but that same path always makes
+  `classify_generated_only` return `False`). **fix** — rewrote both
+  docstrings to state the check is retained as defense-in-depth against a
+  future loosening of either function, not as a currently-reachable case;
+  the guard's ORDERING (still correct, still tested) is unaffected. Traced
+  every other caller of the touched functions (`review_record_tier.py`,
+  `pr_review_gate_verdict.py`, both test files) and confirmed no other code
+  path assumed `reviews.json` was still skip-safe.
+- **Doubt review summary:** Two doubts, neither a defect in this diff —
+  both are pre-existing, unrelated code the diff didn't touch. Doubt 1
+  (high) is a substantive escalation of the already-filed, already-tracked
+  `_GENERATED_PREFIXES` provenance gap (triage `trg-dd297923`, filed during
+  this iterate's earlier Doubt Review section above): it traces
+  `.shipwright/compliance/` — one of `_GENERATED_PREFIXES`'s four
+  bare-prefix, no-provenance-check entries, structurally the same
+  unanchored shape Round 4 just closed for `reviews.json` — to a concrete
+  downstream consumer (a deploy-time security gate reading a file under
+  that prefix without independent verification), meaning a PR whose only
+  changed file is under that prefix could both skip the PR-review model call
+  AND, if merged, affect what that later gate trusts. Doubt 2 (medium) is
+  the same shape on the other two `_GENERATED_PREFIXES` entries, with a
+  weaker (not concretely traced) consumer.
+- **Disposition — disclose, filed as tracked follow-up, not fixed inline:**
+  consistent with this run's explicit "small dedicated iterate" scope
+  boundary (used identically for the original `_GENERATED_PREFIXES` finding
+  earlier in this same iterate) and with the fact that neither doubt names
+  code this diff touched — `_GENERATED_PREFIXES` and the deploy gate that
+  consumes `.shipwright/compliance/` predate this entire iterate.
+  **`trg-dd297923` amended** (not duplicated) with the concrete-consumer
+  finding, raising it from an abstract "lacks anchoring" note to a traced
+  risk chain — severity confirmed `high`. A full fix (anchoring or
+  disclose-and-accept per prefix, following this iterate's own pattern, or
+  independently verifying the deploy gate's input) belongs in its own
+  iterate, not bolted onto a fix whose own scope was already stretched once
+  by Round 4's operator-authorized change.
+- **Status:** 1 fixed (medium, cross-file docstring accuracy, Round 4 code
+  review), 1 disclosed + triage-amended (high, pre-existing, out of scope,
+  Round 4 doubt review), 1 disclosed (medium, weaker evidence, same
+  disposition). Full plugin suite re-run (1027 passed, 7 skipped) and lint
+  after the docstring fix — clean.

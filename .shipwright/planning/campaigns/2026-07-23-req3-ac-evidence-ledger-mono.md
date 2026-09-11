@@ -113,7 +113,26 @@ minting) changed rows without anyone re-running the count. Current count,
 reproducible at any time via `uv run
 shared/scripts/tools/measure_ac_evidence_ledger.py`:
 
-**47** prompt-only/mechanisable · **19** prompt-only/judgement ·
+**Re-measured again 2026-09-11 (sub-iterate `e1-checks-plan-design`, same
+campaign, incl. post-REJECT repair)** after closing all 18 of FR-01.03's and
+FR-01.04's prompt-only/mechanisable rows named in the two FRs' tables above
+(each with a new check + test, in the same commit as its status flip):
+**29** prompt-only/mechanisable · **20** prompt-only/judgement · **16**
+enforced-untested · **33** unimplemented · **68** enforced-tested. The
+unimplemented count also moved (36→33): three rows were previously
+double-counted under a compound status (unimplemented-for-the-data-half /
+mechanisable-for-the-gate-half) that collapsed into a single enforced-and-tested
+status once the underlying data gap (`screen_registry`'s dead
+`linked_frs`) was fixed — not a new closure of unimplemented work. The
+judgement count (19→20) reflects a later repair the same sub-iterate made
+after a Stage-1 spec-reviewer REJECT: FR-01.03 #1 was split into #1 (the
+mechanisable "available key silently skipped" direction, kept enforced and
+tested) and a new #1b (the judgement "missing key stops and asks"
+direction, downgraded to prompt-only judgement with a drift test, per D7's
+own abort rule) — no criterion changed meaning, one row became two.
+
+Superseded prior count, kept for the paragraph's own history: **47**
+prompt-only/mechanisable · **19** prompt-only/judgement ·
 **16** enforced-untested · **36** unimplemented · **50**
 enforced-tested (see the script's own docstring on why these five category
 names are deliberately written *without* their backtick form here — the
@@ -170,18 +189,19 @@ setup-planning-session}.py`, `scripts/lib/sections.py`,
 
 | # | Criterion (short) | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | No review key ⇒ stops and asks | `prompt-only (mechanisable)` | Status IS computed in code (`get_external_review_status`), but `is_external_review_enabled` has **no production caller** — only tests. `external_review.py` itself skips gracefully with no keys. Acting on it is the agent's job. |
-| 2 | Route recorded; dividing refuses without it | `prompt-only (mechanisable)` (in-session) | The in-session gate is prompt text. See #6 for the enforced half. |
-| 3 | Every requirement lands in ≥1 section | `prompt-only (mechanisable)` | **Zero code.** `check-sections.py` only checks declared sections have files. No FR-coverage logic anywhere in the plugin. |
+| 1 | Available key silently skipped ⇒ refused | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** **Split from the original combined row per D7's abort rule** (a criterion with no oracle for one direction is downgraded on that direction, not weakly gated as if both held). Direction enforced: when `get_external_review_status` computes `available` (a key IS present), `plan_gate_extras.review_key_honesty` fails the gate if the Step-5 marker still records a `skipped_*` route — a false skip cannot pass silently. Wired into `check-plan-gates.py --gate review` (Step 6). Tested: `shared/tests/test_plan_gate_extras.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
+| 1b | No review key ⇒ stops and asks | `prompt-only (judgement)` | **Split from #1, 2026-09-11.** A MISSING key making the session stop and ask is conversational behavior with no file artifact a check can observe mid-session — no oracle exists, so D7 forbids a gate. Drift-tested instead: `plugins/shipwright-plan/tests/test_missing_key_stop_and_ask_drift.py` pins SKILL.md's Branch B "STOP. Ask user verbatim... Do NOT proceed until chosen" instruction verbatim. |
+| 2 | Route recorded; dividing refuses without it | `enforced, tested` | **Pre-existing, mis-walked before this campaign's `check-plan-gates.py` (created 2026-07-27) existed.** `review_gate` calls `review_marker.evaluate_review_state` and blocks Step 6 non-zero on a missing marker or an undecided disagreement — the in-session half the original walk found only as prompt text. Tested: `plugins/shipwright-plan/tests/test_check_plan_gates.py`, `shared/tests/test_review_marker_companion_verdicts.py`. |
+| 3 | Every requirement lands in ≥1 section | `enforced, tested` | **Pre-existing, mis-walked (same gap as #2).** `sections_gate` calls `plan_section_quality.coverage_report` and lists every FR named by no section as a problem, non-zero on any. Tested: `shared/tests/test_plan_section_quality.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
 | 3b | Every section traces back to ≥1 requirement | `unimplemented` → per-plugin triage item (`shipwright-plan`, uncarded — see "Feeds the per-plugin triage item" below) | **Newly added by this round.** Not claimed anywhere before — found by the negative-space pass. A section records no requirement link at all (`section-index.md`: the manifest is a bare `NN-slug` list), so a plan can add work nobody asked for and nothing notices. Constitution forbids exactly this (YAGNI). Note this is also what makes #3 uncheckable: there is no link data in either direction. |
-| 4 | Each section: purpose, ≥2 steps, test strategy | `prompt-only (mechanisable)` | **Zero code.** No section-quality logic anywhere in the plugin. |
+| 4 | Each section: purpose, ≥2 steps, test strategy | `enforced, tested` | **Pre-existing, mis-walked (same gap as #2).** `sections_gate` calls `plan_section_quality.quality_problems` per section, which requires a non-empty `## Overview`, ≥2 `## Implementation Steps`, and `## Tests First`. Tested: `shared/tests/test_plan_section_quality.py`, `shared/tests/test_verifiers_plan.py`. |
 | 5 | a section **names which others it presupposes**; the numbering never places a prerequisite after its user | `unimplemented`, `mechanisable` → `trg-88f721be` | **rewritten 2026-07-25 (scenario).** Was `no-oracle`: the manifest is a flat `NN-slug` list, so dependencies were **not expressible** and nothing could establish the promise. The module's remedy for a no-oracle is to change the *writing* — declaring the dependency is what makes the order checkable |
 | 6 | Resumes where it stopped; unreviewed plan sent back | `enforced, untested` | `setup-planning-session.py:71-72` forces `resume_step = 5` when `plan.md` exists but the marker does not — comment states the intent. Also audited by `plan_compliance.check_w5_external_review_marker`. No test found pinning the marker-missing branch specifically. |
-| 7 | Planning writes no production code, runs no tests | `prompt-only (mechanisable)` | Boundary criterion; nothing asserts it. |
-| 8 | Design decisions recorded with reasoning | `prompt-only (mechanisable)` | `write_decision_log.py` exists as a tool; nothing requires calling it. |
-| 9 | A section is self-contained (names prereqs, files, test strategy) | `prompt-only (mechanisable)` | **Added 2026-07-24 (revisit gap B).** The row's headline promise ("one section at a time"). `check-sections.py` verifies only that declared sections have files; a check that each names prereqs/files/test-strategy is buildable from the `section-index.md` format. |
-| 10 | Review findings addressed or rejected-with-reason | `prompt-only (mechanisable)` | **Added 2026-07-24 (revisit gap A).** The consequence-free hole: `mark-review-state` logs `findings_count` as an integer; nothing checks they were acted on. The `decision_log` writeback infra already exists (operator confirmed), so a count-vs-logged-decisions check is buildable. The one gap with no downstream net — worth prioritising in the work unit. |
-| 11 | UI project's plan names the end-to-end journeys | `prompt-only (mechanisable)` | **Added 2026-07-24 (revisit gap C).** `setup-planning-session` detects `e2e_exists` only to pick a resume step; nothing requires the journeys. Design now guarantees the flows are shown (FR-01.04 #3); this carries them forward so the test phase has something to verify against. |
+| 7 | Planning writes no production code, runs no tests | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `phase_write_boundary.py` (new, shared) reads `git status --porcelain` and flags any changed path outside `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`, `shipwright_plan_config.json`, `CHANGELOG-unreleased.d/`; wired into `check-plan-gates.py --gate boundary` (Step 9). Tested: `shared/tests/test_phase_write_boundary.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
+| 8 | Design decisions recorded with reasoning | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `plan_gate_extras.decisions_recorded` requires ≥1 Plan-phase-tagged decision-log entry (`- **Section:** Plan Interview — {split}` or similar) for the split; wired into `check-plan-gates.py --gate sections` (Step 9). Tested: `shared/tests/test_plan_gate_extras.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
+| 9 | A section is self-contained (names prereqs, files, test strategy) | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `plan_section_quality.py` extended with a `## Prerequisites`/`## Dependencies` shape check (non-empty, `None` accepted); `section-splitting.md`'s gated-parts table and the section-writer prompt updated to match. Wired into the existing `sections_gate` (`quality_problems`). Tested: `shared/tests/test_plan_section_quality.py` (4 new cases), `shared/tests/test_verifiers_plan.py`. |
+| 10 | Review findings addressed or rejected-with-reason | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design** (2nd Stage-1 pass fixed a false-fail: `findings_count` can come from the internal review carrying the gate, not only Branch A's external one). `plan_gate_extras.findings_addressed` compares the Step-5 marker's `findings_count` against the number of `External Review — {split}` **or** `Internal Plan Review — {split}` decision-log entries; wired into `check-plan-gates.py --gate sections` (Step 9). Tested: `shared/tests/test_plan_gate_extras.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
+| 11 | UI project's plan names the end-to-end journeys | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `plan_gate_extras.e2e_journeys_named` requires `claude-plan-e2e.md` to both exist AND contain a `### Flow N: ...`-style heading, not merely exist; wired into `check-plan-gates.py --gate sections` via `--plugin-root` (Step 9, SKILL.md now passes it). Tested: `shared/tests/test_plan_gate_extras.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
 
 | C | **an implementation plan exists, divided into sections build can take one at a time** | `enforced, untested` | **central, added 2026-07-24.** `_validate_plan` checks sections declared **and** each file exists — real, nothing pins it |
 **Shape of this requirement's guarantee.** "Never silently skipped" is real, but
@@ -192,8 +212,12 @@ mechanism.
 
 **Feeds the per-plugin triage item for `shipwright-plan`:** FR coverage check,
 section quality gate, dependency representation + order check, and the
-in-session review gate are all claimed in `SKILL.md` Step 9 as "verification
-gates" but exist nowhere in code.
+in-session review gate were all claimed in `SKILL.md` Step 9 as "verification
+gates" but existed nowhere in code at the original walk. **Closed
+2026-09-11** (iterate-2026-09-11-e1-checks-plan-design) for every row above
+except #3b and #5, which remain open under their own trigger (`trg-88f721be`)
+— the dependency-order *check* runs today, but nothing yet requires a section
+to *declare* its dependency in the first place.
 
 ---
 
@@ -245,25 +269,29 @@ only real code is the manifest generator and a visual-guidelines existence check
 
 | # | Criterion (short) | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | Every user-facing requirement has ≥1 screen | `unimplemented` (data) / `prompt-only (mechanisable)` (gate) → per-plugin work unit (`shipwright-design`, uncarded — see "Feeds the per-plugin work unit" below) | The FR-Coverage gate lives in `review-loop.md` (prompt). **It has no data to check against:** `screen_registry.ScreenEntry.linked_frs` is never populated — `scan_designs_dir` derives screens from filenames only, and the `add --frs` subcommand the module docstring advertises **is not implemented** (`main()` has only `list` + `write-manifest`). So the manifest's "Linked FRs" column always renders empty. Same shape as the plan section→FR gap. |
-| 2 | Design tokens (colours/typography/spacing) exist as one definition | `prompt-only (mechanisable)` | `scan_designs_dir` sets `has_visual_guidelines` from **file existence** only. That the file contains the three token groups is checked in `review-loop.md` (prompt). Existence is enforced-ish; content is prompt. |
-| 3 | Flows between journey screens are shown | `prompt-only (mechanisable)` | **New criterion (negative-space).** `scan_designs_dir` lists `flows/*.html` if present, but nothing requires a flow per journey; generation is prompt (SKILL Step 5). |
-| 4 | Each user-facing requirement records its screen | `unimplemented` (manifest) / `prompt-only (mechanisable)` (spec writeback) → same per-plugin work unit as #1 (`shipwright-design`, uncarded — one fix closes both) | The structured link is the same dead `linked_frs` as #1. The spec-side writeback ("FR → screen") is prompt (`review-loop.md` Spec Backflow). So the traceability the build needs is not captured structurally anywhere. |
-| 5 | Shared chrome from one definition | `prompt-only (mechanisable)` | `chrome-definition.md` is a prompt artifact; nothing checks screens actually draw from it. |
-| 6 | Mockups open standalone in a browser | `prompt-only (mechanisable)` | A property of generated HTML; nothing verifies no external `src`/CDN/deps. A grep-for-external-refs check is buildable. |
+| 1 | Every user-facing requirement has ≥1 screen | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `screen_registry.parse_screen_linked_frs` reads a new `<!-- Requirements: FR-01.02, FR-01.05 -->` HTML comment convention and populates `linked_frs` (the dead data gap this row named); `check-design-gates.py --gate fr-coverage` (new CLI, delegates to the pre-existing compliance verifier `check_design_fr_coverage`/`check_design_manifest_screens_exist`) is wired into `review-loop.md` Option A. Tested: `plugins/shipwright-design/tests/test_screen_registry.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
+| 2 | Design tokens (colours/typography/spacing) exist as one definition | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `design_gate_extras.visual_tokens_present` (new, shared) requires `visual-guidelines.md` to exist AND carry non-empty Colours/Typography/Spacing content, not merely exist; wired into `check-design-gates.py --gate tokens`. Tested: `shared/tests/test_design_gate_extras.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
+| 3 | Flows between journey screens are shown | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `design_gate_extras.flows_present_for_multi_screen_app` requires ≥1 flow once a session has ≥2 screens; wired into `check-design-gates.py --gate flows`. Tested: `shared/tests/test_design_gate_extras.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
+| 4 | Each user-facing requirement records its screen | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** Same `linked_frs` fix as #1 — the manifest's "Linked FRs" column now renders real data (`generate_manifest` reads `linked_frs`, was always empty before), and the same `fr-coverage` gate covers the reverse direction. Tested: `plugins/shipwright-design/tests/test_screen_registry.py` (manifest-rendering cases). |
+| 5 | Shared chrome from one definition | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `design_gate_extras.chrome_nav_targets_consistent` (new, shared) requires a screen's nav-target set to equal `chrome-definition.md`'s (screens with no nav markup at all — auth/Layout-C — are exempt); wired into `check-design-gates.py --gate chrome`. Tested: `shared/tests/test_design_gate_extras.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
+| 6 | Mockups open standalone in a browser | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `design_gate_extras.standalone_html_violations` (new, shared) greps every screen/flow for an external `src`/`href` outside the one allowed Google Fonts CDN exception; wired into `check-design-gates.py --gate standalone`. Tested: `shared/tests/test_design_gate_extras.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
 | 7 | Look approved by a person before the rest | `enforced` | **Corrected 2026-07-24** — this is not prompt-only. `gate_catalog.json` sets `design.preview-approval` to `orchestrator-approve` with `default_answer: null` → the gate cannot auto-resolve even in autonomous mode; a human must approve. |
 | 7b | Design finishes only on human approval | `enforced` | **Added 2026-07-24 (negative-space).** `design.review-loop-finalize` = `orchestrator-approve`, `default_answer: null` — design cannot finalize without a person approving. The "refined by conversation … before code" half of the description, and one of the few genuinely enforced guarantees in the phase. Was absent from the criteria. |
-| 8 | Supplied mockups preserved, only missing generated | `prompt-only (mechanisable)` | Upload mode; `scan_designs_dir` detects `uploads/`, but generate-only-missing is prompt. |
-| 9 | Feedback regenerates only that screen | `prompt-only (mechanisable)` | Iteration mode, prompt. |
+| 8 | Supplied mockups preserved, only missing generated | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `design_gate_extras.uploads_preserved` (new, shared) reads `git status --porcelain` on `uploads/` and fails if any supplied file shows as modified (new/untracked and deletions are not this criterion's concern); wired into `check-design-gates.py --gate uploads`. Tested: `shared/tests/test_design_gate_extras.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
+| 9 | Feedback regenerates only that screen | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** `design_gate_extras.parse_feedback_round` + `iteration_touched_flagged_screens` (new, shared) hard-fail if a CHANGES/REJECTED screen was not actually regenerated; a drive-by change to an unflagged screen only warns (Chrome Change Propagation is a legitimate reason for every screen to change in one round). Wired into `check-design-gates.py --gate iteration`, called from `review-loop.md` Option B. Tested: `shared/tests/test_design_gate_extras.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
 
 | 10 | **feedback that changes what a screen or flow DOES corrects the requirement** | `unimplemented` → `trg-e9e5188e` | **added 2026-07-25.** The round writes back pointers only. Judgement half (behaviour vs appearance) has no oracle; the **mechanisable** half exists elsewhere — copy iterate's requirement-impact declaration |
-| 11 | what design produces are review mockups, not production code | `prompt-only (mechanisable)` | boundary criterion; checkable — the phase's diff touches no production paths |
-**Feeds the per-plugin work unit for `shipwright-design`:** the headline gap is
-that **screen↔requirement linkage is structurally dead** — `linked_frs` is never
-populated and the `add --frs` command is documented but absent. Both the
-coverage gate (#1) and the build-facing traceability (#4) depend on it. Fixing
-that one thing (capture the link when a screen is registered) turns two
-`unimplemented` guarantees into checkable ones. Description holds — no divergence.
+| 11 | what design produces are review mockups, not production code | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** Reuses `phase_write_boundary.py` (built for FR-01.03 #7) against a design-phase allowlist (`.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`, `CHANGELOG-unreleased.d/`); wired into `check-design-gates.py --gate boundary`, called from `review-loop.md` Option A. Tested: `shared/tests/test_phase_write_boundary.py`, `plugins/shipwright-design/tests/test_check_design_gates.py`. |
+**Fed the per-plugin work unit for `shipwright-design` — closed
+2026-09-11.** The headline gap was that **screen↔requirement linkage was
+structurally dead** — `linked_frs` was never populated and the `add --frs`
+command was documented but absent. Both the coverage gate (#1) and the
+build-facing traceability (#4) depended on it. `iterate-2026-09-11-e1-checks-plan-design`
+fixed the one thing (capture the link via an `<!-- Requirements: … -->`
+comment when a screen is written) and built the checks + tests for #1–#6,
+#8, #9 and #11 in the same pass. #10 remains open under its own trigger
+(`trg-e9e5188e`) — the judgement half (behaviour vs appearance) still has
+no oracle.
 
 ## FR-01.05 — /shipwright-build  ✅ walked + restructured 2026-07-24
 

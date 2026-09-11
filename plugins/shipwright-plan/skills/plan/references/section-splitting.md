@@ -50,7 +50,7 @@ What this section implements.
 How to verify this section is complete.
 ```
 
-**Four parts are gated** — `check-plan-gates.py --gate sections` fails without
+**Five parts are gated** — `check-plan-gates.py --gate sections` fails without
 them, and so does the plan phase verifier:
 
 | Part | Rule | Why |
@@ -59,10 +59,12 @@ them, and so does the plan phase verifier:
 | `## Overview` | non-empty | the section says what it is for |
 | `## Implementation Steps` | ≥2 list items | one step is a title, not a plan |
 | `## Tests First` | non-empty | the section says how it will be tested |
+| `## Prerequisites` | non-empty (write `None` if there truly are none) | FR-01.03 #9 — a section is self-contained only if it names what it presupposes; an omitted heading is indistinguishable from "nobody checked" |
 
 The headings above are the ones to write. `Purpose`/`Description`/`Goal`,
-`Implementation`/`Steps`, and `Test Strategy`/`Tests`/`Testing` are also
-accepted so a hand-written section is not failed on wording.
+`Implementation`/`Steps`, `Test Strategy`/`Tests`/`Testing`, and
+`Dependencies` (for `Prerequisites`) are also accepted so a hand-written
+section is not failed on wording.
 
 Cross-section dependencies go in **two** places and they mean different
 things: the `SECTION_MANIFEST` line (`03-api: 01-auth`) is the machine-checked
