@@ -23,6 +23,8 @@ from contextlib import contextmanager
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 
@@ -85,6 +87,7 @@ def test_main_records_the_race_and_names_it_in_the_warning(tmp_path, monkeypatch
     assert rc == 0
 
 
+@pytest.mark.covers("FR-01.14/AC25")
 def test_a_green_run_that_could_not_record_the_race_exits_three(tmp_path, monkeypatch,
                                                                 capsys):
     monkeypatch.setattr(race_mod, "_load_triage", _boom)

@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
@@ -169,6 +171,7 @@ def test_clean_prompt_scan_resolves_when_code_scanning_available(tmp_path, monke
     assert result["by_source"][github_triage.PREFIX_PROMPT] == 0
 
 
+@pytest.mark.covers("FR-01.14/AC15")
 def test_sast_findings_stay_gated_when_code_scanning_available(tmp_path, monkeypatch) -> None:
     # Invariant preserved: prompt_risks.json IS fetched (orthogonal to Code Scanning),
     # but the SAST findings.json is NOT — it would double-count the SARIF alerts.

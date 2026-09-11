@@ -77,6 +77,7 @@ def test_scan_separates_unrecoverable_text(tmp_path: Path) -> None:
 # --apply — mutation
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC22")
 def test_report_mode_never_mutates(tmp_path: Path) -> None:
     project = _project(tmp_path)
     p = _corrupt_outbox(project)
@@ -130,6 +131,7 @@ def test_apply_terminates_an_unterminated_file(tmp_path: Path) -> None:
     assert p.read_bytes().endswith(b"\n")
 
 
+@pytest.mark.covers("FR-01.14/AC22")
 def test_apply_quarantines_unrecoverable_text_verbatim(tmp_path: Path) -> None:
     project = _project(tmp_path)
     p = _corrupt_outbox(project, tail='{"truncated":')

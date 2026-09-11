@@ -155,7 +155,7 @@ def test_latest_security_workflow_run_returns_none_on_malformed_payload(
         )
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC16")
 def test_latest_security_workflow_run_freshness_gate_default_14d(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -182,7 +182,7 @@ def test_latest_security_workflow_run_freshness_gate_env_override(
     assert github_api.latest_security_workflow_run() is None
 
 
-@pytest.mark.covers("FR-01.14")
+@pytest.mark.covers("FR-01.14/AC16")
 def test_latest_security_workflow_run_picks_first_fresh_skipping_stale(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

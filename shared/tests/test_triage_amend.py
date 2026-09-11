@@ -215,6 +215,7 @@ def test_apply_amend_kind_change_has_no_derived_field_side_effect():
     assert item["suggestedDomain"] == "engineering"  # untouched — derives from source, not kind
 
 
+@pytest.mark.covers("FR-01.14/AC29")
 def test_apply_amend_records_amended_by_and_at():
     item = _base_item()
     raw = {"title": "new", "by": "sven", "ts": "2026-08-08T00:00:00Z"}

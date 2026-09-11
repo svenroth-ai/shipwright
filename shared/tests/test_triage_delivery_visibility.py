@@ -16,6 +16,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
@@ -58,6 +60,7 @@ def _split_store(tmp_path: Path, *, tracked_extra: str = "") -> tuple[Path, Path
     return tracked, outbox
 
 
+@pytest.mark.covers("FR-01.14/AC10")
 def test_status_flip_only_in_the_outbox_is_undelivered(tmp_path: Path) -> None:
     tracked, outbox = _split_store(tmp_path)
     assert undelivered_status_ids(tracked, outbox, applied_statuses=STATUSES) == {"trg-good0001"}
@@ -202,6 +205,7 @@ def test_listing_always_carries_a_boolean_pending_status_delivery() -> None:
     assert payload["undeliveredDecisions"]["ids"] == ["trg-good0001"]
 
 
+@pytest.mark.covers("FR-01.14/AC10")
 def test_pending_delivery_field_is_unchanged() -> None:
     """The existing field keeps its append-residence meaning — no redefinition."""
     item = {"id": "trg-good0001", "status": "triage", "severity": "low"}

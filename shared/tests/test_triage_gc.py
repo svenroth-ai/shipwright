@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _TOOLS = Path(__file__).resolve().parent.parent / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
@@ -48,6 +50,7 @@ def test_is_machine_churn_requires_both_conditions():
 # Plan (dry-run computation)
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC23")
 def test_plan_drops_machine_keeps_human(tmp_path: Path):
     m = _add(tmp_path, title="machine", dedup="k1")
     _dismiss(tmp_path, m, by="auditDetector", reason="auditResolved")
@@ -59,6 +62,7 @@ def test_plan_drops_machine_keeps_human(tmp_path: Path):
     assert plan["total"] == 2
 
 
+@pytest.mark.covers("FR-01.14/AC23")
 def test_promoted_and_open_never_dropped(tmp_path: Path):
     p = _add(tmp_path, title="promoted", dedup="kp")
     triage.mark_status(tmp_path, p, new_status="promoted", by="auditDetector",

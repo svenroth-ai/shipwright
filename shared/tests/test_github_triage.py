@@ -87,11 +87,9 @@ WORKFLOW_RUNS = [
     },
 ]
 
-
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     return tmp_path
-
 
 def _patch_api(
     monkeypatch,
@@ -129,7 +127,6 @@ def _patch_api(
     monkeypatch.setattr(github_api, "download_security_findings", lambda rid, workflow_base=None: None)
     monkeypatch.setattr(github_api, "download_prompt_risks", lambda rid: None)
 
-
 def _append_events(project_root: Path) -> list[dict]:
     """Raw `append`-event lines in triage.jsonl (one per imported finding)."""
     path = project_root / ".shipwright" / "triage.jsonl"
@@ -144,7 +141,6 @@ def _append_events(project_root: Path) -> list[dict]:
         if obj.get("event") == "append":
             out.append(obj)
     return out
-
 
 # ---------------------------------------------------------------------------
 # Per-finding mappers were removed in iterate-2026-05-20-triage-launch-surface
@@ -163,7 +159,6 @@ def _append_events(project_root: Path) -> list[dict]:
 )
 def test_severity_mapping(gh_value, expected):
     assert github_triage.triage_severity(gh_value) == expected
-
 
 # ---------------------------------------------------------------------------
 # CI: latest-concluded-run-per-workflow logic
@@ -193,6 +188,7 @@ def test_latest_failed_ci_runs_skips_in_progress():
 # behavior that survived the iterate-A redesign.
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC12")
 def test_secret_value_never_written_to_triage_file(project, monkeypatch):
     """End-to-end secret hygiene (AC8 of #39, preserved by iterate-A
     AC-2): a secret-scanning alert's raw `secret` field MUST NOT appear
@@ -213,6 +209,7 @@ def test_secret_value_never_written_to_triage_file(project, monkeypatch):
 # next successful import dismisses the open unit as githubResolved.
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC06")
 def test_import_findings_auto_resolves_fixed_alert(project, monkeypatch):
     """When all findings clear, the action-unit dismisses on next import."""
     _patch_api(monkeypatch, code_scanning=[CS_ALERT], dependabot=[],
@@ -231,6 +228,7 @@ def test_import_findings_auto_resolves_fixed_alert(project, monkeypatch):
     assert item["statusReason"] == "githubResolved"
 
 
+@pytest.mark.covers("FR-01.14/AC06")
 def test_failed_fetch_does_not_resolve_items(project, monkeypatch):
     """Per-source fetch failure must NOT auto-resolve the action-unit.
 
@@ -338,6 +336,7 @@ def test_state_file_round_trip(project):
 # github_api — gh-CLI client (subprocess mocked)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.14/AC13")
 def test_gh_available_false_when_gh_missing(monkeypatch):
     monkeypatch.setattr(github_api.shutil, "which", lambda _: None)
     assert github_api.gh_available() is False
@@ -376,6 +375,7 @@ def test_hook_throttled_skips_import(project, monkeypatch):
     assert calls == []  # throttled -> import_findings never called
 
 
+@pytest.mark.covers("FR-01.14/AC13")
 def test_hook_gh_unavailable_exits_zero(project, monkeypatch):
     written = []
     monkeypatch.setattr(github_triage, "is_due", lambda *a, **k: True)

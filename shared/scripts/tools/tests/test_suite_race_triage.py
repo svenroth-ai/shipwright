@@ -50,12 +50,10 @@ from triage import mark_status, read_all_items  # noqa: E402
 _XDIST = ("shared/tests",)
 _ALONE = "uv run --with pytest pytest tests -q"
 
-
 def _raced(unit_id="shared/tests", rc=1, serial_rc=0, output="", cmd=_ALONE):
     """A UnitResult exactly as `run_suite` leaves a confirmed race."""
     return UnitResult(unit_id, PASS, rc, 1.0, output, race=True,
                       retry_kind=RETRY_SERIAL, serial_rc=serial_rc, retry_cmd=cmd)
-
 
 def _suite(*results, exit_code=0, xdist=_XDIST):
     return SuiteResult(list(results), exit_code, 12.0, xdist)
@@ -72,6 +70,7 @@ def _items(root):
 
 # --- AC1/AC2: the runner writes it, into the TRACKED store, under the given root ---
 
+@pytest.mark.covers("FR-01.14/AC25")
 def test_a_confirmed_race_is_written_to_the_tracked_store(tmp_path):
     report = _emit(tmp_path, _raced(), run_id="iterate-x", commit="deadbeef")
 
@@ -238,6 +237,7 @@ def test_the_launch_payload_reproduces_both_sides_with_the_real_command(tmp_path
     assert str(tmp_path) in payload and "run_test_suite.py" in payload
 
 
+@pytest.mark.covers("FR-01.14/AC25")
 def test_the_card_says_what_was_measured_and_claims_no_cause(tmp_path):
     _emit(tmp_path, _raced())
     detail = _items(tmp_path)[0]["detail"]
