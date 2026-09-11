@@ -377,6 +377,7 @@ document.
 | `I6` | an FR with no acceptance criteria at all (§3a) | advisory |
 | `I7` | a criterion that exists but is not in the §3b `Given`/`when`/`then` shape | advisory |
 | `I8` | a `/shipwright-adopt` `TBD` acceptance-criteria placeholder that has survived 90+ days, read from `git blame` | advisory |
+| `I9` | a requirement whose recorded changes never co-occur with a decision-drop / ADR run_id ("Rewritability", REQ3.04c mechanism M7) | advisory, never blocking |
 
 **Advisory** means the finding is reported with its count and IDs but does not
 change the audit's verdict or exit code — an existing spec can carry historical
@@ -423,6 +424,22 @@ emit. It stays advisory because the rule behind it (§3a — too broad gets
 divided) is a judgement a person makes; zero criteria is the observable signal
 that the judgement is *owed*, not the verdict. A signal that reddened CI would
 be read as the verdict.
+
+`I9` is advisory by explicit design decision (REQ3.04c campaign, mechanism
+M7 "Rewritability"), not by inference from the reasoning above: an ADR
+requirement for every requirement would be bloat, so the check reports
+without ever being promoted to a gate. It is also a PROXY rather than a
+direct check — no field anywhere links an FR id to a decision drop or ADR
+today, so `I9` infers a link transitively, through the run_id shared by a
+requirement's recorded change and a decision drop's own record. A run that
+changed a requirement without naming it in `--affected-frs`, or that recorded
+its rationale in an ADR predating the `**Run-ID:**` convention
+(2026-05-16), reads as unlinked even though a rationale may well exist —
+named here rather than silently assumed away. See
+`shared/scripts/lib/rewritability_links.py` for the full reasoning and the
+three-outcome shape (`linked` / `unlinked` / `could_not_determine` — a
+requirement with no recorded changes at all is the third, not silently
+folded into `unlinked`).
 
 Not linted, deliberately: §5.3 (name length) and §5.4 (one capability per FR)
 need editorial judgement, and a wrong automated verdict would be worse than

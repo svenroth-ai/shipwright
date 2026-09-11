@@ -124,7 +124,7 @@ def test_clean_greenfield_spec_is_clean(tmp_path):
     # I5 (Basis vocabulary) joined the group in campaign S5; I6 (acceptance
     # criteria) in the REQ-3 granularity round; I7 (criterion shape) in
     # iterate-2026-09-06-fr-hygiene-touched-rows.
-    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8"}
+    assert set(findings) == {"I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9"}
     # Greenfield has no Name column, so the §5 fence is inapplicable, NOT passing.
     assert findings["I1"].status == "skip"
     assert "not applicable" in findings["I1"].detail
@@ -142,6 +142,10 @@ def test_clean_greenfield_spec_is_clean(tmp_path):
     # No TBD placeholder text in this fixture at all.
     assert findings["I8"].status == "pass"
     assert "no FR" in findings["I7"].detail
+    # No shipwright_events.jsonl in this fixture at all -- neither FR has any
+    # recorded change, so I9 reports "cannot determine", never "unlinked".
+    assert findings["I9"].status == "pass"
+    assert "cannot determine" in findings["I9"].detail
 
 
 def test_clean_adopt_spec_passes_the_name_fence(tmp_path):
