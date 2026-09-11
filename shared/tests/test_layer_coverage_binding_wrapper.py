@@ -79,7 +79,19 @@ def test_binding_result_advisory_message():
     r = _binding_result("n", verdict)
     assert r.ok is False and not r.is_skipped
     assert r.severity == "warning" and r.strict_exempt is True
-    assert "legacy/collision (advisory)" in r.detail
+    assert "legacy/collision/pre-rollout (advisory)" in r.detail
+
+
+def test_binding_result_transition_grace_message_distinguishes_from_legacy():
+    # trg-aedcfe7b: an `explicit`-sourced gap downgraded via the transition rule
+    # must not read as if the FR were legacy-sourced (g.source is still "explicit").
+    gap = LayerGap("FR-09.17", "a::FR-09.17", "integration", "Must", "explicit",
+                   "BINDING_INCOMPLETE_TRANSITION")
+    verdict = CrossLayerVerdict(changed_keys=["a::FR-09.17"], advisory=[gap])
+    r = _binding_result("n", verdict)
+    assert r.severity == "warning" and r.strict_exempt is True
+    assert "FR-09.17: omits integration (pre-rollout transition grace)" in r.detail
+    assert "(explicit)" not in r.detail
 
 
 def test_binding_result_clean_pass_with_changed_keys():
@@ -177,6 +189,25 @@ def test_wrapper_full_success_path_clean(tmp_path, monkeypatch):
     assert "no behaviour-changed FR" in r.detail
 
 
+def test_wrapper_clean_path_never_calls_rollout_manifest(tmp_path, monkeypatch):
+    # Performance contract (internal plan review): the rollout snapshot must be
+    # LAZY — never built when there is no candidate HARD gap to downgrade.
+    node = _node("FR-09.15", coverage={"unit": "ok"})
+    manifest = _manifest({"a::FR-09.15": node})
+    _seed_medium(tmp_path, "r")
+    monkeypatch.setattr(_lc, "_git_precheck", lambda *a, **k: None)
+    monkeypatch.setattr(_lcb_wrapper, "regenerate_base_head",
+                         lambda *a, **k: (manifest, manifest, {}))
+    monkeypatch.setattr(_lcb_wrapper, "changed_criteria_ids", lambda *a, **k: (set(), None))
+
+    def _boom(*a, **k):
+        raise AssertionError("rollout_manifest must not be called on a clean run")
+
+    monkeypatch.setattr(_lcb_wrapper, "rollout_manifest", _boom)
+    r = check_binding_completeness(tmp_path, "r", "abc1234")
+    assert r.ok is True and not r.is_skipped
+
+
 def test_wrapper_full_path_hard_gap_propagates(tmp_path, monkeypatch):
     # External code review (P3.3, openai): the prior full-path test only exercised a
     # clean manifest, so a wrapper regression that drops the evaluator's verdict, or
@@ -193,9 +224,35 @@ def test_wrapper_full_path_hard_gap_propagates(tmp_path, monkeypatch):
     monkeypatch.setattr(_lc, "_git_precheck", lambda *a, **k: None)
     monkeypatch.setattr(_lcb_wrapper, "regenerate_base_head", lambda *a, **k: (base, head, {}))
     monkeypatch.setattr(_lcb_wrapper, "changed_criteria_ids", lambda *a, **k: (set(), None))
+    monkeypatch.setattr(_lcb_wrapper, "rollout_manifest", lambda *a, **k: None)
     r = check_binding_completeness(tmp_path, "r", "abc1234")
     assert r.ok is False and not r.is_skipped
     assert "FR-09.13: omits integration" in r.detail
+
+
+def test_wrapper_transition_grace_downgrades_hard_gap_to_advisory(tmp_path, monkeypatch):
+    # trg-aedcfe7b: an otherwise-HARD gap whose required_layers value already
+    # existed at the resolved rollout snapshot is downgraded end-to-end through
+    # the wrapper, not just in the pure evaluator. The change trigger is base's
+    # required_layers differing from head's (NOT a forced title edit — the
+    # rollout snapshot's title must match head's for grace to apply at all, so
+    # forcing only head's title would deny grace via title-mismatch instead of
+    # exercising the value-match path this test is actually about; external
+    # code review, P3.3 follow-up, glm, HIGH).
+    base = _manifest({"a::FR-09.16": _node("FR-09.16", layers=())})
+    head = _manifest({
+        "a::FR-09.16": _node("FR-09.16", layers=("unit",),
+                              coverage={"unit": "ok", "integration": "ok"}),
+    }, spec_hash="sha256:changed")
+    rollout = _manifest({"a::FR-09.16": _node("FR-09.16", layers=("unit",))})
+    _seed_medium(tmp_path, "r")
+    monkeypatch.setattr(_lc, "_git_precheck", lambda *a, **k: None)
+    monkeypatch.setattr(_lcb_wrapper, "regenerate_base_head", lambda *a, **k: (base, head, {}))
+    monkeypatch.setattr(_lcb_wrapper, "changed_criteria_ids", lambda *a, **k: (set(), None))
+    monkeypatch.setattr(_lcb_wrapper, "rollout_manifest", lambda *a, **k: rollout)
+    r = check_binding_completeness(tmp_path, "r", "abc1234")
+    assert r.ok is False and r.severity == "warning" and r.strict_exempt is True
+    assert "FR-09.16: omits integration (pre-rollout transition grace)" in r.detail
 
 
 def test_run_all_checks_binding_gap_propagates_to_failure(tmp_path, monkeypatch):
@@ -214,6 +271,7 @@ def test_run_all_checks_binding_gap_propagates_to_failure(tmp_path, monkeypatch)
     monkeypatch.setattr(_lc, "_git_precheck", lambda *a, **k: None)
     monkeypatch.setattr(_lcb_wrapper, "regenerate_base_head", lambda *a, **k: (base, head, {}))
     monkeypatch.setattr(_lcb_wrapper, "changed_criteria_ids", lambda *a, **k: (set(), None))
+    monkeypatch.setattr(_lcb_wrapper, "rollout_manifest", lambda *a, **k: None)
     results = run_all_checks(tmp_path, "r", commit_hash="abc1234")
     binding = next(r for r in results if "binding completeness" in r.name)
     assert binding.ok is False and not binding.is_skipped
