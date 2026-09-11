@@ -132,13 +132,50 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
-      "provider": null,
-      "completed_at": "2026-09-11T14:02:47.287529+00:00",
-      "disposition": "runner has no Agent tool — cascade delegated to orchestrator at campaign-mode.md 3f-bis before merge",
-      "recorded_by": "none",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "scope",
+          "file": "shared/scripts/tools/verifiers/_project_gate_wiring.py",
+          "line": null,
+          "finding": "check_criteria_free_of_implementation_detail (#5) and check_no_empty_split (#10) have no extension-scope skip, unlike check_basis_forbids_assumed/check_starting_guidance_present.",
+          "suggestion": "Deferred to triage (trg-9583d3a8): the ledger's own #5/#10 text does not state 'greenfield only' the way #4/#15/#11 do, so the right treatment (extension-scope skip, touched-rows-only scope, or a one-time rollout marker per the check_binding_completeness precedent, commit c6bf0805c) is a design decision, not a mechanical fix.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras.py",
+          "line": null,
+          "finding": "is_qualified_assumed's verdict.value.startswith(\"assumed\") also matches an unrelated out-of-vocabulary typo with no word boundary (e.g. glued \"assumedallowed\"), which fr_basis classifies under its OTHER malformed branch (\"not in the vocabulary\") -- not the qualifier-smuggling one.",
+          "suggestion": "Fixed: switched to checking verdict.note (the field that textually names which malformed branch fired) instead of verdict.value; added regression test test_basis_forbids_assumed_ignores_an_unrelated_malformed_cell. Self-caught follow-on: the first pass checked verdict.reason instead of verdict.note -- BasisVerdict is (kind, value, reason=\"\", note=\"\") and the descriptive text is populated into note, reason stays \"\" on both malformed branches. Corrected before commit.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "documentation",
+          "file": "shared/scripts/lib/fr_criteria.py",
+          "line": null,
+          "finding": "fr_criteria.py's docstring claim of \"exactly two, both commented\" strict=False callers is stale -- this diff added two more without updating it.",
+          "suggestion": "Fixed: docstring now enumerates all four callers; inline comments added at both new call sites in _project_gate_extras.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/tests/test_project_gate_basis_and_guidance.py",
+          "line": null,
+          "finding": "A test docstring claimed \"the other two gates\" sharing _read_spec_texts got a missing/unreadable-spec regression test, but only basis_forbids_assumed actually did -- criteria_free_of_implementation_detail never got one.",
+          "suggestion": "Fixed: added test_check_criteria_free_of_implementation_detail_skips_when_no_spec_yet and ..._fails_loud_on_a_declared_but_missing_spec.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "claude",
+      "completed_at": "2026-09-11T20:23:17.978386+00:00",
+      "disposition": "4 findings: 3 accepted-and-fixed (regression-tested), 1 (medium, extension-scope treatment for #5/#10) deferred to triage trg-9583d3a8 as a design decision outside this round's scope.",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
