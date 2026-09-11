@@ -25,6 +25,10 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 RUNNER_DOC = PLUGIN_ROOT / "agents" / "sub-iterate-runner.md"
 SCHEMA_FILE = PLUGIN_ROOT / "agents" / "sub_iterate_runner_contract.schema.json"
 CAMPAIGN_MODE = PLUGIN_ROOT / "skills" / "iterate" / "references" / "campaign-mode.md"
+CAMPAIGN_STEP_3_4 = (
+    PLUGIN_ROOT / "skills" / "iterate" / "references"
+    / "campaign-step-3-4-risk-recheck.md"
+)
 
 #: The bloat baseline pins the runner contract here (state: exception, ADR-119).
 RUNNER_DOC_LINE_CEILING = 497
@@ -170,16 +174,19 @@ def test_step_3_5_trigger_mirrors_step_3_7():
 
 @pytest.mark.covers("FR-01.11")
 def test_campaign_mode_documents_step_3_4_and_the_escalated_unit_path():
-    """The contract delegates Step 3.4's rationale to campaign-mode.md to stay
-    under its line ceiling, which makes that prose load-bearing: it is the only
-    place the orchestrator's handling of a CI-escalated unit is written down."""
-    text = CAMPAIGN_MODE.read_text(encoding="utf-8")
-    assert "Step 3.4" in text
-    assert "ci_supplychain_requires_operator" in text
+    """The contract delegates Step 3.4's rationale to campaign-mode.md (and, since
+    campaign-mode.md's own line ceiling required a further split,
+    campaign-step-3-4-risk-recheck.md), which makes that prose load-bearing: it is
+    the only place the orchestrator's handling of a CI-escalated unit is written
+    down."""
+    campaign_mode_text = CAMPAIGN_MODE.read_text(encoding="utf-8")
+    assert "Step 3.4" in campaign_mode_text
+    step_3_4_text = CAMPAIGN_STEP_3_4.read_text(encoding="utf-8")
+    assert "ci_supplychain_requires_operator" in step_3_4_text
     for expected in ("STRICT-STOP", "record_ci_supplychain_ack.py"):
-        assert expected in text, (
-            f"campaign-mode.md must document {expected!r} — how the campaign "
-            "halts, and how the operator resolves the handback"
+        assert expected in step_3_4_text, (
+            f"campaign-step-3-4-risk-recheck.md must document {expected!r} — how "
+            "the campaign halts, and how the operator resolves the handback"
         )
 
 
