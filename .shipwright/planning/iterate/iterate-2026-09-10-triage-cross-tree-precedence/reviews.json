@@ -109,11 +109,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-10T23:56:58.695301+00:00",
+      "completed_at": "2026-09-11T01:49:02.339385+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
