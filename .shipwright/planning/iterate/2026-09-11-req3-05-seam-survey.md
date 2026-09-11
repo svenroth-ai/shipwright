@@ -1,0 +1,317 @@
+# t0 — Seam survey: FR cluster → existing test boundary
+
+> Campaign `req3-05-test-backfill-mono`, sub-iterate **t0** (seam-survey, BLOCKING,
+> read-only, no ACs of its own). This is the ONE repo-wide answer to "which existing
+> seam does a backfilled test for FR-01.NN attach to" that t1–t9 cite instead of
+> re-deciding. Cite a row; do not re-argue the seam for a cluster this table already
+> covers. Re-derive the AC-count columns from `shipwright_ac_coverage_baseline.json`
+> before trusting them — this table is a snapshot at survey time (2026-09-11), and the
+> baseline shrinks as t1–t9 land.
+>
+> **Placed here, not under `.shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/`,
+> deliberately:** that directory is gitignored (`.gitignore` line ~263 — "campaign planning
+> dirs are local-only operational planning, not durable product artifacts"), so a file placed
+> only there would never reach `origin/main` and would vanish with the worktree. This survey is
+> the shared reference every later unit cites — it needs git-history durability, unlike
+> `campaign.md`/`status.json`. A one-line pointer stub was ALSO written directly to
+> `.shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/seam-survey.md` for
+> in-worktree discovery, and `campaign.md` itself now carries a one-line pointer too — but
+> **neither is visible in this run's diff** (both paths are gitignored, so no diff can ever
+> show them; external code review, glm, medium, correctly flagged that the diff alone cannot
+> verify this claim). Confirm they exist on disk if you need to rely on them from a different
+> tool than this file.
+>
+> **Scope note (external plan review, openai, high — see External-Plan-Review-Findings
+> below):** t0's own sub-iterate spec states "ACs in this unit: n/a (survey unit)" and
+> "Test root(s): all roots (read-only)," yet the spec's boilerplate Acceptance Criteria block
+> (identical, word-for-word, in every t1–t9 spec — it is a shared template, not tailored per
+> unit) reads as if t0 must itself regenerate the baseline and produce green tests. It cannot:
+> a survey with no AC cluster of its own has nothing to bind. This document, not a baseline
+> regen or a test file, is t0's deliverable, per the orchestrating campaign's own framing of
+> this unit. The mismatch between the generic checklist and t0's actual (narrower) mandate is
+> a spec-authoring gap worth fixing when campaign.md's sub-iterate specs are next touched, not
+> something t0 should paper over by inventing binding work outside its read-only scope.
+>
+> **Rejected-with-reason (external code review, openai, high — "regenerate the baseline or
+> obtain a spec amendment"):** t0's `FR cluster:` field in its own spec is literally `-` — it
+> has no AC ids to bind and no baseline entries of its own to touch. "Regenerate the baseline"
+> presupposes a cluster t0 does not have; running the regenerator now would do nothing (t0
+> changed zero source/test files) and would misrepresent a no-op as evidence of work. The
+> `run_id`/spec citation IS the record that this reading was deliberate, not an oversight.
+>
+> **Where the "recorded reason" for THIS document's own no-seam ACs lives (external code
+> review, glm, medium):** the two Named Exceptions below, for the specific AC ids listed in
+> their tables (FR-01.12 AC01's precondition/AC02/AC03/AC07/AC09; FR-01.15 AC02/AC03/AC06),
+> ARE that recorded reason — t8 and t9 should cite this survey by section (not re-derive a
+> reason) when they record those exact AC ids as unbound-with-reason at their own baseline
+> regeneration, and should link back to it (a decision-drop reference or a spec.md-adjacent
+> comment naming this file) so the reason survives past this PR the way Finding 5 says it must.
+
+## Method (reproducible)
+
+1. FR titles + AC text: `.shipwright/planning/01-adopted/spec.md` (`### FR-01.NN — <title>`
+   headings, `[ACnn]` bullets).
+2. AC total / unbound / bound counts per FR: cross `shipwright_ac_coverage_baseline.json`
+   (`unbound` list) against the AC ids minted in spec.md.
+3. Existing precedent: `grep -rn 'covers("FR-01\.NN/AC` across the tree — every FR/AC pair
+   that is **already bound** shows, by its own file's path, which test root and module the
+   framework itself already uses to prove that FR's behavior. Precedent beats guessing.
+4. Owning implementation module per unbound AC: read the AC text against
+   `plugins/<name>/scripts/` and `shared/scripts/{lib,tools}/` to find the real
+   deterministic surface (not just the FR's nominal plugin title — see Finding 1 below).
+5. Test-root inventory: `plugins/*/tests`, `shared/tests`, `shared/scripts/tests`,
+   `shared/scripts/tools/tests`, `integration-tests` (the five ADR-044 roots; ONE per
+   pytest process, `--junitxml` per root — CLAUDE.md, repo-root `conftest.py` exit 4).
+
+**Caveat (external plan review, openai, medium):** the precedent evidence above is
+`grep`-derived, not execution-derived — it shows a `@pytest.mark.covers(...)` decorator
+exists in a file under a given root, not that pytest currently collects and passes it from
+that root. t0 spot-checked one (`shared/tests/test_phase_history.py`, `--collect-only`,
+18 tests collected clean under `shared/tests` — confirming that root/precedent pair), but did
+not re-run all ~40 precedent files cited below. **Before trusting a DIFFERENT precedent row,
+run a private, uncommitted `uv run pytest <root>/<file> -q --collect-only` spot-check first**
+— this is a local confidence probe only, throwaway, and is NOT a substitute for, and does not
+relax, the binding ADR-044 rule that the unit's real, evidence-bearing test run is one pytest
+invocation per root with its own `--junitxml` (external code review, openai, medium: an
+earlier draft of this caveat could have been misread as licensing a second, junit-less
+invocation as part of the recorded run — it does not; run the spot-check, throw it away, then
+run the real `--junitxml` invocation once per root as ADR-044 requires).
+
+**Known false-positive source (Stage-2 code review, medium):** the `grep` in step 3 above
+will match `shared/scripts/tools/tests/test_backfill_ac_provenance_*.py` (e.g.
+`test_backfill_ac_provenance_cli.py:91,116,128,129,168`,
+`test_backfill_ac_provenance_apply_skips.py:36,41,44,46,89`) — these contain literal
+`covers("FR-01.NN")` / `covers("FR-01.NN/ACnn")` strings as the backfill tool's OWN test
+fixture data (source text the tool rewrites, and decoy strings inside docstrings/comments/
+assertions it must NOT touch), not real `@pytest.mark.covers` bindings on tests the file
+itself is collected under. Do not count a hit in this file as precedent for any FR/AC pair;
+t1-t9 should skip it when scanning grep output rather than each rediscovering this by hand.
+
+## Key findings (read before using the table)
+
+**Finding 1 — the FR's plugin title is not always its test root.** campaign.md's framing
+("every FR-01.xx maps 1:1 onto a plugin … so the FR cluster IS the test seam") holds for the
+*majority* of ACs, but the already-bound precedent falsifies it as a universal rule: FR-01.01
+(titled `/shipwright-run`) has its one bound AC (`AC08`, phase-history-note freshness) proven
+across a dozen files entirely under `shared/tests/` (`test_phase_history.py`,
+`test_c3_cross_phase_verdict.py`, `test_completion_writers*.py`) because the behavior — the
+phase-history join — is implemented in `shared/scripts/lib/`, not in
+`plugins/shipwright-run/scripts/`. Likewise FR-01.11's two bound ACs (`AC17` merge-state,
+`AC18` silent-revert) live in `shared/tests/test_pr_blockers_merge_state.py` and
+`shared/tests/test_silent_revert*.py` — shared cross-cutting infrastructure every iterate
+calls, not `/shipwright-iterate`-specific code. **Rule for t1–t9: find where the AC's
+behavior is actually implemented (grep the verb of the AC against `shared/scripts/lib`
+first, then the plugin's own `scripts/`) before picking a root — do not default to
+"my FR's plugin dir" without checking.**
+
+**Finding 2 — almost the entire backlog is virgin ground, not a backlog of near-misses.**
+Of 259 unbound ACs, only 4 FRs have ANY existing AC-level binding at all (FR-01.01: 1/8 bound,
+FR-01.07: 4/18, FR-01.11: 2/29, FR-01.13: 2/8) — every other FR is 0% bound. There is no
+"finish the last few" pattern anywhere; every unit is greenfield backfill against whatever
+seam already exists for that behavior (a `tests/` dir, a CLI harness, a fixture corpus), not
+against an existing partial AC-tag pattern to extend.
+
+**Finding 3 — the binding idiom is settled and repo-wide.** Every existing AC-level bind uses
+`@pytest.mark.covers("FR-01.NN/ACnn")` (the `covers` marker is registered once, root
+`pyproject.toml`, applies to every ADR-044 root). `shared/scripts/lib/fr_tag_grammar.py` is
+the parser; a bare `covers("FR-01.NN")` (no `/ACnn`) does not bind a specific AC and will not
+clear this baseline. **Every backfilled test MUST use the `/ACnn`-qualified form.**
+
+**Finding 4 — two named exceptions have no existing deterministic seam at all** (see below):
+FR-01.12 (`/shipwright-preview`) and, partially, FR-01.15 (cross-repo output contract).
+
+**Finding 5 — the baseline JSON has no field to hold a "recorded reason" (external plan
+review, glm, medium).** `shipwright_ac_coverage_baseline.json` (`schema_version: 1`) is a
+flat `unbound: [ "FR-xx/ACnn", ... ]` list — set membership only, per
+`shared/scripts/tools/check_ac_coverage_ratchet.py`'s own docstring. The per-unit exit
+condition ("or is recorded with a reason why it cannot be proven at an existing seam") has
+nowhere machine-checkable to live: today that reason can only live as spec-adjacent prose (a
+decision-drop, or a comment beside the AC in `spec.md`), which is exactly the "rots into
+someone wrote a paragraph once" risk the external review named. **t0 does not fix this** — a
+baseline schema change is out of scope for a read-only survey — but t1–t9 should be aware:
+when you record a no-seam reason, put it somewhere a later reader (or a future automated
+check) can actually find it again (the AC's own line in `spec.md`, or a decision-drop titled
+with the FR/AC id), not only in a PR description that gets buried.
+
+**Finding 6 — some existing `covers(...)` tags are bare-FR, not AC-qualified (external plan
+review, glm, low).** The changelog family (FR-01.09) and a few others carry
+`@pytest.mark.covers("FR-01.09")`-style tags with no `/ACnn` suffix (Finding 3's precedent
+grep found zero AC-qualified changelog binds despite the FR clearly being exercised by tests).
+A bare tag does not bind a specific AC and will not move an entry out of `unbound`. t5 should
+either upgrade an existing bare tag to the qualified form where the test already proves that
+exact AC, or add a new qualified tag — do not assume the bare tag already "counts."
+
+## Master mapping table
+
+> The **Total / Unbound ACs** column is a snapshot at survey time (2026-09-11) and is
+> **non-normative** — re-derive it from `shipwright_ac_coverage_baseline.json` before citing a
+> number (external plan review, glm, low: this column will drift stale the moment t1 lands).
+> The durable part of this table is the FR → root → harness mapping to its right; that does
+> not change as the baseline shrinks.
+
+| FR | Title | Total / Unbound ACs (snapshot, re-derive) | Existing test root(s) | Harness / entry point | Precedent (bound AC, if any) | Sub-iterate |
+|---|---|---|---|---|---|---|
+| FR-01.01 | /shipwright-run | 8 / 7 | `plugins/shipwright-run/tests` (plugin-owned ACs); `shared/tests` (phase-history / completion-writer ACs — Finding 1) | `plugins/shipwright-run/tests/test_lifecycle_cli.py` (real subprocess CLI over `scripts/lib/orchestrator.py` — the highest E2E boundary this plugin has); `test_orchestrator.py`, `test_phase_state_machine.py` for in-process behavior | `shared/tests/test_phase_history.py` etc. → `FR-01.01/AC08` | t8 |
+| FR-01.02 | /shipwright-project | 15 / 15 | `plugins/shipwright-project/tests` | `test_integration.py` (drives `setup_session.py` end to end — the real skill entry point); `test_state.py`, `test_manifest.py`, `test_config.py` for individual ACs | none yet | t6 |
+| FR-01.03 | /shipwright-plan | 21 / 21 | `plugins/shipwright-plan/tests` | `test_integration.py` (`setup_planning_session.py` pipeline); `test_review_iterate.py` / `test_review_routing_contract.py` for the external-review ACs (AC02–AC04, AC09–AC13, AC19–AC21) | none yet | t3 |
+| FR-01.04 | /shipwright-design | 12 / 12 | `plugins/shipwright-design/tests` | `test_setup_design.py` (design-session pipeline); `test_screen_registry.py` (per-requirement screen mapping, AC01/AC04) | none yet | t3 |
+| FR-01.05 | /shipwright-build | 8 / 8 | `plugins/shipwright-build/tests` | `test_integration.py`, `test_setup_implementation.py`, `test_sections.py` / `test_section_builder_contract.py` | none yet | t8 |
+| FR-01.06 | /shipwright-test | 18 / 18 | `plugins/shipwright-test/tests` | `test_test_runner.py`, `test_smoke_test.py`, `test_playwright_runner.py`, `test_journey_coverage.py`, `test_boundary_coverage_report.py` (already the plugin's densest suite — attach beside it) | none yet | t4 |
+| FR-01.07 | /shipwright-security | 18 / 14 | `plugins/shipwright-security/tests`; `shared/tests` for the shared scan-card/coverage surface (Finding 1) | `test_generate_security_report.py`, `test_gitleaks_*`, `test_coverage_*`; shared: `test_security_scan_card.py` | `shared/tests/test_security_scan_card.py` → `AC04, AC08, AC11`; `plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py` → `AC06` | t4 |
+| FR-01.08 | /shipwright-deploy | 15 / 15 | `plugins/shipwright-deploy/tests` | `test_smoke_e2e_cli.py`, `test_rollback_e2e_cli.py` — genuine subprocess E2E CLI harnesses already exist here; prefer them over the narrower `test_validate_deploy.py`/`test_rollback.py` unit files where an AC is itself about the CLI's observable behavior | none yet | t5 |
+| FR-01.09 | /shipwright-changelog | 15 / 15 | `plugins/shipwright-changelog/tests`; `shared/tests` for the aggregation/idempotency surface (Finding 1) | `test_integration.py`; shared: `test_changelog_aggregation_idempotency.py`, `test_changelog_aggregation_refusal.py`, `test_aggregate_changelog.py`, `test_changelog_sections_shared.py` | none AC-bound yet (only bare-FR tags found) | t5 |
+| FR-01.10 | /shipwright-compliance | 14 / 14 | `plugins/shipwright-compliance/tests` | `test_audit_*` family (Group A–I audits) — pick the audit group file matching the AC's dimension; `test_rtm_generator.py` for traceability ACs | none yet | t7 |
+| FR-01.11 | /shipwright-iterate | 29 / 27 | `plugins/shipwright-iterate/tests` (plugin-specific mechanics); `shared/tests` for cross-cutting infra ACs the whole pipeline shares (merge-state, revert-detection — Finding 1) | `test_diff_risk_recheck.py`, `test_sub_iterate_runner_*`, `test_classify_complexity.py`, `test_campaign*.py` | `shared/tests/test_pr_blockers_merge_state.py` → `AC17`; `shared/tests/test_silent_revert*.py` → `AC18` | t1 |
+| FR-01.12 | /shipwright-preview | 9 / 9 | **No plugin-owned implementation module — see Named Exception 1.** Route through `shared/scripts/tests` for the sub-behaviors it actually orchestrates (dev-server, browser verify) | `shared/scripts/tests/test_browser_verify.py`, `test_detect_frontend_changes.py`; `shared/scripts/dev_server/` has no test dir of its own yet — check before adding one | none yet | t8 |
+| FR-01.13 | /shipwright-adopt | 8 / 6 | `plugins/shipwright-adopt/tests` | `test_adopt_evidence_disclosure.py`, `test_skill_md_env_scaffold.py` | → `AC05` (`test_skill_md_env_scaffold.py`), `AC08` (`test_adopt_evidence_disclosure.py`) | t8 |
+| FR-01.14 | Triage Inbox | 29 / 29 | `shared/tests` (primary — 86 existing triage test files); `shared/scripts/tools/tests` for the CLI-tool layer (`triage_add.py`, `triage_cli.py`, `triage_repair.py`) — **two ADR-044 roots, one unit** | `shared/tests/test_github_api_artifact.py`, `test_drift_triage_emit.py`, `test_security_triage_emit.py`, `test_performance_triage_emit.py`; `shared/scripts/tools/tests/test_suite_race_triage.py` | none yet | t2 |
+| FR-01.15 | Cross-repo output contract | 8 / 8 | `shared/tests` — but see **Named Exception 2**: no CLI gate script exists yet, only library-level modules | `shared/scripts/lib/contract_baseline.py`, `contract_skeleton.py`; tests: `test_contract_skeleton.py`, `test_cross_repo_contract_documented.py` | none yet | t9 |
+| FR-01.16 | Guided requirement elicitation | 10 / 10 | `shared/tests` (single root — see harness column; code review confirmed AC09 is provable here alone, not a 3rd/4th root) | `shared/tests/test_requirement_elicitation_rigor.py`, `test_requirement_elicitation_discovery.py`, `test_requirement_elicitation_refs.py`; `_elicitation_discovery.py` (shared harness) globs `plugins/*/skills/*/references/*.md` directly from the shared root (see `shared/tests/_elicitation_discovery.py:61`), so AC09's "which capabilities are bound" check across the three invoking surfaces (`shipwright-project`, `shipwright-adopt`, `shipwright-iterate`) is read as doc content from `shared/tests` — it does NOT require running those plugins' own test suites or adding roots | none yet | t6 |
+| FR-01.17 | Independent re-check on the code host | 7 / 7 | `shared/tests` — CI/PR-review surface; the "code host" itself cannot run inside a test, so the existing seam treats `.github/workflows/*.yml` content + the gate scripts that decide merge-readiness as the observable boundary | `shared/tests/test_pr_review_convergence.py`, `test_pr_review_fail_closed.py`, `test_pr_review_fork_trust.py`, `test_check_ci_supplychain_*`, `_pr_review_workflows.py` (fixture reading real workflow YAML) | none yet | t9 |
+| FR-01.18 | /shipwright-grade | 8 / 8 | `plugins/shipwright-grade/tests` | `test_grade_cli.py` (real CLI entry point), `test_authoritative.py`, `test_negative_fixtures.py`, `test_network_policy.py` (consent-gating ACs) | none yet | t7 |
+| FR-01.19 | Recovery of a broken shared branch | 10 / 10 | `plugins/shipwright-iterate/tests` (main-repair mechanics); `shared/tests` for the shared assertion-weakening / size-limit gate (Finding 1) | `plugins/shipwright-iterate/tests/test_main_repair_hooks.py`; `shared/tests/test_assertion_weakening.py`; bloat/size-crossing ACs (AC08) need the anti-ratchet gate tests (`shared/tests` bloat family, see `shared/glossary.md`) | none yet | t9 |
+| FR-01.20 | Context-Cost Meter | 6 / 6 | **Three roots**: `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests` — pick per AC by which layer it describes (hook capture vs. session fold vs. CLI summary/statusline) | `shared/tests/test_context_cost_core.py`, `test_context_cost_fold.py`; `shared/scripts/tests/test_track_context_cost*.py`, `test_context_cost_integration.py`; `shared/scripts/tools/tests/test_context_cost_readiness.py`, `test_context_cost_summary.py`, `test_context_cost_statusline.py` | none yet | t9 |
+
+## Quick-decide notes for the multi-root FRs (external plan review, openai, high — partial fix)
+
+Full AC-by-AC seam pre-assignment for all 259 ACs is out of proportion for a BLOCKING survey
+unit itself scoped `small` (it would mean t0 doing t1–t9's own classification work up front).
+Instead, here is the one-sentence decision rule per FR that already spans >1 root, so the
+owning unit spends seconds, not a re-investigation, per AC:
+
+- **FR-01.01** (t8): if the AC is about the phase-history NOTE / freshness / cross-phase
+  verdict join, it is `shared/tests` (already proven, AC08). If it is about the pipeline's own
+  sequencing, override recording, or one-conversation-mode behavior, it is
+  `plugins/shipwright-run/tests` — check `plugins/shipwright-run/scripts/lib/orchestrator.py`
+  for the function first.
+- **FR-01.07** (t4): if the AC is about a specific scanner's own behavior (gitleaks, Semgrep,
+  CodeQL config), it is `plugins/shipwright-security/tests`. If it is about the aggregated
+  scan-card shape, coverage comparison, or cross-scanner reporting, it is `shared/tests`
+  (proven precedent: `test_security_scan_card.py`).
+- **FR-01.11** (t1): if the AC is `/shipwright-iterate`-specific mechanics (complexity
+  classification, campaign orchestration, sub-iterate runner contract), it is
+  `plugins/shipwright-iterate/tests`. If the AC is about merge-state, revert detection, or any
+  mechanic every phase's iterate shares, it is `shared/tests` (proven precedent: AC17, AC18).
+- **FR-01.19** (t9): if the AC is about main-repair's own decision logic (claim/abandon, filed
+  vs. repaired), it is `plugins/shipwright-iterate/tests/test_main_repair_hooks.py`'s
+  neighborhood. If the AC is about the test-weakening detector or the size-crossing gate
+  itself (assertion strength, bloat ratchet), it is `shared/tests` (`test_assertion_weakening.py`
+  and the bloat-gate family — `shared/glossary.md` names the exact modules).
+- **FR-01.20** (t9): the three-root split is by LAYER, not by ambiguity — hook-level capture
+  (`shared/scripts/hooks/track_context_cost.py`) is `shared/scripts/tests`; session-fold /
+  core dedup logic (`shared/scripts/lib/context_cost_core.py`,
+  `context_cost_session.py`) is `shared/tests`; CLI-facing summary/statusline/readiness
+  (`shared/scripts/tools/context_cost_*.py`) is `shared/scripts/tools/tests`. Read the AC's
+  verb (captured? folded? displayed?) to pick the layer.
+
+## Named exceptions (no existing boundary — argued)
+
+### Exception 1 — FR-01.12 (`/shipwright-preview`)
+
+`plugins/shipwright-preview/` has **no `scripts/` directory at all** — the entire capability
+is SKILL.md prose executed by the agent, not a deterministic script. The one existing test
+file, `test_preview_checks.py`, says so in its own header comment: its helper functions
+"mirror the SKILL.md logic" — i.e. the test re-implements the logic it is meant to check
+rather than importing the real thing. A test attached there would not prove anything; it
+would assert that a duplicate agrees with itself, which is exactly the
+non-circumvention violation the campaign header and SPEC 1.4.1 forbid.
+
+**Resolution for t8 — AC-by-AC split (external plan review, both reviewers: make this
+concrete rather than deferred)**, from `spec.md` FR-01.12 AC01–AC09:
+
+| AC | What it asks | Bucket | Real seam |
+|---|---|---|---|
+| AC01 | project running + address handed back on request | **split — record BOTH halves, not just the provable one** (external code review, openai, medium: an earlier draft left this AC's precondition half unaccounted for) | the spawn/URL-return half is real (`shared/scripts/dev_server/spawn.py`); the "at least one build section is complete" precondition is the SAME unimplemented `check_build_ready` as AC02 — record that half with AC02's identical no-seam reason, never let the spawn half's test stand in as proof of the whole AC |
+| AC02 | nothing built yet → explains and stops | **no seam** | `check_build_ready` exists ONLY inside `test_preview_checks.py` itself (self-referential) and in SKILL.md prose — nothing else implements it |
+| AC03 | missing settings → operator walked through | **no seam** | conversational/agent behavior, no deterministic surface |
+| AC04 | already running → reuse, don't start a second | **real seam** | `shared/scripts/dev_server/spawn.py` (`_is_pid_running`) + `health.py` (`_is_port_in_use*`) |
+| AC05 | address shown, survives past the conversation, next request reuses it | **real seam** | same `dev_server` health/spawn module pair |
+| AC06 | a stranger's process on that address is never reused as this project's | **real seam** | `shared/scripts/dev_server/validation.py` / `health.py` — verify the exact ownership check before citing a line |
+| AC07 | failure is investigated and addressed, not merely reported | **no seam** | agent-behavior AC, no deterministic surface to assert against |
+| AC08 | a new stack previews without changing the preview capability | **real seam** | `shared/scripts/dev_server/profile_config.py` + `shared/profiles/` — provable by adding/using a second stack profile and asserting no `dev_server` code path changed |
+| AC09 | a preview is machine-local evidence only, never a release claim | **no seam** | a policy/documentation guarantee, not an executable behavior |
+
+Do not add a new harness for the "no seam" rows (AC02, AC03, AC07, AC09) — SKILL.md-only
+behavior is out of scope for what a pytest seam can prove; record the honest reason per the
+per-unit exit condition instead. The "real seam" rows attach under `shared/scripts/tests/`
+(already exercising these same `dev_server` modules via `test_browser_verify.py` and
+`test_detect_frontend_changes.py`) — **not** `plugins/shipwright-preview/tests/`, and never by
+extending the self-referential `test_preview_checks.py`.
+
+### Exception 2 — FR-01.15 (Cross-repo output contract), the gate half
+
+`contract_baseline.py` / `contract_skeleton.py` are real, imported, unit-tested library
+modules — a legitimate seam for ACs about the CONTRACT'S OWN SHAPE. But three ACs describe a
+**gate that runs on the actual PR diff**, which no `shared/scripts/checks/` script wraps
+these modules into today:
+
+| AC | What it asks | Provable now (library unit test) | Residual guarantee NOT provable without a gate script |
+|---|---|---|---|
+| AC01 | shape published, versioned, alongside the payload | yes — `contract_baseline.py`/`contract_skeleton.py` shape + version fields | — |
+| AC02 | comparison against the LAST-published shape fails until version is raised for a breaking change | partially — the comparison FUNCTION can be unit-tested with two synthetic shapes | that it actually RUNS as a merge gate on a real diff — nothing invokes it today |
+| AC03 | published shape read from a state the proposed change cannot alter (never a same-PR copy) | no | the git-immutable-base-ref read itself; a library unit test supplies its own fixture text, which cannot demonstrate immutability |
+| AC04 | a field becoming optional is a breaking change even though nothing disappeared | yes — same comparison function, one more fixture case | — |
+| AC05 | a weakly-observed field (always empty/absent) is stated as a stated weakness | yes — `contract_skeleton.py` fixture provenance | — |
+| AC06 | checked against what the reader ACTUALLY fetches, not just what the producer emits | no | requires running the real consuming command and diffing its real stdout — no such harness exists |
+| AC07 | the producing capability states plainly that it has an outside reader | yes — `test_cross_repo_contract_documented.py` | — |
+| AC08 | the contract binds only this side, not the receiver's behavior | yes — documentation/scope assertion, same file | — |
+
+This is not "no seam is possible" the way Exception 1 is — the library primitives already
+exist and a gate script is a normal, buildable extension of them. Per the binding seam rule
+("no new harness where one fits"), unit-testing the library directly is not a new harness —
+it is the existing one — so t9 should default to it for AC01/04/05/07/08. **For AC02/03/06,
+t9 must NOT close them via the library unit test alone** (external plan review, openai,
+medium: "do not let t9 claim completion... through library-only tests") — record them with
+the specific residual guarantee named above, and file a tracked follow-up (triage card or
+decision-drop) for the missing gate script + its CI wiring, naming an owner rather than
+leaving the gap only as prose in this survey.
+
+**Concrete machine outcome (Stage-2 code review, medium — the "partially" language above was
+ambiguous about the actual `unbound`-list action; stated explicitly here so t9 does not
+guess):** for AC02 specifically — despite the comparison FUNCTION being unit-testable today
+— **do NOT tag `FR-01.15/AC02`** (i.e. do not remove it from `shipwright_ac_coverage_baseline.json`'s
+`unbound` list). The AC's own text asks about the gate *running on a real diff*, which the
+library unit test does not exercise; tagging it now would mark the AC bound while its actual
+behavior remains unproven. Leave AC02 in `unbound`, citing this section's residual-gate
+reason, until the gate script exists and a test invokes it against a real diff. The identical
+rule applies to AC03 and AC06 for the same reason (column above: "no" / not provable now).
+
+## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
+
+| Unit | FR(s) | Roots touched | Root count |
+|---|---|---|---|
+| t1 | FR-01.11 | `plugins/shipwright-iterate/tests`, `shared/tests` | 2 |
+| t2 | FR-01.14 | `shared/tests`, `shared/scripts/tools/tests` | 2 |
+| t3 | FR-01.03, FR-01.04 | `plugins/shipwright-plan/tests`, `plugins/shipwright-design/tests` | 2 |
+| t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (watch this one — see below) |
+| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests` | 3 (watch) |
+| t6 | FR-01.02, FR-01.16 | `plugins/shipwright-project/tests`, `shared/tests` | 2 |
+| t7 | FR-01.10, FR-01.18 | `plugins/shipwright-compliance/tests`, `plugins/shipwright-grade/tests` | 2 |
+| t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (watch — largest fan-out) |
+| t9 | FR-01.15, FR-01.17, FR-01.19, FR-01.20 | `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-iterate/tests` | 4 (watch) |
+
+ADR-044 (repo-root `conftest.py`, exit 4) blocks a single pytest **process** from spanning
+roots — it does not cap how many roots a *unit* may touch across multiple invocations. t4, t5,
+t8 and t9 should plan on 3–5 separate `uv run pytest <root> --junitxml=...` invocations, not
+one.
+
+**Flagged deviation, not a reinterpretation (external plan review, glm, medium — accepted;
+corrected 2026-09-11 after Stage-1 spec-review REJECT — the first version of this paragraph
+named only t8/t9 and silently under-reported t4/t5, which the table two rows above it had
+already shown at 3 roots each. A survey that reports only part of its own finding is worse
+than none: it implies completeness it doesn't have. Re-checked systematically against every
+row of the table above, not spot-checked, before writing this correction):**
+campaign.md states the cut should "keep that count at one or two, never more." **All four**
+of t4 (3 roots), t5 (3 roots), t8 (5 roots) and t9 (4 roots) exceed that as surveyed — not
+only t8/t9. t0 does not have the authority to waive a binding campaign constraint by
+relabeling it a "target" — that decision belongs to whoever owns campaign.md. **This is
+recorded here as an open conflict for the campaign owner to resolve before t4, t5, t8 or t9
+run**, with two honest options on the table for each of the four: (a) accept the deviation
+explicitly (the fan-out reflects where the behavior already lives, not scope creep chosen by
+the unit), or (b) re-cut the FR grouping so each unit stays within two roots (e.g. split t4's
+FR-01.07 shared-scan-card ACs, t5's FR-01.09 shared-aggregation ACs, or t8's
+`shared/scripts/tests`-only AC bucket from FR-01.12's real-seam rows, into their own passes).
+t0 recommends (a) for all four — the roots are forced by Finding 1 (behavior lives where it
+lives), not chosen — but does not decide it unilaterally. Triage card `trg-ff6ea5f0` names
+all four units (amended alongside this correction); see it for the campaign owner's decision
+point.
