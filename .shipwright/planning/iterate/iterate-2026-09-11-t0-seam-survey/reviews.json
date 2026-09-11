@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-t0-seam-survey",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:24:57.816380+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The root-count table openly exceeds the campaign constraint (\"one or two, never more\") for t4, t5, t8, t9, and the plan self-authorizes that as a \"target, not a ceiling.\" This is a survey unit reinterpreting a binding constraint rather than flagging the conflict back to the campaign owner.",
+          "suggestion": "Record this as an explicit deviation request (a row in the survey or a one-line amendment to campaign.md) rather than an inline reinterpretation. Otherwise t8 (4 FRs, 5 roots) will look like a violation in review, and the \"prefer the plugin's own root for borderline ACs\" tiebreaker is the only thing preventing scope creep — make it binding language in the table, not an aside.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Exception 2's resolution (default to unit-testing the library for AC01/05/07/08, record AC02/03/06 as \"needing the gate script\") leaves three ACs permanently unbound with only a prose reason. The baseline-regeneration AC (\"no entry remains in `unbound` without a recorded reason\") technically permits this, but there's no mechanism ensuring the recorded reason is durable and re-reviewed — it can rot into \"someone wrote a paragraph once.\"",
+          "suggestion": "Make the recorded reason machine-checkable: have the baseline entry carry the exception tag (e.g. `unbound_reason: \"no-gate-script\"`) tied to a specific named follow-up, so a later unit can grep for and resolve it rather than re-litigate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The survey is a snapshot (\"2026-09-11\") and t1–t9 will mutate the very baseline the table's counts were derived from, but later units are told only to \"re-derive before trusting.\" The Total/Unbound columns will be stale after t1 lands, and each unit regenerating its own counts partially defeats the point of a single repo-wide answer.",
+          "suggestion": "Either strip the volatile count columns (keep FR → root/harness/precedent, which is stable) or mark the columns as t0-time-only and non-normative. The FR→seam mapping is the durable artifact; the counts are not.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Finding 3 notes bare `covers(\"FR-01.NN\")` tags exist (e.g. changelog family) but the survey doesn't say whether those pre-existing bare tags will be upgraded to `/ACnn` form by t-units or left as-is. Leaving them means the baseline tooling and the survey disagree about what \"bound\" means on the same files.",
+          "suggestion": "Add one row-level note: bare-FR tags found during t5 (changelog) should be either qualified or confirmed intentionally non-binding, so the parser's semantics stay unambiguous.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The relocation out of the gitignored campaign dir is well-argued, but the pointer stub at the gitignored path is a local-only affordance — other developers/worktrees won't have it unless it's the stub that's committed somewhere. Minor discovery gap, not correctness.",
+          "suggestion": "Put the pointer the other way: commit a stub or README line wherever the survey lands that references the campaign dir, and ensure the survey file's path is discoverable from CLAUDE.md or the campaign header.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Exception 1's split of FR-01.12's 9 ACs into \"attach to real scripts\" vs. \"honestly unbounded\" is the right call and correctly rejects the self-referential `test_preview_checks.py`, but the AC-to-bucket assignment is deferred entirely to t8. Given this survey exists precisely so units don't re-decide, the one remaining per-AC decision could be made here.",
+          "suggestion": "If cheap, add the 9 AC ids split across the two buckets in the exception text; otherwise the deferral is acceptable since it's a bounded, one-time decision within a single unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The stated t0 scope is “read-only, no ACs,” but the plan creates a durable survey file and a campaign-folder pointer stub. Its acceptance criteria also require tests and baseline regeneration. Those are incompatible deliverables for one iterate.",
+          "suggestion": "Explicitly split t0 into a read-only survey/verification unit and a follow-up commit-producing unit, or change t0’s scope to authorize the exact tracked artifacts and baseline update it must make.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Several rows still require each later unit to choose its own seam (“pick per AC,” “find where behavior is implemented,” multiple roots/files). That defeats the stated purpose of preventing repeated seam decisions—especially for FR-01.01, .07, .11, .12, .19, and .20.",
+          "suggestion": "Add an AC-level or explicit AC-range-to-seam appendix: `AC ids → root → test module/entry point → exception reason`. Keep the FR table as a summary, but make the detailed mapping the citation target.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not name the durable survey file path, pointer-stub contents, or the baseline schema/tool used to record “no seam” reasons. A prose table alone may not be consumable by the baseline regeneration step.",
+          "suggestion": "Specify the tracked file path and the exact baseline field/tool/command that records exceptions, including how a reason is linked to an AC without falsely marking it covered.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "grep` for `covers(\"FR-01.NN/AC` is not sufficient evidence that a binding is real: it can find comments, inactive tests, non-collected files, or tests that fail under their required root invocation.",
+          "suggestion": "For each claimed precedent/root, validate collection and execute the applicable root once with its JUnit output. Derive binding counts from the same parser/regeneration mechanism CI uses, rather than text search alone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The named exceptions do not define a consistent outcome for partially testable ACs. FR-01.12 can split an AC’s observable script behavior from conversational sequencing, and FR-01.15 distinguishes shape logic from immutable-ref guarantees; without a rule, later work can incorrectly mark the whole AC as proven.",
+          "suggestion": "Require each exception to list the exact AC IDs, the assertion a current seam can prove, and the residual guarantee it cannot prove. Mark residual guarantees explicitly unbound/blocked until the required product boundary exists.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.15’s gate-related ACs require a missing CI-invoked gate and trusted-base-ref behavior. Recording them as needing a gate is accurate, but the plan does not identify the follow-on owner/change needed to make the ACs satisfiable.",
+          "suggestion": "Create a tracked prerequisite for the gate script and its workflow integration, including a protected/trusted source for the baseline ref; do not let t9 claim completion of AC02/AC03/AC06 through library-only tests.  Overall, the survey strategy and its preference for existing user-observable seams are sound, but it needs a precise AC-to-seam artifact and resolution of its read-only versus artifact/test/baseline obligations before it can govern the later units reliably. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T23:23:52.440835+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: risk — Severity: medium**\n**Finding:** The root-count table openly exceeds the campaign constraint (\"one or two, never more\") for t4, t5, t8, t9, and the plan self-authorizes that as a \"target, not a ceiling.\" This is a survey unit reinterpreting a binding constraint rather than flagging the conflict back to the campaign owner.\n**Suggestion:** Record this as an explicit deviation request (a row in the survey or a one-line amendment to campaign.md) rather than an inline reinterpretation. Otherwise t8 (4 FRs, 5 roots) will look like a violation in review, and the \"prefer the plugin's own root for borderline ACs\" tiebreaker is the only thing preventing scope creep — make it binding language in the table, not an aside.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Exception 2's resolution (default to unit-testing the library for AC01/05/07/08, record AC02/03/06 as \"needing the gate script\") leaves three ACs permanently unbound with only a prose reason. The baseline-regeneration AC (\"no entry remains in `unbound` without a recorded reason\") technically permits this, but there's no mechanism ensuring the recorded reason is durable and re-reviewed — it can rot into \"someone wrote a paragraph once.\"\n**Suggestion:** Make the recorded reason machine-checkable: have the baseline entry carry the exception tag (e.g. `unbound_reason: \"no-gate-script\"`) tied to a specific named follow-up, so a later unit can grep for and resolve it rather than re-litigate.\n\n**Category: approach — Severity: low**\n**Finding:** The survey is a snapshot (\"2026-09-11\") and t1–t9 will mutate the very baseline the table's counts were derived from, but later units are told only to \"re-derive before trusting.\" The Total/Unbound columns will be stale after t1 lands, and each unit regenerating its own counts partially defeats the point of a single repo-wide answer.\n**Suggestion:** Either strip the volatile count columns (keep FR → root/harness/precedent […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The stated t0 scope is “read-only, no ACs,” but the plan creates a durable survey file and a campaign-folder pointer stub. Its acceptance criteria also require tests and baseline regeneration. Those are incompatible deliverables for one iterate.  \n   **Suggestion:** Explicitly split t0 into a read-only survey/verification unit and a follow-up commit-producing unit, or change t0’s scope to authorize the exact tracked artifacts and baseline update it must make.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** Several rows still require each later unit to choose its own seam (“pick per AC,” “find where behavior is implemented,” multiple roots/files). That defeats the stated purpose of preventing repeated seam decisions—especially for FR-01.01, .07, .11, .12, .19, and .20.  \n   **Suggestion:** Add an AC-level or explicit AC-range-to-seam appendix: `AC ids → root → test module/entry point → exception reason`. Keep the FR table as a summary, but make the detailed mapping the citation target.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan does not name the durable survey file path, pointer-stub contents, or the baseline schema/tool used to record “no seam” reasons. A prose table alone may not be consumable by the baseline regeneration step.  \n   **Suggestion:** Specify the tracked file path and the exact baseline field/tool/command that records exceptions, including how a reason is linked to an AC without falsely marking it covered.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** `grep` for `covers(\"FR-01.NN/AC` is not sufficient evidence that a binding is real: it can find comments, inactive tests, non-collected files, or tests that fail under their required root invocation.  \n   **Suggestion:** For each claimed precedent/root, validate collection and execute the applicable root once with its JUnit output. Derive bindin […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:28:38.760096+00:00",
+      "disposition": "delegated_to_orchestrator — the sub-iterate runner's tools (Read, Write, Edit, Bash, Glob, Grep) exclude Agent, so it cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; the campaign orchestrator runs it at 3f-bis before merge and promotes this row with --force per shared/prompts/campaign-mode.md.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:28:38.908556+00:00",
+      "disposition": "delegated_to_orchestrator — the sub-iterate runner's tools (Read, Write, Edit, Bash, Glob, Grep) exclude Agent, so it cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; the campaign orchestrator runs it at 3f-bis before merge and promotes this row with --force per shared/prompts/campaign-mode.md.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": ".shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md` — header paragraph (\"A one-line pointer stub is left at the campaign-folder path for discovery from inside the worktree\")",
+          "line": null,
+          "finding": "The diff contains exactly one new file. The pointer stub it claims to leave at `.shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/` (for the seam survey) does not exist in this change — so from inside the worktree, the survey is undiscoverable at the campaign path, and the durability argument in the header is only half-implemented.",
+          "suggestion": "Add the one-line pointer file (or delete the claim). It's a one-line fix; shipping the claim without the file means anyone following the campaign folder finds nothing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "same file, \"Scope note\" paragraph and the absence of any baseline change",
+          "line": null,
+          "finding": "The spec's acceptance criteria explicitly require \"`shipwright_ac_coverage_baseline.json` regenerated; no entry for this cluster remains in `unbound` without a recorded reason.\" The diff's position is that this is shared boilerplate inapplicable to a survey unit with no AC cluster, which is a reasonable reading — but the exit condition \"recorded reason why no existing seam can prove it\" (AC 1 of the checklist) is applicable to the ACs this survey itself classifies as \"no seam\" (FR-01.12 AC02/03/07/09, FR-01.15 AC03/06), and Finding 5 admits those reasons currently have nowhere durable to live and defers the mechanism. So the \"recorded reason\" AC is only partially satisfied: the reasons exist as prose in this survey, not attached to the baseline entries they excuse.",
+          "suggestion": "At minimum, the survey should state explicitly where each no-seam reason will be recorded per-unit (it gestures at \"spec.md line or decision-drop\" but assigns nothing), or the campaign owner should bless this document as the recorded reason. Right now it's a deferral the spec's checklist does not authorize.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "same file, \"Method\" step 3 and Finding 3",
+          "line": null,
+          "finding": "The precedent evidence is grep-derived and the document itself flags that no precedent file was re-run (the \"Caveat\" paragraph). All the \"Precedent\" column entries (FR-01.01/AC08, FR-01.07/AC04/08/11/06, FR-01.11/AC17/18, FR-01.13/AC05/08) are therefore unverified — if any of those files are broken, skipped, or not collected from their cited root, the table's precedent column and the quick-decide rules built on it (which route whole FRs based on \"proven precedent\") would be wrong, and t1–t9 would only catch this if their unit happens to sanity-check the specific file.",
+          "suggestion": "The document already tells t1–t9 to sanity-check the one precedent file they attach beside — that mitigation is adequate; just ensure the quick-decide rules are understood as unverified too, or run the ~4 cited precedent files once before this survey is cited as binding.  No security issues (no code touched). No tests introduced, so nothing to assess for test quality. No caller regressions possible (single new doc file).  Internal consistency check: the per-FR unbound counts (7+15+21+12+8+18+14+15+15+14+27+9+6+29+8+10+7+8+10+6) do sum to the stated 259, and the bound/unbound splits for FR-01.01/07/11/13 match Finding 2's 4-FR/9-bound claim — the arithmetic is sound.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:21](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:21)",
+          "line": null,
+          "finding": "The diff explicitly declines to regenerate `shipwright_ac_coverage_baseline.json`, although the acceptance criteria require it and require every relevant unbound entry to have either a proving test or a recorded reason. Adding prose alone leaves the baseline unchanged and its `unbound` entries unaccounted for.",
+          "suggestion": "Regenerate and commit the baseline with the required recorded dispositions, or obtain and commit a specification change that removes this requirement for t0.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:40](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:40)",
+          "line": null,
+          "finding": "The survey instructs later units to run a targeted `uv run pytest <root>/<file> -q` sanity check without `--junitxml`, in addition to the required root invocation. This conflicts with the binding requirement of one pytest invocation and one JUnit XML per test root.",
+          "suggestion": "Fold this verification into the single root-level invocation and require its `--junitxml`, or explicitly amend the invocation constraint.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:160](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:160)",
+          "line": null,
+          "finding": "FR-01.12/AC01 is only partially mapped: the spawn/URL behavior has a seam, but its required “at least one build section is complete” precondition is declared to have no seam. Unlike the explicitly no-seam ACs, AC01 receives no complete recorded reason or disposition, so it cannot be proven as an acceptance criterion.",
+          "suggestion": "Record AC01’s unprovable precondition as a no-seam exception (or split the AC in the specification), rather than treating a partial test as proof of the full AC.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:258](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:258)",
+          "line": null,
+          "finding": "The mapping leaves t8 and t9 at five and four test roots despite the campaign’s binding “never more than two” constraint, deferring resolution to the campaign owner. A blocking seam survey should provide an executable, compliant mapping rather than leave later units unable to follow both constraints.",
+          "suggestion": "Re-cut those units or secure and record an explicit campaign-constraint amendment before using this survey as the binding reference.  Overall: ship-with-fixes. The survey is substantial, but it currently overrides or defers explicit blocking requirements rather than satisfying them.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T23:28:30.558595+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: bug**\n  **Severity: medium**\n  File: `.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md` — header paragraph (\"A one-line pointer stub is left at the campaign-folder path for discovery from inside the worktree\")\n  **Finding:** The diff contains exactly one new file. The pointer stub it claims to leave at `.shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/` (for the seam survey) does not exist in this change — so from inside the worktree, the survey is undiscoverable at the campaign path, and the durability argument in the header is only half-implemented.\n  **Suggestion:** Add the one-line pointer file (or delete the claim). It's a one-line fix; shipping the claim without the file means anyone following the campaign folder finds nothing.\n\n- **Category: spec**\n  **Severity: medium**\n  File: same file, \"Scope note\" paragraph and the absence of any baseline change\n  **Finding:** The spec's acceptance criteria explicitly require \"`shipwright_ac_coverage_baseline.json` regenerated; no entry for this cluster remains in `unbound` without a recorded reason.\" The diff's position is that this is shared boilerplate inapplicable to a survey unit with no AC cluster, which is a reasonable reading — but the exit condition \"recorded reason why no existing seam can prove it\" (AC 1 of the checklist) *is* applicable to the ACs this survey itself classifies as \"no seam\" (FR-01.12 AC02/03/07/09, FR-01.15 AC03/06), and Finding 5 admits those reasons currently have nowhere durable to live and defers the mechanism. So the \"recorded reason\" AC is only partially satisfied: the reasons exist as prose in this survey, not attached to the baseline entries they excuse.\n  **Suggestion:** At minimum, the survey should state explicitly where each no-seam reason will be recorded per-unit (it gestures at \"spec.md line or decision-drop\" but assigns nothing), or the campaign owner should bless this document as the recorded reason. Right  […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: [.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:21](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:21)  \n  Finding: The diff explicitly declines to regenerate `shipwright_ac_coverage_baseline.json`, although the acceptance criteria require it and require every relevant unbound entry to have either a proving test or a recorded reason. Adding prose alone leaves the baseline unchanged and its `unbound` entries unaccounted for.  \n  Suggestion: Regenerate and commit the baseline with the required recorded dispositions, or obtain and commit a specification change that removes this requirement for t0.\n\n- Category: spec  \n  Severity: medium  \n  File: [.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:40](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:40)  \n  Finding: The survey instructs later units to run a targeted `uv run pytest <root>/<file> -q` sanity check without `--junitxml`, in addition to the required root invocation. This conflicts with the binding requirement of one pytest invocation and one JUnit XML per test root.  \n  Suggestion: Fold this verification into the single root-level invocation and require its `--junitxml`, or explicitly amend the invocation constraint.\n\n- Category: spec  \n  Severity: medium  \n  File: [.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:160](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-3esldy9t\\.shipwright\\planning\\iterate\\2026-09-11-req3-05-seam-survey.md:160)  \n  Finding: FR-01.12/AC01 is only partially mapped: the spawn/URL behavior has a seam, but its required “at least one build section is complete” precondition is declared to have no seam. Unlike the explicitly no-seam ACs, AC01 receives no complete recorded reason or disposition, so it cannot  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:28:39.050632+00:00",
+      "disposition": "delegated_to_orchestrator — the sub-iterate runner's tools (Read, Write, Edit, Bash, Glob, Grep) exclude Agent, so it cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; the campaign orchestrator runs it at 3f-bis before merge and promotes this row with --force per shared/prompts/campaign-mode.md.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:23:59.489344+00:00",
+      "disposition": "plan_internal has no internal arm per project_plan_review_has_no_internal_arm — the runner never performs an internal plan review pass; external Step 3.5 (recorded as review-type=plan above) is the only plan review this contract defines.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -116,3 +116,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR: design_checks.py, compliance_compliance.py, and convert_configs_to_events.py move to phase_tasks\[\]](iterate-2026-09-10-s4-verifiers-and-converter-phase-tasks-reader.md)
 - [Retarget the v1 update_step path onto phase_tasks\[\], then drop current_step/completed_steps](iterate-2026-09-10-s5-retarget-v1-then-drop.md)
 - [One-time rollout transition grace for check_binding_completeness](iterate-2026-09-11-binding-completeness-rollout-transition.md)
+- [t0 seam survey — review findings ledger (campaign req3-05-test-backfill-mono)](iterate-2026-09-11-t0-seam-survey-findings.md)

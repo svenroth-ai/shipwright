@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-t0-seam-survey",
+  "date": "2026-09-11",
+  "section": "req3-05-test-backfill-mono/t0",
+  "title": "Seam survey: FR cluster to existing test boundary (t0, req3-05)",
+  "context": "REQ3.05 mono test-backfill campaign needs one repo-wide answer to which existing test seam proves each FR-01.NN AC before t1-t9 run, so units do not each re-decide the same question (259 unbound ACs across 20 FRs).",
+  "decision": "Produced a tracked FR-to-root mapping doc (20 FRs, grep+spot-checked precedent, 2 named no-seam exceptions with AC-by-AC breakdowns) at .shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md; deliberately NOT in the gitignored campaigns/ dir. External plan+code review findings applied; see spec-ref for the full findings ledger.",
+  "consequences": "t1-t9 cite this survey's rows instead of re-deciding a seam; two open items handed to the campaign owner: the missing per-AC baseline reason field (Finding 5) and the t8/t9 root-count deviation from the 2-root guidance (flagged, not resolved by t0).",
+  "rationale": "A survey unit has no AC cluster of its own to bind (FR cluster: - in its spec) and is read-only across all test roots by its own spec; regenerating the baseline here would be a no-op misrepresented as work.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-11-t0-seam-survey-findings.md"
+}
