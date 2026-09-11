@@ -565,3 +565,42 @@ the final code — see `## Spec Review` disposition below (recorded as the
   Round 4 doubt review), 1 disclosed (medium, weaker evidence, same
   disposition). Full plugin suite re-run (1027 passed, 7 skipped) and lint
   after the docstring fix — clean.
+
+## Round 5 — the live PR-review gate, again, on this iterate's own PR #727
+
+- **Finding:** the automated Tier-3 reviewer blocked repeatedly on
+  `is_generated_path`'s `external-[^/]*review[^/]*\.(json|md)` alternative
+  (hide-from-the-model only, never skip-safe — unaffected by Round 4): a
+  contributor can name an arbitrary file to match the wildcard and have its
+  diff hidden from the reviewing model, a review-evasion path.
+- **Measured before deciding:** `git ls-files .shipwright/planning/iterate`
+  on `origin/main` carries 40+ distinct basenames for the same handful of
+  review-evidence artifact *kinds* — `code-review.json`, `code_review.json`,
+  `stage2-code-review.json`, `stage2_code_review.json`,
+  `code-review-raw.json`, `external-code-review-raw.json`,
+  `external-code-review.raw.json`, `self-review.json`, `self_review.json`,
+  `spec-review.json`, `spec_review_payload.json`, and more — not exhaustive.
+- **Both candidate fixes rejected by that measurement:** a wildcard wide
+  enough to catch those real names is wide enough for an attacker to hit
+  deliberately (the review-evasion concern stands); an exact-basename
+  allowlist (the move already made for `_reply.json`, which has exactly
+  three fixed producers) would need ~40 entries today and would still miss
+  whatever the next run invents — name-trust does not work when the writers
+  choose names ad hoc per run.
+- **Disposition — scoped down, not fixed inline:** the defect is upstream of
+  this classifier (no canonical name per review-evidence artifact kind), so
+  no path filter, wide or narrow, can classify this family safely here. Left
+  `_REVIEW_EVIDENCE_RE` / `_REVIEW_EVIDENCE_RE_RUN_ANCHORED` exactly as they
+  were before this iterate started. Recorded the measurement and rejection
+  reasoning as a durable code comment in `pr_review_generated.py` (Round 5
+  note). Filed `trg-3b206c08` (high, improvement): the real fix is for each
+  review-evidence writer to emit one canonical name per kind under the run
+  directory — the same move `is_safe_to_skip_review` already made via
+  `_SKIP_REVIEW_CANONICAL_BASENAME_PATHS` — after which an exact-path
+  allowlist becomes possible here too. That is a producer-side change,
+  belongs in its own iterate, and is explicitly NOT attempted by this PR.
+- **PR #722 is NOT unblocked by this PR.** `is_generated_path`'s hide-only
+  wildcard is unchanged from before this iterate started; #722's own
+  "PR Review" gate finding (if it shares this same wildcard concern) will
+  recur until `trg-3b206c08` is resolved. Do not wait on #727 for #722 to
+  pass.

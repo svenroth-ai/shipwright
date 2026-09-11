@@ -147,6 +147,38 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
 # extend this alternative (hide side) when that happens. There is no
 # skip-side set to extend any more (see the Round 4 note below).
 
+# Round 5 (the live PR-review gate, again, on this iterate's own PR #727):
+# the gate flagged `external-[^/]*review[^/]*\.(json|md)` as a review-evasion
+# wildcard — a contributor could name an arbitrary file to match it and have
+# its diff hidden from the model. Measured before deciding: `git ls-files
+# .shipwright/planning/iterate` on origin/main carries 40+ DISTINCT basenames
+# for the same handful of review-evidence artifact KINDS (code-review.json,
+# code_review.json, stage2-code-review.json, stage2_code_review.json,
+# code-review-raw.json, external-code-review-raw.json,
+# external-code-review.raw.json, self-review.json, self_review.json,
+# spec-review.json, spec_review_payload.json, ... — and that list is not
+# exhaustive). That measurement rules out BOTH candidate fixes at once:
+# - Widening the wildcard is out: a pattern loose enough to catch that many
+#   real names is loose enough for an attacker to hit deliberately. The
+#   review-evasion concern stands.
+# - An exact-basename allowlist (the `_reply.json` move, above) is ALSO out:
+#   it would need ~40 entries today and would still miss whatever the next
+#   run invents. Name-trust does not work when the *writers* choose names ad
+#   hoc per run, unlike the closed `_reply.json` family, which has exactly
+#   three fixed producers.
+#
+# The defect is upstream of this classifier: the pipeline has no canonical
+# name per review-evidence artifact kind, so no path-based filter — wide or
+# narrow — can classify this family safely. The real fix is to make the
+# writers emit ONE canonical name per kind under the run directory, the same
+# move `is_safe_to_skip_review` already made via
+# `_SKIP_REVIEW_CANONICAL_BASENAME_PATHS` — only then does an exact-path
+# allowlist become possible here too. That is a producer-side change, tracked
+# separately (trg-3b206c08), not this classifier's to attempt. This PR
+# does NOT close the underlying gap PR #722 waits on; `is_generated_path`'s
+# hide-only wildcard stays exactly as wide as before this iterate started,
+# unchanged from the pre-existing regex above.
+
 # NO review-evidence path is skip-safe, as of Round 4 (the live PR-review gate's
 # own bot, on this iterate's own PR #727 — the tool built to enforce this rule
 # caught the rule's last remaining gap by exercising it for real). Rounds 1-3
