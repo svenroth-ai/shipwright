@@ -15,9 +15,8 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from . import _project_gate_extras as _extras
 from .common import CheckResult, Severity, read_run_config
 
-# Mirrors PLANNING_DIRNAME in project_checks.py — kept as a literal here
-# rather than imported, to avoid a circular import (project_checks imports
-# THIS module).
+# Mirrors PLANNING_DIRNAME in project_checks.py — a literal here to avoid
+# a circular import (project_checks imports THIS module).
 _PLANNING_DIRNAME = ".shipwright/planning"
 
 
@@ -73,12 +72,11 @@ def _declared_split_names(
     empty set is a real, valid "zero splits declared" answer, distinct from
     that. ``manifest_error`` is set whenever the manifest exists but cannot
     be trusted as a split list — parse failure, a non-list ``splits`` value,
-    or ANY declared name being invalid/unsafe (external code review,
-    e2-checks-project-elicitation rounds 3-4; external Tier-3 review,
+    or ANY declared name being invalid/unsafe (rounds 3-4; Tier-3 review,
     PR #729): each used to fall through to "zero splits" or a silently-
     dropped subset, letting every spec-text gate pass vacuously over the
-    rejected names. A mixed manifest is loud too now — a single unsafe
-    entry must not evade the four gates just because a sibling was valid.
+    rejected names. A mixed manifest is loud too — one unsafe entry must
+    not evade the four gates just because a sibling was valid.
 
     External code review (round 2, high, both reviewers independently):
     directory enumeration under ``.shipwright/planning/`` cannot tell a
@@ -96,17 +94,23 @@ def _declared_split_names(
         except (json.JSONDecodeError, OSError) as exc:
             return None, f"shipwright_project_config.json could not be parsed: {exc}"
         if not isinstance(data, dict):
-            # External code review (round 6, medium, both reviewers
-            # independently): a syntactically valid but non-object config
-            # (``[]``, ``null``, a bare scalar) used to fall through to
-            # "zero splits declared" (SKIPPED) here, even though the SAME
-            # non-object case already fails loud in ``_read_project_scope``
-            # — the exact silent-pass inconsistency this module's own
-            # docstrings claim were closed everywhere.
+            # Round 6: a syntactically valid but non-object config (``[]``,
+            # ``null``, a bare scalar) used to fall through to "zero splits
+            # declared" (SKIPPED) here, even though the SAME non-object
+            # case already fails loud in ``_read_project_scope``.
             return None, (
                 f"shipwright_project_config.json is a {type(data).__name__}, "
                 f"expected a JSON object"
             )
+    elif data and not isinstance(data, dict):
+        # Tier-3 PR review (PR #729): the run-config FALLBACK path never
+        # validated ``data``'s shape like the project-config branch above —
+        # a malformed, truthy non-dict run-config fell through to
+        # ``splits=[]``, SKIPPED, instead of failing loud.
+        return None, (
+            f"shipwright_run_config.json is a {type(data).__name__}, "
+            f"expected a JSON object"
+        )
     if not path.exists() and not data:
         return None, None
     splits = data.get("splits") if isinstance(data, dict) else None
@@ -126,17 +130,14 @@ def _declared_split_names(
             names.add(raw_name)
         else:
             # Every non-dict entry, and every dict entry whose "name" is
-            # missing / null / empty / unsafe, is recorded — external code
-            # review (round 5, medium, openai): a FALSY name (``null``,
-            # ``""``) used to be filtered out before ever being counted as
-            # rejected, so a manifest of nothing but null names read as
-            # "declared zero splits" (SKIPPED) rather than "every declared
-            # split was invalid" (loud failure).
+            # missing / null / empty / unsafe, is recorded (round 5): a
+            # FALSY name used to be filtered before being counted as
+            # rejected, so an all-null manifest read as "zero splits"
+            # rather than "every declared split was invalid".
             rejected.append(s if not isinstance(s, dict) else raw_name)
     if rejected:
-        # External Tier-3 review, PR #729: a mixed manifest used to silently
-        # drop rejected entries and check only the valid subset, letting an
-        # unsafe declared name (e.g. `../escape`) evade every gate.
+        # Tier-3 review, PR #729: a mixed manifest used to silently drop
+        # rejected entries and check only the valid subset.
         return None, f"declared split entry(ies) invalid/unsafe: {rejected!r}"
     return names, None
 

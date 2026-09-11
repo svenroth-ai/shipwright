@@ -210,68 +210,89 @@ directly (`_project_gate_wiring.py`, `fr_basis.py`'s `classify()`,
 | 3 | `fr_criteria.py`'s docstring claim of "exactly two, both commented" `strict=False` callers is stale — this diff added two more without updating it (low) | accepted-and-fixed — docstring now enumerates all four callers; inline comments added at both new call sites in `_project_gate_extras.py` |
 | 4 | A test docstring claimed "the other two gates" sharing `_read_spec_texts` got a missing/unreadable-spec regression test, but only `basis_forbids_assumed` actually did — `criteria_free_of_implementation_detail` never got one (low) | accepted-and-fixed — added `test_check_criteria_free_of_implementation_detail_skips_when_no_spec_yet` and `..._fails_loud_on_a_declared_but_missing_spec` |
 
-## Required Tier-3 PR Review BLOCK (PR #729, post Stage-3 doubt review)
+## Tier-3 review history — extension-scope coverage of #15 (PR #729)
 
 The CI-gating, required "PR Review" check (Tier-3, `openai/gpt-5.6-luna`,
 B4.5 — distinct from the internal spec/code/doubt-reviewer cascade above)
-returned `BLOCK`: the merged #4/#15 gate's extension-scope skip (added
-round 5) leaves #15's "an `assumed` row must name what would settle it"
-obligation completely unenforced for extension-scope projects, with no
-documented carve-out for #15 specifically.
+identified, in a review pass after the Stage-3 doubt review, that the
+merged #4/#15 gate's extension-scope skip (added round 5) left #15's "an
+`assumed` row must name what would settle it" obligation entirely
+unenforced for extension-scope projects, with no documented carve-out for
+#15 specifically.
 
-**This reverses round 7's rejection of the same concern** (row above:
-"#15's settlement-oracle half unenforced for extension scope... rejected
-— the merged mechanism's scope (greenfield) is #4's own stated scope, not
-a new gap"). Re-examined against the ledger's actual text (not the round-7
-reviewer's framing) for this BLOCK: #4's own row name is literally
+An earlier internal code-review round (round 7, above) had reviewed the
+same concern ("#15's settlement-oracle half unenforced for extension
+scope") and rejected it, reasoning the merged mechanism's scope
+(greenfield) was #4's own stated scope, not a new gap. Comparing that
+reasoning against the ledger's own row text: #4's row name is literally
 "(greenfield)"; #15's row name carries no such qualifier. After the
 round-1 spec-review REJECT (above), the merged function no longer
-implements #4's original "assumed never appears" ban at all — that ban
-was reverted for being stricter than the ledger's own decided ceiling —
-so the function now implements ONLY #15's un-scoped form obligation.
-Round 5's and round 7's shared premise ("both #4 and #15 scope to
-greenfield") did not survive round 1's own fix; nobody re-checked it
-after. An extension-scope `/shipwright-project` run still runs an
-interview (a PO is present, the same availability context as
-greenfield) — unlike `/shipwright-adopt`, which has nobody to ask at
-all — so #15's obligation is reachable there too, and the ledger's own
-text never exempted it. **Fixed** by removing the extension-scope skip
-from `check_basis_forbids_assumed`; #15 (and, vacuously, #4's now-only-
-#15-shaped behavior) is enforced regardless of scope. `#11`'s own
-extension-scope skip is untouched — it exists for an unrelated reason
-(those files pre-exist in extension mode; the check has no availability
-question to fail).
+implements #4's original "assumed never appears" ban — that ban was
+reverted for being stricter than the ledger's own decided ceiling — so
+the function implements only #15's un-scoped form obligation. Round 5's
+and round 7's shared premise ("both #4 and #15 scope to greenfield") did
+not survive round 1's own change, and nobody had re-checked it since. An
+extension-scope `/shipwright-project` run still runs an interview (a PO
+is present, the same availability context as greenfield) — unlike
+`/shipwright-adopt`, which has nobody to ask at all — so #15's obligation
+is reachable there too, and the ledger's own text never exempted it. The
+extension-scope skip was removed from `check_basis_forbids_assumed`, so
+#15 (and, vacuously, #4's now-only-#15-shaped behavior) applies regardless
+of scope. `#11`'s own extension-scope skip was left as-is — it exists for
+an unrelated reason (those files pre-exist in extension mode; the check
+has no availability question to answer).
 
-The bot's two non-blocking `Comments` did not gate the verdict (only its
-`Blocking issues` section did) and are logged, not acted on this round:
-a present, valid-object project config that simply omits the `splits`
-key entirely reads as "zero splits declared" — the same outcome as an
-explicit `"splits": []` — which `_declared_split_names`'s own docstring
-already treats as one legitimate case, not distinguished from a
-key-omitted config; and the #8b drift test's substring-pin fragility
-repeats round 7's own `logged, not acted on` note verbatim.
+The same review pass raised two non-blocking `Comments`, recorded here
+without further action: a present, valid-object project config that
+simply omits the `splits` key entirely reads as "zero splits declared" —
+the same outcome as an explicit `"splits": []` — which
+`_declared_split_names`'s own docstring already treats as one legitimate
+case, not distinguished from a key-omitted config; and the #8b drift
+test's substring-pin fragility repeats round 7's own note on the same
+point.
 
-## Required Tier-3 PR Review BLOCK #2 (PR #729, post extension-scope fix)
+## Tier-3 review history — cross-platform split-name traversal (PR #729)
 
-Re-run on the extension-scope fix's own commit returned `BLOCK` again, on
-an unrelated pre-existing function: `_is_safe_split_name`'s `..`/`.`
-segment check parsed a candidate split name with the host-native
-`Path(name).parts`. A name like `"foo\..\..\escape"` splits into a single
-literal part on POSIX (backslash is not a separator there) and was judged
-safe, passing the traversal check — but a declared split name is data
-committed to the repo and later joined by whichever OS actually reads the
-manifest. The same name, read on a host where backslash IS a separator
-(Windows — this repo's own primary dev platform), resolves outside
+A later review pass, over the commit addressing the finding above,
+identified a second, unrelated issue in a pre-existing function:
+`_is_safe_split_name`'s `..`/`.` segment check parsed a candidate split
+name with the host-native `Path(name).parts`. A name like
+`"foo\..\..\escape"` splits into a single literal part on POSIX
+(backslash is not a separator there) and was judged safe, passing the
+traversal check — but a declared split name is data committed to the
+repo and later joined by whichever OS actually reads the manifest. The
+same name, read on a host where backslash IS a separator (Windows — this
+repo's own primary dev platform), resolves outside
 `.shipwright/planning/`. The function already checked absolute-path forms
-against BOTH `PurePosixPath` and `PureWindowsPath` (rounds 4-6, above) —
-the `..`/`.` segment check was the one path that had not been given the
-same both-conventions treatment. **Fixed** by checking segments under both
-`PurePosixPath(name).parts` and `PureWindowsPath(name).parts`, rejecting if
-either contains `..` or `.`. A backslash-embedded single `.` (e.g.
-`"foo\.\escape"`) is NOT flagged — pathlib silently normalizes single-dot
-segments out of `.parts` under both conventions, and a `.` segment cannot
-itself escape a directory the way `..` can, so there is nothing there to
-catch.
+against both `PurePosixPath` and `PureWindowsPath` (rounds 4-6, above) —
+the `..`/`.` segment check was the one path that had not received the
+same both-conventions treatment. The check now inspects segments under
+both `PurePosixPath(name).parts` and `PureWindowsPath(name).parts`,
+rejecting a name if either contains `..` or `.`. A backslash-embedded
+single `.` (e.g. `"foo\.\escape"`) is not flagged by this change — pathlib
+silently normalizes single-dot segments out of `.parts` under both
+conventions, and a `.` segment cannot itself escape a directory the way
+`..` can, so there was nothing there to catch.
+
+## Tier-3 review history — run-config fallback shape, and ADR wording (PR #729)
+
+A third review pass, over the commit addressing the traversal finding
+above, raised two points. First, `_declared_split_names`'s fallback path
+(used when `shipwright_project_config.json` has not been written yet)
+read `shipwright_run_config.json` via `read_run_config` without
+validating that its parsed content was a JSON object — a malformed,
+truthy non-dict run-config (a bare list, string, or number) fell through
+to `splits=[]`, read as "zero splits declared" (SKIPPED), instead of
+failing loud the way every other malformed-manifest case in this function
+does. The fallback branch now applies the same shape check the
+project-config branch already had. Second, the two prior sections in this
+document were written with heading and phrasing choices (naming the
+CI check's own verdict word in the heading, marking a change with a bare
+bolded "Fixed") that read as addressed to a future automated reviewer of
+this diff rather than as project history for a human reader; both
+sections above have been reworded to describe what was found and changed
+in ordinary past-tense narration, without changing any of the underlying
+facts.
 
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 

@@ -142,6 +142,20 @@ def test_check_no_empty_split_fails_loud_on_non_object_config(tmp_path):
     assert "expected a JSON object" in r.detail
 
 
+def test_check_no_empty_split_fails_loud_on_non_object_run_config_fallback(tmp_path):
+    """Tier-3 PR review (PR #729): with no ``shipwright_project_config.json``
+    written yet, the run-config FALLBACK path never validated ``data``'s
+    shape the way the project-config branch does — a malformed, truthy
+    non-dict ``shipwright_run_config.json`` (here a bare list) fell through
+    to ``splits=[]``, SKIPPED, instead of failing loud like every other
+    malformed-manifest case in this module."""
+    (tmp_path / "shipwright_run_config.json").write_text("[1]", encoding="utf-8")
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "expected a JSON object" in r.detail
+
+
 def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():
     """External code review (round 6, low+medium, both reviewers
     independently): ``is_absolute()`` alone misses Windows DRIVE-relative
