@@ -275,14 +275,23 @@ roots — it does not cap how many roots a *unit* may touch across multiple invo
 t8 and t9 should plan on 3–5 separate `uv run pytest <root> --junitxml=...` invocations, not
 one.
 
-**Flagged deviation, not a reinterpretation (external plan review, glm, medium — accepted):**
-campaign.md states the cut should "keep that count at one or two, never more." t8 (5 roots)
-and t9 (4 roots) exceed that as surveyed. t0 does not have the authority to waive a binding
-campaign constraint by relabeling it a "target" — that decision belongs to whoever owns
-campaign.md. **This is recorded here as an open conflict for the campaign owner to resolve
-before t8/t9 run**, with two honest options on the table: (a) accept the deviation explicitly
-(the fan-out reflects where the behavior already lives, not scope creep chosen by the unit),
-or (b) re-cut t8/t9's FR grouping so each stays within two roots (e.g. split t8's
-`shared/scripts/tests`-only AC bucket, from FR-01.12's real-seam rows, into its own pass). t0
-recommends (a) — the roots are forced by Finding 1 (behavior lives where it lives), not chosen
-— but does not decide it unilaterally.
+**Flagged deviation, not a reinterpretation (external plan review, glm, medium — accepted;
+corrected 2026-09-11 after Stage-1 spec-review REJECT — the first version of this paragraph
+named only t8/t9 and silently under-reported t4/t5, which the table two rows above it had
+already shown at 3 roots each. A survey that reports only part of its own finding is worse
+than none: it implies completeness it doesn't have. Re-checked systematically against every
+row of the table above, not spot-checked, before writing this correction):**
+campaign.md states the cut should "keep that count at one or two, never more." **All four**
+of t4 (3 roots), t5 (3 roots), t8 (5 roots) and t9 (4 roots) exceed that as surveyed — not
+only t8/t9. t0 does not have the authority to waive a binding campaign constraint by
+relabeling it a "target" — that decision belongs to whoever owns campaign.md. **This is
+recorded here as an open conflict for the campaign owner to resolve before t4, t5, t8 or t9
+run**, with two honest options on the table for each of the four: (a) accept the deviation
+explicitly (the fan-out reflects where the behavior already lives, not scope creep chosen by
+the unit), or (b) re-cut the FR grouping so each unit stays within two roots (e.g. split t4's
+FR-01.07 shared-scan-card ACs, t5's FR-01.09 shared-aggregation ACs, or t8's
+`shared/scripts/tests`-only AC bucket from FR-01.12's real-seam rows, into their own passes).
+t0 recommends (a) for all four — the roots are forced by Finding 1 (behavior lives where it
+lives), not chosen — but does not decide it unilaterally. Triage card `trg-ff6ea5f0` names
+all four units (amended alongside this correction); see it for the campaign owner's decision
+point.

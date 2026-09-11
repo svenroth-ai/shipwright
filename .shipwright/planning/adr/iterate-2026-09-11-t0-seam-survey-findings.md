@@ -89,6 +89,52 @@ Skipped — effective complexity `small`, no `touches_io_boundary` risk flag, no
 explicitly. Self-Review (above) is the only review axis besides the plan/code review
 cascade for this run.
 
+## Corrective pass (Stage-1 spec-reviewer REJECT, 2026-09-11)
+
+The orchestrator's Stage-1 spec-reviewer (3f-bis cascade, run against the merge-base diff
+of the first pushed commit `e95c49cd7`) REJECTed PR #720 with two findings. Both were
+independently re-verified before acting, per this campaign's standing "verify the claim,
+not its neighbourhood" discipline:
+
+1. **Confirmed real — under-reported escalation.** The survey's "Flagged deviation"
+   paragraph and triage card `trg-ff6ea5f0` named only t8 (5 roots) and t9 (4 roots) as
+   violating campaign.md's "never more than two test roots" rule. Re-checking every row of
+   the "Per-unit ADR-044 root count" table systematically (not spot-checked) confirmed t4
+   (3 roots: `shipwright-test/tests`, `shipwright-security/tests`, `shared/tests`) and t5
+   (3 roots: `shipwright-deploy/tests`, `shipwright-changelog/tests`, `shared/tests`) also
+   exceed the cap — the table data already showed this; only the prose and the triage card
+   under-reported it. **Fixed:** rewrote the paragraph to name all four units and restated
+   the accept/re-cut framing for each; amended `trg-ff6ea5f0` in place via
+   `triage_cli.py amend` (append-only ledger — an amend event, not a new card) to the same
+   effect. No other unit among t1-t9 exceeds two roots.
+
+2. **Investigated and found to be a false positive — not restored.** The finding claimed
+   commit `e95c49cd7` deleted a "foreign" evidence file belonging to a different, completed
+   run (`.shipwright/agent_docs/iterates/iterate-2026-08-26-b-pure-hardening.json`),
+   allegedly still present on `origin/main`, via an overbroad stage (`git add -A`). Forensic
+   re-check before acting: (a) `origin/main`'s current tip does NOT contain the file
+   (`git ls-tree` returns nothing); (b) the file WAS present at this branch's original
+   merge-base (`4a977c53f5fd`); (c) an independent, already-merged sibling PR (#721,
+   commit `c6bf0805c`) deleted the identical file between that merge-base and the current
+   `origin/main` tip, via its own F5c retention eviction — the same designed, self-healing
+   mechanism this run's own F5c triggered (`.shipwright/agent_docs/iterates/` held 53
+   unpinned summary entries at the merge-base, already over the ~50 cap); (d) the file is
+   not in `shipwright_run_config.json`'s `iterate_retention_pins`; (e) this run never used
+   `git add -A` at any step (all `git add`/`git restore` calls named explicit paths). The
+   suggested restore command (`git checkout origin/main -- <path>`) fails as tested
+   (`pathspec ... did not match any file(s)`), because there is nothing on `origin/main` to
+   restore — resurrecting the file from the stale merge-base blob would reintroduce content
+   `origin/main` has already, independently and correctly, retired. **Resolution:** rebased
+   this branch onto the current `origin/main` (bringing in PR #721) instead of restoring
+   anything; once rebased, both sides agree the file is absent, so it no longer appears in
+   the branch's diff at all — the original appearance was a three-dot/merge-base diff
+   artifact of reviewing before this branch had absorbed #721, not a mistaken deletion by
+   this run.
+
+Both fixes verified via a fresh `git diff origin/main...HEAD --stat` after rebase: the
+disputed path no longer appears; the corrective diff is scoped to the seam-survey prose,
+the triage amend event, and this note.
+
 ## Review cascade delegation (Step 3.7 item 1)
 
 `spec`, `code`, `doubt` recorded `not_run` / `delegated_to_orchestrator` — this runner's
