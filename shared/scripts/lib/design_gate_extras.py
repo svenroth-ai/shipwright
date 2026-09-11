@@ -230,11 +230,12 @@ def uploads_preserved(project_root: Path, uploads_dir: Path) -> GateResult:
     changed" is.
     """
     try:
+        rel_uploads = uploads_dir.resolve().relative_to(project_root.resolve()).as_posix()
         proc = subprocess.run(
-            ["git", "-C", str(project_root), "status", "--porcelain", "--", str(uploads_dir)],
+            ["git", "-C", str(project_root), "status", "--porcelain", "--", rel_uploads],
             capture_output=True, text=True, check=False,
         )
-    except (OSError, FileNotFoundError):
+    except (OSError, FileNotFoundError, ValueError):
         return GateResult(True, "no git evidence available")
     if proc.returncode != 0:
         return GateResult(True, "no git evidence available")

@@ -255,7 +255,7 @@ def main() -> int:
         return 2
 
     designs_dir = project_root / DESIGNS_DIRNAME
-    round_path = Path(args.round).resolve() if args.round else None
+    round_path = (project_root / args.round).resolve() if args.round else None
 
     results = []
     if args.gate in ("fr-coverage", "all"):

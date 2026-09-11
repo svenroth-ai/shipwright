@@ -48,3 +48,21 @@ def test_a_staged_new_upload_edited_again_before_commit_is_not_a_violation(tmp_p
     _git(repo, "add", "-A")
     (uploads / "new.md").write_text("edited again pre-commit\n", encoding="utf-8")
     assert uploads_preserved(repo, uploads).ok is True
+
+
+def test_an_absolute_uploads_path_still_catches_a_modified_upload(tmp_path):
+    """External Tier-3 review, iterate-2026-09-11-e1-checks-plan-design: an
+    absolute pathspec passed straight to git can be rejected on some
+    platforms, and the failure was swallowed as "no evidence" (a false
+    pass). The gate now converts to a repo-relative pathspec first — both
+    args here are already absolute, as every real caller passes them."""
+    repo = _init_repo(tmp_path)
+    uploads = repo / ".shipwright" / "designs" / "uploads"
+    uploads.mkdir(parents=True)
+    (uploads / "brand.md").write_text("x\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "add upload")
+    (uploads / "brand.md").write_text("changed\n", encoding="utf-8")
+    result = uploads_preserved(repo.resolve(), uploads.resolve())
+    assert result.ok is False
+    assert "brand.md" in result.detail
