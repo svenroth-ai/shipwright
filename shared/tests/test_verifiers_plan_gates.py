@@ -255,3 +255,53 @@ def test_heading_adoption_is_decided_per_split_not_per_section(tmp_path):
     assert r.ok is False
     assert r.severity == Severity.ERROR.value
     assert "02-b" in r.detail
+
+
+# --- prerequisites (#9) has its OWN adoption signal, separate from the rest -
+#
+# External code review (iterate-2026-09-11-e1-checks-plan-design) caught that
+# `uses_known_shape` never included prerequisites — a section written under
+# the pre-existing three-heading convention (Overview/Steps/Tests, no
+# Prerequisites) is `adopted=True` on THOSE three headings alone, and would
+# hard-fail on a heading that did not exist when it was written otherwise.
+
+_PRE_PREREQUISITE_SECTION = (
+    "# Section: {name}\n\nRequirements: {frs}\n\n"
+    "## Overview\nDoes the thing.\n\n"
+    "## Implementation Steps\n1. one\n2. two\n\n"
+    "## Tests First\n- a unit test\n"
+)
+
+
+def test_a_split_that_never_adopted_prerequisites_warns_not_fails(tmp_path):
+    root = seed(
+        tmp_path,
+        manifest="01-a\n02-b",
+        sections={
+            "01-a": _PRE_PREREQUISITE_SECTION.format(name="01-a", frs="FR-01.01"),
+            "02-b": _PRE_PREREQUISITE_SECTION.format(name="02-b", frs="FR-01.01"),
+        },
+    )
+    r = check_section_quality(root)
+    assert r.ok is False
+    assert r.severity == Severity.WARNING.value
+    assert r.strict_exempt is True
+    assert "prerequisites" in r.detail
+
+
+def test_one_section_naming_prerequisites_holds_the_whole_split_to_it(tmp_path):
+    """Mirrors `test_heading_adoption_is_decided_per_split_not_per_section`,
+    but for the prerequisites signal specifically: once one section in the
+    split shows the newer heading, the other is a real failure, not legacy."""
+    root = seed(
+        tmp_path,
+        manifest="01-a\n02-b",
+        sections={
+            "01-a": WELL_FORMED.format(name="01-a", frs="FR-01.01"),
+            "02-b": _PRE_PREREQUISITE_SECTION.format(name="02-b", frs="FR-01.01"),
+        },
+    )
+    r = check_section_quality(root)
+    assert r.ok is False
+    assert r.severity == Severity.ERROR.value
+    assert "02-b" in r.detail and "prerequisites" in r.detail

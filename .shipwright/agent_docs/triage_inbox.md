@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-09-11T01:45:13.819477Z. Items waiting for triage decision.
+> Auto-generated 2026-09-07T17:43:26.986738Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 919
-- Triage: 17 | Promoted: 5 | Dismissed: 894 | Snoozed: 3
+- Total: 891
+- Triage: 11 | Promoted: 4 | Dismissed: 873 | Snoozed: 3
 
-## Top 17 items (severity-sorted)
+## Top 11 items (severity-sorted)
 
 ### Source: board-split (1 item)
 
@@ -23,111 +23,40 @@
     ```
   - Promote: `triage_promote.py --id trg-14392ba5 --task-ref EXT:<ref>`
 
-### Source: ci-observation (1 item)
+### Source: doubt-review (1 item)
 
-<a id="trg-9b243652"></a>
-- **Flaky: test\_ensure\_shared\_cache\_fanout\_join.py barrier timing on Windows CI** `id=trg-9b243652 | severity=medium | kind=bug → P2/engineering`
-  - shared/tests/test\_ensure\_shared\_cache\_fanout\_join.py::test\_detected\_fanout\_waits\_for\_all\_installed\_hook\_pa…
+<a id="trg-aedcfe7b"></a>
+- **Binding-completeness F11 gate: blast radius unmeasured on non-adopt target projects** `id=trg-aedcfe7b | severity=high | kind=compliance → P1/engineering`
+  - The new check\_binding\_completeness HARD gate \(P3.3, iterate-2026-09-07-p3-3-producers-emit-and-require-binding\) was…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate <id>
     ```
-  - Promote: `triage_promote.py --id trg-9b243652 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-aedcfe7b --task-ref EXT:<ref>`
 
-### Source: cli (1 item)
+### Source: iterate-2026-08-01-drop-write-once-step-fields (1 item)
 
-<a id="trg-33d30377"></a>
-- **record\_ci\_supplychain\_ack.py has no operator-only guard - a sub-iterate runner wrote its own CI trust-boundary permi…** `id=trg-33d30377 | severity=high | kind=bug → P1/engineering`
-  - MEASURED 2026-09-11 on PR #718 \(p3.8 rewritability-advisory\).  WHAT HAPPENED The sub-iterate runner's Step 3.4 re-che…
-  - Promote: `triage_promote.py --id trg-33d30377 --task-ref EXT:<ref>`
-
-### Source: compliance (1 item)
-
-<a id="trg-0801c0a8"></a>
-- **Compliance: 2 open finding\(s\)** `id=trg-0801c0a8 | severity=high | kind=compliance → P1/compliance`
-  - 2 open compliance finding\(s\): H/H1, H/H2  - H/H1: Bloat drift \(oversize file not in baseline\) — shared/scripts/ci\_…
+<a id="trg-61438a67"></a>
+- **P4.04 \[CAMPAIGN\] Retire the write-once current\_step / completed\_steps fields** `id=trg-61438a67 | severity=medium | kind=improvement → P2/engineering`
+  - Successor to trg-be24ff6f, which asked to migrate two phase\_quality readers to phase\_tasks\[\] and 'then drop the fie…
   - Launch payload (copy into a new Claude session):
     ```text
-    /shipwright-compliance
+    /shipwright-iterate
     
-    Context: 2 open compliance finding(s): H/H1, H/H2.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
+    Work item: Retire the write-once current_step / completed_steps fields (campaign, not a P3 unit)
     ```
-  - Promote: `triage_promote.py --id trg-0801c0a8 --task-ref EXT:<ref>`
-
-### Source: doubt-reviewer (1 item)
-
-<a id="trg-dd297923"></a>
-- **PR-review skip-gate: directory-prefix classification lacks provenance anchoring** `id=trg-dd297923 | severity=high | kind=bug → P1/engineering`
-  - is\_safe\_to\_skip\_review's \_GENERATED\_PREFIXES check is a plain directory-prefix match with no closed-set/canonical…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-dd297923 --task-ref EXT:<ref>`
-
-### Source: external-code-review (1 item)
-
-<a id="trg-00b11bd7"></a>
-- **ITERATE B \[AFTER Iterate A / trg-e69bf1ba\] P3.7 orphan-AC-binding check does not see a retired FR's surviving @covers…** `id=trg-00b11bd7 | severity=high | kind=compliance → P1/engineering`
-  - External code review \(openai, HIGH\) on P3.7 feeder \(b\), check\_orphan\_ac\_binding.py \(campaign req3-04c-ac-identi…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-00b11bd7 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-61438a67 --task-ref EXT:<ref>`
 
 ### Source: iterate-2026-09-07-p3-3-producers-emit-and-require-binding (1 item)
 
 <a id="trg-875104ac"></a>
-- **P3.3 emit-half: wire the EXISTING layer promotion into the iterate flow \(scope settled - no second writer\)** `id=trg-875104ac | severity=medium | kind=compliance → P2/engineering`
+- **P3.3 emit-half: producers must write a complete binding at requirement create/update time** `id=trg-875104ac | severity=medium | kind=compliance → P2/engineering`
   - P3.3 \(campaign req3-04c-ac-identity-wave2\) delivered only the require half \(F11 check\_binding\_completeness\). The…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate <id>
     ```
   - Promote: `triage_promote.py --id trg-875104ac --task-ref EXT:<ref>`
-
-### Source: iterate-2026-09-09-p4-1-glossary-generator-review (1 item)
-
-<a id="trg-6c3629d2"></a>
-- **P4.1 follow-up: 5 low-severity polish items on write\_context\_term.py / interview-protocol.md** `id=trg-6c3629d2 | severity=low | kind=maintenance → P3/engineering`
-  - From PR #699 review \(campaign req3-09-p4-grill-glossary, sub-iterate P4.1, run\_id iterate-2026-09-09-p4-1-glossary-ge…
-  - Promote: `triage_promote.py --id trg-6c3629d2 --task-ref EXT:<ref>`
-
-### Source: iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted (1 item)
-
-<a id="trg-33a474e2"></a>
-- **ITERATE C: two ADVISORY checks - changed test body suspects its AC, and requirement links to its rationale \(p3.8\)** `id=trg-33a474e2 | severity=low | kind=improvement → P3/engineering`
-  - P3.7 sub-iterate spec \(campaign req3-04c-ac-identity-wave2\) names a third, lower-priority item alongside the two hard…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-33a474e2 --task-ref EXT:<ref>`
-
-### Source: iterate-2026-09-11-binding-completeness-rollout-transition (1 item)
-
-<a id="trg-1d9ed777"></a>
-- **Extend rollout transition grace to evaluate\_cross\_layer / the AC-level keystone gate** `id=trg-1d9ed777 | severity=low | kind=improvement → P3/engineering`
-  - check\_binding\_completeness \(P3.3\) now grants a one-time transition grace to a pre-existing, title-matched, superset…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-1d9ed777 --task-ref EXT:<ref>`
-
-### Source: manual (1 item)
-
-<a id="trg-284c03a1"></a>
-- **Triage cross-tree fold-in: 3 follow-ups after precedence fix** `id=trg-284c03a1 | severity=low | kind=maintenance → P3/engineering`
-  - Filed alongside iterate-2026-09-10-triage-cross-tree-precedence \(fixed the read\_all\_items foreign-status-overrides-l…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate <id>
-    ```
-  - Promote: `triage_promote.py --id trg-284c03a1 --task-ref EXT:<ref>`
 
 ### Source: operator-request (1 item)
 
@@ -142,7 +71,19 @@
     ```
   - Promote: `triage_promote.py --id trg-a0d8c2cb --task-ref EXT:<ref>`
 
-### Source: req3-campaign (2 items)
+### Source: req3-campaign (3 items)
+
+<a id="trg-3be88962"></a>
+- **REQ3.04c \[CAMPAIGN AUTONOM\] Welle 2: AC-Identitaet, Manifest v4, Bindung, Keystone-Gate \(Monorepo\)** `id=trg-3be88962 | severity=high | kind=improvement → P1/engineering`
+  - DIES IST DER EIGENTLICHE REQ3.04-MECHANISMUS. Am 2026-08-23 aus trg-a8f4b029 herausgeloest, damit er nicht mit dem Absc…
+  - Evidence: `.shipwright/planning/campaigns/2026-08-23-req3-04-ac-identity-mono-BRIEF.md`
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate --campaign req3-04c-ac-identity-mono --autonomous
+    
+    Work item: REQ3.04c Welle 2 - AC-Identitaet, Manifest v4, Bindung, Keystone-Gate. Design steht in Spec/design/2026-07-22-req3-campaign-SPEC.md §5 (P3.1-P3.8). Voraussetzung: REQ3.04a gemergt.
+    ```
+  - Promote: `triage_promote.py --id trg-3be88962 --task-ref EXT:<ref>`
 
 <a id="trg-a2a45d38"></a>
 - **REQ3.10 \[ITERATE\]\[STRICTLY LAST after REQ3.05/3.06\] Grader Lead-Magnet: change\_reconciliation real machen** `id=trg-a2a45d38 | severity=medium | kind=improvement → P2/engineering`
@@ -156,7 +97,7 @@
   - Promote: `triage_promote.py --id trg-a2a45d38 --task-ref EXT:<ref>`
 
 <a id="trg-c4f877ab"></a>
-- **REQ3.05 \[CAMPAIGN AUTONOM - scaffold ready\] Test-Backfill: fehlende AC-Tests - Monorepo** `id=trg-c4f877ab | severity=medium | kind=improvement → P2/engineering`
+- **REQ3.05 \[CAMPAIGN AUTONOM\] Test-Backfill: fehlende AC-Tests - Monorepo** `id=trg-c4f877ab | severity=medium | kind=improvement → P2/engineering`
   - Der Coverage-Motor, eigener Anker damit er nicht nachgeschleift wird. Schreibt Tests fuer ACs, die heute keinen beweise…
   - Launch payload (copy into a new Claude session):
     ```text
@@ -166,7 +107,7 @@
     ```
   - Promote: `triage_promote.py --id trg-c4f877ab --task-ref EXT:<ref>`
 
-### Source: req3-phase2-walk (1 item)
+### Source: req3-phase2-walk (2 items)
 
 <a id="trg-0845a2f5"></a>
 - **REQ3.06 \[CAMPAIGN AUTONOM\] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only \(mechanisable\) - Monorepo** `id=trg-0845a2f5 | severity=high | kind=improvement → P1/engineering`
@@ -179,27 +120,29 @@
     ```
   - Promote: `triage_promote.py --id trg-0845a2f5 --task-ref EXT:<ref>`
 
-### Source: stage3-doubt-review (1 item)
-
-<a id="trg-a719e3b7"></a>
-- **Keystone gate's SHARED helper modules \(imported by its \_keystone\_\*.py verifiers\) stay outside SENSITIVE\_PATH\_RE** `id=trg-a719e3b7 | severity=low | kind=improvement → P3/engineering`
-  - iterate-2026-09-10-keystone-verifier-sensitive-path added the 8 \_keystone\_\*.py verifier modules and their ci.yml ent…
+<a id="trg-9c9c0792"></a>
+- **REQ3.09 \[ITERATE\] Domaenen-Glossar erzeugen, Grill-Modul in Project, plus die Nachweis-Spur \(supersedes trg-d5522f68…** `id=trg-9c9c0792 | severity=medium | kind=improvement → P2/engineering`
+  - Phase 4, interaktiv, Follow-up nach der Kampagne. OWNS: die Elicitation-Oberflaeche von PROJECT, das geteilte Grill-Mod…
   - Launch payload (copy into a new Claude session):
     ```text
-    /shipwright-iterate <id>
+    /shipwright-iterate
+    
+    Work item: REQ3.09: Domaenen-Glossar erzeugen, Grill-Modul in Project, plus die Nachweis-Spur (supersedes trg-d5522f68)
     ```
-  - Promote: `triage_promote.py --id trg-a719e3b7 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-9c9c0792 --task-ref EXT:<ref>`
 
-### Source: t0-seam-survey (1 item)
+### Source: session-observation (1 item)
 
-<a id="trg-ff6ea5f0"></a>
-- **req3-05 t4/t5/t8/t9 test-root count exceeds campaign's 2-root guidance — needs owner decision** `id=trg-ff6ea5f0 | severity=medium | kind=compliance → P2/engineering`
-  - t0's seam survey \(.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md\) found FOUR units exceed campaign.md…
+<a id="trg-afd87424"></a>
+- **Triage board silently reverts a decision that was swept onto an iterate branch - pendingDelivery reads false because it…** `id=trg-afd87424 | severity=high | kind=bug → P1/engineering`
+  - MEASURED 2026-09-06, twice in one session, and it cost real operator trust before it was understood: an item the operat…
   - Launch payload (copy into a new Claude session):
     ```text
-    /shipwright-iterate <id>
+    /shipwright-iterate
+    
+    Work item: Triage board silently reverts a decision that was swept onto an iterate branch - pendingDelivery reads false because it only compares the same tree
     ```
-  - Promote: `triage_promote.py --id trg-ff6ea5f0 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-afd87424 --task-ref EXT:<ref>`
 
 ## Deferred — decided, revisit later (3)
 

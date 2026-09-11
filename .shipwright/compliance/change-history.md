@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-09-11T14:12:07.704292+00:00
-Source-State: run=iterate-2026-09-11-pr-review-evidence-filter-gap
+Generated: 2026-09-11T02:05:49.768047+00:00
+Source-State: run=iterate-2026-09-11-e1-checks-plan-design base=1af9ce7f4b30
 Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
-Total commits: 1503
+Total commits: 1499
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 515
-    "feat" : 402
-    "chore" : 269
-    "docs" : 159
+    "fix" : 512
+    "feat" : 403
+    "chore" : 268
+    "docs" : 158
     "refactor" : 90
     "test" : 39
     "ci" : 18
@@ -23,13 +23,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Fixes (fix) — 515 commits
+### Fixes (fix) — 512 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-11 | triage | local status always outranks a foreign status in read_all_items (#724) | 8492d65b5946 |
-| 2026-09-11 | compliance | widen P3.7 feeder (a) AC ratchet gate to run on push (#723) | 7c53a46b20ec |
-| 2026-09-11 | compliance | one-time rollout transition rule for check_binding_completeness (#721) | c6bf0805c7dc |
 | 2026-09-11 | security | post success, not fail-closed, on all-generated PR-review gate (#712) | 58393a4e768c |
 | 2026-09-10 | iterate | warn on individually-unread spec paths in keystone AC gate (#713) | 67c6436b1d81 |
 | 2026-09-10 | security | close keystone gate verifier sensitive-path parity gap (#715) | c9db09c192a9 |
@@ -543,10 +540,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 402 commits
+### Features (feat) — 403 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-11 | plan,design | mechanise 18 flagged FR-01.03/FR-01.04 checks with tests | c980816c21de |
 | 2026-09-10 | compliance | keystone AC gate's post-merge detective arm (ruling Q5) (#716) | ef8e0357ddd2 |
 | 2026-09-10 | compliance | P3.7 feeder AC-binding gates (ratchet + orphan-binding hard check) (#711) | 3da41105c489 |
 | 2026-09-10 | compliance | keystone AC gate — a changed criterion must have re-run its tests green (P3.6) (#702) | 7d57df67c184 |
@@ -950,12 +948,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 269 commits
+### Chores (chore) — 268 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-11 | triage | sweep 8 outbox append(s) into branch | 3afa0051f704 |
-| 2026-09-11 | triage | resolve trg-aedcfe7b (binding-completeness rollout transition) | 3a162d3e3364 |
+| 2026-09-11 | review | record the Stage-1 REJECT for e1-checks-plan-design | 1af9ce7f4b30 |
 | 2026-09-11 | iterate | re-measure the REQ-3 AC-evidence ledger and make 7 lines explicit (#719) | 4a977c53f5fd |
 | 2026-09-10 | compliance | refresh evidence documents as of 4a37d59474dc (#707) | ac0b998c722f |
 | 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
@@ -1224,11 +1221,10 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 159 commits
+### Documentation (docs) — 158 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-11 | iterate | survey FR-01.NN test seams for the req3-05 backfill campaign (t0) (#720) | 8aa946525121 |
 | 2026-09-10 | — | document npx bootstrapper as the recommended plugins+WebUI install path (#714) | 35b9a643d822 |
 | 2026-09-10 | triage | file three deferred follow-up cards from PR #702 (P3.6) (#708) | 8f78b93be251 |
 | 2026-08-10 | — | remove expired refactoring-churn warning from README (#626) | 005f7bfe5843 |
@@ -1580,7 +1576,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1503 |
+| Total commits | 1499 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1503 |
+| Human-authored commits | 1499 |
 

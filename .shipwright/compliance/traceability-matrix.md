@@ -1,7 +1,7 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-09-11T14:12:07.704292+00:00
-Source-State: run=iterate-2026-09-11-pr-review-evidence-filter-gap
+Generated: 2026-09-11T02:05:49.768047+00:00
+Source-State: run=iterate-2026-09-11-e1-checks-plan-design base=1af9ce7f4b30
 Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 
 ## Requirements Coverage
@@ -35,11 +35,7 @@ Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 
 | Event | Source | Type | FRs | Tests | Commit | Date |
 |-------|--------|------|-----|-------|--------|------|
-| <a id="evt-818429d9"></a>Fixed the automated PR-review checker so it no longer gets confused by its own past review notes, and made sure a PR can only skip review automatically for one exact, trusted file. | iterate | bug |  | 18573/18632 | — | 2026-09-11 |
-| <a id="evt-3a45e984"></a>Fixed a bug where an abandoned sibling worktree's stale reopen could resurrect a triage card already dismissed on the main branch. | iterate | bug |  | 18505/18564 | — | 2026-09-11 |
-| <a id="evt-6ce91c71"></a>A CI safety check for tracking untested requirements used to be checked only once, when a change was first proposed; it now also gets re-checked every time code lands on the main line, so a sneaky same-change bypass shows up as a red check the next day instead of never being noticed. | iterate | bug |  | 18522/18581 | — | 2026-09-11 |
-| <a id="evt-19e7b6b6"></a>A framework rule that flags stale test-completeness declarations now gives a one-time pass to bindings that were already correct before the rule existed, instead of blocking on them. | iterate | change |  | 10481/10514 | — | 2026-09-11 |
-| <a id="evt-b817ba10"></a>Wrote a shared reference document that tells every later step of this test-writing campaign which existing test file to attach a new test to, instead of each one guessing separately. | iterate | change |  | 18498/18556 | — | 2026-09-11 |
+| <a id="evt-4f86ce5a"></a>Turned 18 planning and design rules that were only prose instructions into real automated checks with tests, and fixed two real bugs the review found along the way. | iterate | change |  | 18613/18671 | — | 2026-09-11 |
 | <a id="evt-f7bdb434"></a>Counted how much enforcement work is still open in the REQ-3 planning ledger with a script instead of by hand, wrote the fresh count into the ledger, and made seven confusing lines say plainly who owns the fix. | iterate | change |  | 951/970 | — | 2026-09-10 |
 | <a id="evt-504ba4d2"></a>When the latest code hasn't been CI-verified yet, the system now looks back to the most recent commit that WAS verified and promotes requirements whose tests haven't changed since then, instead of giving up. | iterate | change | [FR-01.11](#rtm-fr-0111) | 18397/18456 | — | 2026-09-10 |
 | <a id="evt-4e62c00d"></a>Adds a way to double-check, after a commit has already landed, whether it really passed the acceptance-criteria gate -- using real CI evidence instead of trusting the commit's own self-report. | iterate | feature | [FR-01.11](#rtm-fr-0111) | 18344/18403 | — | 2026-09-10 |
@@ -650,7 +646,7 @@ Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 608 |
+| Iterate changes | 604 |
 | Requirements total | 20 |
 | Requirements verified | 19/20 |
 | Must-have verified | 14/14 |
