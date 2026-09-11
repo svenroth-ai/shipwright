@@ -17,6 +17,7 @@ import subprocess
 
 import pytest
 
+import lib.layer_promotion_sweep as sweep_mod
 from lib.layer_promotion_sweep import (
     LayerPromotionSweepResult,
     run_layer_promotion_sweep,
@@ -112,6 +113,21 @@ def test_no_evidence_yet_is_no_change_not_skipped(monkeypatch, repo):
 
 def test_non_json_stdout_is_an_error(monkeypatch, repo):
     monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout="not json"))
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+    assert result.status == "error"
+    assert "non-JSON" in result.reason
+
+
+def test_non_utf8_stdout_from_promote_tool_degrades_instead_of_raising(monkeypatch, repo, tmp_path):
+    """External review, PR #725 round 5: ``subprocess.run(..., text=True)``
+    decodes with the strict default — a ``promote_required_layers.py`` that
+    ever emitted non-UTF-8 bytes (a stray legacy-codepage traceback, say)
+    would raise ``UnicodeDecodeError`` past this module's never-raises
+    boundary. Runs a REAL throwaway subprocess (not the usual ``_stub_run``)
+    so the fix's actual decoding behavior is exercised end-to-end."""
+    fake_tool = tmp_path / "fake_promote_tool.py"
+    fake_tool.write_bytes(b"import sys\nsys.stdout.buffer.write(b'\\x80\\x81not valid utf-8')\n")
+    monkeypatch.setattr(sweep_mod, "_PROMOTE_TOOL", fake_tool)
     result = run_layer_promotion_sweep(repo, "iterate-x")
     assert result.status == "error"
     assert "non-JSON" in result.reason

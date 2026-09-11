@@ -180,10 +180,15 @@ def run_layer_promotion_sweep(
         return LayerPromotionSweepResult(status="skipped", reason=f"{_NO_FETCH_ENV}=1 — offline")
 
     try:
+        # encoding="utf-8", errors="replace" (not text=True's locale-default
+        # strict decoding): non-UTF-8 bytes in the tool's stdout/stderr must
+        # never raise UnicodeDecodeError past this "never raises" boundary —
+        # same convention as lib.git_base.run_git (external review, PR #725).
         proc = subprocess.run(
             [sys.executable, str(_PROMOTE_TOOL),
              "--project-root", str(worktree_path), "--run-id", run_id],
-            cwd=worktree_path, capture_output=True, text=True,
+            cwd=worktree_path, capture_output=True,
+            encoding="utf-8", errors="replace",
             timeout=_PROMOTE_SUBPROCESS_TIMEOUT,
         )
     except subprocess.TimeoutExpired:
