@@ -12,8 +12,10 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
   --planning-dir "{planning_dir}" --project-root "$(pwd)" --plugin-root {plugin_root} --gate sections
 ```
 
-Non-zero exit = STOP. The same gates run again inside `_validate_plan`
-below, so skipping this only defers the failure to a worse moment.
+Non-zero exit = STOP. This is the only place these gates run — the
+phase-completion validator (`_validate_plan`) does not re-run them, so
+skipping this check is not deferred to a later backstop; fix what it names
+now.
 
 1. plan.md exists with SECTION_MANIFEST
 2. All declared sections have files

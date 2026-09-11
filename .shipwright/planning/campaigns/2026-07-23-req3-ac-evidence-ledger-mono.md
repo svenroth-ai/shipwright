@@ -114,16 +114,22 @@ reproducible at any time via `uv run
 shared/scripts/tools/measure_ac_evidence_ledger.py`:
 
 **Re-measured again 2026-09-11 (sub-iterate `e1-checks-plan-design`, same
-campaign)** after closing all 18 of FR-01.03's and FR-01.04's
-prompt-only/mechanisable rows named in the two FRs' tables above (each with
-a new check + test, in the same commit as its status flip): **29**
-prompt-only/mechanisable · **19** prompt-only/judgement · **16**
+campaign, incl. post-REJECT repair)** after closing all 18 of FR-01.03's and
+FR-01.04's prompt-only/mechanisable rows named in the two FRs' tables above
+(each with a new check + test, in the same commit as its status flip):
+**29** prompt-only/mechanisable · **20** prompt-only/judgement · **16**
 enforced-untested · **33** unimplemented · **68** enforced-tested. The
 unimplemented count also moved (36→33): three rows were previously
 double-counted under a compound status (unimplemented-for-the-data-half /
 mechanisable-for-the-gate-half) that collapsed into a single enforced-and-tested
 status once the underlying data gap (`screen_registry`'s dead
-`linked_frs`) was fixed — not a new closure of unimplemented work.
+`linked_frs`) was fixed — not a new closure of unimplemented work. The
+judgement count (19→20) reflects a later repair the same sub-iterate made
+after a Stage-1 spec-reviewer REJECT: FR-01.03 #1 was split into #1 (the
+mechanisable "available key silently skipped" direction, kept enforced and
+tested) and a new #1b (the judgement "missing key stops and asks"
+direction, downgraded to prompt-only judgement with a drift test, per D7's
+own abort rule) — no criterion changed meaning, one row became two.
 
 Superseded prior count, kept for the paragraph's own history: **47**
 prompt-only/mechanisable · **19** prompt-only/judgement ·
@@ -183,8 +189,9 @@ setup-planning-session}.py`, `scripts/lib/sections.py`,
 
 | # | Criterion (short) | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | No review key ⇒ stops and asks | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** Direction actually enforced: when `get_external_review_status` computes `available` (a key IS present), `plan_gate_extras.review_key_honesty` fails the gate if the Step-5 marker still records a `skipped_*` route — a false skip cannot pass silently. The converse this criterion names — a MISSING key must make the session stop and ask rather than silently proceed — is not itself gated here: `computed_status in {missing_keys, user_disabled}` is accepted unconditionally (`GateResult(True, ...)`, no marker required), because a legitimate stop-and-ask exchange happens in conversation, not as a file artifact this check can observe. Wired into `check-plan-gates.py --gate review` (Step 6). Tested: `shared/tests/test_plan_gate_extras.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
-| 2 | Route recorded; dividing refuses without it | `enforced, tested` | **Pre-existing, mis-walked before this campaign's `check-plan-gates.py` (created 2026-07-27) existed.** `review_gate` calls `review_marker.evaluate_review_state` and blocks Step 6 non-zero on a missing marker or an undecided disagreement — the in-session half the original walk found only as prompt text. Tested: `plugins/shipwright-plan/tests/test_check_plan_gates.py`, `shared/tests/test_review_marker.py`. |
+| 1 | Available key silently skipped ⇒ refused | `enforced, tested` | **Closed iterate-2026-09-11-e1-checks-plan-design.** **Split from the original combined row per D7's abort rule** (a criterion with no oracle for one direction is downgraded on that direction, not weakly gated as if both held). Direction enforced: when `get_external_review_status` computes `available` (a key IS present), `plan_gate_extras.review_key_honesty` fails the gate if the Step-5 marker still records a `skipped_*` route — a false skip cannot pass silently. Wired into `check-plan-gates.py --gate review` (Step 6). Tested: `shared/tests/test_plan_gate_extras.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
+| 1b | No review key ⇒ stops and asks | `prompt-only (judgement)` | **Split from #1, 2026-09-11.** A MISSING key making the session stop and ask is conversational behavior with no file artifact a check can observe mid-session — no oracle exists, so D7 forbids a gate. Drift-tested instead: `plugins/shipwright-plan/tests/test_missing_key_stop_and_ask_drift.py` pins SKILL.md's Branch B "STOP. Ask user verbatim... Do NOT proceed until chosen" instruction verbatim. |
+| 2 | Route recorded; dividing refuses without it | `enforced, tested` | **Pre-existing, mis-walked before this campaign's `check-plan-gates.py` (created 2026-07-27) existed.** `review_gate` calls `review_marker.evaluate_review_state` and blocks Step 6 non-zero on a missing marker or an undecided disagreement — the in-session half the original walk found only as prompt text. Tested: `plugins/shipwright-plan/tests/test_check_plan_gates.py`, `shared/tests/test_review_marker_companion_verdicts.py`. |
 | 3 | Every requirement lands in ≥1 section | `enforced, tested` | **Pre-existing, mis-walked (same gap as #2).** `sections_gate` calls `plan_section_quality.coverage_report` and lists every FR named by no section as a problem, non-zero on any. Tested: `shared/tests/test_plan_section_quality.py`, `plugins/shipwright-plan/tests/test_check_plan_gates.py`. |
 | 3b | Every section traces back to ≥1 requirement | `unimplemented` → per-plugin triage item (`shipwright-plan`, uncarded — see "Feeds the per-plugin triage item" below) | **Newly added by this round.** Not claimed anywhere before — found by the negative-space pass. A section records no requirement link at all (`section-index.md`: the manifest is a bare `NN-slug` list), so a plan can add work nobody asked for and nothing notices. Constitution forbids exactly this (YAGNI). Note this is also what makes #3 uncheckable: there is no link data in either direction. |
 | 4 | Each section: purpose, ≥2 steps, test strategy | `enforced, tested` | **Pre-existing, mis-walked (same gap as #2).** `sections_gate` calls `plan_section_quality.quality_problems` per section, which requires a non-empty `## Overview`, ≥2 `## Implementation Steps`, and `## Tests First`. Tested: `shared/tests/test_plan_section_quality.py`, `shared/tests/test_verifiers_plan.py`. |

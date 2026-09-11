@@ -82,13 +82,14 @@ from review_marker import (  # noqa: E402
 GATES = ("review", "sections", "boundary", "all")
 
 #: FR-01.03 #7 — a planning session may write into these prefixes and
-#: nowhere else. Everything the plan phase's own completion (Step 9) and
-#: shared finalization plumbing touches, per `step-9-completion.md` and
-#: `docs/hooks-and-pipeline.md`.
+#: nowhere else, per `step-9-completion.md` / `docs/hooks-and-pipeline.md`.
+#: Includes `shipwright_plan_config.json`: SKILL.md's First Action E writes
+#: it at project root every session, not only at completion.
 PLAN_ALLOWED_PREFIXES = (
     ".shipwright/",
     "shipwright_run_config.json",
     "shipwright_project_config.json",
+    "shipwright_plan_config.json",
     "CHANGELOG-unreleased.d/",
 )
 
@@ -253,12 +254,10 @@ def main() -> int:
     parser.add_argument("--planning-dir", required=True)
     parser.add_argument(
         "--project-root", required=True,
-        help="Project root — decision_log.md, git evidence, and the review-config "
-             "override all read relative to this. Required (not defaulted to cwd,"
-             " matching check-design-gates.py): a silently-wrong cwd would let"
-             " --gate boundary read an empty git evidence set and pass with"
-             " nothing checked — external code review, iterate-2026-09-11-"
-             "e1-checks-plan-design.",
+        help="Project root for decision_log.md, git evidence, and review-config "
+             "overrides. Required (matches check-design-gates.py) — a cwd "
+             "default let --gate boundary read empty git evidence and "
+             "false-pass (external review, iterate-2026-09-11-e1).",
     )
     parser.add_argument(
         "--plugin-root", default=None,

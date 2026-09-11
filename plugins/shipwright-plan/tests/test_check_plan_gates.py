@@ -169,6 +169,16 @@ def test_boundary_passes_when_only_shipwright_paths_changed(bare_planning_dir):
     assert run_gates(bare_planning_dir, "boundary")[0] == 0
 
 
+def test_boundary_passes_with_the_early_in_progress_plan_config(tmp_path, bare_planning_dir):
+    """Stage-1 spec review, iterate-2026-09-11-e1-checks-plan-design: SKILL.md's
+    First Action E writes ``shipwright_plan_config.json`` to the project root
+    on EVERY session (not only at completion), so the boundary gate must
+    allow it or it fails on every real plan session."""
+    (tmp_path / "shipwright_plan_config.json").write_text("{}\n", encoding="utf-8")
+    code, out = run_gates(bare_planning_dir, "boundary")
+    assert code == 0, _problems(out, "boundary")
+
+
 def test_boundary_fails_on_a_production_path(tmp_path, bare_planning_dir):
     src = tmp_path / "src"
     src.mkdir()

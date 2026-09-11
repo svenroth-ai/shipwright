@@ -1,5 +1,6 @@
 """Tests for screen registry."""
 
+from pathlib import Path
 
 from screen_registry import (
     generate_manifest,
@@ -7,6 +8,25 @@ from screen_registry import (
     scan_designs_dir,
     write_manifest,
 )
+
+STEP_4_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "skills" / "design" / "references" / "step-4-generate-screens.md"
+)
+
+
+def test_step_4_instructs_the_requirements_comment_producer():
+    """Stage-1 spec review, iterate-2026-09-11-e1-checks-plan-design:
+    `parse_screen_linked_frs` reads the `<!-- Requirements: ... -->` comment,
+    but nothing ever instructed a screen's author to write it — a
+    consumer with no producer. Pin the instruction, not just its existence,
+    so a rewrite of the Save step can't silently drop it again."""
+    body = STEP_4_PATH.read_text(encoding="utf-8")
+    assert "<!-- Requirements:" in body, (
+        "Step 4's Save instruction must tell the agent to write the "
+        "Requirements comment `parse_screen_linked_frs` reads — without a "
+        "producer, every screen's linked_frs stays empty"
+    )
 
 
 def test_scan_empty_dir(tmp_path):
