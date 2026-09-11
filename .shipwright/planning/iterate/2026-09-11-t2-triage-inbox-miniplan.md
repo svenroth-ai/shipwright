@@ -37,18 +37,20 @@ deviation from the two-root budget was needed for this unit (unlike t1's
 AC08/AC09 3rd-root exception).
 
 **Scope-note reconciliation (external plan review, openai, high — disposition
-#1 below):** the campaign sub-iterate spec
+#1 below) — RESOLVED:** the campaign sub-iterate spec
 (`campaigns/req3-05-test-backfill-mono/sub-iterates/t2-triage-inbox.md`)
-states the test root as "`shared/scripts/tests` (34 files)", which is neither
-of the two roots this unit — or t0's seam-survey row above — actually names
-or uses. That line pre-dates this correction and is out of this run's scope
-to edit (this is a review-bookkeeping fix, not a spec change); the seam
-survey's `FR-01.14` row, quoted verbatim above, is the authoritative binding
-citation per the campaign header's own rule ("cite the row t0 produced ...
-rather than re-deciding it"), and every binding in this document is verified
-against the actual committed tree (see per-AC table), not against the spec's
-scope line. The inconsistency is real but stays confined to a prose summary
-in a document this unit does not own.
+previously stated the test root as "`shared/scripts/tests` (34 files)", which
+was neither of the two roots this unit — or t0's seam-survey row above —
+actually names or uses. The operator has since corrected that scope-note line
+to read "`shared/tests` (primary, 86 existing triage test files);
+`shared/scripts/tests/tools` for the CLI-tool layer", matching the seam
+survey's `FR-01.14` row quoted verbatim above (the authoritative binding
+citation per the campaign header's own rule — "cite the row t0 produced ...
+rather than re-deciding it"). That campaign spec file is gitignored
+local-only state, not part of this PR's diff, so the correction carries no
+further tracked-file change here; every binding in this document was already
+verified against the actual committed tree (see per-AC table), not against
+the spec's scope line, so no re-verification was needed.
 
 ## Re-derived work list (not copied from the spec)
 
@@ -234,7 +236,7 @@ root-column inconsistency, and a documentation-only exception reason).
 
 | # | Reviewer | Severity | Finding | Disposition |
 |---|---|---|---|---|
-| 1 | openai | high | Scope note in the campaign sub-iterate spec names `shared/scripts/tests`, conflicting with the actually-used `shared/tests` + `shared/scripts/tools/tests` | accepted-and-fixed (documentation reconciliation only) — added "Scope-note reconciliation" under "Cited seam" above; the campaign spec's own scope line is out of this run's narrow scope to edit, and the seam survey's row (quoted verbatim, authoritative per the campaign header) is what this plan actually cites and follows |
+| 1 | openai | high | Scope note in the campaign sub-iterate spec names `shared/scripts/tests`, conflicting with the actually-used `shared/tests` + `shared/scripts/tools/tests` | accepted-and-fixed — added "Scope-note reconciliation" under "Cited seam" above; the operator has since corrected the campaign spec's scope-note line itself to match the seam survey's row (quoted verbatim, authoritative per the campaign header) |
 | 2 | openai | high | AC09/AC10/AC21/AC28/AC29 named a "fixture path" rather than the concrete decorated test function, making the binding non-auditable | accepted-and-fixed — re-derived every row directly from `grep -A1 'covers("FR-01.14'` against the actual committed tree; the per-AC table above now names the exact decorated test function for every AC, with no fixture stand-ins |
 | 3 | openai, glm | medium | AC08's root was listed as `shared/scripts/tools/tests`, but the retagged test (`test_triage_defer_producer_coverage.py`) actually lives in `shared/tests` | accepted-and-fixed — this was a copy-paste error from t1's own AC08 exception (a different unit, a real 3rd-root case); t2 has no such deviation. Corrected in the per-AC table; both stated roots (`shared/tests`, `shared/scripts/tools/tests`) match the seam survey's FR-01.14 row exactly, no exception needed |
 | 4 | openai, glm | medium | AC26's "recorded reason" existed only as prose in this plan and the F3 decision drop, not in the canonical, campaign-wide mechanism (`shipwright_ac_coverage_baseline.json` has no per-entry reason field) | accepted-and-fixed — added `.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md` **Named Exception 5**, the same durable mechanism Exception 1 (FR-01.12) and Exception 4 (FR-01.11/AC12) already use for the campaign's other "no seam exists" ACs; updated the FR-01.14 row's exceptions column to point at it |
@@ -252,7 +254,7 @@ recorded honestly rather than argued away a second time:
 
 | # | Reviewer | Severity | Finding | Disposition |
 |---|---|---|---|---|
-| 10 | openai | high | Prose reconciliation of the spec's scope-note conflict does not establish authority to substitute different roots; wants a campaign/spec-owner correction recorded in the canonical artifact | not fixed by this run — this sub-iterate has no standing to edit the campaign owner's spec artifact or rule on the campaign's own scope note; flagged to the human operator (Sven) in this run's final report rather than self-authorized, per the same precedent as t1's Exception 3 (a unit does not get to decide a campaign-level document's own correction for itself) |
+| 10 | openai | high | Prose reconciliation of the spec's scope-note conflict does not establish authority to substitute different roots; wants a campaign/spec-owner correction recorded in the canonical artifact | resolved — this sub-iterate had no standing to edit the campaign owner's spec artifact itself, so it was flagged to the human operator (Sven) rather than self-authorized, per the same precedent as t1's Exception 3; the operator has since made that correction directly in the campaign spec's scope-note line |
 | 11 | openai | medium | AC26's exception lives in a markdown file, not a machine-checked field the ratchet script can resolve | not fixed by this run — `shipwright_ac_coverage_baseline.json`'s schema has no per-entry reason field for ANY of the campaign's prior "no seam" exceptions either (Exception 1, Exception 4); adding one is a cross-cutting schema change spanning every prior unit, not a t2-scoped fix. Recorded as an open, named gap here rather than silently deferred |
 | 12 | openai | medium | Verification section's tools-root line still said "AC08, AC25" after AC08 moved to `shared/tests` | accepted-and-fixed — corrected in "Verification performed" step 1/2 above, with the stale history noted so a future reader isn't left wondering why it changed |
 | 13 | openai | medium | AC23's observable-assertion note cited `test_is_machine_churn_requires_both_conditions`, which is not the AC's actually-bound test | accepted-and-fixed — corrected in "Per-AC observable assertion" above to the two actually-decorated tests (`test_plan_drops_machine_keeps_human`, `test_promoted_and_open_never_dropped`), with their real assertions described |
@@ -261,7 +263,7 @@ recorded honestly rather than argued away a second time:
 | 16 | glm | medium | Disposition #6 (blank-line trimming) self-adjudicates a rejected finding instead of getting a ruling from the metric's owner | acknowledged, not re-argued a second time — flagged to the operator as an open policy question in this run's final report instead of standing on the original disposition alone |
 | 17 | glm | medium | AC26's reason is prose in a planning doc, not CI-verifiable | same as #11 above — not fixed by this run; recorded as an open schema gap |
 | 18 | glm | medium | AC26's "no seam exists" claim is asserted, not argued — the candidate seams considered aren't shown | accepted-and-fixed — Named Exception 5 (seam-survey.md, added by disposition #4) states directly that no candidate in `shared/tests` or `shared/scripts/tools/tests` implements or enforces the "not a plan" claim, following Exception 1's own reasoning style rather than asserting the conclusion alone |
-| 19 | glm | low | The spec's stale scope-note should be filed as a tracked follow-up, not just reconciled in this plan | acknowledged — flagged to the operator in this run's final report; this run does not have standing to edit the campaign spec unilaterally (same reasoning as #10) |
+| 19 | glm | low | The spec's stale scope-note should be filed as a tracked follow-up, not just reconciled in this plan | resolved — flagged to the operator in this run's final report (same reasoning as #10); the operator has since corrected the scope-note line directly in the campaign spec |
 | 20 | glm | low | Confirm the orphan-binding check resolves parametrized test IDs (AC19) so a future added param case doesn't silently break the binding | rejected-with-reason — pre-existing, campaign-wide question about `check_orphan_ac_binding.py`'s own ID-resolution behavior, not something this unit's AC19 binding introduces; out of scope for a bookkeeping correction to answer definitively |
 | 21 | glm | low | If anything consumes the sub-iterate spec's stale test-root line for execution, those 34 files get no coverage signal | rejected-with-reason — verified: nothing in this repo's compliance or CI tooling reads a sub-iterate spec's prose "Test root(s)" line to decide what to execute; `shared/scripts/tools/update_compliance.py` and CI both read `shipwright_compliance_config.json`'s `traceability.test_roots`, not the spec |
 
@@ -273,7 +275,7 @@ Reviewed against the full `origin/main` merge-base diff (`76ca8abd3`..`HEAD`,
 
 | # | Reviewer | Severity | Finding | Disposition |
 |---|---|---|---|---|
-| 1 | openai | high | Same scope-note conflict as the plan-review round (decision drop / spec say `shared/scripts/tests`, actual bindings are `shared/tests` + `shared/scripts/tools/tests`); no coverage marker or JUnit evidence exists for the spec's literal stated root | same disposition as plan-review #1/#10 — the seam survey's FR-01.14 row (quoted verbatim in this plan) is the authoritative citation per the campaign's binding-seam rule; the sub-iterate spec's scope-note line is a pre-existing typo this run's narrow scope does not authorize editing. Flagged to the operator (Sven) rather than self-corrected in the spec |
+| 1 | openai | high | Same scope-note conflict as the plan-review round (decision drop / spec say `shared/scripts/tests`, actual bindings are `shared/tests` + `shared/scripts/tools/tests`); no coverage marker or JUnit evidence exists for the spec's literal stated root | resolved, same disposition as plan-review #1/#10 — the seam survey's FR-01.14 row (quoted verbatim in this plan) is the authoritative citation per the campaign's binding-seam rule; the sub-iterate spec's scope-note line was a pre-existing typo, flagged to the operator (Sven) rather than self-corrected by this run, and has since been corrected by the operator directly in the campaign spec |
 | 2 | glm | low | `risk_recheck.json` says `plan_review_required: true`, but `reviews.json`'s `plan` row (before this correction) was dispositioned as a rule-driven skip under the 100-LOC threshold — an internal contradiction | accepted-and-fixed by this run's very purpose — that stale disposition is exactly the bookkeeping error this correction replaces; `reviews.json`'s `plan` row is being re-recorded `completed` in this same pass (see Step 4 below), removing the contradiction |
 | 3 | glm | low | The F3 decision drop cites t0's seam survey by assertion, not by quoting/pointing at the actual row, weakening auditability | acknowledged, not re-opened — the already-committed F3 decision drop is an immutable per-run artifact this correction does not reopen (out of the narrow review-bookkeeping scope authorized for this run); the exact row is now quoted verbatim in this mini-plan's "Cited seam" section, closing the auditability gap going forward |
 | 4 | glm | low | `test_completeness.counts` in the F5c iterate record shows `untestable: 0`/28-of-28, while the decision drop treats AC26 as untestable-with-reason — the two artifacts don't visibly agree on the denominator (28 vs. 29) | acknowledged, not modified — F5/F5c is a different, already-finalized ledger this run's narrow scope (review bookkeeping only, no F0–F6 redo) does not reopen; flagged to the operator as a possible ledger-accuracy follow-up (whether AC26 should appear as `untestable: 1` rather than being excluded from the counted denominator) |
