@@ -173,7 +173,9 @@ def test_an_external_script_reference_fails(project):
     )
     code, out = run_gates(project, "standalone")
     assert code == 1
-    assert any("cdn.example.com" in p for p in _problems(out, "standalone"))
+    assert _problems(out, "standalone") == [
+        "screens/01-login.html: external reference https://cdn.example.com/x.js"
+    ]
 
 
 def test_an_allowed_font_cdn_reference_passes(project):

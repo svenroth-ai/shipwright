@@ -64,6 +64,29 @@ def test_multiple_allowed_prefixes_all_apply():
     assert violations == ["src/x.py"]
 
 
+def test_an_exact_filename_entry_does_not_allow_a_suffixed_sibling():
+    """External Tier-3 review, iterate-2026-09-11-e1-checks-plan-design:
+    a bare allowlist entry names one exact file, not a directory — treating
+    it as a `startswith` prefix let `shipwright_project_config.json.bak`
+    (or `.evil`, `.tmp`) slip through as if it were the allowed config."""
+    violations = find_boundary_violations(
+        ["shipwright_project_config.json.bak"], ["shipwright_project_config.json"]
+    )
+    assert violations == ["shipwright_project_config.json.bak"]
+
+
+def test_an_exact_filename_entry_still_allows_the_exact_file():
+    assert find_boundary_violations(
+        ["shipwright_project_config.json"], ["shipwright_project_config.json"]
+    ) == []
+
+
+def test_a_directory_prefix_entry_is_unaffected_by_the_exact_match_rule():
+    assert find_boundary_violations(
+        [".shipwright/planning/plan.md"], [".shipwright/"]
+    ) == []
+
+
 # --------------------------------------------------------------------------- #
 # git_dirty_paths — real git evidence
 # --------------------------------------------------------------------------- #

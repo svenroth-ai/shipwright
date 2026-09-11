@@ -82,20 +82,33 @@ def git_dirty_paths(project_root: Path | str) -> list[str]:
     return paths
 
 
+def _is_allowed(normalized: str, allowed_prefix: str) -> bool:
+    """A ``/``-suffixed entry is a directory prefix; anything else names one
+    exact file (external Tier-3 review, iterate-2026-09-11-e1-checks-plan-
+    design): treating both as ``startswith`` let a same-named sibling like
+    ``shipwright_project_config.json.bak`` slip through an allowlist entry
+    that names an exact file, not a directory."""
+    if allowed_prefix.endswith("/"):
+        return normalized.startswith(allowed_prefix)
+    return normalized == allowed_prefix
+
+
 def find_boundary_violations(
     changed_paths: list[str], allowed_prefixes: list[str]
 ) -> list[str]:
-    """Return the ``changed_paths`` that start with none of ``allowed_prefixes``.
+    """Return the ``changed_paths`` that match none of ``allowed_prefixes``.
 
-    Prefix matching is on POSIX-separated strings; both sides are normalised
-    the same way so a caller passing OS-native separators still matches.
-    An empty ``changed_paths`` list — nothing changed yet, or evidence
-    unavailable — yields no violations: the check has nothing to fail on.
+    Matching is on POSIX-separated strings; both sides are normalised the
+    same way so a caller passing OS-native separators still matches. An
+    entry ending in ``/`` is a directory prefix; every other entry is an
+    exact path match, not a prefix — see ``_is_allowed``. An empty
+    ``changed_paths`` list — nothing changed yet, or evidence unavailable —
+    yields no violations: the check has nothing to fail on.
     """
     normalized_allowed = [p.replace("\\", "/") for p in allowed_prefixes]
     violations = []
     for path in changed_paths:
         normalized = path.replace("\\", "/")
-        if not any(normalized.startswith(prefix) for prefix in normalized_allowed):
+        if not any(_is_allowed(normalized, prefix) for prefix in normalized_allowed):
             violations.append(path)
     return violations
