@@ -1,5 +1,5 @@
-"""Tests for ``check_no_empty_split`` and ``_is_safe_split_name`` in
-``shared/scripts/tools/verifiers/_project_gate_wiring.py``.
+"""Tests for ``check_no_empty_split`` (``_project_gate_wiring.py``) and
+``_is_safe_split_name``/manifest reading (``_project_gate_manifest.py``).
 
 Split out of ``test_verifiers_project.py`` (shared bloat gate, 300-line
 limit; req3-06-enforcement-mono sub-iterate e2) — ``check_no_empty_split``
@@ -19,10 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tools.verifiers._project_gate_wiring import (  # noqa: E402
-    _is_safe_split_name,
-    check_no_empty_split,
-)
+from tools.verifiers._project_gate_manifest import _is_safe_split_name  # noqa: E402
+from tools.verifiers._project_gate_wiring import check_no_empty_split  # noqa: E402
 
 from _project_check_fixtures import _write_splits_config  # noqa: E402
 
@@ -168,6 +166,24 @@ def test_check_no_empty_split_fails_loud_on_an_empty_non_object_run_config_fallb
     assert r.ok is False
     assert not r.is_skipped
     assert "expected a JSON object" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_syntactically_invalid_run_config_fallback(tmp_path):
+    """Tier-3 PR review (PR #729, round 3 on this same fix): with no
+    ``shipwright_project_config.json`` written yet, ``read_run_config``
+    swallows a ``JSONDecodeError`` into ``{}`` BY DESIGN (its own
+    docstring), indistinguishable from a genuinely missing file — so
+    syntactically INVALID JSON in ``shipwright_run_config.json`` (not
+    merely valid-JSON-but-non-object, covered above) silently read as
+    "zero splits declared" instead of failing loud. Reading the fallback
+    file directly, rather than through that swallowing helper, closes it."""
+    (tmp_path / "shipwright_run_config.json").write_text(
+        "{not valid json", encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "could not be parsed" in r.detail
 
 
 def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():

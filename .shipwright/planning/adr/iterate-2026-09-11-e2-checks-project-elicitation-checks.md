@@ -313,6 +313,31 @@ dispatcher-level test only asserts the four gate names are present rather
 than exercising the guidance gate's actual merge-blocking behavior via a
 full-app fixture — recorded here, not acted on this round.
 
+## Tier-3 review history — run-config parse-failure swallowing (PR #729)
+
+A fifth review pass, over the commit addressing the falsy-case fix above,
+found a still deeper issue in the same fallback path: `read_run_config`
+swallows a `JSONDecodeError` into `{}` by its own documented design ("a
+missing or malformed file yields `{}`"), so `_declared_split_names` could
+never distinguish a genuinely absent `shipwright_run_config.json` from a
+present-but-syntactically-invalid one — both prior rounds' shape checks
+operated only on whatever that helper handed back, which could never
+carry a parse failure at all. `_declared_split_names` now reads
+`shipwright_run_config.json` directly, the same way it already reads
+`shipwright_project_config.json`, so a parse failure there surfaces its
+own manifest error instead of disappearing into `read_run_config`'s
+"nothing to report" default.
+
+This round also crossed the shared 300-line bloat-baseline guideline on
+`_project_gate_wiring.py` a fourth time across this PR's Tier-3 fix
+rounds — each prior round had been handled by trimming docstrings back
+under the line, which was starting to compress the very review-history
+context this ADR exists to preserve. `_is_safe_split_name`,
+`_declared_split_names`, `_read_spec_texts` and `_unreadable_result` (all
+manifest-reading logic, none of it `check_*` wiring) were split out into
+a new sibling module, `_project_gate_manifest.py` — the same precedent as
+this file's own split from `project_checks.py`.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading

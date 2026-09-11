@@ -138,7 +138,7 @@ def _write_splits_config(root: Path, names: list[str]) -> None:
     """Declares ``names`` as this project's splits manifest — the
     authoritative source ``_read_spec_texts`` now enumerates from (round 2
     fix: config-driven, not directory-enumeration; see
-    ``_project_gate_wiring._declared_split_names``)."""
+    ``_project_gate_manifest._declared_split_names``)."""
     (root / "shipwright_project_config.json").write_text(
         json.dumps({"splits": [{"name": n, "status": "not_started"} for n in names]}),
         encoding="utf-8",
