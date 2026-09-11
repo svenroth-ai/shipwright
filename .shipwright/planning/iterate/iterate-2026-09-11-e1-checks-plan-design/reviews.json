@@ -151,38 +151,56 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
+      "findings_count": 5,
       "findings": [
         {
           "severity": "medium",
           "category": "correctness",
-          "file": "shared/tests/test_design_gate_extras_stage2_review.py",
-          "line": 53,
-          "finding": "Original regression test compared two already-absolute tmp_path values, so it would have passed on the pre-fix code too (weak evidence).",
-          "suggestion": "Replace with a test that captures the actual git argv via a monkeypatched subprocess.run and asserts the pathspec is repo-relative POSIX.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/lib/design_gate_extras.py",
-          "line": 238,
-          "finding": "The new ValueError branch (uploads_dir outside project_root) reused the misleading 'no git evidence available' PASS message, the same fail-open shape the Tier-3 finding objected to.",
-          "suggestion": "Return a FAIL naming the actual cause instead.",
+          "file": "plugins/shipwright-design/scripts/checks/check-design-gates.py",
+          "line": 212,
+          "finding": "A GIVEN-but-wrong --round path (bad round number, not yet written) collapsed into the same silent no-op as omitting --round entirely, bypassing the flagged-screen check via a different input than the round-6 fix closed.",
+          "suggestion": "Add a round_not_found usage error in main() when round_path is not None but does not exist; simplify iteration_gate() to check only round_path is None.",
           "source": "code-reviewer"
         },
         {
           "severity": "low",
           "category": "readability",
-          "file": "plugins/shipwright-design/tests/test_check_design_gates_tier3_review.py",
-          "line": 11,
-          "finding": "New test file duplicates SCRIPT/_git helpers from the sibling test file, and asserted on parsed JSON before checking returncode (a script crash would surface as a JSONDecodeError, not a readable failure).",
-          "suggestion": "Assert on returncode with stdout/stderr in the message before parsing JSON. Helper duplication accepted as-is (same pattern already used in test_design_gate_extras_stage2_review.py, precedented in this campaign).",
+          "file": "plugins/shipwright-plan/tests/test_check_plan_gates.py",
+          "line": 162,
+          "finding": "test_plugin_root_is_required_for_the_sections_and_all_gates duplicated the sections-gate assertion already owned by test_check_plan_gates_sections.py's usage-error test.",
+          "suggestion": "Reduce to the all-gate + review/boundary-exempt assertions only.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/tests/test_check_design_gates.py",
+          "line": 227,
+          "finding": "test_gate_all_still_no_ops_without_round only asserted overall exit 0, indistinguishable from the pre-existing clean-project test; could not tell 'iteration no-op'd' from 'iteration was dropped from the all-run'.",
+          "suggestion": "Assert the iteration gate row's ok/detail specifically.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/skills/plan/references/step-9-completion.md",
+          "line": 5,
+          "finding": "Doc said gate #11 'silently skips itself' without --plugin-root, made stale by the round-6 fix (now a usage error, exit 2).",
+          "suggestion": "Rewrite to 'refuses to run (usage error, exit 2) without it'; fix the check-plan-gates.py usage synopsis bracketing --plugin-root as optional.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-plan/scripts/checks/check-plan-gates.py",
+          "line": 272,
+          "finding": "--plugin-root was required but not validated as a directory, unlike --planning-dir; a mistyped path resolved and fail-closed with a misleading problem message instead of a clear usage error.",
+          "suggestion": "Add a plugin_root_not_found usage error mirroring planning_dir_not_found.",
           "source": "code-reviewer"
         }
       ],
       "provider": null,
-      "completed_at": "2026-09-11T06:09:13.824798+00:00",
+      "completed_at": "2026-09-11T06:42:07.980483+00:00",
       "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
