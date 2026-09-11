@@ -146,20 +146,6 @@ def test_non_none_without_runner_exits_1(tmp_path):
     assert code == EXIT_INVALID_ARGS
 
 
-def test_zero_tests_exits_2(tmp_path):
-    """Greedy-filter trap: runner exits 0 but matched zero tests."""
-    code, block = verify_surface(
-        project_root=tmp_path,
-        run_id="iterate-2026-01-01-foo",
-        surface="cli",
-        runner=[sys.executable, "-c", "print('no tests collected')"],
-        justification=None,
-        tests_run_override=None,
-    )
-    assert code == EXIT_ZERO_TESTS
-    assert block["tests_run"] == 0
-
-
 def test_runner_failure_exits_3(tmp_path):
     code, block = verify_surface(
         project_root=tmp_path,
@@ -186,20 +172,6 @@ def test_command_not_found_exits_3(tmp_path):
         retry_cap=1,
     )
     assert code == EXIT_RUNNER_FAILED
-
-
-def test_happy_path_exit_0(tmp_path):
-    code, block = verify_surface(
-        project_root=tmp_path,
-        run_id="iterate-2026-01-01-foo",
-        surface="cli",
-        runner=[sys.executable, "-c", "print('=== 3 passed in 0.1s ===')"],
-        justification=None,
-        tests_run_override=None,
-    )
-    assert code == EXIT_OK
-    assert block["tests_run"] == 3
-    assert block["exit_code"] == 0
 
 
 def test_tests_run_override_wins(tmp_path):

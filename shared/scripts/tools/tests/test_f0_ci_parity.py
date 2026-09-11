@@ -40,10 +40,12 @@ def test_ci_still_loops_plugins_on_pyproject_plus_tests(ci_text):
     assert '[ -f "$plugin/pyproject.toml" ]' in ci_text
     assert '[ -d "$plugin/tests" ]' in ci_text
 
-
+@pytest.mark.covers("FR-01.11/AC09")
 def test_ci_still_runs_the_same_shared_dirs(ci_text):
-    """Pin the EXECUTABLE line, not the file text: ci.yml also names these dirs in long
-    comments, so a substring-anywhere check would still pass if the loop were deleted."""
+    """AC09: the shared build service runs the same units serially, as an
+    independent cross-check. Pin the EXECUTABLE line, not the file text: ci.yml
+    also names these dirs in long comments, so a substring-anywhere check would
+    still pass if the loop were deleted."""
     assert f"for dir in {' '.join(SHARED_TEST_DIRS)}" in ci_text, \
         "ci.yml no longer loops over exactly the shared test dirs — F0/CI selection drifted"
 

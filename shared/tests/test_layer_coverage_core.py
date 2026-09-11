@@ -85,10 +85,10 @@ def test_cross_layer_could_not_determine_when_spec_changed_but_no_fr():
     assert v.could_not_determine and not v.changed_keys
 
 
+@pytest.mark.covers("FR-01.11/AC20")
 def test_cross_layer_could_not_determine_when_spec_changed_but_no_row_delta():
-    # External-review MUST-FIX: a spec delta that leaves every FR row identical is
-    # undeterminable (could be a behavioural AC edit under an unchanged row), NOT a silent
-    # pass — the manifest cannot see AC prose, so it WARNs for a human to adjudicate.
+    # AC20 (undecidable stays undecidable): a spec delta touching no row/AC is
+    # undeterminable — NOT a silent pass; the manifest cannot see AC prose.
     base = _manifest({"a::FR-01.01": _node("FR-01.01")}, spec_hash="sha256:x")
     head = _manifest({"a::FR-01.01": _node("FR-01.01")}, spec_hash="sha256:CHANGED")
     v = evaluate_cross_layer(base, head)

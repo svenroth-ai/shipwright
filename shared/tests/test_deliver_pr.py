@@ -17,6 +17,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 # APPENDED, not inserted at 0 — `shared/tests/tools/` exists, so putting this
@@ -100,9 +102,14 @@ def test_a_transient_arm_failure_still_just_watches():
 
 # --- the honest fast failure ---------------------------------------------------
 
+@pytest.mark.covers("FR-01.11/AC24")
 def test_no_merger_and_no_permission_stops_at_once_without_waiting():
-    """The whole point. Previously this waited 1800 seconds for a merger that
-    cannot exist; now it says so immediately, and the watcher is never entered."""
+    """AC24: a project that would rather nothing was ever merged on its
+    behalf (SELF_MERGE=0) is reported as not delivered STRAIGHT AWAY rather
+    than waited on — waiting for a merge nobody will perform is stalling,
+    not waiting. The whole point. Previously this waited 1800 seconds for a
+    merger that cannot exist; now it says so immediately, and the watcher is
+    never entered."""
     host = _Host(arm=_Proc(1, stderr=PROTECTED_REFUSAL),
                  capability={"allow_auto_merge": True, "base_protected": False})
     watch = _watcher({"status": "pending"})
@@ -111,6 +118,24 @@ def test_no_merger_and_no_permission_stops_at_once_without_waiting():
     assert watch.seen == []            # never waited
     assert "merge --squash" not in " ".join(host.calls)   # never merged
     assert "switched off" in result["reason"]
+
+
+@pytest.mark.covers("FR-01.11/AC22")
+def test_a_protected_base_with_auto_merge_off_is_reported_not_delivered():
+    """AC22: the base branch IS protected and only the host's automatic-merge
+    setting is switched off — the change is reported as not delivered and
+    the ONE setting to change is named, rather than merged past the
+    protected base's required reviews/checks on the strength of the local
+    test suite alone. Self-merge must never be offered here (unlike the
+    unprotected-base rung 3 path in test_deliver_pr_self_merge.py)."""
+    host = _Host(arm=_Proc(1, stderr=PROTECTED_REFUSAL),
+                 capability={"allow_auto_merge": False, "base_protected": True})
+    watch = _watcher({"status": "pending"})
+    result = _deliver(host, watch)
+    assert (result["status"], result["exit_code"]) == ("no_merger", EXIT_NO_MERGER)
+    assert watch.seen == []            # never waited — self-merge was never offered
+    assert not any(c.startswith("merge ") for c in host.calls)   # never merged
+    assert "Allow auto-merge" in result["reason"]
 
 
 def test_an_unusable_switch_value_also_refuses_rather_than_merging():

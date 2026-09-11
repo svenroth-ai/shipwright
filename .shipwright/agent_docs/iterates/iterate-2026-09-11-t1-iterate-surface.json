@@ -1,0 +1,163 @@
+{
+  "run_id": "iterate-2026-09-11-t1-iterate-surface",
+  "date": "2026-09-11T17:11:58.943961Z",
+  "event_at": "2026-09-11T15:41:54.728716+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t1-iterate-surface",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t1-iterate-surface.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-t1-iterate-surface",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "FR-01.11/AC01 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_runner_phase_registry.py::test_runner_carries_every_required_finalization_phase PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC02 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_classify_complexity.py (4 cases), test_classify_intent.py (3 cases) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC03 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_record_event.py::test_iterate_without_any_classification_rejected, ::test_main_exits_1_when_gate_rejects PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC04 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_record_event.py::test_iterate_with_change_type_and_none_reason_passes, ::test_change_type_without_none_reason_rejected PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC05 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_path_a_spec_impact_gate.py::test_fold_routes_a_completed_or_extended_capability_to_modify PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC06 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_path_a_spec_impact_gate.py::test_new_fr_numbering_is_deterministic_and_never_reuses_retired_ids (positive); shared/tests/test_check_fr_hygiene_doubt3.py::test_a_new_duplicate_id_at_head_is_flagged (negative-space) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC07 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_surface_verification_ac07.py::test_zero_tests_exits_2, ::test_happy_path_exit_0 PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC08 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_run_test_suite.py::test_red_in_parallel_but_green_serially_is_a_RACE_not_a_stop, ::test_a_reproducing_infra_fault_fails_the_gate[...], ::test_a_transient_infra_fault_recovers_but_is_reported PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC09 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_f0_ci_parity.py::test_ci_still_runs_the_same_shared_dirs PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC10 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_suggest_iterate.py::test_no_config_exits_silently, ::test_completed_pipeline_routes_to_test PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC11 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_review_record_roundtrip.py::test_record_survives_a_round_trip_unchanged, ::test_findings_survive_verbatim PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC13 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_review_record_gate.py::test_fails_when_a_type_is_still_pending, ::test_the_failure_message_lists_every_outstanding_type PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC14 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_review_record_forward_compat.py (3 cases) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC15 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_review_verdict_reviewer_migration.py (4 cases) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC16 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_watch_pr_delivery.py::test_pending_report_names_the_cause_in_plain_words, ::test_pending_report_says_which_sources_it_could_not_check PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC19 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_handoff_freshness.py::test_an_old_file_naming_this_run_passes, ::test_a_brand_new_file_naming_another_run_fails PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC20 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_layer_coverage_core.py::test_cross_layer_could_not_determine_when_spec_changed_but_no_row_delta; test_layer_coverage_ac_only_change.py (both tests, new file) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC21 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_deliver_pr_self_merge.py::test_a_green_current_branch_is_merged_here_and_confirmed PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC22 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_deliver_pr.py::test_a_protected_base_with_auto_merge_off_is_reported_not_delivered (new test) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC23 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_deliver_pr_summary.py::test_the_summary_names_who_merged_and_on_what_evidence, ::test_the_summary_counts_passes_not_rollup_entries PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC24 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_deliver_pr.py::test_no_merger_and_no_permission_stops_at_once_without_waiting PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC25 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_deliver_pr_self_merge.py::test_a_refresh_pushes_reverifies_and_waits_again_before_merging, ::test_a_behind_branch_triggers_a_refresh_instead_of_waiting_forever PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC26 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_handoff_freshness_canonical.py (3 cases) PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC27 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_mini_plan_persistence_doc.py::test_no_small_tier_no_file_exemption_remains PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC28 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_review_record_immediate_write_rule.py::test_site_carries_immediate_write_mandate[...] PASSED"
+      },
+      {
+        "behavior": "FR-01.11/AC29 is proven by an existing, executable test at the seam t0's survey named (or the recorded 3rd-root/new-test exception)",
+        "disposition": "tested",
+        "evidence": "test_skill_b1_reviews_json_check.py::test_b1_names_the_direct_reviews_json_read; shared/tests/test_compaction_state_audit_acceptance.py (3 cases, upgraded) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 26,
+      "tested": 26,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 26,
+      "covered_acs": 26
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "test-backfill unit binding existing FR-01.11 ACs to existing tests + a compliance-config fix; no startable web/dev-server/CLI surface of its own -- verification is the unit-test suite itself (F0), run across the 3 touched ADR-044 roots."
+  },
+  "declared_removals": []
+}

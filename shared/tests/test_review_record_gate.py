@@ -74,7 +74,9 @@ def test_passes_when_types_are_closed_as_not_run(tmp_path):
     assert check_review_record(project, RUN_ID).ok
 
 
+@pytest.mark.covers("FR-01.11/AC13")
 def test_fails_when_a_type_is_still_pending(tmp_path):
+    """AC13: finishing is refused while any review pass is left unanswered."""
     project = _project(tmp_path)
     record = new_record(RUN_ID)
     record = upsert_review(record, make_entry("self", "completed"))
@@ -228,7 +230,11 @@ def test_no_commit_supplied_skips_the_committed_assertion(tmp_path):
     assert check_review_record(project, RUN_ID).ok
 
 
+@pytest.mark.covers("FR-01.11/AC13")
 def test_the_failure_message_lists_every_outstanding_type(tmp_path):
+    """AC13: the record says explicitly which pass did not run — 'nothing
+    shown' always means 'genuinely did not run', never 'nobody wrote it
+    down'."""
     project = _project(tmp_path)
     write_record(project, RUN_ID, new_record(RUN_ID))
     message = check_review_record(project, RUN_ID).detail
