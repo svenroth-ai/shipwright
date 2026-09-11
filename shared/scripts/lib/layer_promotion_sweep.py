@@ -141,27 +141,39 @@ def _extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
 
 
 def _rollback_staged(worktree_path: Path, pre_sha: str) -> bool:
-    """Undo a staged-but-not-committed write, so a failed ``add``/``commit``
-    never leaves residue for a later, unrelated commit to sweep up. Returns
-    whether the reset itself succeeded — a caller must escalate to
-    ``rollback_failed`` when it did not, since an ordinary ``error`` status
-    implies a clean rollback that never actually happened (external review,
-    PR #725)."""
+    """Undo any write the promotion subprocess left behind — staged or not,
+    tracked or a brand-new untracked file — so a failed ``add``/``commit``,
+    or a subprocess that partially wrote the ledger/spec before timing out
+    or reporting something unusable, never leaves residue for a later,
+    unrelated commit to sweep up. ``reset --hard`` alone only reverts
+    already-tracked content; ``clean -fd`` is what removes a newly-written
+    file the tool created but this module never got as far as staging
+    (external review, PR #725 round 6). Returns whether the cleanup fully
+    succeeded — a caller must escalate to ``rollback_failed`` when it did
+    not, since an ordinary terminal status implies a clean rollback that
+    never actually happened (external review, PR #725)."""
     if not pre_sha:
         return False
     reset = run_git_soft(["reset", "--hard", pre_sha], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
-    return reset.returncode == 0
+    if reset.returncode != 0:
+        return False
+    clean = run_git_soft(["clean", "-fd"], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
+    return clean.returncode == 0
 
 
-def _error_after_rollback(
-    worktree_path: Path, pre_sha: str, reason: str, promoted: list[str], escalated: int,
+def _bail(
+    worktree_path: Path, pre_sha: str, status: str, reason: str, promoted: list[str], escalated: int,
 ) -> LayerPromotionSweepResult:
-    """Roll back staged/committed residue and report the outcome: ``error``
-    if the rollback itself succeeded, the loud ``rollback_failed`` if it did
-    not — the one outcome where the residue may still be sitting on this
-    branch."""
+    """Every non-decisive return path funnels through here once ``pre_sha``
+    is known: unconditionally roll the worktree back to it — cheap and safe
+    even when nothing was actually written, since ``reset --hard`` onto the
+    current HEAD and ``clean -fd`` on an already-clean tree are both no-ops
+    — before reporting the given ``status``. Escalates to the loud
+    ``rollback_failed`` when the rollback itself does not succeed, the one
+    outcome where residue might still be sitting on this branch."""
     ok = _rollback_staged(worktree_path, pre_sha)
-    status = "error" if ok else "rollback_failed"
+    if not ok:
+        return LayerPromotionSweepResult(status="rollback_failed", reason=reason, promoted=promoted, escalated=escalated)
     return LayerPromotionSweepResult(status=status, reason=reason, promoted=promoted, escalated=escalated)
 
 
@@ -179,6 +191,25 @@ def run_layer_promotion_sweep(
     if os.environ.get(_NO_FETCH_ENV) == "1":
         return LayerPromotionSweepResult(status="skipped", reason=f"{_NO_FETCH_ENV}=1 — offline")
 
+    # Captured BEFORE the subprocess ever runs, not after parsing its report:
+    # the tool can write the ledger/spec directly to the worktree's
+    # filesystem before timing out, exiting oddly, or emitting something
+    # unparseable, and every one of those early returns must still be able
+    # to roll that partial write back — an unknown rollback target is the
+    # one state this module must never create, since it is exactly what
+    # could leave promotion residue sitting on the iterate's own branch for
+    # a later, unrelated commit to sweep up (external review, PR #725 round 6).
+    pre_sha_result = run_git_soft(["rev-parse", "HEAD"], cwd=worktree_path)
+    if pre_sha_result.returncode != 0:
+        return LayerPromotionSweepResult(
+            status="error", reason=f"pre_sha_rev_parse_failed: {pre_sha_result.stderr.strip()[:300]}",
+        )
+    pre_sha = pre_sha_result.stdout.strip()
+    if not pre_sha:
+        return LayerPromotionSweepResult(
+            status="error", reason="pre_sha_rev_parse_failed: rev-parse HEAD exited 0 with empty stdout",
+        )
+
     try:
         # encoding="utf-8", errors="replace" (not text=True's locale-default
         # strict decoding): non-UTF-8 bytes in the tool's stdout/stderr must
@@ -192,82 +223,58 @@ def run_layer_promotion_sweep(
             timeout=_PROMOTE_SUBPROCESS_TIMEOUT,
         )
     except subprocess.TimeoutExpired:
-        return LayerPromotionSweepResult(status="skipped", reason="promote_required_layers timed out")
+        return _bail(worktree_path, pre_sha, "skipped", "promote_required_layers timed out", [], 0)
     except OSError as exc:
-        return LayerPromotionSweepResult(status="skipped", reason=f"promote_required_layers could not start: {exc}")
+        return _bail(worktree_path, pre_sha, "skipped", f"promote_required_layers could not start: {exc}", [], 0)
 
     if proc.returncode not in _REPORT_EXIT_CODES:
-        return LayerPromotionSweepResult(
-            status="skipped",
-            reason=(proc.stdout.strip() or proc.stderr.strip() or f"exit {proc.returncode}")[:300],
+        return _bail(
+            worktree_path, pre_sha, "skipped",
+            (proc.stdout.strip() or proc.stderr.strip() or f"exit {proc.returncode}")[:300], [], 0,
         )
 
     try:
         report = json.loads(proc.stdout)
     except ValueError:
-        return LayerPromotionSweepResult(status="error", reason="promote_required_layers produced non-JSON stdout")
+        return _bail(worktree_path, pre_sha, "error", "promote_required_layers produced non-JSON stdout", [], 0)
 
     try:
         promoted, escalated, written_paths = _extract_report_fields(report)
     except ValueError as exc:
-        return LayerPromotionSweepResult(status="error", reason=f"malformed report: {exc}")
+        return _bail(worktree_path, pre_sha, "error", f"malformed report: {exc}", [], 0)
 
     # The tool writes the ledger unconditionally whenever ANY FR is promoted
     # (its own "ledger BEFORE spec.md" ordering) even on a run that, for
     # every promoted FR, hit SKIP_LIVE_CELL_HAS_RESIDUAL_TEXT and so wrote no
     # spec.md — gate on EITHER signal, not just ``written_spec_paths``.
     if not promoted and not written_paths:
-        return LayerPromotionSweepResult(status="no_change", promoted=promoted, escalated=escalated)
+        return _bail(worktree_path, pre_sha, "no_change", "", promoted, escalated)
 
     paths = [*written_paths, DEFAULT_LEDGER_RELPATH]
-
-    # Captured BEFORE anything is staged: this is the rollback target every
-    # error path below (and deliver_as_own_pr) resets back to. If it cannot
-    # even be read, bail before staging/committing at all — an unknown
-    # rollback target is the one state this module must never create,
-    # since it is exactly what could leave a promotion commit sitting on
-    # the iterate's own branch (Stage-2 review finding).
-    pre_sha_result = run_git_soft(["rev-parse", "HEAD"], cwd=worktree_path)
-    if pre_sha_result.returncode != 0:
-        return LayerPromotionSweepResult(
-            status="error",
-            reason=f"pre_sha_rev_parse_failed: {pre_sha_result.stderr.strip()[:300]}",
-            promoted=promoted, escalated=escalated,
-        )
-    pre_sha = pre_sha_result.stdout.strip()
-    if not pre_sha:
-        return LayerPromotionSweepResult(
-            status="error",
-            reason="pre_sha_rev_parse_failed: rev-parse HEAD exited 0 with empty stdout",
-            promoted=promoted, escalated=escalated,
-        )
 
     add = run_git_soft(["add", "--", *paths], cwd=worktree_path)
     if add.returncode != 0:
         # `git add` with multiple pathspecs can partially stage before hitting
         # the one that fails — roll back rather than leave that residue for a
         # later, unrelated commit to pick up.
-        return _error_after_rollback(
-            worktree_path, pre_sha, f"add_failed: {add.stderr.strip()[:300]}", promoted, escalated,
-        )
+        return _bail(worktree_path, pre_sha, "error", f"add_failed: {add.stderr.strip()[:300]}", promoted, escalated)
 
     # Gate the commit on a REAL staged delta (mirrors lib.sweep_outbox's same
     # guard): an EOL-only rewrite of an already-tracked spec.md can leave
     # nothing staged even though the tool reported a write.
     staged = run_git_soft(["diff", "--cached", "--quiet", "--", *paths], cwd=worktree_path)
     if staged.returncode == TIMEOUT_RETURNCODE:
-        return _error_after_rollback(worktree_path, pre_sha, "git_timeout: diff --cached", promoted, escalated)
+        return _bail(worktree_path, pre_sha, "error", "git_timeout: diff --cached", promoted, escalated)
     if staged.returncode == 0:
-        return LayerPromotionSweepResult(status="no_change", promoted=promoted, escalated=escalated)
+        return _bail(worktree_path, pre_sha, "no_change", "", promoted, escalated)
     if staged.returncode != 1:
         # `git diff --cached --quiet` uses exit 1 for "a real staged delta
         # exists" — any OTHER nonzero (128 = a real git error, e.g. a corrupt
         # index) is a genuine failure, not a delta, and must roll back rather
         # than proceed to commit whatever got staged (external review, PR #725).
-        return _error_after_rollback(
-            worktree_path, pre_sha,
-            f"diff_cached_failed: exit {staged.returncode}: {staged.stderr.strip()[:300]}",
-            promoted, escalated,
+        return _bail(
+            worktree_path, pre_sha, "error",
+            f"diff_cached_failed: exit {staged.returncode}: {staged.stderr.strip()[:300]}", promoted, escalated,
         )
 
     subject = f"chore(compliance): promote {len(promoted)} FR Layer(s) from confirmed CI evidence"
@@ -275,11 +282,9 @@ def run_layer_promotion_sweep(
         ["commit", "-m", subject, "--", *paths], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
     )
     if commit.returncode == TIMEOUT_RETURNCODE:
-        return _error_after_rollback(worktree_path, pre_sha, "commit_timeout", promoted, escalated)
+        return _bail(worktree_path, pre_sha, "error", "commit_timeout", promoted, escalated)
     if commit.returncode != 0:
-        return _error_after_rollback(
-            worktree_path, pre_sha, f"commit_failed: {commit.stderr.strip()[:300]}", promoted, escalated,
-        )
+        return _bail(worktree_path, pre_sha, "error", f"commit_failed: {commit.stderr.strip()[:300]}", promoted, escalated)
 
     status, reason, pr_url, branch = deliver_as_own_pr(worktree_path, default_branch, pre_sha, subject)
     return LayerPromotionSweepResult(

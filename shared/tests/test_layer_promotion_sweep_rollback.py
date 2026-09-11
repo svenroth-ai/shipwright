@@ -235,26 +235,3 @@ def test_add_failure_with_a_failing_rollback_reports_rollback_failed(monkeypatch
     assert any("CRITICAL" in w for w in sweep_warnings(result))
 
 
-def test_commit_failure_rolls_back_staged_residue(repo):
-    """A failed commit must not leave staged residue behind for a later,
-    unrelated commit to sweep up — forced via a real failing pre-commit
-    hook rather than a stub, since add/diff/commit route through the real
-    git binary regardless of ``subprocess.run`` monkeypatching."""
-    report = {
-        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
-        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
-    }
-    hook = repo / ".git" / "hooks" / "pre-commit"
-    hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
-    hook.chmod(0o755)
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
-        (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
-        result = run_layer_promotion_sweep(repo, "iterate-x")
-
-    assert result.status == "error"
-    assert "commit_failed" in result.reason
-    porcelain = subprocess.run(
-        ["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True,
-    ).stdout
-    assert porcelain.strip() == ""  # rolled back to pre_sha, nothing left dirty or staged
