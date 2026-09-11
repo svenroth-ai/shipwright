@@ -40,7 +40,6 @@ def test_ci_still_loops_plugins_on_pyproject_plus_tests(ci_text):
     assert '[ -f "$plugin/pyproject.toml" ]' in ci_text
     assert '[ -d "$plugin/tests" ]' in ci_text
 
-
 @pytest.mark.covers("FR-01.11/AC09")
 def test_ci_still_runs_the_same_shared_dirs(ci_text):
     """AC09: the shared build service runs the same units serially, as an

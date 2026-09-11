@@ -3,7 +3,7 @@
   "run_id": "iterate-2026-09-11-t1-iterate-surface",
   "risk_recheck": {
     "changed_file_count": 48,
-    "diff_loc": 1958,
+    "diff_loc": 1963,
     "risk_flags": [
       "touches_io_boundary"
     ],
