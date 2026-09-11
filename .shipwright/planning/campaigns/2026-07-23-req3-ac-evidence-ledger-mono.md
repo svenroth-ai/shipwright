@@ -116,10 +116,11 @@ shared/scripts/tools/measure_ac_evidence_ledger.py`:
 **Re-measured again 2026-09-11 (sub-iterate `e1-checks-plan-design`, same
 campaign, incl. post-REJECT repair)** after closing all 18 of FR-01.03's and
 FR-01.04's prompt-only/mechanisable rows named in the two FRs' tables above
-(each with a new check + test, in the same commit as its status flip):
-**29** prompt-only/mechanisable · **20** prompt-only/judgement · **16**
-enforced-untested · **33** unimplemented · **68** enforced-tested. The
-unimplemented count also moved (36→33): three rows were previously
+(each with a new check + test, in the same commit as its status flip) —
+superseded by the `e2-checks-project-elicitation` re-measurement below, kept
+here for the paragraph's own history: 29 prompt-only/mechanisable, 20
+prompt-only/judgement, 16 enforced-untested, 33 unimplemented, 68
+enforced-tested. The unimplemented count also moved (36→33): three rows were previously
 double-counted under a compound status (unimplemented-for-the-data-half /
 mechanisable-for-the-gate-half) that collapsed into a single enforced-and-tested
 status once the underlying data gap (`screen_registry`'s dead
@@ -132,12 +133,17 @@ direction, downgraded to prompt-only judgement with a drift test, per D7's
 own abort rule) — no criterion changed meaning, one row became two.
 
 **Re-measured again 2026-09-11 (sub-iterate `e2-checks-project-elicitation`,
-same campaign, incl. round-3 external-code-review follow-up)** after closing
-FR-01.02's 6 mechanisable rows (#4/#15 merged into one enforced mechanism,
-#5, #10, #11) and FR-01.16's 3 (C, #6, and the defined-anywhere half of #3)
-— the 9 lines this sub-iterate's own spec named:
-**20** prompt-only/mechanisable · **24** prompt-only/judgement · **16**
-enforced-untested · **33** unimplemented · **76** enforced-tested. Three rows
+same campaign, incl. Stage-1 spec-review round-2 repair and Stage-2/3 review
+follow-up)** after closing FR-01.02's 6 mechanisable rows (#4/#15 merged
+into one enforced mechanism, #5, #10, #11) and FR-01.16's 3 (C, #6, and the
+defined-anywhere half of #3) — the 9 lines this sub-iterate's own spec
+named:
+**20** prompt-only/mechanisable · **25** prompt-only/judgement · **16**
+enforced-untested · **33** unimplemented · **76** enforced-tested. The
+judgement count (24→25) reflects the Stage-1 round-2 repair after this
+paragraph was first written: #15 was split further into #15 (floor) and
+#15b (the aboutness half, judgement, no gate — see the ADR's "Stage-1
+Spec-Review REJECT (round 2)" section). Three rows
 split rather than closed outright, per the campaign's own abort condition (no
 deterministic oracle → downgrade the un-buildable half, never a weaker gate):
 FR-01.02 #8 into #8 (the floor — an ADR exists for the phase, already
