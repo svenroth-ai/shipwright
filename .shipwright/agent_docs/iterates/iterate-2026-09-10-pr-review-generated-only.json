@@ -1,0 +1,100 @@
+{
+  "run_id": "iterate-2026-09-10-pr-review-generated-only",
+  "date": "2026-09-10T15:56:01.797157Z",
+  "event_at": "2026-09-10T15:55:33.488805+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/pr-review-generated-only",
+  "spec": ".shipwright/planning/iterate/iterate-2026-09-10-pr-review-generated-only.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-10-pr-review-generated-only",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an all-generated changed-path list posts PR Review=success with a self-explaining description (acceptance 1)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_gate_verdict.py::test_all_generated_pr_posts_success_with_the_naming_description PASSED"
+      },
+      {
+        "behavior": "one sensitive path in the mix still blocks, even when every other path is generated (acceptance 2)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_gate_verdict.py::test_a_sensitive_path_in_the_mix_means_all_generated_is_false_upstream PASSED"
+      },
+      {
+        "behavior": "a model/API failure on an all-generated PR still fails -- the carve-out never becomes a catch-all (acceptance 3)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_gate_verdict.py::test_model_api_failure_on_an_all_generated_pr_still_fails PASSED"
+      },
+      {
+        "behavior": "a failed waiver-consumption on an all-generated + waived PR still fails, never masked by the carve-out (code-review finding)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_gate_verdict.py::test_all_generated_waived_pr_with_a_failed_waiver_consumption_still_fails PASSED"
+      },
+      {
+        "behavior": "an all-generated + waived + waiver-OK PR posts the generated reason, not the waiver's tier reason (external-review finding)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_gate_verdict.py::test_all_generated_and_waived_pr_posts_the_generated_reason_not_the_tier_reason PASSED"
+      },
+      {
+        "behavior": "the three agent-instruction docs (build_dashboard.md, session_handoff.md, triage_inbox.md) are NOT safe to skip review, though still is_generated_path (doubt-review finding)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_generated_skip_review.py::test_the_three_agent_instruction_docs_are_NOT_safe_to_skip PASSED"
+      },
+      {
+        "behavior": "an off-canonical path with a generated basename is NOT safe to skip review -- basename matches anchor to their canonical path (doubt-review finding)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_generated_skip_review.py::test_an_off_canonical_path_with_a_generated_basename_is_NOT_safe_to_skip PASSED"
+      },
+      {
+        "behavior": "the classifier keeps canonical generated prefixes/basenames/review-evidence skip-safe (no regression)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_generated_skip_review.py (remaining cases) PASSED"
+      },
+      {
+        "behavior": "classify_generated_only: all-generated changed paths, one sensitive path, one reviewable path, empty/truncated lists, CLI output wiring",
+        "disposition": "tested",
+        "evidence": "test_review_record_tier.py::test_classify_generated_only_* PASSED"
+      },
+      {
+        "behavior": "the review-run step's if: still asserts all three conditions (workflow_run success, needs_review, all_generated != true), not only the new one (external-review finding)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_generated_only_gate_shape.py::test_generated_only_gate_derived_from_api_changed_paths PASSED"
+      },
+      {
+        "behavior": "under set -e, the gate-decision script call is guarded (|| gate_out=\"\") so a crash still reaches the existing empty-state failure fallback instead of aborting the step silently (external-review finding, empirically verified)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_generated_only_gate_shape.py::test_gate_decision_script_failure_still_posts_a_status PASSED"
+      },
+      {
+        "behavior": "stage1/tier failure and an ordinary reviewed PR's verdicts are unaffected by the new carve-out (non-regression)",
+        "disposition": "tested",
+        "evidence": "test_pr_review_gate_verdict.py::test_stage1_failure_fails_regardless_of_all_generated, test_tier_failure_fails_regardless_of_all_generated, test_ordinary_reviewed_pr_still_posts_the_original_descriptions PASSED"
+      },
+      {
+        "behavior": "end-to-end GitHub Actions execution of the two-stage workflow_run chain against a real fork PR",
+        "disposition": "untestable",
+        "reason_code": "requires-external-nondeterministic-service",
+        "reason": "GitHub Actions workflow_run chaining cannot be exercised locally; mitigated by the workflow-shape snapshot tests plus the fully-tested pure decision function (decide_gate) the workflow now delegates to."
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 11,
+      "untestable": 1,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 3,
+      "covered_acs": 3
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "CI-workflow gate logic (GitHub Actions YAML + pure Python decision functions); no startable UI/web/API surface exists to drive -- behavior is covered by the pure-function unit tests (test_pr_review_gate_verdict.py, test_review_record_tier.py, test_pr_review_generated_skip_review.py) and workflow-shape snapshot tests, per the acceptance criteria in the iterate spec."
+  },
+  "declared_removals": []
+}

@@ -15,6 +15,17 @@ def plugin_root():
 
 
 @pytest.fixture
+def no_e2e_plugin_root(tmp_path):
+    """A minimal plugin root with E2E disabled — for tests that need a
+    non-None --plugin-root (now required for --gate sections/all) but are
+    not themselves testing the E2E-journeys check."""
+    root = tmp_path / "plugin"
+    root.mkdir()
+    (root / "config.json").write_text('{"e2e_test_plan": {"enabled": false}}\n', encoding="utf-8")
+    return root
+
+
+@pytest.fixture
 def tmp_planning(tmp_path):
     """Create a temporary planning directory with sections subdir."""
     planning = tmp_path / ".shipwright" / "planning"
@@ -61,6 +72,25 @@ def planning_with_sections(planning_with_plan):
     (sections / "02-api.md").write_text("# Section: 02-api\n")
     (sections / "03-frontend.md").write_text("# Section: 03-frontend\n")
     return planning_with_plan
+
+
+@pytest.fixture
+def planning(tmp_path):
+    """A planning split whose every gate passes — for
+    ``test_check_plan_gates{,_sections}.py``. Defined here (not imported from
+    ``_check_plan_gates_support.py``) so it is auto-available to every test
+    module without ruff flagging the same-named test-function parameter as
+    shadowing an import (F811)."""
+    from ._check_plan_gates_support import _build_planning
+    return _build_planning(tmp_path)
+
+
+@pytest.fixture
+def bare_planning_dir(tmp_path):
+    """A minimal planning dir under the canonical ``.shipwright/planning/``
+    location, for the boundary-gate tests in ``test_check_plan_gates.py``."""
+    from ._check_plan_gates_support import _build_bare_planning_dir
+    return _build_bare_planning_dir(tmp_path)
 
 
 @pytest.fixture

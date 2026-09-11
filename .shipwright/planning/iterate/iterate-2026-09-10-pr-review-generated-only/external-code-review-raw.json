@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The change implements the stage-2 trusted-path carve-out, preserves sensitive-path and waiver-failure fail-closed behavior, and tests the relevant decision boundaries.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "## Findings\n\n- Category: bug\n  Severity: medium\n  File: `.github/workflows/pr-review-run.yml` (verdict step, `gate_out=$(uv run ... decide_pr_review_gate.py ...)`)\n  Finding: GitHub Actions `run:` steps default to `bash -e -o pipefail`. If `decide_pr_review_gate.py` exits non-zero (argparse error, missing module, uv failure), the `gate_out=$(...)` assignment aborts the step **before** the `state`/`desc` guard and before the `gh api` status post. The carefully-written \"gate decision script produced no output\" fallback is unreachable for the crash case it claims to cover \u2014 a crash now results in *no posted status* instead of the previous guaranteed `failure` status, weakening the \"one producer, always posts\" invariant (hard constraint 3/4).\n  Suggestion: Capture the failure explicitly, e.g. `gate_out=$(uv run ... ) || gate_out=\"\"`, so the existing empty-state guard actually fires and a `failure` status is still posted.\n\n- Category: spec\n  Severity: medium\n  File: `.github/workflows/pr-review-run.yml` (tier step, lines ~121\u2013137 of the diff)\n  Finding: The spec requires the tier step to *emit* new outputs `all_generated` / `all_generated_reason` to `$GITHUB_OUTPUT`, but the diff shows only a comment addition to that step \u2014 no change to the bash that writes step outputs. If the existing output-capture logic is not a generic key=value passthrough of the tool's stdout, `steps.tier.outputs.all_generated` will be empty, the review step's `if:` still passes (`'' != 'true'`), review runs, and \u2014 because `REVIEW_OUTCOME` would be `success`/`failure` \u2014 the all-generated branch never fires. The change silently no-ops instead of failing loudly. The new shape test (`test_generated_only_gate_derived_from_api_changed_paths`) only checks the *consumer* side of the wiring, so a missing producer would pass all tests.\n  Suggestion: Add a shape assertion that the tier step actually writes `all_generated` to `$GITHUB_OUTPUT` (or show the capture is a generic passthrough), e.g. assert `all_generated= >> \"$GITHUB_OUTPUT\"` or equivalent in `test_pr_review_workflow_shape.py`.\n\n- Category: edge-case\n  Severity: low\n  File: `plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py:62-63`\n  Finding: An all-generated PR that is *also* waived (`needs_review=False`, waiver consumed OK) posts `all_generated_reason` instead of the historical `tier_reason` \u2014 the \"ordinary waived PRs keep their exact original descriptions\" ledger row is only tested for `all_generated=False`. Minor behavioral drift, arguably intended, but untested and unstated.\n  Suggestion: Either add a test pinning the intended description for the all-generated + waived + waiver-ok combination, or note it in the docstring.\n\n- Category: test\n  Severity: low\n  File: `plugins/shipwright-security/tests/test_pr_review_workflow_shape.py` (`test_generated_only_gate_derived_from_api_changed_paths`)\n  Finding: The regex extracting the review step's `if:` bounds it by `\\n\\s*env:` and a 300-char window. It asserts the `all_generated != 'true'` clause exists but not that the original two conditions remain \u2014 a future edit dropping `needs_review == 'true'` from the `if:` would still pass this test. Combined with the missing producer-side assertion above, the workflow-shape coverage of the new gating is thinner than the ledger implies.\n  Suggestion: Assert all three conditions of the `if:` are present.\n\nNon-findings I checked and consider sound: `decide_gate` branch ordering matches the spec (waiver-failure before the all-generated short-circuit, per the Stage-2 review fix); sensitive-path and truncated/empty-list handling in `classify_generated_only` are correct; `is_safe_to_skip_review`'s narrowing (agent-docs exclusion, canonical basename anchoring) is implemented and well-tested; no shell-injection risk in the new arg passing (all quoted, sed parsing is non-eval).\n\nOverall: the core logic and tests are solid, but the workflow wiring has two real gaps \u2014 the crash-path guard is dead code under default `bash -e`, and the tier-step output producer is never verified \u2014 both of which could make the carve-out silently inert or change the posted-status guarantee. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

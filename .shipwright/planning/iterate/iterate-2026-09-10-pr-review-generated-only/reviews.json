@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-pr-review-generated-only",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:35:58.509929+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:36:14.124833+00:00",
+      "disposition": "autonomous run: the operator's own report already specified the fix design, hard constraints and acceptance criteria in full detail, functioning as the mini-plan; no separate external plan review was run before implementation",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py",
+          "line": 58,
+          "finding": "decide_gate's all_generated success branch was checked before the waiver-consumption-failure branch. A PR whose only changed path is a corroborated review-record file (.shipwright/planning/iterate/<run>/reviews.json, itself is_generated_path) can have all_generated=True and needs_review=False at once; if the waiver-consumption step then fails, the all_generated branch matched first and posted success, masking the failure test_failed_waiver_consumption_cannot_post_a_green_gate exists to prevent.",
+          "suggestion": "Reorder the waiver-consumption-failure check before the all_generated short-circuit; add a regression test combining all_generated=True with needs_review=False and waiver_consumed_ok=False.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T14:44:45.367218+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "classify_generated_only's reuse of is_generated_path is a safe carve-out for any combination of changed paths that classifier accepts",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the basename-only matches (triage.jsonl, shipwright_events.jsonl, etc.) are an acceptable input to a full review-skip decision",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "decide_gate's test/docstring treat 'timed_out' as a real GitHub Actions step outcome value",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-10T14:53:28.120360+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": ".github/workflows/pr-review-run.yml` (verdict step, `gate_out=$(uv run ... decide_pr_review_gate.py ...)`)",
+          "line": null,
+          "finding": "GitHub Actions `run:` steps default to `bash -e -o pipefail`. If `decide_pr_review_gate.py` exits non-zero (argparse error, missing module, uv failure), the `gate_out=$(...)` assignment aborts the step before the `state`/`desc` guard and before the `gh api` status post. The carefully-written \"gate decision script produced no output\" fallback is unreachable for the crash case it claims to cover — a crash now results in no posted status instead of the previous guaranteed `failure` status, weakening the \"one producer, always posts\" invariant (hard constraint 3/4).",
+          "suggestion": "Capture the failure explicitly, e.g. `gate_out=$(uv run ... ) || gate_out=\"\"`, so the existing empty-state guard actually fires and a `failure` status is still posted.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".github/workflows/pr-review-run.yml` (tier step, lines ~121–137 of the diff)",
+          "line": null,
+          "finding": "The spec requires the tier step to emit new outputs `all_generated` / `all_generated_reason` to `$GITHUB_OUTPUT`, but the diff shows only a comment addition to that step — no change to the bash that writes step outputs. If the existing output-capture logic is not a generic key=value passthrough of the tool's stdout, `steps.tier.outputs.all_generated` will be empty, the review step's `if:` still passes (`'' != 'true'`), review runs, and — because `REVIEW_OUTCOME` would be `success`/`failure` — the all-generated branch never fires. The change silently no-ops instead of failing loudly. The new shape test (`test_generated_only_gate_derived_from_api_changed_paths`) only checks the consumer side of the wiring, so a missing producer would pass all tests.",
+          "suggestion": "Add a shape assertion that the tier step actually writes `all_generated` to `$GITHUB_OUTPUT` (or show the capture is a generic passthrough), e.g. assert `all_generated= >> \"$GITHUB_OUTPUT\"` or equivalent in `test_pr_review_workflow_shape.py`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_gate_verdict.py:62-63",
+          "line": null,
+          "finding": "An all-generated PR that is also waived (`needs_review=False`, waiver consumed OK) posts `all_generated_reason` instead of the historical `tier_reason` — the \"ordinary waived PRs keep their exact original descriptions\" ledger row is only tested for `all_generated=False`. Minor behavioral drift, arguably intended, but untested and unstated.",
+          "suggestion": "Either add a test pinning the intended description for the all-generated + waived + waiver-ok combination, or note it in the docstring.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_workflow_shape.py` (`test_generated_only_gate_derived_from_api_changed_paths`)",
+          "line": null,
+          "finding": "The regex extracting the review step's `if:` bounds it by `\\n\\senv:` and a 300-char window. It asserts the `all_generated != 'true'` clause exists but not that the original two conditions remain — a future edit dropping `needs_review == 'true'` from the `if:` would still pass this test. Combined with the missing producer-side assertion above, the workflow-shape coverage of the new gating is thinner than the ledger implies.",
+          "suggestion": "Assert all three conditions of the `if:` are present.  Non-findings I checked and consider sound: `decide_gate` branch ordering matches the spec (waiver-failure before the all-generated short-circuit, per the Stage-2 review fix); sensitive-path and truncated/empty-list handling in `classify_generated_only` are correct; `is_safe_to_skip_review`'s narrowing (agent-docs exclusion, canonical basename anchoring) is implemented and well-tested; no shell-injection risk in the new arg passing (all quoted, sed parsing is non-eval).  Overall: the core logic and tests are solid, but the workflow wiring has two real gaps — the crash-path guard is dead code under default `bash -e`, and the tier-step output producer is never verified — both of which could make the carve-out silently inert or change the posted-status guarantee. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T14:58:24.480671+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug\n  Severity: medium\n  File: `.github/workflows/pr-review-run.yml` (verdict step, `gate_out=$(uv run ... decide_pr_review_gate.py ...)`)\n  Finding: GitHub Actions `run:` steps default to `bash -e -o pipefail`. If `decide_pr_review_gate.py` exits non-zero (argparse error, missing module, uv failure), the `gate_out=$(...)` assignment aborts the step **before** the `state`/`desc` guard and before the `gh api` status post. The carefully-written \"gate decision script produced no output\" fallback is unreachable for the crash case it claims to cover — a crash now results in *no posted status* instead of the previous guaranteed `failure` status, weakening the \"one producer, always posts\" invariant (hard constraint 3/4).\n  Suggestion: Capture the failure explicitly, e.g. `gate_out=$(uv run ... ) || gate_out=\"\"`, so the existing empty-state guard actually fires and a `failure` status is still posted.\n\n- Category: spec\n  Severity: medium\n  File: `.github/workflows/pr-review-run.yml` (tier step, lines ~121–137 of the diff)\n  Finding: The spec requires the tier step to *emit* new outputs `all_generated` / `all_generated_reason` to `$GITHUB_OUTPUT`, but the diff shows only a comment addition to that step — no change to the bash that writes step outputs. If the existing output-capture logic is not a generic key=value passthrough of the tool's stdout, `steps.tier.outputs.all_generated` will be empty, the review step's `if:` still passes (`'' != 'true'`), review runs, and — because `REVIEW_OUTCOME` would be `success`/`failure` — the all-generated branch never fires. The change silently no-ops instead of failing loudly. The new shape test (`test_generated_only_gate_derived_from_api_changed_paths`) only checks the *consumer* side of the wiring, so a missing producer would pass all tests.\n  Suggestion: Add a shape assertion that the tier step actually writes `all_generated` to `$GITHUB_OUTPUT` (or show the capture is a generic passthrough), e.g.  […truncated]\n\n[openai] No concrete defects found. The change implements the stage-2 trusted-path carve-out, preserves sensitive-path and waiver-failure fail-closed behavior, and tests the relevant decision boundaries.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:40:06.564241+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T14:36:14.250641+00:00",
+      "disposition": "no separate internal plan-review pass was run; the operator's prescriptive report substituted for the mini-plan this arm would normally review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

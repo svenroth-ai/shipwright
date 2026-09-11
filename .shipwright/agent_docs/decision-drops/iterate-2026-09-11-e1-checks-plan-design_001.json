@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-e1-checks-plan-design",
+  "date": "2026-09-11",
+  "section": "Iterate - checks: mechanise 18 flagged FR-01.03/FR-01.04 lines",
+  "title": "Mechanisable checks for the 18 flagged plan/design ledger lines",
+  "context": "18 ledger lines were prompt-only (mechanisable); D7 forbids downgrading them to an LLM-judged gate.",
+  "decision": "Wrote one check function + test per line, wired into check-plan-gates.py / check-design-gates.py, flipping the ledger line in the same edit.",
+  "consequences": "Ledger counts stable at 29/19/16/33/68; check-plan-gates.py --project-root is now required (breaking, callers updated).",
+  "rationale": "Check-then-test kept each of the 18 edits small; splitting the Prerequisites check onto its own adoption signal avoided breaking legacy-plan leniency.",
+  "rejected": "Downgrading any line to judgement - rejected per-line, every criterion had a concrete checkable shape.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-11-e1-checks-plan-design.md"
+}

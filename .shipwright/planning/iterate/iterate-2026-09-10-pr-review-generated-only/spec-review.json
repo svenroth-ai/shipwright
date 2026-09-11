@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All four hard constraints (classifier in stage-2 default-branch code reading only trusted API changed-paths; sensitive-path override; single producer/step/status; narrow all_generated carve-out that only fires when the review step structurally never ran) are implemented and individually tested exactly as specified. The Fix section's wiring (new tier-step outputs all_generated/all_generated_reason, the review step's tightened if:, and the moved decide_gate composition invoked via decide_pr_review_gate.py) matches .github/workflows/pr-review-run.yml line for line. Every row in the Test Completeness Ledger corresponds to an existing, correctly-asserting test. No missing, unfaithful, out-of-scope, or contradictory elements found. Code-reviewer (Stage 2) may proceed."
+}

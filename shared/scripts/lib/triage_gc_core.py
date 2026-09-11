@@ -85,7 +85,7 @@ def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
     """Fail loudly if the rewrite produced an inconsistent TRACKED log.
 
     D1: GC compacts the tracked store only, so validation reads the tracked path
-    directly (NOT the union ``read_all_items`` / ``_iter_raw_lines``) — otherwise an
+    directly (NOT the union ``read_all_items`` / ``_iter_local_lines``) — otherwise an
     OUTBOX-resident status whose append GC just dropped would false-trip the
     orphan-status check, and an outbox item would count as a survivor.
     """

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-binding-completeness-rollout-transition",
+  "date": "2026-09-11",
+  "section": "Iterate — change: binding-completeness rollout transition",
+  "title": "One-time rollout transition grace for check_binding_completeness",
+  "context": "trg-aedcfe7b: an explicit binding predating the gate's 2026-09-07 rollout gets no grace; webui promoted 9 FRs the same day and get zero leniency.",
+  "decision": "A HARD gap downgrades to ADVISORY when head's required_layers is a non-empty, title-matched superset of the project's own git history at-or-before the rollout instant (source-agnostic).",
+  "consequences": "Pre-existing, unchanged-or-widened explicit bindings survive their next unrelated touch; narrowed/new bindings judged normally. Permanent per-repo git resolution added to the gate family.",
+  "rationale": "Reuses regenerate_base_head's own archive+collector machinery instead of a fragile git-blame primitive; source-agnostic superset check is the only design that protects the measured webui population.",
+  "rejected": "Exact-match comparator; source-gated grace; git-blame-on-spec-row; grace-by-diff-against-merge-base; reusing manifest_at_commit.py (violates R3); unconditional amnesty; hand-annotation backfill (architecture-review glm reject, overridden by explicit operator directive).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-11-binding-completeness-rollout-transition.md"
+}

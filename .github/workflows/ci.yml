@@ -457,9 +457,54 @@ jobs:
         # .shipwright/compliance/test-traceability.json in place from THIS run's
         # real JUnit output before this gate reads it.
         #
-        # pull_request only, same trust boundary as the Keystone gate.
-        if: github.event_name == 'pull_request'
-        run: uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root .
+        # ALSO runs on push to main (trg-e69bf1ba / iterate-2026-09-11-ac-ratchet-
+        # push-observe) — the one feeder that can, because it needs no merge base
+        # (`check_ac_coverage_ratchet.py` only ever reads HEAD's own manifest +
+        # baseline, never `--base-sha`/`--head-sha`; unlike the Keystone gate and
+        # the Orphan AC binding gate below, which are genuine merge conditions
+        # with nothing to diff against on a push). Before this, the baseline was
+        # observed at exactly one point in its lifecycle — inside the introducing
+        # PR — and never again automatically.
+        #
+        # External code review (openai, HIGH) on the first version of this fix:
+        # re-running the SAME comparison against the SAME committed baseline on
+        # push detects NOTHING new for a same-PR self-grandfathered entry — by
+        # the time that commit reaches `main`, the baseline already contains it,
+        # so `new_unbound` is empty exactly as it was inside the introducing PR.
+        # `--check-baseline-growth` (push only) is the actual fix for that:
+        # `verifiers/_ac_baseline_growth.py` diffs the baseline file's own
+        # committed bytes against `--parent-sha` and blocks if it grew, which
+        # is exactly what a same-PR `--write` self-grandfather does to the
+        # file. `--parent-sha` is the push event's own `before` SHA — main's
+        # tip immediately before THIS push — never a bare `HEAD~1` (external
+        # code review, openai, HIGH, second round): a push can carry more
+        # than one commit (a non-squash merge, a rebase-merge, a direct
+        # multi-commit push — all real paths a solo-maintainer `--admin`
+        # override can take), and if the baseline grew in an EARLIER commit
+        # of that push while the pushed tip leaves it untouched, `HEAD~1`
+        # already contains the grown entry and would silently miss it;
+        # `before` covers the whole pushed range regardless of commit count.
+        # This job stays read-only throughout (see `permissions:` above) —
+        # nothing here rewrites the baseline, it only reads two commits'
+        # worth of it.
+        #
+        # This surfaces the self-grandfather as a red run rather than
+        # durably closing it (Stage-3 doubt review): the push run is not a
+        # required PR check, and it self-clears the FOLLOWING push once the
+        # grown entry is already inside every later `before` — a missed red
+        # run gets no further automated signal for that entry.
+        #
+        # What this still does NOT close, disclosed rather than silently
+        # dropped: an AC already listed in the baseline that regresses (bound,
+        # then unbound again) in a commit that never touches the baseline FILE
+        # itself changes none of its bytes, so the growth diff cannot see it
+        # either. Real closure needs a periodic full `--write` refresh or a
+        # persisted resolution ledger with cross-run memory — real design work,
+        # named but not built in `.shipwright/planning/iterate/2026-09-10-p3-7-
+        # feeder-checks.md` §7, and not built here either; tracked as a
+        # follow-up rather than claimed as fixed.
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root . ${{ github.event_name == 'push' && format('--check-baseline-growth --parent-sha "{0}"', github.event.before) || '' }}
 
       - name: Orphan AC binding (gate)
         # P3.7 feeder (b) (same campaign, same design doc). SPEC §8 E2: "a test

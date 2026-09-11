@@ -3487,7 +3487,15 @@ being quietly unbound, and grows automatically as binding does.
 **Two more steps close the job — P3.7's feeder checks, ASYMMETRIC BY
 DESIGN (SPEC §8 E2).** Both read the same regenerated traceability manifest
 the Keystone gate does, so both share its ordering requirement (after the
-regeneration step) and its `pull_request`-only trigger.
+regeneration step). Their **trigger** is no longer identical, and that split
+is itself deliberate: `Orphan AC binding` stays `pull_request`-only, same as
+the Keystone gate, because it is a genuine merge condition — its base-vs-head
+arm has no base to diff on a push. `AC coverage ratchet` is the one feeder
+that needs no merge base at all (it only ever reads HEAD's own manifest +
+baseline), so it ALSO runs on `push` to `main` (trg-e69bf1ba /
+iterate-2026-09-11-ac-ratchet-push-observe) — see that step's own comment in
+`ci.yml`, and the paragraph below, for exactly what this does and does not
+close.
 
 `AC coverage ratchet (gate)` (`shared/scripts/tools/check_ac_coverage_ratchet.py`)
 answers *"AC without a test"* — **anti-ratcheted**, because a real legacy
@@ -3495,7 +3503,53 @@ backlog exists (259 of 268 minted ACs have no binding today, per the
 Keystone gate's own §2.1 measurement). It compares the currently-unbound AC
 population against `shipwright_ac_coverage_baseline.json` (regenerate via
 `--write`) and blocks only on a NEW unbound AC outside that grandfathered
-set — never on the existing backlog.
+set — never on the existing backlog. **Before iterate-2026-09-11-ac-ratchet-
+push-observe**, this comparison ran only inside the introducing PR, so a
+same-PR `--write` that self-grandfathered a newly-unbound AC, or an AC that
+regressed (bound, then unbound again) in a *later* PR against a baseline that
+still listed it from the original snapshot, was invisible to any automated
+route once merged — the same gap already disclosed in
+`.shipwright/planning/iterate/2026-09-10-p3-7-feeder-checks.md` §7 and tracked
+at `trg-91532c29`/`trg-e69bf1ba`.
+
+**What the push trigger actually closes, precisely — three rounds of review
+(two external, one internal doubt review) corrected an overclaim each
+time.** Simply re-running the
+identical `unbound - baselined` comparison against the identical committed
+baseline on every push detects **nothing new** (openai, HIGH, round 1): by
+the time a commit reaches `main`, the baseline already contains whatever a
+same-PR `--write` put there, so `new_unbound` reads exactly as empty on push
+as it did inside the introducing PR. The actual fix is a second, push-only
+flag, `--check-baseline-growth --parent-sha <sha>`
+(`shared/scripts/tools/verifiers/_ac_baseline_growth.py`): it diffs the
+baseline **file's own committed bytes** against `--parent-sha` and blocks if
+it grew. `ci.yml` passes the push event's own `before` SHA there — **not a
+bare `HEAD~1`** (openai, HIGH, round 2): a push can carry more than one
+commit (a non-squash merge, a rebase-merge, a direct multi-commit push — all
+real paths a solo-maintainer `--admin` override can take), and if growth
+happened in an earlier commit of that push while the pushed tip left the
+baseline untouched, `HEAD~1` (the tip's own immediate parent) already
+contains the grown entry and would silently miss it; `before` is main's tip
+immediately before the WHOLE push landed, so it covers every commit the push
+introduced regardless of count. `HEAD~1` is resolved only as a fallback for
+local/manual invocation outside CI, where there is no push range to speak
+of. A same-PR self-grandfathering `--write` is, by construction, a commit
+that changes the baseline file's bytes somewhere within the pushed range, so
+this surfaces that escape directly — the entry shows up as
+`baseline_grew_since_parent` and reddens `main` the very next push. That
+surfacing is detective, not durably preventive (Stage-3 doubt review,
+medium): the push run is not a required PR check, and it self-clears on the
+following push once the grown entry is already inside every later `before`,
+with no persisted record if a maintainer misses that one red run. **What
+it still does not close, disclosed rather than dropped:**
+an AC already listed in the baseline that regresses (bound, then unbound
+again) in a commit that never touches the baseline file changes none of its
+bytes, so the growth diff cannot see it either — real closure needs a
+periodic full `--write` refresh or a persisted resolution ledger with
+cross-run memory, real design work named but not built in that same §7, and
+not built here either. The job stays read-only throughout (`permissions:
+contents: read`); nothing here writes the baseline back, it only reads two
+commits' worth of it.
 
 `Orphan AC binding (gate)` (`shared/scripts/tools/check_orphan_ac_binding.py`)
 answers the opposite case — *"a test whose AC vanished"* — **hard from day
