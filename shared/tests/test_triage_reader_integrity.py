@@ -132,5 +132,5 @@ def test_precondition_failure_still_writes_nothing(tmp_path: Path, monkeypatch) 
     else:  # pragma: no cover - the precondition must refuse
         raise AssertionError("expected StatusPreconditionError")
 
-    rows = triage._iter_raw_lines(project)
+    rows = triage._iter_local_lines(project)
     assert [r for r in rows if r.get("event") == "status"] == []

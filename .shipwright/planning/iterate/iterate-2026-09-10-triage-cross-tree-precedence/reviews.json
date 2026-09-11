@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-10-triage-cross-tree-precedence",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:27:29.860187+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The internal plan review's finding 1 (filtering `local_status_ids` by `newStatus in STATUSES`) is marked \"integrated,\" but the mini-plan's step 3 describes the precedence filter without mentioning the validity check: \"compute the set of ids with a local `status` event.\" If implemented as literally written, a malformed local status record permanently blocks legitimate foreign gap-fill — exactly the regression the plan review flagged.",
+          "suggestion": "Make step 3 explicit: local-status-ids = ids where `newStatus in STATUSES`, mirroring pass 2's tolerant-skip. Otherwise the plan text and the reviewed plan diverge, and the implementer follows the plan.  2. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The two plan-review-integrated regression tests — `test_a_malformed_local_status_event_does_not_block_a_legitimate_foreign_gap_fill` and `test_a_local_decision_in_the_outbox_only_still_blocks_a_foreign_override` — appear nowhere in the mini-plan's file list or work breakdown. The outbox-only case is the exact D1 union path the fix claims to cover; if it isn't written, the core claim ships untested.",
+          "suggestion": "Add both tests to the step-1 RED list and the Test Completeness Ledger reference.  3. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Deliberate asymmetry: the advisory `pendingDelivery` marker (via `cross_tree_delivery_facts`) will still report a foreign status as \"pending\" even when it can no longer affect resolution. This is a defensible design choice and well-argued in the rejected alternative, but combined with the disclosed stale `format_pending_delivery_notice` wording, users may act on a \"pending\" notice that structurally cannot flip the card. Filing a follow-up card is acceptable, but the two staleness items (wording + marker semantics) should be one tracked follow-up, not scattered.",
+          "suggestion": "Consolidate finding 3 of the plan review and the WebUI parity item into the single follow-up card step 6 already plans, or confirm they're both in it.  4. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Multiple foreign `status` events for the same gap-fill id: the spec and plan only discuss a single foreign event. Behavior should be unchanged (chronological among foreign events for undecided ids), but it's worth one assertion so a future refactor of the drop-filter doesn't accidentally drop all but one foreign status.",
+          "suggestion": "One-line assertion in the new gap-fill test: two foreign status events for the same never-decided id resolve to the later one.  5. Category: approach — Severity: low (positive)",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The rejected alternative (filtering at the source in `triage_cross_tree`) is correctly rejected — it would invert the module dependency and leak resolution policy into a report-only module. Filtering in `read_all_items` pass 2 is the right boundary, and the plan review's confirmation that local files are read once (not twice) removes the main perf concern.  Security: No new serialized formats, no user-facing surface, no injection surface — the change is in-process resolution logic. No concerns.  Overall: The approach is sound and the module-boundary reasoning is solid; the plan just hasn't fully absorbed its own plan-review findings — the STATUSES filter and the two integrated tests must appear in the mini-plan itself before build.  SHIPWRIGHT_VERDICT: revise",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Splitting and recombining raw lines can accidentally change the existing `(ts, file-order)` tie behavior for `amend` records. The rewritten status tie test no longer protects that behavior, and the proposed amend test is not explicitly an equal-timestamp, cross-origin ordering test.",
+          "suggestion": "Add a regression with local and foreign `amend` events at the same timestamp and assert the current source/file ordering remains unchanged (including the expected foreign-after-local ordering if that is today’s contract).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The separate WebUI resolver is explicitly known to implement the same precedence logic but will remain unfixed. If users can view the same board through both readers before the follow-up ships, the application will present contradictory card states for locally decided items.",
+          "suggestion": "Before releasing, confirm whether the WebUI is an active status-resolving consumer. If so, coordinate the follow-up release or clearly gate/communicate the temporary inconsistency; otherwise document why the Python reader is the sole affected production path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The correctness of the local-status gate depends on preserving pass-2 validation semantics: only records that are valid status transitions should establish local authority. The internal review identifies this, but the implementation step itself only says “local `status` event,” which is easy to implement too broadly.",
+          "suggestion": "Make the invariant explicit in the implementation notes and tests: include an id in `local_status_ids` only when its `newStatus` is in `STATUSES`, using the same normalization/validation path as pass 2. Keep the malformed-local/valid-foreign gap-fill regression as a required test.  Overall, the precedence rule belongs in `read_all_items` and the chosen boundary is sound. Subject to preserving amendment tie ordering and confirming the known multi-reader rollout implication, this is a focused, low-risk fix.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T23:24:30.334252+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**1. Category: dependency — Severity: medium**\n**Finding:** The internal plan review's finding 1 (filtering `local_status_ids` by `newStatus in STATUSES`) is marked \"integrated,\" but the mini-plan's step 3 describes the precedence filter without mentioning the validity check: \"compute the set of ids with a local `status` event.\" If implemented as literally written, a malformed local status record permanently blocks legitimate foreign gap-fill — exactly the regression the plan review flagged.\n**Suggestion:** Make step 3 explicit: local-status-ids = ids where `newStatus in STATUSES`, mirroring pass 2's tolerant-skip. Otherwise the plan text and the reviewed plan diverge, and the implementer follows the plan.\n\n**2. Category: edge-case — Severity: medium**\n**Finding:** The two plan-review-integrated regression tests — `test_a_malformed_local_status_event_does_not_block_a_legitimate_foreign_gap_fill` and `test_a_local_decision_in_the_outbox_only_still_blocks_a_foreign_override` — appear nowhere in the mini-plan's file list or work breakdown. The outbox-only case is the exact D1 union path the fix claims to cover; if it isn't written, the core claim ships untested.\n**Suggestion:** Add both tests to the step-1 RED list and the Test Completeness Ledger reference.\n\n**3. Category: risk — Severity: low**\n**Finding:** Deliberate asymmetry: the advisory `pendingDelivery` marker (via `cross_tree_delivery_facts`) will still report a foreign status as \"pending\" even when it can no longer affect resolution. This is a defensible design choice and well-argued in the rejected alternative, but combined with the disclosed stale `format_pending_delivery_notice` wording, users may act on a \"pending\" notice that structurally cannot flip the card. Filing a follow-up card is acceptable, but the two staleness items (wording + marker semantics) should be one tracked follow-up, not scattered.\n**Suggestion:** Consolidate finding 3 of the plan review and the WebUI  […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Splitting and recombining raw lines can accidentally change the existing `(ts, file-order)` tie behavior for `amend` records. The rewritten status tie test no longer protects that behavior, and the proposed amend test is not explicitly an equal-timestamp, cross-origin ordering test.  \n   **Suggestion:** Add a regression with local and foreign `amend` events at the same timestamp and assert the current source/file ordering remains unchanged (including the expected foreign-after-local ordering if that is today’s contract).\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The separate WebUI resolver is explicitly known to implement the same precedence logic but will remain unfixed. If users can view the same board through both readers before the follow-up ships, the application will present contradictory card states for locally decided items.  \n   **Suggestion:** Before releasing, confirm whether the WebUI is an active status-resolving consumer. If so, coordinate the follow-up release or clearly gate/communicate the temporary inconsistency; otherwise document why the Python reader is the sole affected production path.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The correctness of the local-status gate depends on preserving pass-2 validation semantics: only records that are valid status transitions should establish local authority. The internal review identifies this, but the implementation step itself only says “local `status` event,” which is easy to implement too broadly.  \n   **Suggestion:** Make the invariant explicit in the implementation notes and tests: include an id in `local_status_ids` only when its `newStatus` is in `STATUSES`, using the same normalization/validation path as pass 2. Keep the malformed-local/valid-foreign gap-fill regression as a required test.\n\nOverall, the precedence rule belongs in `read_all_items` and the chosen  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:49:02.339385+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:57:04.103727+00:00",
+      "disposition": "diff touches no migrations, no async/concurrency, no cross-plugin imports, no irreversible ops — in-process JSONL resolution-logic change only; Stage-3 doubt-reviewer trigger criteria (shipwright-build:doubt-reviewer) do not apply",
+      "recorded_by": "self",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug / edge-case",
+          "file": "shared/scripts/triage.py — the drop-filter inside `read_all_items`'s pass-2 comprehension (`and raw.get(\"id\") in local_status_ids`)",
+          "line": null,
+          "finding": "The `id` of a foreign record is used in a set-membership test with no type guard, unlike the local side which is guarded by `isinstance(r.get(\"id\"), str)`. A foreign (sibling-worktree) record whose `id` is a non-string JSON value that is unhashable (e.g. a list or object: `{\"event\":\"status\",\"id\":[\"x\"],\"newStatus\":\"dismissed\",...}`) raises `TypeError: unhashable type` during the `in local_status_ids` check, crashing `read_all_items` entirely. Before this change, pass 2 only did dict-key lookups on `raw.get(\"id\")` (hash-safe with `.get`-style access on `resolved`), so a single corrupted line in any of the 91 sibling logs — exactly the environment the module's own tolerant-parsing contract exists for — now takes down the whole board read, not just that record.",
+          "suggestion": "Guard the foreign side symmetrically, e.g. `and isinstance(raw.get(\"id\"), str) and raw.get(\"id\") in local_status_ids`, or hoist the check into a helper that returns False for non-str/non-hashable ids. Add a regression test with a malformed foreign id.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_triage_cross_tree_precedence.py — `test_a_malformed_local_status_event_does_not_block_a_legitimate_foreign_gap_fill",
+          "line": null,
+          "finding": "The test asserts the gap-fill resolves `dismissed`, which is also the outcome a correct pre-fix implementation produced (the malformed local status was always skipped, foreign chronology applied). It does distinguish filter-present vs. filter-absent for the gate (without the `newStatus in STATUSES` filter the foreign event would be dropped and status would stay `triage`), so it does validate the specific finding it targets — but only via the `statusBy == \"cli\"` assertion path. If pass 2 ever tolerated the malformed `newStatus` differently, the assertion could pass for the wrong reason. Minor; the primary assertion (`status == \"dismissed\"` plus `statusBy`) is adequate but a `status != \"triage\"`-style negative control alongside an invalid foreign counterpart (asserting it's skipped) would harden it.",
+          "suggestion": "Optionally add the mirror case: a malformed foreign status must be ignored, not crash (ties into the finding above).",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-10T23:34:01.562832+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: bug / edge-case\n  Severity: medium\n  File: shared/scripts/triage.py — the drop-filter inside `read_all_items`'s pass-2 comprehension (`and raw.get(\"id\") in local_status_ids`)\n  Finding: The `id` of a **foreign** record is used in a set-membership test with no type guard, unlike the local side which is guarded by `isinstance(r.get(\"id\"), str)`. A foreign (sibling-worktree) record whose `id` is a non-string JSON value that is unhashable (e.g. a list or object: `{\"event\":\"status\",\"id\":[\"x\"],\"newStatus\":\"dismissed\",...}`) raises `TypeError: unhashable type` during the `in local_status_ids` check, crashing `read_all_items` entirely. Before this change, pass 2 only did dict-key lookups on `raw.get(\"id\")` (hash-safe with `.get`-style access on `resolved`), so a single corrupted line in any of the 91 sibling logs — exactly the environment the module's own tolerant-parsing contract exists for — now takes down the whole board read, not just that record.\n  Suggestion: Guard the foreign side symmetrically, e.g. `and isinstance(raw.get(\"id\"), str) and raw.get(\"id\") in local_status_ids`, or hoist the check into a helper that returns False for non-str/non-hashable ids. Add a regression test with a malformed foreign id.\n\n- Category: test\n  Severity: low\n  File: shared/tests/test_triage_cross_tree_precedence.py — `test_a_malformed_local_status_event_does_not_block_a_legitimate_foreign_gap_fill`\n  Finding: The test asserts the gap-fill resolves `dismissed`, which is also the outcome a correct *pre-fix* implementation produced (the malformed local status was always skipped, foreign chronology applied). It does distinguish filter-present vs. filter-absent for the *gate* (without the `newStatus in STATUSES` filter the foreign event would be dropped and status would stay `triage`), so it does validate the specific finding it targets — but only via the `statusBy == \"cli\"` assertion path. If pass 2 ever tolerated the malformed `newStatus` differently,  […truncated]\n\n[openai] No concrete defects found. The implementation applies the local-valid-status gate only to foreign `status` events, preserves foreign gap-fill and chronological `amend` behavior, and covers the specified regression and edge cases.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "revise"
+      },
+      "model_tier": "opus"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:30:02.412186+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:20:17.911160+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

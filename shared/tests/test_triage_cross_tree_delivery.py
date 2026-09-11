@@ -7,7 +7,9 @@ files, so an item dismissed only in a worktree read back on `main` as still
 open, with `pendingDelivery` computing `False` — a false reassurance. RED-
 before-fix scenario, kept as the permanent regression gate. See
 :mod:`lib.triage_cross_tree` for the fix; the CLI subprocess round-trip lives
-in `test_triage_cross_tree_cli_roundtrip.py` (split out at 300 lines).
+in `test_triage_cross_tree_cli_roundtrip.py` (split out at 300 lines), and
+`triage.read_all_items`'s own cross-tree status-precedence tests live in
+`test_triage_cross_tree_precedence.py` (same reason).
 """
 from __future__ import annotations
 
@@ -109,64 +111,6 @@ def test_a_detached_head_worktree_is_skipped_not_guessed_at(tmp_path: Path) -> N
     (wt / ".git").write_text(f"gitdir: {admin}\n", encoding="utf-8")
 
     assert triage_cross_tree.sibling_worktree_logs(main) == []
-
-
-# ---------------------------------------------------------------------------
-# triage.read_all_items — the board itself
-# ---------------------------------------------------------------------------
-
-def test_a_dismiss_recorded_only_in_a_worktree_resolves_as_dismissed_on_main(
-    tmp_path: Path,
-) -> None:
-    """The exact measured defect: main must not show this as open `triage`."""
-    main = _make_main(tmp_path)
-    (main / ".shipwright" / "triage.jsonl").write_text(
-        _j({"v": 1}) + "\n" + _j(_APPEND) + "\n", encoding="utf-8")
-    wt = _make_worktree(main, "camp-a", "iterate/camp-a")
-    (wt / ".shipwright" / "triage.jsonl").write_text(
-        _j({"v": 1}) + "\n" + _j(_APPEND) + "\n" + _j(_DISMISS) + "\n",
-        encoding="utf-8")
-
-    item = next(i for i in triage.read_all_items(main) if i["id"] == "trg-good0001")
-    assert item["status"] == "dismissed"
-
-
-def test_a_foreign_append_never_seeds_an_item_this_tree_never_created(
-    tmp_path: Path,
-) -> None:
-    """Only KNOWN ids fold in — a sibling's own item must not appear on main."""
-    main = _make_main(tmp_path)
-    (main / ".shipwright" / "triage.jsonl").write_text(
-        _j({"v": 1}) + "\n", encoding="utf-8")
-    wt = _make_worktree(main, "camp-a", "iterate/camp-a")
-    foreign_only = {**_APPEND, "id": "trg-foreignonly"}
-    (wt / ".shipwright" / "triage.jsonl").write_text(
-        _j({"v": 1}) + "\n" + _j(foreign_only) + "\n", encoding="utf-8")
-
-    assert triage.read_all_items(main) == []
-
-
-def test_a_foreign_tie_is_broken_by_file_order_not_origin(tmp_path: Path) -> None:
-    """`read_all_items`' tie-break is pure ``(ts, file-order)`` with no special
-    case for physical origin (same rule as the existing tracked-before-outbox
-    precedent) — the foreign tail is appended last, so it wins an identical
-    timestamp even against main's own tracked copy. Distinguishing `by` values
-    make the winner provable. This is safe regardless of which copy wins:
-    `pendingDelivery`'s canonical-content check (`lib.triage_delivery`)
-    answers "delivered" from content equality, not from this tie-break."""
-    main = _make_main(tmp_path)
-    (main / ".shipwright" / "triage.jsonl").write_text(
-        _j({"v": 1}) + "\n" + _j(_APPEND) + "\n" + _j(_DISMISS) + "\n",
-        encoding="utf-8")
-    wt = _make_worktree(main, "camp-a", "iterate/camp-a")
-    foreign_dismiss = {**_DISMISS, "by": "worktree-cli"}
-    (wt / ".shipwright" / "triage.jsonl").write_text(
-        _j({"v": 1}) + "\n" + _j(_APPEND) + "\n" + _j(foreign_dismiss) + "\n",
-        encoding="utf-8")
-
-    item = next(i for i in triage.read_all_items(main) if i["id"] == "trg-good0001")
-    assert item["status"] == "dismissed"
-    assert item["statusBy"] == "worktree-cli"
 
 
 # ---------------------------------------------------------------------------

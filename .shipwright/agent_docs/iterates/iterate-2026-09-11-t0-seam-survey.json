@@ -1,0 +1,23 @@
+{
+  "run_id": "iterate-2026-09-11-t0-seam-survey",
+  "date": "2026-09-11T00:13:28.441536Z",
+  "event_at": "2026-09-11T00:12:42.944777+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t0-seam-survey",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t0-seam-survey.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-t0-seam-survey",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "small complexity, no new behavior or code -- t0 is a read-only survey producing an analysis document; no testable behavior was introduced for the ledger to enumerate. The full suite re-run (F0) is the evidence nothing regressed."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "campaign survey unit -- a docs-only analysis deliverable (.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md), no startable web/dev-server/CLI surface of its own; detect_frontend_changes.py confirmed has_frontend_changes=false against merge-base. Verification is the full repo suite (F0), which this run re-ran in full and which passed clean (18556 tests, 18498 passed, 58 skipped, 0 failed across 18 units)."
+  },
+  "declared_removals": []
+}
