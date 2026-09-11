@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-ci-supplychain-ack-authorship",
+  "date": "2026-09-11",
+  "section": "Iterate — bug: CI supply-chain ack authorship guard",
+  "title": "Operator-only guard for record_ci_supplychain_ack.py",
+  "context": "PR #718 (trg-33d30377): a campaign sub-iterate runner wrote its own CI-supplychain ack for its own diff, violating a prose-only rule in campaign-mode.md Step 3.4 that nothing enforced. Every existing check (run binding, content fingerprint, field shape) validated the self-authored ack perfectly -- none asked who wrote it. Full detail: see spec_ref.",
+  "decision": "record_ci_supplychain_ack.py now refuses outright (no override) while SHIPWRIGHT_LOOP_UNIT_ID is set in its own process env -- the marker an active autonomous-loop unit's subprocesses carry via capture_session_id.py's CLAUDE_ENV_FILE sync. Checked at main/build_ack/write_ack. Added --commit <ref> mode and a required provenance stamp (worktree|commit). Full detail: see spec_ref.",
+  "consequences": "A campaign runner or shipwright-build --autonomous unit can no longer author its own ack in either content mode, with no file left behind on refusal. An operator has a reachable path pre- and post-commit. This is a process-identity heuristic, not a cryptographic guarantee -- disclosed, not hidden. Full detail: see spec_ref.",
+  "rationale": "Gate on data (who authored the write, checked mechanically), not on an agent being expected to behave -- webui #285 already showed a full medium iterate with external plan review reversing an accepted-risk posture unnoticed. provenance stays required even though no current authorization decision reads its value: it is the one signal distinguishing this CLI's own output from a hand-assembled forgery that otherwise gets run-id and content binding right by copying a real ack.",
+  "rejected": "SHIPWRIGHT_SESSION_ID-based authorship matching -- a Task-spawned runner and its orchestrating session are plausibly the same session id, and the documented remedial flow has the operator resolve from that same session. Prose-only rule (architecture brief Option C) -- the exact posture that already failed once. Cryptographic operator-identity proof -- not buildable with this repo's infrastructure (no human-in-the-loop signing).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-11-ci-supplychain-ack-authorship-decision.md"
+}

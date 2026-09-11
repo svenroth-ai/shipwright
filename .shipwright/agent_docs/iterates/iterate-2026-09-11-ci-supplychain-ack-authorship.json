@@ -1,0 +1,30 @@
+{
+  "run_id": "iterate-2026-09-11-ci-supplychain-ack-authorship",
+  "date": "2026-09-11T15:39:44.930746Z",
+  "event_at": "2026-09-11T02:05:49.768047+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/ci-supplychain-ack-authorship",
+  "spec": ".shipwright/planning/iterate/iterate-2026-09-11-ci-supplychain-ack-authorship.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-11-ci-supplychain-ack-authorship",
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "internal iterate-tooling CLI + F11 verifier + SessionStart hook change (record_ci_supplychain_ack.py authorship guard, capture_session_id.py CLAUDE_ENV_FILE propagation); no web/API/CLI-product surface of its own to browser-verify -- exercised entirely through its own unit/integration-style round-trip test suite (shared/tests)."
+  },
+  "test_completeness": {
+    "status": "complete",
+    "counts": {
+      "testable": 14,
+      "tested": 14,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 10,
+      "covered_acs": 10
+    }
+  }
+}

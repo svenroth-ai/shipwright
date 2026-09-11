@@ -54,6 +54,11 @@ def _ack(run_id: str = _RUN, fingerprint: str | None = None, **over) -> dict:
         "consistent_with": _WITH,
         "statement": _STMT,
         "ci_paths": [_WF],
+        # Default matches what record_ci_supplychain_ack.py stamps for the common
+        # case (trg-33d30377). `_validate_fields` only enforces this for the
+        # per-run location — a legacy-location caller may still omit it via
+        # `_ack(provenance=None)` or plain dict surgery, and must keep passing.
+        "provenance": "worktree",
     }
     ack.update(over)
     return ack
@@ -231,6 +236,53 @@ def test_legacy_ack_is_still_run_and_fingerprint_bound(git_origin_repo, make_wor
     commit = _commit(wt, _WF, "shipwright_test_results.json")
 
     assert cs.check_ci_supplychain_ack(wt, _RUN, commit).ok is False
+
+
+# --- provenance stamp (trg-33d30377 / PR #718) -------------------------------
+
+def test_per_run_ack_without_provenance_is_rejected(git_origin_repo, make_worktree):
+    """An ack at the per-run location that was not written by
+    record_ci_supplychain_ack.py (no `provenance` field) cannot have gone through
+    the authorship guard — reject it rather than trust it as-is."""
+    work, _o = git_origin_repo
+    wt = make_worktree(work, "prh-no-provenance")
+    _touch_workflow(wt)
+    rel = _write_per_run_ack(wt, _ack(provenance=None))
+    commit = _commit(wt, _WF, rel)
+
+    res = cs.check_ci_supplychain_ack(wt, _RUN, commit)
+    assert res.ok is False
+    assert "provenance" in res.detail.lower()
+
+
+def test_per_run_ack_with_inconsistent_provenance_pair_is_rejected(
+        git_origin_repo, make_worktree):
+    """`provenance`/`provenance_ref` must agree — an ack claiming "worktree"
+    while carrying a ref, or "commit" with no ref, is a pair the CLI never
+    writes (external review, Branch A)."""
+    work, _o = git_origin_repo
+    wt = make_worktree(work, "prh-provenance-inconsistent")
+    _touch_workflow(wt)
+    rel = _write_per_run_ack(wt, _ack(provenance="worktree", provenance_ref="deadbeef"))
+    commit = _commit(wt, _WF, rel)
+
+    res = cs.check_ci_supplychain_ack(wt, _RUN, commit)
+    assert res.ok is False
+    assert "provenance_ref" in res.detail
+
+
+def test_legacy_ack_without_provenance_is_still_accepted(git_origin_repo, make_worktree):
+    """The provenance requirement must not retroactively break the legacy leg's
+    own compatibility promise: every legacy-location ack predates the field by
+    construction, and none of them can be rebased to add it."""
+    work, _o = git_origin_repo
+    wt = make_worktree(work, "prh-legacy-no-provenance")
+    _touch_workflow(wt)
+    _write_legacy_ack(wt, _ack(provenance=None))
+    commit = _commit(wt, _WF, "shipwright_test_results.json")
+
+    res = cs.check_ci_supplychain_ack(wt, _RUN, commit)
+    assert res.ok is True, res.detail
 
 
 def test_no_ack_anywhere_still_fails(git_origin_repo, make_worktree):
