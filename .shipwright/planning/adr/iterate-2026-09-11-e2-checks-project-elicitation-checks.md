@@ -21,17 +21,22 @@ filesystem-facing wiring (`_project_gate_wiring.py`), wired into
 `project_checks.run_project_checks()` — the same dispatcher
 `update-step --step project` already blocks on:
 
-- **#4 + #15 merged** — `basis_forbids_assumed`: a QUALIFIED `assumed`
-  cell (e.g. `assumed: nobody could answer`) is always banned — the
-  settlement belongs in an acceptance criterion, not smuggled into the
-  Basis cell. A BARE `assumed` cell is banned only when the row carries
-  zero acceptance criteria — `assumed` is legal per `fr-authoring.md`
-  §4a but never bare, so the mechanical form obligation is "paired with
-  a recorded criterion", not "absent altogether" (revised post-merge,
-  see Stage-1 Spec-Review below; the original round shipped an outright
-  ban copied from P4.2's grill-trace layer, which was stricter than the
-  ledger's own decided ceiling). Skipped for `scope: "extension"` (added
-  round 5 review).
+- **#4 + #15 merged, then #15 split** — `basis_forbids_assumed`: a
+  QUALIFIED `assumed` cell (e.g. `assumed: nobody could answer`) is
+  always banned — the settlement belongs in an acceptance criterion, not
+  smuggled into the Basis cell. A BARE `assumed` cell is banned only when
+  the row carries zero acceptance criteria (**#15's floor**) — `assumed`
+  is legal per `fr-authoring.md` §4a but never bare, so the mechanical
+  form obligation is "paired with a recorded criterion", not "absent
+  altogether" (revised post-merge, see Stage-1 Spec-Review below; the
+  original round shipped an outright ban copied from P4.2's grill-trace
+  layer, which was stricter than the ledger's own decided ceiling).
+  Whether the criterion actually NAMES the settlement, vs. an unrelated
+  functional criterion vacuously satisfying the floor, has no
+  deterministic "aboutness" oracle — split out as **#15b**, downgraded to
+  judgement, drift-tested (same shape and rationale as #8/#8b and
+  #10/#10b below). Skipped for `scope: "extension"` (added round 5
+  review).
 - **#5** — `criteria_free_of_implementation_detail`: reuses I1's own
   detector against every active FR's acceptance CRITERIA text, not just
   the Name column I1 already covered.
@@ -55,9 +60,10 @@ filesystem-facing wiring (`_project_gate_wiring.py`), wired into
 
 ## Consequences
 
-9 lines closed (6 FR-01.02 + 3 FR-01.16); 3 new judgement downgrades
-recorded (#8b, #10b, #3b), each drift-tested, none gated. Live
-re-measurement: 20 prompt-only/mechanisable, 24 prompt-only/judgement, 16
+9 lines closed (6 FR-01.02 + 3 FR-01.16); 4 judgement downgrades recorded
+(#8b, #10b, #3b, and #15b added in the Stage-1 spec-review's second pass
+below), each drift-tested, none gated. Live re-measurement (pre-#15b
+split): 20 prompt-only/mechanisable, 24 prompt-only/judgement, 16
 enforced-untested, 33 unimplemented, 76 enforced-tested. 67 new/updated
 tests, all green; lint clean; no architecture-doc structural impact (new
 verifier functions wired into an existing dispatcher, not a new
@@ -135,7 +141,7 @@ probes were run this iterate (CLAUDE.md/agent_docs existence-checking and
 the project-config JSON reads are plain file-existence/JSON-parse checks
 with no format-ambiguity to probe).
 
-## Stage-1 Spec-Review REJECT (post-merge with main, PR #729)
+## Stage-1 Spec-Review REJECT (post-merge with main, PR #729, round 1)
 
 Stage-1 spec-reviewer REJECTed the shipped `basis_forbids_assumed`: an
 outright ban on Basis=`assumed` is stricter than FR-01.02 #4's own
@@ -153,6 +159,42 @@ docs actually state — presence of at least one acceptance criterion on
 the row, not a judgement about the criterion's content (see the revised
 `_project_gate_extras.basis_forbids_assumed` docstring for why a
 mechanical check stops at presence, not aboutness).
+
+## Stage-1 Spec-Review REJECT (round 2, re-run against the round-1 fix)
+
+Re-verified genuine by re-reading `fr-authoring.md` §4a, `requirement-elicitation.md`
+§8 and `spec-generation.md`'s worked FR-01.05 example directly (all three
+explicitly require the settlement to be *named*, and the worked example
+shows a distinct second criterion doing exactly that naming). Two
+findings, both accepted:
+
+1. **Unfaithful** — the round-1 fix checks criterion PRESENCE, never
+   whether any criterion names a settlement; a bare `assumed` row with
+   an unrelated functional criterion vacuously passes.
+2. **Missing** — this campaign's own D7 rule was already applied twice in
+   this identical diff for the exact same "buildable floor + unbuildable
+   aboutness half" shape (#8/#8b, #10/#10b), but #15 was not split the
+   same way, and no drift test pinned the "naming the settlement"
+   language the ledger's own row #15 quotes.
+
+Finding 1 restates the same unbuildable-oracle problem #10b's own text
+already names ("no deterministic aboutness oracle exists, same rationale
+as #4/#15's resolution") — building that oracle was ruled out by the
+operator in round 1, consistent with this ADR's own Rejected Alternatives.
+Finding 2 is the correct, actionable resolution the operator's round-1
+instruction ("say so in the docstring and stop there") already implied at
+the DOCSTRING level but the ledger did not yet reflect at the PROCESS
+level: split into #15 (floor, enforced) + #15b (aboutness, judgement),
+matching #8/#8b and #10/#10b exactly. No new test was needed — a
+pre-existing drift suite, `shared/tests/test_requirement_granularity_and_basis.py`
+(predates this sub-iterate, written for an earlier REQ-3 granularity
+round), already pins the "never bare" / "what would settle it" /
+"acceptance criterion" language across all three binding docs
+(`test_every_basis_doc_sends_the_settlement_to_a_criterion`,
+`test_every_surface_qualifies_assumed`) and the exact FR-01.05 worked
+example the round-2 reviewer cited
+(`test_worked_example_assumed_row_has_its_settlement_criterion`); #15b
+cites all three rather than duplicating coverage.
 
 ## Rejected Alternatives
 
