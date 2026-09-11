@@ -249,9 +249,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-10T23:28:39.050632+00:00",
-      "disposition": "delegated_to_orchestrator — the sub-iterate runner's tools (Read, Write, Edit, Bash, Glob, Grep) exclude Agent, so it cannot spawn the spec-reviewer/code-reviewer/doubt-reviewer cascade; the campaign orchestrator runs it at 3f-bis before merge and promotes this row with --force per shared/prompts/campaign-mode.md.",
-      "recorded_by": "none",
+      "completed_at": "2026-09-11T00:28:08.266674+00:00",
+      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: (1) survey under-reports its own campaign root-count-cap conflict for t4/t5 (only t8/t9 escalated in triage card trg-ff6ea5f0), defeating the seam survey's one-repo-wide-answer purpose per campaign.md:40 + t0-seam-survey.md:5,15; (2) this branch's sole commit e95c49cd7 deletes an unrelated iterate's evidence ledger (.shipwright/agent_docs/iterates/iterate-2026-08-26-b-pure-hardening.json) out of scope for a read-only survey. Full citations: .shipwright/runs/sub_iterate-20260910-230649/t0/spec_review_reject.txt. Delivery stopped; PR #720 left open for human repair.",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
