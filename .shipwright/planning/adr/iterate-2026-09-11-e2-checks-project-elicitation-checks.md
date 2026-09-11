@@ -210,6 +210,47 @@ directly (`_project_gate_wiring.py`, `fr_basis.py`'s `classify()`,
 | 3 | `fr_criteria.py`'s docstring claim of "exactly two, both commented" `strict=False` callers is stale — this diff added two more without updating it (low) | accepted-and-fixed — docstring now enumerates all four callers; inline comments added at both new call sites in `_project_gate_extras.py` |
 | 4 | A test docstring claimed "the other two gates" sharing `_read_spec_texts` got a missing/unreadable-spec regression test, but only `basis_forbids_assumed` actually did — `criteria_free_of_implementation_detail` never got one (low) | accepted-and-fixed — added `test_check_criteria_free_of_implementation_detail_skips_when_no_spec_yet` and `..._fails_loud_on_a_declared_but_missing_spec` |
 
+## Required Tier-3 PR Review BLOCK (PR #729, post Stage-3 doubt review)
+
+The CI-gating, required "PR Review" check (Tier-3, `openai/gpt-5.6-luna`,
+B4.5 — distinct from the internal spec/code/doubt-reviewer cascade above)
+returned `BLOCK`: the merged #4/#15 gate's extension-scope skip (added
+round 5) leaves #15's "an `assumed` row must name what would settle it"
+obligation completely unenforced for extension-scope projects, with no
+documented carve-out for #15 specifically.
+
+**This reverses round 7's rejection of the same concern** (row above:
+"#15's settlement-oracle half unenforced for extension scope... rejected
+— the merged mechanism's scope (greenfield) is #4's own stated scope, not
+a new gap"). Re-examined against the ledger's actual text (not the round-7
+reviewer's framing) for this BLOCK: #4's own row name is literally
+"(greenfield)"; #15's row name carries no such qualifier. After the
+round-1 spec-review REJECT (above), the merged function no longer
+implements #4's original "assumed never appears" ban at all — that ban
+was reverted for being stricter than the ledger's own decided ceiling —
+so the function now implements ONLY #15's un-scoped form obligation.
+Round 5's and round 7's shared premise ("both #4 and #15 scope to
+greenfield") did not survive round 1's own fix; nobody re-checked it
+after. An extension-scope `/shipwright-project` run still runs an
+interview (a PO is present, the same availability context as
+greenfield) — unlike `/shipwright-adopt`, which has nobody to ask at
+all — so #15's obligation is reachable there too, and the ledger's own
+text never exempted it. **Fixed** by removing the extension-scope skip
+from `check_basis_forbids_assumed`; #15 (and, vacuously, #4's now-only-
+#15-shaped behavior) is enforced regardless of scope. `#11`'s own
+extension-scope skip is untouched — it exists for an unrelated reason
+(those files pre-exist in extension mode; the check has no availability
+question to fail).
+
+The bot's two non-blocking `Comments` did not gate the verdict (only its
+`Blocking issues` section did) and are logged, not acted on this round:
+a present, valid-object project config that simply omits the `splits`
+key entirely reads as "zero splits declared" — the same outcome as an
+explicit `"splits": []` — which `_declared_split_names`'s own docstring
+already treats as one legitimate case, not distinguished from a
+key-omitted config; and the #8b drift test's substring-pin fragility
+repeats round 7's own `logged, not acted on` note verbatim.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading

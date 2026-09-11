@@ -218,24 +218,23 @@ def _read_project_scope(
 def check_basis_forbids_assumed(project_root: Path) -> CheckResult:
     """FR-01.02 #4 + #15 (merged) — see ``_project_gate_extras.basis_forbids_assumed``.
 
-    **Greenfield only.** The ledger's own #4 text ("we banned `assumed`
-    for greenfield") and #15's original allow-with-settlement text both
-    scope this to a project being freshly authored — an "extension"
-    project can carry a pre-existing, honestly-unconfirmed `assumed` row
-    that this gate has no business relitigating. External code review
-    (e2-checks-project-elicitation, round 5, medium, both reviewers
-    independently): the wiring ran unconditionally, unlike #11's own
-    scope carve-out, which was the exact inconsistency both reviewers
-    named."""
+    **NOT scoped to greenfield, unlike #11.** Round 5 added an
+    extension-scope skip, reasoning #4's greenfield text and #15's
+    allow-with-settlement text both scope to a freshly-authored
+    project. Required Tier-3 PR review (PR #729) found that stale
+    after the round-1 spec-review REJECT: the merged function no
+    longer enforces #4's literally-greenfield "never appears" ban
+    (reverted, stricter than the ledger's ceiling) — it enforces ONLY
+    #15's form obligation ("name what would settle `assumed`"), which
+    carries no greenfield qualifier of its own. An extension run still
+    runs an interview (a PO is present, same as greenfield) — unlike
+    `/shipwright-adopt`, which has nobody to ask — so #15 is reachable
+    there too, unlike #11's unrelated (pre-existing files) skip. Fixed
+    by removing the skip."""
     name = "Basis column forbids bare 'assumed' (FR-01.02 #4/#15)"
-    scope, error, config_exists = _read_project_scope(project_root, name)
+    _scope, error, _config_exists = _read_project_scope(project_root, name)
     if error:
         return error
-    if config_exists and scope == "extension":
-        return CheckResult(
-            name, True, "extension scope — pre-existing Basis cells are not relitigated",
-            severity=Severity.SKIPPED.value,
-        )
     spec_texts, unreadable = _read_spec_texts(project_root)
     if bad := _unreadable_result(name, unreadable):
         return bad

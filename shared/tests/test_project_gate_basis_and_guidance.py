@@ -86,12 +86,15 @@ def test_check_basis_forbids_assumed_fails_loud_on_a_declared_but_missing_spec(t
     assert "01-a" in r.detail
 
 
-def test_check_basis_forbids_assumed_skips_extension_scope(tmp_path):
-    """External code review (round 5, medium, both reviewers
-    independently): the ban is explicitly greenfield-only per the
-    ledger's own #4/#15 text — an extension project's pre-existing,
-    honestly-unconfirmed ``assumed`` row must not be relitigated, mirroring
-    #11's existing scope carve-out."""
+def test_check_basis_forbids_assumed_fires_on_extension_scope_too(tmp_path):
+    """Required Tier-3 PR review (PR #729): round 5 skipped this WHOLE gate
+    for extension scope, reasoning both #4 and #15 were greenfield-only —
+    but the merged function no longer enforces #4's original ban (reverted
+    for being stricter than the ledger's ceiling), only #15's un-scoped
+    form obligation. An extension ``/shipwright-project`` run still runs an
+    interview (a PO is present), so #15 is reachable there too, unlike
+    ``/shipwright-adopt`` — a bare ``assumed`` row with no criterion must
+    still fail, not be silently skipped."""
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({
             "scope": "extension",
@@ -107,8 +110,8 @@ def test_check_basis_forbids_assumed_skips_extension_scope(tmp_path):
         encoding="utf-8",
     )
     r = check_basis_forbids_assumed(tmp_path)
-    assert r.ok is True
-    assert r.is_skipped
+    assert r.ok is False
+    assert "FR-01.01" in r.detail
 
 
 def test_check_basis_forbids_assumed_fails_loud_on_non_object_config(tmp_path):
