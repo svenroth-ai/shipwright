@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-binding-completeness-rollout-transition",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T00:23:23.549669+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The implementation plan specifies an equality comparator (“SAME `required_layers`”), while the change specification requires a superset check (`HEAD ⊇ rollout snapshot`). This would incorrectly deny grace after a valid post-rollout widening.",
+          "suggestion": "Implement `set(head.required_layers).issuperset(set(snapshot.required_layers))`, with explicit normalization consistent with the manifest collector.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The required title-identity safeguard is absent from the module design, comparator signature, and test plan. Without it, reusing an FR ID for a different requirement inherits the former FR’s transition grace.",
+          "suggestion": "Include the rollout snapshot title and HEAD title in `binding_predates_rollout`, require exact match, and add a test for an ID-reused/retitled FR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The stated “source-agnostic” behavior conflicts with the planned test wording: “grace withheld (edited/promoted since rollout).” A source-only `inferred_legacy → explicit` promotion with unchanged layers must retain grace.",
+          "suggestion": "Split this into separate tests: source-only promotion grants grace; layer narrowing/replacement denies it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The planned dry-run uses this repository’s manifest, directly contradicting the acceptance criterion requiring a synthetic corpus because the local population is entirely legacy-sourced and cannot demonstrate the intended hard-count change.",
+          "suggestion": "Build and preserve a synthetic fixture containing both a pre-rollout explicit/promoted binding and a post-rollout control, then record before/after hard counts from that fixture.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Git-history resolution can silently fail in shallow clones or when the target commit is not reachable from the supplied `commit_hash`; that would turn a valid historical binding into a hard failure.",
+          "suggestion": "Define and test the failure policy: distinguish “no pre-rollout commit exists” from git/archive/collector failure. The former may yield no grace; the latter should produce a clear verifier diagnostic rather than silently treating it as greenfield.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not state how `required_layers` are canonicalized before comparison. Ordering, duplicate entries, or collector normalization differences could make semantically equal bindings compare incorrectly.",
+          "suggestion": "Compare normalized sets using the same layer validation/canonicalization rules as the collector, and add order/duplicate coverage if those inputs are representable.  Overall, the snapshot-based, per-repository approach is sound and appropriately scoped, but the current mini-plan misses two core acceptance requirements (superset semantics and title matching) and its dry-run plan is inconsistent with the specified evidence standard.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openai+glm",
+      "completed_at": "2026-09-10T23:50:34.786617+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach | Severity: medium** — Spec/implementation mismatch on the comparison semantics. The spec's AC explicitly requires a SUPERSET check (post-rollout widening keeps grace), but the Design Notes say \"the FR already carried the SAME `required_layers` value in that snapshot,\" and the comparator signature is `binding_predates_rollout(rollout, key, required_layers)`. If implemented as described in the design notes, an AC-driven widening (e.g. adding a layer) would incorrectly forfeit grace. Pin the spec's superset semantics in the design and add a pure-evaluator test for the widened-superset case specifically.\n\n- **Category: edge-case | Severity: medium** — The FR-title-match condition (repurposed FR id does not inherit grace) is in the ACs but absent from the mini-plan: `binding_predates_rollout(rollout, key, required_layers)` has no title parameter and no test is listed for the repurposed-id case. This is a real correctness hole — an FR id recycled for a different feature with an accidentally-superset binding would silently get amnesty. Add the title to the comparator's inputs and a test.\n\n- **Category: dependency | Severity: medium** — `rollout_manifest(project_root, commit_hash)` builds a manifest at an arbitrary historical ref using the collector with `with_evidence=False`. This needs verification that `required_layers`/`required_layers_source` parsing is genuinely evidence-independent — if any part of the collector derives or defaults these fields from evidence flags, the snapshot values will differ from a real collection and grace decisions will be wrong in both directions. Add an explicit assertion/test that a `with_evidence=False` build at HEAD equals the normal build for these two fields before trusting historical snapshots.\n\n- **Category: edge-case | Severity: medium** — `resolve_rollout_commit` via `git rev-list -1 --before=<instant>` is fragile against shallow clones (CI checkouts, `fetch-depth: 1`): the commit at […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The implementation plan specifies an equality comparator (“SAME `required_layers`”), while the change specification requires a superset check (`HEAD ⊇ rollout snapshot`). This would incorrectly deny grace after a valid post-rollout widening.  \n   **Suggestion:** Implement `set(head.required_layers).issuperset(set(snapshot.required_layers))`, with explicit normalization consistent with the manifest collector.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The required title-identity safeguard is absent from the module design, comparator signature, and test plan. Without it, reusing an FR ID for a different requirement inherits the former FR’s transition grace.  \n   **Suggestion:** Include the rollout snapshot title and HEAD title in `binding_predates_rollout`, require exact match, and add a test for an ID-reused/retitled FR.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The stated “source-agnostic” behavior conflicts with the planned test wording: “grace withheld (edited/promoted since rollout).” A source-only `inferred_legacy → explicit` promotion with unchanged layers must retain grace.  \n   **Suggestion:** Split this into separate tests: source-only promotion grants grace; layer narrowing/replacement denies it.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The planned dry-run uses this repository’s manifest, directly contradicting the acceptance criterion requiring a synthetic corpus because the local population is entirely legacy-sourced and cannot demonstrate the intended hard-count change.  \n   **Suggestion:** Build and preserve a synthetic fixture containing both a pre-rollout explicit/promoted binding and a post-rollout control, then record before/after hard counts from that fixture.\n\n5. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Git-history resolution can silently fail in shallow clone […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      },
+      "model_tier": "inherit"
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "code-reviewer",
+      "completed_at": "2026-09-11T00:11:41.654155+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T00:22:43.849967+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_rollout.py` (~line 200, `rollout_manifest`)",
+          "line": null,
+          "finding": "The spec's Design Notes explicitly require the rollout snapshot be built `with_evidence=False` (\"no evidence collection pass is needed for this comparison\"), and the ADR's findings table (glm plan-review #8) records this as \"confirmed by code inspection.\" But the actual call is `_build(test_links, io, root, {}, sha)` — no `with_evidence` flag is visible at the call site, the third evidence argument is a hardcoded `{}`, and the unpacked `_evio` is never used. If `_build`'s fourth parameter is the evidence input and the collector defaults to evidence collection when a real evidence IO is supplied, the rollout build silently pays the evidence-walk cost (and may differ from a `with_evidence=False` build); if it isn't, the \"confirmed\" claim in the ADR is unverifiable from the diff. Either way the AC-visible design requirement is not demonstrably implemented.",
+          "suggestion": "Pass the `with_evidence=False` option explicitly through `_build` (or assert the equivalent), and either use `_evio` or don't unpack it; pin the no-evidence behavior with a test that a `with_evidence=False` build at HEAD equals the rollout path's parsed `required_layers`/`required_layers_source`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_layer_coverage_rollout.py:75-97` (`_commit_at`)",
+          "line": null,
+          "finding": "env={os.environ, ...}` replaces the whole environment; `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` with a full ISO offset string is honored by git, so this is fine — but the helper's correctness relies on git accepting offset-qualified ISO strings for both env vars. That's standard, so this is not itself a bug; however no test covers the other date source the module trusts: the Python-side recheck `committer_epoch > GATE_ROLLOUT_AT_EPOCH` in `resolve_rollout_commit` (the belt-and-suspenders path against `--before` resolving \"now\"). A regression that deletes or inverts that check would pass the entire suite.",
+          "suggestion": "Add a test where `--before` and the commit's real committer date disagree (e.g., a commit with an out-of-order committer date newer than the cutoff but reachable via an older-dated parent), asserting `resolve_rollout_commit` returns `None` because of the Python-side check, not git's.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/tools/verifiers/layer_coverage_binding.py:52-60` (`check_binding_completeness`)",
+          "line": null,
+          "finding": "The lazy gate is `if verdict.hard:` — but this is evaluated after the first call, and if the rollout pass succeeds in downgrading all hard gaps, the second call re-runs the full evaluation including the legacy valve and collision logic. This is the duplicated-evaluation concern glm raised (disclosed as accepted). The residual concrete risk: if `evaluate_binding_completeness`'s signature changes (e.g., a new required param), the second call site silently diverges in behavior only for graced runs — the existing test suite would still pass if the second call were deleted entirely and `rollout` ignored, because no wrapper test asserts the first call's arguments are a subset of the second's. Actually one test does cover the downgrade end-to-end (`test_wrapper_transition_grace_downgrades_hard_gap_to_advisory`), so deletion would fail there — this is acceptable as disclosed. No action required beyond noting the disclosure is accurate.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_rollout.py` (`_ROLLOUT_CACHE`)",
+          "line": null,
+          "finding": "The process-level cache stores `None` for \"no pre-rollout history\" keyed by `(root, commit_hash)`. In a long-lived process (e.g., a test runner or service that evaluates multiple commits for the same repo), a repo whose history is rewritten or unshallowed between calls for the same `commit_hash` keeps the stale `None`/manifest. Within a single CI verification run this is fine (same as `_BASE_CACHE` precedent), but nothing in the module documents that the cache assumes history immutability within a process.",
+          "suggestion": "One docstring line on `_ROLLOUT_CACHE` stating the assumption, matching the disclosure style already used for the shallow-clone case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-11-binding-completeness-rollout-transition/reviews.json",
+          "line": null,
+          "finding": "external_code`, `code`, and `spec` review entries are all `\"status\": \"pending\"` with zero findings, while the ADR's \"External-Code-Review-Findings\" table records 7 substantive external code-review findings with dispositions (\"accepted-and-fixed\" etc.). The evidence artifacts don't back the claims in the ADR — the raw payloads the ADR says to \"see reviews.json's external_code entries for\" aren't there.",
+          "suggestion": "Either populate the `external_code` entry with the actual review payloads, or correct the ADR's pointer; as it stands the review-record AC (per the ADR's own claims of non-silent disposition) is partially unmet.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[shared/scripts/tools/verifiers/_layer_coverage_rollout.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-oj6xh2qk/shared/scripts/tools/verifiers/_layer_coverage_rollout.py:199)",
+          "line": null,
+          "finding": "The blanket `except Exception` converts collector/archive/git infrastructure failures into `None`, indistinguishable from a greenfield repository. The wrapper then enforces the original HARD finding, so a transient archive failure or collector regression produces a misleading policy violation rather than an infrastructure error.",
+          "suggestion": "Preserve “no pre-rollout commit” as a no-grace result, but surface archive/collector/unexpected git failures as a typed error that `check_binding_completeness` returns via `_infra_result`. Add a test for each failure path.  Overall assessment: ship-with-fixes. The transition comparator, source-agnostic superset handling, title guard, lazy wiring, and scoped severity routing otherwise match the specification.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openai+glm",
+      "completed_at": "2026-09-11T00:09:24.254557+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec | Severity: medium\n  File: `shared/scripts/tools/verifiers/_layer_coverage_rollout.py` (~line 200, `rollout_manifest`)\n  Finding: The spec's Design Notes explicitly require the rollout snapshot be built `with_evidence=False` (\"no evidence collection pass is needed for this comparison\"), and the ADR's findings table (glm plan-review #8) records this as \"confirmed by code inspection.\" But the actual call is `_build(test_links, io, root, {}, sha)` — no `with_evidence` flag is visible at the call site, the third evidence argument is a hardcoded `{}`, and the unpacked `_evio` is never used. If `_build`'s fourth parameter is the evidence input and the collector defaults to evidence collection when a real evidence IO is supplied, the rollout build silently pays the evidence-walk cost (and may differ from a `with_evidence=False` build); if it isn't, the \"confirmed\" claim in the ADR is unverifiable from the diff. Either way the AC-visible design requirement is not demonstrably implemented.\n  Suggestion: Pass the `with_evidence=False` option explicitly through `_build` (or assert the equivalent), and either use `_evio` or don't unpack it; pin the no-evidence behavior with a test that a `with_evidence=False` build at HEAD equals the rollout path's parsed `required_layers`/`required_layers_source`.\n\n- Category: test | Severity: low\n  File: `shared/tests/test_layer_coverage_rollout.py:75-97` (`_commit_at`)\n  Finding: `env={**os.environ, ...}` replaces the whole environment; `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` with a full ISO offset string is honored by git, so this is fine — but the helper's correctness relies on git accepting offset-qualified ISO strings for both env vars. That's standard, so this is not itself a bug; however no test covers the *other* date source the module trusts: the Python-side recheck `committer_epoch > GATE_ROLLOUT_AT_EPOCH` in `resolve_rollout_commit` (the belt-and-suspenders path against `--before` resolving […truncated]\n\n[openai] - Category: bug\n- Severity: medium\n- File: [shared/scripts/tools/verifiers/_layer_coverage_rollout.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-oj6xh2qk/shared/scripts/tools/verifiers/_layer_coverage_rollout.py:199)\n- Finding: The blanket `except Exception` converts collector/archive/git infrastructure failures into `None`, indistinguishable from a greenfield repository. The wrapper then enforces the original HARD finding, so a transient archive failure or collector regression produces a misleading policy violation rather than an infrastructure error.\n- Suggestion: Preserve “no pre-rollout commit” as a no-grace result, but surface archive/collector/unexpected git failures as a typed error that `check_binding_completeness` returns via `_infra_result`. Add a test for each failure path.\n\nOverall assessment: ship-with-fixes. The transition comparator, source-agnostic superset handling, title guard, lazy wiring, and scoped severity routing otherwise match the specification.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      },
+      "model_tier": "inherit"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "spec-reviewer",
+      "completed_at": "2026-09-11T00:09:14.741981+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "opus-plan-reviewer",
+      "completed_at": "2026-09-11T00:03:49.551697+00:00",
+      "disposition": null,
+      "recorded_by": "external-prose",
+      "parse_status": "unstructured",
+      "raw_excerpt": "Internal plan review (opus-plan-reviewer) of iterate-2026-09-11-binding-completeness-rollout-transition.\n\nOverall: core logic sound and matches spec precisely — superset comparator, title guard,\nsource-agnostic promotion case, epoch-vs-ISO defense, and lazy-only-on-HARD-gap wiring all\ncheck out, backed by targeted tests. evaluate_cross_layer/_keystone_layer_gap.py confirmed\nuntouched.\n\nFindings (most severe first):\n1. (Medium) rollout_manifest's blanket except Exception gives zero diagnostic signal for a\n   real infra failure vs genuine \"no pre-rollout history.\" Disclosed, not fixed (module\n   docstring updated) — fail-open only withholds an optional leniency, never grants a false\n   pass.\n2. (Medium) Title-identity guard is stricter than needed — an unrelated title wording tweak\n   forfeits grace forever. Disclosed as an accepted trade-off (no separate immutable identity\n   token exists to compare instead).\n3. (Low-Medium) git rev-list --before assumes monotonic commit dates; can pick a non-optimal\n   ancestor on out-of-order committer-date history. Disclosed — conservative direction (can\n   only withhold grace, never grant a false one).\n4. (Low) AC6 synthetic-fixture dry-run not yet produced at time of this review (expected —\n   review ran before finalization). FIXED — dry-run recorded in the ADR with a verified 2->1\n   hard-count delta.\n5. (Low) No timeout= on the three new _run_git calls in _layer_coverage_rollout.py. FIXED —\n   timeout=_GIT_TIMEOUT_SECONDS (30s) added to all three, matching git_helpers.py's own\n   convention.\n\nNo issues found with: superset/subset comparator correctness, laziness gate ordering,\nevaluate_cross_layer/keystone deferral scoping, with_evidence=False reuse of\n_layer_coverage_regen's archive/collector machinery.\n\nSHIPWRIGHT_VERDICT: revise (minor, all addressed)\n",
+      "model_tier": "opus"
+    }
+  }
+}

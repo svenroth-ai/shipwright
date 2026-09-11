@@ -1,0 +1,1 @@
+check_binding_completeness (F11, P3.3) no longer HARD-blocks a binding whose required_layers value already predates the gate's own rollout (2026-09-07T16:09:19Z) — a one-time, per-repo transition rule routes such gaps ADVISORY, closing a false-block affecting explicit bindings authored before the gate existed

@@ -9,7 +9,9 @@ The CheckResult wrapper (``check_binding_completeness``/``_binding_result``) and
 its ``run_all_checks`` wiring live in the sibling
 ``test_layer_coverage_binding_wrapper.py`` — split out when this file crossed
 the 300-LOC guideline (external code review test additions), same precedent
-p3.2 already set for ``test_traceability_contract*.py``.
+p3.2 already set for ``test_traceability_contract*.py``. The trg-aedcfe7b
+transition-rule (``binding_predates_rollout``) cases live in
+``test_layer_coverage_binding_transition.py``, split out the same way.
 """
 
 from __future__ import annotations
