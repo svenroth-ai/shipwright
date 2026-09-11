@@ -115,6 +115,29 @@ _PROMOTE_SUBPROCESS_TIMEOUT = 120.0
 _REPORT_EXIT_CODES = (0, 3)
 
 
+def _extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
+    """Validate the ``promote_required_layers.py`` report shape and pull out
+    the three fields this module reads. ``json.loads`` only rejects a
+    syntactically invalid document — a syntactically valid but wrong-shaped
+    one (a JSON list, ``null``, or a ``promoted`` entry that isn't an object)
+    would otherwise reach an unguarded ``.get()`` and raise past this
+    module's own never-raises boundary (external review, PR #725). Raises
+    :class:`ValueError` with a short reason for any invalid shape; never
+    raises anything else."""
+    if not isinstance(report, dict):
+        raise ValueError(f"report is not a JSON object (got {type(report).__name__})")
+    raw_promoted = report.get("promoted") or []
+    if not isinstance(raw_promoted, list) or not all(isinstance(d, dict) for d in raw_promoted):
+        raise ValueError("'promoted' is not a list of objects")
+    raw_escalated = report.get("escalated") or []
+    if not isinstance(raw_escalated, list):
+        raise ValueError("'escalated' is not a list")
+    written_paths = report.get("written_spec_paths") or []
+    if not isinstance(written_paths, list) or not all(isinstance(p, str) for p in written_paths):
+        raise ValueError("'written_spec_paths' is not a list of strings")
+    return [d.get("fr", "") for d in raw_promoted], len(raw_escalated), written_paths
+
+
 def _rollback_staged(worktree_path: Path, pre_sha: str) -> None:
     """Best-effort undo of a staged-but-not-committed write, so a failed
     ``add``/``commit`` never leaves residue for a later, unrelated commit to
@@ -162,9 +185,10 @@ def run_layer_promotion_sweep(
     except ValueError:
         return LayerPromotionSweepResult(status="error", reason="promote_required_layers produced non-JSON stdout")
 
-    promoted = [d.get("fr", "") for d in (report.get("promoted") or [])]
-    escalated = len(report.get("escalated") or [])
-    written_paths = report.get("written_spec_paths") or []
+    try:
+        promoted, escalated, written_paths = _extract_report_fields(report)
+    except ValueError as exc:
+        return LayerPromotionSweepResult(status="error", reason=f"malformed report: {exc}")
 
     # The tool writes the ledger unconditionally whenever ANY FR is promoted
     # (its own "ledger BEFORE spec.md" ordering) even on a run that, for
@@ -219,6 +243,17 @@ def run_layer_promotion_sweep(
         )
     if staged.returncode == 0:
         return LayerPromotionSweepResult(status="no_change", promoted=promoted, escalated=escalated)
+    if staged.returncode != 1:
+        # `git diff --cached --quiet` uses exit 1 for "a real staged delta
+        # exists" — any OTHER nonzero (128 = a real git error, e.g. a corrupt
+        # index) is a genuine failure, not a delta, and must roll back rather
+        # than proceed to commit whatever got staged (external review, PR #725).
+        _rollback_staged(worktree_path, pre_sha)
+        return LayerPromotionSweepResult(
+            status="error",
+            reason=f"diff_cached_failed: exit {staged.returncode}: {staged.stderr.strip()[:300]}",
+            promoted=promoted, escalated=escalated,
+        )
 
     subject = f"chore(compliance): promote {len(promoted)} FR Layer(s) from confirmed CI evidence"
     commit = run_git_soft(

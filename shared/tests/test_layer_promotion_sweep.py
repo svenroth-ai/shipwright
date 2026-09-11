@@ -4,8 +4,11 @@ non-decisive outcome of the ``promote_required_layers.py`` subprocess call
 opt-out, no evidence yet, malformed output) degrades to a reported result and
 never raises or blocks. Delivery-pipeline outcomes (a found promotion's own
 PR, push/create failures, the existing-PR race) are pinned separately in
-``test_layer_promotion_delivery.py`` — this file stops at the boundary where
-delivery would begin."""
+``test_layer_promotion_delivery.py``; rollback/error-hardening paths (a
+malformed-but-valid report, a mid-stage git failure) are pinned in
+``test_layer_promotion_sweep_rollback.py`` (split out to keep this file
+under the file-size guideline) — this file stops at the boundary where
+either begins."""
 
 from __future__ import annotations
 
@@ -14,7 +17,6 @@ import subprocess
 
 import pytest
 
-import lib.layer_promotion_sweep as sweep_mod
 from lib.layer_promotion_sweep import (
     LayerPromotionSweepResult,
     run_layer_promotion_sweep,
@@ -152,127 +154,6 @@ def test_exit_3_is_still_a_normal_report(monkeypatch, repo):
     result = run_layer_promotion_sweep(repo, "iterate-x")
     assert result.status == "no_change"
     assert result.escalated == 1
-
-
-def test_unreadable_pre_sha_bails_before_staging(monkeypatch, repo):
-    """Stage-2 review: an unreadable rev-parse HEAD must bail BEFORE staging
-    anything — an unknown rollback target is the one state this module must
-    never create (it is what could leave a promotion commit sitting on the
-    iterate's own branch)."""
-    report = {
-        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
-        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
-    }
-    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
-    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
-
-    real_run_git_soft = sweep_mod.run_git_soft
-
-    def _fake_run_git_soft(args, *a, **kw):
-        if args[:2] == ["rev-parse", "HEAD"]:
-            return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: bad revision")
-        return real_run_git_soft(args, *a, **kw)
-
-    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
-    result = run_layer_promotion_sweep(repo, "iterate-x")
-    assert result.status == "error"
-    assert "pre_sha_rev_parse_failed" in result.reason
-
-    staged = subprocess.run(
-        ["git", "diff", "--cached", "--name-only"], cwd=repo, capture_output=True, text=True,
-    ).stdout
-    assert staged.strip() == ""  # git add never ran
-
-
-def test_empty_pre_sha_stdout_bails_before_staging(monkeypatch, repo):
-    """PR #725 external review comment: a `rev-parse HEAD` that exits 0 with
-    empty stdout (malformed but not itself an error) must still be treated
-    as an unusable rollback target and bail before staging, same as an
-    actual rev-parse failure."""
-    report = {
-        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
-        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
-    }
-    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
-    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
-
-    real_run_git_soft = sweep_mod.run_git_soft
-
-    def _fake_run_git_soft(args, *a, **kw):
-        if args[:2] == ["rev-parse", "HEAD"]:
-            return subprocess.CompletedProcess(["git", *args], 0, "", "")
-        return real_run_git_soft(args, *a, **kw)
-
-    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
-    result = run_layer_promotion_sweep(repo, "iterate-x")
-    assert result.status == "error"
-    assert "pre_sha_rev_parse_failed" in result.reason
-
-    staged = subprocess.run(
-        ["git", "diff", "--cached", "--name-only"], cwd=repo, capture_output=True, text=True,
-    ).stdout
-    assert staged.strip() == ""  # git add never ran
-
-
-def test_add_failure_rolls_back_partially_staged_residue(monkeypatch, repo):
-    """PR #725 external review: ``git add -- a b`` can stage ``a`` before
-    failing on ``b`` (e.g. a bad pathspec) — the add-failure path must roll
-    back exactly like the commit-failure path does, never leave the
-    partial stage for a later, unrelated commit to sweep up."""
-    report = {
-        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
-        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
-    }
-    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
-    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
-
-    real_run_git_soft = sweep_mod.run_git_soft
-
-    def _fake_run_git_soft(args, *a, **kw):
-        if args[:1] == ["add"]:
-            # Actually stage spec.md (the partial success), then report the
-            # whole invocation as failed — mirrors a real `git add` that
-            # stages some pathspecs before erroring on another.
-            real_run_git_soft(["add", "--", "spec.md"], *a, **kw)
-            return subprocess.CompletedProcess(
-                ["git", *args], 128, "", "fatal: pathspec did not match any files"
-            )
-        return real_run_git_soft(args, *a, **kw)
-
-    monkeypatch.setattr(sweep_mod, "run_git_soft", _fake_run_git_soft)
-    result = run_layer_promotion_sweep(repo, "iterate-x")
-
-    assert result.status == "error"
-    assert "add_failed" in result.reason
-    porcelain = subprocess.run(
-        ["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True,
-    ).stdout
-    assert porcelain.strip() == ""  # rolled back — spec.md's partial stage did not survive
-
-
-def test_commit_failure_rolls_back_staged_residue(repo):
-    """A failed commit must not leave staged residue behind for a later,
-    unrelated commit to sweep up — forced via a real failing pre-commit
-    hook rather than a stub, since add/diff/commit route through the real
-    git binary regardless of ``subprocess.run`` monkeypatching."""
-    report = {
-        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
-        "written_spec_paths": ["spec.md"], "skipped": [], "escalated": [],
-    }
-    hook = repo / ".git" / "hooks" / "pre-commit"
-    hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
-    hook.chmod(0o755)
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
-        (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
-        result = run_layer_promotion_sweep(repo, "iterate-x")
-
-    assert result.status == "error"
-    assert "commit_failed" in result.reason
-    porcelain = subprocess.run(
-        ["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True,
-    ).stdout
-    assert porcelain.strip() == ""  # rolled back to pre_sha, nothing left dirty or staged
 
 
 def test_result_to_dict_shape():
