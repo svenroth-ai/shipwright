@@ -18,6 +18,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -119,8 +121,12 @@ def test_orphan_criterion_anchor_with_non_canonical_id_is_flagged(
     assert "non-canonical id" in res.detail
 
 
+@pytest.mark.covers("FR-01.11/AC06")
 def test_a_new_duplicate_id_at_head_is_flagged(git_origin_repo, make_worktree):
-    """An id with more than one active row at HEAD is an ambiguous identity a
+    """AC06 (negative space): a retired/guessed number is never reused —
+    enforced here by catching a NEW duplicate FR id at HEAD, since a duplicate
+    is exactly what a bad guess or a reused retired number produces. An id
+    with more than one active row at HEAD is an ambiguous identity a
     dict-based lookup elsewhere would silently resolve to whichever occurs
     LAST — a dirty new row added ABOVE an existing clean legacy row sharing
     its id would otherwise be shadowed and never judged at all (doubt

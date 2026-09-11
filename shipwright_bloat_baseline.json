@@ -1448,9 +1448,10 @@
     {
       "path": "shared/tests/test_record_event.py",
       "limit": 300,
-      "current": 501,
+      "current": 507,
       "state": "exception",
-      "adr": "ADR-092"
+      "adr": "ADR-092",
+      "note": "req3-05-test-backfill-mono t1 (iterate-2026-09-11-t1-iterate-surface) added 4 @pytest.mark.covers(\"FR-01.11/ACnn\") tags binding pre-existing tests to their real ACs (501->507); bumped under the existing ADR-092 exception, same pattern as the 791->810 bump already recorded for this file's shared/scripts/tools/tests twin."
     },
     {
       "path": "shared/tests/test_resolve_churn_conflicts.py",

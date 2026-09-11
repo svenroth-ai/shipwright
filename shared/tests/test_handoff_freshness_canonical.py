@@ -15,6 +15,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 # APPENDED, not inserted at 0 — `shared/tests/tools/` exists, so putting this directory
@@ -63,9 +65,12 @@ def _progress_block(run_id: str) -> str:
 # but a SEPARATE, non-truncating one, because `clip` also cuts at 120 chars and
 # comparing clipped values would trade a false WARN for a false PASS.
 
+@pytest.mark.covers("FR-01.11/AC26")
 def test_a_run_id_padded_with_whitespace_still_names_this_run(tmp_path):
-    """The actual mechanism: `clip` strips surrounding whitespace, the old
-    comparison did not. Both sides rendered identically while `==` said no."""
+    """AC26: two names differ only in characters that cannot be seen — they
+    count as the same name. The actual mechanism: `clip` strips surrounding
+    whitespace, the old comparison did not. Both sides rendered identically
+    while `==` said no."""
     _write(tmp_path, _canon(RUN))
     result = check_session_handoff_fresh(tmp_path, f"  {RUN}\n")
     assert result.ok is True, result.detail
@@ -112,9 +117,12 @@ def test_an_invisible_character_inside_a_different_id_still_warns(tmp_path):
     assert result.severity == "warning"
 
 
+@pytest.mark.covers("FR-01.11/AC26")
 def test_the_warning_never_names_the_same_run_on_both_sides(tmp_path):
-    """The invariant, stated directly. This is the sentence the operator read:
-    'names X, not X'. It must be unreachable, not merely unobserved."""
+    """AC26: the check can never report a mismatch while showing the same
+    name on both sides of it. The invariant, stated directly. This is the
+    sentence the operator read: 'names X, not X'. It must be unreachable,
+    not merely unobserved."""
     for handoff_body, other in (
         (_canon(OTHER), RUN),
         ("# Session Handoff\n" + _progress_block(OTHER), RUN),
@@ -128,9 +136,11 @@ def test_the_warning_never_names_the_same_run_on_both_sides(tmp_path):
         assert canonical_run_id(OTHER) != canonical_run_id(other)
 
 
+@pytest.mark.covers("FR-01.11/AC26")
 def test_canonicalization_accepts_only_the_stated_equivalences():
-    """Surrounding whitespace, paired backticks, invisibles. NOT case, NOT
-    interior punctuation — an over-eager normalizer would launder real drift."""
+    """AC26: two names differ only in punctuation or invisible characters —
+    they count as the same name; case and interior punctuation are left
+    alone so a real difference still reads as a mismatch."""
     assert canonical_run_id(" `iterate-x` ") == "iterate-x"
     assert canonical_run_id("iterate-x\u200b") == "iterate-x"
     assert canonical_run_id("ITERATE-X") != canonical_run_id("iterate-x")

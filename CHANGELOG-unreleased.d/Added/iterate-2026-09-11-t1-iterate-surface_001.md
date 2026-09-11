@@ -1,0 +1,1 @@
+test(iterate): bind 26 of FR-01.11's 27 unbound acceptance criteria to existing tests (the 27th, AC12's ordering clause, recorded unbound with a reason instead), and fix the AC-coverage manifest scan gap that hid @pytest.mark.covers tags living in shared/scripts/tests and shared/scripts/tools/tests

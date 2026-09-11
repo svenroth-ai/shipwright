@@ -13,7 +13,9 @@
       "app",
       "packages",
       "plugins/*/tests",
-      "shared/tests"
+      "shared/tests",
+      "shared/scripts/tests",
+      "shared/scripts/tools/tests"
     ],
     "exclude_dirs": [
       "fixtures"
