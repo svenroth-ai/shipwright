@@ -167,6 +167,15 @@ If no boundaries touched: write `n/a` with one-line justification.}
        tested at), and a requirement can be `Basis: interview` with entirely
        unverified layers. Mind the space: `unit (inferred)` parses,
        `unit(inferred)` silently yields NO required layers.
+       **Manual by construction, not a deferred gap:** a brand-new FR has no
+       CI-confirmed test evidence yet, so there is nothing an automated writer
+       could promote from — `shared/scripts/tools/promote_required_layers.py`
+       (P3.5) only ever *widens* an EXISTING binding from evidence a later CI
+       run confirms; it never mints the first cell on a row that did not exist
+       when that evidence was produced. Typing this cell by hand on CREATE is
+       therefore the whole mechanism for this path, not half of one — the
+       automation exists for the widen-an-existing-FR case (see Path B's
+       MODIFY section for where that runs).
    - **MODIFY** — an additive side-effect or changed behavior of an
      existing FR, **and every FOLD from the gate above**: update the FR
      table-row description + append new

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-wire-promote-required-layers",
+  "date": "2026-09-11",
+  "section": "Iterate — tooling: wire the P3.5 Layers promotion tool into the iterate flow",
+  "title": "Opportunistic FR Layers promotion at iterate worktree setup",
+  "context": "P3.5 (#693) shipped promote_required_layers.py but nothing ever called it -- no SKILL.md, plugin, or workflow referenced it outside its own module family (confirmed by grep). An iterate that pushed a higher observable layer left that FR's Layers cell stale until an operator remembered the CLI, and no ledger file had ever been written.",
+  "decision": "Add lib/layer_promotion_sweep.py, called from setup_iterate_worktree.py step 4.5, BEFORE self-heal/outbox (push ships full ancestry, not just the tip). A found promotion is committed LOCALLY then delivered as its OWN small PR against origin/<default> (lib/layer_promotion_delivery.deliver_as_own_pr: push, gh pr create, best-effort automerge) -- the local commit is always rolled back afterward. Non-decisive outcomes degrade to a reported result; it never blocks setup.",
+  "consequences": "The promotion mechanism now actually runs, opportunistically, on every iterate, but NEVER inside that iterate's own PR. CREATE-path manual Layers authoring is documented as by-construction; MODIFY-path prose cross-references the automated widen path. New write surface .shipwright/compliance/layer_promotion_ledger.json ships in the promotion's own PR, never the triggering iterate's. The guaranteed rollback checks its own returncode (rollback_failed status) rather than assuming success.",
+  "rationale": "Evaluating trunk's own fresh tip lets the tool's existing verified-ancestor anchor logic work unchanged. Shipping via a separate PR (not a commit on iterate/<slug>) is REQUIRED, not stylistic: F11 cross-layer coverage diffs the branch against its merge-base with origin/<default> -- for a freshly-cut worktree that merge-base IS the promotion's own parent commit, so committing it onto the branch put it inside the run's own gated diff.",
+  "rejected": "Original design (Stage-1 spec-review REJECT): commit the promotion onto iterate/<slug> as its own chore(compliance) commit, reasoning it 'never mixes into that diff.' False -- F11 recomputes required_layers changes as behaviour-changed and would HARD-fail an iterate that never touched the promoted FR. Wiring into F11 instead: HEAD there is unpushed, forcing the anchor-fallback for no benefit. A second CREATE-side writer: structurally impossible.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ""
+}
