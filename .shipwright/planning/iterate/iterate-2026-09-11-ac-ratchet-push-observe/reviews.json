@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-ac-ratchet-push-observe",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:27:59.578738+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:28:07.367342+00:00",
+      "disposition": "External LLM plan review is medium+ only (Phase Matrix); this run is small.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "security",
+          "file": ".github/workflows/ci.yml",
+          "line": 501,
+          "finding": "--parent-sha interpolated unquoted in the format() output, unlike sibling gates' quoted --head-sha \"${{ github.sha }}\"; not exploitable (github.event.before is always a 40-hex SHA or all-zeros sentinel, both tested fail-open paths) but an avoidable inconsistency.",
+          "suggestion": "fixed: format() template now quotes the SHA value (--parent-sha \"{0}\"), matching sibling steps' convention; shape test and docstring updated to match; ci_supplychain_ack.json regenerated for the new fingerprint.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": "code-reviewer",
+      "completed_at": "2026-09-10T23:53:46.151222+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tools/verifiers/_ac_baseline_growth.py",
+          "line": null,
+          "finding": "Claim under doubt: The auxiliary growth signal fails OPEN on any infra fault and must never turn an infra hiccup into a red main. — It used raw subprocess.run(text=True) for git show <parent>:<path> and git rev-parse, regressing a defect class (MAX_PATH trap, absent-vs-broken conflation) already fixed elsewhere via git_blob_read.py, and could raise an uncaught UnicodeDecodeError on a non-UTF-8 parent baseline, escaping to EXIT_INFRA -- indistinguishable from EXIT_BLOCKED at the CI shell-exit-code level.",
+          "suggestion": "fixed: rewrote the parent-blob read to go through git_blob_read.blob_oid (separates absent from broken) and git_helpers._run_git (errors=\"ignore\", never raises) instead of raw subprocess calls. Added two tests covering both branches.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/tools/verifiers/_ac_baseline_growth.py",
+          "line": null,
+          "finding": "Claim under doubt: A --write that adds a newly-unbound AC to the baseline anywhere within the pushed commit range is CLOSED. — The push-triggered run is a one-shot, self-clearing detective signal, not a required PR check -- it self-clears the following push once the grown entry is inside every later before SHA, leaving no trace if a maintainer misses the one red run.",
+          "suggestion": "fixed: softened docstring, ci.yml comment, docs/hooks-and-pipeline.md, the decision-drop, and the changelog bullet to describe this as \"surfaced, not durably closed\" / detective / self-clearing, rather than CLOSED.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": "doubt-reviewer",
+      "completed_at": "2026-09-11T00:06:00.506562+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_ac_baseline_growth.py` (the `git rev-parse --verify` pre-check) / `.github/workflows/ci.yml` (the `--parent-sha` expression)",
+          "line": null,
+          "finding": "A force-push to `main` (which the docstring itself notes the solo-maintainer `--admin` path can take) makes `github.event.before` a commit that is no longer reachable from any ref; on a fresh runner with `fetch-depth: 0`, the fetch of the rewritten `main` does not download that commit, `rev-parse --verify` fails, and the growth check fails open — the push goes green with only a log warning. So a maintainer force-push carrying a self-grandfathering baseline edit is a silent bypass. This is consistent with the module's documented fail-open contract for the auxiliary signal, so it's a disclosed design limit rather than a bug — but it's not called out in the \"what this does not close\" prose, which is otherwise exhaustive.",
+          "suggestion": "Add one sentence to the docstring / docs paragraph acknowledging force-push-to-`main` as a fail-open path, or have CI escalate an unresolvable `before` on a non-new branch to a hard failure (it's distinguishable from the all-zeros new-branch case because the ref already existed).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_ac_baseline_growth.py` (shape check on parent blob)",
+          "line": null,
+          "finding": "The parent-baseline shape check rejects a doc that lacks a string-list `unbound`, but the current baseline file format includes `schema_version` (the unit tests write it, the CLI's own baseline presumably does too). A parent baseline that is valid JSON with the right `unbound` list but a different `schema_version` than the current reader understands is silently accepted — the growth diff compares raw string sets across what may be different schema generations. Given the shape check exists precisely to distrust the parent blob, this is a minor asymmetry.",
+          "suggestion": "Either also require/compare `schema_version` on the parent blob, or note that string-set diffing is intentionally schema-agnostic.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_ci_yml_ac_ratchet_push_trigger.py` — `test_the_step_command_adds_the_growth_flag_only_on_push",
+          "line": null,
+          "finding": "The test asserts the exact `format(...)` expression substring, which is strong, but nothing pins the two halves of the `if:` and the `run:` flag condition to agree — a regression that flipped the `run` condition to `github.event_name == 'pull_request' && ...` while keeping the widened `if:` would pass every assertion here (the exact-expression substring still matches; the trigger tests still pass) while making the push trigger a no-op signal. The step would run on push with no growth check — exactly the round-1 overclaim this iterate exists to prevent.",
+          "suggestion": "Add an assertion tying the two together, e.g. that the `run` expression contains `github.event_name == 'push'` (it does implicitly via the exact substring — actually the exact substring already contains `github.event_name == 'push' &&`, so this is covered). On re-inspection this is adequately pinned; disregard unless the substring is ever relaxed.  (I retracted the third finding on closer reading — the exact-substring assertion already encodes `push &&`; I leave the reasoning visible so the reviewer trail stays honest.)  No correctness bugs found in `_ac_baseline_growth.py` (argument-list subprocess, no shell; ValueError on `relative_to` handled; bootstrap-vs-fault distinction correct; `--write` + growth combination rejected at the parser). No injection risk: `github.event.before` is a 40-hex SHA on push events and is passed unquoted into the shell run line, which is fine for that value shape. No regressions: the pull_request payload shape is unchanged (key omitted without the flag, tested), `_run_gate`'s new parameters are defaulted, and the sibling gates' `if:` conditions are pinned by a dedicated test.  Overall: ship-as-is — the two findings are documentation-of-limits refinements on an already well-disclosed fail-open auxiliary signal, not defects in the mechanism itself.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openai+glm",
+      "completed_at": "2026-09-10T23:46:43.496885+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review\n\nThe diff matches its own (heavily iterated) spec: widened `if:` on the ratchet step only, sibling Orphan/Keystone gates left `pull_request`-only, push-only `--check-baseline-growth --parent-sha <before>` as the actual closure mechanism for same-PR self-grandfathering, no `--write` in CI, read-only permissions preserved, and the still-open later-regression escape explicitly disclosed rather than claimed fixed. The tests are genuinely behavioral (real git repos, negative sanity checks proving the plain comparison would pass, HEAD~1-blindness demonstrated before the `before`-SHA fix is asserted), which is rare and good.\n\nFindings:\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/verifiers/_ac_baseline_growth.py` (the `git rev-parse --verify` pre-check) / `.github/workflows/ci.yml` (the `--parent-sha` expression)\n  Finding: A force-push to `main` (which the docstring itself notes the solo-maintainer `--admin` path can take) makes `github.event.before` a commit that is no longer reachable from any ref; on a fresh runner with `fetch-depth: 0`, the fetch of the rewritten `main` does not download that commit, `rev-parse --verify` fails, and the growth check fails open — the push goes green with only a log warning. So a maintainer force-push carrying a self-grandfathering baseline edit is a silent bypass. This is consistent with the module's documented fail-open contract for the auxiliary signal, so it's a disclosed design limit rather than a bug — but it's not called out in the \"what this does not close\" prose, which is otherwise exhaustive.\n  Suggestion: Add one sentence to the docstring / docs paragraph acknowledging force-push-to-`main` as a fail-open path, or have CI escalate an unresolvable `before` on a non-new branch to a hard failure (it's distinguishable from the all-zeros new-branch case because the ref already existed).\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/tools/verifiers/_ac_baseline_growth […truncated]\n\n[openai] No concrete defects found. The push-only growth check compares against the push’s `before` SHA, preserves sibling PR-only gates, and explicitly limits its claim to same-PR baseline growth rather than later regressions.\n\nShip-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "spec-reviewer",
+      "completed_at": "2026-09-10T23:49:22.754698+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:28:07.519900+00:00",
+      "disposition": "Internal Plan Review sub-step is medium+ only (iteration-planning.md); this run is small.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
