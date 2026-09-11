@@ -826,8 +826,7 @@ def read_all_items(
         if isinstance(r, dict)
         and not (
             r.get("event") == "status"
-            and isinstance(r.get("id"), str)
-            and r["id"] in local_status_ids
+            and (not isinstance(r.get("id"), str) or r["id"] in local_status_ids)
         )
     ]
     raw_lines = local_lines + foreign_lines
