@@ -3,7 +3,7 @@ code (``.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.m
 FR-01.03). Each function below is named for, and enforces, exactly one
 criterion row:
 
-* :func:`review_key_honesty` — **#1** "No review key ⇒ stops and asks." The
+* :func:`review_key_honesty` — **#1b** "No review key ⇒ stops and asks." The
   ledger's own gap: ``is_external_review_enabled``/``get_external_review_status``
   had no production caller, so nothing ever caught a marker that silently
   skipped review while a key was actually available.
@@ -120,23 +120,30 @@ def decisions_recorded(decision_log_text: str, split_name: str) -> GateResult:
 
 
 def findings_addressed(decision_log_text: str, split_name: str, findings_count: int) -> GateResult:
-    """**#10** — a nonzero recorded ``findings_count`` (Step 5b's
-    ``--findings-count``, Branch A's external review) must be matched by at
-    least that many ``"External Review — {split_name}"`` entries: Step 5
-    instructs logging every finding, fixed or declined, one entry each.
+    """**#10** — a nonzero recorded ``findings_count`` must be matched by at
+    least that many logged entries. Step 5b sets ``findings_count`` from
+    whichever review actually carried the gate: Branch A's external review
+    logs under ``"External Review — {split_name}"``, but when the Pre-5b
+    Checkpoint found the internal review (opus-plan-reviewer) carrying the
+    gate instead (no external keys, or a degraded external run),
+    ``findings_count`` is the *internal* review's count and its entries are
+    logged under ``"Internal Plan Review — {split_name}"``
+    (`step-5-external-review.md`). Counting only the external tag would
+    false-fail every plan that took that path.
     ``findings_count == 0`` has nothing to check — this gate is silent then."""
     if findings_count <= 0:
         return GateResult(True, "findings_count=0 — nothing to reconcile")
     logged = [
         s for s in _sections_for_split(decision_log_text, split_name)
-        if s.startswith("External Review")
+        if s.startswith("External Review") or s.startswith("Internal Plan Review")
     ]
     if len(logged) < findings_count:
         return GateResult(
             False,
             f"marker records findings_count={findings_count} but only {len(logged)} "
-            f"'External Review — {split_name}' entr{'y' if len(logged) == 1 else 'ies'} "
-            "logged — every finding must be addressed or rejected-with-reason",
+            f"'External Review — {split_name}' / 'Internal Plan Review — {split_name}' "
+            f"entr{'y' if len(logged) == 1 else 'ies'} logged — every finding must be "
+            "addressed or rejected-with-reason",
         )
     return GateResult(True, f"{len(logged)} finding(s) logged, >= findings_count={findings_count}")
 

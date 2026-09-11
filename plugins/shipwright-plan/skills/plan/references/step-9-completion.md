@@ -12,10 +12,13 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
   --planning-dir "{planning_dir}" --project-root "$(pwd)" --plugin-root {plugin_root} --gate sections
 ```
 
-Non-zero exit = STOP. This is the only place these gates run — the
-phase-completion validator (`_validate_plan`) does not re-run them, so
-skipping this check is not deferred to a later backstop; fix what it names
-now.
+Non-zero exit = STOP. The phase-completion validator (`_validate_plan`, via
+`plan_checks.run_plan_checks`) re-runs gates 5-8 below (dependency order, FR
+coverage, section trace, section quality) — but leniently, warning instead of
+blocking on a split written before this format existed. It never re-runs
+gates 9-11 (decision recorded, findings addressed, E2E journeys), and never
+runs the boundary check. This command is the only strict, complete run of
+all of them; fix what it names now rather than counting on that backstop.
 
 1. plan.md exists with SECTION_MANIFEST
 2. All declared sections have files
@@ -61,8 +64,8 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
 
 Fails if this session's own uncommitted changes touch anything outside
 `.shipwright/`, `shipwright_run_config.json`, `shipwright_project_config.json`,
-or `CHANGELOG-unreleased.d/`. A non-git project passes trivially — nothing to
-check against.
+`shipwright_plan_config.json`, or `CHANGELOG-unreleased.d/`. A non-git project
+passes trivially — nothing to check against.
 
 ---
 
@@ -116,10 +119,11 @@ uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase plan --run-id "{SHIPWRIGHT_RUN_ID}" \
   --entry-json '{"split":"{split_name}","sections":{N},"outcome":"sectioned"}'
 
-# Mark plan phase complete. _validate_plan() now runs the modular
-# plan_checks verifier (plan_config status, section files, FR orphans,
-# section id validity, the four Step-9 gates above, canon, phase_history)
-# — missing artifacts or drift blocks this call via ask-level issues.
+# Mark plan phase complete. _validate_plan() runs the modular plan_checks
+# verifier (plan_config status, section files, FR orphans, section id
+# validity, gates 5-8 above — leniently, not gates 9-11 — canon,
+# phase_history) — missing artifacts or drift blocks this call via
+# ask-level issues.
 uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step plan --status complete
 ```

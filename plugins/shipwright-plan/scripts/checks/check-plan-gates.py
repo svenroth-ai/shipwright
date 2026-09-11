@@ -28,9 +28,8 @@ not a gate — this is the command, so Step 6's "STOP" and Step 9's
 
 ``--gate boundary`` (#7 — planning writes no production code)
     Every path this session changed must fall under an allowed planning-phase
-    prefix (``.shipwright/``, ``shipwright_run_config.json``,
-    ``CHANGELOG-unreleased.d/``). Requires ``--project-root`` to be a git
-    worktree; a non-git project skips it (nothing to check against).
+    prefix (see ``PLAN_ALLOWED_PREFIXES`` below). Requires ``--project-root``
+    to be a git worktree; a non-git project skips it (nothing to check against).
 
 Strict by design — unlike the phase verifier, which is lenient toward plans
 written before these formats existed, this runs against the plan being

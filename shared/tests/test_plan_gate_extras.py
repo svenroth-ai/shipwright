@@ -139,6 +139,23 @@ def test_findings_for_a_different_split_do_not_count():
     assert result.ok is False
 
 
+LOG_TWO_INTERNAL_REVIEW_FINDINGS = LOG_TWO_EXTERNAL_REVIEW_FINDINGS.replace(
+    "External Review", "Internal Plan Review"
+)
+
+
+def test_internal_review_carrying_the_gate_counts_too():
+    """Stage-1 spec review, iterate-2026-09-11-e1-checks-plan-design (2nd
+    pass): when no external key is available, the Pre-5b Checkpoint has
+    Step 5b set `findings_count` from the internal review (opus-plan-
+    reviewer) instead, whose findings are logged as `"Internal Plan Review
+    — {split}"`, not `"External Review — {split}"` (step-5-external-
+    review.md). Counting only the external tag false-failed this real,
+    documented path."""
+    result = findings_addressed(LOG_TWO_INTERNAL_REVIEW_FINDINGS, "01-auth", 2)
+    assert result.ok is True
+
+
 # --------------------------------------------------------------------------- #
 # #11 — e2e_journeys_named
 # --------------------------------------------------------------------------- #

@@ -262,9 +262,11 @@ uv run --project {plugin_root} {plugin_root}/scripts/checks/check-plan-gates.py 
   --planning-dir "{planning_dir}" --project-root "$(pwd)" --gate boundary
 ```
 
-Non-zero exit on either = STOP. These are Step 9's own gates — `_validate_plan`
-(the phase-completion validator) does not re-run them, so skipping this check
-is not deferred to a later backstop; fix what it names now.
+Non-zero exit on either = STOP. `_validate_plan` re-runs gates #5-8 above
+leniently (warns, doesn't block, on pre-existing splits) but never #9-11 or
+the boundary check — details in step-9-completion.md. This is the only
+strict, complete run; fix what it names now rather than counting on that
+backstop.
 
 **Phase complete:** set `SHIPWRIGHT_RUN_ID`, then run
 `write-plan-config.py --status complete`, `record_event.py`,
