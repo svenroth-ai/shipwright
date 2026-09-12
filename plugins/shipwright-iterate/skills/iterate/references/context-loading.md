@@ -118,4 +118,6 @@ Read only when the change touches their domain:
 - `supabase/migrations/` — only for database changes
 
 Where `{build_plugin_root}` = path to `plugins/shipwright-build` (resolve from
-`shipwright_run_config.json` or relative to shared).
+`shipwright_run_config.json` or relative to shared). `{security_plugin_root}`
+(used by F11's local PR-review preflight) resolves the same way, to
+`plugins/shipwright-security`.
