@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-e3-checks-test-security",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T07:04:48.684033+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "check_e2e_counts_reconciled` reads Playwright's raw `stats` block but deliberately avoids importing `parse_playwright_json`. That means two independent interpretations of Playwright output now exist in the codebase; if the runner's parsing logic evolves (e.g., handles retries/flaky differently), the reconciliation check can disagree with the recorded numbers for legitimate reasons, turning a passing run into a false failure.",
+          "suggestion": "Document the exact formula (already claimed: \"step-3.5's own documented formula\") in the check's docstring with a pointer to the runner, and add a drift comment/test asserting the formulas still match when `playwright_runner` changes. Even a simple convention like \"if you change parsing in playwright_runner, update check_e2e_counts_reconciled\" in the runner's module docstring reduces the drift window.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "check_design_fidelity_triage_matches_recomputation` recomputes the triage table from two recorded statuses — but the recorded table was produced at a different time than the two artifacts it's reconciled against if any of the three files can be regenerated independently (e.g., re-running tests without re-running step-3.7, or vice versa). Staleness will look like \"disagreement\" and fail, even though nothing is actually wrong.",
+          "suggestion": "Distinguish \"statuses are stale relative to each other\" from \"table misclassifies current statuses\" in the failure message, or check timestamps/artifact generation ordering before declaring disagreement. At minimum, make the failure message tell the operator which artifact to regenerate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The FR-01.06 #6 check (\"journeys planned → at least one spec exists\") is a very weak oracle — a single empty `.spec.ts` file satisfies it. The plan acknowledges this (deferring name-matching to `journey_coverage.py`), which is the right call, but the check's ledger status should honestly reflect that it's a floor, not enforcement of criterion 6.",
+          "suggestion": "Record this check as partially covering the line (or with an explicit note that name-level matching is `journey_coverage.py`'s job) so a future auditor doesn't believe the line is fully closed by a file-existence test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The FR-01.07 downgrade path is well-evidenced (grep-confirmed no writer for `_remediation_status`), but the drift test pins remediation-loop.md sentences \"verbatim.\" Any legitimate doc edit — even rewording for clarity — breaks the drift test, which creates pressure to keep text frozen or churn the test.",
+          "suggestion": "Pin the specific normative sentence(s) only, not surrounding prose, and consider keying on a short canonical phrase rather than full sentences if the doc is actively maintained.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan asserts the 4 enforced-untested FR-01.06 lines belong to REQ3.05 and were \"already backfilled, PR #744,\" but doesn't state how this change verifies it won't touch them — e.g., whether the new checks' SKIP conditions could incidentally start firing on projects covered by those lines.",
+          "suggestion": "Add one sentence to the AC confirming how non-interference is checked (e.g., the 4 lines' checks are distinct functions/files, or a test asserting the new checks SKIP in those projects' configurations).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Malformed-JSON hardening is described and tested — good. One residual: the plan mentions \"directories masquerading as the plan file\" but not symlinked paths or unreadable files (permissions) in the project tree. These would raise unhandled exceptions rather than SKIP.",
+          "suggestion": "Wrap file reads in the same tolerant error handling as JSON parsing (any `OSError` → SKIP), which is likely one extra except clause per read.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The “SKIP when inputs are absent” policy can let check #5 miss the exact inconsistency it is intended to catch: `shipwright_test_results.json` may report non-zero `e2e` counts while `e2e-results.json` is absent, malformed, or unreadable. Skipping in that state permits unverifiable or fabricated recorded counts.",
+          "suggestion": "Skip only when the run demonstrably did not produce/require E2E results (for example, recorded E2E totals are all zero and no planned/selected browser-test run exists). Fail with a clear diagnostic when one side of a required reconciliation pair is present but the other is absent or invalid.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed existence check for planned journeys is weaker than its stated requirement: one arbitrary `.spec.ts` can satisfy a plan containing multiple journeys. Reliance on criterion 14 is reasonable, but the plan does not establish that its existing per-journey coverage check is invoked in the same command/path or is mandatory for these projects.",
+          "suggestion": "Make criterion 14 an explicit prerequisite: verify its check is wired into the relevant test gate and add a regression test showing a planned journey with only an unrelated spec fails. If it is not guaranteed to run here, this check needs a narrow integration with the existing coverage result rather than a separate coarse proxy.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Recomputing design-fidelity triage from two status values assumes both artifacts use the same status vocabulary, scope, and build/run identity. A stale fidelity report from a prior build or statuses aggregated at different granularities could reconcile successfully while describing different screenshots or executions.",
+          "suggestion": "Confirm and enforce a shared run/build identifier and schema/version where available; otherwise fail or mark the result unverifiable when artifact provenance cannot be matched. Cover changed status labels and per-screen versus aggregate status inputs in tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Playwright `stats` reconciliation is likely sensitive to retries, flakes, interrupted runs, skipped/todo tests, and partially written result files. “The documented formula” needs an executable contract, or count mismatches will become noisy or, worse, normalize distinct outcomes incorrectly.",
+          "suggestion": "Define the accepted `stats` schema and exact mapping for retries/flaky/interrupted/skipped results in the checker tests, and require a completed result artifact before comparing totals.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Hardening JSON types is useful, but checks reading project-controlled files can still be subjected to oversized JSON, symlinked inputs, or diagnostics that echo sensitive artifact content.",
+          "suggestion": "Bound input size before parsing, reject or safely resolve unexpected non-regular files/symlinks according to existing repository conventions, and ensure failures report structural errors rather than raw JSON content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed judgement drift tests pin documentation sentences, but they do not prove the ledger retains the `prompt-only (judgement)` classification, the stated reason, or the intentional out-of-scope ownership. A wording-preserving ledger regression could therefore remain undetected.",
+          "suggestion": "Test the ledger’s structured status/reason/owner fields in addition to the remediation-loop wording, so the downgrade remains auditable and cannot silently become an unaccounted-for line.  Overall, the approach is appropriately scoped and avoids inventing unsupported remediation state, but the required-artifact handling and existing journey-coverage dependency need tightening before it can reliably close the claimed lines.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T07:04:07.555510+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** `check_e2e_counts_reconciled` reads Playwright's raw `stats` block but deliberately avoids importing `parse_playwright_json`. That means two independent interpretations of Playwright output now exist in the codebase; if the runner's parsing logic evolves (e.g., handles retries/flaky differently), the reconciliation check can disagree with the recorded numbers for legitimate reasons, turning a passing run into a false failure.\n**Suggestion:** Document the exact formula (already claimed: \"step-3.5's own documented formula\") *in the check's docstring* with a pointer to the runner, and add a drift comment/test asserting the formulas still match when `playwright_runner` changes. Even a simple convention like \"if you change parsing in playwright_runner, update check_e2e_counts_reconciled\" in the runner's module docstring reduces the drift window.\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** `check_design_fidelity_triage_matches_recomputation` recomputes the triage table from two recorded statuses — but the recorded table was produced at a *different time* than the two artifacts it's reconciled against if any of the three files can be regenerated independently (e.g., re-running tests without re-running step-3.7, or vice versa). Staleness will look like \"disagreement\" and fail, even though nothing is actually wrong.\n**Suggestion:** Distinguish \"statuses are stale relative to each other\" from \"table misclassifies current statuses\" in the failure message, or check timestamps/artifact generation ordering before declaring disagreement. At minimum, make the failure message tell the operator which artifact to regenerate.\n\n**Category:** approach — **Severity:** low\n**Finding:** The FR-01.06 #6 check (\"journeys planned → at least one spec exists\") is a very weak oracle — a single empty `*.spec.ts` file satisfies it. The plan acknowledges this (deferring name-matching to `journey_co […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The “SKIP when inputs are absent” policy can let check #5 miss the exact inconsistency it is intended to catch: `shipwright_test_results.json` may report non-zero `e2e` counts while `e2e-results.json` is absent, malformed, or unreadable. Skipping in that state permits unverifiable or fabricated recorded counts.  \n   **Suggestion:** Skip only when the run demonstrably did not produce/require E2E results (for example, recorded E2E totals are all zero and no planned/selected browser-test run exists). Fail with a clear diagnostic when one side of a required reconciliation pair is present but the other is absent or invalid.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The proposed existence check for planned journeys is weaker than its stated requirement: one arbitrary `*.spec.ts` can satisfy a plan containing multiple journeys. Reliance on criterion 14 is reasonable, but the plan does not establish that its existing per-journey coverage check is invoked in the same command/path or is mandatory for these projects.  \n   **Suggestion:** Make criterion 14 an explicit prerequisite: verify its check is wired into the relevant test gate and add a regression test showing a planned journey with only an unrelated spec fails. If it is not guaranteed to run here, this check needs a narrow integration with the existing coverage result rather than a separate coarse proxy.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** Recomputing design-fidelity triage from two status values assumes both artifacts use the same status vocabulary, scope, and build/run identity. A stale fidelity report from a prior build or statuses aggregated at different granularities could reconcile successfully while describing different screenshots or executions.  \n   **Suggestion:** Confirm and enforce a shared run/build identifier and schema/version where available; otherwise fail  […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T07:04:16.397297+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T07:04:16.519223+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_test_gate_extras.py` (the `e2e.get(\"skipped\")` branch)",
+          "line": null,
+          "finding": "A recorded `e2e: {skipped: true, total: 5, passed: 5}` is unconditionally SKIPPED, even when `e2e-results.json` is present with a non-empty stats block. That is the same fabrication/staleness class the check exists to catch (a hand-written record that says \"skipped\" while the tool actually ran and possibly failed evades reconciliation entirely), and it's inconsistent with the file's own stated fail-closed principle for non-skipped layers.",
+          "suggestion": "When `e2e.skipped` is truthy but a readable `e2e-results.json` shows `expected+unexpected+flaky+skipped > 0`, FAIL (or at least warn) — the tool's own output contradicts the \"not run\" claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` — FR-01.06 row #6",
+          "line": null,
+          "finding": "Row #6 is flipped to a bare `enforced, tested` while the row's own text (and the new `trg-2f7a840a` card) concede the check is a weak oracle that one arbitrary spec satisfies. Elsewhere this campaign splits such rows (e.g. #8/#8b, #10/#10b, #15/#15b) rather than letting a floor check stand for the full criterion. The disclosure is present in the cell, but the status tag alone over-claims to a row-reading consumer (including `measure_ac_evidence_ledger.py`, which counts tags, not caveats).",
+          "suggestion": "Either split the row (floor enforced / per-journey matching deferred to `trg-2f7a840a`) or use a qualified status consistent with the campaign's split precedent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_test_gate_e2e_reconciliation.py::test_passes_when_counts_match",
+          "line": null,
+          "finding": "The test asserts `r.severity == Severity.ERROR.value` for a passing result. This pins an implementation detail (default severity) that has nothing to do with the criterion, and would fail on an unrelated severity-default refactor while passing a wrong count comparison is unaffected. It also isn't asserted on any failure-path test, so it's asymmetric.",
+          "suggestion": "Drop the severity assertion on the success path, or assert it consistently across pass and fail cases if the severity contract is intentional.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_test_gate_specs.py` (`_USER_FLOWS_HEADING_RE`, IGNORECASE)",
+          "line": null,
+          "finding": "The heading match is case-insensitive while it claims to mirror `journey_plan.py`'s own `_USER_FLOWS_SECTION` grammar. If the plugin's grammar is case-sensitive, a plan whose heading is `## User flows` will satisfy this floor check but fail criterion 14's per-journey matching — a plan this gate counts as \"declares flows\" that the actual generator never reads. Harmless for the floor (it errs toward checking), but the two grammars can now disagree in both directions.",
+          "suggestion": "Confirm `journey_plan.py`'s matching is also case-insensitive; if not, align or note the divergence in the docstring.  No security issues found — the symlink/path-escape handling via `_is_within`/`_safe_project_file` is correct and tested, and no untrusted input reaches a sensitive sink. No regressions to existing callers: `run_test_checks`/`run_all_checks` signatures are unchanged and the new checks are purely additive.  Overall: ship-with-fixes — the skipped-e2e-with-evidence bypass and the #6 status over-claim are worth addressing, but neither blocks the mechanism.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/scripts/tools/verifiers/_test_gate_specs.py:111](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-nm0ct2dz\\shared\\scripts\\tools\\verifiers\\_test_gate_specs.py:111)",
+          "line": null,
+          "finding": "The new gate marks FR-01.06 #6 as enforced when any `.spec.ts` exists, even if it is unrelated to every planned user flow. This does not establish that browser tests were written from the plan’s journeys; the diff itself acknowledges this weak oracle and defers the actual per-journey check.",
+          "suggestion": "Wire the existing journey-to-spec coverage mechanism into this gate (or keep the ledger criterion as only partially enforced until that is possible). A bare file-existence check is insufficient for the stated criterion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[shared/scripts/tools/verifiers/_test_gate_fidelity.py:104](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-nm0ct2dz\\shared\\scripts\\tools\\verifiers\\_test_gate_fidelity.py:104)",
+          "line": null,
+          "finding": "A project can bypass the new fidelity-triage gate by omitting the entire `design_fidelity` block from `shipwright_test_results.json`. The check returns `SKIPPED` without comparing the existing `design-fidelity-report.json`, whereas it correctly fails when only the nested `triage` block is missing and recomputation finds a required entry.",
+          "suggestion": "When a design-fidelity report exists and identifies screens requiring comparison, require a valid `design_fidelity` block and recompute it; only skip when there is affirmative evidence that no design-fidelity run applies.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "[shared/scripts/tools/verifiers/_test_gate_specs.py:111](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-nm0ct2dz\\shared\\scripts\\tools\\verifiers\\_test_gate_specs.py:111)",
+          "line": null,
+          "finding": "Unlike plan artifacts, discovered `e2e//.spec.ts` files are not checked to remain within `project_root`. A repository-controlled symlink under `e2e/` pointing to an external spec is counted and can satisfy the gate without a project-local browser test.",
+          "suggestion": "Filter discovered spec files through the same resolved-path containment check used for plans, and fail or ignore escaping symlinks.  Overall assessment: ship-with-fixes. The two new “enforced, tested” claims for journey generation and fidelity triage can be bypassed in concrete artifact states. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T07:44:27.950793+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review\n\nThe diff implements the three FR-01.06 checks (#5, #6 floor, #7 mechanisable half), the two FR-01.07 downgrades with drift tests, the FR-01.06 constitution-rule downgrades, the ledger updates, and the re-measurement paragraph. The work is largely sound and the tests are unusually thorough (error paths, malformed inputs, symlink escapes, and the two external-review regression cases — skip-on-absent-evidence and missing-triage-block — are all pinned). Findings:\n\n- Category: edge-case\n  Severity: medium\n  File: `shared/scripts/tools/verifiers/_test_gate_extras.py` (the `e2e.get(\"skipped\")` branch)\n  Finding: A recorded `e2e: {skipped: true, total: 5, passed: 5}` is unconditionally SKIPPED, even when `e2e-results.json` is present with a non-empty stats block. That is the same fabrication/staleness class the check exists to catch (a hand-written record that says \"skipped\" while the tool actually ran and possibly failed evades reconciliation entirely), and it's inconsistent with the file's own stated fail-closed principle for non-skipped layers.\n  Suggestion: When `e2e.skipped` is truthy but a readable `e2e-results.json` shows `expected+unexpected+flaky+skipped > 0`, FAIL (or at least warn) — the tool's own output contradicts the \"not run\" claim.\n\n- Category: spec\n  Severity: low\n  File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` — FR-01.06 row #6\n  Finding: Row #6 is flipped to a bare `enforced, tested` while the row's own text (and the new `trg-2f7a840a` card) concede the check is a weak oracle that one arbitrary spec satisfies. Elsewhere this campaign splits such rows (e.g. #8/#8b, #10/#10b, #15/#15b) rather than letting a floor check stand for the full criterion. The disclosure is present in the cell, but the status tag alone over-claims to a row-reading consumer (including `measure_ac_evidence_ledger.py`, which counts tags, not caveats).\n  Suggestion: Either split the row (floor enforced / per-journey matching  […truncated]\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: [shared/scripts/tools/verifiers/_test_gate_specs.py:111](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-nm0ct2dz\\shared\\scripts\\tools\\verifiers\\_test_gate_specs.py:111)  \n  Finding: The new gate marks FR-01.06 #6 as enforced when any `*.spec.ts` exists, even if it is unrelated to every planned user flow. This does not establish that browser tests were written from the plan’s journeys; the diff itself acknowledges this weak oracle and defers the actual per-journey check.  \n  Suggestion: Wire the existing journey-to-spec coverage mechanism into this gate (or keep the ledger criterion as only partially enforced until that is possible). A bare file-existence check is insufficient for the stated criterion.\n\n- Category: bug  \n  Severity: medium  \n  File: [shared/scripts/tools/verifiers/_test_gate_fidelity.py:104](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-nm0ct2dz\\shared\\scripts\\tools\\verifiers\\_test_gate_fidelity.py:104)  \n  Finding: A project can bypass the new fidelity-triage gate by omitting the entire `design_fidelity` block from `shipwright_test_results.json`. The check returns `SKIPPED` without comparing the existing `design-fidelity-report.json`, whereas it correctly fails when only the nested `triage` block is missing and recomputation finds a required entry.  \n  Suggestion: When a design-fidelity report exists and identifies screens requiring comparison, require a valid `design_fidelity` block and recompute it; only skip when there is affirmative evidence that no design-fidelity run applies.\n\n- Category: security  \n  Severity: low  \n  File: [shared/scripts/tools/verifiers/_test_gate_specs.py:111](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-nm0ct2dz\\shared\\scripts\\tools\\verifiers\\_test_gate_specs.py:111)  \n  Finding: Unlike plan artifacts, discovered `e2e/**/*.spec.ts` files are not checked to remain within `project_root`. A repository-controlled symlink  […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T07:04:16.288554+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T07:04:16.183545+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

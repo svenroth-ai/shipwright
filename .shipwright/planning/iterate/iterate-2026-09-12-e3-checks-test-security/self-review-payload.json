@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "7 FR-01.06/FR-01.07 lines each enforced or downgraded with a documented reason; the 4 REQ3.05 enforced-untested lines untouched (no edits to _validate_test or REQ3.05's own backfill)."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Every new check wraps JSON parsing in try/except (JSONDecodeError, OSError) and treats non-dict/non-list/malformed shapes defensively; none raises."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input reaches SQL/HTML; added symlink-escape containment (_safe_project_file/_is_within) for every fixed-name project file read, per external review finding."},
+    {"name": "Test Quality", "verdict": "pass", "note": "53 new/updated tests assert on CheckResult outcomes (ok/severity/detail); each check has pass, fail, and skip paths covered, plus two symlink-escape regression tests."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "No DB access; globbing is bounded to project-controlled directories (.shipwright/planning/, e2e/); no N+1 or unbounded-fetch patterns introduced."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Follows _project_gate_extras.py/_project_gate_wiring.py naming precedent; both new verifier files stay at or under the 300-line guideline (300, 167)."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "New READERS only over pre-existing serialized formats (shipwright_test_results.json, e2e-results.json, design-fidelity-report.json) — no new format introduced, no writer changed, so no producer/consumer round-trip was created; fixture tests mirror the documented real shapes from step-3.5/step-3.7."}
+  ]
+}
