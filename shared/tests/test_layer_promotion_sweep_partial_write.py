@@ -212,6 +212,29 @@ def test_untracked_cleanup_does_not_glob_match_a_sibling_file(monkeypatch, repo)
     assert sibling.read_text(encoding="utf-8") == "do not delete me\n"  # the sibling survives
 
 
+def test_partial_write_with_a_quotable_filename_is_still_cleaned_up(monkeypatch, repo):
+    """External review, PR #725 round 14: a partial write whose filename Git
+    C-quotes in plain porcelain output (here, a non-ASCII character) must
+    still be recognized and removed by rollback — before this fix,
+    ``untracked_paths`` returned the quoted/escaped string instead of the
+    real name, so the cleanup's ``git clean -- <wrong name>`` matched
+    nothing and the write silently survived while the sweep still reported
+    a clean ``skipped``."""
+    real_name = "café.md"
+
+    def _fake(cmd, *args, **kwargs):
+        if len(cmd) >= 2 and str(cmd[1]).endswith("promote_required_layers.py"):
+            (repo / real_name).write_text("partial\n", encoding="utf-8")
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=120.0)
+        return _REAL_RUN(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", _fake)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "skipped"
+    assert not (repo / real_name).exists()
+
+
 def test_commit_failure_rolls_back_staged_residue(repo):
     """A failed commit must not leave staged residue behind for a later,
     unrelated commit to sweep up — forced via a real failing pre-commit

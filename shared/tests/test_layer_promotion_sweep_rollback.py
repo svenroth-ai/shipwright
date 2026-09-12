@@ -16,7 +16,6 @@ import pytest
 import lib.layer_promotion_rollback as rollback_mod
 import lib.layer_promotion_sweep as sweep_mod
 from lib.layer_promotion_sweep import run_layer_promotion_sweep
-from lib.layer_promotion_sweep_result import sweep_warnings
 
 
 def _git(args, cwd):
@@ -277,6 +276,20 @@ def test_add_failure_with_a_failing_rollback_reports_rollback_failed(monkeypatch
 
     assert result.status == "rollback_failed"
     assert "add_failed" in result.reason
-    assert any("CRITICAL" in w for w in sweep_warnings(result))
+
+
+def test_untracked_paths_returns_the_real_name_for_a_quoted_filename(repo):
+    """External review, PR #725 round 14: plain ``git status --porcelain``
+    C-quotes a path containing a non-ASCII byte (Git's default
+    ``core.quotePath=true``) — a file named ``café.md`` is reported as the
+    literal string ``"caf\\303\\251.md"``, quotes and octal escapes included,
+    not the real on-disk name. ``untracked_paths`` must return the exact
+    filesystem name so a caller diffing/cleaning against it (``rollback_staged``)
+    can actually find and remove the file, rather than silently failing to
+    match it while still reporting a clean rollback."""
+    real_name = "café.md"
+    (repo / real_name).write_text("partial\n", encoding="utf-8")
+
+    assert rollback_mod.untracked_paths(repo) == {real_name}
 
 

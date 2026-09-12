@@ -102,11 +102,28 @@ def untracked_paths(worktree_path: Path) -> set[str] | None:
     so a later snapshot can be diffed against this one to name exactly which
     files are new. Returns ``None`` if the status call itself fails — a
     caller must then treat cleanup as unsafe rather than assume the
-    worktree was empty."""
-    result = run_git_soft(["status", "--porcelain", "--untracked-files=all"], cwd=worktree_path)
+    worktree was empty.
+
+    Uses ``-z`` (NUL-delimited records) rather than plain ``--porcelain``:
+    Git C-quotes a path containing a double quote, backslash, control
+    character, or (by default, ``core.quotePath``) any non-ASCII byte —
+    ``"caf\\303\\251.md"`` on disk becomes the literal 15-character string
+    ``"caf\\303\\251.md"`` (quotes and octal escapes included) in plain
+    porcelain output. ``line[3:]`` returned that quoted string as if it were
+    the real path; handed to ``git clean`` downstream it does not match the
+    on-disk file, so a partial write with such a name would survive
+    "rollback" while the sweep reports success (external review, PR #725
+    round 14). ``-z`` output is unquoted, so ``record[3:]`` is the exact
+    filesystem name in every case."""
+    result = run_git_soft(
+        ["status", "--porcelain", "-z", "--untracked-files=all"], cwd=worktree_path,
+    )
     if result.returncode != 0:
         return None
-    return {line[3:] for line in result.stdout.splitlines() if line.startswith("?? ")}
+    return {
+        record[3:] for record in result.stdout.split("\0")
+        if record.startswith("?? ")
+    }
 
 
 def rollback_staged(worktree_path: Path, pre_sha: str, pre_untracked: set[str] | None) -> bool:
