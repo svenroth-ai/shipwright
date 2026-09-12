@@ -14,8 +14,11 @@ it gets its own file. ``check_basis_forbids_assumed``,
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -208,6 +211,26 @@ def test_check_no_empty_split_ignores_a_malformed_run_config_when_project_config
     )
     r = check_no_empty_split(tmp_path)
     assert r.ok is True
+
+
+def test_check_no_empty_split_fails_loud_on_a_split_dir_symlinked_outside_the_project(tmp_path):
+    """Tier-3 PR review (PR #729, round 7) — see ``_read_spec_texts``'s
+    docstring in ``_project_gate_manifest.py`` for the full rationale
+    (lexical name safety vs. what a symlink actually resolves to on disk)."""
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-target"
+    outside.mkdir()
+    (outside / "spec.md").write_text("leaked host content", encoding="utf-8")
+    _write_splits_config(tmp_path, ["01-a"])
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
+    try:
+        os.symlink(outside, planning / "01-a", target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "leaked host content" not in r.detail
+    assert "outside the project root" in r.detail
 
 
 def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():

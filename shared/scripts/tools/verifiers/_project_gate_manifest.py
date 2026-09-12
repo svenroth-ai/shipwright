@@ -165,18 +165,38 @@ def _read_spec_texts(project_root: Path) -> tuple[dict[str, str], list[str]]:
     reserved non-split dir. Confirmed against ``split-heuristics.md`` line
     47: even a single-unit project always gets a named split dir, never a
     bare root-level ``spec.md`` — so zero declared splits genuinely means
-    "no requirements written yet", not a missed layout."""
+    "no requirements written yet", not a missed layout.
+
+    Tier-3 review (PR #729): ``_is_safe_split_name`` only validates
+    ``name`` LEXICALLY (no ``..``, not absolute) — it says nothing about
+    what is actually ON DISK at ``planning_dir / name``. This check runs
+    against PR content in CI, so a hostile PR could commit that path (or
+    its ``spec.md``) as a symlink resolving OUTSIDE the project root,
+    making a lexically-safe name read an arbitrary host file whose
+    content then flows into every downstream gate's failure detail. Each
+    candidate path is resolved and checked against the resolved project
+    root before being read; an escape is treated the same as "missing" —
+    unverifiable, not silently skipped."""
     names, manifest_error = _declared_split_names(project_root)
     if manifest_error:
         return {}, [manifest_error]
     if not names:
         return {}, []
     planning_dir = project_root / _PLANNING_DIRNAME
+    resolved_root = project_root.resolve()
     texts: dict[str, str] = {}
     unreadable: list[str] = []
     for name in sorted(names):
         spec_path = planning_dir / name / "spec.md"
         rel = str(spec_path.relative_to(project_root))
+        try:
+            resolved_spec = spec_path.resolve(strict=False)
+        except OSError:
+            unreadable.append(f"{rel} (missing)")
+            continue
+        if resolved_spec != resolved_root and resolved_root not in resolved_spec.parents:
+            unreadable.append(f"{rel} (resolves outside the project root)")
+            continue
         if not spec_path.exists():
             unreadable.append(f"{rel} (missing)")
             continue

@@ -358,6 +358,32 @@ test asserts only that gate names are present, not that they produce
 blocking `ERROR` results on a representative failure — recorded here, not
 acted on this round.
 
+## Tier-3 review history — symlinked split dir escapes the project root (PR #729)
+
+A seventh review pass found `_read_spec_texts` joined the manifest-declared,
+lexically-safe split name onto `planning_dir` and called `exists()`/
+`read_text()` without ever checking what that path actually resolves to on
+disk. `_is_safe_split_name` only rejects `..`/absolute/drive-relative
+*names* — it says nothing about a split directory or `spec.md` committed as
+a *symlink*. Since this gate reads untrusted PR content in CI, a hostile PR
+could commit `.shipwright/planning/<declared-name>` (or its `spec.md`) as a
+symlink resolving outside the project root, and a lexically-safe name would
+then read an arbitrary host file, whose content flows into every downstream
+gate's failure `detail`. Judged genuine and materially different from the
+six prior findings (all JSON-manifest parsing/fail-open logic) — this is a
+filesystem/symlink path-escape, a distinct and well-known vulnerability
+class. Fixed in `_read_spec_texts`: each candidate `spec.md` path is now
+resolved (`Path.resolve(strict=False)`) and checked against the resolved
+project root before being read; a path that escapes the root is appended to
+`unreadable` (`"... (resolves outside the project root)"`) — the same
+unverifiable-not-skipped treatment a missing spec.md already gets, so an
+escape fails the gate loud rather than leaking the target file's content.
+Regression test (`test_check_no_empty_split_fails_loud_on_a_split_dir_symlinked_outside_the_project`)
+follows this repo's own `test_path_canon_windows.py` precedent —
+`os.symlink()` inside `try/except (OSError, NotImplementedError):
+pytest.skip(...)` — since unprivileged symlink creation needs admin rights
+or Developer Mode on Windows; it skips here and is exercised by POSIX CI.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading
