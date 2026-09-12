@@ -338,6 +338,26 @@ manifest-reading logic, none of it `check_*` wiring) were split out into
 a new sibling module, `_project_gate_manifest.py` — the same precedent as
 this file's own split from `project_checks.py`.
 
+## Tier-3 review history — run-config fallback read before project config (PR #729)
+
+A sixth review pass, over the commit addressing the parse-failure-
+swallowing fix above (and a `shared/scripts/tools/ensure_current.py`
+merge with `origin/main`, which had advanced during this PR's review
+cycles), found the direct-read restructuring from the previous round had
+introduced its own ordering bug: `_declared_split_names` parsed
+`shipwright_run_config.json` unconditionally, before even checking
+whether `shipwright_project_config.json` — the authoritative source the
+run-config file is only ever a FALLBACK for — existed at all. A malformed
+or unreadable run-config therefore failed every spec gate even when the
+real, valid project config was present and would otherwise have worked.
+The function now checks for the project config first; the run-config
+fallback is read only when the project config is absent, restoring the
+priority the "fallback" naming always implied. The same pass raised one
+non-blocking `Comment` — `test_verifiers_project.py`'s dispatcher-level
+test asserts only that gate names are present, not that they produce
+blocking `ERROR` results on a representative failure — recorded here, not
+acted on this round.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading

@@ -86,37 +86,39 @@ def _declared_split_names(
     interpretation, shared with the existing WARNING-severity check.
     """
     run_config_path = project_root / "shipwright_run_config.json"
-    data: object = {}
-    if run_config_path.exists():
-        # Tier-3 review (PR #729, 3 rounds): ``read_run_config`` swallows a
-        # ``JSONDecodeError`` into ``{}`` BY DESIGN (its own docstring: "a
-        # missing or malformed file yields {}") — indistinguishable here
-        # from a genuinely absent file. Reading the fallback file directly,
-        # the same way the project-config branch below already does, lets
-        # a malformed run-config surface its own error instead of silently
-        # becoming "zero splits declared". Rounds 1-2 of this fix only
-        # tightened the SHAPE check on whatever ``read_run_config`` handed
-        # back, which could never see a parse failure at all.
-        try:
-            data = json.loads(run_config_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
-            return None, f"shipwright_run_config.json could not be parsed: {exc}"
     path = project_root / "shipwright_project_config.json"
     if path.exists():
+        # The authoritative source, checked FIRST. Tier-3 review (PR #729,
+        # round 6): a prior version of this function read the run-config
+        # FALLBACK unconditionally before this check, so a malformed
+        # ``shipwright_run_config.json`` failed the gates loud even when
+        # this, the real manifest, was present and perfectly valid — the
+        # fallback must never take priority over, or block on, the
+        # manifest it is a fallback FOR.
+        source = "shipwright_project_config.json"
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as exc:
-            return None, f"shipwright_project_config.json could not be parsed: {exc}"
+            return None, f"{source} could not be parsed: {exc}"
         if not isinstance(data, dict):
-            return None, (
-                f"shipwright_project_config.json is a {type(data).__name__}, "
-                f"expected a JSON object"
-            )
-    elif not isinstance(data, dict):
-        return None, (
-            f"shipwright_run_config.json is a {type(data).__name__}, "
-            f"expected a JSON object"
-        )
+            return None, f"{source} is a {type(data).__name__}, expected a JSON object"
+    else:
+        # Tier-3 review (PR #729, 3 rounds): ``read_run_config`` swallows a
+        # ``JSONDecodeError`` into ``{}`` BY DESIGN (its own docstring: "a
+        # missing or malformed file yields {}") — indistinguishable from a
+        # genuinely absent file. Reading the fallback file directly, the
+        # same way the branch above does, lets a malformed run-config
+        # surface its own error instead of silently becoming "zero splits
+        # declared". Only reached when the project config is ABSENT.
+        source = "shipwright_run_config.json"
+        data: object = {}
+        if run_config_path.exists():
+            try:
+                data = json.loads(run_config_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError) as exc:
+                return None, f"{source} could not be parsed: {exc}"
+        if not isinstance(data, dict):
+            return None, f"{source} is a {type(data).__name__}, expected a JSON object"
     if not path.exists() and not run_config_path.exists() and not data:
         return None, None
     splits = data.get("splits") if isinstance(data, dict) else None
@@ -124,9 +126,8 @@ def _declared_split_names(
         splits = []
     if not isinstance(splits, list):
         return None, (
-            f"shipwright_project_config.json's 'splits' is a "
-            f"{type(splits).__name__}, expected a list of "
-            f"{{'name': ...}} objects"
+            f"{source}'s 'splits' is a {type(splits).__name__}, "
+            f"expected a list of {{'name': ...}} objects"
         )
     names: set[str] = set()
     rejected: list[object] = []

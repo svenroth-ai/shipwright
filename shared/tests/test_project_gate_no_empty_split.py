@@ -186,6 +186,30 @@ def test_check_no_empty_split_fails_loud_on_syntactically_invalid_run_config_fal
     assert "could not be parsed" in r.detail
 
 
+def test_check_no_empty_split_ignores_a_malformed_run_config_when_project_config_is_valid(tmp_path):
+    """Tier-3 PR review (PR #729, round 6): the run-config fallback file
+    was being parsed UNCONDITIONALLY, before even checking whether
+    ``shipwright_project_config.json`` — the authoritative source —
+    exists. That made a malformed, irrelevant ``shipwright_run_config.json``
+    fail every gate even when the real, valid manifest was present. The
+    fallback must only be consulted when the project config is ABSENT."""
+    _write_splits_config(tmp_path, ["01-a"])
+    (tmp_path / "shipwright_run_config.json").write_text(
+        "{not valid json", encoding="utf-8",
+    )
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget export | Must | export widgets | interview |\n\n"
+        "### FR-01.01\n"
+        "- (E) Given widgets exist, when export runs, then a file is written.\n",
+        encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is True
+
+
 def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():
     """External code review (round 6, low+medium, both reviewers
     independently): ``is_absolute()`` alone misses Windows DRIVE-relative
