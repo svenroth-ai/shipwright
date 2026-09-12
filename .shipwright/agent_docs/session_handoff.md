@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-11-glossary-p41-review-followups"
+run_id: "iterate-2026-09-12-generated-prefixes-provenance-anchor"
 phase: "iterate"
-reason: "PR #699 review follow-ups: 5 deferred non-blocking items addressed"
-timestamp: "2026-09-11T00:40:25.570999+00:00"
+reason: "iterate: anchor or remove is_safe_to_skip_review's _GENERATED_PREFIXES skip-safety per prefix"
+timestamp: "2026-09-12T06:25:32.512191+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-11 00:40:25 UTC
+> Auto-generated 2026-09-12 06:25:32 UTC
 
 ## Session Info
 
-- **Session ID**: 7b98e634-2da0-4e90-a917-e1268eb84655
-- **Timestamp**: 2026-09-11 00:40:25 UTC
-- **Reason**: PR #699 review follow-ups: 5 deferred non-blocking items addressed
+- **Session ID**: 8d134d7c-6358-4d69-9360-d4b362d068d8
+- **Timestamp**: 2026-09-12 06:25:32 UTC
+- **Reason**: iterate completion: iterate-2026-09-12-generated-prefixes-provenance-anchor
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-10-p34c-promotion-anchor-guard
-- **Date**: 2026-09-10T20:21:04.098477Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/p34c-promotion-anchor-guard
-- **ADR**: iterate-2026-09-10-p34c-promotion-anchor-guard
+- **Run ID**: iterate-2026-09-12-generated-prefixes-provenance-anchor
+- **Date**: 2026-09-12T06:25:32.304815Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **ADR**: iterate-2026-09-12-generated-prefixes-provenance-anchor
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/iterate-2026-09-10-p34c-promotion-anchor-guard.md
+- **Spec**: Anchor or remove PR-review skip-safety per _GENERATED_PREFIXES entry, closing the gap a confirmed deploy-gate consumer (ci-security.json) exposed.
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/glossary-p41-review-followups
+- **Branch**: iterate/generated-prefixes-provenance-anchor
 - **External Review Marker**: missing
 - **Review Cascade**: no run_id resolved
 
@@ -66,8 +66,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/glossary-p41-review-followups
-- **Last Commit**: 3615210e2 chore(triage): sweep 24 outbox append(s) into branch
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **Last Commit**: bf193f6a6 chore(churn): regenerate derived snapshots after main merge
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -84,15 +84,15 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-6c5ebe28 | work_completed | iterate (Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser.) | 2026-09-11 |
-| evt-9e7f3b93 | work_completed | iterate (Add the keystone AC gate's own verifier source (check_keystone_ac_gate.py + verifiers/_keystone_*.py) to SENSITIVE_PATH_RE so an edit to its logic alone gets the same mandatory-review treatment as an edit to ci.yml.) | 2026-09-10 |
-| evt-504ba4d2 | work_completed | iterate (Anchor Layers-promotion to the newest CI-verified ancestor commit when HEAD itself is not verified, with staleness re-verification per FR.) | 2026-09-10 |
-| evt-4e62c00d | work_completed | iterate (Keystone AC gate's post-merge detective arm (ruling Q5): classify_commit composes resolve_ci_verification/resolve_execution_evidence to judge an already-merged commit against CI-verified trunk evidence, distinct from the preventive gate's own same-run producer.) | 2026-09-10 |
-| evt-d3ed36c9 | work_completed | iterate (Pin Sec.0's load-bearing-order claim, Sec.4's glossary cross-check trigger, and Sec.5's minimum-two-scenarios rule in shared/requirement-elicitation.md against silent drift; append Sec.0's heading to REQUIRED_SECTIONS.) | 2026-09-10 |
+| evt-b5e5c018 | work_completed | iterate (Record the deferred test-results-orphan retention defect (promised by trg-b28a039c, never filed) as its own triage card, with measured counts and root cause; no code fix.) | 2026-09-12 |
+| evt-636423bf | work_completed | iterate (Bind FR-01.06's and FR-01.07's unbound acceptance criteria to existing/new tests via @pytest.mark.covers and regenerate the AC coverage baseline) | 2026-09-12 |
+| evt-354973ae | work_completed | iterate (Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py, with all prose/code mirrors of the cap updated and a regression test guarding them.) | 2026-09-11 |
+| evt-ca92f53b | work_completed | iterate (Fix agent_doc_budget.entry_anchor() false-anchor-match hole: an incidental bold quote elsewhere in an entry's prose could be mistaken for its cross-diff identity, letting a new over-budget entry escape the budget gate by colliding with an unrelated base entry's anchor.) | 2026-09-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 603
+- **Total work events**: 624
 - **Last iterate**: bug — Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser. (2026-09-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
