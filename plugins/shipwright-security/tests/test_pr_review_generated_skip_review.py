@@ -1,7 +1,8 @@
-"""Tests for `pr_review_generated.is_safe_to_skip_review` — the strictly
-narrower sibling of `is_generated_path` used to decide whether the PR-review
-GATE ITSELF may post green with no model call at all (as opposed to merely
-hiding a section from a model that still reviews the rest of the diff).
+"""Tests for `pr_review_skip_safety.is_safe_to_skip_review` — the strictly
+narrower sibling of `pr_review_generated.is_generated_path` used to decide
+whether the PR-review GATE ITSELF may post green with no model call at all
+(as opposed to merely hiding a section from a model that still reviews the
+rest of the diff).
 
 Added after a Stage-3 doubt review on iterate-2026-09-10-pr-review-generated-only
 found that reusing `is_generated_path` wholesale let a PR touching only the
@@ -20,13 +21,83 @@ if str(PLUGIN_LIB) not in sys.path:
     sys.path.insert(0, str(PLUGIN_LIB))
 
 import pr_review_generated as G  # noqa: E402
+import pr_review_skip_safety as S  # noqa: E402
 
 
-def test_compliance_and_changelog_prefixes_stay_safe_to_skip():
-    assert G.is_safe_to_skip_review(".shipwright/compliance/dashboard.md")
-    assert G.is_safe_to_skip_review(".shipwright/compliance/sbom.md")
-    assert G.is_safe_to_skip_review("CHANGELOG-unreleased.d/fix/some-drop.md")
-    assert G.is_safe_to_skip_review(".shipwright/agent_docs/iterates/iterate-x.test-results.json")
+def test_compliance_prefix_is_no_longer_safe_to_skip():
+    """iterate-2026-09-12-generated-prefixes-provenance-anchor: `ci-security.json`
+    is read by `security_gate.py` as a deploy-gate pass/fail oracle with no
+    provenance check — the same "exact path isn't provenance" shape Round 4
+    closed for `reviews.json`. Its siblings have no closed set either, so the
+    whole prefix lost skip-safety, not just the one file. Still hidden from
+    the model (`is_generated_path`, unaffected)."""
+    for path in (
+        ".shipwright/compliance/ci-security.json",
+        ".shipwright/compliance/dashboard.md",
+        ".shipwright/compliance/sbom.md",
+    ):
+        assert G.is_generated_path(path), path
+        assert not S.is_safe_to_skip_review(path), path
+
+
+def test_runtime_prefix_is_no_longer_safe_to_skip():
+    """`.shipwright/agent_docs/runtime/` is gitignored and empirically never
+    tracked (shared/tests/test_runtime_dir_gitignored.py); granting it
+    skip-safety was pure downside with no legitimate write to preserve."""
+    path = ".shipwright/agent_docs/runtime/session_handoff.md"
+    assert G.is_generated_path(path)
+    assert not S.is_safe_to_skip_review(path)
+
+
+def test_changelog_drop_anchored_shape_stays_safe_to_skip():
+    assert S.is_safe_to_skip_review(
+        "CHANGELOG-unreleased.d/Fixed/iterate-2026-01-01-x_001.md"
+    )
+    assert S.is_safe_to_skip_review(
+        "CHANGELOG-unreleased.d/Security/iterate-2026-01-01-x_012.md"
+    )
+
+
+def test_changelog_drop_off_shape_is_NOT_safe_to_skip():
+    """An attacker-chosen category, a missing counter suffix, or an extra
+    nesting level no longer borrow the anchored category+drop shape. Each
+    case isolates exactly one failing axis (code review, iterate-2026-09-12-
+    generated-prefixes-provenance-anchor)."""
+    for path in (
+        "CHANGELOG-unreleased.d/fix/iterate-x_001.md",  # not a real category name
+        "CHANGELOG-unreleased.d/FIXED/iterate-x_001.md",  # not a real category case
+        "CHANGELOG-unreleased.d/Fixed/some-drop.md",  # no _NNN counter
+        "CHANGELOG-unreleased.d/Fixed/iterate-x_1.md",  # counter not 3 digits
+        "CHANGELOG-unreleased.d/Fixed/nested/iterate-x_001.md",  # extra nesting
+        "CHANGELOG-unreleased.d/Fixed/iterate-x_١٢٣.md",  # Unicode digits, not ASCII
+    ):
+        assert not S.is_safe_to_skip_review(path), path
+
+
+def test_iterates_prefix_is_no_longer_safe_to_skip():
+    """iterate-2026-09-12-generated-prefixes-provenance-anchor, Stage-3 doubt
+    review: an earlier version of this fix anchored the filename to
+    `<run_id>.json` / `<run_id>.test-results.json`, reasoning that
+    `RUN_ID_STRICT` shape was already enforced at write time. Disproved:
+    `RUN_ID_STRICT` is a public, freely-choosable shape, not a signature — a
+    contributor's own PR can commit a brand-new, self-authored, shape-valid
+    file under this prefix with forged content. A concrete real consumer
+    trusts that content unauthenticated: `complexity_history.load_history_
+    prior` globs every `*.json` directly under this dir and accepts any file
+    with a valid `complexity` + parseable `date`, feeding it into later
+    iterates' complexity default. Same "shape is not provenance" defect
+    Round 4 closed for `reviews.json` and this iterate closed for
+    `ci-security.json` — removed entirely rather than left narrower-but-
+    still-forgeable. Still hidden from the model (`is_generated_path`,
+    unaffected)."""
+    for path in (
+        ".shipwright/agent_docs/iterates/iterate-2026-01-01-x.json",
+        ".shipwright/agent_docs/iterates/iterate-2026-01-01-x.test-results.json",
+        ".shipwright/agent_docs/iterates/_quarantine/legacy.json",
+        ".shipwright/agent_docs/iterates/nested/iterate-2026-01-01-x.json",
+    ):
+        assert G.is_generated_path(path), path
+        assert not S.is_safe_to_skip_review(path), path
 
 
 def test_the_three_agent_instruction_docs_are_NOT_safe_to_skip():
@@ -40,14 +111,14 @@ def test_the_three_agent_instruction_docs_are_NOT_safe_to_skip():
         ".shipwright/agent_docs/triage_inbox.md",
     ):
         assert G.is_generated_path(path), path
-        assert not G.is_safe_to_skip_review(path), path
+        assert not S.is_safe_to_skip_review(path), path
 
 
 def test_canonical_basename_paths_stay_safe_to_skip():
-    assert G.is_safe_to_skip_review("shipwright_test_results.json")
-    assert G.is_safe_to_skip_review("shipwright_events.jsonl")
-    assert G.is_safe_to_skip_review(".shipwright/triage.jsonl")
-    assert G.is_safe_to_skip_review(".shipwright/triage.outbox.jsonl")
+    assert S.is_safe_to_skip_review("shipwright_test_results.json")
+    assert S.is_safe_to_skip_review("shipwright_events.jsonl")
+    assert S.is_safe_to_skip_review(".shipwright/triage.jsonl")
+    assert S.is_safe_to_skip_review(".shipwright/triage.outbox.jsonl")
 
 
 def test_an_off_canonical_path_with_a_generated_basename_is_NOT_safe_to_skip():
@@ -60,7 +131,7 @@ def test_an_off_canonical_path_with_a_generated_basename_is_NOT_safe_to_skip():
         "plugins/shipwright-evil/shipwright_test_results.json",
     ):
         assert G.is_generated_path(path), path
-        assert not G.is_safe_to_skip_review(path), path
+        assert not S.is_safe_to_skip_review(path), path
 
 
 def test_reviews_json_is_hidden_but_NOT_safe_to_skip():
@@ -72,7 +143,7 @@ def test_reviews_json_is_hidden_but_NOT_safe_to_skip():
     any more; `reviews.json` keeps only its hide-side treatment."""
     path = ".shipwright/planning/iterate/iterate-x/reviews.json"
     assert G.is_generated_path(path)
-    assert not G.is_safe_to_skip_review(path)
+    assert not S.is_safe_to_skip_review(path)
 
 
 def test_review_evidence_siblings_are_hidden_but_NOT_safe_to_skip():
@@ -99,7 +170,7 @@ def test_review_evidence_siblings_are_hidden_but_NOT_safe_to_skip():
         "external-plan-review.md",
     ):
         assert G.is_generated_path(f"{run}/{name}"), name
-        assert not G.is_safe_to_skip_review(f"{run}/{name}"), name
+        assert not S.is_safe_to_skip_review(f"{run}/{name}"), name
 
 
 def test_an_attacker_chosen_reply_or_external_name_is_NOT_safe_to_skip():
@@ -117,7 +188,7 @@ def test_an_attacker_chosen_reply_or_external_name_is_NOT_safe_to_skip():
         "notes_reply.json",
         "external-my-own-review-of-this.json",
     ):
-        assert not G.is_safe_to_skip_review(f"{run}/{name}"), name
+        assert not S.is_safe_to_skip_review(f"{run}/{name}"), name
 
 
 def test_an_attacker_chosen_reply_name_is_not_even_hidden_after_round_2():
@@ -146,8 +217,8 @@ def test_a_mixed_case_basename_borrows_neither_hide_nor_skip():
     any casing as of Round 4, so only the hide-side assertion remains
     meaningful here."""
     run = ".shipwright/planning/iterate/iterate-x"
-    assert not G.is_safe_to_skip_review(f"{run}/REVIEWS.JSON")
-    assert not G.is_safe_to_skip_review(f"{run}/Reviews.Json")
+    assert not S.is_safe_to_skip_review(f"{run}/REVIEWS.JSON")
+    assert not S.is_safe_to_skip_review(f"{run}/Reviews.Json")
     assert not G.is_generated_path(f"{run}/Spec_Review_Reply.json")
 
 
@@ -161,7 +232,7 @@ def test_review_evidence_is_never_safe_to_skip_in_any_shape():
         ".shipwright/planning/iterate/iterate-x/nested/reviews.json",  # extra nesting
         ".shipwright/planning/iterate/iterate-x/spec_review_reply.json.bak",  # lookalike suffix
     ):
-        assert not G.is_safe_to_skip_review(path), path
+        assert not S.is_safe_to_skip_review(path), path
 
 
 def test_self_review_payload_is_NOT_safe_to_skip():
@@ -171,10 +242,10 @@ def test_self_review_payload_is_NOT_safe_to_skip():
     review, not silently license skipping one."""
     run = ".shipwright/planning/iterate/iterate-x"
     assert not G.is_generated_path(f"{run}/self-review-payload.json")
-    assert not G.is_safe_to_skip_review(f"{run}/self-review-payload.json")
+    assert not S.is_safe_to_skip_review(f"{run}/self-review-payload.json")
 
 
 def test_ordinary_source_is_never_safe_to_skip():
-    assert not G.is_safe_to_skip_review("plugins/shipwright-security/scripts/tools/pr_review.py")
+    assert not S.is_safe_to_skip_review("plugins/shipwright-security/scripts/tools/pr_review.py")
 
 

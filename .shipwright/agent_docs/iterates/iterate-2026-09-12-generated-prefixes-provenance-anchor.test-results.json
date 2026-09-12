@@ -1,0 +1,107 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-generated-prefixes-provenance-anchor",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 18250,
+      "total": 18309
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "backend classifier change in shipwright-security's scripts/lib (path-string decision functions) plus its test files and a triage-record dismissal; no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": ".shipwright/compliance/ paths (incl. the confirmed deploy-gate oracle ci-security.json) are removed from is_safe_to_skip_review entirely, while is_generated_path still hides them from the model",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_compliance_prefix_is_no_longer_safe_to_skip PASSED"
+        },
+        {
+          "behavior": ".shipwright/agent_docs/iterates/ paths are removed from is_safe_to_skip_review entirely (not merely re-anchored), across the canonical run-id shape, malformed run_ids, and nested/quarantine paths, while is_generated_path still hides them",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_iterates_prefix_is_no_longer_safe_to_skip PASSED"
+        },
+        {
+          "behavior": ".shipwright/agent_docs/runtime/ paths are removed from is_safe_to_skip_review entirely, while is_generated_path still hides them",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_runtime_prefix_is_no_longer_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "a CHANGELOG-unreleased.d/ drop in the anchored <category>/<name>_<NNN>.md shape (one of the six real categories, ASCII 3-digit counter) stays safe to skip",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_changelog_drop_anchored_shape_stays_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "a CHANGELOG-unreleased.d/ drop off the anchored shape (wrong category name/case, missing/short/nested counter, or a Unicode-digit counter) is never safe to skip",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_changelog_drop_off_shape_is_NOT_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "no review-evidence path (reviews.json, the three internal reply basenames, external-*review* names, self-review-payload.json, mixed-case or off-shape lookalikes) is ever safe to skip, in any shape",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_reviews_json_is_hidden_but_NOT_safe_to_skip, ::test_review_evidence_siblings_are_hidden_but_NOT_safe_to_skip, ::test_review_evidence_is_never_safe_to_skip_in_any_shape, ::test_a_mixed_case_basename_borrows_neither_hide_nor_skip, ::test_self_review_payload_is_NOT_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "the canonical basenames (shipwright_test_results.json, shipwright_events.jsonl, .shipwright/triage.jsonl, .shipwright/triage.outbox.jsonl) stay safe to skip only at their canonical repo-root path, not at an attacker-chosen nested path",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_canonical_basename_paths_stay_safe_to_skip, ::test_an_off_canonical_path_with_a_generated_basename_is_NOT_safe_to_skip PASSED"
+        },
+        {
+          "behavior": "review_record_tier.classify_generated_only imports and calls the relocated is_safe_to_skip_review from the new pr_review_skip_safety module (not the old pr_review_generated module) and composes it correctly with the sensitive-path check",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_all_generated_paths_classify_true_with_a_naming_reason, ::test_one_sensitive_path_among_generated_ones_blocks_the_carve_out, ::test_one_reviewable_source_path_blocks_the_carve_out, ::test_empty_or_truncated_changed_paths_never_classify_true, ::test_cli_emits_all_generated_outputs PASSED"
+        },
+        {
+          "behavior": "is_generated_path's own hide-side behavior (the file-split's other half) is unaffected by the skip-safety changes",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py (every case above also asserts G.is_generated_path where relevant) and the full pre-existing plugins/shipwright-security/tests/ suite (1031 passed, 7 skipped) PASSED"
+        },
+        {
+          "behavior": "no other module in the repo still imports is_safe_to_skip_review from its old location (plugins/shipwright-security/scripts/lib/pr_review_generated.py) after the split",
+          "disposition": "tested",
+          "evidence": "repo-wide grep for 'from pr_review_generated import' / 'pr_review_generated.is_safe_to_skip_review' (external code review, this iterate) found only pr_review_diff_filter.py importing is_generated_path (unaffected) and stale doc/ADR prose, no live code importer of the removed name"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-generated-prefixes-provenance-anchor",
+    "commit": "3ef473caa13b38b39222bbfa7e407dd49edad439",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
