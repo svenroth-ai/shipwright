@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-keystone-helper-sensitive-path",
+  "date": "2026-09-12",
+  "section": "shipwright-security/review_record_tier",
+  "title": "Name keystone-carrying layer-coverage helpers individually in SENSITIVE_PATH_RE",
+  "context": "trg-a719e3b7: the keystone AC gate's own _keystone_*.py verifier modules import three shared, non-_keystone_-prefixed helpers (_layer_coverage_ac.py, _layer_coverage_binding.py, _layer_coverage_core.py) that carry keystone-specific decision logic, so an edit to those helpers escaped the mandatory-review pattern added for trg-9967000f.",
+  "decision": "List the three helper files individually in SENSITIVE_PATH_RE rather than matching the whole verifiers/_layer_coverage_ directory.",
+  "consequences": "Closes the residual gap for the files keystone actually imports; the list must be kept in sync (via the same import grep) whenever a _keystone_*.py module's imports change.",
+  "rationale": "",
+  "rejected": "Directory-wide match on verifiers/_layer_coverage_ — rejected because those same helpers also back an unrelated non-keystone layer-coverage gate, and a directory match would force mandatory review onto that gate's own unrelated maintenance PRs.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

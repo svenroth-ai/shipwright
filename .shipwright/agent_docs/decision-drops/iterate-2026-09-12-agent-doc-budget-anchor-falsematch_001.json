@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-agent-doc-budget-anchor-falsematch",
+  "date": "2026-09-12",
+  "section": "Iterate — bug: agent-doc-budget anchor false-match",
+  "title": "entry_anchor() requires a leading run_id/ADR-NNN bold anchor",
+  "context": "entry_anchor() picked the FIRST bold span anywhere in an entry as its cross-diff identity. A date-lead entry whose prose quotes another entry's own bold anchor form (e.g. describing a `- **Run-ID:**` bullet) got that incidental match as its anchor.",
+  "decision": "Restrict entry_anchor() to a LEADING bold span shaped like a run_id or ADR-NNN; anything else falls back to the first 60 chars of the body.",
+  "consequences": "An incidental prose bold quote can no longer collide with an unrelated base entry's anchor, so new_over_budget() can no longer skip a genuinely new over-budget entry by mistaking it for an edit.",
+  "rationale": "Both real bold-lead forms (Convention/Architecture Updates canonical shape, and the legacy bold-lead Learnings form) already put the anchor at the very start; nothing legitimate relies on a mid-body bold match.",
+  "rejected": "Requiring shape validation without the leading-position check was rejected: it would not have caught this bug, since the incidental Run-ID: quote is itself shape-plausible-looking prose, not a genuine anchor.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

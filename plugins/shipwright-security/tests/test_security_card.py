@@ -85,6 +85,7 @@ class TestScanCard:
         assert "everything (22)" in payload
         assert "critical and above (2)" in payload
 
+    @pytest.mark.covers("FR-01.07/AC10")
     def test_title_leads_with_the_severity_split_not_a_bare_total(self) -> None:
         card = build_scan_action_unit(
             findings=_findings(critical=2, low=20),

@@ -96,15 +96,15 @@ the count is recorded on run config as
 `_iterate_migration_quarantined_count` so the handoff + verifiers
 surface it.
 
-Retention: keep **approximately** the 50 most recent entry files per project
-(sorted by ISO date, run_id tiebreaker) — not exactly 50. This is a **bounded
+Retention: keep **approximately** the 200 most recent entry files per project
+(sorted by ISO date, run_id tiebreaker) — not exactly 200. This is a **bounded
 window, by design** — on a full directory each append evicts the oldest entry
 file (a tracked `git rm` in the same commit). The evicted run is **not** lost:
 it survives in git history and, permanently, in the append-only
 `shipwright_events.jsonl` (`work_completed` events are never evicted).
 **Consumer rule:** anything that must show the FULL iterate history (e.g. the
 WebUI Mission Requirement artifact) reads `shipwright_events.jsonl`, NOT this
-directory — `iterates/<run_id>.json` is a 50-run recency cache, not the
+directory — `iterates/<run_id>.json` is a 200-run recency cache, not the
 historical record.
 
 **Why "approximately," not "exactly."** Retention is computed per-worktree
@@ -120,10 +120,24 @@ leak. See
 `append_iterate_entry.py`'s `ITERATE_RETENTION` comment and
 `test_retention_merge_overshoot.py` for the mechanism and reproduction.
 
-The 50-entry retention applies only to compact `<run_id>.json` summaries. A
+**Cap history.** The cap was 50 until 2026-09-12, when it was raised to 200
+for headroom: the self-heal above was modeled and tested against roughly 2
+concurrent overshooting branches, and by 2026-09-12 iterate-branch
+concurrency had grown well past that — main's unpinned count was
+persistently sitting at or just above the old cap, so different branches
+were pruning different other-run entry files as a side effect of unrelated
+PRs. See that date's ADR amending
+`iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md`.
+**Revisit trigger:** if the unpinned count on `origin/main` is observed
+approaching ~150, or the cross-run pruning symptom above recurs, that ADR's
+declined alternative — moving retention to a main-only post-merge step
+instead of computing it per-branch — should be re-evaluated rather than
+raising the cap again.
+
+The 200-entry retention applies only to compact `<run_id>.json` summaries. A
 project may set `iterate_retention_pins` in `shipwright_run_config.json` for
 named summaries that must remain reachable; retention evicts unpinned entries
-first and retains up to ~50 unpinned summaries (see above) in addition to
+first and retains up to ~200 unpinned summaries (see above) in addition to
 those explicit pins.
 `<run_id>.test-results.json` is immutable per-run evidence and is never deleted
 by F5c retention; pruning it would recreate the evidence loss this artifact
