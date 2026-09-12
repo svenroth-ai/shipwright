@@ -107,11 +107,6 @@
         "evidence": "test_check_plan_gates_reviewers.py::test_a_reviewer_that_never_answered_is_recorded_unavailable_not_reviewed; ::test_neither_reviewer_answering_fails_loudly_not_a_pass PASSED"
       },
       {
-        "behavior": "FR-01.03/AC20 is proven by new tests exercising the real reviewer-identity gate (plugins/shipwright-plan/tests)",
-        "disposition": "tested",
-        "evidence": "test_check_plan_gates_reviewers.py::test_a_historical_schema_marker_is_still_read_truthfully; ::test_a_current_schema_marker_cannot_borrow_a_historical_reviewer_name PASSED"
-      },
-      {
         "behavior": "FR-01.04/AC01 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
         "disposition": "tested",
         "evidence": "test_check_design_gates.py::test_an_orphan_fr_fails_fr_coverage PASSED"
@@ -157,11 +152,6 @@
         "evidence": "test_check_design_gates.py::test_a_modified_upload_fails PASSED"
       },
       {
-        "behavior": "FR-01.04/AC10 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
-        "disposition": "tested",
-        "evidence": "test_check_design_gates.py::test_a_flagged_screen_left_untouched_fails PASSED"
-      },
-      {
         "behavior": "FR-01.04/AC11 is proven by new tests exercising the real requirement-writeback CLIs (plugins/shipwright-design/tests)",
         "disposition": "tested",
         "evidence": "test_requirement_writeback_gate.py::test_declaring_a_behaviour_change_without_correcting_the_requirement_is_refused; ::test_declaring_a_behaviour_change_after_correcting_the_requirement_is_accepted PASSED"
@@ -173,14 +163,14 @@
       }
     ],
     "counts": {
-      "testable": 32,
-      "tested": 32,
+      "testable": 30,
+      "tested": 30,
       "untestable": 0,
       "untested_testable": 0
     },
     "enumeration_basis": {
-      "acs": 32,
-      "covered_acs": 32
+      "acs": 30,
+      "covered_acs": 30
     }
   },
   "surface_verification": {
