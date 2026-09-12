@@ -114,10 +114,8 @@ def test_scan_skips_removed_requirements(tmp_path):
 def _run(project_root):
     return group_i.run(project_root, None, None)
 
-
 def _by_id(findings):
     return {f.check_id: f for f in findings}
-
 
 def test_clean_greenfield_spec_is_clean(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, _GREENFIELD)))
@@ -147,7 +145,6 @@ def test_clean_greenfield_spec_is_clean(tmp_path):
     assert findings["I9"].status == "pass"
     assert "cannot determine" in findings["I9"].detail
 
-
 def test_clean_adopt_spec_passes_the_name_fence(tmp_path):
     """With a Name column present, a clean spec genuinely PASSES I1."""
     body = _ADOPT.replace(
@@ -157,13 +154,12 @@ def test_clean_adopt_spec_passes_the_name_fence(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, body, split="01-adopted")))
     assert findings["I1"].status == "pass"
 
-
+@pytest.mark.covers("FR-01.10/AC13")
 def test_adopt_spec_flags_name_and_description(tmp_path):
     findings = _by_id(_run(_spec(tmp_path, _ADOPT, split="01-adopted")))
     assert "FR-01.02" in findings["I1"].detail
     assert "advisory" in findings["I1"].detail
     assert "advisory" in findings["I2"].detail
-
 
 def test_fold_candidate_is_reported(tmp_path):
     body = _GREENFIELD.replace(
@@ -174,7 +170,7 @@ def test_fold_candidate_is_reported(tmp_path):
     assert "FR-02.02" in findings["I3"].detail
     assert "advisory" in findings["I3"].detail
 
-
+@pytest.mark.covers("FR-01.10/AC14")
 def test_duplicate_fr_id_is_reported(tmp_path):
     body = _GREENFIELD.replace("| FR-02.02 |", "| FR-02.01 |")
     findings = _by_id(_run(_spec(tmp_path, body)))
@@ -192,7 +188,7 @@ def _two_splits(tmp_path: Path, first: str, second: str) -> Path:
     _spec(tmp_path, second, split="03-reports")
     return tmp_path
 
-
+@pytest.mark.covers("FR-01.10/AC14")
 def test_duplicate_fr_id_across_two_documents_now_fails(tmp_path):
     """FLIPPED by S6: I4 deduped on ``(split, id)``, so this used to PASS.
 
@@ -210,6 +206,7 @@ def test_duplicate_fr_id_across_two_documents_now_fails(tmp_path):
     assert "FR-02.02" in findings["I4"].detail
 
 
+@pytest.mark.covers("FR-01.10/AC14")
 def test_distinct_fr_ids_across_two_documents_still_pass(tmp_path):
     """Control: the flip must not make MULTI-DOCUMENT itself the defect.
 
@@ -256,6 +253,7 @@ def test_every_finding_is_detective_only_and_advisory(tmp_path):
         assert f.severity in {"LOW", "MEDIUM"}
 
 
+@pytest.mark.covers("FR-01.10/AC13")
 def test_prose_checks_never_flip_the_audit_verdict(tmp_path):
     """The load-bearing advisory guarantee.
 
@@ -270,6 +268,7 @@ def test_prose_checks_never_flip_the_audit_verdict(tmp_path):
 
 
 @pytest.mark.covers("FR-01.02/AC15")
+@pytest.mark.covers("FR-01.10/AC14")
 def test_retired_fr_number_must_not_be_reused(tmp_path):
     """§4: a removed FR's number is retired for good — I4 must see it."""
     body = _WITH_REMOVED.replace(
@@ -288,6 +287,7 @@ def test_retired_rows_are_not_linted_for_prose(tmp_path):
     assert "FR-02.09" not in findings["I2"].detail
 
 
+@pytest.mark.covers("FR-01.10/AC13")
 def test_findings_cap_the_preview_but_report_the_true_count(tmp_path):
     """A legacy spec must not dump 60 IDs into the report."""
     header = _ADOPT.split("| FR-01.01")[0]

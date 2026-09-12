@@ -41,9 +41,9 @@ RECORD = {
 }
 
 
-def _git(args: list[str], cwd: Path) -> None:
-    subprocess.run(["git", "-C", str(cwd), *args],
-                   check=True, capture_output=True, text=True, timeout=30)
+def _git(args: list[str], cwd: Path) -> str:
+    return subprocess.run(["git", "-C", str(cwd), *args],
+                           check=True, capture_output=True, text=True, timeout=30).stdout.strip()
 
 
 @pytest.fixture
@@ -77,11 +77,12 @@ def _run(root: Path, *extra: str) -> int:
 
 
 class TestStampAndPreserve:
+    @pytest.mark.covers("FR-01.10/AC03")
     def test_writes_the_block_with_code_resolved_values(self, project: Path):
         assert _run(project, "--run-id", RUN) == 0
         state = from_block(_read(project)[BLOCK_KEY])
         assert state.run_id == RUN
-        assert state.commit is not None and len(state.commit) == 40
+        assert state.commit == _git(["rev-parse", "HEAD"], project)
         # The record itself is excluded from the dirty calculation, so a tree
         # whose only change is the record reads clean.
         assert state.dirty is False
@@ -177,6 +178,7 @@ class TestRefusalAndDegradation:
         assert state.commit is None
         assert state.dirty is None
 
+    @pytest.mark.covers("FR-01.10/AC03")
     def test_unresolvable_run_id_is_null_not_invented(self, project: Path):
         assert _run(project) == 0
         assert _read(project)[BLOCK_KEY]["run_id"] is None

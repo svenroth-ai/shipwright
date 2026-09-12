@@ -1,0 +1,13 @@
+{
+  "run_id": "iterate-2026-09-12-t7-compliance-grade",
+  "date": "2026-09-12T21:06:24.127708Z",
+  "event_at": "2026-09-12T21:05:20.023927+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t7",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t7-compliance-grade.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-t7-compliance-grade",
+  "declared_removals": []
+}

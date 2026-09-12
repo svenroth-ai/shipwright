@@ -12,6 +12,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 import authoritative
 import grade_inputs_projector
 from conftest import build_repo
@@ -52,6 +54,7 @@ def _model_for(root: Path):
 
 
 class TestAuthoritativeEndToEnd:
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_canonical_records_grade_authoritatively(self, tmp_path: Path):
         model = _model_for(_canonical_repo(tmp_path / "auth"))
         assert model.mode == "authoritative"
