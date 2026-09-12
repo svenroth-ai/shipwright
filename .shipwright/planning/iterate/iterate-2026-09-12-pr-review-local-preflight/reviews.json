@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-pr-review-local-preflight",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T08:02:55.221727+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "F11 treats exit code 2 as advisory, but argparse errors are explicitly tested to exit 2. A bad static invocation, missing/default base value, or future CLI wiring regression could therefore skip the preflight and still proceed to push. This conflicts with the stated “EXIT_USAGE split” rationale.",
+          "suggestion": "Give usage/configuration failures a distinct non-advisory exit code, or have F11 distinguish the tool’s explicit availability result from all other nonzero exits. Only missing credentials and transport/model availability failures should be advisory.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "diff-file` accepts arbitrary paths and sends their contents to the external review model. Unlike `--base`, this can unintentionally transmit a secret, binary-derived text, or unrelated local file if an operator supplies the wrong path.",
+          "suggestion": "Document this clearly at the CLI flag and guide level; ideally require an explicit acknowledgement flag for files outside `--project-root` (or reject them by default).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The test ledger covers invalid base resolution but not invalid/unreadable `--diff-file`, invalid/non-Git `--project-root`, or a repository with no resolvable merge base. These are realistic local-invocation failures and must not produce a traceback or be misclassified as an advisory reviewer outage.",
+          "suggestion": "Add guarded error handling and focused tests for these cases, with the same exit-code classification adopted for finding 1.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "base` resolves the caller’s local ref. F11 is protected by the preceding fetch, but the documented standalone CLI can silently review against a stale `origin/main`, yielding a weaker preflight than CI.",
+          "suggestion": "Print the resolved base SHA and merge-base SHA in local mode, and document that callers should fetch before using a remote-tracking base.  Overall, the design is sound: it preserves CI as the authority and reuses the existing review path while avoiding posting side effects. The exit-code ambiguity should be resolved before adoption; the remaining items are targeted hardening. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex(gpt/glm)",
+      "completed_at": "2026-09-12T07:47:43.244654+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: edge-case** — **Severity: low** — `--diff-file` accepts an arbitrary diff, but the CI path feeds the model a diff that `gh` guarantees is well-formed. A hand-edited, malformed, or binary-mangled diff file (`read_diff_file` uses UTF-8 `errors=replace`) goes straight into the model prompt with no structural validation. Suggestion: after reading, validate the diff at least parses as a unified diff (starts with `diff --git`/`---`/`+++`) and fail closed with a clear error if not, rather than letting the model guess on garbage.\n\n- **Category: edge-case** — **Severity: low** — The spec handles empty diff (fail closed, model never consulted) but doesn't state behavior for a diff that exceeds the truncation threshold *and* the model returns BLOCK anyway — the exit-1 path is covered, but worth confirming the truncated-diff fix (from the live probe) covers both approve and block post-`post_local_result` branches, not just the one caught. The regression test as named (`truncated-diff branch skipped post_local_result`) suggests only one side was tested.\n\n- **Category: approach** — **Severity: low** — Exit-code semantics for \"model returned unparseable/empty output\" in local mode are not specified. If a malformed model response maps to exit 2 (advisory), a silently degrading model turns the preflight into a no-op without any signal. Confirm malformed-response maps to exit 1 or a distinct loud-advisory path, and that F12 surfaces *why* it was advisory (key missing vs. transport vs. bad response), not just that it was.\n\n- **Category: risk** — **Severity: low** — `--base <ref>` resolved at F11 time relies on `ensure_current.py`'s fetch having just run (the dismissal of the staleness concern). That coupling is implicit: if F11 is ever edited to reorder steps, or someone runs `pr_review.py --base` manually, a stale `origin/main` yields a diff against an outdated merge base and can *miss* files the CI gate will see. Suggestion: have `build […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** F11 treats exit code 2 as advisory, but argparse errors are explicitly tested to exit 2. A bad static invocation, missing/default base value, or future CLI wiring regression could therefore skip the preflight and still proceed to push. This conflicts with the stated “EXIT_USAGE split” rationale.  \n   **Suggestion:** Give usage/configuration failures a distinct non-advisory exit code, or have F11 distinguish the tool’s explicit availability result from all other nonzero exits. Only missing credentials and transport/model availability failures should be advisory.\n\n2. **Category:** security  \n   **Severity:** medium  \n   **Finding:** `--diff-file` accepts arbitrary paths and sends their contents to the external review model. Unlike `--base`, this can unintentionally transmit a secret, binary-derived text, or unrelated local file if an operator supplies the wrong path.  \n   **Suggestion:** Document this clearly at the CLI flag and guide level; ideally require an explicit acknowledgement flag for files outside `--project-root` (or reject them by default).\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The test ledger covers invalid base resolution but not invalid/unreadable `--diff-file`, invalid/non-Git `--project-root`, or a repository with no resolvable merge base. These are realistic local-invocation failures and must not produce a traceback or be misclassified as an advisory reviewer outage.  \n   **Suggestion:** Add guarded error handling and focused tests for these cases, with the same exit-code classification adopted for finding 1.\n\n4. **Category:** risk  \n   **Severity:** low  \n   **Finding:** `--base` resolves the caller’s local ref. F11 is protected by the preceding fetch, but the documented standalone CLI can silently review against a stale `origin/main`, yielding a weaker preflight than CI.  \n   **Suggestion:** Print the resolved base SHA and merge-base SHA in […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+          "line": null,
+          "finding": "EXIT_USAGE did not cover argparse's own parse failures, only resolve_diff_mode's semantic errors.",
+          "suggestion": "Wrap parser.parse_args in try/except SystemExit, remap non-zero exits to EXIT_USAGE.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_local.py",
+          "line": null,
+          "finding": "--diff-file sends arbitrary local file content to the external model with no warning of secret-exfiltration risk.",
+          "suggestion": "Document the risk at the CLI flag and module-docstring level.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_local.py",
+          "line": null,
+          "finding": "post_local_result's print(body) skips the control-character stripping render_comment applies to every other field, unlike the summary field.",
+          "suggestion": "Apply strip_display_unsafe before printing to a real terminal.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "docs",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-12-pr-review-local-preflight.md",
+          "line": null,
+          "finding": "Test Completeness Ledger mislabeled two rows as argparse-exit-2 when they actually test resolve_diff_mode's EXIT_USAGE path.",
+          "suggestion": "Correct the ledger.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+          "line": null,
+          "finding": "meta_repo/meta_pr_number placeholders had no inline comment unlike the nonce line above them.",
+          "suggestion": "Add a one-line comment.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T08:19:04.519492+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T08:19:31.220817+00:00",
+      "disposition": "Stage 3 conditional trigger (migrations, async/concurrency, cross-plugin imports, irreversible ops) does not apply: subprocess/git use is a private-temp-index diff build, read-only by construction on the real repo, and every new import stays within shipwright-security. No cross-plugin import, no migration, no concurrency.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/F11.md` (the `symbolic-ref ... | sed ... || echo main` fallback in the new bash block)",
+          "line": null,
+          "finding": "The `|| echo main` only fires if `sed` fails — but when `git symbolic-ref` fails (its stderr is suppressed, stdout empty), `sed` still exits 0 with empty output, so `--base` becomes the literal string `origin/`. `git merge-base origin/ HEAD` then fails, `build_local_diff` returns an error, and `main()` maps it to `EXIT_ERROR` (2) — the advisory code. The preflight is silently skipped with a \"reviewer infra unavailable\" message when the actual cause is an unresolved default-branch ref, exactly the wiring-bug-reads-as-advisory failure the `EXIT_USAGE` split was created to prevent.",
+          "suggestion": "Capture the ref resolution separately and fall back to `main` on empty output (e.g. `ref=$(git ... | sed ...); : \"${ref:=main}\"`), or classify an unresolvable base as `EXIT_USAGE` so F11 stops.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py` (the `build_local_diff` error return and the `read_diff_file` exception path inside the `try`)",
+          "line": null,
+          "finding": "Local-mode diff-acquisition failures (unresolvable base, git failure, unreadable/missing `--diff-file`) all return `EXIT_ERROR` (2), which the F11 wiring treats as advisory-only. A typo'd `--diff-file` path or a bad `--base` ref therefore silently skips the preflight rather than stopping. This was explicitly raised in the recorded external review (\"invalid/unreadable `--diff-file` … must not … be misclassified as an advisory reviewer outage\") and is only partially addressed — `resolve_diff_mode` catches flag combinations, not bad values.",
+          "suggestion": "Distinguish \"diff source unavailable/malformed\" from \"model transport unavailable\": return `EXIT_USAGE` (or a new non-advisory code) for local diff-build/read failures so F11 stops on them.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_local_preflight.py` — `test_base_mode_reviews_the_merge_base_diff",
+          "line": null,
+          "finding": "The test only asserts exit 0; it never inspects `posted[\"messages\"]` that `_wire_local` captures. A `build_local_diff` wired incorrectly in `main()` (e.g. diffing the wrong ref, or the untracked-inclusion broken by a future refactor at the call site) would still pass, because the fake model returns \"approve\" regardless of diff content. The merge-base semantics are only proven at the `build_local_diff` unit level, not through `main()`.",
+          "suggestion": "Assert the sent messages contain `feature.py`/`untracked.py` and not the main-only `shared.py` change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_local.py` — `resolve_diff_mode` / `pr_review.py` `--diff-file` handling",
+          "line": null,
+          "finding": "diff-file \"\"` produces `Path(\"\")` → `PosixPath('.')`, which is truthy, so `resolve_diff_mode` accepts it as a valid local source; `read_diff_file` then raises `IsADirectoryError`, caught by the broad `except` → exit 2 (advisory). An empty-string argument should be a usage error.",
+          "suggestion": "Treat an empty/`.` `--diff-file` value (and a nonexistent or non-file path) as `EXIT_USAGE` before attempting the read.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-12-pr-review-local-preflight.md` — Test Completeness Ledger",
+          "line": null,
+          "finding": "The ledger claims \"30/30 new tests across three files\"; the two test modules in the diff contain 15 (`_diff`) + 12 (`_preflight`) = 27 tests. Given the ledger's own \"0 testable-but-untested\" claim, the count should be reconciled.",
+          "suggestion": "Correct the count or identify the three missing tests if they exist elsewhere.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-security/scripts/tools/pr_review.py",
+          "line": 207,
+          "finding": "A local `--base` setup failure (for example, missing `origin/main`, non-Git `--project-root`, or no merge base) returns `EXIT_ERROR` (2). F11 explicitly treats 2 as advisory and proceeds to push, despite no preflight having occurred; this conflicts with the specified “only no key/transport failure is advisory” contract.",
+          "suggestion": "Classify local diff construction/configuration failures as `EXIT_USAGE` (3), or introduce a separate blocking configuration exit code and have F11 stop on it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_local.py",
+          "line": 183,
+          "finding": "post_local_result` sanitizes `body`, but prints `review[\"summary\"]` directly to stderr. A model response influenced by an untrusted diff can include terminal escape/control characters in `summary`, enabling terminal-output injection despite the stated sanitization.",
+          "suggestion": "Apply `strip_display_unsafe` to `summary_excerpt` before interpolating it into the stderr line, and add a test covering control characters in `review[\"summary\"]`.  Overall assessment: ship-with-fixes. The local-mode structure is sound, but local diff/configuration errors currently bypass the mandatory preflight in F11, and terminal sanitization is incomplete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T08:28:08.977753+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: bug** — Severity: medium\n  **File:** `plugins/shipwright-iterate/skills/iterate/references/F11.md` (the `symbolic-ref ... | sed ... || echo main` fallback in the new bash block)\n  **Finding:** The `|| echo main` only fires if `sed` fails — but when `git symbolic-ref` fails (its stderr is suppressed, stdout empty), `sed` still exits 0 with empty output, so `--base` becomes the literal string `origin/`. `git merge-base origin/ HEAD` then fails, `build_local_diff` returns an error, and `main()` maps it to `EXIT_ERROR` (2) — the advisory code. The preflight is silently skipped with a \"reviewer infra unavailable\" message when the actual cause is an unresolved default-branch ref, exactly the wiring-bug-reads-as-advisory failure the `EXIT_USAGE` split was created to prevent.\n  **Suggestion:** Capture the ref resolution separately and fall back to `main` on empty output (e.g. `ref=$(git ... | sed ...); : \"${ref:=main}\"`), or classify an unresolvable base as `EXIT_USAGE` so F11 stops.\n\n- **Category: bug** — Severity: medium\n  **File:** `plugins/shipwright-security/scripts/tools/pr_review.py` (the `build_local_diff` error return and the `read_diff_file` exception path inside the `try`)\n  **Finding:** Local-mode diff-acquisition failures (unresolvable base, git failure, unreadable/missing `--diff-file`) all return `EXIT_ERROR` (2), which the F11 wiring treats as advisory-only. A typo'd `--diff-file` path or a bad `--base` ref therefore silently skips the preflight rather than stopping. This was explicitly raised in the recorded external review (\"invalid/unreadable `--diff-file` … must not … be misclassified as an advisory reviewer outage\") and is only partially addressed — `resolve_diff_mode` catches flag *combinations*, not bad *values*.\n  **Suggestion:** Distinguish \"diff source unavailable/malformed\" from \"model transport unavailable\": return `EXIT_USAGE` (or a new non-advisory code) for local diff-build/read failures so F11 stops on  […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `plugins/shipwright-security/scripts/tools/pr_review.py:207`\n- Finding: A local `--base` setup failure (for example, missing `origin/main`, non-Git `--project-root`, or no merge base) returns `EXIT_ERROR` (2). F11 explicitly treats 2 as advisory and proceeds to push, despite no preflight having occurred; this conflicts with the specified “only no key/transport failure is advisory” contract.\n- Suggestion: Classify local diff construction/configuration failures as `EXIT_USAGE` (3), or introduce a separate blocking configuration exit code and have F11 stop on it.\n\n- Category: security\n- Severity: medium\n- File: `plugins/shipwright-security/scripts/lib/pr_review_local.py:183`\n- Finding: `post_local_result` sanitizes `body`, but prints `review[\"summary\"]` directly to stderr. A model response influenced by an untrusted diff can include terminal escape/control characters in `summary`, enabling terminal-output injection despite the stated sanitization.\n- Suggestion: Apply `strip_display_unsafe` to `summary_excerpt` before interpolating it into the stderr line, and add a test covering control characters in `review[\"summary\"]`.\n\nOverall assessment: ship-with-fixes. The local-mode structure is sound, but local diff/configuration errors currently bypass the mandatory preflight in F11, and terminal sanitization is incomplete.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T08:03:39.889323+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T07:55:18.215120+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
