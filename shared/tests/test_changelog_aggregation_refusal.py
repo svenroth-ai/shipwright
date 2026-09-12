@@ -83,7 +83,7 @@ def test_partial_unlink_refuses_instead_of_deleting_released_bullets(
         assert bullet in changelog_text(project)
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC08")
 def test_hand_edited_section_refuses(project: Path) -> None:
     """AC5 — the same arm protects an operator edit. The recorded section is
     not what the drops say, and which one is right is not knowable here."""
@@ -108,7 +108,7 @@ def test_hand_edited_section_refuses(project: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC08")
 def test_yanked_marker_on_the_heading_refuses(project: Path) -> None:
     """A replace rewrites the whole heading line, so anything the renderer does
     not reproduce is discarded. Keep-a-Changelog puts the yank marker there;
@@ -148,7 +148,7 @@ def test_aggregating_the_unreleased_block_refuses(project: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC07")
 def test_duplicate_sections_refuse_with_the_count(project: Path) -> None:
     """AC6 — wreckage from the old bug. Which section is authoritative is not
     knowable, so stop rather than write a third."""
@@ -179,7 +179,7 @@ def test_duplicate_sections_refuse_with_the_count(project: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC10")
 def test_dry_run_reports_the_replace_without_writing_or_unlinking(
     project: Path,
 ) -> None:
@@ -197,7 +197,7 @@ def test_dry_run_reports_the_replace_without_writing_or_unlinking(
     assert drop_texts(project) == before_drops
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC10")
 def test_dry_run_still_refuses_a_state_that_would_be_refused(project: Path) -> None:
     """AC8 — a refusal is a refusal under --dry-run too. Reporting it as a
     successful preview would tell the operator the release is safe to run."""

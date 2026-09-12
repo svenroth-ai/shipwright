@@ -117,6 +117,7 @@ def app_repo(tmp_path):
 # AC1 / AC11 — the requested version really is sent, over the wire
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_the_cli_sends_the_requested_version_to_the_host(host, app_repo, tmp_path):
     base_url, stub = host
 
@@ -159,6 +160,7 @@ def test_the_token_never_reaches_stdout(host, app_repo, tmp_path):
 # AC4 / AC9 — stored data that moved on refuses, and touches nothing
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC07")
 def test_drifted_data_refuses_without_contacting_the_host(host, app_repo, tmp_path):
     base_url, stub = host
     (app_repo / "supabase" / "migrations" / "0002_add_column.sql").write_text("alter table t;")
@@ -183,7 +185,23 @@ def test_drifted_data_refuses_without_contacting_the_host(host, app_repo, tmp_pa
     assert completed.returncode == 1
 
 
+@pytest.mark.covers("FR-01.08/AC07")
+@pytest.mark.covers("FR-01.08/AC15")
 def test_acknowledging_the_drift_proceeds(host, app_repo, tmp_path):
+    """Spec FR-01.08/AC15: once the rollback *completes*, the running code
+    came back but `data_drift.drifted` is still reported True — the code
+    path never silently marks the data as reverted too. This binds the AC's
+    own testable clause precisely: "so nobody assumes the data went back
+    too" is a claim about what the tool *reports*, not a claim this module
+    could make about a live database it never talks to (`rollback.py`
+    imports only `data_drift`, `rollback_report`, `deploy_profile` — no
+    database/migration-execution client exists in this code path at all, so
+    there is no runtime call to spy on for "did it touch the data"; the
+    guarantee is architectural, not decision-based, and a git-checkout of
+    the CODE tree back to `v1` legitimately also reverts the migration
+    *file* in the working tree — that is not the "data" this AC means, and
+    asserting the file is unchanged would conflate code rollback with data
+    mutation)."""
     base_url, stub = host
     (app_repo / "supabase" / "migrations" / "0002_add_column.sql").write_text("alter table t;")
     _git(app_repo, "add", "-A")
@@ -206,6 +224,8 @@ def test_acknowledging_the_drift_proceeds(host, app_repo, tmp_path):
 # AC9 / AC12 — a way back that fails names the state and stops
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC13")
+@pytest.mark.covers("FR-01.08/AC14")
 def test_a_failed_update_halts_with_a_distinct_exit_code(host, app_repo, tmp_path):
     base_url, stub = host
     stub.fail = {"environment/vcs/rest/update"}
@@ -226,6 +246,7 @@ def test_a_failed_update_halts_with_a_distinct_exit_code(host, app_repo, tmp_pat
     assert "not verify which version is running" in result["operator_message"]
 
 
+@pytest.mark.covers("FR-01.08/AC14")
 def test_a_failed_pin_never_issues_the_update(host, app_repo, tmp_path):
     base_url, stub = host
     stub.fail = {"environment/vcs/rest/editproject"}
@@ -242,6 +263,7 @@ def test_a_failed_pin_never_issues_the_update(host, app_repo, tmp_path):
     assert result["halt"] is True
 
 
+@pytest.mark.covers("FR-01.08/AC14")
 def test_an_invalid_ref_is_rejected_before_anything_is_contacted(host, app_repo, tmp_path):
     base_url, stub = host
 
@@ -258,6 +280,7 @@ def test_an_invalid_ref_is_rejected_before_anything_is_contacted(host, app_repo,
     assert not (app_repo / "pwned").exists()
 
 
+@pytest.mark.covers("FR-01.08/AC10")
 def test_a_stop_only_clone_rollback_says_so(host, tmp_path):
     """AC10 — the CLI must report stopping as stopping, never as restoring."""
     base_url, _ = host

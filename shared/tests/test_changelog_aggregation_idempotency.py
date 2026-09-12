@@ -44,7 +44,7 @@ def project(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC07")
 def test_rerun_after_interrupted_release_writes_the_version_once(project: Path) -> None:
     """AC3 — same release date: run 2 leaves the file byte-identical to run 1."""
     seed_drops(project, pending())
@@ -219,7 +219,7 @@ def test_first_release_reports_inserted(project: Path) -> None:
     assert result["changelog_updated"] is True
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC07")
 def test_replacing_changed_content_reports_replaced(project: Path) -> None:
     """AC11 — a replace that changes bytes is `replaced`, not `unchanged`."""
     seed_drops(project, pending())
@@ -236,7 +236,7 @@ def test_replacing_changed_content_reports_replaced(project: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.covers("FR-01.09")
+@pytest.mark.covers("FR-01.09/AC07")
 def test_rerunning_a_completed_release_is_a_clean_noop(project: Path) -> None:
     """AC12 — section recorded, no drops left. This must never reach a refusal
     arm: a successful release has to stay re-runnable."""

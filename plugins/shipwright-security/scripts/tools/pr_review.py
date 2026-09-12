@@ -16,15 +16,20 @@ rendered comment + (best-effort) review state → exit per decision.
 
 Usage: pr_review.py --pr-number N --repo owner/repo --prompt-dir shared/prompts/pr_reviewer
 
+Local preflight (PREFLIGHT ONLY, never a waiver — see `pr_review_local`):
+    pr_review.py --base origin/main --prompt-dir shared/prompts/pr_reviewer
+    pr_review.py --diff-file some.diff --prompt-dir shared/prompts/pr_reviewer
+
 Environment:
     OPENROUTER_API_KEY          required — OpenRouter credential (never logged)
     SHIPWRIGHT_PR_REVIEW_MODEL  optional — model id (default below)
-    GH_TOKEN / GITHUB_TOKEN     used by the `gh` CLI for diff + comment + review
+    GH_TOKEN / GITHUB_TOKEN     CI mode only — used by the `gh` CLI for diff + comment + review
 
 Exit codes:
     0  decision approve | comment
     1  block — also when nothing/not everything was reviewed (fails closed)
     2  error (no key, OpenRouter down, JSON parse failure, unknown decision)
+    3  usage — local preflight only, a malformed --base/--diff-file combination
 """
 
 from __future__ import annotations
@@ -43,28 +48,15 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 # so this tool stays small and the logic is unit-testable. Re-exposed here so
 # `pr_review.<symbol>` keeps working for callers and tests.
 from pr_review_lib import (  # noqa: E402
-    EXIT_BLOCK,
-    EXIT_ERROR,
-    EXIT_OK,
-    MAX_DIFF_CHARS,
-    _redact,
-    build_messages,
-    build_pr_meta,
-    decision_to_exit,
-    filter_generated_paths,
-    load_prompts,
-    nothing_reviewed_summary,
-    parse_review_response,
-    render_comment, safe_path,
-    truncate_diff,
+    EXIT_BLOCK, EXIT_ERROR, EXIT_OK, EXIT_USAGE, MAX_DIFF_CHARS, _redact,
+    build_messages, build_pr_meta, decision_to_exit, filter_generated_paths,
+    load_prompts, nothing_reviewed_summary, parse_review_response,
+    render_comment, safe_path, truncate_diff,
 )
 from pr_review_diff_filter import count_sections  # noqa: E402
 # Clearing this reviewer's own superseded verdicts — the policy lives there.
 from pr_review_dismiss import (  # noqa: E402
-    dismiss_own_stale_verdicts,
-    new_nonce,
-    read_reviewed_head,
-    stamp_review_body,
+    dismiss_own_stale_verdicts, new_nonce, read_reviewed_head, stamp_review_body,
 )
 # The two I/O boundaries each own a module — `gh` subprocess and OpenRouter HTTP.
 # Re-exported here so existing call sites and their monkeypatch targets
@@ -83,7 +75,14 @@ from pr_review_openrouter import (  # noqa: E402
 from pr_review_model_policy import (  # noqa: E402
     DeepSeekRoutingPolicyError, GlmRoutingPolicyError, resolve_extra_body,
 )
-from pr_review_verdict import finish_decision, post_verdict  # noqa: E402
+from pr_review_verdict import (  # noqa: E402
+    finish_decision, handle_empty_diff, handle_truncated_diff, post_verdict,
+)
+# Local-preflight (`--base`/`--diff-file`) diff source + no-side-effect verdict
+# reporting. See that module's docstring for the "preflight, never a waiver" contract.
+from pr_review_local import (  # noqa: E402
+    build_local_diff, log_files_sent, post_local_result, read_diff_file, resolve_diff_mode,
+)
 
 # The re-export surface: every name a caller or test is entitled to reach
 # through `pr_review.<symbol>`. Kept complete on purpose — a name that is
@@ -97,7 +96,9 @@ __all__ = [
     "read_reviewed_head", "render_comment", "safe_path", "stamp_review_body", "truncate_diff",
     "call_openrouter", "DEEPSEEK_MODEL", "DEFAULT_MODEL", "DEFAULT_TIMEOUT", "GLM_MODEL",
     "LUNA_MODEL", "OPENROUTER_URL", "DeepSeekRoutingPolicyError", "GlmRoutingPolicyError",
-    "resolve_extra_body", "post_verdict", "finish_decision"]
+    "resolve_extra_body", "post_verdict", "finish_decision", "EXIT_USAGE",
+    "build_local_diff", "log_files_sent", "post_local_result", "read_diff_file",
+    "resolve_diff_mode", "handle_empty_diff", "handle_truncated_diff"]
 
 
 def _fix_windows_encoding() -> None:
@@ -118,17 +119,38 @@ def _post_verdict(args, api_key: str, body: str, decision: str, summary: str, no
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Tier-3 OpenRouter PR reviewer")
-    parser.add_argument("--pr-number", type=int, required=True, help="PR number to review")
-    parser.add_argument("--repo", required=True, help="owner/repo slug")
-    parser.add_argument(
-        "--prompt-dir",
-        default="shared/prompts/pr_reviewer",
-        help="Directory holding the `system` and `user` prompt files",
-    )
+    parser.add_argument("--pr-number", type=int, default=None, help="PR number to review (CI mode)")
+    parser.add_argument("--repo", default=None, help="owner/repo slug (CI mode)")
+    parser.add_argument("--base", default=None,
+                        help="Local preflight: review the merge-base diff against this ref "
+                             "instead of a pushed PR (see pr_review_local)")
+    parser.add_argument("--diff-file", type=Path, default=None,
+                        help="Local preflight: review a pre-built diff file instead of --base. "
+                             "Sent to the model verbatim — never a file that may hold a secret")
+    parser.add_argument("--project-root", type=Path, default=Path("."),
+                        help="Repo root --base resolves its merge-base diff against")
+    parser.add_argument("--prompt-dir", default="shared/prompts/pr_reviewer",
+                        help="Directory holding the `system` and `user` prompt files")
     # One default, defined with the transport it belongs to (pr_review_openrouter).
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
                         help="OpenRouter timeout (seconds)")
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as e:
+        # argparse's own error() also exits 2 (bad flag/value) — remap to
+        # EXIT_USAGE so F11's exit-2-is-advisory rule can't swallow a CLI
+        # wiring bug (code review, 2026-09-12); exit 0 is --help, untouched.
+        if e.code == 0:
+            raise
+        return EXIT_USAGE
+
+    local_mode, mode_error = resolve_diff_mode(args.pr_number, args.repo, args.base, args.diff_file)
+    if mode_error:
+        # EXIT_USAGE, never EXIT_ERROR: F11 treats EXIT_ERROR as "reviewer
+        # infra unavailable, advisory-only" — a misconfigured invocation must
+        # never be silently swallowed as that (external review, 2026-09-12).
+        print(f"[pr_review] {mode_error}", file=sys.stderr)
+        return EXIT_USAGE
 
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
@@ -154,8 +176,12 @@ def main(argv: list[str] | None = None) -> int:
             f"[pr_review] reviewer misconfigured (ZDR routing policy) — "
             f"not your change: {type(e).__name__}: {e}", api_key), file=sys.stderr)
         return EXIT_ERROR
-    # Minted before the first post, because EVERY posting path stamps it.
-    nonce = new_nonce()
+    # Minted before the first post, because EVERY posting path stamps it. Local
+    # mode never posts, so it never needs one (see pr_review_local docstring).
+    nonce = "" if local_mode else new_nonce()
+    # Model-facing pr_meta placeholders — local mode has no real PR to name.
+    meta_repo = f"local:{args.base or args.diff_file}" if local_mode else args.repo
+    meta_pr_number = 0 if local_mode else args.pr_number
 
     try:
         system_prompt, user_prompt = load_prompts(args.prompt_dir)
@@ -165,14 +191,28 @@ def main(argv: list[str] | None = None) -> int:
 
     # The head as it stands just before the diff is read. A review's own
     # `commit_id` is stamped when it is SUBMITTED, so it cannot say what was
-    # actually reviewed — and the cleanup below needs exactly that.
-    reviewed_sha = read_reviewed_head(args.pr_number, args.repo)
+    # actually reviewed — and the cleanup below needs exactly that. Local mode
+    # never dismisses anything, so it has no reviewed head to track.
+    reviewed_sha = "" if local_mode else read_reviewed_head(args.pr_number, args.repo)
 
     try:
-        diff = fetch_pr_diff(args.pr_number, args.repo)
+        if args.diff_file:
+            diff = read_diff_file(args.diff_file)
+        elif local_mode:
+            diff, diff_error = build_local_diff(args.project_root, args.base)
+            if diff_error:
+                # EXIT_USAGE: a bad --base/--project-root is local config,
+                # not infra — exit-2-is-advisory must not skip it (external
+                # review, 2026-09-12).
+                print(_redact(f"[pr_review] {diff_error}", api_key), file=sys.stderr)
+                return EXIT_USAGE
+        else:
+            diff = fetch_pr_diff(args.pr_number, args.repo)
     except Exception as e:  # noqa: BLE001 — subprocess / runtime errors are varied
-        print(_redact(f"[pr_review] failed to fetch PR diff: {e}", api_key), file=sys.stderr)
-        return EXIT_ERROR
+        print(_redact(f"[pr_review] failed to fetch diff: {e}", api_key), file=sys.stderr)
+        # Same reasoning: local misconfig -> EXIT_USAGE; CI's `gh` transport
+        # failure stays EXIT_ERROR, the genuinely advisory case.
+        return EXIT_USAGE if local_mode else EXIT_ERROR
 
     # Drop producer-generated artifacts (compliance MDs, agent-docs, changelog
     # drops, state logs, prior review records — NOT dependency lockfiles, which
@@ -185,36 +225,18 @@ def main(argv: list[str] | None = None) -> int:
     # humans (comment) — transparent, never silent. See triage trg-e1c554d9.
     diff, excluded = filter_generated_paths(diff)
 
-    # ...but "everything was generated" is not a review. This script runs ONLY
-    # when the tier step decided the PR needs one (needs-review label, sensitive
-    # path, or external contributor — an ordinary internal churn PR takes the
-    # `decide false "internal PR"` branch and never reaches here). So a filtered
-    # diff that came back empty means a PR that had to be reviewed was handed to
-    # the model as nothing at all — and the system prompt answers an empty diff
-    # with `approve` plainly: a green required check over an unread change. The
-    # shape that matters is a fork PR touching only producer-generated artifacts.
-    # The invariant is "the reviewer saw at least one file section" — NOT the
-    # narrower "everything was filtered". An empty fetch, a `gh` body with no
-    # `diff --git` header at all, and a fully-filtered PR are the same failure
-    # from the model's side.
     if not count_sections(diff):
-        summary = nothing_reviewed_summary(excluded)
-        # `model=` names who reviewed. On this branch nobody did — we return
-        # before call_openrouter — so the footer must not attribute the verdict
-        # to a model that was never sent anything.
-        _post_verdict(args, api_key,
-                      render_comment({"decision": "block", "summary": summary},
-                                     model="no model — nothing was sent",
-                                     truncated=False,
-                                     excluded_generated=excluded), "block", summary, nonce)
-        print(f"[pr_review] {summary}", file=sys.stderr)
-        return EXIT_BLOCK
+        return handle_empty_diff(
+            excluded, local_mode,
+            post_verdict_fn=lambda body, decision, summary: _post_verdict(
+                args, api_key, body, decision, summary, nonce),
+            post_local_result_fn=post_local_result)
 
     reviewed = truncate_diff(diff)
     diff, truncated = reviewed.text, reviewed.incomplete
     missing = {"omitted": reviewed.omitted, "partial": reviewed.partial,
                "unidentified": reviewed.unidentified}
-    pr_meta = build_pr_meta(args.pr_number, args.repo, truncated, excluded, **missing)
+    pr_meta = build_pr_meta(meta_pr_number, meta_repo, truncated, excluded, **missing)
     try:
         messages = build_messages(system_prompt, user_prompt, diff, pr_meta)
     except ValueError as e:
@@ -225,12 +247,15 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_ERROR
 
     est_tokens = (len(system_prompt) + len(user_prompt) + len(diff)) // 4
+    subject = "LOCAL PREFLIGHT diff" if local_mode else f"PR #{args.pr_number}"
     print(
-        f"[pr_review] reviewing PR #{args.pr_number} with {model} "
+        f"[pr_review] reviewing {subject} with {model} "
         f"(~{est_tokens} input tokens, truncated={truncated}, "
         f"generated-excluded={len(excluded)})",
         file=sys.stderr,
     )
+    if local_mode:
+        log_files_sent(diff)
 
     try:
         raw = call_openrouter(api_key, model, messages, args.timeout, extra_body=extra_body)
@@ -248,37 +273,23 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_ERROR
 
     decision = str(review.get("decision", ""))
-    # A truncated diff is a PARTIAL review — we never saw the whole change. For a
-    # required gate on an untrusted (external/sensitive) PR, neither auto-passing
-    # nor trusting the partial verdict is safe: a large diff must not be able to
-    # BYPASS review by exceeding the size cap. Fail CLOSED — force a
-    # request-changes state + non-zero exit (below) so a human must review; a
-    # waiver requires `skip-pr-review`, a trusted exact-head GitHub approval, and a schema-valid record
-    # with completed internal passes; a manual look or label alone cannot waive it. The red
-    # required check is also what lets the gh-pr-ci triage producer surface the PR
-    # as a tracked follow-up. (Until iterate-2026-06-17-pr-review-truncation-
-    # failclosed this returned EXIT_OK — a silent size-bypass of the gate.)
+    # A truncated diff is a PARTIAL review — never trust it, fail closed
+    # instead (see `handle_truncated_diff`'s docstring for the full rationale
+    # and the required-gate waiver path).
     effective_decision = "block" if truncated else decision
     body = render_comment(
         review, model=model, truncated=truncated, excluded_generated=excluded, **missing)
 
-    state_posted = _post_verdict(args, api_key, body, effective_decision,
-                                 str(review.get("summary", "")), nonce)
+    state_posted = True if local_mode else _post_verdict(
+        args, api_key, body, effective_decision, str(review.get("summary", "")), nonce)
 
     if truncated:
-        # Partial review fails closed — needs human (see comment above).
-        # Sanitised like every sink: a raw Git path can carry terminal escapes.
-        unseen = ", ".join(safe_path(p) for p in reviewed.omitted + reviewed.partial)
-        extra = f" (+{reviewed.unidentified} unnamed)" if reviewed.unidentified else ""
-        print(
-            "[pr_review] diff exceeded the review limit — failing closed (needs human "
-            f"review). Not reviewed in full: {unseen or 'unidentifiable'}{extra}. Apply "
-            "a trusted exact-head GitHub approval, a schema-valid review record with completed passes, and "
-            "the `skip-pr-review` label; the label alone cannot override.",
-            file=sys.stderr)
-        return EXIT_BLOCK
+        return handle_truncated_diff(reviewed, local_mode, review, body,
+                                     post_local_result_fn=post_local_result)
 
     exit_code = decision_to_exit(decision)
+    if local_mode:
+        return post_local_result(decision, exit_code, review, body)
     return finish_decision(args.pr_number, args.repo, api_key, decision, exit_code, review,
                            nonce=nonce, reviewed_sha=reviewed_sha, state_posted=state_posted,
                            dismiss_fn=dismiss_own_stale_verdicts)

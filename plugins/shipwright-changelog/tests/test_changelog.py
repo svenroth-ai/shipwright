@@ -10,7 +10,10 @@ from lib.changelog import (
 )
 
 
+@pytest.mark.covers("FR-01.09/AC02")
 def test_categorize_commits():
+    """Spec FR-01.09/AC02: each entry is grouped by the kind of change it
+    was, in a form a human reads rather than a raw list of commits."""
     parsed = [
         {"type": "feat", "scope": "auth", "description": "add login", "breaking": False},
         {"type": "fix", "scope": "api", "description": "handle null", "breaking": False},

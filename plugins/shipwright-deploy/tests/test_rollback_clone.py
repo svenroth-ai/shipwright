@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 import rollback
 
 SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "lib" / "rollback.py")
@@ -18,6 +20,7 @@ SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "lib" / "rollb
 # AC10 — stopping is never reported as restoring
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC10")
 def test_clone_strategy_reports_stopping_not_restoring(client):
     client()
 
@@ -29,6 +32,7 @@ def test_clone_strategy_reports_stopping_not_restoring(client):
     assert "stopped" in result["message"].lower()
 
 
+@pytest.mark.covers("FR-01.08/AC13")
 def test_clone_stop_failure_halts_and_names_the_state(client):
     client(fail_on={"stopenv"})
 

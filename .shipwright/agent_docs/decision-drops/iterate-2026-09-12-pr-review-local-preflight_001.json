@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-pr-review-local-preflight",
+  "date": "2026-09-12",
+  "section": "Iterate — change: local PR-review preflight",
+  "title": "Local PR-review preflight (--base/--diff-file)",
+  "context": "Three real PRs blocked 2026-09-12 by the required pr_review.py CI gate; each cost a full push-CI-review round trip to learn the verdict.",
+  "decision": "Add pr_review.py --base/--diff-file local preflight (new pr_review_local.py), same prompts/model/filter as CI, wired into F11 before push; a preflight, never a waiver.",
+  "consequences": "Operator learns the CI verdict before pushing; a malformed invocation or unresolvable --base/--diff-file still STOPs (EXIT_USAGE), only real infra unavailability is advisory.",
+  "rationale": "The gate itself works (3 real defects in one day) - the fix is running it sooner, not less often; reuses F0's private-temp-index diff technique rather than importing it, to avoid coupling plugins.",
+  "rejected": "Narrowing the required CI gate to Tier-3/external-contributor PRs only - rejected, CI stays the sole required authority for every PR.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-pr-review-local-preflight-design.md"
+}

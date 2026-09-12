@@ -124,6 +124,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR spec-ref: FR-01.11 AC backfill (t1, req3-05-test-backfill-mono)](iterate-2026-09-11-t1-iterate-surface-fr-01-11-ac-backfill.md)
 - [Mechanise FR-01.06/FR-01.07's 7 AC-evidence lines, or downgrade with a reason](iterate-2026-09-12-e3-checks-test-security-fr0106-fr0107-checks.md)
 - [Anchor or remove PR-review skip-safety for the 4 _GENERATED_PREFIXES entries](iterate-2026-09-12-generated-prefixes-provenance-anchor-skip-safety.md)
+- [Local PR-review preflight (`--base`/`--diff-file`)](iterate-2026-09-12-pr-review-local-preflight-design.md)
 - [Retention cap raised to 200 for headroom against branch concurrency](iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md)
 - [Canonical review-evidence basenames per artifact kind](iterate-2026-09-12-review-evidence-canonical-names-canonical-basenames.md)
 - [ADR spec-ref: FR-01.03 + FR-01.04 AC backfill (t3, req3-05-test-backfill-mono)](iterate-2026-09-12-t3-plan-design-fr-01-03-01-04-ac-backfill.md)
