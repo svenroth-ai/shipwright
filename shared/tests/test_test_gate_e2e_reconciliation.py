@@ -227,6 +227,29 @@ def test_int_skipped_count_still_reconciles_strictly(tmp_path):
     assert "passed: recorded=20 tool=17" in r.detail
 
 
+def test_fails_when_skipped_claim_evidence_is_malformed(tmp_path):
+    """Tier-3 CI review (PR #748, round 4): a malformed/unreadable
+    e2e-results.json used to fold into the same "0, no contradiction" result
+    as a genuinely absent file, letting a `skipped: true` claim pass without
+    the evidence ever being validated. It must FAIL instead."""
+    (tmp_path / "e2e-results.json").write_text("{not json")
+    _write_test_results(tmp_path, {"skipped": True})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "malformed/unreadable" in r.detail
+
+
+def test_fails_when_skipped_claim_evidence_has_no_stats_block(tmp_path):
+    """Same class of gap: an e2e-results.json that exists but has no stats
+    block cannot validate a `skipped: true` claim either — it must FAIL,
+    not silently skip."""
+    (tmp_path / "e2e-results.json").write_text(json.dumps({"suites": []}))
+    _write_test_results(tmp_path, {"skipped": True})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "no stats block to validate the claim" in r.detail
+
+
 def test_boolean_skipped_layer_is_still_honoured(tmp_path):
     """The boolean meaning is unchanged: a layer marked `skipped: true` with
     no contradicting evidence still SKIPS rather than demanding counts."""

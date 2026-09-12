@@ -64,29 +64,33 @@ def _stat_field(stats: dict, key: str) -> tuple[int, str | None]:
     return value, None
 
 
-def _skipped_claim_contradicted_by_evidence(pw_path: Path | None) -> int:
+def _skipped_claim_contradicted_by_evidence(pw_path: Path | None) -> tuple[int, str | None]:
     """Whether a readable ``e2e-results.json`` at ``pw_path`` shows any
     non-zero stats field, contradicting a recorded ``e2e.skipped: true``
-    claim. Returns the count of non-zero fields found (0 when there is no
-    contradiction — no file, unreadable, or a genuinely all-zero stats
-    block, which is what an honestly-skipped run's own JSON output would
-    also look like)."""
+    claim. Returns ``(contradiction_count, error)``. ``error`` is set when
+    the file EXISTS but cannot be validated (malformed JSON, unreadable, or
+    a missing/wrong-shaped ``stats`` block) — Tier-3 CI review (PR #748,
+    round 4): that case was previously folded into the same "0, no
+    contradiction" result as a genuinely absent file, letting a
+    ``skipped: true`` claim pass without the evidence ever being validated.
+    No file at all is the only case with neither a contradiction nor an
+    error — an honestly-skipped run writes none."""
     if pw_path is None:
-        return 0
+        return 0, None
     try:
         pw_data = json.loads(pw_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return 0
+    except (json.JSONDecodeError, OSError) as exc:
+        return 0, f"exists but is malformed/unreadable ({exc})"
     stats = pw_data.get("stats") if isinstance(pw_data, dict) else None
     if not isinstance(stats, dict):
-        return 0
+        return 0, "exists but has no stats block to validate the claim against"
     return sum(
         1
         for key in ("expected", "unexpected", "skipped", "flaky")
         if isinstance(stats.get(key), int)
         and not isinstance(stats.get(key), bool)
         and stats[key] > 0
-    )
+    ), None
 
 
 def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
@@ -172,7 +176,13 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
         # External review round 2 (GLM, medium): a "skipped" claim is the
         # same fabrication/staleness class this check exists to catch if
         # the tool's own output contradicts it — check before trusting it.
-        contradiction = _skipped_claim_contradicted_by_evidence(pw_path)
+        contradiction, evidence_error = _skipped_claim_contradicted_by_evidence(pw_path)
+        if evidence_error:
+            return CheckResult(
+                name, False,
+                f"e2e layer recorded as skipped, but e2e-results.json {evidence_error} "
+                f"— the 'skipped' claim cannot be validated against it",
+            )
         if contradiction:
             return CheckResult(
                 name, False,
