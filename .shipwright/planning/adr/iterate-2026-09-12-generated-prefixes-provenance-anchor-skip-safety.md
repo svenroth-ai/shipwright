@@ -66,16 +66,19 @@ filename (kept skip-safe) was the first draft; rejected once
 content-trusting consumer of exactly that shape — the same "filename shape
 is not provenance" defect Round 4 already closed for `reviews.json`.
 
-## Residual, deliberately out of scope
+## Residual, narrowed during this iterate
 
 External code review found that both `is_generated_path` and
 `is_safe_to_skip_review` normalize (`.strip()`) each changed path before
 matching — a pre-existing pattern, not introduced by this diff, that could
 in principle let a path differing only by leading/trailing whitespace from a
-canonical skip-safe shape be misclassified. Filed as `trg-0eb7b587` rather
-than fixed here: it is a repo-wide, pre-existing normalization choice
-shared by both classifiers, not specific to the 4 `_GENERATED_PREFIXES`
-entries this iterate's stated scope covers.
+canonical skip-safe shape be misclassified. Initially filed as `trg-0eb7b587`
+and deferred as out of this iterate's stated scope. The live PR-review gate
+(this iterate's own PR #746) disagreed and BLOCKED on it for
+`is_safe_to_skip_review` specifically — the higher-stakes, skip-the-gate-
+entirely function — so it was fixed here after all: that function no longer
+strips its input. `is_generated_path` (hide-from-model side, lower stakes)
+still normalizes; `trg-0eb7b587` was narrowed to track that remaining half.
 
 ## Review cascade
 

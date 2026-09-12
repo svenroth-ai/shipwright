@@ -4,8 +4,8 @@
     "date": "2026-09-12",
     "unit": {
       "status": "passed",
-      "passed": 18250,
-      "total": 18309
+      "passed": 18255,
+      "total": 18314
     },
     "integration": {
       "status": "passed",
@@ -83,23 +83,28 @@
           "behavior": "no other module in the repo still imports is_safe_to_skip_review from its old location (plugins/shipwright-security/scripts/lib/pr_review_generated.py) after the split",
           "disposition": "tested",
           "evidence": "repo-wide grep for 'from pr_review_generated import' / 'pr_review_generated.is_safe_to_skip_review' (external code review, this iterate) found only pr_review_diff_filter.py importing is_generated_path (unaffected) and stale doc/ADR prose, no live code importer of the removed name"
+        },
+        {
+          "behavior": "is_safe_to_skip_review no longer strips its input, so a path differing only by leading/trailing whitespace (including a trailing newline, closed via a match->fullmatch fix in the changelog-drop counter regex) from a canonical skip-safe shape is never granted skip-safety",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py::test_whitespace_variant_of_a_skip_safe_shape_is_NOT_safe_to_skip PASSED (live PR-review gate on this iterate's own PR #746 BLOCKED on the pre-fix .strip() call; fixed and re-verified)"
         }
       ],
       "counts": {
-        "testable": 10,
-        "tested": 10,
+        "testable": 11,
+        "tested": 11,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 10,
-        "covered_acs": 10
+        "acs": 11,
+        "covered_acs": 11
       }
     }
   },
   "source_state": {
     "run_id": "iterate-2026-09-12-generated-prefixes-provenance-anchor",
-    "commit": "3ef473caa13b38b39222bbfa7e407dd49edad439",
+    "commit": "bf193f6a67e839cc330bb5d7dcc153f078d0cb89",
     "dirty": true,
     "base": null,
     "release": null

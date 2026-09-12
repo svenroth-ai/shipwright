@@ -121,6 +121,28 @@ def test_canonical_basename_paths_stay_safe_to_skip():
     assert S.is_safe_to_skip_review(".shipwright/triage.outbox.jsonl")
 
 
+def test_whitespace_variant_of_a_skip_safe_shape_is_NOT_safe_to_skip():
+    """Live PR-review gate, this iterate's own PR #746 (blocking): the
+    classifier used to `.strip()` its input before matching, so a real,
+    distinct on-disk path differing only by leading/trailing whitespace from
+    a canonical skip-safe shape could borrow that shape's classification.
+    `is_safe_to_skip_review` no longer normalizes at all — every one of these
+    must be rejected, not merely "still passes because whitespace happens to
+    collapse the same way"."""
+    for path in (
+        " shipwright_test_results.json",
+        "shipwright_test_results.json ",
+        " shipwright_events.jsonl",
+        " .shipwright/triage.jsonl",
+        ".shipwright/triage.outbox.jsonl ",
+        " CHANGELOG-unreleased.d/Fixed/x_001.md",
+        "CHANGELOG-unreleased.d/Fixed/x_001.md ",
+        "\tCHANGELOG-unreleased.d/Security/x_012.md",
+        "CHANGELOG-unreleased.d/Security/x_012.md\n",
+    ):
+        assert not S.is_safe_to_skip_review(path), path
+
+
 def test_an_off_canonical_path_with_a_generated_basename_is_NOT_safe_to_skip():
     """Medium-severity doubt-review finding: a brand-new file merely NAMED
     triage.jsonl at an attacker-chosen path is not the regenerated artifact

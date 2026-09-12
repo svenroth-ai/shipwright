@@ -164,7 +164,7 @@ def _is_canonical_changelog_drop(rest: str) -> bool:
     category, sep, filename = rest.partition("/")
     if not sep or category not in _SKIP_REVIEW_CHANGELOG_CATEGORIES:
         return False
-    return bool(_SKIP_REVIEW_CHANGELOG_DROP_RE.match(filename))
+    return bool(_SKIP_REVIEW_CHANGELOG_DROP_RE.fullmatch(filename))
 
 
 def is_safe_to_skip_review(path: str) -> bool:
@@ -204,8 +204,16 @@ def is_safe_to_skip_review(path: str) -> bool:
        from skip-safety entirely. See the "PER-PREFIX ANCHORING" comment
        above for the full trace, including a doubt-review round that
        disproved an earlier, broader version of this same fix.
+
+    Deliberately does NOT `.strip()` the input (live PR-review gate, this
+    iterate's own PR #746) — the earlier draft normalized whitespace before
+    matching, which let a real, distinct on-disk path such as
+    `" CHANGELOG-unreleased.d/Fixed/x_001.md"` (leading space) borrow the
+    canonical path's classification. This is a HIGHER bar than
+    `is_generated_path` (hide-only, lower stakes) needs, which is why the two
+    diverge on this point rather than sharing one normalization rule.
     """
-    p = (path or "").strip()
+    p = path or ""
     if p.startswith(_SKIP_REVIEW_CHANGELOG_PREFIX):
         return _is_canonical_changelog_drop(p[len(_SKIP_REVIEW_CHANGELOG_PREFIX):])
     return p in _SKIP_REVIEW_CANONICAL_BASENAME_PATHS
