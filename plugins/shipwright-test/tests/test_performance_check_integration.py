@@ -131,21 +131,59 @@ def test_block_gate_fails_when_lighthouse_below_budget(tmp_path):
 # ── warn gate: same bad LHR but exit 0 + success true ────────────────────────
 
 @pytest.mark.covers("FR-01.06/AC14")
-def test_warn_gate_succeeds_even_on_lighthouse_failure(tmp_path):
-    # AC14's "gate=warn continues rather than stopping" clause.
+def test_warn_gate_skips_lighthouse_without_dev_url(tmp_path):
+    # Sibling to the AC14 test below: without --dev-url, lighthouse is
+    # skipped outright (not "warned through") -- kept as its own test so the
+    # skip path stays proven once the failure path below stopped relying on it.
     cwd = FIXTURES
     profile_path = _make_temp_profile(tmp_path, gate="warn")
     proc = _run(
         ["--cwd", str(cwd), "--profile-path", str(profile_path)],
         env_extra={"SHIPWRIGHT_PERF_LHCI_FAKE": str(FIXTURES / "lhci" / "lhr-bad.json")},
     )
-    # No --dev-url passed → lighthouse skipped; bundle still runs and passes
     assert proc.returncode == 0
     out = json.loads(proc.stdout)
     assert out["success"] is True
     assert out["gate"] == "warn"
     assert out["lighthouse"]["skipped"] is True
     assert out["bundle"]["ran"] is True
+
+
+@pytest.mark.covers("FR-01.06/AC14")
+def test_warn_gate_continues_on_a_real_failure_and_files_a_followup(tmp_path):
+    # AC14's "gate=warn continues rather than stopping" clause AND "an
+    # overrun that only warns is still recorded as a follow-up that outlives
+    # the run" clause -- both require a REAL failing sub-check, so lighthouse
+    # must actually run (--dev-url passed, same fake-LHR seam as the block-gate
+    # test above). A prior version of this test omitted --dev-url, which
+    # skipped lighthouse entirely and made `evaluate_gate`'s hardcoded
+    # `return True` for gate="warn" the only reason the assertion passed --
+    # a real gate=block->warn flip would not have been caught (Stage-1 spec
+    # review REJECT, iterate-2026-09-12-t4-test-security).
+    cwd = tmp_path
+    profile_path = _make_temp_profile(tmp_path, gate="warn")
+    proc = _run(
+        ["--cwd", str(cwd), "--profile-path", str(profile_path),
+         "--dev-url", "http://localhost:3000"],
+        env_extra={"SHIPWRIGHT_PERF_LHCI_FAKE": str(FIXTURES / "lhci" / "lhr-bad.json")},
+    )
+    assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"
+    out = json.loads(proc.stdout)
+    assert out["success"] is True
+    assert out["gate"] == "warn"
+    assert out["lighthouse"]["ran"] is True
+    assert out["lighthouse"]["skipped"] is False
+    assert out["lighthouse"]["score_passed"] is False
+    # The overrun is a real failure, so it must still be filed even though
+    # the gate itself let the run continue.
+    triage_path = tmp_path / ".shipwright" / "triage.jsonl"
+    assert triage_path.exists(), (
+        "a warn-only overrun must still be recorded as a surviving follow-up"
+    )
+    lines = [json.loads(line) for line in triage_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert any("score below budget" in item.get("title", "").lower() for item in lines), (
+        f"expected a lighthouse score follow-up in triage.jsonl, got: {lines}"
+    )
 
 
 # ── profile-opts-out scenario ────────────────────────────────────────────────
