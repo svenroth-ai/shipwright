@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-generated-prefixes-provenance-anchor",
+  "date": "2026-09-12",
+  "section": "Iterate — fix: anchor or remove _GENERATED_PREFIXES skip-safety per prefix",
+  "title": "is_safe_to_skip_review: anchor or remove each _GENERATED_PREFIXES entry",
+  "context": "is_safe_to_skip_review's _GENERATED_PREFIXES check was a plain directory-prefix match, unanchored unlike the function's basename/review-evidence categories. Round 4 (parent iterate iterate-2026-09-11-pr-review-evidence-filter-gap) traced one prefix to a real consumer: security_gate.py trusts .shipwright/compliance/ci-security.json's content unverified as a deploy-gate oracle.",
+  "decision": "Per prefix: the compliance-evidence and agent-doc-runtime prefixes are removed from skip-safety entirely (no closed writer shape / gitignored-never-tracked). iterates/ first anchored to its RUN_ID_STRICT filename shape, then also removed after doubt review showed that shape is public/forgeable and complexity_history.load_history_prior trusts it unauthenticated. CHANGELOG-unreleased.d/ anchored to <category>/<name>_<NNN>.md (ASCII digits). is_generated_path (hide side) unchanged. Full rationale: spec_ref.",
+  "consequences": "PRs touching only the compliance-evidence, iterates, or agent-doc-runtime prefixes now get one real (if trivial) review call instead of an automatic skip; CHANGELOG-only PRs keep the automatic skip. pr_review_generated.py split into two files to stay under the 300-line guideline. A pre-existing, unrelated whitespace-normalization gap in both classifiers was found by external review and filed as trg-0eb7b587 (out of scope here).",
+  "rationale": "Doubt review + external code review both independently disproved 'write-time-enforced filename shape' as equivalent to provenance for a file an automated consumer trusts unauthenticated — the same lesson Round 4 already established for reviews.json, applied per-prefix here.",
+  "rejected": "Narrowing .shipwright/agent_docs/iterates/ to a RUN_ID_STRICT-anchored filename (kept skip-safe) was the first draft; rejected once complexity_history.load_history_prior was identified as an unauthenticated content-trusting consumer of that exact shape.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-generated-prefixes-provenance-anchor-skip-safety.md"
+}

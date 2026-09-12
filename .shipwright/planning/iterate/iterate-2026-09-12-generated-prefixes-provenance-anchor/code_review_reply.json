@@ -1,0 +1,22 @@
+{
+  "section": "generated-prefixes-provenance-anchor",
+  "review": [
+    {
+      "severity": "high",
+      "category": "architecture",
+      "file": "shipwright_bloat_baseline.json",
+      "line": null,
+      "finding": "plugins/shipwright-security/scripts/lib/pr_review_generated.py crosses the 300-line source guideline for the first time in this diff (276 -> 386 lines) and has no corresponding entry in shipwright_bloat_baseline.json.",
+      "suggestion": "FIXED: split along the is_generated_path / is_safe_to_skip_review consumer boundary per reviewer's exact recommendation. pr_review_generated.py keeps is_generated_path + its constants/rationale (202 lines); new pr_review_skip_safety.py holds is_safe_to_skip_review + its constants/rationale (212 lines); review_record_tier.py's import updated to the new module. Both files now under 300 lines. Re-ran full plugin suite (1032 passed, 7 skipped), lint, and verify_local.py after the split — all clean."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py",
+      "line": 63,
+      "finding": "test_changelog_drop_off_shape_is_NOT_safe_to_skip's first case exercised two independent failure axes (category name+case, missing counter) at once.",
+      "suggestion": "FIXED: split into a wrong-category-name case and a wrong-category-case (FIXED vs Fixed) case, each paired with a valid counter, alongside the existing single-axis cases."
+    }
+  ],
+  "summary": "PASS. Correctness of the two new anchoring functions verified against edge cases (empty/traversal/case/nesting/counter-width) with no false positives; sole caller of is_safe_to_skip_review (review_record_tier.classify_generated_only) confirmed as the only affected consumer; test updates confirmed to exercise real anchoring boundaries. Both findings fixed."
+}
