@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-e2-checks-project-elicitation",
+  "date": "2026-09-11",
+  "section": "FR-01.02 / FR-01.16 enforcement",
+  "title": "Mechanised checks for /shipwright-project (FR-01.02) and elicitation (FR-01.16)",
+  "context": "REQ-3 ledger named 9 prompt-only/mechanisable lines under FR-01.02 (6) and FR-01.16 (3, excl. e6's 5 judgement lines). D7: no line may become an LLM-judgement gate; downgrade to judgement+drift-test only when no deterministic oracle exists.",
+  "decision": "Built 4 new pure gate functions + wiring (_project_gate_extras.py/_project_gate_wiring.py) into project_checks.run_project_checks: basis_forbids_assumed (#4/#15 merged, extension-scope skipped), criteria_free_of_implementation_detail (#5), no_empty_split (#10 floor), starting_guidance_present (#11). #8/#10/#3 each split floor(enforced)+judgement-half(drift-tested: #8b,#10b,#3b). FR-01.16 C/#6/#3-half cite already-shipped P4.2 work.",
+  "consequences": "9 lines closed, 3 new drift-tested judgement downgrades, none gated. 67 tests green, lint clean. Live re-measure: 20 mechanisable, 24 judgement, 16 enforced-untested, 33 unimplemented, 76 enforced-tested. No architecture-doc impact (existing dispatcher, no new route/schema).",
+  "rationale": "7 rounds of external code review (both GLM+OpenAI) hardened every manifest-read path (parse failure, non-list/non-object splits, unsafe/traversal names, missing/unreadable spec.md, scope defaults) to fail loud instead of silently passing; round 7 closed with GLM approve. Full findings tables + self-review + confidence-calibration in the linked spec-ref.",
+  "rejected": "A second semantic 'does this AC name a settlement' oracle for #15 (no deterministic check exists); directory enumeration for split discovery (cannot distinguish real splits from reserved dirs like campaigns/adr/grill-traces); failing the whole manifest on any single invalid split name (kept per-split granularity instead).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-11-e2-checks-project-elicitation-checks.md"
+}

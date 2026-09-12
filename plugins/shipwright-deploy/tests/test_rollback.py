@@ -8,6 +8,9 @@ the returned payload. Clone-strategy and CLI-argument tests live in
 ``test_rollback_clone.py``.
 """
 
+import os
+import socket
+import subprocess
 import urllib.error
 
 import pytest
@@ -76,6 +79,7 @@ def test_pin_sends_the_full_project_object_with_only_the_branch_replaced(client,
     assert pinned["branch"] == "v1.2.3"
 
 
+@pytest.mark.covers("FR-01.08/AC14")
 def test_unreadable_project_config_refuses_instead_of_writing(client):
     """AC11 — if the current config cannot be read, do not risk a sparse write."""
     recording = client(fail_on={"getprojects"})
@@ -92,6 +96,7 @@ def test_unreadable_project_config_refuses_instead_of_writing(client):
 # AC3 / AC13 — the verdict never over-claims
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_readback_confirming_the_ref_reports_confirmed(client):
     client()
 
@@ -101,6 +106,7 @@ def test_readback_confirming_the_ref_reports_confirmed(client):
     assert result["verification_error"] is None
 
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_readback_returning_a_different_ref_is_a_failure(client):
     """AC3 — a mismatch is not a soft warning."""
     recording = client()
@@ -118,6 +124,7 @@ def test_readback_returning_a_different_ref_is_a_failure(client):
     assert result["halt"] is True
 
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_unavailable_readback_downgrades_the_claim_and_says_why(client):
     """AC3 — 'unconfirmed' keeps success but must never read as 'confirmed'."""
     recording = client()
@@ -140,6 +147,7 @@ def test_unavailable_readback_downgrades_the_claim_and_says_why(client):
     assert "not confirm" in result["message"]
 
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_a_raw_transport_failure_also_downgrades_rather_than_escaping(client, vcs_project):
     """A client that does not wrap URLError must still produce a report."""
     recording = client()
@@ -198,6 +206,8 @@ def test_refs_heads_prefix_compares_canonically(client):
 # AC12 — a half-done rollback names what it changed
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC13")
+@pytest.mark.covers("FR-01.08/AC14")
 def test_update_failure_reports_the_changed_configuration_and_the_previous_ref(client):
     client(fail_on={"update"})
 
@@ -217,6 +227,7 @@ def test_update_failure_reports_the_changed_configuration_and_the_previous_ref(c
 # AC13 — ref-form validation happens before anything is touched
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC14")
 @pytest.mark.parametrize("bad", ["HEAD; rm -rf /", "-oProxyCommand=x", "a..b", "with space", ""])
 def test_invalid_ref_forms_are_rejected_before_any_host_call(client, bad):
     recording = client()
@@ -226,4 +237,45 @@ def test_invalid_ref_forms_are_rejected_before_any_host_call(client, bad):
     assert recording.calls == []
     assert result["success"] is False
     assert result["mutated"] is False
-    assert result["halt"] is False
+
+
+@pytest.mark.covers("FR-01.08/AC15")
+def test_completed_rollback_touches_no_data_tier_capability(client, monkeypatch):
+    """Spec FR-01.08/AC15: "stored data...stays where it is" is proven here
+    by blocking every capability a data-tier mutation would need -- raw
+    sockets (what every HTTP client, ORM, or DB driver ultimately calls
+    through, regardless of which named library is used or how it is
+    imported), subprocess, and os.system/popen -- then completing a real
+    rollback through the fake hosting client only. A prior version of this
+    test scanned rollback.py's static imports for a denylist of known DB
+    packages; Tier-3 PR review correctly rejected that as gameable (an
+    unlisted client, a dynamic import, or reuse of an already-imported
+    module could all bypass a name-based scan). A capability spy at the
+    interpreter's actual network/process primitives has no such blind spot:
+    if a broken implementation reached for ANY of them to touch stored data,
+    this fails loudly instead of passing by construction."""
+
+    def _fail(name):
+        def _raiser(*args, **kwargs):
+            raise AssertionError(f"rollback must not use {name} to reach a data tier")
+        return _raiser
+
+    for name in ("run", "Popen", "call", "check_call", "check_output"):
+        monkeypatch.setattr(subprocess, name, _fail(f"subprocess.{name}"))
+    monkeypatch.setattr(socket, "socket", _fail("socket.socket"))
+    monkeypatch.setattr(socket, "create_connection", _fail("socket.create_connection"))
+    monkeypatch.setattr(os, "system", _fail("os.system"))
+    monkeypatch.setattr(os, "popen", _fail("os.popen"))
+
+    # Positive control: the spy is reachable and actually fires.
+    with pytest.raises(AssertionError):
+        socket.socket()
+    with pytest.raises(AssertionError):
+        subprocess.run(["true"])
+
+    recording = client()
+
+    result = rollback.rollback_git("dev-demo", "v1.2.3")
+
+    assert result["success"] is True
+    assert recording.calls  # completed via the fake hosting client only

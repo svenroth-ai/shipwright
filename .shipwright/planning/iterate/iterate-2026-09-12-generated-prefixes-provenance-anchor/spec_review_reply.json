@@ -1,0 +1,6 @@
+{
+  "stage": "spec",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Verified against actual source (security_gate.py, iterate_entry.py, iterate_test_results.py, write_changelog_drop.py, .gitignore, test_runtime_dir_gitignored.py). Confirmed consumer (.shipwright/compliance/ci-security.json) loses unanchored skip-safety; the two anchored prefixes (.shipwright/agent_docs/iterates/, CHANGELOG-unreleased.d/) match their real write-time shape, not a guess; .shipwright/agent_docs/runtime/ removal justified by gitignore + CI-gating test. Scope confined to the classifier, its two test files, and the triage dismissal. No missing, unfaithful, out-of-scope, or contradictory elements found."
+}

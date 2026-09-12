@@ -147,6 +147,7 @@ def test_a_shell_metacharacter_ref_never_reaches_git(repo):
 # The gate — what the target's own declared strategy does to the question
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC07")
 def test_drift_refuses_and_names_the_targets_strategy(repo):
     _add_migration(repo, "0002_add_column.sql")
 
@@ -157,6 +158,7 @@ def test_drift_refuses_and_names_the_targets_strategy(repo):
     assert "0002_add_column.sql" in refusal
 
 
+@pytest.mark.covers("FR-01.08/AC07")
 def test_an_unresolvable_ref_refuses_rather_than_guessing(repo):
     report, refusal = gate(repo, "v99", strategy="down-migration")
 
@@ -164,6 +166,7 @@ def test_an_unresolvable_ref_refuses_rather_than_guessing(repo):
     assert "cannot tell" in refusal
 
 
+@pytest.mark.covers("FR-01.08/AC07")
 def test_acknowledging_the_drift_lifts_the_refusal(repo):
     _add_migration(repo, "0002_add_column.sql")
 
@@ -173,8 +176,14 @@ def test_acknowledging_the_drift_lifts_the_refusal(repo):
     assert refusal is None
 
 
+@pytest.mark.covers("FR-01.08/AC15")
 def test_a_target_whose_data_never_moves_skips_the_question(repo):
-    """`none-app-only` means there is no data tier to meet — do not refuse."""
+    """`none-app-only` means there is no data tier to meet — do not refuse.
+
+    Spec FR-01.08/AC15: on a completed rollback, stored data stays where it
+    is (this module never mutates data, only reports on it) and how that is
+    handled is answered by the target's own written record
+    (`data_rollback_strategy`), named here by `target_id`."""
     _add_migration(repo, "0002_add_column.sql")
 
     report, refusal = gate(repo, "v99", strategy="none-app-only", target_id="vercel")
@@ -184,6 +193,7 @@ def test_a_target_whose_data_never_moves_skips_the_question(repo):
     assert "vercel" in report["reason"]
 
 
+@pytest.mark.covers("FR-01.08/AC07")
 def test_an_undeclared_strategy_still_refuses_and_says_it_is_undeclared(repo):
     _add_migration(repo, "0002_add_column.sql")
 

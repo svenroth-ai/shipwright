@@ -1,0 +1,98 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-11-glossary-p41-review-followups",
+    "date": "2026-09-11",
+    "unit": {
+      "status": "passed",
+      "passed": 17966,
+      "total": 18025
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure CLI-tooling follow-up fixes (write_context_term.py, context_md_format.py, _write_context_term_cli.py, and their tests); no startable web/dev-server surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "legacy CLI-flag test functions are named for the legacy-flag path they actually cover, and no stale cross-reference to the old name remains",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_cli.py::test_legacy_cli_flags_sharpen_a_term_into_context_md, ::test_legacy_cli_flags_second_sharpened_term_does_not_corrupt_first PASSED"
+        },
+        {
+          "behavior": "--term/--definition/--avoid's own --help text warns against shell-composed interview text and points at --payload-file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_cli.py::test_help_warns_against_shell_composed_interview_text_on_legacy_flags PASSED"
+        },
+        {
+          "behavior": "interview-protocol.md's fenced bash blocks never contain a --term-shaped invocation (only --payload-file is sanctioned)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_project_interview_protocol_wires_the_context_producer PASSED"
+        },
+        {
+          "behavior": "a payload-file caller's blank avoid is rejected with a message naming the payload's own field spelling (avoid/clear_avoid), not only the CLI flag spelling",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_payload.py::test_payload_file_blank_avoid_error_names_the_payload_field PASSED"
+        },
+        {
+          "behavior": "a wrapped _Avoid_ continuation line that starts with a bolded cross-reference to another term is absorbed into the avoid text, not mistaken for that other term's own entry",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_duplicates.py::test_wrapped_avoid_line_cross_referencing_another_term_is_not_flagged PASSED"
+        },
+        {
+          "behavior": "an unrelated hand-written note separated from _Avoid_ by a blank line is preserved as its own raw block, not swallowed into the avoid text",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_duplicates.py::test_unrelated_raw_line_after_avoid_is_not_swallowed_into_it PASSED"
+        },
+        {
+          "behavior": "the three pre-existing hidden-duplicate rejection cases still fail upsert_term as before (the item-5 parser fix does not weaken duplicate detection)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_write_context_term_duplicates.py (three existing rejection-case tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-glossary-p41-review-followups",
+    "commit": "3615210e2203da133bcab980445e9360ad27f759",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

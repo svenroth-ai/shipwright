@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-generated-prefixes-provenance-anchor",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "Naming & Structure",
+          "file": null,
+          "line": null,
+          "finding": "pr_review_generated.py is now 386 lines, over the 300-line guideline (was 276 before this diff). Disclosed rather than split in this run: the file's own established convention is dense, chronologically-ordered rationale comments per anchoring round (Round 1-5 already present before this diff), and splitting the classification logic from its round-by-round rationale would separate code from the reasoning a future round needs to extend it safely. Flagging for the code-reviewer to weigh in; will split if it agrees a split is warranted without losing that traceability.",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T00:06:46.273817+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T00:06:52.682144+00:00",
+      "disposition": "mini-plan and external plan review are medium+ only per SKILL.md Phase Matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": null,
+          "finding": "plugins/shipwright-security/scripts/lib/pr_review_generated.py crosses the 300-line source guideline for the first time in this diff (276 -> 386 lines) and has no corresponding entry in shipwright_bloat_baseline.json.",
+          "suggestion": "FIXED: split along the is_generated_path / is_safe_to_skip_review consumer boundary per reviewer's exact recommendation. pr_review_generated.py keeps is_generated_path + its constants/rationale (202 lines); new pr_review_skip_safety.py holds is_safe_to_skip_review + its constants/rationale (212 lines); review_record_tier.py's import updated to the new module. Both files now under 300 lines. Re-ran full plugin suite (1032 passed, 7 skipped), lint, and verify_local.py after the split — all clean.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py",
+          "line": 63,
+          "finding": "test_changelog_drop_off_shape_is_NOT_safe_to_skip's first case exercised two independent failure axes (category name+case, missing counter) at once.",
+          "suggestion": "FIXED: split into a wrong-category-name case and a wrong-category-case (FIXED vs Fixed) case, each paired with a valid counter, alongside the existing single-axis cases.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T05:31:30.408065+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
+          "line": null,
+          "finding": "Claim under doubt: Anchoring `.shipwright/agent_docs/iterates/` entries to `<run_id>.json` / `<run_id>.test-results.json` (with `run_id` matching `RUN_ID_STRICT`, already enforced at write time by `iterate_entry.py`/`iterate_test_results.py`) closes the same class of gap Round 4 closed for `reviews.json`, making it safe to keep skip-safe. — `RUN_ID_STRICT` is a public, freely-choosable filename shape, not a signature — a contributor's own PR can commit a brand-new, self-authored, shape-valid file under this prefix carrying forged content; nothing about the write-time enforcement of that shape by the legitimate producer prevents an attacker from independently producing a file matching the same shape. A concrete real consumer trusts that content unauthenticated: `plugins/shipwright-iterate/scripts/lib/complexity_history.py::load_history_prior` globs every `*.json` directly under this dir and accepts any file with a valid `complexity` + parseable `date`, feeding it into later iterates' complexity default (`prior_source: history`) with zero authorship or provenance check. The claim conflated 'shape enforced at write time by the legitimate producer' with 'shape can only be produced by the legitimate producer' — Round 4 already showed those are not the same thing for `reviews.json`, and this anchor repeated exactly that mistake one directory over. Disproved.",
+          "suggestion": "Either (a) apply the same treatment given to `.shipwright/compliance/` — remove `.shipwright/agent_docs/iterates/` from skip-safety entirely now that a concrete downstream truster (`complexity_history.load_history_prior`) is identified, accepting one extra trivial review call for iterate-record-only PRs, or (b) disclose this explicitly as an accepted residual risk.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
+          "line": null,
+          "finding": "Claim under doubt: The comment comparing the `CHANGELOG-unreleased.d/` wildcard's residual risk to the `external-*review*` hide-side wildcard treats the two as comparably low-stakes: both are described as leaving a shape-conforming but content-forged file 'hidden from one review call'. — The two are not comparable. `external-*review*` is hide-only: even a forged file under that prefix still leaves the rest of the diff subject to a real model review, so it is hidden from one review call within an otherwise-reviewed PR. `CHANGELOG-unreleased.d/` is hidden AND skip-safe, so a PR whose only change is one shape-conforming drop gets zero review, human or model, not merely one hidden section. The comment's wording obscured this asymmetry.",
+          "suggestion": "Reword the comment to state explicitly that a matching CHANGELOG-only PR gets zero review, and ground the acceptance in the absence of any content-trusting downstream reader for that prefix (drops are aggregated into CHANGELOG.md by a human-run `/shipwright-changelog`, never consumed as a gate oracle) rather than implying parity with the hide-side wildcard's residual risk.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T05:44:27.011600+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py — `_SKIP_REVIEW_CHANGELOG_DROP_RE = re.compile(r\"^[^/]+_\\d{3}\\.md$\")",
+          "line": null,
+          "finding": "The anchor assumes the producer's counter is always exactly three zero-padded digits. If `write_changelog_drop._next_counter_path` ever emits a 4-digit counter (a category with ≥1000 drops, or if padding is configurable), a legitimate drop would silently lose skip-safety. This fails safe (extra trivial review), not open, but the sync constraint with the producer isn't enforced or tested at a shared constant.",
+          "suggestion": "Either import/derive the pattern from `write_changelog_drop` (or assert sync in a test that reads the producer's `_next_counter_path` output format), or relax to `\\d{3,}`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py (removal of `is_safe_to_skip_review` from `__all__` and module)",
+          "line": null,
+          "finding": "is_safe_to_skip_review` was removed entirely from `pr_review_generated.py`. Only `review_record_tier.py` and the test file are updated in this diff; any other consumer importing it from the old module (none visible here, but the diff doesn't prove the repo-wide caller set) would break with an ImportError.",
+          "suggestion": "A grep of the repo for `from pr_review_generated import`/`pr_review_generated.is_safe_to_skip_review` should be recorded as verified; the self-review claims this was checked (\"sole caller confirmed\") but the diff itself carries no evidence. If any external plugin re-exports it, add a shim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py — `test_changelog_drop_anchored_shape_stays_safe_to_skip",
+          "line": null,
+          "finding": "The positive tests only cover `Fixed/` and `Security/` categories with counters `001` and `012`; there is no test that a category segment with trailing/leading whitespace or an attacker category that happens to be one of the six after unicode normalization is rejected. Minor — the closed frozenset comparison is exact — but the category check could also be exercised against a category that is a real name with trailing slash-less suffix like `Fixed2`, which the regex/`not in` set correctly rejects; that axis is untested.",
+          "suggestion": "Add `Fixed2/...` and a real-category-with-trailing-space case to the negative test.  Everything material in the spec is implemented and verifiable in the diff: compliance/, iterates/, runtime/ removed from skip-safety; CHANGELOG-unreleased.d/ anchored to the six-category + `_<NNN>.md` shape; the zero-review disclosure rewording present in the PER-PREFIX comment; `is_generated_path` (hide side) untouched; sole visible caller `review_record_tier.py` import updated; tests assert both the hide-side preservation and the skip-side removal for each dropped prefix, and isolate single failure axes for the changelog anchor. No security regression introduced — the change strictly narrows the skip-gate.  Overall assessment: ship-as-is; findings are hardening refinements, none block.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "[pr_review_skip_safety.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-viudrcoh\\plugins\\shipwright-security\\scripts\\lib\\pr_review_skip_safety.py:204)",
+          "line": null,
+          "finding": "strip()` turns a real Git path with leading or trailing whitespace into a canonical changelog-drop path. For example, ` CHANGELOG-unreleased.d/Fixed/x_001.md` would be allowed to make a PR skip review, despite not matching the required repo path shape.",
+          "suggestion": "Do not normalize the path in this security classifier (`p = path or \"\"`); preserve exact path bytes and reject whitespace-prefixed/suffixed lookalikes. Add negative tests for both cases.  Ship-with-fixes: the per-prefix decisions otherwise match the specification, but the new canonical-path check is bypassable for valid Git filenames containing boundary whitespace.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T05:51:22.206809+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py — `_SKIP_REVIEW_CHANGELOG_DROP_RE = re.compile(r\"^[^/]+_\\d{3}\\.md$\")`\n  Finding: The anchor assumes the producer's counter is always exactly three zero-padded digits. If `write_changelog_drop._next_counter_path` ever emits a 4-digit counter (a category with ≥1000 drops, or if padding is configurable), a legitimate drop would silently lose skip-safety. This fails safe (extra trivial review), not open, but the sync constraint with the producer isn't enforced or tested at a shared constant.\n  Suggestion: Either import/derive the pattern from `write_changelog_drop` (or assert sync in a test that reads the producer's `_next_counter_path` output format), or relax to `\\d{3,}`.\n\n- Category: regression\n  Severity: low\n  File: plugins/shipwright-security/scripts/lib/pr_review_generated.py (removal of `is_safe_to_skip_review` from `__all__` and module)\n  Finding: `is_safe_to_skip_review` was removed entirely from `pr_review_generated.py`. Only `review_record_tier.py` and the test file are updated in this diff; any other consumer importing it from the old module (none visible here, but the diff doesn't prove the repo-wide caller set) would break with an ImportError.\n  Suggestion: A grep of the repo for `from pr_review_generated import`/`pr_review_generated.is_safe_to_skip_review` should be recorded as verified; the self-review claims this was checked (\"sole caller confirmed\") but the diff itself carries no evidence. If any external plugin re-exports it, add a shim.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py — `test_changelog_drop_anchored_shape_stays_safe_to_skip`\n  Finding: The positive tests only cover `Fixed/` and `Security/` categories with counters `001` and `012`; there is no test that a category segment with trailing/leading whitespace or an attacker category that ha […truncated]\n\n[openai] - Category: security\n- Severity: medium\n- File: [pr_review_skip_safety.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-viudrcoh\\plugins\\shipwright-security\\scripts\\lib\\pr_review_skip_safety.py:204)\n- Finding: `strip()` turns a real Git path with leading or trailing whitespace into a canonical changelog-drop path. For example, ` CHANGELOG-unreleased.d/Fixed/x_001.md` would be allowed to make a PR skip review, despite not matching the required repo path shape.\n- Suggestion: Do not normalize the path in this security classifier (`p = path or \"\"`); preserve exact path bytes and reject whitespace-prefixed/suffixed lookalikes. Add negative tests for both cases.\n\nShip-with-fixes: the per-prefix decisions otherwise match the specification, but the new canonical-path check is bypassable for valid Git filenames containing boundary whitespace.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T05:22:55.858631+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T00:06:52.805712+00:00",
+      "disposition": "internal plan review is medium+ only per SKILL.md Phase Matrix; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

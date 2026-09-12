@@ -1,0 +1,101 @@
+{
+  "run_id": "iterate-2026-09-12-t5-deploy-changelog",
+  "date": "2026-09-12T06:50:23.031396Z",
+  "event_at": "2026-09-12T06:38:21.111580+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t5",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t5-deploy-changelog.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-t5-deploy-changelog",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "FR-01.08/AC01: a release actually reaches the target and is made to run there, and more than one hosting kind can be configured",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-deploy/tests/test_jelastic_client.py::test_deploy_from_git_creates_the_project_then_updates_when_absent, ::test_more_than_one_hosting_target_kind_is_offered PASSED"
+      },
+      {
+        "behavior": "FR-01.08/AC03-AC04: a completed release is contacted to prove it is alive, polled per the target's own deadline",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-deploy/tests/test_smoke_e2e_cli.py PASSED (4 tests)"
+      },
+      {
+        "behavior": "FR-01.08/AC06-AC07,AC13-AC14: rollback confirms/mismatches/downgrades the readback claim; drifted data refuses and names the strategy; a failed way-back halts and is distinguished from a pre-contact refusal",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-deploy/tests/test_rollback.py, test_rollback_e2e_cli.py, test_data_drift.py PASSED"
+      },
+      {
+        "behavior": "FR-01.08/AC09: every offered target's rollback discipline is checked against one common schema, including a target with a missing rollback block being rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/tools/test_validate_deploy_profile.py::TestRealProfilesAreValid, ::test_missing_rollback_block_fails PASSED"
+      },
+      {
+        "behavior": "FR-01.08/AC10,AC15: a stop-only clone rollback is reported as stopping not restoring; a completed rollback leaves stored data alone and the target's own strategy answers what happens to it",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-deploy/tests/test_rollback_clone.py, test_rollback_e2e_cli.py::test_acknowledging_the_drift_proceeds, test_data_drift.py::test_a_target_whose_data_never_moves_skips_the_question PASSED"
+      },
+      {
+        "behavior": "FR-01.08/AC02,AC05,AC08,AC11,AC12: agent-orchestrated SKILL.md steps with no coded gate/trigger to exercise",
+        "disposition": "untestable",
+        "reason_code": "requires-interactive-tty",
+        "reason": "test-gate confirmation, auto-rollback-on-smoke-failure, override-record, cause-recording and manual-confirm+liveness-proof are all agent AskUserQuestion/decision-log prose in SKILL.md -- an interactive step the test harness cannot drive, not a coded runtime path; filed as trg-7a6a9562 for AC02/AC05 specifically"
+      },
+      {
+        "behavior": "FR-01.09/AC02,AC04: commits are categorized by kind; the version-bump rule (incl. the pre-1.0 breaking exception) is followed exactly",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-changelog/tests/test_changelog.py::test_categorize_commits, test_git_utils.py::test_suggest_version_* (5 tests) PASSED"
+      },
+      {
+        "behavior": "FR-01.09/AC03,AC06-AC10: no pending work reports an empty section not an empty release; a new release lands above the prior one; a rerun replaces rather than duplicates or is refused with a named reason; legacy bullets are preserved and warned; dry-run previews without writing",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_changelog_aggregation.py, test_changelog_aggregation_idempotency.py, test_changelog_aggregation_refusal.py PASSED"
+      },
+      {
+        "behavior": "FR-01.09/AC05: two decision records from independent drops get sequential ADR numbers assigned at one aggregation point",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_aggregate_decisions.py::test_aggregates_drops_into_decision_log PASSED"
+      },
+      {
+        "behavior": "FR-01.09/AC11: preparing a release publishes nothing by itself -- no git/gh process-launch call happens during aggregation",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_changelog_aggregation.py::TestAggregateEndToEnd::test_aggregation_never_shells_out_to_git_or_gh PASSED"
+      },
+      {
+        "behavior": "FR-01.09/AC12-AC13: a manifest write is checked against the committed blob afterward; a manifest carrying its version in more than one place gets every occurrence written together",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_sync_release_manifests_git.py, test_sync_release_manifests_marketplace.py::test_sync_marketplace_manifest_bumps_root_and_nested_entries PASSED"
+      },
+      {
+        "behavior": "FR-01.09/AC14: the release page is checked against a fixed expected shape and actually created, carrying the summary and link",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_validate_release_notes.py, test_create_github_release.py::test_reports_exists_without_creating, ::test_success_argv_shape PASSED"
+      },
+      {
+        "behavior": "FR-01.09/AC01,AC15: conjunctive claims whose second clause (a version tag + PR; a retroactive-non-creation guarantee) has no code artifact to invoke",
+        "disposition": "untestable",
+        "reason_code": "requires-interactive-tty",
+        "reason": "AC01's tag+PR steps are raw `git tag`/`gh pr create` shell commands the agent runs interactively in SKILL.md, not a single deterministic seam a test harness can invoke; AC15's second clause is a property of how SKILL.md sequences those same interactive calls (once, per newly-tagged version), not something create_github_release.py/publish_release_notes.py can distinguish at the code level"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 9,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 30,
+      "covered_acs": 30
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "test-only AC-binding backfill (FR-01.08/FR-01.09); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0), plus the four ADR-044 roots this unit touched run individually with their own --junitxml."
+  },
+  "declared_removals": []
+}

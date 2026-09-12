@@ -34,16 +34,23 @@ prose between heading and bullets, so ``strict=True`` and the old permissive
 scan agree on every one of them.
 
 ``criteria_for(..., strict=False)`` / ``has_criteria(..., strict=False)`` is
-the one narrow, EXPLICIT, tested exception: a legacy ``**Description:**`` /
+the narrow, EXPLICIT, tested exception: a legacy ``**Description:**`` /
 ``**Acceptance Criteria:**`` label paragraph sitting between the heading and
 the bullets must not hide them. Two real, pre-existing tests require exactly
 this and would break if the default silently changed under them:
 ``plugins/shipwright-compliance/tests/test_group_i_criteria.py::test_legacy_bold_acceptance_label_still_counts``
 (I6) and
 ``shared/tests/test_layer_coverage_criteria.py::test_prose_outside_a_criterion_is_not_a_criterion_change``
-(the cross-layer gate). Both call sites pass ``strict=False`` explicitly,
-each with a comment naming the test it preserves — see
-``group_i_criteria.has_criteria`` and ``_layer_coverage_ac.criteria_digests``.
+(the cross-layer gate). Every call site passes ``strict=False`` explicitly,
+each with a comment naming the reason it needs the permissive scan — see
+``group_i_criteria.has_criteria`` and ``_layer_coverage_ac.criteria_digests``
+(the two original callers), and
+``_project_gate_extras.basis_forbids_assumed`` /
+``_project_gate_extras.criteria_free_of_implementation_detail`` (added
+req3-06-enforcement-mono, e2-checks-project-elicitation — same rationale:
+an FR-01.02 spec.md is exactly the shape the legacy label paragraph can
+appear in, so the strict default would silently under-count criteria there
+too).
 
 ``leading_criteria`` stays adjacency-gated unconditionally (spec_parser's
 S5 fallback never needs the permissive scan): without that gate the fallback

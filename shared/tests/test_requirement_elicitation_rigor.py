@@ -107,6 +107,29 @@ def test_assumed_is_only_for_unobtainable_answers():
     )
 
 
+def test_module_requires_hard_to_reverse_rationale_linked_from_the_requirement():
+    """FR-01.02 #8 (req3-06-enforcement-mono, sub-iterate e2): "Hard-to-reverse
+    rationale recorded + linked." The floor half — an ADR exists for the
+    phase at all — is code-enforced (C4, `project_checks.check_c4_decision_log_has_phase_adr`).
+    The LINK-BACK half (a specific ADR traceable from the specific
+    requirement it justifies) has no addressable field anywhere in the
+    FR-row schema to check mechanically — fr-authoring.md defines no
+    "links to ADR-NNN" cell, and inventing one is a schema change, not a
+    check. Per the campaign's own abort condition (no deterministic oracle
+    → downgrade to judgement + drift test, never a weaker gate that pretends),
+    this is the honest ceiling: pin that §7 still demands the link in prose.
+    """
+    body = MODULE.read_text(encoding="utf-8")
+    assert "linked from the" in body, (
+        "§7 must still say the hard-to-reverse *why* is linked FROM the "
+        "requirement — the promise FR-01.02 #8's ledger row names"
+    )
+    assert "an ADR, linked" in body, (
+        "§8's coverage-checklist Rationale row must still require the ADR "
+        "to be linked, not merely written"
+    )
+
+
 def test_module_separates_enforced_from_prompt_only():
     """§6 — REQ-3 Phase 2 finding 2.
 
