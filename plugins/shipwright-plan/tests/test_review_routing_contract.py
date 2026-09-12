@@ -4,13 +4,20 @@ and prove the Step 5a architecture-review CLI's real input contract.
 FR-01.03/AC03, AC11 have no artifact a deterministic check can observe
 mid-session (which reviewer ran, whether the user was actually asked) — the
 same class of judgement criterion FR-01.03/AC02's drift test already covers
-(`test_missing_key_stop_and_ask_drift.py`), so the legitimate enforcement is
-pinning the instruction verbatim rather than building an LLM-judgement gate.
+(`test_missing_key_stop_and_ask_drift.py`). PR review (high) found that
+text-pinning alone does not PROVE either AC, since the pinned artifact
+(`self_review_fallback_ran`) is write-only and nothing checks that the
+production run actually behaved this way — so both are left unbound with
+the reason recorded here and in the seam survey (Named Exception 8), the
+drift-pin tests kept as a guard against the reference doc itself drifting.
 
 FR-01.03/AC09, AC10 DO have a deterministic seam: the Step 5a CLI invocation
 itself (`external_review.py --mode architecture`) refuses to run reviewed
 over the plan in place of a brief — asserted below via the real command,
-not a re-implementation of its input-selection logic.
+not a re-implementation of its input-selection logic. AC09 also has an
+end-to-end test driving `external_review.main()` itself with only the
+network call stubbed, after PR review (high) found the direct-renderer-call
+test alone insufficient.
 """
 
 import os
@@ -59,12 +66,18 @@ def test_every_external_review_branch_routes_to_the_one_checkpoint():
         assert "go straight to Step 5b" not in branch
 
 
-@pytest.mark.covers("FR-01.03/AC03")
 def test_self_review_fallback_only_runs_when_no_independent_review_completed():
-    """FR-01.03/AC03: the plan's own author re-reading it never satisfies the
-    review step UNLESS the independent reviewer (Step 5-int) could not be
-    reached either — the one checkpoint that decides this names both
-    conditions and treats the fallback as the last resort, not an option."""
+    """Not bound to FR-01.03/AC03 (see seam survey Exception 8, new): PR
+    review (high) found this pins only the instruction TEXT, not an
+    observable artifact — `self_review_fallback_ran` (the would-be seam) is
+    write-only, nothing reads it, so a production regression that ignored
+    this instruction would still pass. Kept as a drift-pin guard (the class
+    this repo already uses for AC02's identical situation), just no longer
+    claimed as AC-proving. The plan's own author re-reading it never
+    satisfies the review step UNLESS the independent reviewer (Step 5-int)
+    could not be reached either — the one checkpoint that decides this names
+    both conditions and treats the fallback as the last resort, not an
+    option."""
     text = REFERENCE.read_text(encoding="utf-8")
     checkpoint = _normalized(text[
         text.index("## Pre-5b Checkpoint"): text.index("## Self-Review Fallback")
@@ -76,11 +89,14 @@ def test_self_review_fallback_only_runs_when_no_independent_review_completed():
     assert "true last resort" in fallback
 
 
-@pytest.mark.covers("FR-01.03/AC11")
 def test_architecture_reject_stops_and_asks_the_user_to_choose():
-    """FR-01.03/AC11: either reviewer answering that the work should not be
-    built this way stops the run and puts a three-way choice to a person —
-    alternative, keep-with-reason, or rework — before Step 6."""
+    """Not bound to FR-01.03/AC11 (see seam survey Exception 8, new): same
+    gap as AC03 above — pins the instruction text, but whether the run
+    actually stopped and asked a person is not recorded anywhere a
+    deterministic check can read mid-session. Either reviewer answering that
+    the work should not be built this way stops the run and puts a
+    three-way choice to a person — alternative, keep-with-reason, or
+    rework — before Step 6."""
     body = REFERENCE.read_text(encoding="utf-8")
     step_5a = _normalized(
         body[body.index("## Step 5a"): body.index("## Branch B", body.index("## Step 5a"))]
@@ -125,14 +141,12 @@ def test_architecture_mode_requires_a_brief_not_the_plan(tmp_path):
     assert "--plan-file belongs to --mode plan" in plan_instead_of_brief.stderr
 
 
-@pytest.mark.covers("FR-01.03/AC09")
 def test_architecture_review_prompt_carries_the_brief_not_the_plan_reasoning():
-    """FR-01.03/AC09's mechanical half: once past the CLI's input-selection
-    gate (proved above), the text actually threaded into the outgoing prompt
-    is whatever was handed in as the BRIEF — never silently swapped for
-    something else, and distinguishable from the spec's own text. This calls
-    the real template-substitution function `external_review.py` itself
-    uses to build the request, not a re-implementation of it."""
+    """Unit-level check of the template-substitution function
+    `external_review.py` itself uses to build the request (not a
+    re-implementation of it) — kept as a fast lower-level guard, but the
+    real AC09 proof is the end-to-end test below, which drives the same
+    substitution through the actual CLI entrypoint (PR review, high)."""
     import external_review
 
     brief_text = "BRIEF-ONLY: do a queue exist to fix X? (rejection reasons omitted)"
@@ -143,3 +157,55 @@ def test_architecture_review_prompt_carries_the_brief_not_the_plan_reasoning():
     assert brief_text in rendered
     assert spec_text in rendered
     assert rendered == f"Brief: {brief_text}\nSpec: {spec_text}"
+
+
+@pytest.mark.covers("FR-01.03/AC09")
+def test_architecture_cli_end_to_end_threads_the_brief_into_the_outgoing_prompt(
+    tmp_path, monkeypatch,
+):
+    """FR-01.03/AC09, full CLI path: PR review (high) found the sibling test
+    above insufficient — it calls the renderer directly, so a CLI that
+    accepted a brief and then silently reviewed something else would still
+    pass it. This drives `external_review.main()` itself (real argparse,
+    real mode selection, real prompt loading) and stubs only the actual
+    network call (`retrying_completion`), so the assertion is on what the
+    CLI actually sent, not on a re-implementation of its input-selection."""
+    import external_review
+
+    brief_text = "BRIEF-ONLY: should a retry queue exist at all for X?"
+    spec_text = "SPEC-ONLY: X must not fail weekly."
+    plan_text = "PLAN-ONLY: implement the retry queue this way, because Y."
+
+    spec_file = tmp_path / "spec.md"
+    brief_file = tmp_path / "brief.md"
+    plan_file = tmp_path / "plan.md"
+    spec_file.write_text(spec_text, encoding="utf-8")
+    brief_file.write_text(brief_text, encoding="utf-8")
+    plan_file.write_text(plan_text, encoding="utf-8")
+    fake_plugin = tmp_path / "fake-plugin"
+    fake_plugin.mkdir()
+
+    captured_prompts: list[str] = []
+
+    def fake_retrying_completion(client, *, via, max_retries, **create_kwargs):
+        captured_prompts.append(create_kwargs["messages"][1]["content"])
+        return {"status": "success", "feedback": "SHIPWRIGHT_VERDICT: approve"}
+
+    monkeypatch.setattr(external_review, "retrying_completion", fake_retrying_completion)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key-not-a-real-secret")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(
+        sys, "argv",
+        [
+            "external_review.py", "--mode", "architecture",
+            "--spec-file", str(spec_file), "--brief-file", str(brief_file),
+            "--plugin-root", str(fake_plugin), "--project-root", str(tmp_path),
+        ],
+    )
+
+    external_review.main()
+
+    assert captured_prompts, "the CLI never reached the network-call boundary"
+    for prompt in captured_prompts:
+        assert brief_text in prompt
+        assert plan_text not in prompt

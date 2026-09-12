@@ -39,10 +39,11 @@ per-unit root-count table.
 ## Consequences (full)
 
 `shipwright_ac_coverage_baseline.json`'s `unbound` count dropped from 205 to
-**175** (corrected; see "## Correction" below — the first push wrongly bound
-2 extra ACs, so the true drop is 30, not 32) — exactly the 30 genuinely bound
-ACs, verified via `git diff` that every removed line starts with
-`FR-01.03/` or `FR-01.04/` and nothing else moved.
+**177** (corrected twice; see "## Correction" below — the first push wrongly
+bound 2 extra ACs, and a further 2 were unbound after the Tier-3 PR-review
+gate found them unproven, so the true drop is 28, not 32) — exactly the 28
+genuinely bound ACs, verified via `git diff` that every removed line starts
+with `FR-01.03/` or `FR-01.04/` and nothing else moved.
 `.shipwright/compliance/test-traceability.json` was regenerated first via
 `update_compliance.py --phase build` (pitfall #5 in this unit's own spec),
 before writing the baseline, so the baseline write reads a fresh manifest
@@ -171,11 +172,37 @@ roster the AC's text names (DeepSeek/OpenAI) — the same obsolete-provider
 situation as this unit's own AC21, given the opposite treatment. Both markers
 were removed (the tests themselves are unchanged and still run); both ACs are
 now unbound with a recorded reason in the seam survey (Exception 6, amended;
-Exception 7, new). This unit's actual final count is **30 of 33 bound**, not
-32/33 as first claimed above — see the mini-plan's "Stage-1 spec-review
-REJECT" section for the full disposition. The original "Decision" and
-"Self-Review" sections below are left as originally written (the historical
-record of what was first submitted), not retroactively edited.
+Exception 7, new). This unit's count after this correction was **30 of 33
+bound**, not 32/33 as first claimed above — see the mini-plan's "Stage-1
+spec-review REJECT" section for the full disposition. The original "Decision"
+and "Self-Review" sections below are left as originally written (the
+historical record of what was first submitted), not retroactively edited.
+
+## Correction (PR Review Tier-3 REJECT, 2026-09-12)
+
+The campaign's required Tier-3 external PR review (the actual merge-blocking
+gate, run against the open PR) rejected 2 more of the 30 bound ACs above:
+`FR-01.03/AC03` and `FR-01.03/AC11` were bound to drift-pin tests asserting
+only that an instruction string is present, which both external plan review
+(Step 3.5) and external code review (Step 3.7) had already raised and this
+unit dispositioned as "kept as-is" (see mini-plan disposition tables). The
+Tier-3 gate found this insufficient to PROVE either AC — `self_review_fallback_ran`
+is confirmed write-only, and AC11 has no recorded flag at all — and this unit
+now agrees: unlike AC02 (an already-merged, pre-existing precedent this unit
+did not introduce), AC03 and AC11 are net-new bindings this unit is
+responsible for, and a required gate finding them unproven is decisive over
+an earlier advisory disposition. Both markers were removed (the tests remain
+as drift-pin guards, unmarked); both ACs are now unbound with a recorded
+reason in the seam survey (Exception 8, new). Separately, the Tier-3 gate
+found `FR-01.03/AC09`'s renderer-only test insufficient on its own; a new
+end-to-end test driving `external_review.main()` with the network call
+stubbed was added and the marker moved to it — AC09 remains bound, now on
+the stronger test. **This unit's true final count is 28 of 33 bound**, not
+30/33 as the previous Correction section states — see the mini-plan's "PR
+Review (Tier-3) REJECT" section for the full disposition. The "Decision" and
+"Self-Review" sections below, and the "Stage-1 spec-review REJECT" Correction
+section above, are left as originally written (each the historical record of
+what was true at that point), not retroactively edited.
 
 ## Self-Review (Step 3.6)
 

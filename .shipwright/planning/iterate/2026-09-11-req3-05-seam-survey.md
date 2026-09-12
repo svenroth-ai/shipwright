@@ -153,7 +153,7 @@ exact AC, or add a new qualified tag — do not assume the bare tag already "cou
 |---|---|---|---|---|---|---|
 | FR-01.01 | /shipwright-run | 8 / 7 | `plugins/shipwright-run/tests` (plugin-owned ACs); `shared/tests` (phase-history / completion-writer ACs — Finding 1) | `plugins/shipwright-run/tests/test_lifecycle_cli.py` (real subprocess CLI over `scripts/lib/orchestrator.py` — the highest E2E boundary this plugin has); `test_orchestrator.py`, `test_phase_state_machine.py` for in-process behavior | `shared/tests/test_phase_history.py` etc. → `FR-01.01/AC08` | t8 |
 | FR-01.02 | /shipwright-project | 15 / 15 | `plugins/shipwright-project/tests` | `test_integration.py` (drives `setup_session.py` end to end — the real skill entry point); `test_state.py`, `test_manifest.py`, `test_config.py` for individual ACs | none yet | t6 |
-| FR-01.03 | /shipwright-plan | 21 / 21 | `plugins/shipwright-plan/tests` | `test_integration.py` (`setup_planning_session.py` pipeline); `test_review_iterate.py` / `test_review_routing_contract.py` for the external-review ACs (AC02–AC04, AC09–AC13, AC19–AC21) | AC20/AC21 have no deterministic surface (DeepSeek superseded by GLM) — **see Named Exception 6** | t3 |
+| FR-01.03 | /shipwright-plan | 21 / 21 | `plugins/shipwright-plan/tests` | `test_integration.py` (`setup_planning_session.py` pipeline); `test_review_iterate.py` / `test_review_routing_contract.py` for the external-review ACs (AC02–AC04, AC09–AC13, AC19–AC21) | AC20/AC21 have no deterministic surface (DeepSeek superseded by GLM) — **see Named Exception 6**; AC03/AC11 have no observable artifact — **see Named Exception 8** | t3 |
 | FR-01.04 | /shipwright-design | 12 / 12 | `plugins/shipwright-design/tests` | `test_setup_design.py` (design-session pipeline); `test_screen_registry.py` (per-requirement screen mapping, AC01/AC04) | AC10's full claim isn't enforced by production code — **see Named Exception 7** | t3 |
 | FR-01.05 | /shipwright-build | 8 / 8 | `plugins/shipwright-build/tests` | `test_integration.py`, `test_setup_implementation.py`, `test_sections.py` / `test_section_builder_contract.py` | none yet | t8 |
 | FR-01.06 | /shipwright-test | 18 / 18 | `plugins/shipwright-test/tests` | `test_test_runner.py`, `test_smoke_test.py`, `test_playwright_runner.py`, `test_journey_coverage.py`, `test_boundary_coverage_report.py` (already the plugin's densest suite — attach beside it) | none yet | t4 |
@@ -450,6 +450,39 @@ backfill campaign does not make unilaterally: either tighten
 case would need an explicit carve-out in AC10's own text first), or amend
 AC10's text to state the carve-out that already exists in production. Flagged
 to the operator rather than decided here.
+
+### Exception 8 — FR-01.03 AC03/AC11 (no observable artifact, found during t3 PR review)
+
+`FR-01.03/AC03` ("the plan's own author re-reading it never satisfies the
+review step unless the independent reviewer could not be reached either")
+and `FR-01.03/AC11` ("either reviewer's reject stops the run and asks a
+person to choose") were bound to drift-pin tests
+(`test_self_review_fallback_only_runs_when_no_independent_review_completed`,
+`test_architecture_reject_stops_and_asks_the_user_to_choose` in
+`plugins/shipwright-plan/tests/test_review_routing_contract.py`) that assert
+the instruction text is present in `step-5-external-review.md` — the same
+class of judgement-criterion AC that `FR-01.03/AC02` already uses this
+pattern for (`test_missing_key_stop_and_ask_drift.py`). The Tier-3 external
+PR review (openai/gpt-5.6-luna, high) found this insufficient to PROVE either
+AC: a production implementation that silently ignored the instruction would
+still pass, because the would-be observable artifact
+(`self_review_fallback_ran`) is write-only — nothing reads it — and AC11's
+"stopped and asked a person" has no recorded flag at all. Unlike AC02
+(already-merged, pre-existing precedent this unit did not introduce), AC03
+and AC11 are net-new bindings in this diff, so the campaign's actual
+required merge gate (not a documented precedent from an earlier unit) is the
+live arbiter here.
+
+**Concrete machine outcome:** do NOT tag `FR-01.03/AC03` or `FR-01.03/AC11`.
+Both stay in `shipwright_ac_coverage_baseline.json`'s `unbound` list, with
+this section as the recorded reason. The drift-pin tests are kept
+(unmarked) as a guard against the reference doc itself drifting, since that
+much is still worth catching even though it does not prove the AC. A future
+correction to AC02's own binding is a separate campaign-wide question this
+unit does not decide; wiring a real observable seam (e.g. making
+`self_review_fallback_ran` readable and asserting it, or recording the
+three-way choice for AC11) is a production change, not a test-selection one,
+and is flagged to the operator rather than decided here.
 
 ## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
 

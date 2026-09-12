@@ -53,10 +53,11 @@ purely for the 300-LOC budget after growth
 `test_check_plan_gates_sections.py` / `test_check_design_gates_tier3_review.py`
 splits.
 
-**Three ACs are left unbound with a recorded reason** (this paragraph
-originally said one — AC21 — at the time it was first written; corrected
-after Stage-1 spec-review found two more, see the "Stage-1 spec-review
-REJECT" section below for the full story). `FR-01.03/AC21` names
+**Five ACs are left unbound with a recorded reason** (this paragraph
+originally said one — AC21 — at the time it was first written; corrected to
+three after Stage-1 spec-review, then to five after the Tier-3 PR-review
+gate — see the "Stage-1 spec-review REJECT" and "PR Review (Tier-3) REJECT"
+sections below for the full story). `FR-01.03/AC21` names
 DeepSeek-specific ZDR-endpoint routing for the plan review's OWN reviewer
 roster, but `shared/scripts/lib/external_review_routing.py` documents that
 "DeepSeek is no longer bound as a plan/code-review cascade identity ... GLM
@@ -69,10 +70,15 @@ Tier-3 gate's DeepSeek test (a different FR's behavior) would misrepresent
 what is actually proven. `FR-01.03/AC20` has the identical obsolete-provider
 problem (see seam survey Exception 6, amended). `FR-01.04/AC10`'s full claim
 ("others left untouched") is not enforced by the production gate it would
-bind to (see seam survey Exception 7, new). Recorded here and in the F3
-decision drop; a future correction to AC20/AC21's own text (naming GLM, or
-generalizing to "the active reviewer roster") or to AC10's text (stating the
-Chrome Change Propagation carve-out) is a spec-authoring question for the
+bind to (see seam survey Exception 7, new). `FR-01.03/AC03` and `AC11` have
+no observable artifact a deterministic check can read mid-session — pinning
+the instruction text is the only enforcement available, which the Tier-3
+gate correctly found insufficient to PROVE either AC (see seam survey
+Exception 8, new). Recorded here and in the F3 decision drop; a future
+correction to AC20/AC21's own text (naming GLM, or generalizing to "the
+active reviewer roster"), to AC10's text (stating the Chrome Change
+Propagation carve-out), or a production change making AC03/AC11's behavior
+mechanically observable, is a spec-authoring/production question for the
 campaign/spec owner, not something this unit can resolve by picking a nearby
 test.
 
@@ -84,15 +90,15 @@ test.
 |---|---|---|
 | AC01 | plan | `test_check_sections.py::test_check_all_sections_written` |
 | AC02 | plan | `test_missing_key_stop_and_ask_drift.py::test_missing_review_key_stop_and_ask_instruction_present` |
-| AC03 | plan | `test_review_routing_contract.py::test_self_review_fallback_only_runs_when_no_independent_review_completed` (new — drift-pin, same D7 judgement-criterion class as AC02) |
+| AC03 | **not bound — recorded reason (PR Review Tier-3 REJECT, corrected)** | `self_review_fallback_ran` (the would-be observable artifact) is write-only — nothing reads it. See seam survey Exception 8. Test remains (unmarked) as a drift-pin guard: `test_review_routing_contract.py::test_self_review_fallback_only_runs_when_no_independent_review_completed` |
 | AC04 | plan | `test_check_plan_gates.py::test_no_marker_blocks_section_splitting` |
 | AC05 | plan | `test_check_plan_gates_sections.py::test_an_uncovered_requirement_fails` |
 | AC06 | plan | `test_check_plan_gates_sections.py::test_a_section_serving_no_requirement_fails` |
 | AC07 | plan | `test_check_plan_gates_sections.py::test_an_ill_formed_section_fails_even_in_a_new_plan` |
 | AC08 | plan | same test (shares the 4-problem assertion: purpose, steps, tests, prerequisites) |
-| AC09 | plan | `test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan` (new — real `external_review.py --mode architecture` CLI, the actual Step 5a entry point) |
-| AC10 | plan | same test (`--plan-file` refused as a foreign flag) |
-| AC11 | plan | `test_review_routing_contract.py::test_architecture_reject_stops_and_asks_the_user_to_choose` (new — drift-pin, judgement criterion) |
+| AC09 | plan | `test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan` (new — real `external_review.py --mode architecture` CLI, the actual Step 5a entry point) AND `::test_architecture_cli_end_to_end_threads_the_brief_into_the_outgoing_prompt` (new, added after PR Review Tier-3 REJECT — drives `main()` end-to-end with only the network call stubbed) |
+| AC10 | plan | `test_architecture_mode_requires_a_brief_not_the_plan` (`--plan-file` refused as a foreign flag) |
+| AC11 | **not bound — recorded reason (PR Review Tier-3 REJECT, corrected)** | no recorded artifact for "stopped and asked a person". See seam survey Exception 8. Test remains (unmarked) as a drift-pin guard: `test_review_routing_contract.py::test_architecture_reject_stops_and_asks_the_user_to_choose` |
 | AC12 | plan | `test_check_plan_gates_sections.py::test_findings_count_matched_by_logged_entries_passes` / `test_findings_count_unmatched_by_logged_entries_fails` |
 | AC13 | plan | `test_check_plan_gates.py::test_an_undecided_reviewer_disagreement_blocks` / `test_recording_the_decision_unblocks_it` |
 | AC14 | plan | `test_check_plan_gates_sections.py::test_an_e2e_file_naming_a_flow_passes` / `test_missing_e2e_file_fails_when_a_plugin_root_is_given` |
@@ -180,13 +186,15 @@ submission of this mini-plan.
    live tree before touching the baseline (pitfall #5 in this unit's own
    spec).
 4. `uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root .
-   --write` -> `unbound_count: 173` (from 205) at this original run, later
-   corrected to **175** after Stage-1 spec-review REJECTed 2 of the resolved
-   entries (see "Stage-1 spec-review REJECT" section below) — the final,
-   correct state is 30 FR-01.03/FR-01.04 entries resolved, 3 excepted with
-   recorded reason (AC20, AC21, AC10); verified via `git diff` that every
-   removed baseline line starts with `FR-01.03/` or `FR-01.04/` and nothing
-   else moved.
+   --write` -> `unbound_count: 173` (from 205) at this original run, corrected
+   to **175** after Stage-1 spec-review REJECTed 2 of the resolved entries
+   (see "Stage-1 spec-review REJECT" section below), then corrected again to
+   **177** after the Tier-3 PR-review gate REJECTed 2 more (see "PR Review
+   (Tier-3) REJECT" section below) — the final, correct state is 28
+   FR-01.03/FR-01.04 entries resolved, 5 excepted with recorded reason (AC20,
+   AC21, AC10, AC03, AC11); verified via `git diff` that every removed
+   baseline line starts with `FR-01.03/` or `FR-01.04/` and nothing else
+   moved.
 5. `uvx ruff@0.15.15 check plugins/shipwright-plan/tests
    plugins/shipwright-design/tests` — clean.
 6. Post-code-review fixes (below) re-verified: `plugins/shipwright-plan/tests`
@@ -201,6 +209,12 @@ submission of this mini-plan.
    (t2's commit `0cea78813` does the identical revert with the identical
    rationale). Verified via `git status --short` afterward: only
    `shipwright_ac_coverage_baseline.json` remains modified from that sweep.
+8. Post-PR-review-Tier-3 fixes re-verified: `plugins/shipwright-plan/tests`
+   110 passed (was 109, +1 for AC09's new end-to-end `main()` proof; AC03/
+   AC11 markers removed, test bodies unchanged so no test count change from
+   those two), `plugins/shipwright-design/tests` unchanged at 75 passed;
+   re-linted clean. Baseline regenerated per steps 3/4/7's same procedure
+   (`unbound_count: 177`); the 7 side-effect compliance files reverted again.
 
 ## External-Code-Review-Findings (Step 3.7)
 
@@ -245,3 +259,32 @@ to match; no other binding changed. Re-ran both test roots after the marker
 removals (`plugins/shipwright-plan/tests`: 4/4 passed;
 `plugins/shipwright-design/tests`: 21/21 passed) — no test logic changed,
 only which AC each one is claimed to prove.
+
+## PR Review (Tier-3) REJECT (2026-09-12) — 2 more bindings corrected, 1 strengthened
+
+After Stage-1/Stage-2's internal review cascade passed and the PR was opened,
+the campaign's required Tier-3 external review (`openai/gpt-5.6-luna`, the
+actual merge-blocking gate for this sensitive-path PR) re-raised the
+AC02/AC03/AC11 drift-pin concern that both Step 3.5 (external plan review)
+and Step 3.7 (external code review) had already raised and this unit had
+dispositioned as "kept as-is" (see the disposition tables above) — this time
+against the fresh commit, and this time as the check that actually blocks
+merge rather than an advisory pass. It also found the AC09 renderer-only test
+insufficient on its own.
+
+| # | AC | Finding | Fix |
+|---|---|---|---|
+| 1 | FR-01.03/AC03, AC11 | Both are net-new bindings in this diff (unlike AC02, an already-merged pre-existing precedent). The drift-pin tests assert instruction text is present, not that the pipeline behaves per the AC; `self_review_fallback_ran` (the would-be observable seam for AC03) is confirmed write-only, and AC11's "stopped and asked a person" has no recorded flag at all — so a production regression that ignored either instruction would still pass. The prior disposition's reasoning (D7 convention, no stronger mechanised binding exists) is not wrong as an explanation of WHY no seam exists, but it is not a reason these two can be *claimed as bound* against the campaign's own "test must PROVE the AC" rule when a required gate says otherwise for a fresh binding. | Removed `@pytest.mark.covers("FR-01.03/AC03")` and `@pytest.mark.covers("FR-01.03/AC11")` from `test_self_review_fallback_only_runs_when_no_independent_review_completed` and `test_architecture_reject_stops_and_asks_the_user_to_choose`. Left unbound with a recorded reason: seam survey **Exception 8** (new). Both tests are unchanged and still run as drift-pin guards, just no longer claimed as AC-proving. |
+| 2 | FR-01.03/AC09 | `test_architecture_review_prompt_carries_the_brief_not_the_plan_reasoning` calls `external_review._render_user_prompt()` directly — it would pass even if the CLI stopped calling that function correctly or supplied the wrong value. | Added `test_architecture_cli_end_to_end_threads_the_brief_into_the_outgoing_prompt`: drives `external_review.main()` itself (real argparse, real mode selection, real prompt loading) with only the network call (`retrying_completion`) stubbed, and asserts the brief text — not the plan text — reaches the outgoing prompt. Moved the `@pytest.mark.covers("FR-01.03/AC09")` marker to this new test; the direct-renderer test is kept unmarked as a fast lower-level guard. |
+
+**Baseline re-regenerated again** (same procedure as the Stage-1 round):
+`unbound_count` moved from 175 to **177** (AC03, AC11 returning to
+`unbound`; AC09 stays bound, now on the stronger test). Seam survey row for
+FR-01.03 and its Named Exceptions list updated. Re-ran
+`plugins/shipwright-plan/tests` after the changes: 110/110 passed (was
+109 — the new AC09 end-to-end test).
+
+The one merge conflict encountered opening this PR (`.shipwright/planning/adr/INDEX.md`
+append-order, against 5 commits origin/main advanced during the review
+cascade) is unrelated to AC bindings and is recorded in the merge commit
+message, not here.

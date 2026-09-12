@@ -45,11 +45,6 @@
           "evidence": "test_missing_key_stop_and_ask_drift.py::test_missing_review_key_stop_and_ask_instruction_present PASSED"
         },
         {
-          "behavior": "FR-01.03/AC03 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
-          "disposition": "tested",
-          "evidence": "test_review_routing_contract.py::test_self_review_fallback_only_runs_when_no_independent_review_completed PASSED"
-        },
-        {
           "behavior": "FR-01.03/AC04 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
           "disposition": "tested",
           "evidence": "test_check_plan_gates.py::test_no_marker_blocks_section_splitting PASSED"
@@ -75,19 +70,14 @@
           "evidence": "test_check_plan_gates_sections.py::test_an_ill_formed_section_fails_even_in_a_new_plan PASSED"
         },
         {
-          "behavior": "FR-01.03/AC09 is proven by a new test invoking the real production CLI (plugins/shipwright-plan/tests)",
+          "behavior": "FR-01.03/AC09 is proven by a new test invoking the real production CLI end-to-end, with only the network call stubbed (plugins/shipwright-plan/tests)",
           "disposition": "tested",
-          "evidence": "test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan; ::test_architecture_review_prompt_carries_the_brief_not_the_plan_reasoning PASSED"
+          "evidence": "test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan; ::test_architecture_cli_end_to_end_threads_the_brief_into_the_outgoing_prompt PASSED"
         },
         {
           "behavior": "FR-01.03/AC10 is proven by a new test invoking the real production CLI (plugins/shipwright-plan/tests)",
           "disposition": "tested",
           "evidence": "test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan PASSED"
-        },
-        {
-          "behavior": "FR-01.03/AC11 is proven by a new drift-pin test (plugins/shipwright-plan/tests)",
-          "disposition": "tested",
-          "evidence": "test_review_routing_contract.py::test_architecture_reject_stops_and_asks_the_user_to_choose PASSED"
         },
         {
           "behavior": "FR-01.03/AC12 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
@@ -186,14 +176,14 @@
         }
       ],
       "counts": {
-        "testable": 30,
-        "tested": 30,
+        "testable": 28,
+        "tested": 28,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 30,
-        "covered_acs": 30
+        "acs": 28,
+        "covered_acs": 28
       }
     }
   },
