@@ -29,7 +29,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from ._test_gate_extras import _is_within
+from ._test_gate_paths import _is_within
 from .common import CheckResult, Severity
 
 # Mirrors journey_plan.py's own heading grammar (plugins/shipwright-test/

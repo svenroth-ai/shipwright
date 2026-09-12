@@ -126,6 +126,18 @@ def test_fails_when_flaky_diverges(tmp_path):
     assert "flaky: recorded=0 tool=1" in r.detail
 
 
+def test_recorded_bool_total_is_reported_as_malformed_not_coerced(tmp_path):
+    """Tier-3 CI review (PR #748): `bool` is an `int` subclass in Python, so
+    a recorded `total: true` compares equal to an expected total of 1 with
+    plain `!=` — a malformed recorded count must not silently "reconcile"
+    against a numerically-equal expected value."""
+    _write_pw_results(tmp_path, {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0})
+    _write_test_results(tmp_path, {"total": True, "passed": 1, "flaky": 0})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "total=True is not a non-negative integer" in r.detail
+
+
 def test_bool_stats_are_reported_as_malformed_not_coerced(tmp_path):
     """A hand-edited stats block with `true`/`false` in place of an int must
     not silently be treated as 1/0 (bool is an int subclass in Python) NOR

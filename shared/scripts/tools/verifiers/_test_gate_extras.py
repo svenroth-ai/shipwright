@@ -3,11 +3,10 @@
 sub-iterate ``e3-checks-test-security``). Split out of ``test_checks.py`` from
 the start (mirrors ``_project_gate_extras.py`` / ``_project_gate_manifest.py``
 's precedent of keeping the phase-own dispatcher small) rather than waiting
-for a bloat-gate crossing. This module also owns the shared path-safety
-helpers (:func:`_is_within`, :func:`_safe_project_file`) that the sibling
-``_test_gate_specs.py`` (#6) and ``_test_gate_fidelity.py`` (#7) import —
-both were split OUT of this file once it crossed 300 lines with all three
-gates present.
+for a bloat-gate crossing. The shared path-safety helpers this module, the
+sibling ``_test_gate_specs.py`` (#6), and ``_test_gate_fidelity.py`` (#7) all
+import now live in ``_test_gate_paths.py`` — split out a second time when
+this file crossed 300 lines again (round 5, Tier-3 CI review on PR #748).
 
 :func:`check_e2e_counts_reconciled` — "recorded browser-test numbers are the
 tool's own." ``step-3.5-e2e-verification.md`` instructs an agent to reconcile
@@ -36,49 +35,10 @@ unverified, the exact defect class this check exists to catch.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 from .common import CheckResult, Severity
-
-# ---------------------------------------------------------------------------
-# Shared path-safety helpers
-# ---------------------------------------------------------------------------
-
-
-def _is_within(root: Path, candidate: Path) -> bool:
-    """Whether ``candidate``'s RESOLVED location stays inside ``root``'s
-    RESOLVED location. ``os.path.commonpath`` (not ``str.startswith``,
-    not ``Path.is_relative_to`` alone) so drive-letter/case normalization on
-    Windows and a POSIX symlink both resolve to the same true answer."""
-    try:
-        resolved_root = str(root.resolve())
-        common = os.path.commonpath([resolved_root, str(candidate.resolve())])
-    except (OSError, ValueError):
-        return False
-    return common == resolved_root
-
-
-def _safe_project_file(project_root: Path, relative_name: str) -> Path | None:
-    """Resolve ``project_root / relative_name``, returning it only when it
-    exists, is a regular file, and its RESOLVED location stays inside the
-    RESOLVED project root.
-
-    A project-controlled fixed-name artifact (``e2e-results.json``,
-    ``shipwright_test_results.json``, ``design-fidelity-report.json``) could
-    be committed as a symlink pointing outside the project tree — the same
-    escape class PR #729 round 9 fixed for a plugin's own fixed candidate
-    paths. Treated identically to "missing" (``None``) rather than raising,
-    so a caller's existing SKIP-on-absence branch handles it for free.
-    """
-    candidate = project_root / relative_name
-    try:
-        if not candidate.is_file():
-            return None
-    except OSError:
-        return None
-    return candidate if _is_within(project_root, candidate) else None
-
+from ._test_gate_paths import _safe_project_file
 
 # ---------------------------------------------------------------------------
 # #5 — e2e counts reconciled against Playwright's own stats
@@ -248,6 +208,28 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
     recorded_total = e2e.get("total")
     recorded_passed = e2e.get("passed")
     recorded_flaky = e2e.get("flaky", 0)
+
+    # Tier-3 CI review (PR #748): `bool` is an `int` subclass in Python, so
+    # `True == 1` and `False == 0` — a malformed recorded count of `True`
+    # would silently "reconcile" against an expected value of 1 with the
+    # plain `!=` comparison below. Reject non-bool-non-negative-ints before
+    # comparing, the same discipline `_stat_field` already applies to the
+    # Playwright side.
+    recorded_errors = [
+        f"{label}={value!r} is not a non-negative integer"
+        for label, value in (
+            ("total", recorded_total),
+            ("passed", recorded_passed),
+            ("flaky", recorded_flaky),
+        )
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0
+    ]
+    if recorded_errors:
+        return CheckResult(
+            name, False,
+            "shipwright_test_results.json's e2e layer has unrecognized/malformed "
+            "recorded field(s) — " + "; ".join(recorded_errors),
+        )
 
     mismatches = []
     if recorded_total != expected_total:

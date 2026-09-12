@@ -35,7 +35,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ._test_gate_extras import _safe_project_file
+from ._test_gate_paths import _project_file_or_escape, _safe_project_file
 from .common import CheckResult, Severity
 
 # step-3.7-design-fidelity.md's own category table, keyed by (build_status,
@@ -97,18 +97,33 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
     rather than over every count: a run whose only movement is improvement
     owes nothing, and failing it would be a pure false alarm.
 
-    Two distinct FAIL cases, both from the same external-review round on
-    this sub-iterate's PR: a build report that DOES declare screens combined
-    with test-time recording NO ``design_fidelity`` block at all means the
-    comparison step never ran — caught before ever reaching the
-    recomputation. A ``design_fidelity`` block that IS present but omits
-    ``triage`` while the recomputation finds screens that DO need one FAILS
-    too — the original ordering skipped this exact case, letting
-    "regression" and "never-checked" both escape the gate by simply omitting
-    the block.
+    Several distinct FAIL cases guard against a fabricated or incomplete
+    comparison rather than an honestly empty one: a symlinked
+    ``design-fidelity-report.json`` escaping the project root (Tier-3 CI
+    review, PR #748); either source file's ``screens`` field present but
+    not the expected type (malformed, not empty); a build report that DOES
+    declare screens combined with test-time recording NO ``design_fidelity``
+    block, or one whose ``screens`` list is missing/malformed/empty, means
+    the comparison step never actually covered them — caught before ever
+    reaching the recomputation. A ``design_fidelity`` block that IS present
+    but omits ``triage`` while the recomputation finds screens that DO need
+    one FAILS too — letting "regression" and "never-checked" both escape the
+    gate by simply omitting the block.
     """
     name = "design fidelity triage matches a mechanical recomputation"
-    report_path = _safe_project_file(project_root, "design-fidelity-report.json")
+    report_path, report_escaped = _project_file_or_escape(project_root, "design-fidelity-report.json")
+    if report_escaped:
+        # Tier-3 CI review (PR #748): a fixed-name artifact that exists but
+        # resolves outside the project root must not be treated the same as
+        # an honestly absent one — that would let a project-controlled
+        # symlink suppress this gate (SKIP) instead of failing it, defeating
+        # the whole point of enforcing the check.
+        return CheckResult(
+            name, False,
+            "design-fidelity-report.json exists but resolves outside the "
+            "project root (symlink escape) — treated as a suppression "
+            "attempt, not an absent artifact",
+        )
     if report_path is None:
         return CheckResult(
             name, True, "no design-fidelity-report.json — nothing to recompute",
@@ -127,9 +142,23 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
         build_report = json.loads(report_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         return CheckResult(name, False, f"malformed design-fidelity-report.json: {exc}")
-    build_screens = build_report.get("screens") if isinstance(build_report, dict) else None
-    if not isinstance(build_screens, dict):
+    raw_build_screens = build_report.get("screens") if isinstance(build_report, dict) else None
+    if raw_build_screens is None:
+        # A genuinely absent `screens` key means the report legitimately
+        # declares no UI screens — a real empty state, not a schema error.
         build_screens = {}
+    elif isinstance(raw_build_screens, dict):
+        build_screens = raw_build_screens
+    else:
+        # Tier-3 CI review (PR #748): a `screens` field that IS present but
+        # is not an object (a list, a string, ...) is a malformed report,
+        # not an empty one — silently coercing it to `{}` let a fabricated
+        # or corrupted build report masquerade as "no screens declared".
+        return CheckResult(
+            name, False,
+            f"design-fidelity-report.json's screens field is a "
+            f"{type(raw_build_screens).__name__}, not an object",
+        )
 
     try:
         recorded = json.loads(results_path.read_text(encoding="utf-8"))
@@ -157,7 +186,23 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
         )
 
     screens = design_fidelity.get("screens")
-    if not isinstance(screens, list):
+    if not isinstance(screens, list) or (not screens and build_screens):
+        # Tier-3 CI review (PR #748): a missing/malformed/empty `screens`
+        # list is not the same as "every screen resolved cleanly" when the
+        # build side declares real screens — that combination means the
+        # comparison never actually covered any of them, the same
+        # "comparison step never ran" gap already caught above for a
+        # missing `design_fidelity` block entirely. Silently coercing to
+        # `[]` let a fabricated all-zero triage block sail through without
+        # a single screen being checked.
+        if build_screens:
+            return CheckResult(
+                name, False,
+                f"design-fidelity-report.json declares {len(build_screens)} "
+                f"screen(s), but design_fidelity.screens is missing, "
+                f"malformed, or empty — the comparison step never actually "
+                f"covered them",
+            )
         screens = []
 
     expected_counts = {key: 0 for key in _TRIAGE_RECORD_KEYS.values()}
