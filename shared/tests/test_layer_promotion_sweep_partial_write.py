@@ -185,6 +185,33 @@ def test_report_naming_a_pathspec_magic_path_cannot_be_delivered(monkeypatch, re
     assert other_spec.read_text(encoding="utf-8") == "do not publish me\n"
 
 
+def test_untracked_cleanup_does_not_glob_match_a_sibling_file(monkeypatch, repo):
+    """External review, PR #725 round 13: ``new_paths`` in ``rollback_staged``
+    are filesystem-derived names (from ``git status --porcelain``), never
+    validated the way ``written_spec_paths`` is — a newly created file whose
+    NAME itself contains pathspec-glob syntax (here, a bracket character
+    class) would, without ``--literal-pathspecs``, let ``git clean`` match
+    and remove an unrelated, PRE-EXISTING untracked sibling file too, not
+    just the one path this cleanup means to remove."""
+    sibling = repo / "filea.md"
+    sibling.write_text("do not delete me\n", encoding="utf-8")  # untracked BEFORE the sweep runs
+
+    def _fake(cmd, *args, **kwargs):
+        if len(cmd) >= 2 and str(cmd[1]).endswith("promote_required_layers.py"):
+            # A literal filename containing bracket-glob syntax — matches
+            # "filea.md" too under NON-literal pathspec matching.
+            (repo / "file[a-z].md").write_text("partial\n", encoding="utf-8")
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=120.0)
+        return _REAL_RUN(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", _fake)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "skipped"
+    assert not (repo / "file[a-z].md").exists()  # the genuine partial write IS still cleaned
+    assert sibling.read_text(encoding="utf-8") == "do not delete me\n"  # the sibling survives
+
+
 def test_commit_failure_rolls_back_staged_residue(repo):
     """A failed commit must not leave staged residue behind for a later,
     unrelated commit to sweep up — forced via a real failing pre-commit

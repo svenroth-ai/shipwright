@@ -2653,7 +2653,14 @@ a promotion commit that may still be sitting there — SKILL.md §B1a's recovery
 only knows how to drop that commit as the branch's TOP commit, and a
 self-heal/outbox commit landing above it would bury it and make that recovery
 refuse to act (external review, PR #725 round 13; pinned by
-`test_rollback_failed_skips_selfheal_and_outbox_sweep`). Every `gh` call also pins `--repo` via
+`test_rollback_failed_skips_selfheal_and_outbox_sweep`). **The untracked-file
+cleanup's own `git clean` call is likewise `--literal-pathspecs`-hardened**
+(round 13): its `new_paths` come straight from `git status --porcelain`
+filenames, never validated the way `written_spec_paths` is, so a newly
+created file whose NAME itself contains pathspec-glob syntax (a bracket
+character class, say) could otherwise let `git clean` match and delete an
+unrelated, pre-existing untracked sibling too — pinned by
+`test_untracked_cleanup_does_not_glob_match_a_sibling_file`. Every `gh` call also pins `--repo` via
 `repo_identity.resolve_repo_identity` (doubt-review: this module had dropped
 `lib.pr_delivery_host`'s own "never infer the repo from a remote" property
 when it stopped routing through `Host`; falls back to `gh`'s own inference

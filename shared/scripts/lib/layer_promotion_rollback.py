@@ -145,7 +145,16 @@ def rollback_staged(worktree_path: Path, pre_sha: str, pre_untracked: set[str] |
     new_paths = sorted(post_untracked - pre_untracked)
     if not new_paths:
         return True
-    clean = run_git_soft(["clean", "-fd", "--", *new_paths], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
+    # --literal-pathspecs: new_paths are filesystem-derived names (from `git
+    # status --porcelain`), not validated the way written_spec_paths is — a
+    # newly created file whose NAME itself contains pathspec magic (e.g. a
+    # leading ":" or a "*"/"?"/"[...]" wildcard) would otherwise let `git
+    # clean` match and remove files beyond the one path it names (external
+    # review, PR #725 round 13; mirrors round 12's written_spec_paths fix).
+    clean = run_git_soft(
+        ["--literal-pathspecs", "clean", "-fd", "--", *new_paths],
+        cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
+    )
     return clean.returncode == 0
 
 
