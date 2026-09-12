@@ -141,25 +141,54 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4631,
+          "finding": "Canon-coverage matrix 'test' row still lists only test_checks.py + check_test_results_file_fresh; the three new gates wired into run_test_checks (_test_gate_extras/_test_gate_specs/_test_gate_fidelity) are absent.",
+          "suggestion": "Append the three check names to the test row's Verifier-module cell in the same shape as the plan row.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_test_gate_extras.py",
+          "line": 118,
+          "finding": "_skipped_claim_contradicted_by_evidence returns 0 on JSONDecodeError/OSError (SKIP-passes), while the non-skipped branch FAILs on identical corruption. Asymmetric fail-open.",
+          "suggestion": "Distinguish 'no file' (SKIP) from 'file present but unparseable' (FAIL or WARN) in the skipped-claim branch.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_test_gate_specs.py",
+          "line": 58,
+          "finding": "_plan_declares_a_flow returns False when ## User Flows is absent, but journey_plan.parse_journeys falls back to scanning the whole plan text. Permissive-only divergence (under-fires, never false-fails).",
+          "suggestion": "Mirror the fallback or note the intentional divergence in the module comment.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-12T10:54:16.399844+00:00",
-      "disposition": "Stage-2 code-reviewer REJECTED at 3f-bis: 2 HIGH findings, _test_gate_extras.py:179 e2e.get('skipped') truthy-checks an int skip-count instead of 'is True', false-failing any run with skipped e2e tests -> spec (test_security e2e reconciliation AC) vs actual: fabrication check misfires on legitimate skips; _test_gate_fidelity.py:168 any(expected_counts.values()) includes 'resolved' screens in the needs-triage predicate, contradicting the function's own docstring and step-3.7's documented pass-through, false-failing a legitimate partial-to-pass fidelity improvement with no triage block. Delivery stopped; PR left open.",
+      "completed_at": "2026-09-12T11:32:32.005655+00:00",
+      "disposition": null,
       "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T07:04:16.519223+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-12T11:32:38.913510+00:00",
+      "disposition": "Stage 3 is conditional and did not trigger for this diff (no migrations, async/concurrency, cross-plugin imports, or irreversible ops; the symlink/path-containment logic was independently re-verified sound by both external review and Stage-2 code-reviewer); Stage 2 passed at 3f-bis",
+      "recorded_by": "orchestrator",
       "parse_status": null,
       "raw_excerpt": null
     },
