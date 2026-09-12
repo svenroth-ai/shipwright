@@ -15,6 +15,21 @@ permission slip for the CI gate it precedes. It only prints.
 VERBATIM — unlike `--base`, an operator can point it at any local path, so
 it is the caller's responsibility to never name a file that may contain a
 secret (code review, 2026-09-12).
+
+`--base <ref>` MUST NAME A REF YOU ALREADY TRUST as much as your own working
+tree. `build_local_diff` stages it with `git add -A` in a private temporary
+index — see that function's own docstring for why that step, unlike the
+diff step after it, can execute a clean/filter driver `.gitattributes`
+declares, using whatever `[filter "<name>"]` command is already configured
+in YOUR OWN git config (local or global). This repo configures none, and no
+Shipwright-scaffolded project does either, but a maintainer's personal
+global config might (e.g. git-lfs) — checking out and reviewing an
+unfamiliar contributor's branch before merge is exactly the case where that
+config and that branch's `.gitattributes` could combine (dogfooded finding,
+external gpt-5.6-luna run, 2026-09-12). No `git` flag disables this without
+also losing untracked-file coverage (a hard requirement here), so this is a
+documented, not eliminated, risk: know what filters your own config defines
+before pointing `--base` at anything you have not already read.
 """
 
 from __future__ import annotations

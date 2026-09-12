@@ -123,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", default=None, help="owner/repo slug (CI mode)")
     parser.add_argument("--base", default=None,
                         help="Local preflight: review the merge-base diff against this ref "
-                             "instead of a pushed PR (see pr_review_local)")
+                             "instead of a pushed PR — never an unreviewed ref (see pr_review_local)")
     parser.add_argument("--diff-file", type=Path, default=None,
                         help="Local preflight: review a pre-built diff file instead of --base. "
                              "Sent to the model verbatim — never a file that may hold a secret")

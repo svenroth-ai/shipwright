@@ -264,3 +264,30 @@ possible for this one (it is prose inside a runtime-prompt shell snippet, not
 executable code) — caught only by actually running the finished tool
 end-to-end, which is the point of doing this at F0.5 rather than treating the
 CLI surface requirement as satisfied by unit tests alone.
+
+## Second dogfooding run (F11, real preflight against the pushed diff)
+
+Re-ran `pr_review.py --base origin/main` for real at F11 (after
+`ensure_current.py` integrated 5 commits main had gained meanwhile).
+`openai/gpt-5.6-luna` returned `block`: `build_local_diff`'s `git add -A` in
+the private temporary index can execute a clean/filter driver a
+`.gitattributes` declares, using whatever `[filter "<name>"]` command the
+operator's own git config (local or global) already defines -- a real git
+property, not specific to this code, but one the module's existing "acceptable
+here, own already-trusted working tree" dismissal understated: `--base` is a
+general CLI, and a maintainer checking out an unfamiliar contributor's branch
+to review it before merge is exactly the scenario where an unrelated,
+legitimately-configured personal filter (e.g. git-lfs) and that branch's
+`.gitattributes` could combine. Verified empirically that neither this repo
+nor any Shipwright-scaffolded template configures any `[filter ...]` clean/
+smudge/process driver anywhere (`git config --get-regexp '^filter\.'` empty,
+local and global; no `filter=` attribute in any tracked `.gitattributes`), so
+the precondition does not exist here today -- but the CLI outlives this repo.
+No `git` flag disables filter drivers for `add` without also losing
+untracked-file coverage (constraint 5, a hard requirement), so this is
+addressed as a documented, not eliminated, risk: `--base`'s help text and
+`pr_review_local`'s module docstring now both say, explicitly, never to point
+`--base` at a ref not already trusted as much as the caller's own working
+tree. `pr_review.py` briefly crossed 300 lines adding the help-text warning;
+trimmed back to exactly 300 by moving the full explanation into the module
+docstring and keeping the CLI help to one line.
