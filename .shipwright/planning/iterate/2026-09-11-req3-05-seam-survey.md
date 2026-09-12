@@ -491,12 +491,12 @@ and is flagged to the operator rather than decided here.
 | t1 | FR-01.11 | `plugins/shipwright-iterate/tests`, `shared/tests`, `shared/scripts/tools/tests` | 3 (found during execution — see Exception 3; **accepted by the campaign owner**, 2 of 27 ACs, no new harness) |
 | t2 | FR-01.14 | `shared/tests`, `shared/scripts/tools/tests` | 2 |
 | t3 | FR-01.03, FR-01.04 | `plugins/shipwright-plan/tests`, `plugins/shipwright-design/tests` | 2 |
-| t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (watch this one — see below) |
-| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests` | 3 (watch) |
+| t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12 — see below) |
+| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12) |
 | t6 | FR-01.02, FR-01.16 | `plugins/shipwright-project/tests`, `shared/tests` | 2 |
 | t7 | FR-01.10, FR-01.18 | `plugins/shipwright-compliance/tests`, `plugins/shipwright-grade/tests` | 2 |
-| t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (watch — largest fan-out) |
-| t9 | FR-01.15, FR-01.17, FR-01.19, FR-01.20 | `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-iterate/tests` | 4 (watch) |
+| t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (**accepted by the campaign owner**, 2026-09-12 — largest fan-out) |
+| t9 | FR-01.15, FR-01.17, FR-01.19, FR-01.20 | `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-iterate/tests` | 4 (**accepted by the campaign owner**, 2026-09-12) |
 
 ADR-044 (repo-root `conftest.py`, exit 4) blocks a single pytest **process** from spanning
 roots — it does not cap how many roots a *unit* may touch across multiple invocations. t4, t5,
@@ -529,6 +529,11 @@ within two roots (e.g. split t4's FR-01.07 shared-scan-card ACs, t5's FR-01.09
 shared-aggregation ACs, or t8's `shared/scripts/tests`-only AC bucket from FR-01.12's real-seam
 rows, into their own passes). t0 recommends (a) for all four — the roots are forced by
 Finding 1 (behavior lives where it lives), not chosen — but does not decide it unilaterally.
-Triage card `trg-ff6ea5f0` names all five units, t1 marked resolved and t4/t5/t8/t9 still open
-(amended alongside this correction); see it for the campaign owner's decision point. A similar
-ruling for t4/t5/t8/t9 is expected but not yet finalized as of this writing.
+Triage card `trg-ff6ea5f0` names all five units; t1 was marked resolved on 2026-09-11, and
+**t4/t5/t8/t9 are now RESOLVED too** — the campaign owner (Sven) ruled on 2026-09-12: option (a)
+accepted for all four. Do not re-cut the FR groupings; keep them exactly as scoped. Run one
+`pytest` invocation per root, one `--junitxml` per root (ADR-044 governs pytest *processes*, not
+roots per unit — see the paragraph above), and merge the results afterward. Each of t4/t5/t8/t9's
+own evidence must state its root count and cite this waiver plus ADR-044. The triage card was
+dismissed by the operator on 2026-09-11T23:09:17Z with this same ruling; see its `status: dismissed`
+entry for the verbatim reason.
