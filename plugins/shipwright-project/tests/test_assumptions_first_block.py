@@ -92,6 +92,7 @@ def test_assumptions_first_heading_present() -> None:
     )
 
 
+@pytest.mark.covers("FR-01.02/AC12")
 def test_assumptions_listed_before_clarifying_questions() -> None:
     block = _assumptions_block().lower()
     assert block, (
@@ -138,6 +139,7 @@ def test_assumptions_block_has_mit_attribution() -> None:
 # --- Kern surfacing ---------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.02/AC12")
 def test_kern_step_1_surfaces_assumptions_first() -> None:
     body = _step_1_kern_body()
     assert body, "Could not extract `## Step 1: Interview` body from Kern SKILL.md."

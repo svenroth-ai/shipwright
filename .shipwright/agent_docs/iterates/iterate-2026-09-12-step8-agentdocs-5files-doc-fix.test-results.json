@@ -1,0 +1,50 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-step8-agentdocs-5files-doc-fix",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 10684,
+      "total": 10714
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure documentation correction (2 skill-reference .md files); no code/behavior change and no startable web/dev-server/CLI surface of its own -- verification is the F0 unit test suite plus the mirrored merge gates."
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "doc-only prose fix (2 skill-reference .md files); no code/behavior change and no cross_component machinery touched, so there is no behavior to enumerate."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-step8-agentdocs-5files-doc-fix",
+    "commit": "503d4e7e13e132987bc73f0e2d8bcec16c32b32d",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-step8-agentdocs-5files-doc-fix",
+  "date": "2026-09-12",
+  "section": "shipwright-project Step 8 completion checklist",
+  "title": "Correct Step 8 agent_docs file count from 5 to 3",
+  "context": "step-8-completion.md and SKILL.md item 4 claimed the agent_docs directory has 5 files; project-scaffolding.md's producer contract and the new starting_guidance_present gate (FR-01.02 #11) both write only 3 (architecture.md, decision_log.md, conventions.md), plus CLAUDE.md at project root as item 3.",
+  "decision": "Fixed the prose to say 3 files and named them, and noted session_handoff.md is written later by the Stop hook and does not count toward this check.",
+  "consequences": "The checklist now matches the gate and the producer contract; no behavior or gate logic changed.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

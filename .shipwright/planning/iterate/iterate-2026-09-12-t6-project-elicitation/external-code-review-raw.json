@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "### Findings\n\n- Category: spec | Severity: medium\n  File: `shipwright_ac_coverage_baseline.json` (diff hunk removing FR-01.02/AC01\u2013AC15 and FR-01.16 entries)\n  Finding: The spec requires \"no entry for this cluster remains in `unbound` without a **recorded reason**.\" FR-01.02/AC01 and AC15 do remain in `unbound`, and their reasons are recorded only in the miniplan doc and a triage jsonl entry \u2014 not in the baseline artifact itself (or in any cited evidence path the ratchet tool reads). If the baseline schema (or the coverage-ratchet pass at t7) expects the reason adjacent to the unbound entry, this criterion is only partially satisfied, and the reason is invisible to anyone reading the baseline alone.\n  Suggestion: Record the reason in whatever field/mechanism the baseline format supports for unbound entries (or confirm the ratchet tooling pulls reasons from a sidecar), and make the diff show it.\n\n- Category: bug | Severity: medium\n  File: `plugins/shipwright-project/pyproject.toml:28` (new `covers` marker registration)\n  Finding: The `covers` marker is registered only in `plugins/shipwright-project/pyproject.toml`, but the bulk of the new `@pytest.mark.covers` tags live in `shared/tests/*`. If the shared test root's pytest config has `--strict-markers` (directly or via inherited addopts), those tests will error as unknown markers. The diff shows no corresponding registration for the shared root.\n  Suggestion: Verify `shared/tests`' pytest config registers (or does not enforce) the `covers` marker; add the marker line to that root's config if strict-markers applies.\n\n- Category: test | Severity: medium\n  File: `shared/tests/test_verifiers_project.py:287` (`test_run_project_checks_includes_all_four_new_gates` tagged with AC06/AC08/AC13/AC14)\n  Finding: This single wiring test is the *only* `covers` binding for none of the four (good \u2014 dedicated tests exist), but AC07's sole binding is `test_run_project_checks_detects_grill_trace_blank_dimension`, a wrapper-level test through `run_project_checks`. The miniplan's own rule says never bind to the wrapper-level integration test alone. AC07's underlying rule (blank-dimension STOP) is only tested at the pure-function level without a `covers` tag (`test_blank_dimension_fails_*` are untagged in the completeness test file).\n  Suggestion: Add the `covers(\"FR-01.02/AC07\")` tag to the pure-function `check_blank_dimension` failure tests in `test_verify_grill_trace_completeness.py` (e.g. the blank-assumed-reason test), matching the pattern used for AC10 there.\n\n- Category: test | Severity: low\n  File: `shared/tests/test_requirement_elicitation_rigor.py:194` and `:210` (`test_module_requires_adr_capture_at_the_decision_moment`, `test_module_requires_confirmation_before_writing_the_requirement`)\n  Finding: The assertions match strings containing embedded hard line breaks (`\"the *why* behind a\\nhard-to-reverse choice\"`, `\"The\\nconfirmation\"`) that depend on exact markdown line wrapping in the module doc. Any reflow of a paragraph (not a semantic change) breaks the test; conversely the AC's actual guarantee (glossary free of implementation detail) is only pinned by the presence of one sentence, which could remain while the surrounding rule is gutted.\n  Suggestion: Normalize whitespace (e.g. collapse `\\s+` to single spaces) before matching, as other tests in the suite already do with `_norm`.\n\n- Category: test | Severity: low\n  File: `shared/tests/test_requirement_elicitation_discovery.py:80` (`test_elicitation_surface_cites_the_module` tagged with both AC09 and AC10)\n  Finding: AC10 (per the rigor test's binding) is \"module separates enforced from prompt-only\" \u2014 a property of \u00a76 of the module, not of the citing docs. Tagging the doc-citation parametrized test with AC10 means a hypothetical removal of \u00a76's three-way verdict would be caught by the *rigor* test, so it's redundant but mislabeled; if the rigor test were deleted, this citation test would silently \"cover\" AC10 without proving it.\n  Suggestion: Drop the `FR-01.16/AC10` tag from the discovery test; leave AC10 bound only to `test_module_separates_enforced_from_prompt_only`.\n\n- Category: spec | Severity: low\n  File: `.shipwright/planning/iterate/iterate-2026-09-12-t6-project-elicitation/risk_recheck.json:18`\n  Finding: `ci_ack_recorded: false` while the unit's AC requires proving tests \"run green in CI.\" The diff contains no JUnit XML evidence or recorded CI acknowledgement for the two test roots, so the green-run claim is unverified in this change.\n  Suggestion: Record the CI acknowledgment / junitxml results (one per test root, per ADR-044) as the iterate's evidence.\n\nOverall: the binding arithmetic is consistent (21 of 25 tagged, 4 unbound with documented reasoning) and the approach respects the seam/flag-don't-self-authorize constraints. The main gaps are the unbound-reason recording surface, possible missing `covers` marker registration in the shared test root, and a few tag placements that don't prove the AC they claim.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: low\n- File: [.shipwright/planning/iterate/2026-09-12-t6-project-elicitation-miniplan.md](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-qg9sqqql\\.shipwright\\planning\\iterate\\2026-09-12-t6-project-elicitation-miniplan.md:11)\n- Finding: The binding constraint requires citing the specific t0 seam-survey row for this cluster. The plan only generally attributes the two roots to \u201cthe campaign\u2019s seam survey, t0,\u201d so the mandated seam evidence is not actually recorded.\n- Suggestion: Add the exact t0 row identifier/path (and its stated root decision) to the plan or iterate record.\n\nThe test bindings and baseline update otherwise cover the stated 21 bindable ACs, while the four remaining unbound ACs have concrete reasons recorded in the plan. Ship with the seam citation corrected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MODULE = REPO_ROOT / "shared" / "requirement-elicitation.md"
@@ -107,6 +108,7 @@ def test_assumed_is_only_for_unobtainable_answers():
     )
 
 
+@pytest.mark.covers("FR-01.02/AC11")
 def test_module_requires_hard_to_reverse_rationale_linked_from_the_requirement():
     """FR-01.02 #8 (req3-06-enforcement-mono, sub-iterate e2): "Hard-to-reverse
     rationale recorded + linked." The floor half — an ADR exists for the
@@ -130,6 +132,7 @@ def test_module_requires_hard_to_reverse_rationale_linked_from_the_requirement()
     )
 
 
+@pytest.mark.covers("FR-01.16/AC10")
 def test_module_separates_enforced_from_prompt_only():
     """§6 — REQ-3 Phase 2 finding 2.
 
@@ -150,3 +153,57 @@ def test_module_separates_enforced_from_prompt_only():
         "§6 must say a prompt-only guarantee admits only a drift test — the "
         "distinction the enforcement campaign depends on"
     )
+
+
+SPEC_GENERATION = (
+    REPO_ROOT / "plugins" / "shipwright-project" / "skills" / "project"
+    / "references" / "spec-generation.md"
+)
+
+
+@pytest.mark.covers("FR-01.02/AC05")
+def test_spec_generation_requires_criteria_before_a_requirement_finishes():
+    """FR-01.02 AC05: no requirement leaves the phase unelaborated. Nothing
+    mechanically enforces this today (`criteria_free_of_implementation_detail`
+    scores criteria CONTENT but vacuously passes a row with zero criteria —
+    see `test_criteria_free_of_implementation_detail_passes_when_no_criteria_anchored`
+    in `test_project_gate_extras.py`), so this is a prompt-only guarantee per
+    `requirement-elicitation.md` §6 — pin the instruction itself, not a
+    behaviour no gate exists to check."""
+    body = SPEC_GENERATION.read_text(encoding="utf-8")
+    assert "Every FR with Priority \"Must\" MUST have acceptance criteria" in body, (
+        "spec-generation.md must still obligate every Must-priority "
+        "requirement to carry acceptance criteria before the phase finishes"
+    )
+
+
+@pytest.mark.covers("FR-01.16/AC06")
+def test_module_requires_adr_capture_at_the_decision_moment():
+    """FR-01.16 AC06: a hard-to-reverse, surprising, genuine-trade-off choice
+    is captured AS A DECISION RECORD at the moment it is made, and the
+    project's domain vocabulary lives in a plain glossary carrying no
+    implementation detail. Pin §7's rule sentence, not just its heading."""
+    normalized = " ".join(MODULE.read_text(encoding="utf-8").split())
+    assert (
+        "the *why* behind a hard-to-reverse choice is captured at the moment "
+        "it is decided" in normalized
+    ), "§7 must still say the ADR is captured AT THE MOMENT the choice is made"
+    assert "totally devoid of implementation detail" in normalized, (
+        "§7 must still require CONTEXT.md to carry no implementation detail"
+    )
+
+
+@pytest.mark.covers("FR-01.16/AC08")
+def test_module_requires_confirmation_before_writing_the_requirement():
+    """FR-01.16 AC08: coverage complete -> play back the shared understanding
+    and wait for the person's confirmation before writing anything; skipping
+    it means recording a guess, not the agreed requirement. Pin §9's rule
+    sentence, not just its heading."""
+    normalized = " ".join(MODULE.read_text(encoding="utf-8").split())
+    assert "Do not act on it until I confirm we have reached a shared understanding" in normalized, (
+        "§9 must still open with Pocock's confirm-before-acting instruction"
+    )
+    assert (
+        "The confirmation is the hand-off from *their* mental model to *the "
+        "recorded one*" in normalized
+    ), "§9 must still name confirmation as the hand-off from their model to the recorded one"
