@@ -16,13 +16,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.audit import group_i  # noqa: E402
 from scripts.audit.audit_adapters import SOURCE_DETECTIVE_ONLY  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -269,6 +269,7 @@ def test_prose_checks_never_flip_the_audit_verdict(tmp_path):
         assert findings[check].status != "fail", check
 
 
+@pytest.mark.covers("FR-01.02/AC15")
 def test_retired_fr_number_must_not_be_reused(tmp_path):
     """§4: a removed FR's number is retired for good — I4 must see it."""
     body = _WITH_REMOVED.replace(
