@@ -129,22 +129,22 @@ def _wrong_shape_detail(field: str, value: object) -> str:
 def _no_entry_detail(run_id: str) -> str:
     """Why an absent F5c entry FAILS instead of skipping.
 
-    Both gates resolve the run's complexity from the entry, so without one they
-    do not know what to enforce. Returning SKIPPED there answered "not
-    applicable" to a question that had actually not been asked — and at F11,
-    F5c is mandatory and has already run, so the honest reading of an absent
-    entry is "F5c did not happen", never "this run is exempt".
+    Both gates resolve the run's complexity from the entry; without one they don't
+    know what to enforce. SKIPPED there answered "not applicable" to a question
+    that was never asked — and at F11, F5c is mandatory and already ran, so an
+    absent entry honestly reads "F5c did not happen", never "this run is exempt".
     """
+    from tools.append_iterate_entry import ITERATE_RETENTION
     return (
         f"no iterate entry for {run_id} in .shipwright/agent_docs/iterates/ — "
         "this gate cannot resolve the run's complexity and must not report "
         "itself as not-applicable. For the run being finalized this means F5c "
         "did not run: `append_iterate_entry.py --run-id ... --entry-json ...`. "
-        "For an OLDER run it may instead have been evicted by the 50-entry "
-        "retention window (that directory is a recency cache, not the "
-        "historical record — `shipwright_events.jsonl` keeps the "
-        "`work_completed` event permanently), in which case the run cannot be "
-        "re-verified from the tree and this result is a limit, not a defect"
+        f"For an OLDER run it may instead have been evicted by the {ITERATE_RETENTION}-entry "
+        "retention window (that directory is a recency cache, not the historical "
+        "record — `shipwright_events.jsonl` keeps the `work_completed` event "
+        "permanently), in which case the run cannot be re-verified from the "
+        "tree and this result is a limit, not a defect"
     )
 
 
