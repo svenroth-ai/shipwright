@@ -19,11 +19,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 SKILL_PATH = (
     Path(__file__).resolve().parent.parent / "skills" / "plan" / "SKILL.md"
 )
 
 
+@pytest.mark.covers("FR-01.03/AC02")
 def test_missing_review_key_stop_and_ask_instruction_present():
     body = SKILL_PATH.read_text(encoding="utf-8")
     assert "Branch B" in body and "missing_keys" in body, (

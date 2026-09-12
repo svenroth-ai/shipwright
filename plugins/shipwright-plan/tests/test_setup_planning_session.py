@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "checks" / "setup-planning-session.py")
 
 
@@ -127,8 +129,11 @@ def _seed_resume(planning_dir: Path, *, with_marker: bool) -> None:
         )
 
 
+@pytest.mark.covers("FR-01.03/AC16")
 def test_setup_resume_forces_step5_when_marker_missing(sample_spec, tmp_path):
-    """plan.md exists but external_review_state.json missing → resume_step = 5."""
+    """FR-01.03/AC16: a plan whose review was never recorded is sent back to
+    be reviewed rather than resumed past it. plan.md exists but
+    external_review_state.json missing → resume_step = 5."""
     plugin_root = str(Path(__file__).resolve().parent.parent)
     _seed_resume(sample_spec.parent, with_marker=False)
 
@@ -143,8 +148,11 @@ def test_setup_resume_forces_step5_when_marker_missing(sample_spec, tmp_path):
     assert output["state"]["review_state_exists"] is False
 
 
+@pytest.mark.covers("FR-01.03/AC16")
 def test_setup_resume_advances_when_marker_present(sample_spec, tmp_path):
-    """plan.md + external_review_state.json + sections missing → resume_step = 6."""
+    """FR-01.03/AC16: an interrupted session resumes from the step it had
+    reached rather than starting over. plan.md + external_review_state.json
+    + sections missing → resume_step = 6."""
     plugin_root = str(Path(__file__).resolve().parent.parent)
     _seed_resume(sample_spec.parent, with_marker=True)
 
