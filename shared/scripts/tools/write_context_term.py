@@ -139,8 +139,9 @@ def upsert_term(
         avoid = sanitize_field(avoid)
         if not avoid:
             raise ValueError(
-                "--avoid must not be blank — omit it to keep an existing "
-                "_Avoid_ line, or use --clear-avoid to delete one"
+                "'avoid' must not be blank — omit it (or pass null in "
+                "--payload-file) to keep an existing _Avoid_ line, or set "
+                "clear_avoid/--clear-avoid to delete one"
             )
     if not term:
         raise ValueError("--term must not be blank")
@@ -247,11 +248,11 @@ def upsert_term(
 
 
 def main() -> int:
-    # Windows console stderr defaults to strict-mode cp1252; without this a
-    # non-ASCII error (e.g. a duplicate-heading path) raises UnicodeEncodeError
-    # instead of a clean exit 1.
-    if hasattr(sys.stderr, "reconfigure"):
-        sys.stderr.reconfigure(errors="replace")
+    # Windows console streams default to strict-mode cp1252; without this a
+    # non-ASCII error or --help text (em dash) mis-encodes for a UTF-8 reader.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
     parser = build_arg_parser(__doc__.split("\n")[0])
     args = parser.parse_args()

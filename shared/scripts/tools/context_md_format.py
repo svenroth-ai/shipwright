@@ -162,7 +162,12 @@ def parse_language_entries(body: list[str]) -> list[dict]:
     definition rather than left to become an orphaned raw block that
     injects a spurious blank line on re-render (doubt-reviewer D3, P4.1
     Stage-3 review; ``shared/context-format.md`` §2's own worked
-    ``Cancellation`` example wraps this way)."""
+    ``Cancellation`` example wraps this way). A continuation line following
+    an ``_Avoid_`` line is absorbed into the avoid text the same way — an
+    un-absorbed wrap left a hidden line-start occurrence of whatever bolded
+    term the wrap happened to start with, which ``term_markup_count`` then
+    counted as a real duplicate heading (P4.1 final-review deferred
+    finding)."""
     entries: list[dict] = []
     i = 0
     n = len(body)
@@ -183,22 +188,35 @@ def parse_language_entries(body: list[str]) -> list[dict]:
         term = m.group(1)
         definition_parts = [m.group(2)]
         i += 1
-        while i < n and body[i].strip() and not _TERM_RE.match(body[i]) \
-                and not _AVOID_RE.match(body[i]):
-            definition_parts.append(body[i].strip())
-            i += 1
+        extra, i = _absorb_continuation(body, i, n)
+        definition_parts.extend(extra)
         avoid = None
         if i < n:
             am = _AVOID_RE.match(body[i])
             if am:
-                avoid = am.group(1)
+                avoid_parts = [am.group(1)]
                 i += 1
+                extra, i = _absorb_continuation(body, i, n)
+                avoid_parts.extend(extra)
+                avoid = " ".join(avoid_parts)
         entries.append({
             "term": term,
             "definition": " ".join(definition_parts),
             "avoid": avoid,
         })
     return entries
+
+
+def _absorb_continuation(body: list[str], i: int, n: int) -> tuple[list[str], int]:
+    """Lines following a term/avoid line that are neither blank nor the
+    start of a new ``**Term**``/``_Avoid_`` line — wrapped hand-written
+    prose to fold into the field being parsed. Returns ``(parts, next_i)``."""
+    parts: list[str] = []
+    while i < n and body[i].strip() and not _TERM_RE.match(body[i]) \
+            and not _AVOID_RE.match(body[i]):
+        parts.append(body[i].strip())
+        i += 1
+    return parts, i
 
 
 def serialize_language_entries(entries: list[dict]) -> list[str]:

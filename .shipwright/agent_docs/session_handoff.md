@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-11-wire-promote-required-layers"
+run_id: "iterate-2026-09-11-glossary-p41-review-followups"
 phase: "iterate"
-reason: "F5b work_completed event"
-timestamp: "2026-09-11T01:49:36.018292+00:00"
+reason: "PR #699 review follow-ups: 5 deferred non-blocking items addressed"
+timestamp: "2026-09-11T00:40:25.570999+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-11 01:49:36 UTC
+> Auto-generated 2026-09-11 00:40:25 UTC
 
 ## Session Info
 
-- **Session ID**: 2205b7b9-fd99-4a99-bbab-6b7a3b63412d
-- **Timestamp**: 2026-09-11 01:49:36 UTC
-- **Reason**: F5b work_completed event
+- **Session ID**: 7b98e634-2da0-4e90-a917-e1268eb84655
+- **Timestamp**: 2026-09-11 00:40:25 UTC
+- **Reason**: PR #699 review follow-ups: 5 deferred non-blocking items addressed
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-09-11T01:49:36.018292+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/wire-promote-required-layers
+- **Branch**: iterate/glossary-p41-review-followups
 - **External Review Marker**: missing
 - **Review Cascade**: no run_id resolved
 
@@ -66,8 +66,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/wire-promote-required-layers
-- **Last Commit**: 0178ba04d feat(iterate): wire promote_required_layers.py into worktree setup
+- **Branch**: iterate/glossary-p41-review-followups
+- **Last Commit**: 3615210e2 chore(triage): sweep 24 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -83,7 +83,7 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a3cdccfe | work_completed | iterate (Wire the existing promote_required_layers.py P3.5 CLI into /shipwright-iterate's worktree setup (step 4.5): a found promotion ships as its own small PR against the default branch, never inside the triggering iterate's own PR, avoiding an F11 cross-layer coverage hard-fail hazard.) | 2026-09-11 |
+| evt-6c5ebe28 | work_completed | iterate (Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser.) | 2026-09-11 |
 | evt-9e7f3b93 | work_completed | iterate (Add the keystone AC gate's own verifier source (check_keystone_ac_gate.py + verifiers/_keystone_*.py) to SENSITIVE_PATH_RE so an edit to its logic alone gets the same mandatory-review treatment as an edit to ci.yml.) | 2026-09-10 |
 | evt-504ba4d2 | work_completed | iterate (Anchor Layers-promotion to the newest CI-verified ancestor commit when HEAD itself is not verified, with staleness re-verification per FR.) | 2026-09-10 |
 | evt-4e62c00d | work_completed | iterate (Keystone AC gate's post-merge detective arm (ruling Q5): classify_commit composes resolve_ci_verification/resolve_execution_evidence to judge an already-merged commit against CI-verified trunk evidence, distinct from the preventive gate's own same-run producer.) | 2026-09-10 |
@@ -93,7 +93,7 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 603
-- **Last iterate**: change — Wire the existing promote_required_layers.py P3.5 CLI into /shipwright-iterate's worktree setup (step 4.5): a found promotion ships as its own small PR against the default branch, never inside the triggering iterate's own PR, avoiding an F11 cross-layer coverage hard-fail hazard. (2026-09-11)
+- **Last iterate**: bug — Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser. (2026-09-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
