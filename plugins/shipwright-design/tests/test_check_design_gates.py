@@ -18,7 +18,6 @@ GOOD_GUIDELINES = (
     "## Spacing & Layout\n- Base unit: 4px\n"
 )
 
-
 def run_gates(project_root: Path, gate: str = "all", round_path: Path | None = None) -> tuple[int, dict]:
     cmd = [sys.executable, SCRIPT, "--project-root", str(project_root), "--gate", gate]
     if round_path is not None:
@@ -29,10 +28,8 @@ def run_gates(project_root: Path, gate: str = "all", round_path: Path | None = N
     except json.JSONDecodeError:  # pragma: no cover - diagnostic path
         raise AssertionError(f"non-JSON stdout: {proc.stdout!r} / {proc.stderr!r}")
 
-
 def _problems(out: dict, gate: str) -> list[str]:
     return next(g for g in out["gates"] if g["gate"] == gate)["problems"]
-
 
 @pytest.fixture
 def project(tmp_path):
@@ -60,22 +57,19 @@ def project(tmp_path):
     (designs / "visual-guidelines.md").write_text(GOOD_GUIDELINES, encoding="utf-8")
     return root
 
-
 def test_a_clean_project_passes_every_gate(project):
     code, out = run_gates(project)
     assert code == 0, out
     assert out["success"] is True
-
 
 def test_a_missing_project_root_is_a_usage_error(tmp_path):
     code, out = run_gates(tmp_path / "nope")
     assert code == 2
     assert out["error"] == "project_root_not_found"
 
-
 # --- fr-coverage (#1 / #4) --------------------------------------------------
 
-
+@pytest.mark.covers("FR-01.04/AC01")
 def test_an_orphan_fr_fails_fr_coverage(project):
     (project / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text(
         "| ID | Requirement | Priority |\n"
@@ -87,16 +81,15 @@ def test_an_orphan_fr_fails_fr_coverage(project):
     assert code == 1
     assert any("FR-01.02" in p for p in _problems(out, "fr-coverage"))
 
-
 def test_a_missing_screen_file_fails_fr_coverage(project):
     (project / ".shipwright" / "designs" / "screens" / "01-login.html").unlink()
     code, out = run_gates(project, "fr-coverage")
     assert code == 1
 
-
 # --- tokens (#2) -------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.04/AC02")
 def test_missing_visual_guidelines_fails_tokens(project):
     (project / ".shipwright" / "designs" / "visual-guidelines.md").unlink()
     code, out = run_gates(project, "tokens")
@@ -107,6 +100,7 @@ def test_missing_visual_guidelines_fails_tokens(project):
 # --- flows (#3) --------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.04/AC03")
 def test_multi_screen_with_no_flow_fails(project):
     (project / ".shipwright" / "designs" / "screens" / "02-dashboard.html").write_text(
         "<!-- Requirements: FR-01.01 -->\n<html></html>", encoding="utf-8"
@@ -133,6 +127,7 @@ def test_no_chrome_definition_is_a_no_op_when_no_screen_uses_nav(project):
     assert run_gates(project, "chrome")[0] == 0
 
 
+@pytest.mark.covers("FR-01.04/AC05")
 def test_no_chrome_definition_fails_when_a_screen_uses_nav_markup(project):
     """External code review, iterate-2026-09-11-e1-checks-plan-design's high
     finding: absence of chrome-definition.md was accepted unconditionally,
@@ -165,6 +160,7 @@ def test_a_screen_diverging_from_chrome_fails(project):
 # --- standalone (#6) -----------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.04/AC06")
 def test_an_external_script_reference_fails(project):
     (project / ".shipwright" / "designs" / "screens" / "01-login.html").write_text(
         '<!-- Requirements: FR-01.01 -->\n<script src="https://cdn.example.com/x.js"></script>',
@@ -200,6 +196,7 @@ def test_uploads_passes_without_git(project):
     assert run_gates(project, "uploads")[0] == 0
 
 
+@pytest.mark.covers("FR-01.04/AC09")
 def test_a_modified_upload_fails(project):
     _git_init(project)
     upload = project / ".shipwright" / "designs" / "uploads" / "brand.md"
@@ -228,6 +225,7 @@ ROUND_FILE = (
 # test_check_design_gates_tier3_review.py — kept out of this file's budget.
 
 
+@pytest.mark.covers("FR-01.04/AC10")
 def test_a_flagged_screen_left_untouched_fails(project, tmp_path):
     _git_init(project)
     _git(project, "add", "-A")
@@ -258,6 +256,7 @@ def test_boundary_passes_without_git(project):
     assert run_gates(project, "boundary")[0] == 0
 
 
+@pytest.mark.covers("FR-01.04/AC12")
 def test_boundary_fails_on_a_production_path(project):
     _git_init(project)
     src = project / "src"

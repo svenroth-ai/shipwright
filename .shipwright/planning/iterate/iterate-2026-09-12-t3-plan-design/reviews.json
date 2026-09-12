@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-t3-plan-design",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T22:55:14.577315+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC02, AC03, and AC11 are bound to \"drift-pin\" tests that assert an instruction string is present (`test_missing_review_key_stop_and_ask_instruction_present`, `test_self_review_fallback_only_runs_when_no_independent_review_completed`, `test_architecture_reject_stops_and_asks_the_user_to_choose`). The spec's binding constraint says a test \"shaped around the implementation it was written against does not count and will be rejected in review.\" A string-presence test proves the prompt text contains an instruction, not that the pipeline behaves per the AC.",
+          "suggestion": "For each of these three, verify whether the underlying behavior is mechanistically observable (e.g., does the gate script fail when the review key is missing? does `external_review.py` exit non-zero on reject without a choice?). If yes, bind to the behavioral assertion instead and keep the drift-pin as a secondary marker. If genuinely unobservable, extend the AC21-style recorded-reason treatment rather than binding a text-assert.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The third-root handling creates new in-root tests for AC09/AC10/AC11 (and their neighbors) that invoke the same production CLIs already proven end-to-end in `shared/tests` (`test_architecture_review_mode.py`, `test_design_round_declarations.py`, etc.). This is deliberate duplication of existing coverage to stay within the two-root budget. The plan flags it and names the escalation path, which is good process — but the duplicated tests are likely thinner than the originals, so the baseline will record these ACs as \"proven\" by the weaker tests.",
+          "suggestion": "Before merge, run the escalation now rather than after: a 3rd root citing the already-existing shared/tests files is a one-line campaign-owner ask, and if granted it deletes the duplicated in-root tests. If the escalation is denied or slow, the current fallback stands — but record the pending escalation in the F3 drop so it doesn't silently become permanent duplication.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Several new tests are subprocess-driven with file writes (`touches_io_boundary` was flagged by complexity classification). The plan doesn't state whether the new tests use isolated temp directories or run against the repo tree. A subprocess test that writes review markers or declaration files into the working tree would corrupt state on a local (non-CI) run or in parallel execution.",
+          "suggestion": "Confirm the new tests follow the `test_requirement_writeback_integration.py` idiom fully — including its tmpdir/sandbox setup — and note that confirmation in the mini-plan verification section.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC08, AC10, and AC14 are bound as \"same test\" — a single test function proving multiple ACs. This is fine when the assertion genuinely covers both criteria (as claimed for AC08's 4-problem assertion), but it weakens the traceability the baseline is meant to provide: when the shared test changes or is renamed, multiple baseline entries break at once.",
+          "suggestion": "Acceptable as-is if the assertions truly span the ACs (verify for AC10: \"foreign flag refused\" and \"brief required\" are distinct behaviors in one test — check the test asserts both, not just one). If one AC's criterion is only incidentally touched, split the `@pytest.mark.covers` marker off to a dedicated narrow test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC21's unbinding is well-reasoned and documented, but the recorded reason lives only in the plan prose and the F3 drop. If the spec owner later amends AC21 to name GLM, the unbound entry will silently persist until someone re-derives.",
+          "suggestion": "Ensure the recorded reason is machine-readable in `shipwright_ac_coverage_baseline.json` (the ratchet tool's `--reason`/annotation field, if it has one), not just prose, so a future AC21 text change triggers a re-check.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 4 verified only that removed baseline lines start with the FR prefixes — nothing verifies the newly added bound entries are correct (right test IDs, right roots). A typo'd `@pytest.mark.covers` marker would silently under-count or mis-route.",
+          "suggestion": "Add a spot-check: after regeneration, grep a handful of new `covers` markers and confirm the test IDs resolve via `pytest --collect-only` on both roots (the green full runs likely already cover this — say so explicitly if so).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The recorded verification commands omit the required `--junitxml` output for both test roots. This directly conflicts with ADR-044 and the binding constraint, so the claimed green runs do not demonstrate the mandated CI evidence.",
+          "suggestion": "Run exactly one pytest invocation per assigned root, each with its own `--junitxml` path, and include the generated reports in the expected compliance/CI workflow.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "For architecture-review and requirement-writeback ACs, the plan acknowledges that stronger end-to-end proofs already exist in `shared/tests`, but recreates them under the assigned roots solely to avoid a third-root deviation. That duplicates proof logic and creates drift risk; it is not a clean resolution of the root-budget constraint.",
+          "suggestion": "Escalate the third-root exception before adding duplicate coverage, or obtain an explicit campaign-owner decision that the in-root tests are the canonical tests and retire/reassign overlapping coverage where appropriate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Several mapped “drift-pin” tests are described as checking that an instruction is present (for example, AC02) rather than exercising the stop-and-ask behavior. That can pass while the real command no longer enforces the requirement, which fails the stated “test must PROVE the AC” rule.",
+          "suggestion": "For each drift-pin mapping, assert observable CLI/pipeline behavior using representative invalid inputs and verify exit status, user-facing stop/ask output, and absence of prohibited continuation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC21 is said to be recorded in the plan and an F3 decision drop, but the acceptance criterion specifically requires a recorded reason for any cluster entry left in `unbound`. The stated ratchet result only proves that 32 entries were removed, not that the remaining AC21 entry carries the required structured reason in the baseline artifact.",
+          "suggestion": "Confirm the baseline’s actual schema-supported reason field is populated for `FR-01.03/AC21`, and add a validation/assertion that the reason survives ratchet regeneration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new subprocess tests exercise file-writing CLIs but do not state isolation or cleanup guarantees. Shared working directories, fixed run IDs, or inherited environment settings can make parallel CI runs flaky or leave artifacts that affect later tests.",
+          "suggestion": "Use per-test temporary project roots and unique run IDs; explicitly assert outputs are confined to those roots and avoid inherited production credentials or network-capable reviewer settings.  Overall, the coverage direction and AC mapping are largely sound, including the decision not to falsely bind the obsolete DeepSeek AC. Resolve the evidence-format requirement and canonical-test ownership/proof gaps before merging. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-11T22:49:40.605862+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: medium**\n**Finding:** AC02, AC03, and AC11 are bound to \"drift-pin\" tests that assert an instruction string is present (`test_missing_review_key_stop_and_ask_instruction_present`, `test_self_review_fallback_only_runs_when_no_independent_review_completed`, `test_architecture_reject_stops_and_asks_the_user_to_choose`). The spec's binding constraint says a test \"shaped around the implementation it was written against does not count and will be rejected in review.\" A string-presence test proves the *prompt text* contains an instruction, not that the pipeline *behaves* per the AC.\n**Suggestion:** For each of these three, verify whether the underlying behavior is mechanistically observable (e.g., does the gate script fail when the review key is missing? does `external_review.py` exit non-zero on reject without a choice?). If yes, bind to the behavioral assertion instead and keep the drift-pin as a secondary marker. If genuinely unobservable, extend the AC21-style recorded-reason treatment rather than binding a text-assert.\n\n**Category: approach — Severity: medium**\n**Finding:** The third-root handling creates new in-root tests for AC09/AC10/AC11 (and their neighbors) that invoke the same production CLIs already proven end-to-end in `shared/tests` (`test_architecture_review_mode.py`, `test_design_round_declarations.py`, etc.). This is deliberate duplication of existing coverage to stay within the two-root budget. The plan flags it and names the escalation path, which is good process — but the duplicated tests are likely thinner than the originals, so the baseline will record these ACs as \"proven\" by the weaker tests.\n**Suggestion:** Before merge, run the escalation now rather than after: a 3rd root citing the already-existing shared/tests files is a one-line campaign-owner ask, and if granted it deletes the duplicated in-root tests. If the escalation is denied or slow, the current fallback stands — but record the pendi […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The recorded verification commands omit the required `--junitxml` output for both test roots. This directly conflicts with ADR-044 and the binding constraint, so the claimed green runs do not demonstrate the mandated CI evidence.  \n   **Suggestion:** Run exactly one pytest invocation per assigned root, each with its own `--junitxml` path, and include the generated reports in the expected compliance/CI workflow.\n\n2. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** For architecture-review and requirement-writeback ACs, the plan acknowledges that stronger end-to-end proofs already exist in `shared/tests`, but recreates them under the assigned roots solely to avoid a third-root deviation. That duplicates proof logic and creates drift risk; it is not a clean resolution of the root-budget constraint.  \n   **Suggestion:** Escalate the third-root exception before adding duplicate coverage, or obtain an explicit campaign-owner decision that the in-root tests are the canonical tests and retire/reassign overlapping coverage where appropriate.\n\n3. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** Several mapped “drift-pin” tests are described as checking that an instruction is present (for example, AC02) rather than exercising the stop-and-ask behavior. That can pass while the real command no longer enforces the requirement, which fails the stated “test must PROVE the AC” rule.  \n   **Suggestion:** For each drift-pin mapping, assert observable CLI/pipeline behavior using representative invalid inputs and verify exit status, user-facing stop/ask output, and absence of prohibited continuation.\n\n4. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** AC21 is said to be recorded in the plan and an F3 decision drop, but the acceptance criterion specifically requires a recorded reason for any cluster entry left in `unbound`. The stated ratchet result o […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T22:55:21.448347+00:00",
+      "disposition": "runner has no Agent tool; internal code-reviewer cascade runs at campaign-mode.md 3f-bis before merge (delegated_to_orchestrator)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T22:55:21.556565+00:00",
+      "disposition": "runner has no Agent tool; internal doubt-reviewer cascade runs at campaign-mode.md 3f-bis before merge (delegated_to_orchestrator)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec |",
+          "file": ".shipwright/compliance/test-traceability.json` (FR-01.03 / FR-01.04 sections, `@@ -1277,1845 +1277,2236 @@` hunk)",
+          "line": null,
+          "finding": "Every newly bound FR-01.03 and FR-01.04 test in the committed traceability manifest shows `\"executed\": \"not_run\"` and both FRs' coverage blocks read `\"unit\": \"MISSING\"` (FR-01.04 also `\"e2e\": \"MISSING\"`). The ADR claims `update_compliance.py --phase build` was run to regenerate from the live tree before writing the baseline (Self-Review item 7 / \"Verification performed\" step 3), but the committed artifact was generated at `2026-09-11T19:58` from `source_commit 0cea7881` — the t2 branch point, not this branch's state. The AC \"runs green in CI\" is therefore not reflected in the machine-readable evidence; only the baseline's `unbound` list changed.",
+          "suggestion": "Re-run the traceability regen against this branch's head (after the junit runs) and commit the resulting `executed: \"pass\"` / coverage flips, or the F11/test-evidence gates will contradict the baseline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "test |",
+          "file": "plugins/shipwright-plan/tests/test_review_routing_contract.py:66-103` (AC03, AC11 tests); `test_missing_key_stop_and_ask_drift.py` (AC02)",
+          "line": null,
+          "finding": "Three ACs are bound to tests that only assert reference-doc/SKILL.md strings exist (\"true last resort\", \"`reject` from either reviewer → STOP and ask the user\", \"Branch B\"/\"missing_keys\"). The spec's binding constraint is explicit: \"The test must PROVE the AC. A test shaped around the implementation it was written against does not count and will be rejected in review.\" Both external reviewers raised exactly this (finding #1/#9 in `reviews.json`); the disposition rejects it by citing a \"D7 convention\" that is not visible in this spec. A pipeline whose reviewers silently auto-approve would still pass these tests.",
+          "suggestion": "Either record these ACs (AC03, AC11 at minimum — they are new in this diff, unlike AC02) as unbound-with-reason like AC21, or bind them to an observable behavior (e.g., the review gate failing when the fallback marker lacks the required condition — analogous to the AC19/AC20 tests, which do assert real gate behavior).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "plugins/shipwright-plan/tests/test_review_routing_contract.py:107-137` (`test_architecture_mode_requires_a_brief_not_the_plan`, AC09/AC10)",
+          "line": null,
+          "finding": "AC09's claim is \"the second question — should this be built at all — is asked over a short brief.\" The test only proves CLI argument validation (exit 2 on missing `--brief-file` and on misused `--plan-file`). It never proves the architecture question is actually asked, that a brief is accepted, or that the review runs over the brief's content. A CLI that accepted a brief and then reviewed the plan file anyway would pass. The test also depends on `_keyless_env()` for no stated reason — the assertions don't need keys, and the env stripping suggests the author wasn't sure whether the CLI would attempt a network call mid-arg-validation.",
+          "suggestion": "Add the positive half: invoke with a valid `--brief-file` and assert the outgoing payload/context references the brief content (or at minimum that it proceeds past arg validation to the documented key-required failure), so the binding proves the brief is what gets reviewed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "plugins/shipwright-design/tests/test_requirement_writeback_gate.py` and `plugins/shipwright-plan/tests/test_review_routing_contract.py` (new tests) vs. the mini-plan's \"Third-root discovery\" section",
+          "line": null,
+          "finding": "The unit deliberately duplicates end-to-end coverage that already exists in `shared/tests` (`test_architecture_review_mode.py`, `test_record_requirement_impact.py`, etc.) to stay inside the two-root budget, filing an escalation instead. Both external reviewers flagged this as drift-prone duplication (findings #2/#8); the escalation remains unresolved at merge time, so the repo now carries two parallel test suites for the same CLIs with no owner decision recorded. This violates the spirit of \"No new test harness was introduced where an existing one fits\" — the existing harness does fit, it's just in a third root.",
+          "suggestion": "Block merge on the campaign owner's third-root ruling, or at minimum record the pending escalation in a triage card (the mini-plan says \"filed\" but no trg- entry appears in the diff) so the duplication cannot silently become permanent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shipwright_ac_coverage_baseline.json` — `\"FR-01.03/AC21\"` retained with no reason field",
+          "line": null,
+          "finding": "The unit AC requires \"no entry for this cluster remains in `unbound` without a recorded reason.\" AC21's reason exists only as prose in the ADR/mini-plan; the baseline is a flat string list with no reason annotation, so nothing mechanical ties the reason to the entry or survives/informs regeneration. External-review finding #4/#10 flagged exactly this and the disposition rejected it as a \"campaign-wide gap\" — but that leaves this unit's own AC formally unmet for AC21 (reason not recorded with the unbound entry in any durable, checkable form).",
+          "suggestion": "Add the reason to the F3 decision drop (which the ADR says it does — verify it actually landed there) and, given the schema limitation, file the schema gap as a triage item if one doesn't already exist; otherwise a future spec edit to AC21 silently leaves a stale unbound entry.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression |",
+          "file": ".shipwright/compliance/dashboard.md` and `test-evidence.md` — \"latest full suite\" changed from 18613/18671 to 11604/11647",
+          "line": null,
+          "finding": "The reported total test count dropped by ~7,000 between the previous and current evidence snapshots with no explanation in the diff. If this is the junit-evidence resolver picking up only one root's report (or the t2 run's smaller suite), the dashboard's Test-Health dimension is now reporting a stale/partial number, and the FR-01.14 RTM row was updated to cite `11604/11647` as if it were the suite of record.",
+          "suggestion": "Confirm which run produced 11604/11647 and whether the latest-full-suite resolver correctly picked the largest/most-recent full suite; if intentional, note why in test-evidence.md.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "plugins/shipwright-plan/tests/test_check_plan_gates_reviewers.py:78-92",
+          "line": null,
+          "finding": "The AC20 \"historical schema\" test hardcodes `marker_schema: 3` with `deepseek/openai` and schema 4 as `glm/openai`. The AC's actual claim is truthful reviewer identification generally; if the roster changes again (as it did from deepseek→glm), these pins break or, worse, keep passing while asserting a stale contract. This is the same text-pin fragility class as above, though here at least a real gate is exercised.",
+          "suggestion": "Acceptable as-is, but derive the expected historical/current roster from the production module (e.g., import the schema constants) rather than duplicating them in the fixture.",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-11T23:07:34.010418+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: spec | Severity: high**\n  **File:** `.shipwright/compliance/test-traceability.json` (FR-01.03 / FR-01.04 sections, `@@ -1277,1845 +1277,2236 @@` hunk)\n  **Finding:** Every newly bound FR-01.03 and FR-01.04 test in the committed traceability manifest shows `\"executed\": \"not_run\"` and both FRs' coverage blocks read `\"unit\": \"MISSING\"` (FR-01.04 also `\"e2e\": \"MISSING\"`). The ADR claims `update_compliance.py --phase build` was run to regenerate from the live tree *before* writing the baseline (Self-Review item 7 / \"Verification performed\" step 3), but the committed artifact was generated at `2026-09-11T19:58` from `source_commit 0cea7881` — the t2 branch point, not this branch's state. The AC \"runs green in CI\" is therefore not reflected in the machine-readable evidence; only the baseline's `unbound` list changed.\n  **Suggestion:** Re-run the traceability regen against this branch's head (after the junit runs) and commit the resulting `executed: \"pass\"` / coverage flips, or the F11/test-evidence gates will contradict the baseline.\n\n- **Category: test | Severity: high**\n  **File:** `plugins/shipwright-plan/tests/test_review_routing_contract.py:66-103` (AC03, AC11 tests); `test_missing_key_stop_and_ask_drift.py` (AC02)\n  **Finding:** Three ACs are bound to tests that only assert reference-doc/SKILL.md *strings* exist (\"true last resort\", \"`reject` from either reviewer → STOP and ask the user\", \"Branch B\"/\"missing_keys\"). The spec's binding constraint is explicit: \"The test must PROVE the AC. A test shaped around the implementation it was written against does not count and will be rejected in review.\" Both external reviewers raised exactly this (finding #1/#9 in `reviews.json`); the disposition rejects it by citing a \"D7 convention\" that is not visible in this spec. A pipeline whose reviewers silently auto-approve would still pass these tests.\n  **Suggestion:** Either record these ACs (AC03, AC11 at minimum — they are new in this dif […truncated]\n\n[openai] <no review returned: codex exec exited 1: Error: turn/start: turn/start failed: Input exceeds the maximum length of 1048576 characters. (code -32602), data: {\"input_error_code\":\"input_too_large\",\"max_chars\":1048576,\"actual_chars\":1317770}>",
+      "verdicts": {
+        "openai": "unavailable",
+        "glm": "revise"
+      },
+      "contradiction_resolution": "only one reviewer (glm) answered; openai/codex errored on diff-size limit (1.3M chars > 1,048,576), unrelated to review content; glm's revise verdict processed via the 7-row disposition table in the ADR/mini-plan"
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T22:55:21.317941+00:00",
+      "disposition": "runner has no Agent tool; internal spec-reviewer cascade runs at campaign-mode.md 3f-bis before merge (delegated_to_orchestrator)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T22:55:27.152409+00:00",
+      "disposition": "plan review has no internal arm (project_plan_review_has_no_internal_arm); external plan review (Branch A) is the only plan-review pass, recorded under review-type plan",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
