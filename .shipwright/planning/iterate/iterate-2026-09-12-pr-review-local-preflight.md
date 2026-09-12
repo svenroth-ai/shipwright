@@ -291,3 +291,42 @@ addressed as a documented, not eliminated, risk: `--base`'s help text and
 tree. `pr_review.py` briefly crossed 300 lines adding the help-text warning;
 trimmed back to exactly 300 by moving the full explanation into the module
 docstring and keeping the CLI help to one line.
+
+## Third dogfooding round (real required CI gate BLOCK, then a regression it caused)
+
+The pushed PR's own required Tier-3 "PR Review" check (not the local preflight)
+independently surfaced the SAME git-filter-driver risk the local dogfooding run
+had found, and explicitly REJECTED the first (documentation-only) mitigation:
+"documenting this risk does not prevent code execution when reviewing an
+unfamiliar branch." It demanded a real fix — stage the worktree with an
+isolated config/environment that disables filter drivers while still covering
+untracked files — plus a regression test proving a configured filter does not
+run.
+
+First fix attempt: nulled `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM` to
+`os.devnull` for the staging subprocess. This did stop the filter from
+executing, but caused a severe regression verified directly: `build_local_diff`
+against `origin/main` returned 4675 files / 102MB instead of the correct ~27.
+Root cause: this machine's `core.autocrlf=true` is set at the git SYSTEM config
+layer (not global), so nulling `GIT_CONFIG_SYSTEM` silently disabled CRLF
+normalization on the fresh `git add -A`, while `base_sha`'s tree held
+normalized blobs — every text file in the repo then read as changed.
+
+Corrected fix: stopped nulling config files at the environment level entirely.
+Instead, query the MERGED effective git config (`git config --get-regexp
+'^filter\..*\.(clean|smudge|process)$'`, unscoped — reads local+global+system
+together) for every active filter-driver key, then blank each one via a `-c
+<key>=` override on the `git add -A` call itself. `-c` outranks every config
+layer, so no configured filter can run, and no other config value (like
+`core.autocrlf`) is touched. Verified directly: `build_local_diff` against
+`origin/main` now returns exactly 27 files / 220762 bytes, matching the known-
+correct file list, and the new regression test
+(`test_configured_clean_filter_driver_does_not_execute`) plus the full existing
+suite (31 tests in the two local-preflight files, 1067 passed/7 skipped across
+`plugins/shipwright-security/tests/`) all pass. Re-running the local preflight
+against the corrected code no longer surfaces the filter-driver finding at
+all — the only remaining finding is the reviewer's own sensitive-skill-path
+BLOCK, a structural self-approval limitation for a solo maintainer/author (see
+`feedback_solo_maintainer_admin_override_pattern` in project memory), not a
+code defect. Admin-override approval to merge past that check was requested
+and granted by the user.

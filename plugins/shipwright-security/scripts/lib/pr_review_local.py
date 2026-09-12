@@ -16,20 +16,17 @@ VERBATIM — unlike `--base`, an operator can point it at any local path, so
 it is the caller's responsibility to never name a file that may contain a
 secret (code review, 2026-09-12).
 
-`--base <ref>` MUST NAME A REF YOU ALREADY TRUST as much as your own working
-tree. `build_local_diff` stages it with `git add -A` in a private temporary
-index — see that function's own docstring for why that step, unlike the
-diff step after it, can execute a clean/filter driver `.gitattributes`
-declares, using whatever `[filter "<name>"]` command is already configured
-in YOUR OWN git config (local or global). This repo configures none, and no
-Shipwright-scaffolded project does either, but a maintainer's personal
-global config might (e.g. git-lfs) — checking out and reviewing an
-unfamiliar contributor's branch before merge is exactly the case where that
-config and that branch's `.gitattributes` could combine (dogfooded finding,
-external gpt-5.6-luna run, 2026-09-12). No `git` flag disables this without
-also losing untracked-file coverage (a hard requirement here), so this is a
-documented, not eliminated, risk: know what filters your own config defines
-before pointing `--base` at anything you have not already read.
+`build_local_diff` stages the working tree with `git add -A` in a private
+temporary index, which — unlike the diff step after it — could otherwise run
+a clean/filter driver a branch's `.gitattributes` declares. Neutralized without
+touching the operator's git config files: every `filter.<name>.(clean|smudge|
+process)` key active in the MERGED effective config (local/global/system) is
+found with one unscoped `git config --get-regexp` query, then blanked via `-c`
+overrides on the `add -A` call itself — `-c` outranks every config layer, so
+none of those drivers can run (see `_no_filter_overrides`). An earlier attempt
+nulled `GIT_CONFIG_GLOBAL`/`_SYSTEM` wholesale instead; reverted after it also
+erased this machine's SYSTEM `core.autocrlf`, corrupting every diff (see that
+function's docstring) — required-gate finding, openai/gpt-5.6-luna, 2026-09-12.
 """
 
 from __future__ import annotations
@@ -67,6 +64,34 @@ def _controlled_git_env(index_file: Path) -> dict[str, str]:
     return env
 
 
+def _no_filter_overrides(root: Path, env: dict[str, str]) -> list[str]:
+    """`-c` overrides blanking every clean/smudge/process filter driver
+    currently active for this repo, from ANY config layer (local, global,
+    system — the plain, unscoped `--get-regexp` reads the merged effective
+    config, so one query finds all three without needing to know which layer
+    defined what). `-c` outranks every layer, so passing these on the `git
+    add -A` call this guards means no configured filter driver can run.
+
+    Deliberately does NOT null `GIT_CONFIG_GLOBAL`/`_SYSTEM` wholesale —
+    tried first, that also erased unrelated settings a real environment
+    needs to compare correctly (this machine's SYSTEM `core.autocrlf=true`,
+    for one: without it, a fresh `add` re-normalizes nothing while
+    `base_sha`'s tree was recorded normalized, so EVERY text file reads as
+    changed). A branch's `.gitattributes` can still NAME a filter; naming
+    one that resolves to nothing runs nothing, git's own default for an
+    unconfigured filter (required-gate finding, 2026-09-12)."""
+    result = subprocess.run(  # nosec B603 - fixed argv, shell=False
+        ["git", "-C", str(root), "config", "--get-regexp",
+         r"^filter\..*\.(clean|smudge|process)$"],
+        cwd=str(root), env=env, capture_output=True, text=True,
+        errors="replace", shell=False, timeout=30)
+    keys = [line.split(" ", 1)[0] for line in (result.stdout or "").splitlines() if line.strip()]
+    overrides: list[str] = []
+    for key in keys:
+        overrides += ["-c", f"{key}="]
+    return overrides
+
+
 def build_local_diff(project_root: Path, base_ref: str) -> tuple[str, str]:
     """One coherent merge-base -> working-tree diff: same private-temporary-
     index technique as F0's diff-coverage gate
@@ -90,10 +115,9 @@ def build_local_diff(project_root: Path, base_ref: str) -> tuple[str, str]:
     `--no-ext-diff` and `--no-textconv` keep the diff step non-executing: a
     diff/textconv driver configured via `.gitattributes` could otherwise run
     an arbitrary local command while comparing blobs (external review,
-    2026-09-12). The preceding `git add -A` has no such flag and does run
-    clean/filter drivers if configured — acceptable here because this is the
-    caller's own already-trusted working tree (in the F11 wiring, run after
-    F6 has committed), never an untrusted checkout.
+    2026-09-12). The preceding `git add -A` has no such flag, so it is run
+    with every clean/smudge/process filter driver neutralized instead — see
+    `_controlled_git_env`/`_no_filter_overrides`.
 
     Returns ``(diff_text, error)``; ``error`` is empty on success.
     """
@@ -114,7 +138,8 @@ def build_local_diff(project_root: Path, base_ref: str) -> tuple[str, str]:
             return "", (f"could not resolve merge base against {base_ref}: {detail}".rstrip()
                         or f"could not resolve merge base against {base_ref}")
         base_sha = base.stdout.strip()
-        for git_args in (("read-tree", base_sha), ("add", "-A", "--", ".")):
+        no_filters = _no_filter_overrides(root, env)
+        for git_args in (("read-tree", base_sha), (*no_filters, "add", "-A", "--", ".")):
             proc = _git(*git_args)
             if proc.returncode != 0:
                 detail = (proc.stderr or proc.stdout or "").strip()

@@ -131,3 +131,24 @@ class TestBuildLocalDiff:
         diff, error = pr_review_local.build_local_diff(tmp_path, "origin/does-not-exist")
         assert diff == ""
         assert error != ""
+
+    def test_configured_clean_filter_driver_does_not_execute(self, tmp_path):
+        # A branch's .gitattributes can NAME a filter; the command behind
+        # that name comes only from the operator's OWN git config (local or
+        # global) -- required-gate finding, openai/gpt-5.6-luna, 2026-09-12.
+        _git(tmp_path, "init", "-q", "-b", "main")
+        marker = tmp_path.parent / "pwned-marker"
+        _git(tmp_path, "config", "--local", "filter.evil.clean",
+            f'sh -c "touch {marker.as_posix()}; cat"')
+        (tmp_path / ".gitattributes").write_text("secret.txt filter=evil\n", encoding="utf-8")
+        (tmp_path / "secret.txt").write_text("hello\n", encoding="utf-8")
+        _git(tmp_path, "add", "-A")
+        _git(tmp_path, "commit", "-q", "-m", "base")
+        if marker.exists():
+            marker.unlink()  # the FIRST add above legitimately ran it; reset before the real probe
+        base_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(tmp_path),
+                                  env=_GIT_ENV, capture_output=True, text=True,
+                                  check=True).stdout.strip()
+        diff, error = pr_review_local.build_local_diff(tmp_path, base_sha)
+        assert error == ""
+        assert not marker.exists(), "the locally-configured clean filter must never run"
