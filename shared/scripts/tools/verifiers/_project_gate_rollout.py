@@ -54,13 +54,32 @@ rollout commit (greenfield, or a repo entirely younger than the rollout
 instant), or any git failure all degrade to "no grace" — the worst outcome
 is an unexplained HARD block identical to today's pre-existing behaviour,
 never a silently weakened gate.
+
+**Trust anchor, `trg-4380c61a`.** A committer-date claim alone is a claim
+whoever controls ``resolved_commit_sha`` can forge: ``resolved_commit_sha``
+is typically an open PR's own HEAD, so a contributor can create a NEW commit
+on their own branch with ``GIT_COMMITTER_DATE`` backdated before
+``GATE_ROLLOUT_AT_EPOCH`` — it satisfies every check that only reads
+``resolved_commit_sha``'s own reachable history, having never actually
+existed at that instant. :func:`resolve_rollout_commit` additionally
+requires the candidate to be an ancestor of (or equal to) the corroborated
+boundary where the branch actually left the project's own already-merged
+trunk (``origin/main``/``origin/master``/local fallbacks — reuses
+``git_helpers._branch_base_commit``, the same hardened trunk-corroboration
+pattern already trusted elsewhere in this gate family). Only content that
+was genuinely already on that trunk before the branch's own commits could
+be introduced passes; a self-authored commit sitting ON the branch, however
+dated, never can. No corroborated trunk boundary (no ``origin`` remote, an
+ambiguous/renamed trunk name) withholds grace entirely — the same
+fail-closed direction as every other branch in this function, not a
+special case.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from .git_helpers import _run_git
+from .git_helpers import _branch_base_commit, _run_git
 
 # Same bound `git_helpers`'s own callers use on a git-subprocess hot path: a
 # wedged `index.lock` or a stalled filesystem must degrade this OPTIONAL
@@ -114,10 +133,15 @@ def resolve_head_sha(project_root: Path, commit_hash: str) -> str | None:
 def resolve_rollout_commit(project_root: Path, resolved_commit_sha: str) -> str | None:
     """The calling project's own commit at-or-before :data:`GATE_ROLLOUT_AT_EPOCH`,
     reachable from ``resolved_commit_sha`` (already a concrete SHA — see
-    :func:`resolve_head_sha`), or ``None`` when no such commit exists: a repo
-    born entirely after the gate's rollout, a shallow clone, or any git
-    failure. Verifies the resolved commit's OWN committer time in Python
-    rather than trusting git's ``--before`` parse alone."""
+    :func:`resolve_head_sha`) AND an ancestor of the project's own
+    corroborated trunk boundary, or ``None`` when no such commit exists: a
+    repo born entirely after the gate's rollout, a shallow clone, an
+    uncorroborated/absent trunk anchor, or any git failure. Verifies the
+    resolved commit's OWN committer time in Python rather than trusting
+    git's ``--before`` parse alone, and — see the module docstring's "Trust
+    anchor" note, `trg-4380c61a` — that the commit is not merely a
+    self-authored, unmerged commit on ``resolved_commit_sha``'s own branch
+    carrying a forged early committer date."""
     if not resolved_commit_sha or _is_shallow(project_root):
         return None
     rc, sha, _ = _run_git(
@@ -137,6 +161,15 @@ def resolve_rollout_commit(project_root: Path, resolved_commit_sha: str) -> str 
         return None
     if committer_epoch > GATE_ROLLOUT_AT_EPOCH:
         return None  # git's answer postdates our cutoff — refuse rather than trust it
+
+    base = _branch_base_commit(project_root, resolved_commit_sha)
+    if base is None:
+        return None  # no corroborated trunk boundary — an unverifiable ancestry claim is not grace
+    rc3, count_out, _ = _run_git(
+        project_root, "rev-list", "--count", f"{base}..{sha}", timeout=_GIT_TIMEOUT_SECONDS,
+    )
+    if not (rc3 == 0 and count_out.strip() == "0"):
+        return None  # sha is not reachable from the trusted trunk boundary — refuse
     return sha
 
 

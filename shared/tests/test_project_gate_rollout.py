@@ -65,7 +65,13 @@ def _write(root: Path, rel: str, body: str) -> None:
     p.write_text(body, encoding="utf-8")
 
 
-def _commit_at(root: Path, msg: str, iso_date: str) -> str:
+def _commit_at(root: Path, msg: str, iso_date: str, *, on_trunk: bool = True) -> str:
+    """``on_trunk=True`` (the default) also advances a simulated
+    ``origin/main`` to the new commit — standing in for "this content is
+    already merged", the trust anchor `resolve_rollout_commit` now requires
+    (`trg-4380c61a`). Pass ``on_trunk=False`` to build a commit that exists
+    only on the local branch, unreachable from that anchor — e.g. an open
+    PR's own unmerged commit."""
     _git(root, "add", "-A")
     proc = subprocess.run(
         ["git", "-C", str(root), "commit", "-q", "-m", msg],
@@ -74,7 +80,10 @@ def _commit_at(root: Path, msg: str, iso_date: str) -> str:
     )
     if proc.returncode != 0:
         raise RuntimeError(f"git commit failed: {proc.stderr}")
-    return _git(root, "rev-parse", "HEAD")
+    sha = _git(root, "rev-parse", "HEAD")
+    if on_trunk:
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+    return sha
 
 
 _BEFORE_ROLLOUT = "2026-09-06T00:00:00+00:00"
@@ -197,6 +206,51 @@ def test_resolve_rollout_commit_none_when_gits_before_answer_postdates_cutoff(tm
         return real_run_git(project_root, *args, **kwargs)
 
     monkeypatch.setattr(rollout_mod, "_run_git", _lying_rev_list)
+    assert resolve_rollout_commit(root, head_sha) is None
+
+
+# --------------------------------------------------------------------------- #
+# Trust anchor (`trg-4380c61a`) — a committer-date claim alone is forgeable
+# --------------------------------------------------------------------------- #
+
+
+def test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit(tmp_path):
+    """A contributor controls every commit on their own branch, including
+    ``GIT_COMMITTER_DATE`` — so a backdated, never-merged commit on that
+    branch must NOT qualify for grace merely because it carries an early
+    date. The genuine trunk commit is built on ``main`` (tracked via
+    ``on_trunk=True``, the default — standing in for "already merged"); the
+    forged commit sits on a separate, never-merged branch
+    (``on_trunk=False``), reproducing an open PR whose own HEAD carries a
+    backdated commit no reviewer or CI ever saw on trunk."""
+    root = tmp_path / "repo"
+    _init(root)
+    _write(root, ".shipwright/planning/app/spec.md", "trunk content")
+    trunk_sha = _commit_at(root, "genuine pre-rollout trunk commit", _BEFORE_ROLLOUT)
+
+    _git(root, "checkout", "-q", "-b", "feature")
+    _write(root, ".shipwright/planning/app/spec.md", "forged content")
+    forged_sha = _commit_at(
+        root, "forged, unmerged commit", _BEFORE_ROLLOUT, on_trunk=False,
+    )
+
+    assert resolve_rollout_commit(root, forged_sha) is None
+    # Genuine trunk content is unaffected by the new check.
+    assert resolve_rollout_commit(root, trunk_sha) == trunk_sha
+
+
+def test_resolve_rollout_commit_none_without_a_corroborated_trunk_anchor(tmp_path):
+    """No ``origin`` remote, and the local branch name matches none of the
+    trunk candidates — there is nothing to verify ancestry against, so this
+    degrades to "no grace" (the same fail-closed direction as a shallow
+    clone or a git failure), never to trusting the committer-date claim
+    alone."""
+    root = tmp_path / "repo"
+    _init(root)
+    _git(root, "checkout", "-q", "-b", "not-a-trunk-name")
+    _write(root, ".shipwright/planning/app/spec.md", "pre")
+    head_sha = _commit_at(root, "pre-rollout, no anchor", _BEFORE_ROLLOUT, on_trunk=False)
+
     assert resolve_rollout_commit(root, head_sha) is None
 
 

@@ -79,6 +79,14 @@ reference point and a per-project resolution routine future maintainers of
 this gate family must know about. `check_basis_forbids_assumed` (#4/#15) and
 `check_starting_guidance_present` (#11) are untouched.
 
+**Follow-up, `trg-4380c61a` (see "Post-merge PR-review gate finding, fixed"
+below):** grace additionally requires the resolved commit to be an ancestor
+of a corroborated trunk boundary, not merely committer-date arithmetic. A
+project with no `origin` remote, or whose local trunk branch matches none of
+the trunk-candidate names, now gets no grace at all rather than a
+timestamp-only answer — the same fail-closed direction as a shallow clone,
+just a narrower set of repos it now applies to.
+
 ## Rationale
 
 Text/count identity, not value superset (unlike the layer-coverage
@@ -233,6 +241,12 @@ instruction), rather than silently picking a side.
 - A `/shipwright-adopt` onboarding run AFTER the gate's own rollout instant
   gets no grace at all for content its own AC-miner produces — see Out of
   Scope, `trg-ac2ef362`.
+- The identical trust-anchor gap in the `check_binding_completeness`
+  precedent (`_layer_coverage_rollout.py`) is **not** fixed by this change —
+  scoped to this PR's own gate family only, per the operator's explicit
+  instruction. `trg-4380c61a`'s tracked pointer is updated to reflect that
+  the FR-01.02 #5/#10 copy is fixed and the `check_binding_completeness`
+  copy remains open, rather than closed outright.
 - Three near-identical copies of git shallow-check + `rev-list --before` +
   committer-epoch-verify logic now exist across the gate families
   (`_layer_coverage_rollout.py`, its binding-completeness sibling, and this
@@ -285,11 +299,12 @@ instruction), rather than silently picking a side.
    `git show` (`_is_safe_git_path`); the epoch constant is a fixed literal;
    `commit_hash` reaches `_run_git` as an argv element, never
    shell-interpolated. Trust-boundary caveat (Stage-3 doubt review, high —
-   see Doubt-Review-Findings #1): the rollout instant this grace relies on is
-   itself proven only by a target project's own commit timestamp, a value
-   its own author sets — a real limitation, shared with the shipped
-   precedent, disclosed and tracked (`trg-4380c61a`) rather than silently
-   passed over.
+   see Doubt-Review-Findings #1), **fixed post-merge, see "Post-merge
+   PR-review gate finding, fixed" below**: the rollout instant this grace
+   relied on was originally proven only by a target project's own commit
+   timestamp, a value its own author sets; `resolve_rollout_commit` now
+   additionally requires the candidate to be an ancestor of a corroborated,
+   contributor-uncontrolled trunk boundary (`trg-4380c61a`).
 4. **Test Quality** — pass. Real-git tests for commit resolution (before/at/
    after cutoff, shallow clone verified via `--is-shallow-repository` after a
    `file://` clone, empty ref, cache behaviour) and snapshot reading
@@ -356,8 +371,8 @@ below.
 
 | # | Severity | Finding (short) | Disposition |
 |---|---|---|---|
-| 1 | high | Both this diff's and the `check_binding_completeness` precedent's rollout-transition grace anchor "existed before rollout" to a target project's own commit timestamp — a value the commit's own author sets, with no external verification. Under the threat model this gate family already documents elsewhere (running against untrusted PR content in CI), that timestamp cannot be trusted as proof against an adversarial author, letting a genuinely new violation potentially receive grace it should not | reasoned rebuttal + disclosed, not fixed — real and correctly escalated beyond the precedent's own prior "clock-skew" framing (that ADR's row #13 graded a milder version of this low), but NOT a hole newly opened by this diff: it mirrors an already-shipped, already-merged mechanism (PR #721) with the identical trust shape. Bounded blast radius: the worst case downgrades a hygiene-gate ERROR to a WARNING for the attacker's own content — the check still fires and stays visible, not a bypass with irreversible effect. A real fix needs a trust anchor the content's author cannot set (e.g. requiring the resolved commit to also be an ancestor of a pre-existing trusted ref, or a platform-reported time instead of the self-reported commit field) — new infrastructure affecting the precedent's module too, out of proportion to a targeted two-gate fix and not something an autonomous run should design and ship unreviewed for a security-relevant trust boundary. Tracked as `trg-4380c61a` (high), detail in `Spec/trg-4380c61a-rollout-timestamp-trust.md` |
-| 2 | low | The `#10` (`no_empty_split`) grace path shares the same root cause as #1 above, just with a smaller blast radius (downgrades an empty-split hard-block, not banned content) | acknowledged — same disposition as #1; a structural fix to the shared resolver covers both gates at once, no separate action needed |
+| 1 | high | Both this diff's and the `check_binding_completeness` precedent's rollout-transition grace anchor "existed before rollout" to a target project's own commit timestamp — a value the commit's own author sets, with no external verification. Under the threat model this gate family already documents elsewhere (running against untrusted PR content in CI), that timestamp cannot be trusted as proof against an adversarial author, letting a genuinely new violation potentially receive grace it should not | **fixed** (post-merge PR-review gate finding — see "Post-merge PR-review gate finding, fixed" below) for this diff's own gate family: `resolve_rollout_commit` now additionally requires the candidate to be an ancestor of a corroborated trunk boundary (`git_helpers._branch_base_commit`), a value the PR's own author cannot set. The `check_binding_completeness` precedent's identical copy is deliberately **not** touched here — out of scope per the operator's explicit instruction, remains open, see Disclosed-not-fixed |
+| 2 | low | The `#10` (`no_empty_split`) grace path shares the same root cause as #1 above, just with a smaller blast radius (downgrades an empty-split hard-block, not banned content) | fixed — same disposition as #1; both gates share one `resolve_rollout_commit` call, so the fix covers both at once |
 
 ## External-Code-Review-Findings (GPT/openai + GLM cascade, medium+ default-on)
 
@@ -372,7 +387,7 @@ dispositions are "fix and re-ask for approval" in nature.
 |---|---|---|---|---|
 | 1 | high | glm | `_TEXT_CACHE` keyed by `(sha, posix_path)` only, omitting `project_root` — two nested projects in one repo sharing a rollout SHA and the same relative spec.md path would read each other's historical text (the sibling `_MANIFEST_CACHE` already included `project_root`; this was an accidental omission) | accepted-and-fixed — key widened to `(str(project_root), sha, posix_path)`; new test `test_two_sibling_nested_projects_at_the_same_sha_do_not_share_text_cache_entries` pins two sibling nested projects at the same SHA/path resolving to their own distinct text |
 | 2 | medium | openai | Same `_TEXT_CACHE` finding, independently found | accepted-and-fixed — same fix as #1 |
-| 3 | high | openai | Rollout grace trusts the target project's own commit committer timestamp, which its author controls — a genuinely new post-rollout violation could be backdated into apparent legacy content | acknowledged, same disposition as Doubt-Review-Findings #1 — independently confirms that finding at the same severity from a second, separate review route; not re-litigated here, see that section and `trg-4380c61a` |
+| 3 | high | openai | Rollout grace trusts the target project's own commit committer timestamp, which its author controls — a genuinely new post-rollout violation could be backdated into apparent legacy content | fixed, same disposition as Doubt-Review-Findings #1 — independently confirmed that finding at the same severity from a second, separate review route, and independently reproduced post-merge by the CI PR-review gate; see that section and "Post-merge PR-review gate finding, fixed" below |
 | 4 | medium | openai | `strict_exempt` not honored by `verify_phase.py --strict`'s blocking calc | acknowledged, same disposition as Code-Review-Findings #1 — independently confirms that finding; see `trg-b996bc21` |
 | 5 | low | glm | `criteria_free_of_implementation_detail`'s mixed hard+graced branch summarized graced hits as a bare count, unlike `no_empty_split`'s mixed branch which lists graced locations — inconsistent with the stated "every graced hit named transparently" rationale | accepted-and-fixed — mixed branch now lists the first 5 graced hit locations (same truncation policy as hard hits); test assertion added pinning the graced hit's own location string appears after "granted transition grace", not just a count |
 | 6 | low | glm | `_PREFIX_CACHE` unbounded, same cross-root contamination surface as #1 | acknowledged — fixed implicitly by #1's key widening (per the reviewer's own note) |
@@ -393,3 +408,75 @@ lint). Fixed by deriving `_PLANNING_PREFIX` from that existing constant
 (`tuple(_PLANNING_DIRNAME.split("/"))`) instead of re-declaring it, preserving
 `split_name_from_path`'s exact two-segment-prefix-matching behavior. No new
 design decision — a mechanical lint fix, not re-reviewed.
+
+## Post-merge PR-review gate finding, fixed (`trg-4380c61a`)
+
+After this PR (#755) opened, CI's automated `PR Review` gate blocked merge
+twice in a row citing the identical finding already disclosed above
+(Doubt-Review-Findings #1, External-Code-Review-Findings #3): the rollout
+grace's trust anchor — a target project's own committer timestamp — is
+forgeable by a contributor who backdates a new, unmerged commit on their own
+branch (`GIT_COMMITTER_DATE` before `GATE_ROLLOUT_AT_EPOCH`) to receive
+advisory treatment for a violation that never actually predated the gate.
+Both prior disclosures had deliberately left this open as out-of-proportion
+for an unreviewed autonomous fix to a security-relevant trust boundary; a
+live operator decision was required, and required the transition mechanism
+itself stay intact — not weakened, not gated around.
+
+**Decision.** `resolve_rollout_commit` now requires a second, independent
+condition alongside the existing committer-epoch check: the candidate commit
+must be an ancestor of (or equal to) `git_helpers._branch_base_commit`'s
+resolved trunk boundary for `resolved_commit_sha` — the same hardened,
+already-shipped corroborated-trunk-resolution helper other ERROR gates in
+this framework already trust (candidate names `origin/HEAD` /
+`origin/main` / `origin/master` / local `main` / `master`, deliberately
+excluding a branch's own `@{u}`, requiring ≥2 independently-resolving
+candidates to agree before any base is trusted). A value only the branch's
+own commits can walk past — not one its author can set — decides whether
+grace applies. No corroborated trunk boundary (no `origin` remote, an
+ambiguous/renamed trunk name) withholds grace entirely, the same
+fail-closed direction the module already used for a shallow clone.
+
+**Why this, not the alternatives the operator considered.** Weakening or
+removing the grace mechanism was explicitly ruled out — the mechanism closes
+a real, named defect (`trg-9583d3a8`) and the trust-anchor gap is a
+narrower, fixable flaw in its proof, not a reason to remove the leniency
+itself. Overriding the CI gate was explicitly ruled out — the gate correctly
+caught a real vulnerability my own review cascade had already found and
+disclosed rather than fixed; overriding it would launder a known,
+disclosed-not-fixed security gap into main. Reusing
+`git_helpers._branch_base_commit` (already covering this exact "resolve the
+trusted trunk boundary" problem for other gates in this same framework, not
+a general shared primitive spanning gate families) rather than inventing a
+new trust-anchor mechanism keeps the fix small, already-hardened, and
+already-tested in its own right.
+
+**Consequence.** All the existing rollout-family test fixtures relied on a
+single local branch with no `origin` remote; that shape can no longer
+corroborate a trunk boundary at all, so every test's shared `_commit_at`
+helper (`test_project_gate_rollout.py`, `test_project_gate_rollout_snapshot.py`,
+`test_project_gate_wiring_rollout.py`) now advances a simulated
+`refs/remotes/origin/main` alongside each commit by default (`on_trunk=True`),
+standing in for "already merged" — an opt-out (`on_trunk=False`) builds a
+commit that exists only on its own branch, unreachable from that anchor, for
+the new adversarial tests below. This mirrors what a normal `git clone` of a
+real project already provides (an `origin` remote with `origin/HEAD`/
+`origin/main`), so a genuine calling project sees no behavior change on the
+common path; a project with no remote configured at all (or a renamed trunk
+matching no candidate) now gets no grace rather than a timestamp-only
+answer.
+
+**Tests.** `test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit`
+builds a genuine pre-rollout trunk commit (tracked as merged) and a separate,
+never-merged branch carrying a backdated commit, and asserts the forged
+commit gets no grace while the genuine trunk commit still does (confirmed,
+before writing the fix, that this test fails against the unpatched
+`resolve_rollout_commit` — a real regression test, not a vacuous one).
+`test_resolve_rollout_commit_none_without_a_corroborated_trunk_anchor` pins
+the new fail-closed branch when no trunk candidate resolves at all. Re-ran
+the full three-file rollout suite (29 tests) and `shared/tests` in full,
+green; `uvx ruff@0.15.15 check .` clean.
+
+**Scope.** This PR's own gate family only (FR-01.02 #5/#10). The identical
+gap in the `check_binding_completeness` precedent (`_layer_coverage_rollout.py`)
+is untouched — see Disclosed, not fixed.
