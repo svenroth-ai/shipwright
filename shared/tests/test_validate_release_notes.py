@@ -50,14 +50,20 @@ def test_oversized_body_fails(monkeypatch):
     assert "exceeds" in result.reason
 
 
+@pytest.mark.covers("FR-01.09/AC14")
 def test_bad_heading_fails():
+    """FR-01.09/AC14: the condensed body is checked against a fixed, expected
+    shape before publishing — never published unchecked."""
     body = "## Not A Real Section\n\n- item\n"
     result = vrn.validate(body, "1.2.3", footer=FOOTER, repo_identity="acme/widgets")
     assert not result.ok
     assert "not in the allowed vocabulary" in result.reason
 
 
+@pytest.mark.covers("FR-01.09/AC14")
 def test_missing_version_string_fails():
+    """FR-01.09/AC14: the version marking is checked against the recorded
+    facts of the release, never left to the condensing step."""
     footer_no_version = "Full changelog: https://github.com/acme/widgets/blob/main/CHANGELOG.md#x\n"
     body = "## Highlights\n\nSomething shipped.\n"
     result = vrn.validate(body, "9.9.9", footer=footer_no_version, repo_identity="acme/widgets")
@@ -71,7 +77,11 @@ def test_first_release_no_compare_link_passes():
     assert result.ok
 
 
+@pytest.mark.covers("FR-01.09/AC14")
 def test_normal_release_footer_carries_compare_link():
+    """FR-01.09/AC14: the link back to the full record is constructed
+    directly from the recorded facts of the release, never left to the
+    condensing step."""
     body = "## Highlights\n\nAnother release.\n"
     result = vrn.validate(body, "1.2.3", footer=FOOTER_WITH_COMPARE, repo_identity="acme/widgets")
     assert result.ok

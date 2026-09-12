@@ -69,6 +69,7 @@ def test_stage_returns_pathspec(repo):
     assert "package.json" in staged
 
 
+@pytest.mark.covers("FR-01.09/AC12")
 def test_verify_commit_passes_when_write_landed_in_commit(repo, tmp_path):
     _write_config(repo, [{"path": "package.json", "format": "package_json"}])
     _write_manifest(repo / "package.json", version="0.1.0")
@@ -84,11 +85,14 @@ def test_verify_commit_passes_when_write_landed_in_commit(repo, tmp_path):
     assert verify["status"] == "ok"
 
 
+@pytest.mark.covers("FR-01.09/AC12")
 def test_verify_commit_catches_omitted_manifest_regression(repo, tmp_path):
     """The exact regression from the card: the manifest was written and a
     sync result recorded it, but it was never actually included in the
     release commit (e.g. an omitted pathspec). A worktree-only check would
-    see the bumped file and pass; verify-commit must not."""
+    see the bumped file and pass; verify-commit must not — FR-01.09/AC12:
+    a manifest still at its previous version in the commit stops the release.
+    """
     _write_config(repo, [{"path": "package.json", "format": "package_json"}])
     _write_manifest(repo / "package.json", version="0.1.0")
     _run(repo, "add", "-A")

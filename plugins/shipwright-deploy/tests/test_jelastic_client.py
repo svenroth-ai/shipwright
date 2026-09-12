@@ -153,3 +153,66 @@ def test_set_vcs_ref_never_forwards_a_stale_session_or_envname(client):
     assert "stale" not in sent
     assert "envName=dev-demo" in sent
     assert "other" not in sent
+
+
+# --------------------------------------------------------------------------
+# AC01 — a release actually reaches the target and is made to run there
+# --------------------------------------------------------------------------
+
+@pytest.mark.covers("FR-01.08/AC01")
+def test_deploy_from_git_creates_the_project_then_updates_when_absent(client):
+    """Spec FR-01.08/AC01: the project is put onto the target and made to run
+    there. When no VCS project exists yet (first deploy), the client creates
+    one carrying the *requested* repo/branch (not a stale or hard-coded one —
+    the request body is captured and checked, not just which endpoints were
+    hit), then pulls and deploys it — never just an ``update`` against a
+    project that was never told what to run."""
+    endpoints: list[str] = []
+    bodies: dict[str, str] = {}
+
+    def _fake(request, timeout=None):
+        endpoint = request.full_url.rsplit("/", 1)[-1]
+        endpoints.append(endpoint)
+        bodies[f"{endpoint}#{endpoints.count(endpoint)}"] = request.data.decode()
+        response = MagicMock()
+        # `update` fails once (no project yet), then `createproject` and the
+        # retried `update` both succeed.
+        body = {"result": 4, "error": "no such project"} if (
+            endpoint == "update" and endpoints.count("update") == 1
+        ) else {"result": 0}
+        response.read.return_value = json.dumps(body).encode()
+        response.__enter__ = lambda s: s
+        response.__exit__ = MagicMock(return_value=False)
+        return response
+
+    with patch("urllib.request.urlopen", side_effect=_fake):
+        result = client.deploy_from_git(
+            "dev-demo", "https://example.invalid/the-real-app.git", "release-branch"
+        )
+
+    assert endpoints == ["update", "createproject", "update"]
+    assert result == {"result": 0}
+    create_body = bodies["createproject#1"]
+    assert "url=https%3A%2F%2Fexample.invalid%2Fthe-real-app.git" in create_body
+    assert "branch=release-branch" in create_body
+
+
+@pytest.mark.covers("FR-01.08/AC01")
+def test_more_than_one_hosting_target_kind_is_offered():
+    """Spec FR-01.08/AC01: which target a project deploys to belongs to the
+    project — more than one kind can be configured, and the phase is not tied
+    to a single hosting company. Reads the real, shipped profile directory
+    rather than asserting on a hard-coded list, so a profile removal would
+    fail this test. This proves the AC's literal clause — *configured*, not
+    *dispatched*: today only `jelastic.json` has `implementation_status:
+    shipped` (this file's own `JelasticClient` is the only real client this
+    codebase has); `vercel.json`/`compose-vps.json` are
+    `implementation_status: stub` — no runtime target-selection dispatcher
+    exists yet to exercise, so a test proving one is chosen at deploy time
+    would be testing code that does not exist."""
+    profiles_dir = Path(__file__).resolve().parents[3] / "shared" / "profiles" / "deploy"
+    kinds = {
+        json.loads(p.read_text(encoding="utf-8"))["target_kind"]
+        for p in profiles_dir.glob("*.json")
+    }
+    assert len(kinds) > 1, f"expected more than one target_kind, found {kinds}"

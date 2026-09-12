@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from tools.aggregate_decisions import aggregate, drop_dir, rebuild_adr_index
 from tools.write_decision_drop import write_decision_drop
 
@@ -37,7 +39,12 @@ def test_no_drops_is_noop(tmp_path):
     assert result["adr_numbers"] == []
 
 
+@pytest.mark.covers("FR-01.09/AC05")
 def test_aggregates_drops_into_decision_log(tmp_path):
+    """Spec FR-01.09/AC05: two decision records developed in parallel (each
+    keyed by run_id, not pre-assigned a number) get their sequential ADR
+    numbers assigned at this ONE aggregation point, so they can never
+    collide."""
     _seed_log(
         tmp_path,
         "# Decision Log\n\n### ADR-005: prior\n- **Date:** 2026-01-01\n",

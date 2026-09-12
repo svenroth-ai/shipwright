@@ -61,14 +61,22 @@ def compose_profile() -> dict:
 
 
 class TestRealProfilesAreValid:
-    """AC-12 (a): all three real profiles pass via validate() directly."""
+    """AC-12 (a): all three real profiles pass via validate() directly.
 
+    Also FR-01.08/AC09: every offered target's rollback discipline (the
+    schema's ``rollback`` required block) is checked against this one common
+    shape before the target is offered, not discovered during an incident.
+    """
+
+    @pytest.mark.covers("FR-01.08/AC09")
     def test_jelastic_valid(self, jelastic_profile, schema):
         assert validate(jelastic_profile, schema) == []
 
+    @pytest.mark.covers("FR-01.08/AC09")
     def test_vercel_valid(self, vercel_profile, schema):
         assert validate(vercel_profile, schema) == []
 
+    @pytest.mark.covers("FR-01.08/AC09")
     def test_compose_valid(self, compose_profile, schema):
         assert validate(compose_profile, schema) == []
 
@@ -100,6 +108,18 @@ class TestStructuralViolations:
         errors = validate(broken, schema)
         assert any("minLength" in e.message or "description" in (e.json_pointer or "")
                    for e in errors)
+
+    @pytest.mark.covers("FR-01.08/AC09")
+    def test_missing_rollback_block_fails(self, jelastic_profile, schema):
+        """Spec FR-01.08/AC09, negative case: a target declared without its
+        required `rollback` block (the way-back-written-down requirement)
+        is rejected by the common schema — proving the check would catch an
+        incomplete offering before it ever reaches a person, not only that
+        the three already-complete shipped profiles happen to pass."""
+        broken = copy.deepcopy(jelastic_profile)
+        del broken["rollback"]
+        errors = validate(broken, schema)
+        assert any("rollback" in e.message for e in errors), errors
 
     def test_migrations_supported_false_with_strategy_fields_fails(self, vercel_profile, schema):
         broken = copy.deepcopy(vercel_profile)

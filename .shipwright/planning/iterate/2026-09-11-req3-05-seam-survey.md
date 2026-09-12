@@ -334,6 +334,19 @@ ADR-044's canonical root list — it named `shared/tests` but not `shared/script
 canonical list, not introducing a new root) — see that run's mini-plan
 (`2026-09-11-t1-iterate-surface-miniplan.md`) for the empirical before/after verification.
 
+**t5 addendum (found during t5 execution, 2026-09-12):** the same pattern recurred. This
+survey's row for FR-01.09 (above) named `plugins/shipwright-changelog/tests` and `shared/tests`
+(3 roots total with FR-01.08's own root). Executing t5 found that 2 of FR-01.09's ACs —
+**AC12** and **AC13** — do not fit either: their real implementation and only existing tests
+live in `shared/scripts/tools/tests`, the same third canonical ADR-044 root Exception 3 already
+names for t1. t5 did not self-authorize this the way t1 originally (incorrectly) did — it
+flagged the deviation, unresolved, in its own report back to the orchestrator rather than
+amending this survey unilaterally. **The campaign owner (Sven) approved the deviation for t5
+specifically (2026-09-12)**, on the same substantive grounds as t1's and t4/t5/t8/t9's: the
+root is forced by where the behavior lives, not chosen. Triage card `trg-fcfc385c` (filed and
+dismissed 2026-09-12) records this decision. t5's row in the per-unit root count table above is
+updated to 4 roots accordingly.
+
 ### Exception 4 — FR-01.11 AC12, the ordering clause (found during t1 execution, external code review)
 
 `FR-01.11/AC12` conjoins two clauses in one AC (`spec.md`, FR-01.11 AC12): **(a)** an
@@ -492,7 +505,7 @@ and is flagged to the operator rather than decided here.
 | t2 | FR-01.14 | `shared/tests`, `shared/scripts/tools/tests` | 2 |
 | t3 | FR-01.03, FR-01.04 | `plugins/shipwright-plan/tests`, `plugins/shipwright-design/tests` | 2 |
 | t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12 — see below) |
-| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12) |
+| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests`, `shared/scripts/tools/tests` | 4 (3 surveyed, **accepted by the campaign owner**, 2026-09-12; a 4th found during t5's own execution — see Exception 3 addendum below; **also accepted by the campaign owner**, 2026-09-12) |
 | t6 | FR-01.02, FR-01.16 | `plugins/shipwright-project/tests`, `shared/tests` | 2 |
 | t7 | FR-01.10, FR-01.18 | `plugins/shipwright-compliance/tests`, `plugins/shipwright-grade/tests` | 2 |
 | t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (**accepted by the campaign owner**, 2026-09-12 — largest fan-out) |
