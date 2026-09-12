@@ -59,8 +59,13 @@ def _run(args, cwd):
 # AC5 / AC7 / AC8 — the liveness CLI honours the target's deadline
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC03")
 def test_the_liveness_cli_reads_the_whole_policy_from_the_target_profile(live_app, tmp_path):
-    """AC7 — no flags at all: every value comes from the target's own profile."""
+    """AC7 — no flags at all: every value comes from the target's own profile.
+
+    Spec FR-01.08/AC03: a live application answers, so the release is proven
+    alive rather than just assumed finished.
+    """
     completed, result = _run(["--url", live_app, "--profile", JELASTIC_PROFILE], tmp_path)
 
     assert result["success"] is True
@@ -69,8 +74,15 @@ def test_the_liveness_cli_reads_the_whole_policy_from_the_target_profile(live_ap
     assert completed.returncode == 0
 
 
+@pytest.mark.covers("FR-01.08/AC03")
+@pytest.mark.covers("FR-01.08/AC04")
 def test_the_liveness_cli_keeps_asking_until_the_deadline(tmp_path):
-    """AC5 / AC7 — it polls, and an explicit flag overrides only its own field."""
+    """AC5 / AC7 — it polls, and an explicit flag overrides only its own field.
+
+    Spec FR-01.08/AC03: failure to answer within the deadline is a failed
+    release, not a finished one. FR-01.08/AC04: it asks repeatedly, using the
+    target's own deadline, rather than giving up after one try.
+    """
     completed, result = _run(
         ["--url", DEAD_URL, "--profile", JELASTIC_PROFILE,
          "--timeout", "1", "--poll-interval", "1", "--max-wait", "5"],
@@ -85,8 +97,12 @@ def test_the_liveness_cli_keeps_asking_until_the_deadline(tmp_path):
     assert completed.returncode == 1
 
 
+@pytest.mark.covers("FR-01.08/AC04")
 def test_the_liveness_cli_without_a_deadline_asks_once(tmp_path):
-    """AC8 — the /shipwright-test call site keeps its single fast attempt."""
+    """AC8 — the /shipwright-test call site keeps its single fast attempt.
+
+    Spec FR-01.08/AC04: when no deadline is configured, it is asked once.
+    """
     started = time.monotonic()
     _, result = _run(["--url", DEAD_URL, "--timeout", "2"], tmp_path)
     elapsed = time.monotonic() - started

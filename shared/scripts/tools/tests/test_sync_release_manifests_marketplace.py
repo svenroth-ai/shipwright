@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # shared/
 
 from scripts.tools.sync_release_manifests import sync  # noqa: E402
@@ -36,10 +38,16 @@ def _write_marketplace_manifest(path: Path, version: str = "0.1.0") -> None:
     path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.09/AC13")
 def test_sync_marketplace_manifest_bumps_root_and_nested_entries(tmp_path):
     """A project declaring one package_json AND one marketplace_json entry
     together — the shape this monorepo's own config uses (14 plugin.json +
-    one marketplace.json) — bumps both formats in one sync() call."""
+    one marketplace.json) — bumps both formats in one sync() call.
+
+    FR-01.09/AC13: a manifest carrying its version in more than one place
+    (root + a catalog of named entries) gets every occurrence written
+    together in the same pass.
+    """
     _write_config(
         tmp_path,
         [

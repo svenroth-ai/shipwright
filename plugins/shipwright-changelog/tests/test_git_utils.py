@@ -2,6 +2,8 @@
 
 import os
 
+import pytest
+
 from lib.git_utils import (
     get_commits_since,
     get_last_tag,
@@ -62,34 +64,48 @@ def test_parse_all_commits():
     assert parsed[2].type == "other"
 
 
+@pytest.mark.covers("FR-01.09/AC04")
 def test_suggest_version_first_release():
+    """Spec FR-01.09/AC04: a project with no release at all starts at its
+    first pre-stable version."""
     version, reason = suggest_version_bump([], None)
     assert version == "0.1.0"
     assert "first" in reason
 
 
+@pytest.mark.covers("FR-01.09/AC04")
 def test_suggest_version_feat():
+    """Spec FR-01.09/AC04: a new capability raises the second number."""
     from lib.git_utils import ParsedCommit
     commits = [ParsedCommit(hash="a", raw_message="", type="feat", description="x")]
     version, _ = suggest_version_bump(commits, "v0.1.0")
     assert version == "0.2.0"
 
 
+@pytest.mark.covers("FR-01.09/AC04")
 def test_suggest_version_fix_only():
+    """Spec FR-01.09/AC04: anything else raises the third number."""
     from lib.git_utils import ParsedCommit
     commits = [ParsedCommit(hash="a", raw_message="", type="fix", description="x")]
     version, _ = suggest_version_bump(commits, "v0.1.0")
     assert version == "0.1.1"
 
 
+@pytest.mark.covers("FR-01.09/AC04")
 def test_suggest_version_breaking():
+    """Spec FR-01.09/AC04: a change that breaks compatibility raises the
+    first number once a stable release exists."""
     from lib.git_utils import ParsedCommit
     commits = [ParsedCommit(hash="a", raw_message="", type="feat", description="x", breaking=True)]
     version, _ = suggest_version_bump(commits, "v1.0.0")
     assert version == "2.0.0"
 
 
+@pytest.mark.covers("FR-01.09/AC04")
 def test_suggest_version_breaking_pre_1():
+    """Spec FR-01.09/AC04: before the first stable release, a break raises
+    the second number instead, because nothing has been promised as stable
+    yet."""
     from lib.git_utils import ParsedCommit
     commits = [ParsedCommit(hash="a", raw_message="", type="feat", description="x", breaking=True)]
     version, _ = suggest_version_bump(commits, "v0.2.0")

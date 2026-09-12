@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from tools import create_github_release as cgr  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -70,6 +72,7 @@ def test_run_survives_a_non_utf8_stdout_byte():
     assert "�" in result.stdout
 
 
+@pytest.mark.covers("FR-01.09/AC14")
 def test_reports_exists_without_creating(tmp_path: Path):
     with patch.object(cgr, "_gh_version", return_value=(2, 60, 0)), \
          patch.object(cgr, "_gh_authenticated", return_value=True), \
@@ -95,6 +98,7 @@ def test_view_failure_reports_failed_not_create(tmp_path: Path):
     assert mock_run.call_count == 1  # never falls through to create
 
 
+@pytest.mark.covers("FR-01.09/AC14")
 def test_success_argv_shape(tmp_path: Path):
     notes_file = tmp_path / "notes.md"
     notes_file.write_text("body", encoding="utf-8")
