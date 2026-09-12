@@ -123,3 +123,17 @@ def test_iterate_paths_carry_the_mint_vs_fold_gate(rel):
     """
     body = (REPO_ROOT / rel).read_text(encoding="utf-8")
     assert "MINT" in body and "FOLD" in body
+
+
+@pytest.mark.covers("FR-01.02/AC15")
+@pytest.mark.parametrize("rel", CITING_DOCS[2:])  # the two iterate paths
+def test_iterate_paths_forbid_silently_deleting_a_retired_fr(rel):
+    """AC15's "moves into a retired section instead of being deleted" clause
+    has no code-level seam: `_layer_coverage_removal.py`'s removed-test gate
+    and the I4 number-reuse audit both tolerate a row deleted outright, as
+    long as no surviving test or number collision exists to catch it. This
+    REMOVE-classification instruction is the only place the rule lives at
+    all — pin it so an edit cannot drop it unnoticed."""
+    body = (REPO_ROOT / rel).read_text(encoding="utf-8")
+    assert "never silently delete" in body.lower()
+    assert "Removed Requirements" in body
