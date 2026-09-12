@@ -30,13 +30,12 @@ import sys
 import textwrap
 from pathlib import Path
 
-
+import pytest
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.audit import group_d  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Helpers (kept local so this module stands alone)
@@ -113,12 +112,12 @@ def _finding(tmp_path: Path, check_id: str):
         f for f in group_d.run(tmp_path, None, None) if f.check_id == check_id
     )
 
-
 # ---------------------------------------------------------------------------
 # AC1 / AC2 — a tested mint covers and delivers
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.10/AC11")
 def test_d1_counts_a_tested_mint_as_coverage(tmp_path):
     """AC1: the change that introduces a requirement covers it."""
     _fixture(tmp_path, {"passed": 4889, "total": 4889})
@@ -127,6 +126,7 @@ def test_d1_counts_a_tested_mint_as_coverage(tmp_path):
     assert d1.status == "pass", d1.detail
 
 
+@pytest.mark.covers("FR-01.10/AC11")
 def test_d3_counts_a_tested_mint_as_delivery(tmp_path):
     """AC2: ``work_completed`` means the work is done, so naming a requirement as
     newly-created on it reads "introduced AND delivered", not "promised for
@@ -140,12 +140,12 @@ def test_d3_counts_a_tested_mint_as_delivery(tmp_path):
     # new rule rather than the old "follow-up affected_frs event" wording.
     assert "tested mint" in d3.detail
 
-
 # ---------------------------------------------------------------------------
 # AC3 — the tests guard survives (the relaxation is not a loophole)
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.10/AC11")
 def test_d1_does_not_count_an_untested_mint_as_coverage(tmp_path):
     """AC3: minting a requirement in a 0/0 docs commit must not mark it covered,
     or the TT2 hardening would be dodgeable by filing under the other key."""
@@ -156,6 +156,7 @@ def test_d1_does_not_count_an_untested_mint_as_coverage(tmp_path):
     assert "FR-01.15" in d1.detail
 
 
+@pytest.mark.covers("FR-01.10/AC11")
 def test_d3_does_not_count_an_untested_mint_as_delivery(tmp_path):
     """AC3, delivery side: without this guard D3 could never fail again, since
     every promise would deliver itself the instant it was made."""

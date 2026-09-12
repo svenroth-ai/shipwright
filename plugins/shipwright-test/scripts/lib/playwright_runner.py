@@ -19,6 +19,16 @@ retry is reported as such:
 * ``flaky <= passed`` — flaky is a **subset** of passed, not a fourth bucket.
   It stays a pass and does not block; it is counted separately so a test that
   has needed a retry for weeks becomes visible before it fails for good.
+
+**Drift note** (FR-01.06 #5, sub-iterate ``e3-checks-test-security``):
+``shared/scripts/tools/verifiers/_test_gate_extras.py``'s
+``check_e2e_counts_reconciled`` reconciles ``shipwright_test_results.json``'s
+recorded ``e2e`` counts against ``e2e-results.json``'s raw ``stats`` block
+using the SAME total/passed formula this module's own retry semantics imply
+(``total = expected+unexpected+flaky+skipped``, ``passed = expected+flaky``).
+It cannot import this module (ADR-045: a shared verifier never reaches into a
+single plugin's own ``scripts/lib``), so if this file's counting rules ever
+change, update that check's formula to match.
 """
 
 import argparse

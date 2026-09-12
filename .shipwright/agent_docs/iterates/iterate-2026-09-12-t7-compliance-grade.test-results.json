@@ -1,0 +1,52 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-t7-compliance-grade",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 13320,
+      "total": 13360
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure test-tagging + traceability-backfill unit (no production code, no new route/component/CLI surface); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suites themselves (F0), fresh across all 4 roots this run touched: plugins/shipwright-compliance/tests (1697/5 skipped), plugins/shipwright-grade/tests (390/1 skipped), integration-tests (534), shared/tests (10699/34 skipped)."
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "small-complexity requirement-traceability backfill: the unit's actual work product is the 21/22 AC-to-test binding disposition table (not a new application behavior to enumerate as tested/untestable behaviors), recorded in full in .shipwright/planning/adr/iterate-2026-09-12-t7-compliance-grade-ac-bindings.md. The one remaining unbound AC (FR-01.10/AC06) is a genuine spec-vs-implementation conflict, not an untestable behavior fitting the closed reason-code vocabulary -- filed as triage card trg-6bda0dbb instead."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-t7-compliance-grade",
+    "commit": "7732b75fb285907d40bd0d034532eb7245803c76",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

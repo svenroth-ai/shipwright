@@ -51,12 +51,14 @@ def _disclosure(text: str) -> str:
     return _line(text, "Consistency-audit:")
 
 
+@pytest.mark.covers("FR-01.10/AC07")
 @pytest.mark.parametrize("doc", sorted(_HEADER_RENDERERS))
 def test_never_run_is_disclosed_in_every_document(doc: str, project_root: Path):
     text = _HEADER_RENDERERS[doc](collect_all(project_root))
     assert "never run" in _disclosure(text)
 
 
+@pytest.mark.covers("FR-01.10/AC07")
 @pytest.mark.parametrize("doc", sorted(_HEADER_RENDERERS))
 def test_recorded_run_is_disclosed_in_every_document(doc: str, project_root: Path):
     record_audit_run(

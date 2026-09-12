@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from grade_inputs_projector import grade_context
 from render_markdown import render_markdown
 from render_terminal import render_terminal
@@ -16,11 +18,13 @@ def _grade(repo: Path):
 
 
 class TestGracefulDegradation:
+    @pytest.mark.covers("FR-01.18/AC05")
     def test_bare_repo_is_not_gradeable_not_a_crash(self, bare_repo: Path):
         model = _grade(bare_repo)
         assert model.gradeable is False
         assert model.grade == "?"
 
+    @pytest.mark.covers("FR-01.18/AC05")
     def test_empty_git_repo_is_not_gradeable(self, empty_git_repo: Path):
         model = _grade(empty_git_repo)
         assert model.gradeable is False

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-t7-compliance-grade",
+  "date": "2026-09-12",
+  "section": "req3-05-test-backfill-mono t7: FR-01.10/FR-01.18 AC bindings",
+  "title": "Bind AC-proving tests to the real audit/engine seams; flag out-of-root seams; triage a real spec-vs-implementation gap",
+  "context": "22 ACs (FR-01.10 AC01-14, FR-01.18 AC01-08) listed unbound in shipwright_ac_coverage_baseline.json. Two declared test roots: plugins/shipwright-compliance/tests, plugins/shipwright-grade/tests.",
+  "decision": "21 of 22 ACs bound to existing, real, passing tests, never a renderer/wrapper-only proxy. AC03 needed a 3rd ADR-044 root (shared/tests); AC04 needed a 4th (integration-tests), found only after External Plan Review asked for an actual search. Both flagged, per the campaign owner's standing pre-approval. AC06 stays unbound: Group D's D5 sets status=fail on the exact scenario AC06 says must not fail the audit - filed as triage card trg-6bda0dbb.",
+  "consequences": "shipwright_ac_coverage_baseline.json unbound_count 106->85 repo-wide (this unit's contribution: 21 of its 22 ACs). Full disposition table + both external-review findings tables (18 findings total) in the linked spec-ref.",
+  "rationale": "External plan review (OpenAI HIGH) on cross-root JUnit aggregation for AC03 verified via discover_test_roots+ci_junit_plan.py, no gap. OpenAI medium asked for a real AC04 search - found the seam, 20/22->21/22. GLM's stacked/multi-arg covers-decorator concerns both empirically verified via links_for(), no regression.",
+  "rejected": "Forcing a proxy binding on AC06 - rejected by this unit's own binding constraint. Self-authorizing extra test roots - rejected, mirrors t5/t6. OpenAI's claim AC06 needs a code fix now - rejected: unbound-with-a-triage-card is the established t3-t6 disposition for a genuine spec conflict.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-t7-compliance-grade-ac-bindings.md"
+}

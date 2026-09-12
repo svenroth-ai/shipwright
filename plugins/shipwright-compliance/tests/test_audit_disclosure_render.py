@@ -178,6 +178,7 @@ class TestRenderConsistencyAudit:
         block = "\n".join(render_consistency_audit(bare_root, as_of=_AS_OF))
         assert "FAIL" in block
 
+    @pytest.mark.covers("FR-01.10/AC07")
     def test_partial_since_the_last_full_run_is_spelled_out(self, bare_root: Path):
         _record(bare_root, ran_at="2026-07-01T00:00:00+00:00")
         _record(bare_root, ran_at="2026-07-25T00:00:00+00:00", scope="A,B")
@@ -192,6 +193,7 @@ class TestRenderConsistencyAudit:
         assert "Never fully run" in block
         assert "A,B" in block
 
+    @pytest.mark.covers("FR-01.10/AC07")
     def test_gitignored_transient_does_not_change_the_render(self, bare_root: Path):
         """The tracked document must read the same on every machine."""
         _record(bare_root)

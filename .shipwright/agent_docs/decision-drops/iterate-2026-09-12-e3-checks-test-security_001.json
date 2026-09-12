@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-e3-checks-test-security",
+  "date": "2026-09-12",
+  "section": "Iterate — feat: FR-01.06/FR-01.07 checks-test-security",
+  "title": "Mechanise or downgrade FR-01.06/FR-01.07's 7 AC lines",
+  "context": "AC-evidence ledger named 7 prompt-only lines for this sub-iterate; D7 requires each enforced or downgraded with a reason.",
+  "decision": "Built 3 checks (FR-01.06 #5/#6-floor/#7); downgraded FR-01.06's 2 constitution mentions and FR-01.07's 2 lines to judgement, each drift-tested.",
+  "consequences": "Ledger: 14 mechanisable, 29 judgement, 80 enforced-tested; all 7 lines closed, none left as an unresolved deferral.",
+  "rationale": "No oracle exists for the downgraded lines (grep-confirmed dead fields / cross-cutting rule); D7 forbids a gate that pretends one does.",
+  "rejected": "A prose deferral note without flipping the status tag (code review rejected this); silently coercing malformed stats to 0.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-e3-checks-test-security-fr0106-fr0107-checks.md"
+}

@@ -32,6 +32,13 @@ def _git(args: list[str], cwd: Path) -> None:
     )
 
 
+def _head_sha(cwd: Path) -> str:
+    return subprocess.run(
+        ["git", "-C", str(cwd), "rev-parse", "HEAD"],
+        check=True, capture_output=True, text=True, timeout=30,
+    ).stdout.strip()
+
+
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
     """A real git repo with one commit — resolution is tested against git, not a mock."""
@@ -62,7 +69,9 @@ class TestGitResolution:
     def test_clean_repo_resolves_head_and_not_dirty(self, repo: Path):
         state = resolve_git_state(repo, run_id=RUN)
         assert state.run_id == RUN
-        assert state.commit is not None and len(state.commit) == 40
+        # Read from the project, not merely shaped like a commit: must equal
+        # the real HEAD, not just any 40-hex string (trg doubt-review t7).
+        assert state.commit == _head_sha(repo)
         assert state.dirty is False
 
     def test_tracked_modification_is_dirty(self, repo: Path):
