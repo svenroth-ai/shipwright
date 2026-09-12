@@ -10,6 +10,8 @@ from __future__ import annotations
 import dataclasses
 from pathlib import Path
 
+import pytest
+
 from engine_bridge import load_engine
 from grade_inputs_projector import (
     _is_self_referential,
@@ -51,6 +53,7 @@ class TestWellRun:
         assert ctx.has_ci is True
         assert extras.static_test_inventory  # surfaced
 
+    @pytest.mark.covers("FR-01.18/AC06")
     def test_heuristic_grade_caps_at_b_not_a(self, well_run_repo: Path):
         # A cold (heuristic) grade can never read A: change-reconciliation is a
         # load-bearing control a cold repo can't demonstrate, so the honesty gate
@@ -63,6 +66,7 @@ class TestWellRun:
         assert model.mode == "heuristic"
         assert "reconciliation" in model.verdict.lower()  # factual cap reason
 
+    @pytest.mark.covers("FR-01.18/AC06")
     def test_cold_projection_declares_reconciliation_expected(self, well_run_repo: Path):
         # The cap mechanism: the COLD projection marks change-reconciliation as the
         # one expected-but-dark control, so the honesty gate (unchanged) caps at B.
@@ -71,6 +75,7 @@ class TestWellRun:
         inputs, _extras, _ctx = _inputs(well_run_repo)
         assert inputs.expected_dimensions == ("change_reconciliation",)
 
+    @pytest.mark.covers("FR-01.18/AC07")
     def test_test_health_is_na_but_inventory_surfaced(self, well_run_repo: Path):
         model = grade_context(_context(well_run_repo))
         th = [d for d in model.dimensions if d.key == "test_health"][0]
@@ -209,6 +214,7 @@ class TestOrderingAndDeterminism:
         low = grade_context(_context(messy_repo)).score
         assert well > mid > low
 
+    @pytest.mark.covers("FR-01.18/AC02")
     def test_same_repo_state_same_grade(self, well_run_repo: Path):
         first = grade_context(_context(well_run_repo))
         second = grade_context(_context(well_run_repo))

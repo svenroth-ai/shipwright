@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 import clone
 import grade
 from clone import _run_clone
@@ -12,6 +14,7 @@ from grade import run
 
 
 class TestGradeCli:
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_terminal_format_default(self, well_run_repo: Path, capsys):
         rc = run([str(well_run_repo)])
         assert rc == 0
@@ -26,6 +29,7 @@ class TestGradeCli:
         assert rc == 0
         assert "# Control Grade: B" in capsys.readouterr().out
 
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_json_format_is_valid_and_stable(self, well_run_repo: Path, capsys):
         rc = run([str(well_run_repo), "--format", "json"])
         assert rc == 0
@@ -101,6 +105,7 @@ class TestGradeCli:
         src = Path(grade.__file__).read_text(encoding="utf-8")
         assert "input(" not in src and "stdin.read" not in src
 
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_json_carries_g2_network_and_maintainability(self, well_run_repo: Path, capsys):
         rc = run([str(well_run_repo), "--format", "json"])
         assert rc == 0

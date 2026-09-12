@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import sys
 
+import pytest
+
 from engine_bridge import load_engine
 
 
 class TestLoadEngine:
+    @pytest.mark.covers("FR-01.18/AC03")
     def test_returns_working_compute_grade(self):
         engine = load_engine()
         inputs = engine.GradeInputs(
@@ -23,6 +26,7 @@ class TestLoadEngine:
         assert report.gradeable is True
         assert report.grade in {"A", "B", "C", "D", "F"}
 
+    @pytest.mark.covers("FR-01.18/AC03")
     def test_all_green_input_grades_a(self):
         engine = load_engine()
         inputs = engine.GradeInputs(
@@ -32,6 +36,7 @@ class TestLoadEngine:
         report = engine.compute_grade(inputs)
         assert report.grade == "A"
 
+    @pytest.mark.covers("FR-01.18/AC05")
     def test_all_na_is_not_gradeable_never_f(self):
         engine = load_engine()
         report = engine.compute_grade(engine.GradeInputs())
