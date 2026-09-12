@@ -201,3 +201,47 @@ def test_skipped_layer_with_malformed_screens_value_fails_not_skips(tmp_path):
     r = check_design_fidelity_triage_matches_recomputation(tmp_path)
     assert r.ok is False
     assert "malformed, not empty" in r.detail
+
+
+def test_non_object_build_report_top_level_fails_closed(tmp_path):
+    """Tier-3 CI review, round 3 (PR #748): a valid JSON document whose TOP
+    LEVEL isn't an object (a list here) was silently read the same as "no
+    screens field" and could sail through as an honestly empty report."""
+    (tmp_path / "design-fidelity-report.json").write_text(json.dumps([1, 2, 3]))
+    _write_test_results(tmp_path, {
+        "screens": [{"mockup": "01-login.html", "status": "needs_review"}],
+        "triage": {"resolved": 0, "regressions": 0, "persistent_failures": 0, "unchecked": 1},
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "top-level value is a list, not an object" in r.detail
+
+
+def test_non_object_test_results_top_level_fails_closed(tmp_path):
+    """Same class of gap as the build-report check above, for
+    shipwright_test_results.json's own top-level shape."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    (tmp_path / "shipwright_test_results.json").write_text(json.dumps("not-an-object"))
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "top-level value is a str, not an object" in r.detail
+
+
+def test_boolean_triage_counts_are_reported_as_malformed_not_coerced(tmp_path):
+    """Tier-3 CI review, round 3 (PR #748): `bool` is an `int` subclass in
+    Python, so a recorded `true`/`false` would compare equal to the
+    recomputed `1`/`0` and silently pass a fabricated or corrupted triage
+    block instead of being caught as malformed."""
+    _write_build_report(tmp_path, {
+        "01-login.html": {"status": "full"},
+    })
+    _write_test_results(tmp_path, {
+        "screens": [{"mockup": "01-login.html", "status": "needs_review"}],
+        "triage": {
+            "resolved": 0, "regressions": True,
+            "persistent_failures": 0, "unchecked": 0,
+        },
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "not a non-negative integer" in r.detail

@@ -40,6 +40,7 @@ from ._test_gate_fidelity_categorize import (
     TRIAGE_RECORD_KEYS as _TRIAGE_RECORD_KEYS,
     TRIAGE_REQUIRING_KEYS as _TRIAGE_REQUIRING_KEYS,
     categorize_fidelity_screen as _categorize_fidelity_screen,
+    validate_triage_counts as _validate_triage_counts,
 )
 from .common import CheckResult, Severity
 
@@ -109,7 +110,17 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
         build_report = json.loads(report_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         return CheckResult(name, False, f"malformed design-fidelity-report.json: {exc}")
-    raw_build_screens = build_report.get("screens") if isinstance(build_report, dict) else None
+    if not isinstance(build_report, dict):
+        # Tier-3 CI review, round 3 (PR #748): a valid JSON document whose
+        # TOP LEVEL isn't an object (a list, a string, a bare number, ...)
+        # was silently treated the same as "no screens field" below and
+        # could sail through as an empty, legitimate report.
+        return CheckResult(
+            name, False,
+            f"design-fidelity-report.json's top-level value is a "
+            f"{type(build_report).__name__}, not an object",
+        )
+    raw_build_screens = build_report.get("screens")
     if raw_build_screens is None:
         # A genuinely absent `screens` key means the report legitimately
         # declares no UI screens — a real empty state, not a schema error.
@@ -131,8 +142,18 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
         recorded = json.loads(results_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
         return CheckResult(name, False, f"malformed shipwright_test_results.json: {exc}")
+    if not isinstance(recorded, dict):
+        # Tier-3 CI review, round 3 (PR #748): same class of gap as the
+        # build report above — a valid JSON document whose top level isn't
+        # an object was silently read the same as "no design_fidelity key",
+        # letting a schema error masquerade as an honest absence.
+        return CheckResult(
+            name, False,
+            f"shipwright_test_results.json's top-level value is a "
+            f"{type(recorded).__name__}, not an object",
+        )
 
-    design_fidelity = recorded.get("design_fidelity") if isinstance(recorded, dict) else None
+    design_fidelity = recorded.get("design_fidelity")
     if not isinstance(design_fidelity, dict):
         # External review round 2 (openai, medium): a build report that
         # DOES declare screens, combined with a test-time record that omits
@@ -247,6 +268,14 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
             "no triage block recorded, and recomputation finds no screen that "
             "needs one — every screen either passed or improved",
             severity=Severity.SKIPPED.value,
+        )
+
+    count_errors = _validate_triage_counts(recorded_triage, expected_counts)
+    if count_errors:
+        return CheckResult(
+            name, False,
+            "recorded design_fidelity.triage has unrecognized/malformed "
+            "field(s) — " + "; ".join(count_errors),
         )
 
     mismatches = [

@@ -25,6 +25,23 @@ TRIAGE_RECORD_KEYS = {
 TRIAGE_REQUIRING_KEYS = ("regressions", "persistent_failures", "unchecked")
 
 
+def validate_triage_counts(recorded_triage: dict, keys) -> list[str]:
+    """Every recorded ``design_fidelity.triage`` count must be a non-boolean,
+    non-negative integer before it is compared against a recomputed count —
+    ``bool`` is an ``int`` subclass in Python, so a recorded ``true``/``false``
+    would otherwise compare equal to ``1``/``0`` and silently pass a
+    malformed triage block (Tier-3 CI review, round 3, PR #748). Returns one
+    diagnostic string per malformed field, empty when all are valid.
+    """
+    return [
+        f"{key}={recorded_triage.get(key)!r} is not a non-negative integer"
+        for key in keys
+        if isinstance(recorded_triage.get(key), bool)
+        or not isinstance(recorded_triage.get(key), int)
+        or recorded_triage.get(key) < 0
+    ]
+
+
 def categorize_fidelity_screen(build_status: object, current_status: object) -> str | None:
     """Pure function: (build-time status, test-time status) -> triage
     category, or ``None`` when out of the table's scope.
