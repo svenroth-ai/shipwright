@@ -145,9 +145,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T07:04:16.397297+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-12T10:54:16.399844+00:00",
+      "disposition": "Stage-2 code-reviewer REJECTED at 3f-bis: 2 HIGH findings, _test_gate_extras.py:179 e2e.get('skipped') truthy-checks an int skip-count instead of 'is True', false-failing any run with skipped e2e tests -> spec (test_security e2e reconciliation AC) vs actual: fabrication check misfires on legitimate skips; _test_gate_fidelity.py:168 any(expected_counts.values()) includes 'resolved' screens in the needs-triage predicate, contradicting the function's own docstring and step-3.7's documented pass-through, false-failing a legitimate partial-to-pass fidelity improvement with no triage block. Delivery stopped; PR left open.",
+      "recorded_by": "code-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
