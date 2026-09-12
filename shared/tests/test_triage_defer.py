@@ -81,7 +81,7 @@ def test_defer_records_the_decision_and_its_reason(project: Path, item: str) -> 
     assert result == {
         "id": item, "previousStatus": "triage",
         "newStatus": "snoozed", "reason": "waiting on upstream fix",
-        "revisitAt": FUTURE,
+        "revisitAt": FUTURE, "route": "tracked",
     }
     stored = _only(project)
     assert stored["status"] == "snoozed"
@@ -184,7 +184,7 @@ def test_dismiss_is_unchanged_by_the_shared_extraction(
     result = dismiss(project, item_id=item, reason="not relevant")
     assert result == {
         "id": item, "previousStatus": "triage",
-        "newStatus": "dismissed", "reason": "not relevant",
+        "newStatus": "dismissed", "reason": "not relevant", "route": "tracked",
     }
     stored = _only(project)
     assert (stored["status"], stored["statusBy"]) == ("dismissed", "manualDismiss")

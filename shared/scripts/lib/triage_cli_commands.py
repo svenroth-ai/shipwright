@@ -39,6 +39,7 @@ from lib.triage_cross_tree import cross_tree_delivery_facts  # noqa: E402
 from lib.triage_delivery import format_pending_delivery_notice  # noqa: E402
 from lib.triage_integrity import store_facts  # noqa: E402
 from lib.triage_render import format_item, render_deferred_section  # noqa: E402
+from lib.triage_route import route_label, route_note  # noqa: E402
 from tools.triage_promote import (  # noqa: E402
     TransitionPreconditionError,
     defer,
@@ -147,10 +148,13 @@ def _resolved_item(project_root: Path, item_id: str) -> dict:
     raise KeyError(item_id)
 
 
-def _emit_result(args: argparse.Namespace, operation: str, item: dict) -> None:
+def _emit_result(args: argparse.Namespace, operation: str, item: dict, *, route: str | None = None) -> None:
     if getattr(args, "json", False):
         ensure_utf8_stdout()
-        sys.stdout.write(json.dumps({"operation": operation, "item": item}, ensure_ascii=False) + "\n")
+        payload = {"operation": operation, "item": item}
+        if route is not None:  # outbox/tracked, `lib.triage_route.route_note`'s JSON twin
+            payload["route"] = route
+        sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
 def _command_error(exc: Exception) -> int:
@@ -184,21 +188,19 @@ def cmd_promote(args: argparse.Namespace) -> int:
     project_root = Path(args.project_root)
     try:
         result = promote(
-            project_root,
-            item_id=args.item_id,
-            task_ref=args.task_ref,
-            reason=args.reason,
-            by=_BY_LABEL,
-            include_item=True,
+            project_root, item_id=args.item_id, task_ref=args.task_ref,
+            reason=args.reason, by=_BY_LABEL, include_item=True,
         )
         item = result["item"]
     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
         return _command_error(exc)
 
     if getattr(args, "json", False):
-        _emit_result(args, "promote", item)
+        _emit_result(args, "promote", item, route=result["route"])
     else:
         sys.stderr.write(f"promoted {result['id']} → {result['promotedTaskId']}\n")
+        if (note := route_note(project_root, result["route"] == "outbox")) is not None:
+            sys.stderr.write(note + "\n")
     return 0
 
 
@@ -214,21 +216,19 @@ def _status_flip(
     """
     try:
         result = decide(
-            Path(args.project_root),
-            item_id=args.item_id,
-            reason=args.reason,
-            by=_BY_LABEL,
-            include_item=True,
-            **extra,
+            Path(args.project_root), item_id=args.item_id, reason=args.reason,
+            by=_BY_LABEL, include_item=True, **extra,
         )
         item = result["item"]
     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
         return _command_error(exc)
 
     if getattr(args, "json", False):
-        _emit_result(args, operation, item)
+        _emit_result(args, operation, item, route=result["route"])
     else:
         sys.stderr.write(f"{verb} {result['id']} (reason: {result['reason']})\n")
+        if (note := route_note(Path(args.project_root), result["route"] == "outbox")) is not None:
+            sys.stderr.write(note + "\n")
     return 0
 
 
@@ -237,13 +237,13 @@ def cmd_dismiss(args: argparse.Namespace) -> int:
     if getattr(args, "json", False):
         try:
             reason = _optional_reason(args.reason)
-            _, item = mark_status(
+            _, item, to_outbox = mark_status(
                 Path(args.project_root), args.item_id, new_status="dismissed",
                 by=_BY_LABEL, reason=reason, expected_status="triage", return_item=True,
             )
         except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
             return _command_error(exc)
-        _emit_result(args, "dismiss", item)
+        _emit_result(args, "dismiss", item, route=route_label(to_outbox))
         return 0
     return _status_flip(dismiss, args, "dismissed", "dismiss")
 
@@ -278,17 +278,11 @@ def cmd_amend(args: argparse.Namespace) -> int:
         ("severity", args.severity), ("kind", args.kind),
     ) if v is not None]
     if getattr(args, "json", False):
-        _emit_result(args, "amend", item)
+        _emit_result(args, "amend", item, route=route_label(to_outbox))
         return 0
     sys.stderr.write(f"amended {args.item_id} ({', '.join(changed)})\n")
-    if to_outbox:
-        # Delivery-visibility parity for `amend` is deferred scope (AC15) — this
-        # is the operator's only signal the correction hasn't reached a branch
-        # yet (Stage-3 doubt review, finding 1).
-        sys.stderr.write(
-            "note: buffered in the local outbox, not yet on any branch — "
-            "delivered on the next iterate's sweep\n"
-        )
+    if (note := route_note(project_root, to_outbox)) is not None:  # AC15 parity
+        sys.stderr.write(note + "\n")
     return 0
 
 
@@ -310,7 +304,7 @@ def cmd_snooze(args: argparse.Namespace) -> int:
     """WebUI-compatible park: unlike human ``defer``, reason/date are optional."""
     try:
         reason = _optional_reason(args.reason)
-        _, item = mark_status(
+        _, item, to_outbox = mark_status(
             Path(args.project_root), args.item_id, new_status="snoozed", by=_BY_LABEL,
             reason=reason, revisit_at=args.revisit, expected_status="triage",
             require_future_revisit=True, return_item=True,
@@ -318,7 +312,9 @@ def cmd_snooze(args: argparse.Namespace) -> int:
     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
         return _command_error(exc)
     if getattr(args, "json", False):
-        _emit_result(args, "snooze", item)
+        _emit_result(args, "snooze", item, route=route_label(to_outbox))
     else:
         sys.stderr.write(f"snoozed {args.item_id}\n")
+        if (note := route_note(Path(args.project_root), to_outbox)) is not None:
+            sys.stderr.write(note + "\n")
     return 0

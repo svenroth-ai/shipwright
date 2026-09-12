@@ -166,7 +166,7 @@ def promote(
 ) -> dict:
     """Promote a triage item to a backlog task.
 
-    Returns ``{"id", "previousStatus", "newStatus", "promotedTaskId"}``.
+    Returns ``{"id", "previousStatus", "newStatus", "promotedTaskId", "route"}``.
     Raises:
         FileNotFoundError: triage store missing.
         KeyError: item_id not found.
@@ -192,15 +192,10 @@ def promote(
         raise _not_triage_error(item_id, current, "promoted")
 
     try:
-        mark_result = mark_status(
-            project_root,
-            item_id,
-            new_status="promoted",
-            by=by,
-            reason=reason_clean,
-            promoted_task_id=task_ref_clean,
-            expected_status="triage",
-            return_item=include_item,
+        _previous, item_result, to_outbox = mark_status(  # always return_item=True: route needs to_outbox
+            project_root, item_id, new_status="promoted", by=by,
+            reason=reason_clean, promoted_task_id=task_ref_clean,
+            expected_status="triage", return_item=True,
         )
     except StatusPreconditionError as exc:
         raise _not_triage_error(item_id, exc.actual, "promoted") from exc
@@ -210,9 +205,10 @@ def promote(
         "previousStatus": "triage",
         "newStatus": "promoted",
         "promotedTaskId": task_ref_clean,
+        "route": "outbox" if to_outbox else "tracked",
     }
     if include_item:
-        result["item"] = mark_result[1]
+        result["item"] = item_result
     return result
 
 
@@ -252,28 +248,28 @@ def _transition(
         raise _wrong_status_error(item_id, current, new_status, allowed)
 
     try:
-        mark_result = mark_status(
+        previous, item_result, to_outbox = mark_status(  # always return_item=True: route needs to_outbox
             project_root, item_id, new_status=new_status, by=by,
             reason=reason_clean, expected_status=allowed,
             revisit_at=revisit_at,
-            return_item=include_item,
+            return_item=True,
         )
     except StatusPreconditionError as exc:
         raise _wrong_status_error(
             item_id, exc.actual, new_status, allowed,
         ) from exc
 
-    previous = mark_result[0] if include_item else mark_result
     result = {
         "id": item_id,
         "previousStatus": previous,
         "newStatus": new_status,
         "reason": reason_clean,
+        "route": "outbox" if to_outbox else "tracked",
     }
     if revisit_at is not None:
         result["revisitAt"] = revisit_at
     if include_item:
-        result["item"] = mark_result[1]
+        result["item"] = item_result
     return result
 
 
@@ -287,7 +283,7 @@ def dismiss(
 ) -> dict:
     """Dismiss a triage item (false-positive / won't-fix).
 
-    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
+    Returns ``{"id", "previousStatus", "newStatus", "reason", "route"}``.
 
     Raises:
         FileNotFoundError: triage store missing.
@@ -325,7 +321,7 @@ def defer(
     replaces the date, so a mistyped one is correctable without un-parking
     first. `dismissed` and `promoted` are refused.
 
-    Returns ``{"id", "previousStatus", "newStatus", "reason", "revisitAt"}``.
+    Returns ``{"id", "previousStatus", "newStatus", "reason", "revisitAt", "route"}``.
     """
     if revisit_at is None:
         raise ValueError("revisit_at is required when deferring an item")
@@ -355,7 +351,7 @@ def unpark(
     passed reads `triage` and is refused as *already open*, rather than being
     handed a second event that changes nothing.
 
-    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
+    Returns ``{"id", "previousStatus", "newStatus", "reason", "route"}``.
     """
     return _transition(
         project_root, item_id=item_id, new_status="triage",

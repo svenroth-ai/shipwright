@@ -1,0 +1,1 @@
+triage CLI (dismiss/snooze/amend/promote/defer/unpark) now reports whether a status write landed in the local outbox or the tracked store, in both --json and human output, so an operator on a branch is never left guessing where a decision went.
