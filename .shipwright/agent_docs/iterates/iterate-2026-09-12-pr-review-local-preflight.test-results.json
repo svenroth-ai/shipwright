@@ -1,0 +1,131 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-pr-review-local-preflight",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 18315,
+      "total": 18374
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run --project plugins/shipwright-security pytest plugins/shipwright-security/tests/test_pr_review_local_diff.py plugins/shipwright-security/tests/test_pr_review_local_preflight.py -v",
+      "exit_code": 0,
+      "tests_run": 30,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-12-pr-review-local-preflight/surface_verification.log",
+      "timestamp": "2026-09-12T08:37:21.739Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "resolve_diff_mode: CI mode valid, local via --base/--diff-file valid, and the four invalid combinations",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_local_diff.py::TestResolveDiffMode PASSED (7 tests)"
+        },
+        {
+          "behavior": "list_diff_paths: extracts every header in order, empty diff -> empty list",
+          "disposition": "tested",
+          "evidence": "...::TestListDiffPaths PASSED (2 tests)"
+        },
+        {
+          "behavior": "read_diff_file: decodes valid UTF-8, replaces invalid bytes rather than raising",
+          "disposition": "tested",
+          "evidence": "...::TestReadDiffFile PASSED (2 tests)"
+        },
+        {
+          "behavior": "build_local_diff: includes branch commit + untracked, excludes unrelated base-only commit; never mutates real index/HEAD; disables ext-diff/textconv; unresolvable base returns an error, does not raise",
+          "disposition": "tested",
+          "evidence": "...::TestBuildLocalDiff PASSED (4 tests)"
+        },
+        {
+          "behavior": "main() local mode: approve -> exit 0 / block -> exit 1, no CI-only boundary called; prints banner+review, never posts; --base end-to-end; empty diff fails closed; truncated diff still prints (regression)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_local_preflight.py::TestLocalPreflightOrchestration PASSED (7 tests)"
+        },
+        {
+          "behavior": "resolve_diff_mode usage errors exit EXIT_USAGE (3), never EXIT_ERROR (2)",
+          "disposition": "tested",
+          "evidence": "...::test_pr_number_and_base_combined_exits_usage_not_error, ...::test_no_mode_at_all_exits_usage PASSED"
+        },
+        {
+          "behavior": "a genuine argparse-level failure (not resolve_diff_mode's) also exits EXIT_USAGE, not the 2 argparse itself would otherwise raise",
+          "disposition": "tested",
+          "evidence": "...::test_argparse_level_usage_error_also_exits_usage_not_2 PASSED"
+        },
+        {
+          "behavior": "--help still exits 0 through the new SystemExit remap",
+          "disposition": "tested",
+          "evidence": "...::test_help_flag_still_exits_0 PASSED"
+        },
+        {
+          "behavior": "post_local_result strips control/escape chars from body before printing to a real terminal",
+          "disposition": "tested",
+          "evidence": "...::test_local_result_strips_control_chars_from_printed_body PASSED"
+        },
+        {
+          "behavior": "empty/\".\" --diff-file value is not a valid local source (Path(\"\") is truthy)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_local_diff.py::test_empty_diff_file_path_is_not_a_valid_source PASSED"
+        },
+        {
+          "behavior": "--base mode's main() call sends the actual merge-base diff content, not just \"a\" diff",
+          "disposition": "tested",
+          "evidence": "...::test_base_mode_reviews_the_merge_base_diff PASSED"
+        },
+        {
+          "behavior": "unresolvable --base / unreadable --diff-file exit EXIT_USAGE, never EXIT_ERROR",
+          "disposition": "tested",
+          "evidence": "...::test_unresolvable_base_exits_usage_not_error, ...::test_unreadable_diff_file_exits_usage_not_error PASSED"
+        },
+        {
+          "behavior": "CI mode regression (pre-existing suite, unmodified behavior)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-security/tests/test_pr_review_*.py PASSED (F0 unit shipwright-security)"
+        },
+        {
+          "behavior": "live end-to-end dogfooding against this branch's real merge-base diff with a real model call",
+          "disposition": "tested",
+          "evidence": "manual probe: pr_review.py --base origin/main --project-root . -> decision=block, exit=1, no PR comment/state; caught a real F11.md exit-code gap (fixed)"
+        }
+      ],
+      "counts": {
+        "testable": 14,
+        "tested": 14,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 88.1,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-12T08:54:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-pr-review-local-preflight",
+    "commit": "42c43abebeadfe64990561aeb94a292f35d06b95",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -39,6 +39,13 @@ from pr_review_render import (  # noqa: F401
 EXIT_OK = 0
 EXIT_BLOCK = 1
 EXIT_ERROR = 2
+# Local-preflight ONLY (`--base`/`--diff-file` argument validation) — kept
+# distinct from EXIT_ERROR so a misconfigured invocation (bad flag
+# combination) can never be treated as the advisory "reviewer infra
+# unavailable, continue" case F11 applies to EXIT_ERROR (external review,
+# 2026-09-12: the two were conflated and a usage bug would have silently
+# looked like a benign, ignorable preflight skip).
+EXIT_USAGE = 3
 
 
 def _redact(text: str, *secrets: str) -> str:

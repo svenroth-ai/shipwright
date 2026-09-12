@@ -542,6 +542,26 @@ or merges stale (Group-E staleness noise). The contract:
   `strict_required_status_checks_policy`, so being behind is no longer a *merge*
   requirement — `ensure_current` still integrates when it is, which is why the
   ordering consequence stands rather than going away.
+- **Local PR-review preflight, before push (iterate-2026-09-12-pr-review-local-
+  preflight).** The required CI gate (`pr_review.py`, stage 2 of FR-01.17) reviews
+  against a threat model, a different question from the spec-compliance cascade
+  (Step 8) preceding it, so that cascade's green carries no information about the
+  CI verdict — every one of that gate's findings previously cost a full push → CI
+  → re-review round to learn. F11 now runs `pr_review.py --base <default>` against
+  the merge-base diff of the still-unpushed branch, immediately before the push
+  below: same prompts, model and generated-file filter as CI, via the new
+  `pr_review_local` module (private-temporary-index diff, the same technique F0's
+  diff-coverage gate uses). **A preflight, never a waiver:** it posts no PR
+  comment, no review state, dismisses nothing, and nothing it writes is read by
+  `review_record_tier.decide()` — it cannot satisfy the required gate, which still
+  reviews the pushed PR independently. Exit 1 (a genuine BLOCK) and exit 3
+  (`EXIT_USAGE` — a malformed invocation, an unresolvable `--base`, or an
+  unreadable `--diff-file`: local misconfiguration, not infra) both STOP F11;
+  only exit 2 (no `OPENROUTER_API_KEY`, model/transport failure) is
+  advisory-only, logged and surfaced in F12 — the CI gate remains the authority.
+  Any OTHER exit code (e.g. 127 if `uv` itself is missing) is outside the
+  tool's own vocabulary and also STOPs — it means the command never reached a
+  documented exit, not that reviewer infra was merely unavailable.
 - **The integration is verified, not just performed
   (iterate-2026-07-27-no-silent-revert).** Requiring branches to be current is what
   *forces* the integration — it does not make the resolution correct, and a
