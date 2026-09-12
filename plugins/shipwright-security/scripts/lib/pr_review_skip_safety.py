@@ -51,6 +51,21 @@ _SKIP_REVIEW_CHANGELOG_CATEGORIES = frozenset(
 # Arabic-Indic ١٢٣), not only the ASCII counter `write_changelog_drop.
 # _next_counter_path` actually writes (`{counter:03d}`, counter capped at 999
 # by `_MAX_COUNTER = 1000`) — external code review, this iterate.
+#
+# `[^/]+` (not `.+`, not dropped): a live PR-review gate finding on this
+# iterate's own PR #746 claimed this pattern accepts an empty name before
+# the counter (citing `_001.md`) via `[^/]+` "consuming the separator". That
+# claim is false — verified directly: `fullmatch` against `filename` requires
+# `[^/]+` to consume >=1 char BEFORE the fixed-length literal `_[0-9]{3}\.md`
+# suffix, so `_001.md` (7 chars, exactly the suffix's own length) leaves zero
+# chars available and does not match. `.+` was tried as a "clarifying"
+# alternative and reverted: unlike `[^/]+`, `.` also matches `/`, which
+# reopened the EXTRA-NESTING case (`Fixed/nested/x_001.md`) that this same
+# regex must reject — `filename` is only the piece after `rest.partition("/")`
+# splits off the category, so it CAN still contain further `/`s the pattern
+# must not cross. `test_changelog_drop_off_shape_is_NOT_safe_to_skip` asserts
+# both the literal `_001.md` case the (incorrect) review flagged and the
+# nesting case a naive "fix" would have broken.
 _SKIP_REVIEW_CHANGELOG_DROP_RE = re.compile(r"^[^/]+_[0-9]{3}\.md$")
 
 # PER-PREFIX ANCHORING for `pr_review_generated._GENERATED_PREFIXES`

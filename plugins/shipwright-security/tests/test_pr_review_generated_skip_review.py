@@ -70,6 +70,7 @@ def test_changelog_drop_off_shape_is_NOT_safe_to_skip():
         "CHANGELOG-unreleased.d/Fixed/iterate-x_1.md",  # counter not 3 digits
         "CHANGELOG-unreleased.d/Fixed/nested/iterate-x_001.md",  # extra nesting
         "CHANGELOG-unreleased.d/Fixed/iterate-x_١٢٣.md",  # Unicode digits, not ASCII
+        "CHANGELOG-unreleased.d/Fixed/_001.md",  # empty name before the counter
     ):
         assert not S.is_safe_to_skip_review(path), path
 
