@@ -30,6 +30,7 @@ def run_canon_and_outbox_sweeps(
     default_branch: str,
     *,
     note: Callable[[str], None],
+    skip_committing_sweeps: bool = False,
 ) -> list[str]:
     """Self-heal the canon ``.gitattributes``/``.gitignore`` scaffolds into the
     worktree, then sweep the gitignored main-tree triage outbox into this
@@ -38,11 +39,22 @@ def run_canon_and_outbox_sweeps(
     either self-heal leaving the index dirty would false-skip the sweep's own
     staged-changes guard.
 
+    ``skip_committing_sweeps`` is the caller's escape hatch for the one case
+    where landing ANY commit here is unsafe: ``layer_promotion_sweep``
+    reporting ``rollback_failed`` means its promotion commit may still be
+    sitting on this branch, and the SKILL.md-documented recovery only knows
+    how to drop it as the branch's TOP commit — a self-heal/outbox commit
+    landing on top of it here would bury it and make that recovery refuse to
+    act (external review, PR #725 round 13). Returns ``[]`` without touching
+    the worktree when set.
+
     ``note`` is the caller's own stderr printer, kept as a callback so this
     module carries no opinion about the ``setup_iterate_worktree:`` prefix.
     Returns the operator-facing warning strings (already passed to ``note``
     for the ones that need it), for the caller to fold into its own payload.
     """
+    if skip_committing_sweeps:
+        return []
     warnings: list[str] = []
 
     ga = self_heal_gitattributes(worktree_path)

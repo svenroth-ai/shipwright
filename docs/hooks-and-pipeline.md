@@ -2625,7 +2625,15 @@ hard-resets back to it so no residue survives into a later commit, and
 unreadable `pre_sha` or a failing reset reports the loud, distinct
 `rollback_failed` status — SKILL.md §B1a tells the agent to check `warnings[]`
 for it and manually drop the stray commit before continuing, since a `0` exit
-alone would not say so. Every `gh` call also pins `--repo` via
+alone would not say so. **On `rollback_failed`, `setup_iterate_worktree.py`
+also skips step 4.6/4.7/5's canon self-heal + outbox sweep entirely**
+(`lib.worktree_setup_sweeps.run_canon_and_outbox_sweeps`'s
+`skip_committing_sweeps` flag) rather than let either land a commit on top of
+a promotion commit that may still be sitting there — SKILL.md §B1a's recovery
+only knows how to drop that commit as the branch's TOP commit, and a
+self-heal/outbox commit landing above it would bury it and make that recovery
+refuse to act (external review, PR #725 round 13; pinned by
+`test_rollback_failed_skips_selfheal_and_outbox_sweep`). Every `gh` call also pins `--repo` via
 `repo_identity.resolve_repo_identity` (doubt-review: this module had dropped
 `lib.pr_delivery_host`'s own "never infer the repo from a remote" property
 when it stopped routing through `Host`; falls back to `gh`'s own inference

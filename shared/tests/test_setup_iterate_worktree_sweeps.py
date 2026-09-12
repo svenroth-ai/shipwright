@@ -166,3 +166,48 @@ def test_layer_promotion_sweep_runs_before_selfheal_and_outbox_sweep(monkeypatch
     final_subjects = _branch_commit_subjects(wt)
     assert _GI_CHORE in final_subjects
     assert "chore(triage): sweep 1 outbox append(s) into branch" in final_subjects
+
+
+def test_rollback_failed_skips_selfheal_and_outbox_sweep(monkeypatch, git_origin_repo):
+    """External review, PR #725 round 13: a promotion commit that failed to
+    roll back may still be sitting on this branch as its TOP commit — the
+    SKILL.md-documented recovery only knows how to drop it as the top commit.
+    A self-heal or outbox-sweep commit landing on top of it here would bury
+    it and make that recovery refuse to act. Seeds a scenario where both the
+    self-heal AND the outbox sweep would genuinely fire (mirrors the
+    both-commit test above), stubs the promotion sweep to report
+    ``rollback_failed``, and asserts NEITHER later commit lands."""
+    work, _ = git_origin_repo
+    sh.set_identity(work)
+    sh.seed_tracked(work, sh.item("trg-seed"))
+    (work / ".gitignore").write_text("node_modules/\n", encoding="utf-8", newline="\n")
+    sh.git(work, "add", "--", ".gitignore")
+    sh.git(work, "commit", "-m", "user gitignore without canon block")
+    sh.git(work, "push", "origin", "main")
+    sh.write_outbox(work, sh.item("trg-outbox-3", title="from-outbox"))
+
+    def _stub(worktree_path, run_id, default_branch):
+        from lib.layer_promotion_sweep import LayerPromotionSweepResult
+        return LayerPromotionSweepResult(status="rollback_failed", reason="reset_failed")
+
+    monkeypatch.setattr(siw, "run_layer_promotion_sweep", _stub)
+    env_ci = os.environ.get("CI")
+    os.environ["CI"] = ""  # interactive session, not CI — self-heal/outbox would otherwise fire
+    try:
+        code, payload = siw.setup(str(work), "rollback-failed-skip", "iterate-20260912-rollback-failed-skip")
+    finally:
+        if env_ci is None:
+            os.environ.pop("CI", None)
+        else:
+            os.environ["CI"] = env_ci
+    assert code == 0, payload
+
+    wt = Path(payload["project_root"])
+    final_subjects = _branch_commit_subjects(wt)
+    assert _GI_CHORE not in final_subjects, (
+        "gitignore self-heal landed despite rollback_failed\n" + final_subjects
+    )
+    assert "chore(triage): sweep" not in final_subjects, (
+        "outbox sweep landed despite rollback_failed\n" + final_subjects
+    )
+    assert any("rollback failed" in w for w in payload["warnings"])

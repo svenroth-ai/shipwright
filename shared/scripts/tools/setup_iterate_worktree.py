@@ -213,11 +213,11 @@ def setup(
         print(f"setup_iterate_worktree: {note}", file=sys.stderr)
 
     # 4.6/4.7/5. Canon .gitattributes/.gitignore self-heal + D2 outbox sweep —
-    #      see lib.worktree_setup_sweeps for the full ordering rationale
-    #      (split out to keep this file under the size guideline).
+    #      see lib.worktree_setup_sweeps for ordering + rollback_failed skip.
     sweep_notes = run_canon_and_outbox_sweeps(
         main_root, worktree_path, db,
         note=lambda n: print(f"setup_iterate_worktree: {n}", file=sys.stderr),
+        skip_committing_sweeps=layer_sweep.status == "rollback_failed",
     )
 
     # 6. Snapshot the main tree + write the per-session run pointer.
