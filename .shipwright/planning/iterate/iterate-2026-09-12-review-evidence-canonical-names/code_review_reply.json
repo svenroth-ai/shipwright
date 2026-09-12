@@ -1,0 +1,45 @@
+{
+  "section": "trg-3b206c08-review-evidence-canonical-names",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "file": "shared/tests/test_review_payload_canonical_basenames.py",
+      "line": 54,
+      "finding": "The two registries (lib.review_payloads.CANONICAL_PAYLOAD_BASENAMES and the salvage hook's local CANONICAL_BASENAME mirror) were pinned to the same literals only one-sidedly, and no test exercised the hook's output feeding record_review_pass.py record -- the exact boundary the docstring promises.",
+      "suggestion": "Add a test pinning both dicts equal, and a round-trip test: run the hook against a fixture transcript, then record_review_pass.main([...]) against its output, asserting exit 0."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_record_review_pass_cli_regressions.py",
+      "line": 66,
+      "finding": "test_recording_a_marker_type_as_completed_requires_a_marker_status recorded --review-type external_code with CANONICAL_PAYLOAD_BASENAMES['plan'] -- passed only because marker-status validation runs before the basename check.",
+      "suggestion": "Use CANONICAL_PAYLOAD_BASENAMES['external_code'] so the test isolates the marker-status rule."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/review_payloads.py",
+      "line": 89,
+      "finding": "The usage error said the payload 'must be named ... under the run directory', but canonical_basename_error compares the basename only -- the parent directory is never checked, so the message overclaimed what is enforced.",
+      "suggestion": "Drop 'under the run directory' from the message; note the directory half as a documented boundary instead of enforcing it (out of this change's proportionate scope)."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 181,
+      "finding": "Prose examples were inconsistent about the path prefix: some gave a relative '.shipwright/planning/iterate/{run_id}/...' path while others gave '{project_root}/...' -- a real cwd-resolution hazard for --payload-file, especially for the campaign orchestrator.",
+      "suggestion": "Prefix every example with '{project_root}/' so all four docs agree."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+      "line": 601,
+      "finding": "The table footer states the table must always restate CANONICAL_PAYLOAD_BASENAMES verbatim, but nothing enforced that -- the prose table is the artifact agents actually read at runtime, so it is the more likely of the two to drift.",
+      "suggestion": "Add a test that reads iteration-reviews.md by path and asserts every CANONICAL_PAYLOAD_BASENAMES value appears in it."
+    }
+  ]
+}

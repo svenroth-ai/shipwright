@@ -38,10 +38,10 @@ from _review_cli_harness import (  # noqa: E402
     payload,
     run_tool,
 )
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
+from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
 
 _ITERATE = REPO_ROOT / "plugins" / "shipwright-iterate"
@@ -108,7 +108,7 @@ def _record_row(root: Path, review_type: str, status: str, disposition: str | No
         args += [
             "--marker-status", "completed", "--provider", "openrouter",
             "--from", "external-review-json",
-            "--payload-file", payload(root, f"{review_type}.json", EXTERNAL_REVIEW_OUTPUT),
+            "--payload-file", payload(root, CANONICAL_PAYLOAD_BASENAMES[review_type], EXTERNAL_REVIEW_OUTPUT),
         ]
     return run_tool(root, *args)
 

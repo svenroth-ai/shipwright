@@ -30,6 +30,7 @@ from _review_cli_harness import (  # noqa: E402
 _SHARED = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_SHARED / "scripts"))
 
+from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 from lib.review_record import record_path  # noqa: E402,F401
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402,F401
 
@@ -49,7 +50,7 @@ def test_a_restatement_is_rejected_not_answered_with_success(project, tmp_path):
     run_tool(project, "init")
     run_tool(project, "record", "--review-type", "plan", "--status", "completed",
              "--marker-status", "completed", "--from", "external-review-json",
-             "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT))
+             "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT))
     before = record_path(project, RUN_ID).read_bytes()
     planning = project / ".shipwright" / "planning" / "iterate"
     marker_before = (planning / "external_review_state.json").read_bytes()
@@ -71,7 +72,7 @@ def test_a_forced_correction_must_also_restate_the_marker(project, tmp_path):
     run_tool(project, "init")
     run_tool(project, "record", "--review-type", "plan", "--status", "completed",
              "--marker-status", "completed", "--from", "external-review-json",
-             "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT))
+             "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT))
 
     code, output = run_tool(project, "record", "--review-type", "plan",
                             "--status", "not_run", "--disposition", REASON, "--force")
@@ -94,7 +95,8 @@ def test_an_unitemizable_review_does_not_reach_the_marker_as_a_clean_zero(projec
     code, output = run_tool(
         project, "record", "--review-type", "plan", "--status", "completed",
         "--marker-status", "completed", "--from", "external-review-json",
-        "--payload-file", payload(tmp_path, "u.json", unparseable),
+        "--payload-file", payload(
+            tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], unparseable),
     )
 
     assert code == 0, output
@@ -117,7 +119,8 @@ def test_a_provider_that_errored_counts_toward_the_denominator(project, tmp_path
     code, output = run_tool(
         project, "record", "--review-type", "plan", "--status", "completed",
         "--marker-status", "completed", "--from", "external-review-json",
-        "--payload-file", payload(tmp_path, "e.json", errored),
+        "--payload-file", payload(
+            tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], errored),
     )
 
     assert code == 0, output
@@ -155,7 +158,8 @@ def test_a_not_run_pass_records_no_findings_even_with_a_payload(project, tmp_pat
     code, _ = run_tool(
         project, "record", "--review-type", "code", "--status", "not_run",
         "--disposition", REASON, "--from", "code-reviewer",
-        "--payload-file", payload(tmp_path, "code.md", CODE_REVIEWER_REPLY),
+        "--payload-file", payload(
+            tmp_path, CANONICAL_PAYLOAD_BASENAMES["code"], CODE_REVIEWER_REPLY),
     )
     assert code == 0
     record = json.loads(record_path(project, RUN_ID).read_text(encoding="utf-8"))

@@ -335,8 +335,13 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   --diff-file "$DIFF_FILE" \
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
-  --project-root "{project_root}" --run-id "$RUN_ID"
+  --project-root "{project_root}" --run-id "$RUN_ID" \
+  > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
 ```
+
+(The redirect writes the ONE canonical basename "Recording each review pass"
+below names for `external_code` — `record_review_pass.py record` REJECTS a
+`--payload-file` under a different name, exit 2 — trg-3b206c08.)
 
 The `trap ... EXIT` above is what makes cleanup unconditional — a straight-line
 `cleanup` call as the block's last line only runs if every prior line
@@ -373,7 +378,8 @@ Internal Plan Review degraded handling — the pass did NOT run; record it
 (`--run-id` additively records this call as an `external_review` timing span,
 parent `review` — see [iterate-timings](iterate-timings.md).)
 
-Parse `reviews.glm.feedback` + `reviews.openai.feedback`. Merge any
+Read the redirected file back and parse `reviews.glm.feedback` +
+`reviews.openai.feedback`. Merge any
 high/medium-severity findings into the iterate ADR's
 `External-Code-Review-Findings` table. Address before commit (apply fix,
 rerun tests) — same disposition pattern as the mini-plan-review block:
@@ -524,9 +530,17 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" init \
 **Immediate-write ordering mandate (MANDATORY).** The instant a reviewer or
 `external_review.py` call returns, write its reply to a file verbatim and call
 `record_review_pass.py record` — before any other reasoning, before spawning
-the next reviewer, before anything else. A `Bash` call to `external_review.py`
-should redirect its own stdout straight to the durable payload path in the
-same command (e.g. `... > .shipwright/planning/iterate/{run_id}/plan-review-raw.json`)
+the next reviewer, before anything else. **The payload file MUST use its
+kind's ONE canonical basename** (table below) — never an ad-hoc name. This is
+not stylistic: `record_review_pass.py` now REJECTS a `--payload-file` whose
+basename does not match (exit 2, `canonical_basename_error` in
+`lib.review_payloads`), and a path-based PR-review classifier that hides/skips
+this file family from the reviewing model depends on a closed, predictable
+name per kind — trg-3b206c08, measured 40+ ad-hoc basenames for the same
+handful of kinds on `origin/main` before this rule existed. A `Bash` call to
+`external_review.py` should redirect its own stdout straight to the durable
+canonical path in the same command (e.g.
+`... > .shipwright/planning/iterate/{run_id}/external-plan-review-raw.json`)
 so the write lands before the agent ever reasons about the result. **This is a
 mitigation, not a guarantee** — it is agent-followed prose, not code-enforced,
 and a compaction landing in the instant between a subagent returning and this
@@ -535,15 +549,18 @@ write happening can still lose the finding. For the Step 8 cascade specifically
 `write-review-payload-on-stop.py` (`plugins/shipwright-build/hooks/hooks.json`)
 is the code-level backstop for exactly that window: it fires synchronously as
 part of the subagent's own lifecycle, independent of the orchestrator's
-remaining context, and salvages the raw reply to
-`.shipwright/planning/iterate/{run_id}/{type}_salvaged_raw.json` if
-`reviews.json` doesn't already show the type terminal by the time the subagent
-stops. It requires the spawn prompt to state the run_id in plain text (SKILL.md
-Step 8) — the hook can only read it from the subagent's own transcript, never
-from an env var (`SHIPWRIGHT_RUN_ID` is documented, in this same repo, as
-unreliable for a Claude-Code-launched hook subprocess). No equivalent hook
-exists for `external_review.py` (a plain CLI call, not a Task-tool subagent) —
-the stdout-redirect instruction above is what closes that window instead.
+remaining context, and salvages the raw reply directly to the SAME canonical
+basename Step 8's own write targets (the table below — `spec_review_reply.json`
+/ `code_review_reply.json` / `doubt_review_reply.json`) if `reviews.json`
+doesn't already show the type terminal by the time the subagent stops, so a
+resuming session records straight from that path with no extra copy step
+(trg-3b206c08). It requires the spawn prompt to state the run_id in plain text
+(SKILL.md Step 8) — the hook can only read it from the subagent's own
+transcript, never from an env var (`SHIPWRIGHT_RUN_ID` is documented, in this
+same repo, as unreliable for a Claude-Code-launched hook subprocess). No
+equivalent hook exists for `external_review.py` (a plain CLI call, not a
+Task-tool subagent) — the stdout-redirect instruction above is what closes
+that window instead.
 
 **A pass that RAN** — write the reviewer's reply to a file verbatim (raw JSON,
 or the whole message with its ```json block; both are accepted) and hand it over:
@@ -553,7 +570,7 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" \
   --review-type {self|plan|spec|code|doubt|external_code|plan_internal} --status completed \
   --from {self-review|spec-reviewer|code-reviewer|doubt-reviewer|external-review-json|external-prose} \
-  --payload-file "{path to the reply}" \
+  --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/{canonical basename for this --review-type — table below}" \
   [--model-tier {resolved review tier}] [--provider openrouter] [--marker-status completed]
 ```
 
@@ -570,15 +587,25 @@ marker without both verdicts blocks.
 Record and marker status are bound: a completed record can only write or repair
 a completed marker, while a skipped marker cannot carry reviewer evidence.
 
-| Pass | `--review-type` | `--from` | payload |
-|---|---|---|---|
-| Step 7 Self-Review | `self` | `self-review` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
-| External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
-| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `spec-reviewer` | the subagent's reply verbatim (`{stage, verdict, spec_citations[]}`). Must be `completed` before a `completed` `code` row |
-| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | the subagent's reply |
-| `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | the subagent's reply |
-| External code cascade | `external_code` | `external-review-json` | `external_review.py` stdout. Add `--marker-status` |
-| Internal Plan Review (medium+, before Branch A/B/C) | `plan_internal` | `none` (no adapter matches `opus-plan-reviewer`'s shape) | metadata-only — `--recorded-by opus-plan-reviewer --model-tier {resolved}`, no `--payload-file`. Findings live in the iterate spec's `## Internal Plan Review` section, not this row |
+| Pass | `--review-type` | `--from` | canonical basename (`.shipwright/planning/iterate/{run_id}/…`) | payload |
+|---|---|---|---|---|
+| Step 7 Self-Review | `self` | `self-review` | `self-review-payload.json` | `{"items":[{"name","verdict":"pass\|fail\|n/a","note"}]}` — one entry per checklist item |
+| External plan/iterate review (Branch A) | `plan` | `external-review-json` | `external-plan-review-raw.json` | `external_review.py` stdout, verbatim. Add `--marker-status` |
+| `spec-reviewer` (Stage 1, HARD-GATE) | `spec` | `spec-reviewer` | `spec_review_reply.json` | the subagent's reply verbatim (`{stage, verdict, spec_citations[]}`). Must be `completed` before a `completed` `code` row |
+| Internal `code-reviewer` (Stage 2) | `code` | `code-reviewer` | `code_review_reply.json` | the subagent's reply |
+| `doubt-reviewer` (Stage 3) | `doubt` | `doubt-reviewer` | `doubt_review_reply.json` | the subagent's reply |
+| External code cascade | `external_code` | `external-review-json` | `external-code-review-raw.json` | `external_review.py` stdout. Add `--marker-status` |
+| Internal Plan Review (medium+, before Branch A/B/C) | `plan_internal` | `none` (no adapter matches `opus-plan-reviewer`'s shape) | — (no payload file) | metadata-only — `--recorded-by opus-plan-reviewer --model-tier {resolved}`, no `--payload-file`. Findings live in the iterate spec's `## Internal Plan Review` section, not this row |
+
+**The basename column is enforced, not advisory** — `lib.review_payloads.CANONICAL_PAYLOAD_BASENAMES`
+is the single source of truth `record_review_pass.py record` validates
+`--payload-file` against (exit 2 on a mismatch); this table must always
+restate that dict's values verbatim, never invent its own (trg-3b206c08).
+**One name per kind, not per round:** when a pass loops (a Stage 1 REJECT
+re-run, an external `revise` verdict), the canonical file holds only the
+LATEST round — it is overwritten, never suffixed (`-round2`, …); the
+recorded row is what persists the outcome, an earlier round's raw file is
+disposable scratch once superseded.
 
 **A pass that did NOT run** must say so and name the rule — a bare "skipped" is
 rejected:
@@ -610,7 +637,8 @@ prefix, i.e. `uv run "{shared_root}/scripts/tools/record_review_pass.py" record
 # `--from`/`--payload-file` are NOT optional: a row recorded without a payload
 # carries findings_count 0 and is indistinguishable from a fabricated one.
 … --review-type external_code --status completed \
-  --from external-review-json --payload-file "{external_review.py stdout}" \
+  --from external-review-json \
+  --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/external-code-review-raw.json" \
   --provider openrouter --marker-status completed
 
 # …or, when it did not run. `not_run` REQUIRES a disposition, and the marker

@@ -33,6 +33,7 @@ from _review_cli_harness import (  # noqa: E402
 _SHARED = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_SHARED / "scripts"))
 
+from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 from lib.review_record import record_path  # noqa: E402,F401
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402,F401
 
@@ -53,17 +54,21 @@ def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
     for args in (
         ["record", "--review-type", "self", "--status", "completed",
          "--from", "self-review",
-         "--payload-file", payload(tmp_path, "self.json", SELF_REVIEW_REPLY)],
+         "--payload-file", payload(
+             tmp_path, CANONICAL_PAYLOAD_BASENAMES["self"], SELF_REVIEW_REPLY)],
         ["record", "--review-type", "code", "--status", "completed",
          "--from", "code-reviewer",
-         "--payload-file", payload(tmp_path, "code.md", CODE_REVIEWER_REPLY)],
+         "--payload-file", payload(
+             tmp_path, CANONICAL_PAYLOAD_BASENAMES["code"], CODE_REVIEWER_REPLY)],
         ["record", "--review-type", "doubt", "--status", "completed",
          "--from", "doubt-reviewer",
-         "--payload-file", payload(tmp_path, "doubt.json", DOUBT_REVIEWER_REPLY)],
+         "--payload-file", payload(
+             tmp_path, CANONICAL_PAYLOAD_BASENAMES["doubt"], DOUBT_REVIEWER_REPLY)],
         ["record", "--review-type", "plan", "--status", "completed",
          "--from", "external-review-json", "--provider", "openrouter",
          "--marker-status", "completed",
-         "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT)],
+         "--payload-file", payload(
+             tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT)],
         ["record", "--review-type", "external_code", "--status", "not_applicable",
          "--disposition", REASON],
         # Stage 1 of the cascade. `code` is recorded completed above, and the
@@ -72,7 +77,8 @@ def test_recording_every_type_makes_the_gate_pass(project, tmp_path):
         # skipped its own first gate.
         ["record", "--review-type", "spec", "--status", "completed",
          "--from", "code-reviewer",
-         "--payload-file", payload(tmp_path, "spec.md", CODE_REVIEWER_REPLY)],
+         "--payload-file", payload(
+             tmp_path, CANONICAL_PAYLOAD_BASENAMES["spec"], CODE_REVIEWER_REPLY)],
         ["record", "--review-type", "plan_internal", "--status", "not_applicable",
          "--disposition", REASON],
     ):
@@ -104,7 +110,8 @@ def test_a_plan_record_dual_writes_the_legacy_marker(project, tmp_path):
     code, output = run_tool(
         project, "record", "--review-type", "plan", "--status", "completed",
         "--from", "external-review-json", "--marker-status", "completed",
-        "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT),
+        "--payload-file", payload(
+            tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT),
     )
     assert code == 0, output
 
@@ -130,7 +137,7 @@ def test_a_marker_is_not_written_for_an_internal_type(project, tmp_path):
     code, _ = run_tool(
         project, "record", "--review-type", "code", "--status", "completed",
         "--from", "code-reviewer", "--marker-status", "completed",
-        "--payload-file", payload(tmp_path, "code.md", CODE_REVIEWER_REPLY),
+        "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["code"], CODE_REVIEWER_REPLY),
     )
     assert code == 2, "internal passes have no legacy marker — this is a usage error"
 
@@ -142,7 +149,7 @@ def test_re_recording_a_terminal_type_exits_3(project, tmp_path):
     run_tool(project, "init")
     run_tool(project, "record", "--review-type", "code", "--status", "completed",
              "--from", "code-reviewer",
-             "--payload-file", payload(tmp_path, "code.md", CODE_REVIEWER_REPLY))
+             "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["code"], CODE_REVIEWER_REPLY))
     before = record_path(project, RUN_ID).read_bytes()
 
     code, output = run_tool(project, "record", "--review-type", "code",
@@ -157,7 +164,7 @@ def test_force_overrides_immutability(project, tmp_path):
     run_tool(project, "init")
     run_tool(project, "record", "--review-type", "code", "--status", "completed",
              "--from", "code-reviewer",
-             "--payload-file", payload(tmp_path, "code.md", CODE_REVIEWER_REPLY))
+             "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["code"], CODE_REVIEWER_REPLY))
 
     code, output = run_tool(project, "record", "--review-type", "code",
                             "--status", "not_run", "--disposition", REASON, "--force")
@@ -193,7 +200,7 @@ def test_close_missing_leaves_already_recorded_types_alone(project, tmp_path):
     run_tool(project, "init")
     run_tool(project, "record", "--review-type", "code", "--status", "completed",
              "--from", "code-reviewer",
-             "--payload-file", payload(tmp_path, "code.md", CODE_REVIEWER_REPLY))
+             "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["code"], CODE_REVIEWER_REPLY))
 
     code, output = run_tool(project, "close-missing", "--status", "not_run",
                             "--disposition", "predates the per-run review record")
