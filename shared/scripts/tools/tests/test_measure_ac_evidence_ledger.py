@@ -26,11 +26,15 @@ import measure_ac_evidence_ledger as measure_mod  # noqa: E402
 _REPO_ROOT = Path(__file__).resolve().parents[4]  # tests -> tools -> scripts -> shared -> repo
 _REAL_LEDGER = _REPO_ROOT / measure_mod.DEFAULT_LEDGER_RELPATH
 
-# Matches the ledger's own "Re-measured <date>" header paragraph, e.g.
+# Matches the ledger's own "Re-measured <date>" header paragraphs, e.g.
 # "**47** prompt-only/mechanisable · **19** prompt-only/judgement · **16**
 # enforced-untested · **36** unimplemented · **50** enforced-tested" —
 # deliberately NOT backtick-quoted there (see that paragraph's own note) so
 # this regex, unlike the script's own counter, must match the plain words.
+# The ledger keeps every superseded paragraph for its own history (each
+# says so explicitly), so this shape can appear more than once in the
+# document; the paragraphs are appended chronologically, so the LAST match
+# is the current one — callers must not use plain `.search()` here.
 _HEADER_LINE_RE = re.compile(
     r"\*\*(\d+)\*\*\s*prompt-only/mechanisable\s*.\s*"
     r"\*\*(\d+)\*\*\s*prompt-only/judgement\s*.\s*"
@@ -193,13 +197,17 @@ def test_real_ledger_header_matches_the_live_measurement() -> None:
         pytest.skip(f"real ledger not found at {_REAL_LEDGER} (moved/renamed?)")
 
     text = _REAL_LEDGER.read_text(encoding="utf-8")
-    header_match = _HEADER_LINE_RE.search(text)
-    assert header_match is not None, (
+    header_matches = list(_HEADER_LINE_RE.finditer(text))
+    assert header_matches, (
         "the ledger's 'Re-measured' header paragraph was not found in the "
         "expected shape — either it was reworded (update _HEADER_LINE_RE to "
         "match) or removed (put it back, per the e0-ledger-accounting spec's "
         "AC 'the re-measured counts are written into the ledger header')"
     )
+    # Superseded paragraphs are kept for history and share this exact shape
+    # (see the regex's own comment above) — the current one is whichever
+    # was appended last, i.e. the last match in the document.
+    header_match = header_matches[-1]
     header_counts = {
         "prompt-only (mechanisable)": int(header_match.group(1)),
         "prompt-only (judgement)": int(header_match.group(2)),

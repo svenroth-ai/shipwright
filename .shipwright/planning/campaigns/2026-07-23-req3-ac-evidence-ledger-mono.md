@@ -182,15 +182,54 @@ numbers, not the card's. The script is committed precisely so the next
 pass re-measures instead of trusting this paragraph once it, too, goes
 stale.
 
-The six genuine `judgement` rows, and why no gate may be built for them —
-each needs reading comprehension, so its honest ceiling is a drift test that the
-instruction is still present:
+**Re-measured again 2026-09-12 (sub-iterate `e3-checks-test-security`, same
+campaign)** after closing FR-01.06's 3 mechanisable rows (#5, #6, #7's
+mechanisable half — each with a new check + test, in the same commit as its
+status flip), downgrading FR-01.06's remaining 2 mechanisable mentions to
+judgement (both the *same* cross-cutting constitution rule, owned by the
+named Phase-3 work unit, not this FR — see the note directly above
+`## FR-01.07`; first pass left them as a deferral note with the tag
+unchanged, which external code review correctly rejected as not meeting
+the AC's binary "enforced or downgraded" — fixed in the same sub-iterate),
+and downgrading FR-01.07's 2 mechanisable rows (#6, #7) to judgement per the
+campaign's own abort condition (no deterministic oracle:
+`_remediation_status` and any per-finding decision record are read-only
+dead fields nothing ever writes), each drift-tested instead — the 7 lines
+this sub-iterate's own spec named. **Re-measured a third time, same
+sub-iterate, after external code review round 2**: splitting FR-01.06 #6
+into #6 (existence floor, enforced-tested) / #6b (per-journey matching,
+prompt-only/mechanisable, deferred to `trg-2f7a840a`) — GLM correctly
+found the original bare enforced-tested tag over-claimed against the
+check's own documented weak-oracle caveat, the same split precedent this
+campaign already applies (#8/#8b, #10/#10b, #15/#15b):
+**14** prompt-only/mechanisable · **29** prompt-only/judgement ·
+**16** enforced-untested · **33** unimplemented · **80** enforced-tested.
+(Status names outside an actual status cell must stay un-backticked — the
+measurement script counts every backtick-quoted canonical status document-wide,
+not just table cells, so a backticked status name in prose silently inflates
+these totals.)
+
+The six genuine `judgement` rows from FR-01.02/FR-01.04, and why no gate may
+be built for them — each needs reading comprehension, so its honest ceiling
+is a drift test that the instruction is still present:
 
 - `.02` #1 every described capability is present · #2 nothing invented that was
   not asked for — comparing an interview to a catalogue;
 - `.02` #4b every context dimension walked · #6 plain language, full guarantee —
   judging prose against prose;
 - and the two remaining pairs of the same shape in `.02`/`.04`.
+
+Four more of the same shape, added by `e3-checks-test-security`: `.07` #6
+"'fixed' means the tests passed after the fix" and #7 "a human-judgement
+finding carries the decision and the reason" — both downgraded from
+mechanisable once building showed the field either would need to read is
+never written by any code path (see `.07`'s table above for the full
+reasoning); drift-tested in
+`plugins/shipwright-security/tests/test_remediation_judgement_drift.py`. And
+`.06`'s two constitution-rule mentions ("test every AC at the layer that can
+falsify it") — no per-phase oracle exists for a cross-cutting rule whose real
+enforcement is a not-yet-built Phase-3 work unit; drift-tested in
+`shared/tests/test_constitution_ac_layer_rule_drift.py`.
 
 **The recurring split inside one criterion:** where a criterion promises both
 *presence* and *quality* ("decisions recorded **with reasoning**", "the decision
@@ -432,9 +471,10 @@ the `.11` walk.
 | 2 | tests actually ran — an empty run is never a pass | `enforced, untested` | `_validate_test:294` (`unit.total > 0`) |
 | 3 | could-not-run is recorded as not-run, never as passed | `enforced, partly tested` | timeout → `success: False` (`test_runner:116`, untested); `lighthouse_unavailable` → skip-with-reason (tested). Mirror of FR-01.07's identical criterion |
 | 4 | results from outside the pipeline are refused | `enforced, untested` | `_validate_test:281` — unique provenance guard, **nothing pins it** (the orchestrator suite mocks `validate_phase` out entirely) |
-| 5 | recorded browser-test numbers are the tool's own | `prompt-only (mechanisable)` | step-3.5 instructs the reconciliation; no code compares the record to the runner's report. Trivially mechanisable |
-| 6 | a project with no browser tests gets them written from the plan's journeys | `prompt-only (mechanisable)` | the **true half** of the journey promise — step-2.5 does exactly this. The missing half **SHIPPED** as criterion 14 (`journey_coverage.py`, iterate-2026-07-27-test-phase-record-honesty) |
-| 7 | screens compared back to mockups; regression ≠ never-checked | `enforced` + `prompt-only (mechanisable)` | structural compare tested; the Resolved/Regression/Persistent/Unchecked triage is agent judgement against the build report |
+| 5 | recorded browser-test numbers are the tool's own | `enforced, tested` | **shipped, sub-iterate e3-checks-test-security.** `check_e2e_counts_reconciled` (`_test_gate_extras.py`) reconciles `shipwright_test_results.json`'s `e2e` counts against Playwright's own `e2e-results.json` `stats` block, wired into `run_test_checks` |
+| 6 | a project with no browser tests gets **something** written from the plan's journeys — the existence floor | `enforced, tested` | **shipped, sub-iterate e3-checks-test-security.** `check_e2e_specs_exist_when_journeys_planned` closes the generation-existence half this row named open (coarse existence check: at least one `*.spec.ts` exists when a plan declares a flow). Split from #6b, 2026-09-12, external code review round 2 (GLM, low) — the campaign's own split precedent (#8/#8b, #10/#10b, #15/#15b) applies here too: a bare `enforced, tested` tag over-claimed against the check's own documented weak-oracle caveat |
+| 6b | the generated spec(s) actually name the RIGHT journey, not an arbitrary one | `prompt-only (mechanisable)` | **Split from #6, 2026-09-12 — a real oracle already exists** (criterion 14's `journey_coverage.py`, **shipped and enforced+tested separately**) but is not yet wired into `.06`'s own gate: `check_e2e_specs_exist_when_journeys_planned` is deliberately coarse (any spec file satisfies it) and does not call it. Wiring it in needs relocating `journey_coverage.py`/`journey_plan.py`'s shared logic to `shared/scripts/lib/` first (ADR-045: a shared verifier never reaches into a single plugin's own `scripts/lib`) — a producer-side design change outside this checks-only sub-iterate's scope. Follow-up filed: `trg-2f7a840a` |
+| 7 | screens compared back to mockups; regression ≠ never-checked | `enforced, tested` | structural compare tested; **triage half shipped, sub-iterate e3-checks-test-security** — `check_design_fidelity_triage_matches_recomputation` recomputes the Resolved/Regression/Persistent/Unchecked table from `design-fidelity-report.json` + `shipwright_test_results.json` as a pure function of two already-recorded values, no longer agent judgement |
 | 8 | cross-page outliers reported, grouped by cause | `enforced` | majority-wins, 6 categories, tested |
 | 9 | declared performance budgets measured, overage quantified, warn-or-stop is the project's choice | `enforced` | `evaluate_gate` + budgets LH 85 / LCP 2500 ms / 250 KB gz; tested |
 | 10 | declared write/read pairs → covered · not covered · undetermined, as indication not proof | `enforced` | 3-state `round_trip_tested`; tested |
@@ -496,10 +536,20 @@ rows already flagged for decision ("criteria-obligation").
 
 **The constitution rule is instructed, so it stays** — and gets no triage card.
 Writing "test every AC at the layer that can falsify it" into `constitution.md`
-makes it `prompt-only (mechanisable)`, not `unimplemented`: every skill's First
+makes it `prompt-only (judgement)`, not `unimplemented`: every skill's First
 Actions reads the constitution, so the instruction is live the moment it lands.
-Its *mechanical* enforcement is a seeded row in the enforcement-register design
-(Phase 3) — filing a card too would duplicate that work unit.
+**Downgraded from prompt-only mechanisable, sub-iterate
+e3-checks-test-security** — code review (GLM) correctly found that a prose
+deferral note alone left the status TAG open, so a re-run of
+`measure_ac_evidence_ledger.py` still counted it. No `.06`-scoped check can
+close it honestly: the rule is cross-cutting across five phases (see the
+table below), so a check built here would be exactly the "weaker gate that
+pretends" the campaign's abort condition forbids — its *mechanical*
+enforcement is a seeded row in the enforcement-register design (Phase 3), a
+real future oracle, not something a single sub-iterate can build today.
+Drift-tested instead: `shared/tests/test_constitution_ac_layer_rule_drift.py`
+pins that the instruction is still present in `shared/constitution.md`.
+Filing a card too would duplicate the Phase-3 work unit.
 
 **The test pyramid — where it landed** (operator question, 2026-07-24). It is not
 one thing and does not have one home:
@@ -507,9 +557,36 @@ one thing and does not have one home:
 | Piece | Home | State |
 |---|---|---|
 | the layers themselves + which ones block | constitution, Test Layer Boundaries | already there |
-| "every AC tested at the layer that can falsify it" | constitution **ALWAYS** — added this round | `prompt-only (mechanisable)`; five phases touch it, so no per-phase FR can own it |
+| "every AC tested at the layer that can falsify it" | constitution **ALWAYS** — added this round | `prompt-only (judgement)`; five phases touch it, so no per-phase FR can own it (downgraded, sub-iterate e3-checks-test-security — see below) |
 | "which criteria have no test" — the report | compliance FR-01.10 + Phase-3 criterion-level test identity | mechanism not built |
 | "how much is covered" — a percentage | Quality Requirement | CI diff-coverage gate exists, uncaptured |
+
+**Accounted for by an actual downgrade, not a deferral note (sub-iterate
+e3-checks-test-security).** The mechanical re-measurement
+(`measure_ac_evidence_ledger.py`) counts every occurrence of the mechanisable
+status tag in this section by flat text, which was two more than the
+numbered table's rows 5-7: the prose paragraph above ("Its *mechanical*
+enforcement is a seeded row...") and this table's own "every AC tested at
+the layer that can falsify it" row both name the **same** cross-cutting
+constitution rule, not a `.06`-specific promise — the row's own text says so
+("five phases touch it, so no per-phase FR can own it"). Building a
+`.06`-scoped check for either would misattribute a rule this campaign's own
+walk already routed to the named Phase-3 enforcement-register work unit
+(`2026-07-24-req3-constitution-enforcement-register-DESIGN.md`). **First
+pass left both mentions tagged prompt-only mechanisable with only a
+prose deferral note — code review (GLM, medium) correctly rejected that: the
+AC requires each of the 7 lines *enforced or downgraded*, and a note that
+doesn't change the status tag leaves a re-run of the mechanical
+re-measurement still counting 2 open mechanisable lines.** Both mentions are
+now actually flipped to prompt-only judgement above (see the two rows this
+paragraph opened with), per the same
+no-oracle reasoning as FR-01.07 #6/#7 below (no `.06`-scoped check can
+mechanically enforce a cross-cutting rule whose real oracle is a Phase-3
+work unit that does not exist yet — building one here would be the "weaker
+gate that pretends" the campaign's abort condition forbids), with a drift
+test in its place. This closes the sub-iterate's full 5-line count (3 built
++ these 2 downgraded) alongside FR-01.07's 2 downgraded — 7 total, all
+enforced or downgraded, none left as an unresolved mention.
 
 ## FR-01.07 — /shipwright-security  ✅ walked 2026-07-24
 
@@ -530,8 +607,8 @@ and undescribed; a third became its own requirement (below).
 | 3 | no check available → refuse with setup instructions | `enforced` | `get_backend()` raises. (SessionStart hook only *hints* — the refusal is at scan time) |
 | 4 | secret values masked; raw refused unattended | `enforced` | redaction default-on; `--full-evidence` hard-refused when `CI` is set |
 | 5 | detailed findings stay out of files that travel with the code | `enforced` | `_ensure_gitignore_entry`. **New (negative space)** — mirrors the constitution's NEVER |
-| 6 | "fixed" means the tests passed after the fix | `prompt-only (mechanisable)` | `remediation-loop.md` prose; no code runs tests or reverts. Re-projected onto the output axis |
-| 7 | a human-judgement finding carries the decision and the reason | `prompt-only (mechanisable)` | `classify_finding` routes it (code); the asking and recording are prompt |
+| 6 | "fixed" means the tests passed after the fix | `prompt-only (judgement)` | **downgraded, sub-iterate e3-checks-test-security (campaign abort condition).** No deterministic oracle exists: the only field that could carry this outcome, `_remediation_status`, is read with a default of `"open"` (`generate_security_report.py`) but is never WRITTEN by any code path — confirmed by grep across the plugin's scripts before downgrading. A check against a field nothing writes would be the "weaker gate that pretends" the campaign forbids. Drift-tested instead: `test_remediation_judgement_drift.py` pins that the "tests passed → fixed" instruction is still present in `remediation-loop.md` |
+| 7 | a human-judgement finding carries the decision and the reason | `prompt-only (judgement)` | **downgraded, sub-iterate e3-checks-test-security (campaign abort condition).** `classify_finding` routes a finding to `needs-review` (code, real), but nothing downstream ever records the Fix/Decline/Defer decision or its reason — `security_triage_emit.py` enumerates findings and asks a *scope* question, never a per-finding decision. Same no-oracle situation as #6. Drift-tested instead: `test_remediation_judgement_drift.py` pins that the decision-and-reason instruction is still present in `remediation-loop.md` |
 | 8 | what the scan found reaches the audit-evidence phase, in the form the scan produced | `enforced` | the report is machine-written and compliance ingests it. **Outcome-ledger claim dropped** (operator, 2026-07-24) — see below |
 | 9 | an accepted finding is recorded in a register kept with the project | `enforced` (1 of 3) | Trivy: real (`.trivyignore.yaml`, passed explicitly). Semgrep: env vars, not a project file. Gitleaks: **the project's file is overridden** by a generated temp config → `trg-33b22f43` |
 | 10 | findings published to the host's security surface in its own format | `enforced` | `sarif_writer.py` + upload step. **Folded in** — FR-01.14 covers *ingesting* host scans, nothing covered *producing* them |
