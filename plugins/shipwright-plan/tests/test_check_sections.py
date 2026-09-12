@@ -20,7 +20,10 @@ def run_check(args: list[str]) -> dict:
     return json.loads(result.stdout)
 
 
+@pytest.mark.covers("FR-01.03/AC01")
 def test_check_all_sections_written(planning_with_sections):
+    """FR-01.03/AC01: the plan is what exists as distinct section files, not
+    one undivided document — every declared section is its own written file."""
     output = run_check(["--planning-dir", str(planning_with_sections)])
     assert output["success"] is True
     assert output["missing"] == []
@@ -68,6 +71,7 @@ def test_dependencies_are_reported(tmp_path):
     assert output["order_errors"] == []
 
 
+@pytest.mark.covers("FR-01.03/AC15")
 def test_prerequisite_after_its_user_fails_the_gate(tmp_path):
     planning = _planning_with(tmp_path, "01-api: 02-db\n02-db", ["01-api", "02-db"])
     output = run_check(["--planning-dir", str(planning)])

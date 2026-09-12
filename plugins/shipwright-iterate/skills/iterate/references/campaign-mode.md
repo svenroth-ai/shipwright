@@ -219,10 +219,13 @@ If campaign directory doesn't exist yet:
        spawns above (omit when `inherit`). **State the run_id in plain text in
        every spawn prompt** — the `SubagentStop` salvage hook
        (`write-review-payload-on-stop.py`) reads it only from the transcript,
-       never an env var. **Write each subagent's reply to its payload file
-       before any other reasoning or spawning the next reviewer** — a
-       mitigation, not a guarantee; the salvage hook backstops the window this
-       alone cannot close (see `iteration-reviews.md`).
+       never an env var. **Write each subagent's reply to its CANONICAL
+       payload file — `spec_review_reply.json` / `code_review_reply.json` /
+       `doubt_review_reply.json` under `.shipwright/planning/iterate/{run_id}/`
+       (trg-3b206c08; `record`'s own `--payload-file` validation rejects any
+       other basename) — before any other reasoning or spawning the next
+       reviewer.** A mitigation, not a guarantee; the salvage hook backstops
+       the window this alone cannot close (see `iteration-reviews.md`).
 
        Promote the rows IN THAT ORDER. The runner already closed them and a
        closed row is immutable, so `--force` is REQUIRED (without it the CLI
@@ -230,7 +233,7 @@ If campaign directory doesn't exist yet:
        gate, so Stage 1 must land first — `…` is the invocation prefix from
        `iteration-reviews.md`, and every call also carries
        `--model-tier "{resolved_review_tier}"`:
-         … record --review-type spec  --status completed --from spec-reviewer              --payload-file "{reply}" --recorded-by spec-reviewer --model-tier "{resolved_review_tier}" --force
+         … record --review-type spec  --status completed --from spec-reviewer              --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/spec_review_reply.json" --recorded-by spec-reviewer --model-tier "{resolved_review_tier}" --force
          … record --review-type code  --status completed --from code-reviewer   … --model-tier "{resolved_review_tier}" --force
          … record --review-type doubt --status completed --from doubt-reviewer  … --model-tier "{resolved_review_tier}" --force
 

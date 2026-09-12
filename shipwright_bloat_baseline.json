@@ -650,7 +650,7 @@
     {
       "path": "plugins/shipwright-security/tests/test_finalize_security_compliance.py",
       "limit": 300,
-      "current": 340,
+      "current": 345,
       "state": "grandfathered",
       "adr": null
     },
@@ -678,14 +678,14 @@
     {
       "path": "plugins/shipwright-security/tests/test_run_scan_and_report.py",
       "limit": 300,
-      "current": 361,
+      "current": 384,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-security/tests/test_scan_cli.py",
       "limit": 300,
-      "current": 380,
+      "current": 474,
       "state": "grandfathered",
       "adr": null
     },
@@ -748,7 +748,7 @@
     {
       "path": "plugins/shipwright-test/tests/test_warning_followups.py",
       "limit": 300,
-      "current": 390,
+      "current": 392,
       "state": "grandfathered",
       "adr": null
     },

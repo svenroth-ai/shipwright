@@ -11,6 +11,8 @@ import json
 import subprocess
 import sys
 
+import pytest
+
 from tests._check_plan_gates_support import SCRIPT, _problems, run_gates
 
 # `planning` and `bare_planning_dir` fixtures come from conftest.py — no
@@ -74,13 +76,18 @@ def test_project_root_is_required_not_defaulted_to_cwd(planning):
 # --- the review gate (Step 6) -----------------------------------------------
 
 
+@pytest.mark.covers("FR-01.03/AC04")
 def test_no_marker_blocks_section_splitting(planning):
+    """FR-01.03/AC04: the review step's route must be on record before
+    dividing the plan into sections is allowed to begin — a missing marker
+    blocks the same review gate Step 9 requires to have passed first."""
     (planning / "external_review_state.json").unlink()
     code, out = run_gates(planning, "review")
     assert code == 1
     assert "did not run to completion" in _problems(out, "review")[0]
 
 
+@pytest.mark.covers("FR-01.03/AC13")
 def test_an_undecided_reviewer_disagreement_blocks(planning):
     (planning / "external_review_state.json").write_text(
         json.dumps({
@@ -96,6 +103,7 @@ def test_an_undecided_reviewer_disagreement_blocks(planning):
     assert "unresolved reviewer disagreement" in _problems(out, "review")[0]
 
 
+@pytest.mark.covers("FR-01.03/AC13")
 def test_recording_the_decision_unblocks_it(planning):
     (planning / "external_review_state.json").write_text(
         json.dumps({
@@ -221,10 +229,17 @@ def test_boundary_passes_with_the_early_in_progress_plan_config(tmp_path, bare_p
     assert code == 0, _problems(out, "boundary")
 
 
+@pytest.mark.covers("FR-01.03/AC17")
 def test_boundary_fails_on_a_production_path(tmp_path, bare_planning_dir):
+    """FR-01.03/AC17: a finished plan hands on no production code — writing
+    outside the planning phase's allowed prefixes is exactly that violation."""
     src = tmp_path / "src"
     src.mkdir()
     (src / "app.py").write_text("print('hi')\n", encoding="utf-8")
     code, out = run_gates(bare_planning_dir, "boundary")
     assert code == 1
     assert any("src/app.py" in p for p in _problems(out, "boundary"))
+
+# The review gate's reviewer-failure / reviewer-identity handling
+# (FR-01.03 AC19/AC20) is split into test_check_plan_gates_reviewers.py to
+# stay under this file's own 300-LOC budget.

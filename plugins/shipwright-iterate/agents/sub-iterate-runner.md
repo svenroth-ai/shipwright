@@ -101,10 +101,10 @@ Parse the JSON. Then:
   ```bash
   uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" --mode iterate \
     --plan-file "{mini_plan_path}" --spec-file "{sub_iterate_spec}" \
-    --plugin-root "{plugin_root}"
+    --plugin-root "{plugin_root}" > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
   ```
 
-  Parse `reviews.glm.feedback` + `reviews.openai.feedback`. Merge
+  Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse `reviews.glm.feedback` + `reviews.openai.feedback`. Merge
   high/medium findings into the iterate ADR's
   `External-Plan-Review-Findings` table, each `accepted-and-fixed` /
   `rejected-with-reason`, before Finalization.
@@ -126,7 +126,7 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   --project-root "{project_root}" --run-id "{run_id}" --review-type plan \
   --status "{completed | not_run}" --provider "{openrouter | null}" \
   --marker-status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
-  [--from external-review-json --payload-file "{stdout}"] [--disposition "{why}"]
+  [--from external-review-json --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"] [--disposition "{why}"]
 ```
 
 ### Step 3.6: Self-Review (always, ADR-029 follow-up)
@@ -191,10 +191,10 @@ review for those.
    git -C "{project_root}" diff HEAD~1 > "$DIFF_FILE"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode code --diff-file "$DIFF_FILE" \
-     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}"
+     --spec-file "{sub_iterate_spec}" --plugin-root "{plugin_root}" > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
    ```
 
-   Parse feedback. Apply high/medium findings before commit, OR mark
+   Read the file back (canonical basename per iteration-reviews.md, trg-3b206c08) and parse feedback. Apply high/medium findings before commit, OR mark
    each `accepted-and-fixed` / `rejected-with-reason` in the iterate
    ADR's `External-Code-Review-Findings` table. Same disposition
    pattern as Step 3.5.

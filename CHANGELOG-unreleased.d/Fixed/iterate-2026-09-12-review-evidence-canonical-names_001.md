@@ -1,0 +1,1 @@
+Review-evidence files (self/spec/code/doubt/plan/external_code review payloads) now use exactly one canonical basename per kind, enforced by record_review_pass.py — the producer-side fix that unblocks a future PR-review classifier exact-path allowlist for this file family (trg-3b206c08).

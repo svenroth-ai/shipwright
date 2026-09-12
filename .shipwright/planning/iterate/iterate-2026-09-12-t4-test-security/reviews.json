@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-t4-test-security",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T03:37:43.586243+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "Two of the seven \"unbound\" ACs look potentially provable with seams the plan itself cites, so the unbind may be premature. FR-01.06/AC02's second clause (\"skip with no reason stops the phase from being called complete\") sits adjacent to `check_test_results_file_fresh` — if that function already validates structure (it rejects `total=0` per AC03's test), a test asserting it rejects a skip record lacking `skip_reason` may prove the clause. Similarly FR-01.06/AC12's regression-vs-unchecked distinction could be testable if `design_fidelity_check.py` persists a prior-run artifact that a second invocation reads.",
+          "suggestion": "Before finalizing, write a 10-minute spike for AC02 against `check_test_results_file_fresh` (does it reject a `skipped: True` record with no `skip_reason`?). If yes, bind it; if the function is silent on that field, the unbind reason stands and is now evidenced by a test-level negative result rather than a prose argument. Same cheap probe for AC12 (does `design_fidelity_check.py` write a state file that persists between runs?).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Verification steps 1–3 run plain `pytest -q` with no `--junitxml`, despite the binding constraint stating \"one `--junitxml` per root.\" The constraint is asserted as satisfied in the mini-plan but the verification section doesn't demonstrate it.",
+          "suggestion": "Either re-run each root with `--junitxml` and record the paths, or note where the CI config applies the flag so local verification doesn't need to. As written, a reviewer can't confirm the JUnit artifacts exist for this run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "Upgrading existing tests from bare `FR-01.xx` tags to qualified `FR-xx.yy/ACnn` tags mutates shared fixtures across three roots. If any other tooling (dashboards, coverage ratchet, compliance regen) consumes the bare tags, the sweep in step 4/7 could mask a break — and step 7 reverts the compliance outputs, so a tag-format regression there would be invisible until the next real regen.",
+          "suggestion": "Confirm (one grep) that nothing downstream parses bare `FR-01.06`/`FR-01.07` markers besides the ratchet script, and record that check in the run notes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.07 AC04, AC06, AC08, AC11 are treated as \"already bound\" per the seam survey's precedent column, but they're absent from the per-AC table and from verification — so this run doesn't demonstrate they're still green and still tagged. If any of those bindings drifted since t0, the ratchet count (25 resolved) would still pass because those ACs never appeared in `unbound`.",
+          "suggestion": "Add one line to verification: confirm the four pre-bound FR-01.07 ACs still resolve to passing tests in the full-root green runs (they were inside the 1031-passed run, but the tags' existence wasn't asserted).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.06/AC03 is bound in `shared/tests` via a test in `test_test_checks_accepted_baseline.py` that \"already carried FR-01.06 tags\" — the plan upgrades one bare tag there. This is the only edit in the waived third root. Fine, but the ratchet-diff check in step 5 (\"every removed line starts with FR-01.06/ or FR-01.07/\") doesn't verify that this shared-root edit was actually included; if the shared-root tag upgrade was missed, AC03 would silently remain unbound while the count math still works out (since it was counted among the 25).",
+          "suggestion": "Verify explicitly that `FR-01.06/AC03` no longer appears in the regenerated baseline's `unbound` (or in its excepted list).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The recorded verification commands omit the required `--junitxml` output for all three pytest roots. This directly violates the binding ADR-044 execution contract and leaves no per-root CI artifact for the newly claimed coverage.",
+          "suggestion": "Run exactly one pytest process per touched root with a distinct `--junitxml` path, retain or merge the three artifacts as the campaign requires, and record those exact commands/results.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Several AC mappings rely on a test name and prose assertion rather than demonstrating that the asserted output is tied to the acceptance criterion. In particular, FR-01.07/AC01 combines scan-type parsing with prompt-injection hook detection in one test; a failure or incomplete assertion can mask a missing category while the broad test still appears to cover the AC.",
+          "suggestion": "Assert each named risk category independently and explicitly in the test result, while retaining a single integration test only if the AC requires their combined runner behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The seven exceptions are described as “recorded,” but the plan does not state where the reasons are serialized in `shipwright_ac_coverage_baseline.json` or confirm that the ratchet recognizes that schema as a valid exception rather than merely leaving the AC unbound. The stated acceptance criterion requires no cluster entry remain unbound without a recorded reason.",
+          "suggestion": "Include the exact baseline representation for each exception and add a targeted validation/assertion that all seven IDs are recognized as reasoned exceptions by the coverage tool.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan asserts that `.shipwright/securityreports/` is ignored, but does not cover existing conflicting `.gitignore` states: duplicate entries, negating rules, nested ignore files, or an already-tracked security report. Appending a line does not ensure findings cannot be committed.",
+          "suggestion": "Test idempotent handling of existing/negated rules and verify the report path is ignored by Git; if the directory is already tracked, fail with a clear remediation message rather than implying protection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The “shared root touched only to upgrade one bare tag” claim makes the extra-root deviation easy to regress, because no check prevents later additions from turning it into a broader third-root test change under the same waiver.",
+          "suggestion": "Keep the waiver scoped in the run record and add a diff-level check or review note that `shared/tests` changes for this unit are annotation-only.  Overall, the seam choices and reuse of existing tests are sensible, and the exception rationale is mostly appropriately conservative. The missing JUnit artifacts and explicit exception-schema validation need correction before this can satisfy the stated execution and traceability requirements.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T03:32:39.146983+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: edge-case | Severity: medium**\n**Finding:** Two of the seven \"unbound\" ACs look potentially provable with seams the plan itself cites, so the unbind may be premature. FR-01.06/AC02's second clause (\"skip with no reason stops the phase from being called complete\") sits adjacent to `check_test_results_file_fresh` — if that function already validates structure (it rejects `total=0` per AC03's test), a test asserting it rejects a skip record lacking `skip_reason` may prove the clause. Similarly FR-01.06/AC12's regression-vs-unchecked distinction could be testable if `design_fidelity_check.py` persists a prior-run artifact that a second invocation reads.\n**Suggestion:** Before finalizing, write a 10-minute spike for AC02 against `check_test_results_file_fresh` (does it reject a `skipped: True` record with no `skip_reason`?). If yes, bind it; if the function is silent on that field, the unbind reason stands and is now evidenced by a test-level negative result rather than a prose argument. Same cheap probe for AC12 (does `design_fidelity_check.py` write a state file that persists between runs?).\n\n**Category: risk | Severity: medium**\n**Finding:** Verification steps 1–3 run plain `pytest -q` with no `--junitxml`, despite the binding constraint stating \"one `--junitxml` per root.\" The constraint is asserted as satisfied in the mini-plan but the verification section doesn't demonstrate it.\n**Suggestion:** Either re-run each root with `--junitxml` and record the paths, or note where the CI config applies the flag so local verification doesn't need to. As written, a reviewer can't confirm the JUnit artifacts exist for this run.\n\n**Category: risk | Severity: low**\n**Finding:** Upgrading existing tests from bare `FR-01.xx` tags to qualified `FR-xx.yy/ACnn` tags mutates shared fixtures across three roots. If any other tooling (dashboards, coverage ratchet, compliance regen) consumes the bare tags, the sweep in step 4/7 could mask a brea […truncated]\n\n[openai] 1. Category: risk  \n   Severity: high  \n   Finding: The recorded verification commands omit the required `--junitxml` output for all three pytest roots. This directly violates the binding ADR-044 execution contract and leaves no per-root CI artifact for the newly claimed coverage.  \n   Suggestion: Run exactly one pytest process per touched root with a distinct `--junitxml` path, retain or merge the three artifacts as the campaign requires, and record those exact commands/results.\n\n2. Category: approach  \n   Severity: medium  \n   Finding: Several AC mappings rely on a test name and prose assertion rather than demonstrating that the asserted output is tied to the acceptance criterion. In particular, FR-01.07/AC01 combines scan-type parsing with prompt-injection hook detection in one test; a failure or incomplete assertion can mask a missing category while the broad test still appears to cover the AC.  \n   Suggestion: Assert each named risk category independently and explicitly in the test result, while retaining a single integration test only if the AC requires their combined runner behavior.\n\n3. Category: dependency  \n   Severity: medium  \n   Finding: The seven exceptions are described as “recorded,” but the plan does not state where the reasons are serialized in `shipwright_ac_coverage_baseline.json` or confirm that the ratchet recognizes that schema as a valid exception rather than merely leaving the AC unbound. The stated acceptance criterion requires no cluster entry remain unbound without a recorded reason.  \n   Suggestion: Include the exact baseline representation for each exception and add a targeted validation/assertion that all seven IDs are recognized as reasoned exceptions by the coverage tool.\n\n4. Category: edge-case  \n   Severity: medium  \n   Finding: The plan asserts that `.shipwright/securityreports/` is ignored, but does not cover existing conflicting `.gitignore` states: duplicate entries, negating rules, nested ignore files, or an alrea […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T03:32:53.725738+00:00",
+      "disposition": "delegated_to_orchestrator: runner has no Agent tool; cascade runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T03:32:53.851654+00:00",
+      "disposition": "delegated_to_orchestrator: runner has no Agent tool; cascade runs at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shipwright_ac_coverage_baseline.json` (diff hunk, lines where FR-01.06/AC02, AC05, AC07, AC12, AC18 and FR-01.07/AC13, AC14 remain in `unbound`)",
+          "line": null,
+          "finding": "The spec's acceptance criterion is \"no entry for this cluster remains in `unbound` without a recorded reason.\" The seven excepted ACs remain in `unbound` in the baseline file with no reason serialized anywhere — not in the baseline, not in any machine-readable artifact this diff adds. The reasons exist only as prose inside the mini-plan markdown. A future consumer reading `shipwright_ac_coverage_baseline.json` cannot distinguish \"convenience skip\" from \"documented exception.\"",
+          "suggestion": "Either extend the baseline write to emit a side-car `excepted` map (id → reason) alongside `unbound`, or record the seven reasons in a structured file the ratchet can read back, and add a verification step asserting those seven ids appear there.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-security/tests/test_scan_cli.py` — new test `test_no_scanner_available_stops_with_setup_instructions_not_a_clean_result",
+          "line": null,
+          "finding": "This test calls `json.loads(stderr)` and indexes `payload[\"error\"][\"alternatives\"]`. The pre-existing sibling test (`test_backend_not_configured_returns_2`, immediately above) asserts only the exit code, so nothing in the diff demonstrates that `scan.main()` actually emits structured JSON on stderr with an `error.alternatives` list containing capitalized \"Install\". If stderr is human-readable prose (or the key is named differently), this test fails with a `JSONDecodeError`/`KeyError` that reads as a test bug, not a coverage signal. Additionally, the diff does not show `import json` being added to this file (only `import prompt_injection_scan` is added at the top); if `json` is not already imported, both new tests here raise `NameError`.",
+          "suggestion": "Confirm `import json` is present at module scope; and either assert against the actual stderr contract (relax to a case-insensitive substring check on the raw stderr) or verify the JSON error shape in a dedicated contract test first.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_scan_cli.py` — `test_the_scan_examines_every_named_risk_category",
+          "line": null,
+          "finding": "patch(\"scan.get_backend\", return_value=FakeBackend(), create=True)` uses `create=True`, which will silently fabricate the attribute if `scan.get_backend` doesn't exist (e.g., the module was refactored to a different backend-resolution mechanism). In that case the patch is a no-op against the real code path, and the test's outcome depends entirely on whatever real backend resolution does — it could start failing for unrelated environmental reasons or, worse, hit a real scanner.",
+          "suggestion": "Drop `create=True` (the sibling tests in `TestMainE2E` / `TestSarifDir` already patch the backend; match their mechanism) so the test fails loudly if the seam moves.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_normalizers.py` — `test_every_normalizer_produces_the_same_required_shape",
+          "line": null,
+          "finding": "The test hardcodes `required = {\"id\", \"severity\", \"type\", \"rule\", \"source\", \"affected_file\"}` without tying it to anything the AC or production code declares. If a normalizer renames `affected_file` to `file`, this test fails — good — but if all three normalizers jointly rename a key, the test still passes because the set is checked against the test's own invention, not a shared schema. It proves key presence, not that downstream consumers can rely on the shape.",
+          "suggestion": "Derive the required key set from the single shared constant/schema the report writer actually consumes (or add one), so the three normalizers are pinned to one authoritative definition rather than three coincidental agreements with the test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-test/tests/test_test_runner.py` — `test_skip_if_missing_records_not_run_with_a_reason_never_a_pass",
+          "line": null,
+          "finding": "Asserts the exact string `\"no tests/integration/ directory\"`. A wording change in the runner breaks this test without any behavioral regression, and conversely the test proves nothing about the reason being informative (any non-empty string change is a breaking event). Minor brittleness only; the behavioral assertions (`skipped`, `passed=0`, `total=0`) are the real proof and are sound.",
+          "suggestion": "Assert `result[\"skip_reason\"]` is a non-empty string mentioning \"integration\", or accept the brittleness consciously.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_scan_cli.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-nhyu3tk3/plugins/shipwright-security/tests/test_scan_cli.py:51)",
+          "line": null,
+          "finding": "AC01 is tagged as proving that the runner examines all infrastructure risk categories, but `FakeBackend.scan()` ignores `scan_types` and always returns preconstructed findings for all three categories. The test would still pass if `scan.main()` stopped requesting one or more categories from its backend.",
+          "suggestion": "Record `scan_types` in the fake backend and assert the CLI requests `sast`, `sca`, and secrets (or invoke the real backend-selection path with scanner doubles that each prove execution).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[test_run_scan_and_report.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-nhyu3tk3/plugins/shipwright-security/tests/test_run_scan_and_report.py:250)",
+          "line": null,
+          "finding": "AC12 is claimed as proof that detailed findings “do not travel with the code,” but the tagged test only verifies that a `.gitignore` entry is appended. A later negating rule or an already tracked report directory means Git can still include the findings; this test would pass in either case.",
+          "suggestion": "Assert Git actually ignores the generated report path (for example with `git check-ignore`) and handle or fail clearly when the report path is already tracked.  Ship-with-fixes: the coverage mapping is largely consistent, but these two tagged tests do not fully prove the acceptance criteria they remove from the unbound baseline. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T03:44:51.915833+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: spec\n  Severity: medium\n  File: `shipwright_ac_coverage_baseline.json` (diff hunk, lines where FR-01.06/AC02, AC05, AC07, AC12, AC18 and FR-01.07/AC13, AC14 remain in `unbound`)\n  Finding: The spec's acceptance criterion is \"no entry for this cluster remains in `unbound` without a **recorded reason**.\" The seven excepted ACs remain in `unbound` in the baseline file with no reason serialized anywhere — not in the baseline, not in any machine-readable artifact this diff adds. The reasons exist only as prose inside the mini-plan markdown. A future consumer reading `shipwright_ac_coverage_baseline.json` cannot distinguish \"convenience skip\" from \"documented exception.\"\n  Suggestion: Either extend the baseline write to emit a side-car `excepted` map (id → reason) alongside `unbound`, or record the seven reasons in a structured file the ratchet can read back, and add a verification step asserting those seven ids appear there.\n\n- Category: bug\n  Severity: medium\n  File: `plugins/shipwright-security/tests/test_scan_cli.py` — new test `test_no_scanner_available_stops_with_setup_instructions_not_a_clean_result`\n  Finding: This test calls `json.loads(stderr)` and indexes `payload[\"error\"][\"alternatives\"]`. The pre-existing sibling test (`test_backend_not_configured_returns_2`, immediately above) asserts only the exit code, so nothing in the diff demonstrates that `scan.main()` actually emits structured JSON on stderr with an `error.alternatives` list containing capitalized \"Install\". If stderr is human-readable prose (or the key is named differently), this test fails with a `JSONDecodeError`/`KeyError` that reads as a test bug, not a coverage signal. Additionally, the diff does not show `import json` being added to this file (only `import prompt_injection_scan` is added at the top); if `json` is not already imported, both new tests here raise `NameError`.\n  Suggestion: Confirm `import json` is present at module scope; and either assert aga […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: [test_scan_cli.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-nhyu3tk3/plugins/shipwright-security/tests/test_scan_cli.py:51)\n- Finding: AC01 is tagged as proving that the runner examines all infrastructure risk categories, but `FakeBackend.scan()` ignores `scan_types` and always returns preconstructed findings for all three categories. The test would still pass if `scan.main()` stopped requesting one or more categories from its backend.\n- Suggestion: Record `scan_types` in the fake backend and assert the CLI requests `sast`, `sca`, and secrets (or invoke the real backend-selection path with scanner doubles that each prove execution).\n\n- Category: test\n- Severity: medium\n- File: [test_run_scan_and_report.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-nhyu3tk3/plugins/shipwright-security/tests/test_run_scan_and_report.py:250)\n- Finding: AC12 is claimed as proof that detailed findings “do not travel with the code,” but the tagged test only verifies that a `.gitignore` entry is appended. A later negating rule or an already tracked report directory means Git can still include the findings; this test would pass in either case.\n- Suggestion: Assert Git actually ignores the generated report path (for example with `git check-ignore`) and handle or fail clearly when the report path is already tracked.\n\nShip-with-fixes: the coverage mapping is largely consistent, but these two tagged tests do not fully prove the acceptance criteria they remove from the unbound baseline.  \nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T03:32:53.585436+00:00",
+      "disposition": "Stage-1 spec-review is run by the orchestrator, not this sub-iterate runner (no Agent tool available here)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T03:32:53.441426+00:00",
+      "disposition": "no internal arm for the plan review pass; campaign convention, see project_plan_review_has_no_internal_arm",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

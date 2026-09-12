@@ -16,6 +16,8 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "tools"))
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
@@ -57,6 +59,7 @@ class _DegradedBackend:
 
 class TestDegradedScanCLI:
 
+    @pytest.mark.covers("FR-01.07/AC03")
     def test_degraded_returns_2_and_writes_marker(self, tmp_path):
         out = tmp_path / "findings.json"
         argv = ["scan.py", "--path", str(tmp_path), "--output", str(out)]
