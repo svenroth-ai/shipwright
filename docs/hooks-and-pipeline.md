@@ -2597,13 +2597,17 @@ an FR the run never touched). Instead: stage `written_spec_paths` plus
 `.shipwright/compliance/layer_promotion_ledger.json`, commit them locally,
 push that ONE commit straight to a fresh `chore/layer-promotion-<sha12>`
 branch (`shared/scripts/lib/layer_promotion_delivery.deliver_as_own_pr`),
-open a PR against `origin/<default>`, best-effort-arm
-`gh pr merge --auto --squash`, then unconditionally hard-reset the worktree
-back to its pre-promotion `HEAD` — the commit exists only on the new remote
-branch, mirroring `references/main-repair.md`'s "repair main as its own small
-PR" ritual. This sweep never waits for that PR to merge (fire-and-forget is
-correct here — it is an opportunistic side artifact, not this run's
-deliverable). Result shape + `sweep_warnings()` live in a sibling module,
+open a PR against `origin/<default>`, then unconditionally hard-reset the
+worktree back to its pre-promotion `HEAD` — the commit exists only on the new
+remote branch, mirroring `references/main-repair.md`'s "repair main as its
+own small PR" ritual. Deliberately does NOT arm `gh pr merge --auto`: unlike
+the iterate's own PR, this one never enters a review cascade (it is not part
+of any iterate skill run, and its content is not a sensitive path), so
+arming automerge on it would let CI-green alone land unreviewed compliance
+state on the default branch (external review, PR #725 round 10) — it is
+opened and left for a human to merge explicitly. This sweep never waits for
+that PR to merge or be reviewed (fire-and-forget is correct here — it is an
+opportunistic side artifact, not this run's deliverable). Result shape + `sweep_warnings()` live in a sibling module,
 `shared/scripts/lib/layer_promotion_sweep_result.py`, split out purely to
 keep `layer_promotion_sweep.py` under the file-size guideline (mirrors the
 existing `lib.sweep_result` split for the outbox sweep). **Never a gate:**
