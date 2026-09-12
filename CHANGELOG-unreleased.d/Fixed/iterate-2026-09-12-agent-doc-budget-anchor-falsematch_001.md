@@ -1,0 +1,1 @@
+Fixed a hole in the agent-doc budget gate where a new over-budget Learnings entry could escape enforcement by incidentally quoting another entry's bold anchor form in its prose (entry_anchor() now requires a leading run_id/ADR-NNN bold anchor)
