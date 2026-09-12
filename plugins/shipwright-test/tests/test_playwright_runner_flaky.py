@@ -155,7 +155,7 @@ class TestFlakyCounting:
         assert result["success"] is True
         assert result["flaky"] == 1
 
-    @pytest.mark.covers("FR-01.06")
+    @pytest.mark.covers("FR-01.06/AC11")
     def test_retries_no_longer_inflate_the_total(self, tmp_path):
         # Two tests, four attempts between them. The old reader reported
         # total=4, passed=2, failed=2 — wrong in both directions.
@@ -218,7 +218,7 @@ class TestFlakyCounting:
         assert (r["total"], r["flaky"]) == (1, 1)
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC06")
 def test_a_legacy_multi_attempt_pass_is_not_silently_a_first_time_pass(tmp_path):
     """Losing the retry here would lose exactly the signal AC6 asks for."""
     path = _results_file(tmp_path, _suite([

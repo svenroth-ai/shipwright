@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,7 @@ class TestBackendShortCircuit:
 
 class TestHappyPath:
 
+    @pytest.mark.covers("FR-01.07/AC15")
     def test_writes_latest_md_and_latest_json(self, stub_oss_backend, tmp_path: Path):
         rc = run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=False)
         assert rc == 0
@@ -246,9 +248,19 @@ class TestRetention:
 
 class TestGitignoreBestEffort:
 
+    @pytest.mark.covers("FR-01.07/AC12")
     def test_appends_shipwright_entry_when_gitignore_exists_without_it(
         self, stub_oss_backend, tmp_path: Path,
     ):
+        # AC12's actual claim is that the findings "stay in a place that does
+        # not travel with the code" — a string appended to .gitignore proves
+        # nothing about Git's own behavior (external code review, openai,
+        # medium: a test asserting only the appended line "would pass" even
+        # if a negating rule or an already-tracked report meant Git still
+        # includes it). Prove the claim with Git itself, not a string match:
+        # init a real repo, run the scan, then ask `git check-ignore` whether
+        # the exact report path the scan just wrote is actually excluded.
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
         gi = tmp_path / ".gitignore"
         gi.write_text("node_modules/\n.venv/\n", encoding="utf-8")
 
@@ -259,6 +271,17 @@ class TestGitignoreBestEffort:
         # Existing entries preserved
         assert "node_modules/" in content
         assert ".venv/" in content
+
+        report_path = tmp_path / run_scan_and_report.REPORTS_DIR / run_scan_and_report.LATEST_JSON
+        assert report_path.exists(), "the scan must have actually written a report to prove against"
+        check = subprocess.run(
+            ["git", "check-ignore", "-q", str(report_path)],
+            cwd=tmp_path,
+        )
+        assert check.returncode == 0, (
+            "git must actually ignore the written report path, not merely have "
+            "an appended .gitignore line that happens to look right"
+        )
 
     def test_does_not_duplicate_when_shipwright_entry_already_present(
         self, stub_oss_backend, tmp_path: Path,
