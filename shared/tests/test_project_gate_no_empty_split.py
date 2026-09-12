@@ -1,0 +1,293 @@
+"""Tests for ``check_no_empty_split`` (``_project_gate_wiring.py``) and its
+manifest reading (``_project_gate_manifest.py``).
+
+Split out of ``test_verifiers_project.py`` (shared bloat gate, 300-line
+limit; req3-06-enforcement-mono sub-iterate e2) — ``check_no_empty_split``
+carries the largest share of this module's external-review regression
+tests (manifest parsing, missing/unreadable specs), so it gets its own
+file. ``_is_safe_split_name`` itself is tested in
+``test_project_gate_split_name_safety.py`` (split out round 7, same
+300-line limit). ``check_basis_forbids_assumed``,
+``check_criteria_free_of_implementation_detail`` and
+``check_starting_guidance_present`` live in
+``test_project_gate_basis_and_guidance.py``.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from tools.verifiers._project_gate_wiring import check_no_empty_split  # noqa: E402
+
+from _project_check_fixtures import _write_splits_config  # noqa: E402
+
+
+def test_check_no_empty_split_fails_when_a_split_has_zero_fr_rows(tmp_path):
+    _write_splits_config(tmp_path, ["01-a"])
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text("# spec\n\nNothing here yet.\n", encoding="utf-8")
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "01-a" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_when_names_are_all_null_or_empty(tmp_path):
+    """External code review (round 5, medium, openai): a FALSY name
+    (``null``, ``""``) used to be filtered out before being counted as
+    rejected, so an all-null manifest read as "declared zero splits"
+    (SKIPPED) instead of "every declared split was invalid" (loud)."""
+    (tmp_path / "shipwright_project_config.json").write_text(
+        json.dumps({"splits": [{"name": None}, {"name": ""}, {"status": "x"}]}),
+        encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "invalid/unsafe" in r.detail
+
+
+def test_check_no_empty_split_fails_on_an_unreadable_spec_md(tmp_path):
+    """External plan review (e2-checks-project-elicitation, round 1, medium):
+    a declared split whose spec.md EXISTS but cannot be read must not
+    silently drop out of every spec-text-keyed check as though the split
+    didn't exist — that reads as a pass, not the unverifiable state it is.
+    A directory named ``spec.md`` is the portable (cross-platform, unlike
+    os.chmod on Windows) way to force a real read failure — same trick
+    ``test_grill_trace_glossary.py`` already uses for this exact class of
+    regression."""
+    _write_splits_config(tmp_path, ["01-a"])
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").mkdir()  # a directory, not a file — read_text() fails
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "unreadable/missing" in r.detail
+    assert "01-a" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_a_malformed_project_config(tmp_path):
+    """External code review (round 3, medium, GLM): a malformed
+    ``shipwright_project_config.json`` used to fall through to "zero
+    splits declared" and every spec-text gate passed vacuously — exactly
+    the silent-pass failure mode round 1 closed for an unreadable
+    spec.md, just one layer up (the manifest itself)."""
+    (tmp_path / "shipwright_project_config.json").write_text(
+        "{not valid json", encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "could not be parsed" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_a_mixed_manifest(tmp_path):
+    """External Tier-3 review, PR #729: a MIXED manifest (one valid name
+    alongside several unsafe ones) used to silently filter the unsafe
+    entries and pass on the valid subset — a manifest containing
+    ``01-a`` and ``../escape`` read as though only ``01-a`` were
+    declared, letting the unsafe entry evade every gate. It must instead
+    fail loud, same as an all-unsafe manifest, not crash the validator
+    (non-string / absolute / traversal names are still handled without
+    reaching ``planning_dir / name`` with a bad value)."""
+    (tmp_path / "shipwright_project_config.json").write_text(
+        json.dumps({"splits": [
+            {"name": "01-a"},
+            {"name": "../escape"},
+            {"name": "/absolute"},
+            {"name": 42},
+            {"name": None},
+        ]}),
+        encoding="utf-8",
+    )
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget | Must | export widgets | interview |\n",
+        encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert "invalid/unsafe" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_when_every_declared_name_is_unsafe(tmp_path):
+    """External code review (round 4, low+medium, both reviewers): a
+    manifest whose split names are ALL invalid/unsafe must not silently
+    read as "zero splits declared" (SKIPPED) — that is a corrupt manifest,
+    not an empty project, and deserves the same loud failure a totally
+    unparseable config already gets."""
+    (tmp_path / "shipwright_project_config.json").write_text(
+        json.dumps({"splits": [{"name": "../escape"}, {"name": 42}, {"name": "."}]}),
+        encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "invalid/unsafe" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_non_object_config(tmp_path):
+    """External code review (round 6, medium, both reviewers
+    independently): a syntactically valid but non-object config (``[]``)
+    used to fall through to "zero splits declared" here even though the
+    SAME case already failed loud in ``_read_project_scope`` — the
+    inconsistency both reviewers independently caught."""
+    (tmp_path / "shipwright_project_config.json").write_text("[]", encoding="utf-8")
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert "expected a JSON object" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_non_object_run_config_fallback(tmp_path):
+    """Tier-3 PR review (PR #729): with no ``shipwright_project_config.json``
+    written yet, the run-config FALLBACK path never validated ``data``'s
+    shape the way the project-config branch does — a malformed, truthy
+    non-dict ``shipwright_run_config.json`` (here a bare list) fell through
+    to ``splits=[]``, SKIPPED, instead of failing loud like every other
+    malformed-manifest case in this module."""
+    (tmp_path / "shipwright_run_config.json").write_text("[1]", encoding="utf-8")
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "expected a JSON object" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_an_empty_non_object_run_config_fallback(tmp_path):
+    """Tier-3 PR review (PR #729, round 2 on this same fix): the first fix
+    above gated on ``data`` being truthy, so a FALSY non-dict run-config
+    (``[]`` here) still fell through to the ``not data`` early return —
+    read as "no manifest yet" (SKIPPED) rather than malformed content,
+    since ``read_run_config`` returns ``{}`` (also falsy) for a genuinely
+    missing file and the two were not distinguished by truthiness alone."""
+    (tmp_path / "shipwright_run_config.json").write_text("[]", encoding="utf-8")
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "expected a JSON object" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_on_syntactically_invalid_run_config_fallback(tmp_path):
+    """Tier-3 PR review (PR #729, round 3 on this same fix): with no
+    ``shipwright_project_config.json`` written yet, ``read_run_config``
+    swallows a ``JSONDecodeError`` into ``{}`` BY DESIGN (its own
+    docstring), indistinguishable from a genuinely missing file — so
+    syntactically INVALID JSON in ``shipwright_run_config.json`` (not
+    merely valid-JSON-but-non-object, covered above) silently read as
+    "zero splits declared" instead of failing loud. Reading the fallback
+    file directly, rather than through that swallowing helper, closes it."""
+    (tmp_path / "shipwright_run_config.json").write_text(
+        "{not valid json", encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert not r.is_skipped
+    assert "could not be parsed" in r.detail
+
+
+def test_check_no_empty_split_ignores_a_malformed_run_config_when_project_config_is_valid(tmp_path):
+    """Tier-3 PR review (PR #729, round 6): the run-config fallback file
+    was being parsed UNCONDITIONALLY, before even checking whether
+    ``shipwright_project_config.json`` — the authoritative source —
+    exists. That made a malformed, irrelevant ``shipwright_run_config.json``
+    fail every gate even when the real, valid manifest was present. The
+    fallback must only be consulted when the project config is ABSENT."""
+    _write_splits_config(tmp_path, ["01-a"])
+    (tmp_path / "shipwright_run_config.json").write_text(
+        "{not valid json", encoding="utf-8",
+    )
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget export | Must | export widgets | interview |\n\n"
+        "### FR-01.01\n"
+        "- (E) Given widgets exist, when export runs, then a file is written.\n",
+        encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is True
+
+
+def test_check_no_empty_split_fails_loud_on_a_split_dir_symlinked_outside_the_project(tmp_path):
+    """Tier-3 PR review (PR #729, round 7) — see ``_read_spec_texts``'s
+    docstring in ``_project_gate_manifest.py`` for the full rationale
+    (lexical name safety vs. what a symlink actually resolves to on disk)."""
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-target"
+    outside.mkdir()
+    (outside / "spec.md").write_text("leaked host content", encoding="utf-8")
+    _write_splits_config(tmp_path, ["01-a"])
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
+    try:
+        os.symlink(outside, planning / "01-a", target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "leaked host content" not in r.detail
+    assert "outside the project root" in r.detail
+
+
+def test_check_no_empty_split_fails_loud_when_splits_is_not_a_list(tmp_path):
+    """External code review (round 4, medium, openai): ``"splits": 1``
+    (a scalar) used to raise ``TypeError`` iterating a non-iterable during
+    manifest reading instead of producing a failing ``CheckResult``."""
+    (tmp_path / "shipwright_project_config.json").write_text(
+        json.dumps({"splits": 1}), encoding="utf-8",
+    )
+    r = check_no_empty_split(tmp_path)  # must not raise
+    assert r.ok is False
+    assert "expected a list" in r.detail
+
+
+def test_check_no_empty_split_fails_on_a_declared_split_with_no_spec_md_at_all(tmp_path):
+    """External CODE review (e2-checks-project-elicitation, round 2, medium):
+    the round-1 fix only made an UNREADABLE spec.md fail loud — a DECLARED
+    split that never got a spec.md written at all was still silently
+    absent from ``_read_spec_texts``'s old ``*/spec.md`` glob, so a second
+    populated split made this gate pass vacuously over the empty one."""
+    _write_splits_config(tmp_path, ["01-a", "02-b"])
+    populated = tmp_path / ".shipwright" / "planning" / "01-a"
+    populated.mkdir(parents=True)
+    (populated / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget | Must | export widgets | interview |\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".shipwright" / "planning" / "02-b").mkdir(parents=True)  # declared, spec.md never written
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is False
+    assert "02-b" in r.detail
+    assert "missing" in r.detail
+    assert "01-a" not in r.detail
+
+
+def test_check_no_empty_split_ignores_undeclared_planning_dirs(tmp_path):
+    """External CODE review (e2-checks-project-elicitation, round 2, high,
+    both reviewers independently): a raw directory-enumeration design
+    cannot tell a real split from a reserved non-split dir under
+    ``.shipwright/planning/`` (``campaigns/``, ``adr/``, ``grill-traces/``,
+    ``iterate/``, ``01-adopted/`` — this very repo's own layout has all
+    five) — an exclusion list chases every new one forever. The round-2
+    redesign enumerates from the project's OWN declared ``splits``
+    manifest instead, so an undeclared dir is invisible to this check
+    regardless of its name, proven here with the two reserved dirs that
+    actually broke it during review."""
+    _write_splits_config(tmp_path, ["01-a"])
+    split = tmp_path / ".shipwright" / "planning" / "01-a"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
+        "| FR-01.01 | widget | Must | export widgets | interview |\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".shipwright" / "planning" / "grill-traces").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "campaigns").mkdir(parents=True)
+    r = check_no_empty_split(tmp_path)
+    assert r.ok is True

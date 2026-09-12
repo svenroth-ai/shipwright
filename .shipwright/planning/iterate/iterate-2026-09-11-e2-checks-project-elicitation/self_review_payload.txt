@@ -1,0 +1,54 @@
+Self-Review (7-item checklist, ADR-029):
+
+1. Spec Compliance — PASS. Sub-iterate spec required "9 lines enforced or
+   downgraded with a reason" and "no judgement line given a gate". Final
+   ledger state: FR-01.02 #4/#15 (merged, enforced), #5 (enforced), #8
+   (floor, enforced-by-citation)/#8b (downgraded, drift-tested), #10
+   (floor, enforced)/#10b (coherence half, downgraded, drift-tested), #11
+   (enforced); FR-01.16 C (enforced-by-citation), #3 (enforced)/#3b
+   (downgraded, drift-tested), #6 (enforced-by-citation). 9 lines
+   accounted for; every downgrade (#8b, #10b, #3b) is drift-tested, none
+   gated.
+2. Error Handling — PASS after 7 external-review rounds. Every manifest
+   read path (project config parse failure, non-list/non-object splits,
+   unsafe/absolute/traversal split names, unreadable/missing spec.md,
+   corrupt scope field) now fails loud with an explicit CheckResult
+   instead of crashing or silently passing. 67 tests pin these paths.
+3. Security Basics — PASS. Path-traversal and Windows drive/root-relative
+   split names are rejected before ever reaching a filesystem join
+   (_is_safe_split_name); no secrets, no network/exec sinks; read-only
+   over project-local files.
+4. Test Quality — PASS. 67 tests total (18 pure-function, ~49 wiring),
+   each asserting the specific failing row/path/reason, not just ok/fail;
+   includes the real-producer bold-anchor+checkbox format (empirical
+   round-trip probe, not inferred from docstrings).
+5. Performance Basics — PASS with a noted inefficiency (GLM round 6,
+   non-blocking): _read_spec_texts is called once per gate (3x per run)
+   rather than cached across the 4 gates in one run_project_checks call —
+   O(splits) file reads, negligible at realistic split counts (single
+   digits), not fixed this round.
+6. Naming & Structure — PASS. Pure/wiring split mirrors the established
+   plan_gate_extras.py/design_gate_extras.py pattern; _project_gate_wiring.py
+   stayed under the 300-LOC guideline (298) via a shared _read_project_scope
+   helper extracted round 5 to remove duplication between the two
+   scope-aware gates.
+7. Affected Boundaries (ADR-024) — PASS, empirically probed. Boundary:
+   spec.md's FR table (Basis column, acceptance-criteria blocks) as
+   written by the REAL /shipwright-project producer (spec-generation.md
+   lines 175-330: "| ID | Area | Name | Priority | Description | Basis |
+   Layers |" header, "**FR-XX.YY: Name**" bold-label anchors, "- [ ]"
+   checkbox bullets — different from every OTHER test fixture in this
+   diff, which uses the also-supported "### FR-xx.yy" + "- (E)" heading
+   style). Ran a live round-trip probe constructing a spec.md snippet in
+   the exact real-producer shape (Area column, bold anchor, checkbox
+   bullets, a planted file-path violation) and called
+   basis_forbids_assumed / criteria_free_of_implementation_detail /
+   no_empty_split directly against it — all three fired correctly
+   (assumed-Basis caught, the planted violation caught specifically
+   inside the bold-anchor block, no false empty-split). Pinned as a
+   permanent regression test
+   (test_criteria_free_of_implementation_detail_reads_the_real_bold_anchor_shape).
+   Asymptote reached: one probe, one pass, no finding — the format-support
+   question this boundary exists to answer had a single deterministic
+   answer (fr_criteria.py's own dual-anchor regex support), not an
+   iterative bug hunt.

@@ -1,0 +1,52 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-test-results-orphan-triage",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 18285,
+      "total": 18344
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "data/record-only change (one triage.jsonl card + agent-doc bookkeeping); no source code, route, or UI touched, so there is no startable surface -- verification is the F0 full test suite."
+    },
+    "test_completeness": {
+      "status": "n/a",
+      "justification": "trivial complexity, auto per the phase matrix -- this run adds no new code or testable behavior (a triage card + agent-doc entries via existing, already-tested tooling)."
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
+    "commit": "263c9197e6428134ad4e97c55384bf5dad89cbc1",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
