@@ -17,9 +17,11 @@ import sys
 from typing import Callable
 
 from pr_review_dismiss import stamp_review_body
-from pr_review_lib import EXIT_ERROR, EXIT_OK, _redact
+from pr_review_lib import (
+    EXIT_BLOCK, EXIT_ERROR, EXIT_OK, _redact, nothing_reviewed_summary, render_comment, safe_path,
+)
 
-__all__ = ["finish_decision", "post_verdict"]
+__all__ = ["finish_decision", "handle_empty_diff", "handle_truncated_diff", "post_verdict"]
 
 
 def post_verdict(pr_number: int, repo: str, api_key: str, body: str, decision: str,
@@ -93,3 +95,68 @@ def finish_decision(pr_number: int, repo: str, api_key: str, decision: str, exit
             print(_redact(f"[pr_review] stale-verdict cleanup failed: {e}", api_key),
                   file=sys.stderr)
     return exit_code
+
+
+def handle_empty_diff(excluded: list[str], local_mode: bool, *,
+                       post_verdict_fn: Callable[[str, str, str], None],
+                       post_local_result_fn: Callable[[str, int, dict, str], int]) -> int:
+    """The "nothing to review" early exit. Split out of `pr_review.main()` to
+    keep that file under the file-size guideline
+    (iterate-2026-09-12-pr-review-local-preflight).
+
+    This script runs ONLY when the tier step decided the PR needs a review
+    (needs-review label, sensitive path, or external contributor — an
+    ordinary internal churn PR never reaches here). So a filtered diff that
+    came back empty means a PR that HAD to be reviewed was handed to the
+    model as nothing at all — and the system prompt answers an empty diff
+    with `approve` plainly: a green required check over an unread change.
+    The invariant is "the reviewer saw at least one file section" — NOT the
+    narrower "everything was filtered". An empty fetch, a `gh` body with no
+    `diff --git` header at all, and a fully-filtered PR are the same failure
+    from the model's side, so this always fails closed rather than calling
+    OpenRouter.
+
+    `post_verdict_fn` posts the CI-mode comment + review state (never called
+    in local mode, which only prints — see `pr_review_local`'s "preflight,
+    never a waiver" contract); `model=` in the rendered comment names who
+    reviewed, and nobody did on this branch, so it must not attribute the
+    verdict to a model that was never sent anything.
+    """
+    summary = nothing_reviewed_summary(excluded)
+    empty_body = render_comment({"decision": "block", "summary": summary},
+                                model="no model — nothing was sent", truncated=False,
+                                excluded_generated=excluded)
+    print(f"[pr_review] {summary}", file=sys.stderr)
+    if local_mode:
+        return post_local_result_fn("block", EXIT_BLOCK, {"summary": summary}, empty_body)
+    post_verdict_fn(empty_body, "block", summary)
+    return EXIT_BLOCK
+
+
+def handle_truncated_diff(reviewed, local_mode: bool, review: dict, body: str, *,
+                          post_local_result_fn: Callable[[str, int, dict, str], int]) -> int:
+    """A truncated diff is a PARTIAL review — the model never saw the whole
+    change. Split out of `pr_review.main()` for the same reason as
+    `handle_empty_diff` above.
+
+    For a required gate on an untrusted (external/sensitive) PR, neither
+    auto-passing nor trusting the partial verdict is safe: a large diff must
+    not be able to BYPASS review by exceeding the size cap, so this always
+    fails CLOSED (non-zero exit) rather than trusting `review`'s decision.
+    Until iterate-2026-06-17-pr-review-truncation-failclosed this returned
+    EXIT_OK — a silent size-bypass of the gate. The CI-mode comment + review
+    state were already posted by the caller before this is reached (a
+    partial review still leaves a trail); this only decides the exit path.
+    """
+    unseen = ", ".join(safe_path(p) for p in reviewed.omitted + reviewed.partial)
+    extra = f" (+{reviewed.unidentified} unnamed)" if reviewed.unidentified else ""
+    remedy = ("split the change or narrow --base/--diff-file before pushing" if local_mode
+             else "apply a trusted exact-head GitHub approval, a schema-valid review "
+                  "record with completed passes, and the `skip-pr-review` label; the "
+                  "label alone cannot override")
+    print(
+        "[pr_review] diff exceeded the review limit — failing closed. Not reviewed in "
+        f"full: {unseen or 'unidentifiable'}{extra}. {remedy}.", file=sys.stderr)
+    if local_mode:
+        return post_local_result_fn("block", EXIT_BLOCK, review, body)
+    return EXIT_BLOCK
