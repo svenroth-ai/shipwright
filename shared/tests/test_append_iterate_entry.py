@@ -21,7 +21,9 @@ from lib.iterate_entry import (
     iterates_dir,
     quarantine_dir,
     read_iterate_entries,
+    sort_key,
 )
+from lib.iterate_test_results import evidence_file_for
 from tools.append_iterate_entry import (
     ITERATE_RETENTION,
     IterateAppendError,
@@ -381,6 +383,41 @@ class TestRetention:
         # Directly invoke helper: no deletions expected.
         deleted = _apply_retention(tmp_path, keep_last=ITERATE_RETENTION)
         assert deleted == 0
+
+    def test_retention_sweeps_evidence_sibling_of_evicted_entries(self, tmp_path):
+        """Each evicted entry's immutable ``.test-results.json`` evidence file
+        must be swept too, or the evidence directory grows unbounded even
+        though the entry-file count stays capped (trg-b28a039c follow-up)."""
+        _seed_migrated_project(tmp_path)
+        _write_entries_directly(tmp_path, ITERATE_RETENTION + 1, "r")
+        entries_before = read_iterate_entries(tmp_path)
+        oldest = sorted(entries_before, key=sort_key)[0]
+        oldest_evidence = evidence_file_for(tmp_path, oldest["run_id"])
+        oldest_evidence.parent.mkdir(parents=True, exist_ok=True)
+        oldest_evidence.write_text(
+            json.dumps({"iterate_latest": {"run_id": oldest["run_id"]}}),
+            encoding="utf-8",
+        )
+
+        append_iterate_entry(
+            tmp_path, _canonical_entry(slug="last", date="2026-06-01T00:00:00Z")
+        )
+
+        assert not (iterates_dir(tmp_path) / f"{oldest['run_id']}.json").exists()
+        assert not oldest_evidence.exists(), (
+            "evicted entry's evidence sibling must be swept alongside its "
+            "entry file, not orphaned"
+        )
+
+    def test_apply_retention_survives_missing_evidence_sibling(self, tmp_path):
+        """No evidence file was ever installed for a swept entry (e.g. a
+        migrated legacy row) -- sweeping the sibling must not raise."""
+        _seed_migrated_project(tmp_path)
+        _write_entries_directly(tmp_path, ITERATE_RETENTION + 1, "t")
+
+        # No evidence files exist for any of these directly-seeded entries.
+        deleted = _apply_retention(tmp_path, keep_last=ITERATE_RETENTION)
+        assert deleted == 1
 
 
 # ---------------------------------------------------------------------------

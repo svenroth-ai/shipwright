@@ -1,0 +1,43 @@
+{
+  "run_id": "iterate-2026-09-12-retention-sibling-sweep",
+  "date": "2026-09-12T11:15:07.726539Z",
+  "event_at": "2026-09-12T06:38:21.111580+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/retention-sibling-sweep",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-retention-sibling-sweep",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "retention sweeps the evicted entry's immutable .test-results.json evidence sibling alongside its entry file",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_append_iterate_entry.py::TestRetention::test_retention_sweeps_evidence_sibling_of_evicted_entries PASSED"
+      },
+      {
+        "behavior": "sweeping a victim with no evidence sibling ever installed (e.g. a migrated legacy row) does not raise",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_append_iterate_entry.py::TestRetention::test_apply_retention_survives_missing_evidence_sibling PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 2,
+      "tested": 2,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 2,
+      "covered_acs": 2
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "internal retention bookkeeping fix in a Python monorepo tool (shared/scripts/tools/append_iterate_entry.py) -- no web/dev-server/CLI surface of its own to browser-verify; verified by the unit test suite (F0, canonical run_test_suite.py, GREEN)."
+  }
+}
