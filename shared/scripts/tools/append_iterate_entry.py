@@ -16,7 +16,9 @@ Behavior:
   happen inside a single ``file_lock`` held on the run-config lock file so
   concurrent same-worktree finalize calls are serialized.
 * Retention drops the oldest unpinned entries beyond ``ITERATE_RETENTION``
-  (~200, not exactly -- see the constant). Full history: ``shipwright_events.jsonl``
+  (~200, not exactly -- see the constant), sweeping each victim's entry file
+  AND its ``.test-results.json`` evidence sibling. Full history:
+  ``shipwright_events.jsonl``
 
 Canonical keys the caller may NOT set: ``run_id``, ``date`` (a full instant
 here, unlike ``phase_history``'s day-precision one) and ``event_at`` — Canon
@@ -62,6 +64,7 @@ from lib.iterate_entry import (  # noqa: E402
 )
 from lib.iterate_test_results import (  # noqa: E402
     EvidenceError,
+    evidence_file_for,
     install_current_evidence,
 )
 
@@ -262,10 +265,15 @@ def _recover_migration(
 
 
 def _apply_retention(project_root: Path, *, keep_last: int, pinned_run_ids: set[str] | None = None) -> int:
-    """Delete the oldest entry files beyond ``keep_last`` (sorted by
-    normalized UTC date, run_id tiebreaker).
+    """Delete the oldest entries beyond ``keep_last`` (sorted by normalized
+    UTC date, run_id tiebreaker) -- each victim's entry file AND its
+    immutable ``.test-results.json`` evidence sibling, so a swept run leaves
+    nothing behind for the other file class to accumulate unboundedly
+    (trg-b28a039c follow-up).
 
-    Pinned run IDs are skipped; returns the count of files actually deleted.
+    Pinned run IDs are skipped; returns the count of entry files actually
+    deleted (the evidence sibling, when present, is swept alongside each one
+    but does not add to the count).
     """
     entries = read_iterate_entries(project_root)
     pins = pinned_run_ids or set()
@@ -285,6 +293,13 @@ def _apply_retention(project_root: Path, *, keep_last: int, pinned_run_ids: set[
             continue
         except OSError:
             continue
+        try:
+            evidence_file_for(project_root, run_id).unlink()
+        except (EvidenceError, FileNotFoundError, OSError):
+            # No evidence was ever installed for this run (e.g. a migrated
+            # legacy row), or it is already gone from a raced-in sweep on
+            # another branch -- either way, not the entry file's problem.
+            pass
     return deleted
 
 

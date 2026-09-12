@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-retention-sibling-sweep",
+  "date": "2026-09-12",
+  "section": "shared/scripts/tools/append_iterate_entry.py",
+  "title": "Retention sweeps the entry file's evidence sibling too",
+  "context": "trg-b28a039c raised ITERATE_RETENTION 50->200 but deferred this: _apply_retention unlinked only the <run_id>.json entry file, never its <run_id>.test-results.json evidence sibling written by install_current_evidence, so the evidence file class grew unbounded (127 orphans measured 2026-09-12).",
+  "decision": "Retention stays in its current per-append shape; _apply_retention now also unlinks evidence_file_for(project_root, run_id) for each evicted entry, tolerating EvidenceError/FileNotFoundError/OSError (no evidence ever installed, or already raced away).",
+  "consequences": "Evidence files no longer outlive the entry that owns them once retention sweeps it. Sweep unit is now (entry, evidence) together, matching the sibling-write relationship install_current_evidence already establishes at append time. Backlog cleanup of the 127 pre-existing orphans is a separate follow-up (safe: nothing reads a deleted run's evidence).",
+  "rationale": "",
+  "rejected": "Removing retention entirely (as trg-b28a039c also floated) was rejected for this iterate: it survives in its current shape, so the sweep-unit question is answered as 'also unlink the sibling', not as part of a larger retention rework.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

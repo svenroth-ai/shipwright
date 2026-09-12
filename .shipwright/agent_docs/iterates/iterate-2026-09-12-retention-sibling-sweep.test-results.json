@@ -1,0 +1,71 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-retention-sibling-sweep",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 10691,
+      "total": 10691
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "internal retention bookkeeping fix in a Python monorepo tool (shared/scripts/tools/append_iterate_entry.py) -- no web/dev-server/CLI surface of its own to browser-verify; verified by the unit test suite (F0, canonical run_test_suite.py, GREEN)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "retention sweeps the evicted entry's immutable .test-results.json evidence sibling alongside its entry file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_append_iterate_entry.py::TestRetention::test_retention_sweeps_evidence_sibling_of_evicted_entries PASSED"
+        },
+        {
+          "behavior": "sweeping a victim with no evidence sibling ever installed (e.g. a migrated legacy row) does not raise",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_append_iterate_entry.py::TestRetention::test_apply_retention_survives_missing_evidence_sibling PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 2,
+        "tested": 2,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-retention-sibling-sweep",
+    "commit": "463f1bb800a21916ab7acc403125483176a2a008",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "BUG path (no formal spec doc). Implements exactly the fix the operator specified: _apply_retention now also unlinks each victim's evidence_file_for(...) sibling, unchanged unless retention itself is reworked (out of scope, deferred separately). No extra features added."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "The new sibling unlink is wrapped in try/except (EvidenceError, FileNotFoundError, OSError) so a legacy-shaped run_id (RUN_ID_LEGACY-only, no evidence ever installed) or a raced-away sibling cannot crash retention -- matches the existing entry-file unlink's own failure tolerance."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "n/a",
+      "note": "No user input, no SQL/HTML, no secrets. Path is derived from validated run_id via the existing evidence_file_for resolver, which already defends against traversal/symlink escape."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Two new tests assert outcomes (file presence/absence), not internals: test_retention_sweeps_evidence_sibling_of_evicted_entries (happy path -- sibling actually removed) and test_apply_retention_survives_missing_evidence_sibling (no sibling ever existed -- must not raise). Both were run RED against the pre-fix code first (only the happy-path one failed, confirming the bug), then GREEN after the fix. Full retention/append/race/overshoot suite (36 tests) still green."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "One extra unlink() syscall per evicted entry (bounded by keep_last churn per append, typically 0-1). No new loops, no N+1 pattern."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "No new files. append_iterate_entry.py (436->451 lines) and its test file (509->546) were already over the 300-line grandfathered bloat-baseline cap before this change; both entries were refreshed in shipwright_bloat_baseline.json to their new measured line counts (via the tool's own _file_newlines(), not wc -l) so the anti-ratchet pre-commit gate reads them as intentional, not a silent ratchet. Re-verified anti_ratchet_check.py --staged is clean."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No new serialized format or producer/consumer pair introduced. The change completes an existing deletion operation using the existing evidence_file_for(project_root, run_id) resolver -- the same path function install_current_evidence already writes through -- so there is no new boundary to round-trip probe. touches_io_boundary did not fire in classify_complexity.py's diff-driven detector."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'no findings', exit 0."
+    }
+  ]
+}
