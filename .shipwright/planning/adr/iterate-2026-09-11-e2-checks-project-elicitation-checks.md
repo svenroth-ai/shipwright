@@ -384,6 +384,29 @@ follows this repo's own `test_path_canon_windows.py` precedent —
 pytest.skip(...)` — since unprivileged symlink creation needs admin rights
 or Developer Mode on Windows; it skips here and is exercised by POSIX CI.
 
+## Tier-3 review history — stray review-transcript scratch files in the diff (PR #729)
+
+An eighth review pass flagged a different class of problem entirely: this
+sub-iterate's own working directory
+(`.shipwright/planning/iterate/iterate-2026-09-11-e2-checks-project-elicitation/`)
+had accumulated `code_review_output.json` and `code_review_output_round3.json`
+through `_round7.json`, plus `plan_review_output.json` — raw, ad-hoc dumps
+of review-tool output from earlier CLI invocations during this same PR's
+Tier-3 fix cycles, committed alongside genuine work. Each carries a
+`SHIPWRIGHT_VERDICT` field (`"approve"`/`"revise"`) that a contributor
+fully controls, in a location a future reader or automation could mistake
+for a trusted signal. Confirmed this is not the repo's actual convention:
+none of the other ~260 committed iterate folders under
+`.shipwright/planning/iterate/` carry a `code_review_output*.json` or
+`plan_review_output.json` file, and no script in `shared/` or `plugins/`
+reads either filename — the durable, tooling-read review record for this
+iterate is `reviews.json`, unaffected by this fix, already excluded from
+Tier-3 review as a generated/prior-record file. The seven stray files
+carried no information not already superseded by `reviews.json` and were
+deleted outright rather than kept as a "state=exception" baseline entry —
+there is no reason to retain committed debug output once its
+recommendations have already been read and acted on.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading
