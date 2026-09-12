@@ -132,24 +132,44 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-design/tests/test_check_design_gates.py",
+          "line": null,
+          "finding": "Nine double-blank-line separators between top-level function definitions were collapsed to single blank lines solely to keep the file at 297/300 LOC under the bloat budget, per the unit's own ADR (\"Consequences\" section). Not a lint violation (ruff's curated ruleset omits E302/E303) and not flagged as a baseline crossing, but it is formatting changed to dodge a metric rather than a genuine simplification.",
+          "suggestion": "Either accept the LOC crossing and register it in shipwright_bloat_baseline.json, or move content to the sibling split file instead of shrinking blank-line whitespace.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "plugins/shipwright-plan/tests/test_review_routing_contract.py",
+          "line": 62,
+          "finding": "test_self_review_fallback_only_runs_when_no_independent_review_completed (AC03) and test_architecture_reject_stops_and_asks_the_user_to_choose (AC11) assert only that specific phrases exist in a markdown reference doc (step-5-external-review.md) - they invoke no production code, so a runtime regression in the actual review-fallback/reject-STOP logic would not be caught by either test. Already raised by both external plan review and external code review (reviews.json findings) and dispositioned via the D7 drift-pin convention (documented, cited primary source). Not re-litigating the Stage-1 spec-compliance call, but flagging since it's a test-quality question in scope for this review: these bindings provide no mechanized safety net for the behavior they claim to prove.",
+          "suggestion": "No action required if the D7 convention is accepted campaign-wide; if a deterministic seam is ever found for AC03/AC11 (e.g. wiring an assertion against self_review_fallback_ran once something reads it), prefer binding to that over the text-pin.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-11T22:55:21.448347+00:00",
-      "disposition": "runner has no Agent tool; internal code-reviewer cascade runs at campaign-mode.md 3f-bis before merge (delegated_to_orchestrator)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-12T01:16:59.150394+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "inherit"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
+      "status": "not_applicable",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T22:55:21.556565+00:00",
-      "disposition": "runner has no Agent tool; internal doubt-reviewer cascade runs at campaign-mode.md 3f-bis before merge (delegated_to_orchestrator)",
+      "completed_at": "2026-09-12T01:17:05.984218+00:00",
+      "disposition": "test-only/documentation diff (AC marker bindings, baseline regen, mini-plan/ADR/decision-drop corrections); no migrations, async/concurrency, cross-plugin imports, or irreversible ops per iteration-reviews.md's doubt-reviewer threshold",
       "recorded_by": "none",
       "parse_status": null,
       "raw_excerpt": null
@@ -237,15 +257,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-11T22:55:21.317941+00:00",
-      "disposition": "runner has no Agent tool; internal spec-reviewer cascade runs at campaign-mode.md 3f-bis before merge (delegated_to_orchestrator)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-12T01:11:49.024034+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "inherit"
     },
     "plan_internal": {
       "review_type": "plan_internal",
