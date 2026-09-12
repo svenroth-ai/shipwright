@@ -38,7 +38,7 @@ import json
 from pathlib import Path
 
 from .common import CheckResult, Severity
-from ._test_gate_paths import _safe_project_file
+from ._test_gate_paths import _project_file_or_escape
 
 # ---------------------------------------------------------------------------
 # #5 — e2e counts reconciled against Playwright's own stats
@@ -105,8 +105,31 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
     module's counting rules ever change — see the note in its own docstring.
     """
     name = "e2e counts reconciled against the playwright tool's own stats"
-    results_path = _safe_project_file(project_root, "shipwright_test_results.json")
-    pw_path = _safe_project_file(project_root, "e2e-results.json")
+    results_path, results_escaped = _project_file_or_escape(project_root, "shipwright_test_results.json")
+    pw_path, pw_escaped = _project_file_or_escape(project_root, "e2e-results.json")
+
+    # Stage-2 code-reviewer (2026-09-12, PR #748 re-review): the Tier-3 CI
+    # fix that made a symlink-escaping design-fidelity-report.json FAIL
+    # instead of SKIP was never extended to this sibling check's own two
+    # fixed-name reads — an escaping file folded into the same None as a
+    # genuinely absent one, which could suppress the reconciliation (SKIP)
+    # or defeat the `skipped: true` contradiction check below (a None
+    # pw_path always contradicts nothing). Check both before either read
+    # falls through to its absence-handling branch.
+    if results_escaped:
+        return CheckResult(
+            name, False,
+            "shipwright_test_results.json exists but resolves outside the "
+            "project root (symlink escape) — treated as a suppression "
+            "attempt, not an absent artifact",
+        )
+    if pw_escaped:
+        return CheckResult(
+            name, False,
+            "e2e-results.json exists but resolves outside the project root "
+            "(symlink escape) — treated as a suppression attempt, not an "
+            "absent artifact",
+        )
 
     if results_path is None:
         if pw_path is not None:

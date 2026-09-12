@@ -201,6 +201,18 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
         # claim contradicted by real screens or a recorded triage block is
         # still the fabrication/staleness class this check exists to catch.
         screens_claim = design_fidelity.get("screens")
+        if screens_claim is not None and not isinstance(screens_claim, list):
+            # Stage-2 code-reviewer (2026-09-12, PR #748 re-review): a
+            # present-but-malformed `screens` value must FAIL here too, the
+            # same "malformed, not empty" discipline the non-skipped branch
+            # below already applies — otherwise this branch alone would
+            # treat a corrupted record identically to an honestly-absent one.
+            return CheckResult(
+                name, False,
+                "design_fidelity recorded as skipped, but its screens field "
+                f"is a {type(screens_claim).__name__}, not a list — "
+                "malformed, not empty",
+            )
         has_real_screens = isinstance(screens_claim, list) and any(
             isinstance(entry, dict) for entry in screens_claim
         )

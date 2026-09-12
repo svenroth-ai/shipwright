@@ -188,3 +188,16 @@ def test_junk_screen_entries_with_declared_build_screens_fails(tmp_path):
     r = check_design_fidelity_triage_matches_recomputation(tmp_path)
     assert r.ok is False
     assert "never actually covered them" in r.detail
+
+
+def test_skipped_layer_with_malformed_screens_value_fails_not_skips(tmp_path):
+    """Stage-2 code-reviewer (2026-09-12, PR #748 re-review): the honest-skip
+    branch above only recognised a contradiction in a LIST `screens` value —
+    a present-but-malformed one (a string, a dict, ...) fell through as "no
+    real screens" and SKIPped, inconsistent with the non-skipped branch's own
+    "malformed, not empty" discipline for the same field."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {"skipped": True, "screens": "not-a-list"})
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "malformed, not empty" in r.detail
