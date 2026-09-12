@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All 8 ACs implemented and test-pinned; AC8's trg-9583d3a8 closure lands as a follow-up append once this run's own PR exists, per the trg-aedcfe7b precedent's own actual closure process."},
+    {"name": "Error Handling", "verdict": "pass", "note": "build_rollout_snapshot never raises (degrades to an unresolved snapshot on any git failure); resolve_rollout_commit fails closed on a shallow clone, an empty commit hash, or any git failure."},
+    {"name": "Security Basics", "verdict": "pass", "note": "Git path/revision containment validated before every git show call. Trust-boundary caveat (Stage-3 doubt review + external code review, high): rollout instant is proven only by a target project's own commit timestamp, shared with the shipped precedent, disclosed and tracked as trg-4380c61a rather than silently passed over."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Real-git tests for commit resolution, snapshot reading (incl. the nested-project_root regression and the cross-project cache-collision regression), pure comparator-matrix tests, and real-git wiring-level end-to-end tests."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "build_rollout_snapshot is lazy (only invoked on a candidate hit) and process-cached by (project_root, sha)/(project_root, sha, path)."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "New modules follow the sibling-gate split precedent already established in this family; every new module and test file stays under the 300-LOC bloat-baseline guideline."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized format's shape changed; reads the existing spec.md text and manifest fields at one more, older git ref."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No findings on the diff."}
+  ]
+}

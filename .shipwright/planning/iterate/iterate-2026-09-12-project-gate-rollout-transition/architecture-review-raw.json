@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **The question, answered in one sentence.** No: this rollout/grandfather mechanism should not exist.\n\n2. **The smallest thing that would do** \u2014 leave the two universal gates hard-blocking and remediate any legacy `spec.md` violations when they are encountered.\n\n3. **What it costs to keep** \u2014 permanent historical-date and per-repo Git-resolution logic, plus an enduring advisory exception for technical debt.\n\n4. **What it forecloses** \u2014 reliable eventual enforcement of these hygiene rules across all project specifications.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: The proposed permanent Git-history exception buys relief from failures that are directly repairable in the affected specification, while allowing unchanged legacy violations to remain indefinitely.\nSuggestion: Choose option C; fix legacy violations in place and retain uniform hard enforcement.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **The question, answered in one sentence.** Yes \u2014 a grandfather rule for these two gates is the right call, and the resolved-commit design is the correct shape; the alternative (a blanket extension-scope skip) is smaller but wrong, and doing nothing leaves a real regression for adopt-ed projects.\n\n2. **The smallest thing that would do.** What's proposed is close to it: lazy, per-hit git-history identity check against a fixed epoch, scoped to exactly the two gates named in the finding. The only genuinely smaller alternative would be a per-project suppression list (authors of legacy content mark their own rows once), which trades automatic correctness for a file humans must curate \u2014 worse, since it needs someone to notice and apply it. Option B (permanent `scope=extension` skip) is smaller in code but permanently excuses *future* extension-scope violations of rules that are stated as universal; that's a standing lie in the gate family, not a transition. Option C leaves newly-onboarded projects hard-failing on content that predates the gate \u2014 a real, user-facing breakage, not hypothetical.\n\n3. **What it costs to keep.** A fixed wall-clock epoch constant, a per-project git-resolution routine, and two new `GateResult` fields that every future maintainer of this gate family must know about. Notably, the mechanism can never be safely removed: any repo with history before 2026-09-12 keeps resolving against it forever, so this is a permanent resident, not a scaffolding tear-down.\n\n4. **What it forecloses.** Mostly none. The lazy-call and optional-parameter design means clean runs and other gates are untouched. One mild note: the third parallel rollout mechanism (`_layer_coverage_rollout`, `_project_gate_rollout`, plus the binding-completeness one) is now three copies of the same idea \u2014 the next gate family that needs this will face a stronger temptation to finally factor a shared primitive, and this module's \"deliberately standalone\" rationale makes that refactor slightly harder to argue.\n\n5. **Findings.**\n\n- Category: proportionality\n- Severity: low\n- Finding: The mechanism is permanent but the transition it serves is one-time; nothing in the spec records when (if ever) it could be retired, and the fail-open \"no rollout commit \u2192 no grace\" direction means a shallow-cloned legacy project silently loses its grandfather and hard-fails on old content.\n- Suggestion: Document the retirement condition explicitly (e.g., \"safe to delete once no active project has commits before the epoch\"), and consider having the fail-open case emit an advisory note naming the shallow-clone cause so its breakage is at least noticeable rather than silent.\n\nNo other findings. The scope is tightly bounded to the two gates named in the finding, the laziness keeps the cost off clean runs, and rejecting option B for over-breadth is correct.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "reject",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": true,
+    "comparable": true,
+    "requires_resolution": true,
+    "reason": "reviewers contradict each other: glm=approve, openai=reject"
+  }
+}

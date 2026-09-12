@@ -1,0 +1,100 @@
+{
+  "run_id": "iterate-2026-09-12-project-gate-rollout-transition",
+  "date": "2026-09-12T19:28:58.585993Z",
+  "event_at": "2026-09-12T19:28:00.357616+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "history",
+  "branch": "iterate/project-gate-rollout-transition",
+  "spec": ".shipwright/planning/iterate/2026-09-12-project-gate-rollout-transition.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-project-gate-rollout-transition",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "commit resolution: before/at/after cutoff, empty ref, unresolvable ref",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout.py"
+      },
+      {
+        "behavior": "shallow-clone refusal (real --depth 1 clone over a file:// URL, verified via --is-shallow-repository)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout.py::test_resolve_rollout_commit_none_for_a_shallow_clone"
+      },
+      {
+        "behavior": "SHA cache keyed by a concrete commit, never the symbolic HEAD",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout.py::test_cached_rollout_sha_caches_by_root_and_commit"
+      },
+      {
+        "behavior": "git's own --before answer is re-verified in Python and refused if it lies",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout.py::test_resolve_rollout_commit_none_when_gits_before_answer_postdates_cutoff"
+      },
+      {
+        "behavior": "nested project_root spec-text + manifest reads resolve correctly (the git show/-C path-resolution fix)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout_snapshot.py (nested-project_root tests)"
+      },
+      {
+        "behavior": "declared-split-names manifest priority + fallback + malformed-at-rollout handling",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout_snapshot.py"
+      },
+      {
+        "behavior": "historical spec-text read cache keyed by (sha, path)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_rollout_snapshot.py::test_spec_text_is_cached_by_sha_and_path"
+      },
+      {
+        "behavior": "grace comparator matrix: identity match/refuse, cosmetic-title tolerance, repurposed-id refusal, split declaration requirement",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_grace.py"
+      },
+      {
+        "behavior": "#5/#10 pure-function grace partitioning: per-criterion membership, mixed hard+graced result, no-rollout fallback",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_extras_rollout.py"
+      },
+      {
+        "behavior": "end-to-end wiring: the CheckResult itself downgrades for pre-existing content, and a genuinely new post-rollout violation still hard-blocks",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_wiring_rollout.py"
+      },
+      {
+        "behavior": "#4/#15 (check_basis_forbids_assumed) and #11 (check_starting_guidance_present) are behaviorally untouched",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_basis_and_guidance.py, shared/tests/test_project_gate_extras.py (unmodified except the #5/#10 tests moving out; full shared/tests re-run: 10743 passed, 0 failed)"
+      },
+      {
+        "behavior": "trg-b996bc21 post-merge fix: verify_phase.py's own argv->dispatch->blocking->sys.exit path (cross-component machinery per integration_coverage.py's own pattern list) correctly composes with ReportSummary.strict_blocking_warnings -- a fully graced (strict_exempt) warning does not block --strict, a genuine warning still does, and an error still blocks alongside a graced warning",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_verify_phase_strict.py (main() invoked end-to-end with real argv/argparse/sys.exit, only dispatch_project monkeypatched)"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 7,
+      "covered_acs": 7
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure Python verifier logic + git-history resolution inside the Shipwright framework itself; no startable web/cli/api surface for a target project exists to run against -- same as every sibling gate in this family and the binding-completeness-rollout-transition precedent, all surface:none for the identical reason."
+  },
+  "declared_removals": [
+    {
+      "path": "shared/tests/test_project_gate_extras.py",
+      "reason": "FR-01.02 #5/#10 tests (criteria_free_of_implementation_detail, no_empty_split) moved verbatim, including their @pytest.mark.covers tags, to the new shared/tests/test_project_gate_extras_rollout.py alongside the module split (trg-9583d3a8) -- not deleted, relocated in the same commit."
+    }
+  ]
+}

@@ -1077,7 +1077,7 @@
     {
       "path": "shared/scripts/tools/verifiers/common.py",
       "limit": 300,
-      "current": 737,
+      "current": 757,
       "state": "grandfathered",
       "adr": null
     },
@@ -1603,7 +1603,7 @@
     {
       "path": "shared/tests/test_verifiers_common.py",
       "limit": 300,
-      "current": 492,
+      "current": 517,
       "state": "grandfathered",
       "adr": null
     },

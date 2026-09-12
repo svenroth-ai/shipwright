@@ -1,6 +1,11 @@
 """Tests for ``shared/scripts/tools/verifiers/_project_gate_extras.py`` — the
-four pure /shipwright-project Step-8 gates closing FR-01.02 #4/#15, #5, #10
-and #11 (req3-06-enforcement-mono, sub-iterate e2-checks-project-elicitation).
+two pure /shipwright-project Step-8 gates closing FR-01.02 #4/#15 and #11
+(req3-06-enforcement-mono, sub-iterate e2-checks-project-elicitation).
+
+#5 (``criteria_free_of_implementation_detail``) and #10 (``no_empty_split``)
+moved to ``test_project_gate_extras_rollout.py`` on 2026-09-12
+(`trg-9583d3a8`), the moment their own module split out of this one to carry
+rollout-transition grace.
 """
 
 from __future__ import annotations
@@ -112,129 +117,6 @@ def test_basis_forbids_assumed_across_multiple_specs_names_every_hit():
     assert result.ok is False
     assert "FR-01.01" in result.detail
     assert "FR-02.01" in result.detail
-
-
-# --------------------------------------------------------------------------- #
-# criteria_free_of_implementation_detail — #5
-# --------------------------------------------------------------------------- #
-
-
-@pytest.mark.covers("FR-01.02/AC08")
-def test_criteria_free_of_implementation_detail_passes_on_clean_criteria():
-    text = (
-        _HEADER + _row("FR-01.01", "interview") + "\n"
-        "### FR-01.01\n"
-        "- (E) Given a signed-in customer, when they request an export, "
-        "then a file download begins within five seconds.\n"
-    )
-    result = ext.criteria_free_of_implementation_detail({"spec.md": text})
-    assert result.ok is True
-
-
-def test_criteria_free_of_implementation_detail_fails_on_a_file_path():
-    text = (
-        _HEADER + _row("FR-01.01", "interview") + "\n"
-        "### FR-01.01\n"
-        "- (E) Given the handler in export_service.py, when it runs, "
-        "then a file is written.\n"
-    )
-    result = ext.criteria_free_of_implementation_detail({"spec.md": text})
-    assert result.ok is False
-    assert "FR-01.01" in result.detail
-    assert "file-path" in result.detail
-
-
-def test_criteria_free_of_implementation_detail_fails_on_an_adr_reference():
-    text = (
-        _HEADER + _row("FR-01.01", "interview") + "\n"
-        "### FR-01.01\n"
-        "- (E) Given ADR-042 was accepted, when export runs, then it uses "
-        "the chosen queue.\n"
-    )
-    result = ext.criteria_free_of_implementation_detail({"spec.md": text})
-    assert result.ok is False
-    assert "adr-number" in result.detail
-
-
-@pytest.mark.covers("FR-01.02/AC08")
-def test_criteria_free_of_implementation_detail_fails_on_a_code_symbol():
-    text = (
-        _HEADER + _row("FR-01.01", "interview") + "\n"
-        "### FR-01.01\n"
-        "- (E) Given export_widget_batch runs, when it completes, then a "
-        "receipt is written.\n"
-    )
-    result = ext.criteria_free_of_implementation_detail({"spec.md": text})
-    assert result.ok is False
-    assert "code-symbol" in result.detail
-
-
-def test_criteria_free_of_implementation_detail_passes_when_no_criteria_anchored():
-    """A row with no ``### FR-xx.yy`` criteria block at all yields no
-    criteria to score — this check is not I6 (does an FR have criteria)."""
-    text = _HEADER + _row("FR-01.01", "interview")
-    result = ext.criteria_free_of_implementation_detail({"spec.md": text})
-    assert result.ok is True
-
-
-def test_criteria_free_of_implementation_detail_reads_the_real_bold_anchor_shape():
-    """Round-trip probe (ADR-024): ``spec-generation.md``'s ACTUAL template
-    anchors criteria with ``**FR-XX.YY: Name**`` + ``- [ ]`` checkboxes, not
-    the ``### FR-xx.yy`` + ``- (E)`` shape every other fixture in this file
-    uses — both are supported by ``fr_criteria``'s own regexes, but only this
-    test pins the format the real producer emits, with a real ``Area`` column
-    too."""
-    text = (
-        "| ID | Area | Name | Priority | Description | Basis | Layers |\n"
-        "|---|---|---|---|---|---|---|\n"
-        "| FR-01.01 | Auth | Password reset | Must | Let a user reset a "
-        "forgotten password. | interview | unit |\n\n"
-        "### Acceptance Criteria\n\n"
-        "**FR-01.01: Password reset**\n"
-        "- [ ] Given a user requests a reset, when they submit a valid "
-        "email, then a reset link is sent.\n"
-        "- [ ] Given the handler in reset_service.py runs, when it "
-        "completes, then a token record is written.\n"
-    )
-    result = ext.criteria_free_of_implementation_detail({"spec.md": text})
-    assert result.ok is False
-    assert "FR-01.01" in result.detail
-    assert "file-path" in result.detail
-
-
-# --------------------------------------------------------------------------- #
-# no_empty_split — #10
-# --------------------------------------------------------------------------- #
-
-
-@pytest.mark.covers("FR-01.02/AC13")
-def test_no_empty_split_passes_when_every_spec_has_a_row():
-    texts = {
-        "01-a/spec.md": _HEADER + _row("FR-01.01", "interview"),
-        "02-b/spec.md": _HEADER + _row("FR-02.01", "code"),
-    }
-    result = ext.no_empty_split(texts)
-    assert result.ok is True
-
-
-@pytest.mark.covers("FR-01.02/AC13")
-def test_no_empty_split_fails_when_one_split_has_no_active_fr_row():
-    texts = {
-        "01-a/spec.md": _HEADER + _row("FR-01.01", "interview"),
-        "02-b/spec.md": "# spec\n\nNothing here yet.\n",
-    }
-    result = ext.no_empty_split(texts)
-    assert result.ok is False
-    assert "02-b/spec.md" in result.detail
-    assert "01-a/spec.md" not in result.detail
-
-
-def test_no_empty_split_treats_a_removed_only_row_as_empty():
-    text = (
-        "## Removed Requirements\n\n" + _HEADER + _row("FR-01.01", "interview")
-    )
-    result = ext.no_empty_split({"01-a/spec.md": text})
-    assert result.ok is False
 
 
 # --------------------------------------------------------------------------- #

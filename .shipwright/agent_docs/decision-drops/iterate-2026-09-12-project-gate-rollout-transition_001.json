@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-project-gate-rollout-transition",
+  "date": "2026-09-12",
+  "section": "Iterate — change: FR-01.02 #5/#10 rollout-transition grace",
+  "title": "One-time rollout transition grace for FR-01.02 #5/#10",
+  "context": "Stage-2 code review on PR #729 (trg-9583d3a8): check_criteria_free_of_implementation_detail (#5) and check_no_empty_split (#10) are unconditional hard blocks, unlike check_basis_forbids_assumed/check_starting_guidance_present. An extension project's pre-existing spec.md content, written before these gates existed, can hard-fail Step 8 for unrelated legacy content. A permanent scope==extension skip was ruled out: neither gate is greenfield-only.",
+  "decision": "One-time, per-repo rollout-transition grace mirroring the check_binding_completeness precedent (PR #721), adapted to text/count identity: per-criterion string membership for #5, declared-split+zero-rows-at-rollout for #10. New modules _project_gate_rollout.py/_project_gate_rollout_snapshot.py/_project_gate_grace.py/_project_gate_extras_rollout.py. Fixed epoch 2026-09-12T06:23:06Z (PR #729's merge commit).",
+  "consequences": "Pre-existing extension-scope content violating #5/#10 now downgrades to advisory; content authored/edited after the rollout instant is judged normally at every scope. #4/#15/#11 untouched. Two follow-up triage cards minted: trg-ac2ef362 (adopt AC-miner still gets no grace) and trg-fcb3ee97 (a third near-identical rollout-resolver copy now exists).",
+  "rationale": "",
+  "rejected": "A permanent scope==extension skip (excuses future violations too) and doing nothing (leaves a measured regression for adopt-ed projects) — both rejected; see the full ADR for the glm/openai architecture-review contradiction and its resolution.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-project-gate-rollout-transition.md"
+}

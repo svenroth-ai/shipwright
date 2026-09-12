@@ -1,0 +1,1 @@
+`/shipwright-project` Step 8's `check_criteria_free_of_implementation_detail` (FR-01.02 #5) and `check_no_empty_split` (FR-01.02 #10) no longer hard-block on pre-existing `spec.md` content written before these two gates existed — a one-time, per-repo rollout-transition grace downgrades such a hit to advisory, matching the precedent already shipped for `check_binding_completeness`

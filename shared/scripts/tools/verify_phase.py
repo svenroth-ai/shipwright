@@ -195,7 +195,13 @@ def main() -> None:
     print(format_report(title, results))
 
     summary = summarise(results)
-    blocking = summary.errors > 0 or (args.strict and summary.warnings > 0)
+    # `strict_blocking_warnings` excludes `CheckResult.strict_exempt` findings
+    # (a rollout-transition grace, a layer-coverage advisory-collision/legacy
+    # warning, a plan-gate migration notice) — a gate family that set that
+    # flag already decided `--strict` must not promote it (trg-b996bc21: a
+    # direct `--phase project --strict` call used to hard-block on a fully
+    # graced legacy violation, contradicting that flag's own contract).
+    blocking = summary.errors > 0 or (args.strict and summary.strict_blocking_warnings > 0)
     sys.exit(1 if blocking else 0)
 
 
