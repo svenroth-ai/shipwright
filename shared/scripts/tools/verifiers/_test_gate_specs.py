@@ -107,7 +107,11 @@ def check_e2e_specs_exist_when_journeys_planned(project_root: Path) -> CheckResu
             # file — a real empirical probe (Step 3.8, confidence
             # calibration) caught this false-negative before it shipped.
             text = plan_file.read_text(encoding="utf-8-sig")
-        except OSError:
+        except (OSError, UnicodeDecodeError):
+            # Tier-3 CI review (PR #748, round 6): UnicodeDecodeError is a
+            # ValueError, not an OSError -- a plan file with invalid UTF-8
+            # bytes previously crashed the whole gate instead of being
+            # treated like any other unreadable file.
             continue
         if _plan_declares_a_flow(text):
             plans_with_flows += 1

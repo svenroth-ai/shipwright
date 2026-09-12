@@ -108,7 +108,7 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
 
     try:
         build_report = json.loads(report_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
         return CheckResult(name, False, f"malformed design-fidelity-report.json: {exc}")
     if not isinstance(build_report, dict):
         # Tier-3 CI review, round 3 (PR #748): a valid JSON document whose
@@ -140,7 +140,7 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
 
     try:
         recorded = json.loads(results_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
         return CheckResult(name, False, f"malformed shipwright_test_results.json: {exc}")
     if not isinstance(recorded, dict):
         # Tier-3 CI review, round 3 (PR #748): same class of gap as the

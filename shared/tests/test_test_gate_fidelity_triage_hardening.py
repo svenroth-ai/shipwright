@@ -245,3 +245,24 @@ def test_boolean_triage_counts_are_reported_as_malformed_not_coerced(tmp_path):
     r = check_design_fidelity_triage_matches_recomputation(tmp_path)
     assert r.ok is False
     assert "not a non-negative integer" in r.detail
+
+
+def test_invalid_utf8_build_report_fails_as_malformed_not_crashed(tmp_path):
+    """Tier-3 CI review (PR #748, round 6): UnicodeDecodeError is a
+    ValueError, not an OSError, so design-fidelity-report.json with invalid
+    UTF-8 bytes used to crash the whole gate instead of returning a
+    malformed CheckResult like any other unreadable file."""
+    (tmp_path / "design-fidelity-report.json").write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    _write_test_results(tmp_path, None)
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "malformed design-fidelity-report.json" in r.detail
+
+
+def test_invalid_utf8_test_results_fails_as_malformed_not_crashed(tmp_path):
+    """Same class of gap for the sibling shipwright_test_results.json read."""
+    _write_build_report(tmp_path, {})
+    (tmp_path / "shipwright_test_results.json").write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "malformed shipwright_test_results.json" in r.detail

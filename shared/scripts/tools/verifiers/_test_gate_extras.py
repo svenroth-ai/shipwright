@@ -83,7 +83,7 @@ def _skipped_claim_contradicted_by_evidence(pw_path: Path | None) -> tuple[int, 
         return 0, None
     try:
         pw_data = json.loads(pw_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
         return 0, f"exists but is malformed/unreadable ({exc})"
     stats = pw_data.get("stats") if isinstance(pw_data, dict) else None
     if not isinstance(stats, dict):
@@ -153,7 +153,7 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
 
     try:
         recorded = json.loads(results_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
         return CheckResult(name, False, f"malformed shipwright_test_results.json: {exc}")
 
     e2e = recorded.get("e2e") if isinstance(recorded, dict) else None
@@ -212,7 +212,7 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
 
     try:
         pw_data = json.loads(pw_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
         return CheckResult(name, False, f"malformed e2e-results.json: {exc}")
 
     stats = pw_data.get("stats") if isinstance(pw_data, dict) else None

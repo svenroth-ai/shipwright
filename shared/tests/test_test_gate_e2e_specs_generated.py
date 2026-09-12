@@ -66,6 +66,18 @@ def test_skips_when_plan_declares_no_flows(tmp_path):
     assert "none declare a flow" in r.detail
 
 
+def test_invalid_utf8_plan_file_is_skipped_not_crashed(tmp_path):
+    """Tier-3 CI review (PR #748, round 6): UnicodeDecodeError is a
+    ValueError, not an OSError, so a plan file with invalid UTF-8 bytes used
+    to crash the whole gate instead of being treated like any other
+    unreadable file (folded into "no plan declares a flow")."""
+    path = _write_plan(tmp_path, _PLAN_WITH_FLOW)
+    path.write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+    assert r.is_skipped
+    assert "none declare a flow" in r.detail
+
+
 def test_skips_when_plan_has_no_user_flows_section_at_all(tmp_path):
     _write_plan(tmp_path, _PLAN_NO_SECTION)
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)

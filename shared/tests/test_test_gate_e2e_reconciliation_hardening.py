@@ -79,3 +79,35 @@ def test_skipped_layer_contradiction_check_not_defeated_by_an_escaping_pw_result
         assert "symlink escape" in r.detail
     finally:
         outside.unlink(missing_ok=True)
+
+
+def test_invalid_utf8_test_results_fails_as_malformed_not_crashed(tmp_path):
+    """Tier-3 CI review (PR #748, round 6): UnicodeDecodeError is a
+    ValueError, not an OSError, so shipwright_test_results.json with invalid
+    UTF-8 bytes used to crash the whole gate instead of returning a
+    malformed CheckResult like any other unreadable file."""
+    _write_pw_results(tmp_path, {"expected": 1, "unexpected": 0, "skipped": 0, "flaky": 0})
+    (tmp_path / "shipwright_test_results.json").write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "malformed shipwright_test_results.json" in r.detail
+
+
+def test_invalid_utf8_pw_results_fails_as_malformed_not_crashed(tmp_path):
+    """Same class of gap for the sibling e2e-results.json read."""
+    (tmp_path / "e2e-results.json").write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    _write_test_results(tmp_path, {"total": 1, "passed": 1, "flaky": 0})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "malformed e2e-results.json" in r.detail
+
+
+def test_invalid_utf8_pw_results_under_skipped_claim_fails_not_crashed(tmp_path):
+    """Same class of gap for the skipped-claim evidence reader
+    (`_skipped_claim_contradicted_by_evidence`), the third of the three
+    read_text(encoding=...) call sites in this file."""
+    (tmp_path / "e2e-results.json").write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    _write_test_results(tmp_path, {"skipped": True})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "malformed/unreadable" in r.detail
