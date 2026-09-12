@@ -106,12 +106,19 @@ def _attempt_delivery(
         return "not_delivered", f"push failed: {push.stderr.strip()[:300]}", "", branch
 
     repo_args = _repo_args(worktree_path)
+    # Built outside the list literal (not adjacent string literals inside
+    # it) so CodeQL's "implicit string concatenation in a list" heuristic —
+    # aimed at a missing comma between what should be separate list
+    # elements — does not misread this deliberate one-string body text
+    # (external review, PR #725 round 13; GHAS alert #1389).
+    pr_body = (
+        "Opportunistic FR Layers promotion from CI-confirmed execution "
+        "evidence, opened at iterate worktree setup — see "
+        "shared/scripts/tools/promote_required_layers.py."
+    )
     create = gh(
         ["pr", "create", "--base", default_branch, "--head", branch,
-         "--title", subject, "--body",
-         "Opportunistic FR Layers promotion from CI-confirmed execution "
-         "evidence, opened at iterate worktree setup — see "
-         "shared/scripts/tools/promote_required_layers.py.", *repo_args],
+         "--title", subject, "--body", pr_body, *repo_args],
         cwd=worktree_path,
     )
     if create.returncode != 0:
