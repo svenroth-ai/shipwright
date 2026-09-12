@@ -225,7 +225,6 @@ ROUND_FILE = (
 # test_check_design_gates_tier3_review.py — kept out of this file's budget.
 
 
-@pytest.mark.covers("FR-01.04/AC10")
 def test_a_flagged_screen_left_untouched_fails(project, tmp_path):
     _git_init(project)
     _git(project, "add", "-A")

@@ -75,11 +75,13 @@ def test_neither_reviewer_answering_fails_loudly_not_a_pass(planning):
     assert any("neither reviewer answered" in p for p in _problems(out, "review"))
 
 
-@pytest.mark.covers("FR-01.03/AC20")
 def test_a_historical_schema_marker_is_still_read_truthfully(planning):
-    """FR-01.03/AC20: an older marker recorded under a prior reviewer roster
-    (schema 3, deepseek/openai) remains readable as historical evidence — it
-    is not rejected merely for predating the current glm/openai contract."""
+    """An older marker recorded under a prior reviewer roster (schema 3,
+    deepseek/openai) remains readable as historical evidence — it is not
+    rejected merely for predating the current glm/openai contract. Not bound
+    to FR-01.03/AC20: that AC names deepseek/openai as the CURRENT roster,
+    which is no longer true (Stage-1 spec-review REJECT, see seam survey
+    Exception 6)."""
     (planning / "external_review_state.json").write_text(
         json.dumps({
             "status": "completed", "provider": "openrouter",
@@ -93,11 +95,12 @@ def test_a_historical_schema_marker_is_still_read_truthfully(planning):
     assert run_gates(planning, "review")[0] == 0
 
 
-@pytest.mark.covers("FR-01.03/AC20")
 def test_a_current_schema_marker_cannot_borrow_a_historical_reviewer_name(planning):
-    """FR-01.03/AC20: the CURRENT roster (glm/openai) is never hidden behind
-    a historical name — a schema-4 marker naming the old gemini/openai pair
-    is a contract mismatch, not a quiet alias."""
+    """The CURRENT roster (glm/openai) is never hidden behind a historical
+    name — a schema-4 marker naming the old gemini/openai pair is a contract
+    mismatch, not a quiet alias. Not bound to FR-01.03/AC20 (see seam survey
+    Exception 6): that AC names a different current roster than the one this
+    codebase actually runs."""
     (planning / "external_review_state.json").write_text(
         json.dumps({
             "status": "completed", "provider": "openrouter",

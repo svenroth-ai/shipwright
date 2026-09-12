@@ -158,6 +158,23 @@ its file path inline) was recorded as a `## Learnings` one-liner in
 `## Convention Updates` bullet — it is a review-authoring gotcha, not a
 structural change to the codebase itself.
 
+## Correction (Stage-1 spec-review REJECT, 2026-09-12)
+
+The orchestrator's spec-reviewer rejected this unit's first push: 2 of the 32
+bound ACs claimed above (`FR-01.04/AC10`, `FR-01.03/AC20`) were unfaithful
+bindings — AC10's bound test proves a narrower guarantee than the AC states
+(the production gate deliberately doesn't enforce "others left untouched");
+AC20's bound tests prove the current reviewer roster (glm/openai), not the
+roster the AC's text names (DeepSeek/OpenAI) — the same obsolete-provider
+situation as this unit's own AC21, given the opposite treatment. Both markers
+were removed (the tests themselves are unchanged and still run); both ACs are
+now unbound with a recorded reason in the seam survey (Exception 6, amended;
+Exception 7, new). This unit's actual final count is **30 of 33 bound**, not
+32/33 as first claimed above — see the mini-plan's "Stage-1 spec-review
+REJECT" section for the full disposition. The original "Decision" and
+"Self-Review" sections below are left as originally written (the historical
+record of what was first submitted), not retroactively edited.
+
 ## Self-Review (Step 3.6)
 
 1. **Spec Compliance** — pass. Bound 32/33 FR-01.03+FR-01.04 ACs per spec.md's

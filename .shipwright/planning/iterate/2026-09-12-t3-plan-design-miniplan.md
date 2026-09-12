@@ -93,7 +93,7 @@ not something this unit can resolve by picking a nearby test.
 | AC17 | plan | `test_check_plan_gates.py::test_boundary_fails_on_a_production_path` |
 | AC18 | plan | `test_check_plan_gates_sections.py::test_no_planning_decision_logged_fails` |
 | AC19 | plan | `test_check_plan_gates_reviewers.py::test_a_reviewer_that_never_answered_is_recorded_unavailable_not_reviewed` / `test_neither_reviewer_answering_fails_loudly_not_a_pass` (new) |
-| AC20 | plan | `test_check_plan_gates_reviewers.py::test_a_historical_schema_marker_is_still_read_truthfully` / `test_a_current_schema_marker_cannot_borrow_a_historical_reviewer_name` (new) |
+| AC20 | **not bound — recorded reason (Stage-1 spec-review REJECT, corrected)** | AC20 names DeepSeek/OpenAI as the current roster; both tests below actually prove the CURRENT roster (glm/openai), not the AC's named one — same obsolete-provider situation as AC21. See seam survey Exception 6. The two tests remain (unmarked) as genuine, valuable coverage of the current-roster guarantee: `test_check_plan_gates_reviewers.py::test_a_historical_schema_marker_is_still_read_truthfully` / `test_a_current_schema_marker_cannot_borrow_a_historical_reviewer_name` |
 | AC21 | **not bound — recorded reason** | see "Approach" above; DeepSeek is no longer part of `/shipwright-plan`'s reviewer roster |
 
 ### FR-01.04 (/shipwright-design)
@@ -109,7 +109,7 @@ not something this unit can resolve by picking a nearby test.
 | AC07 | design | `test_setup_design.py::test_preview_approval_gate_always_stops_for_a_human` (new — real `resolve_gate_policy.py` CLI, `design.preview-approval`) |
 | AC08 | design | `test_setup_design.py::test_review_loop_finalize_gate_always_stops_for_a_human` (new — `design.review-loop-finalize`) |
 | AC09 | design | `test_check_design_gates.py::test_a_modified_upload_fails` |
-| AC10 | design | `test_check_design_gates.py::test_a_flagged_screen_left_untouched_fails` / `test_a_flagged_screen_actually_touched_passes` |
+| AC10 | **not bound — recorded reason (Stage-1 spec-review REJECT, corrected)** | AC10 says "the others are left untouched"; the gate it calls (`iteration_touched_flagged_screens`) deliberately treats extra touched screens as a warning, not a failure (Chrome Change Propagation legitimately touches every screen). The production code cannot make AC10's full claim true, so binding it would be a test shaped around the implementation, not the AC. See seam survey Exception 7. `test_check_design_gates.py::test_a_flagged_screen_left_untouched_fails` / `test_a_flagged_screen_actually_touched_passes` remain (unmarked) as genuine coverage of the narrower, actually-enforced behavior |
 | AC11 | design | `test_requirement_writeback_gate.py::test_declaring_a_behaviour_change_without_correcting_the_requirement_is_refused` / `test_declaring_a_behaviour_change_after_correcting_the_requirement_is_accepted` (new — real `record_requirement_impact.py` / `check_design_round_declarations.py` CLIs) |
 | AC12 | design | `test_check_design_gates.py::test_boundary_fails_on_a_production_path` |
 
@@ -210,3 +210,27 @@ below as `unavailable`, not silently dropped.
 | 5 | glm | medium | AC21's recorded reason is prose-only; the baseline schema has no per-entry reason field | rejected-with-reason — unchanged from Step 3.5 disposition #4: documented, campaign-wide schema gap (t0 seam-survey Finding 5; t2's identical disposition), not scoped to this unit. |
 | 6 | glm | low | `dashboard.md`/`test-evidence.md`'s reported "latest full suite" count dropped from 18613/18671 to 11604/11647 with no stated reason | accepted-and-fixed, same remedy as #1 — verified the drop was pre-existing/structural (the *committed* state already read a stale `iterate-2026-09-11-e1-checks-plan-design` snapshot; `update_compliance.py --phase build` correctly refreshed it from the most recently completed iterate's own F5 ledger), then reverted both files along with the rest of the compliance-report regen sweep, per t1/t2 precedent. Neither file is part of this diff. |
 | 7 | glm | low | AC20's historical-schema test hardcodes `deepseek`/`gemini`/`glm`/`openai` a second time instead of deriving from the production roster | accepted-and-fixed — `test_check_plan_gates_reviewers.py` now imports `REVIEWERS` / `HISTORICAL_REVIEWER_PAIRS` from `shared/scripts/lib/review_verdict.py` and derives every reviewer name used in its four tests from those constants, so a future roster change (as already happened once: deepseek → glm) cannot leave these tests silently pinning a name the production code no longer recognizes. |
+
+## Stage-1 spec-review REJECT (2026-09-12) — 2 bindings corrected
+
+The orchestrator's spec-reviewer, checking every marker against `spec.md`'s
+actual AC text and each test's actual body, REJECTed the first push with two
+findings. Neither external plan review (Step 3.5) nor external code review
+(Step 3.7) caught either one — #7 above addressed only *how* AC20's test
+derived its roster names, never *whether* binding to the current roster
+instead of the AC's named one was faithful in the first place.
+
+| # | AC | Finding | Fix |
+|---|---|---|---|
+| 1 | FR-01.04/AC10 | AC10 says "the others are left untouched"; the bound test only asserts the flagged screen was touched, asserting nothing about the others. The gate it calls (`iteration_touched_flagged_screens`, `shared/scripts/lib/design_gate_extras.py:279-300`) explicitly treats extra touched screens as a warning, not a failure (Chrome Change Propagation legitimately touches every screen in one round) — production code cannot make AC10's full claim true. A test shaped around what the implementation checks, not what the AC requires. | Removed `@pytest.mark.covers("FR-01.04/AC10")` from `test_a_flagged_screen_left_untouched_fails`. Left unbound with a recorded reason: seam survey **Exception 7** (new). The test itself is unchanged and still runs — it just isn't claimed as AC10's proof. |
+| 2 | FR-01.03/AC20 | AC20 names "DeepSeek and OpenAI" as the default outside reviewers; the two bound tests actually assert the CURRENT roster (glm/openai) is identified truthfully — a silent retarget to a different, current roster instead of the AC's named one. Identical obsolete-provider situation to this same unit's own AC21 (Named Exception 6), given the opposite treatment: quietly rebound instead of left unbound. | Removed `@pytest.mark.covers("FR-01.03/AC20")` from both `test_a_historical_schema_marker_is_still_read_truthfully` and `test_a_current_schema_marker_cannot_borrow_a_historical_reviewer_name`. Left unbound with a recorded reason: seam survey **Exception 6**, amended to cover AC20 alongside AC21. Both tests are unchanged and still run. |
+
+**Baseline re-regenerated** (fresh `test-traceability.json` manifest via
+`update_compliance.py --phase build`, then `check_ac_coverage_ratchet.py
+--write`, then the 8 transient compliance-report files reverted, per t1/t2/t3's
+own precedent): `unbound_count` moved from 173 to **175** (the 2 ACs above
+returning to `unbound`). Per-AC tables above and the seam survey rows updated
+to match; no other binding changed. Re-ran both test roots after the marker
+removals (`plugins/shipwright-plan/tests`: 4/4 passed;
+`plugins/shipwright-design/tests`: 21/21 passed) — no test logic changed,
+only which AC each one is claimed to prove.
