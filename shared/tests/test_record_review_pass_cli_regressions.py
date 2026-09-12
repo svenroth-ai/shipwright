@@ -30,6 +30,7 @@ from _review_cli_harness import (  # noqa: E402
 _SHARED = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_SHARED / "scripts"))
 
+from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 from lib.review_record import record_path  # noqa: E402,F401
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402,F401
 
@@ -49,7 +50,7 @@ def test_an_out_of_vocabulary_marker_status_is_rejected(project, tmp_path):
         project, "record", "--review-type", "plan", "--status", "completed",
         "--marker-status", "complete",  # typo for "completed"
         "--from", "external-review-json",
-        "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT),
+        "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT),
     )
     assert code == 2, output
     planning = project / ".shipwright" / "planning" / "iterate"
@@ -62,7 +63,7 @@ def test_recording_a_marker_type_as_completed_requires_a_marker_status(project, 
     code, output = run_tool(
         project, "record", "--review-type", "external_code", "--status", "completed",
         "--from", "external-review-json",
-        "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT),
+        "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["external_code"], EXTERNAL_REVIEW_OUTPUT),
     )
     assert code == 2
     assert "marker-status is required" in output
@@ -83,7 +84,7 @@ def test_repair_markers_rewrites_the_marker_without_touching_the_record(project,
     run_tool(project, "init")
     run_tool(project, "record", "--review-type", "plan", "--status", "completed",
              "--marker-status", "completed", "--from", "external-review-json",
-             "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT))
+             "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT))
     before = record_path(project, RUN_ID).read_bytes()
     planning = project / ".shipwright" / "planning" / "iterate"
     (planning / "external_review_state.json").unlink()
@@ -102,7 +103,7 @@ def test_re_running_a_marker_bearing_record_repairs_instead_of_dead_ending(proje
     run_tool(project, "init")
     args = ["record", "--review-type", "plan", "--status", "completed",
             "--marker-status", "completed", "--from", "external-review-json",
-            "--payload-file", payload(tmp_path, "ext.json", EXTERNAL_REVIEW_OUTPUT)]
+            "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], EXTERNAL_REVIEW_OUTPUT)]
     run_tool(project, *args)
     planning = project / ".shipwright" / "planning" / "iterate"
     (planning / "external_review_state.json").unlink()
@@ -158,7 +159,7 @@ def test_a_leg_that_fails_to_parse_makes_the_merge_partial(project, tmp_path):
     code, output = run_tool(
         project, "record", "--review-type", "plan", "--status", "completed",
         "--marker-status", "completed", "--from", "external-review-json",
-        "--payload-file", payload(tmp_path, "mixed.json", mixed),
+        "--payload-file", payload(tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"], mixed),
     )
 
     assert code == 0, output

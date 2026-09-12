@@ -83,8 +83,18 @@ def test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths():
     assert tier.decide([PATH, "shared/scripts/tools/check_keystone_ac_gate.py"], ["skip-pr-review"], record, True)[0] is True
     assert tier.decide([PATH, "shared/scripts/tools/verifiers/_keystone_core.py"], ["skip-pr-review"], record, True)[0] is True
     assert tier.decide([PATH, "shared/scripts/tools/verifiers/_keystone_ac_digest.py"], ["skip-pr-review"], record, True)[0] is True
+    # The residual gap from trg-a719e3b7: shared, non-`_keystone_`-prefixed
+    # helpers that `_keystone_*.py` verifiers actually import and that carry
+    # keystone-specific decision logic — named individually so the unrelated
+    # non-keystone gate these same helpers back is not swept into review too.
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/_layer_coverage_ac.py"], ["skip-pr-review"], record, True)[0] is True
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/_layer_coverage_binding.py"], ["skip-pr-review"], record, True)[0] is True
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/_layer_coverage_core.py"], ["skip-pr-review"], record, True)[0] is True
     # A near-miss: a verifier file outside the `_keystone_` family stays waivable.
     assert tier.decide([PATH, "shared/scripts/tools/verifiers/common.py"], ["skip-pr-review"], record, True)[0] is False
+    # A near-miss: `_layer_coverage_regen.py` backs the non-keystone gate only
+    # (no `_keystone_*.py` module imports it), so it stays waivable too.
+    assert tier.decide([PATH, "shared/scripts/tools/verifiers/_layer_coverage_regen.py"], ["skip-pr-review"], record, True)[0] is False
 
 
 def test_waiver_cannot_cover_a_change_to_a_suppression_or_hook_channel():

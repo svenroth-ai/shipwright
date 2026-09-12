@@ -152,8 +152,13 @@ def standalone_project(tmp_path):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.07/AC18")
 def test_finalize_skips_in_standalone_mode(standalone_project, monkeypatch):
-    """No `shipwright_project_config.json` → helper exits without committing."""
+    """No `shipwright_project_config.json` → helper exits without committing.
+
+    AC18 — a repository the framework does not manage never gets a commit it
+    was not asked to make; the git HEAD is asserted unchanged, not merely a
+    returned flag."""
     finalize = _load_finalize_module().finalize
 
     monkeypatch.delenv("CI", raising=False)

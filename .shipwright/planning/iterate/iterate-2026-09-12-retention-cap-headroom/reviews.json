@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-retention-cap-headroom",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T23:18:47.966172+00:00",
+      "disposition": null,
+      "recorded_by": "iterate-orchestrator",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The fix is sound and correctly scoped. A cap bump addresses the actual failure generator (branches pruning from stale views) without adding the machinery the prior ADR declined. The investigation's retraction of the merge-conflict claim is handled honestly.",
+          "suggestion": "None — this is the right minimal intervention.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "over-production",
+          "file": null,
+          "line": null,
+          "finding": "test_retention_constant_is_200` plus a doc-grep test (`test_docs_state_current_cap`) asserting the literal `200` appears in three prose locations is brittle mirror-coverage. Every future cap adjustment now requires touching four places plus updating a test that hardcodes the number — the test just moves the sync problem rather than solving it.",
+          "suggestion": "Simpler: keep the constant-assertion test (it guards against accidental reversion), and reduce the prose mirror count. Ideal: have docs/reference prose point at the constant (\"see `ITERATE_RETENTION` in append_iterate_entry.py\") instead of restating the number, so there's one source of truth and the grep test becomes unnecessary. If the three prose mirrors must stay, the grep test is defensible but know it's the weakest part of the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Existing retention tests use the `ITERATE_RETENTION` symbol, but tests that construct fixture state near the cap (e.g. creating `ITERATE_RETENTION + N` files) will now create ~200 files each, slowing the suite. Nothing breaks, but runtime cost quadruples.",
+          "suggestion": "If suite runtime is noticeable, have tests parametrize on a smaller injected cap (if the function accepts one) or monkeypatch `ITERATE_RETENTION` in those tests — the pin-exclusion and overshoot behaviors are cap-value-agnostic, so a small test cap preserves semantics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "200 is justified against the current 53-entry working set, but there's no stated growth bound or re-check trigger. If iterate summaries accumulate without bound and eventually approach 200, the same stale-view pruning resumes at a larger scale.",
+          "suggestion": "Note in the ADR entry the expected re-evaluation trigger (e.g. \"if unpinned count on main exceeds ~150, escalate to the post-merge retention alternative\"). Cheap and makes the amendment actionable rather than just descriptive.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "None material. The ADR drop and F5c.md update are correctly identified as accompanying changes; no schema, hook, or config-file dependencies on the cap value were missed (pins are separate and unaffected).",
+          "suggestion": "None.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Raising the cap to 200 is a sound short-term mitigation, but it only postpones the same stale-branch deletion behavior. The plan calls 200 “well above realistic” concurrency without recording a measured peak finalization fan-out or a review trigger.",
+          "suggestion": "In the ADR, state the capacity basis (current 51 unpinned entries plus expected burst headroom) and define a concrete revisit threshold, such as observed unpinned count nearing 150 or a recurrence of cross-run retention deletions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan verifies only the three named tests and prose locations. It does not explicitly require a repository-wide check for other user-facing references to the old limit or code that relies on a 50-entry operational assumption.",
+          "suggestion": "Add a final repository-wide search for `ITERATE_RETENTION` and retention-related occurrences of `50`; update any remaining authoritative guidance or explicitly document why unrelated matches are not retention references.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new regression test deliberately hardcodes `200`, which is appropriate for enforcing this policy decision, but the prose grep test can pass while documentation loses contextual correctness (for example, says “200” but misstates that pinned files are excluded or that events remain the full history).",
+          "suggestion": "Keep the literal-cap assertion, but add focused assertions for the key retention semantics in the updated doc text, or keep the prose test narrowly scoped and rely on a manual ADR/doc review for semantic wording.  Overall, the approach is proportional and preserves existing retention semantics while removing the immediate pressure causing incidental cross-run deletion. It should proceed once the cap rationale and a repository-wide reference check are made explicit. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T23:19:50.406273+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: low**\n  **Finding:** The fix is sound and correctly scoped. A cap bump addresses the actual failure generator (branches pruning from stale views) without adding the machinery the prior ADR declined. The investigation's retraction of the merge-conflict claim is handled honestly.\n  **Suggestion:** None — this is the right minimal intervention.\n\n- **Category: over-production — Severity: low**\n  **Finding:** `test_retention_constant_is_200` plus a doc-grep test (`test_docs_state_current_cap`) asserting the literal `200` appears in three prose locations is brittle mirror-coverage. Every future cap adjustment now requires touching four places plus updating a test that hardcodes the number — the test just moves the sync problem rather than solving it.\n  **Suggestion:** Simpler: keep the constant-assertion test (it guards against accidental reversion), and reduce the prose mirror count. Ideal: have docs/reference prose point at the constant (\"see `ITERATE_RETENTION` in append_iterate_entry.py\") instead of restating the number, so there's one source of truth and the grep test becomes unnecessary. If the three prose mirrors must stay, the grep test is defensible but know it's the weakest part of the plan.\n\n- **Category: risk — Severity: low**\n  **Finding:** Existing retention tests use the `ITERATE_RETENTION` symbol, but tests that *construct fixture state* near the cap (e.g. creating `ITERATE_RETENTION + N` files) will now create ~200 files each, slowing the suite. Nothing breaks, but runtime cost quadruples.\n  **Suggestion:** If suite runtime is noticeable, have tests parametrize on a smaller injected cap (if the function accepts one) or monkeypatch `ITERATE_RETENTION` in those tests — the pin-exclusion and overshoot behaviors are cap-value-agnostic, so a small test cap preserves semantics.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** 200 is justified against the current 53-entry working set, but ther […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Raising the cap to 200 is a sound short-term mitigation, but it only postpones the same stale-branch deletion behavior. The plan calls 200 “well above realistic” concurrency without recording a measured peak finalization fan-out or a review trigger.  \n   **Suggestion:** In the ADR, state the capacity basis (current 51 unpinned entries plus expected burst headroom) and define a concrete revisit threshold, such as observed unpinned count nearing 150 or a recurrence of cross-run retention deletions.\n\n2. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan verifies only the three named tests and prose locations. It does not explicitly require a repository-wide check for other user-facing references to the old limit or code that relies on a 50-entry operational assumption.  \n   **Suggestion:** Add a final repository-wide search for `ITERATE_RETENTION` and retention-related occurrences of `50`; update any remaining authoritative guidance or explicitly document why unrelated matches are not retention references.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The new regression test deliberately hardcodes `200`, which is appropriate for enforcing this policy decision, but the prose grep test can pass while documentation loses contextual correctness (for example, says “200” but misstates that pinned files are excluded or that events remain the full history).  \n   **Suggestion:** Keep the literal-cap assertion, but add focused assertions for the key retention semantics in the updated doc text, or keep the prose test narrowly scoped and rely on a manual ADR/doc review for semantic wording.\n\nOverall, the approach is proportional and preserves existing retention semantics while removing the immediate pressure causing incidental cross-run deletion. It should proceed once the cap rationale and a repository-wide reference check are made explicit.  \nSHIPWRIGHT_V […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "performance",
+          "file": "shared/tests/test_append_iterate_entry.py",
+          "line": 300,
+          "finding": "test_retention_trims_to_keep_last and test_apply_retention_handles_missing_file_gracefully each looped the FULL append_iterate_entry transaction 202/203 times (up from 52/53 at the old cap) -- O(n^2) I/O from _apply_retention's full directory rescan on every call.",
+          "suggestion": "Seed the first N-1 fixtures directly on disk (as test_retention_race.py's _seed_at_cap does) and call the real transaction only once or twice.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_retention_cap_headroom.py",
+          "line": 9,
+          "finding": "Module docstring said 'three prose mirrors' but the file guards five locations (docstring, inline comment, F5c.md, hooks-and-pipeline.md, guide.md x2).",
+          "suggestion": "Update the docstring to list all five.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_append_iterate_entry.py",
+          "line": 307,
+          "finding": "test_retention_trims_to_keep_last assigned entry['date'] three times in a row, two of them dead code (one via a malformed non-ISO pattern) with a misleading '# kept for sort' comment.",
+          "suggestion": "Drop the dead intermediate assignments.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_append_iterate_entry.py",
+          "line": 322,
+          "finding": "test_retention_does_not_prune_during_migration's docstring claims it verifies migrate-fully-then-retain ordering, but only asserted a post-retention count -- indistinguishable from a hypothetical partial-view-during-migration bug landing on the same count.",
+          "suggestion": "Assert the exact survivor run_id set (newest RETENTION-1 legacy entries + the new one), not just the count.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": ".shipwright/planning/adr/iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md",
+          "line": 91,
+          "finding": "ADR's Consequences bullet said 'three prose locations' but the ADR's own later Internal Plan Review section documents two more found afterward (five total) -- the summary bullet undercounted the fix's actual scope.",
+          "suggestion": "Update the Consequences bullet to list all five (or reference Internal Plan Review).",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T23:30:43.431675+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract / hidden coupling",
+          "file": null,
+          "line": null,
+          "finding": "the ADR's review claim that a repo-wide grep confirmed no other production doc or code states the cap value",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": null,
+          "line": null,
+          "finding": "raising ITERATE_RETENTION fully resolves the cross-branch scatter-pruning problem",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T23:37:25.979067+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T23:31:27.283903+00:00",
+      "disposition": "Internal code-reviewer cascade ran and completed (spec-reviewer Stage 1 PASS, code-reviewer Stage 2 approve_with_fixes_applied); external_code is not mandatory per iteration-reviews.md's escalation rule, which applies only when the internal cascade genuinely cannot be run. F11's check_review_record floor (>=1 of code/external_code completed) is satisfied by the code row.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T23:23:44.698888+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T23:21:32.447215+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

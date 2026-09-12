@@ -58,6 +58,19 @@ def _seed_legacy_project(
     return tmp_path
 
 
+def _write_entries_directly(project: Path, count: int, prefix: str) -> None:
+    """Write ``count`` valid entry files straight to disk, bypassing the full
+    append transaction — retention only reads what's on disk, so seeding this
+    way avoids O(n) real transactions for cap-sized fixtures."""
+    d = iterates_dir(project)
+    for i in range(count):
+        run_id = f"iterate-2026-04-23-{prefix}{i:04d}"
+        entry = _canonical_entry(slug=f"{prefix}{i:04d}")
+        entry["run_id"] = run_id
+        entry["date"] = f"2026-05-{1 + (i // 24):02d}T{i % 24:02d}:00:00Z"
+        (d / f"{run_id}.json").write_text(json.dumps(entry), encoding="utf-8")
+
+
 def _seed_migrated_project(tmp_path: Path) -> Path:
     """Create a target project that has already completed migration."""
     (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
@@ -299,35 +312,24 @@ class TestMigration:
 class TestRetention:
     def test_retention_trims_to_keep_last(self, tmp_path):
         _seed_migrated_project(tmp_path)
-
-        # Append 52 entries with increasing dates so retention is deterministic.
-        for i in range(52):
-            entry = _canonical_entry(
-                slug=f"r{i:03d}", date=f"2026-04-{(i % 28) + 1:02d}T{i % 24:02d}:00:00Z"
-            )
-            # Force unique run_id + monotonic date by mixing the day and index
-            # into a unique date that sorts linearly.
-            entry["date"] = f"2026-05-01T{i:03d}" + ":00:00Z"  # kept for sort
-            # Fall back to a simpler synthetic date to avoid any ambiguity.
-            day = 1 + (i // 24) + 1  # keeps day in valid range
-            hour = i % 24
-            entry["date"] = f"2026-05-{day:02d}T{hour:02d}:00:00Z"
-            append_iterate_entry(tmp_path, entry)
+        # Seed RETENTION + 1 entries directly; one real transaction call
+        # then exercises the trim (retention reads disk state, not history).
+        _write_entries_directly(tmp_path, ITERATE_RETENTION + 1, "r")
+        append_iterate_entry(tmp_path, _canonical_entry(slug="last", date="2026-06-01T00:00:00Z"))
 
         dir_files = _summary_files(tmp_path)
         assert len(dir_files) == ITERATE_RETENTION
 
     def test_retention_does_not_prune_during_migration(self, tmp_path):
-        """Migration of a 60-entry legacy array must preserve all 60 files,
-        even though post-migration retention would otherwise kick in on the
-        same call. Retention happens AFTER the entry write, and the test
-        verifies that the legacy preservation pass wasn't trimmed."""
+        """A (RETENTION + 10)-entry legacy array must migrate whole, even
+        though post-migration retention would otherwise kick in on the
+        same call. Retention happens AFTER the entry write."""
         legacy = [
             _canonical_entry(
                 slug=f"leg-{i:03d}",
                 date=f"2026-03-{(i % 28) + 1:02d}T{i % 24:02d}:00:00Z",
             )
-            for i in range(60)
+            for i in range(ITERATE_RETENTION + 10)
         ]
         # Give them strictly increasing dates so retention order is stable.
         for idx, entry in enumerate(legacy):
@@ -340,25 +342,23 @@ class TestRetention:
         )
 
         dir_files = _summary_files(tmp_path)
-        # 60 legacy + 1 new = 61 pre-retention, retention trims to 50.
-        # The RETENTION call WILL trim — but only the oldest legacy ones.
+        # legacy + 1 new pre-retention; trims to ITERATE_RETENTION, oldest legacy ones evicted.
         assert len(dir_files) == ITERATE_RETENTION
-        # The new entry must survive because it's the newest.
-        assert any(
-            json.loads(p.read_text())["run_id"] == "iterate-2026-04-23-new"
-            for p in dir_files
-        )
+        survivor_ids = {json.loads(p.read_text())["run_id"] for p in dir_files}
+        # Pins the migrate-fully-then-retain ordering: survivors are exactly
+        # the newest (ITERATE_RETENTION - 1) legacy entries plus the new one
+        # — not merely a count that a partial-view mid-migration prune could
+        # also happen to land on.
+        expected_legacy_survivors = {
+            f"iterate-2026-04-23-leg-{i:03d}" for i in range(11, ITERATE_RETENTION + 10)
+        }
+        assert survivor_ids == expected_legacy_survivors | {"iterate-2026-04-23-new"}
 
     def test_apply_retention_handles_missing_file_gracefully(self, tmp_path):
         """A parallel run may have already unlinked a file we planned to
         delete. _apply_retention must not crash."""
         _seed_migrated_project(tmp_path)
-        for i in range(ITERATE_RETENTION + 3):
-            entry = _canonical_entry(
-                slug=f"s{i:03d}",
-                date=f"2026-05-{(i // 24) + 1:02d}T{i % 24:02d}:00:00Z",
-            )
-            append_iterate_entry(tmp_path, entry)
+        _write_entries_directly(tmp_path, ITERATE_RETENTION + 2, "s")
 
         # Simulate a race: delete one of the candidate victims out from under
         # the next retention sweep.

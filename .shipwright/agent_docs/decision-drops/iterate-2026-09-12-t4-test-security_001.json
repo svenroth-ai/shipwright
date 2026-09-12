@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-t4-test-security",
+  "date": "2026-09-12",
+  "section": "req3-05-test-backfill-mono/t4",
+  "title": "Bind FR-01.06/FR-01.07 AC coverage to existing test seams, leave 7 unprovable ACs unbound",
+  "context": "shipwright_ac_coverage_baseline.json listed 18/18 FR-01.06 ACs and 14 FR-01.07 ACs as unbound (no proving test). Campaign req3-05 requires backfilling AC-qualified @pytest.mark.covers markers onto real proving tests, attaching to the highest existing test boundary rather than a new harness.",
+  "decision": "Bound 25 of the 32 ACs to existing/strengthened tests across plugins/shipwright-test/tests, plugins/shipwright-security/tests, and one bare-tag upgrade in shared/tests (3-root waiver per operator ruling 2026-09-12). Left 7 ACs unbound with a recorded reason each (conjunctive ACs where only half is testable, or no observable artifact exists), per seam-survey Exceptions 1/4/7/8 precedent.",
+  "consequences": "unbound_count dropped 177->152 in the coverage baseline (anti-ratchet). External plan + code review (glm+openai) both found real gaps in two new tests (AC01 scan-type filtering, AC12 gitignore proof); both fixed with stronger production-driving assertions, re-verified green (1031 passed) before commit.",
+  "rationale": "Per t3's Tier-3 PR-Review REJECT lesson, every binding was checked against 'would this test fail if the production code broke this specific way' before being claimed; the 7 unbound ACs are exactly the cases where that answer was honestly no.",
+  "rejected": "Binding all 32 ACs regardless of provability (rejected: would repeat t3's REJECT pattern of tests shaped around the implementation, not proving the AC). Adding a machine-readable reason field to the baseline schema (rejected: cross-cutting schema change, out of scope for a test-binding unit, same disposition as t0/t2/t3).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-12-t4-test-security-miniplan.md"
+}

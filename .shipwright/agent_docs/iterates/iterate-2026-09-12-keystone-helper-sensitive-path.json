@@ -1,0 +1,59 @@
+{
+  "run_id": "iterate-2026-09-12-keystone-helper-sensitive-path",
+  "date": "2026-09-11T23:53:59.827328Z",
+  "event_at": "2026-09-11T23:53:26.494719+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/keystone-helper-sensitive-path",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-keystone-helper-sensitive-path",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "an edit to shared/scripts/tools/verifiers/_layer_coverage_ac.py is flagged sensitive (mandatory review, cannot be waived)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED"
+      },
+      {
+        "behavior": "an edit to shared/scripts/tools/verifiers/_layer_coverage_binding.py is flagged sensitive",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED"
+      },
+      {
+        "behavior": "an edit to shared/scripts/tools/verifiers/_layer_coverage_core.py is flagged sensitive",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED"
+      },
+      {
+        "behavior": "a near-miss verifier file outside the named list (common.py) stays waivable \u2014 the fix does not over-widen",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED"
+      },
+      {
+        "behavior": "_layer_coverage_regen.py \u2014 a helper the keystone verifiers do NOT import, backing only the unrelated non-keystone gate \u2014 stays waivable",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_review_record_tier.py::test_evidence_cannot_waive_without_a_trusted_label_or_on_sensitive_paths PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "data-only regex change to a Python security-gate script (review_record_tier.py); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+  },
+  "declared_removals": []
+}

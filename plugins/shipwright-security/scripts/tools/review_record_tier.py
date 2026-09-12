@@ -48,14 +48,22 @@ SENSITIVE_PATH_RE = re.compile(
     # keystone-gate.md` §4/§7) — but its own verifier logic lives in separate
     # source modules that weren't named here, so an edit to the logic alone (not
     # the ci.yml step invoking it) escaped the scrutiny an edit to ci.yml gets.
-    # Closes triage trg-9967000f. Named by FILE, so a shared helper these modules
-    # import (e.g. under `verifiers/_layer_coverage_*`) that also carries
-    # keystone-specific logic is NOT covered — those helpers also back an
-    # unrelated non-keystone gate, so widening this match to their directory
-    # would force mandatory review onto that gate's unrelated maintenance PRs
-    # too. Known, deliberately deferred residual gap: trg-a719e3b7.
+    # Closes triage trg-9967000f.
     r"|shared/scripts/tools/check_keystone_ac_gate\.py"
     r"|shared/scripts/tools/verifiers/_keystone_"
+    # Named by FILE above, so shared, non-`_keystone_`-prefixed helpers that the
+    # `_keystone_*.py` modules actually import (checked by grepping their `from
+    # ._layer_coverage_*` imports) escaped it — trg-a719e3b7. Named individually,
+    # not by directory (`verifiers/_layer_coverage_`), because these same helpers
+    # also back the unrelated non-keystone layer-coverage gate, and a directory
+    # match would force mandatory review onto that gate's own maintenance PRs.
+    # `_layer_coverage_regen.py`/`_evidence.py`/`_removal.py`/`_rollout.py` back
+    # only that other gate (no `_keystone_*.py` module imports them) and stay
+    # deliberately unlisted. Re-check this list — via the same grep — whenever a
+    # `_keystone_*.py` module's imports change.
+    r"|shared/scripts/tools/verifiers/_layer_coverage_ac\.py"
+    r"|shared/scripts/tools/verifiers/_layer_coverage_binding\.py"
+    r"|shared/scripts/tools/verifiers/_layer_coverage_core\.py"
     r"|\.github/workflows/"
     r"|\.github/actions/"
     r"|shared/templates/github-actions/"

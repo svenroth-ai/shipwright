@@ -29,7 +29,8 @@ from .review_findings import (
 from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS, summarize_reviews
 
 __all__ = [
-    "ADAPTERS", "MAX_RAW_EXCERPT", "build_findings", "build_review_evidence",
+    "ADAPTERS", "CANONICAL_PAYLOAD_BASENAMES", "MAX_RAW_EXCERPT",
+    "canonical_basename_error", "build_findings", "build_review_evidence",
     "build_reviewer_verdicts",
 ]
 
@@ -43,7 +44,62 @@ ADAPTERS = (
     "none",
 )
 
+#: One canonical basename per review-type that writes a raw payload file under
+#: `.shipwright/planning/iterate/<run_id>/` — the producer-side half of closing
+#: trg-3b206c08. Measured 40+ ad-hoc basenames for the same handful of
+#: review-evidence KINDS on `origin/main` (Round 5,
+#: `iterate-2026-09-11-pr-review-evidence-filter-gap`), which is what ruled out
+#: both a path-classifier wildcard (too loose) and an exact-basename allowlist
+#: (can't keep up with new names) for that family. Enforcing ONE name per kind
+#: here — where every completed row with a payload must pass through — is the
+#: fix: it does not itself widen the PR-review classifier's allowlist
+#: (`pr_review_generated.py`, deliberately untouched by this change), it makes
+#: doing so SAFE for a later, separate change.
+#:
+#: `spec` / `code` / `doubt` reuse the exact `(spec|code|doubt)_review_reply.json`
+#: names `pr_review_generated._REVIEW_EVIDENCE_RE_RUN_ANCHORED` already anchors
+#: to (closed against a full-history `git log --diff-filter=A` survey, Round 2 of
+#: that same iterate) — unchanged by this dict, just finally MANDATORY instead of
+#: a free-form "path to the reply". `self` reuses the name that iterate's own
+#: spec already treats as established (`self-review-payload.json` — the payload
+#: sent to a review stage, deliberately never hidden from one, so it keeps its
+#: existing name rather than adopting the `_reply` suffix). `plan` and
+#: `external_code` are new: chosen to match the `external-*review*-raw.json`
+#: shape `pr_review_generated.py`'s own comments already cite as the running
+#: example (`external-code-review-raw.json`). `plan_internal` has no payload
+#: file (a metadata-only row) and is deliberately absent from this dict.
+#:
+#: `canonical_basename_error` (below) checks the BASENAME only, not the parent
+#: directory — a payload correctly named but written outside
+#: `.shipwright/planning/iterate/<run_id>/` still passes here. That is a
+#: deliberate boundary, not an oversight: `pr_review_generated.py`'s hide rule
+#: is run-anchored on the FULL path already, so this dict closes the naming
+#: half of the invariant the classifier needs; a later, separate change that
+#: extends the classifier's exact-path allowlist must keep enforcing the
+#: directory itself rather than assuming this check already covers it.
+CANONICAL_PAYLOAD_BASENAMES: dict[str, str] = {
+    "self": "self-review-payload.json",
+    "spec": "spec_review_reply.json",
+    "code": "code_review_reply.json",
+    "doubt": "doubt_review_reply.json",
+    "plan": "external-plan-review-raw.json",
+    "external_code": "external-code-review-raw.json",
+}
+
 MAX_RAW_EXCERPT = 4000
+
+
+def canonical_basename_error(review_type: str, payload_file: str) -> str | None:
+    """``None`` if ``payload_file``'s basename matches its kind's canonical
+    name (or the kind has none); else a CLI usage-error message."""
+    expected = CANONICAL_PAYLOAD_BASENAMES.get(review_type)
+    actual = Path(payload_file).name
+    if not expected or actual == expected:
+        return None
+    return (f"--payload-file for --review-type {review_type} must be named "
+            f"{expected!r}, got {actual!r} — see iteration-reviews.md → "
+            "'Recording each review pass' (trg-3b206c08)")
+
 
 _NATIVE = {
     "code-reviewer": from_code_reviewer,

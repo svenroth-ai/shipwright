@@ -41,7 +41,7 @@ from lib.review_findings import (  # noqa: E402
     ReviewFindingsError,
 )
 from lib.review_marker import ALLOWED_STATUSES  # noqa: E402
-from lib.review_payloads import ADAPTERS, build_review_evidence  # noqa: E402
+from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basename_error  # noqa: E402
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
     STATUS_COMPLETED,
@@ -164,7 +164,7 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
     if args.marker_status and args.marker_status not in ALLOWED_STATUSES:
         return (f"--marker-status must be one of {sorted(ALLOWED_STATUSES)}, "
                 f"got {args.marker_status!r}")
-    return None
+    return canonical_basename_error(args.review_type, args.payload_file) if args.payload_file else None
 
 
 def _cmd_record(args: argparse.Namespace) -> int:

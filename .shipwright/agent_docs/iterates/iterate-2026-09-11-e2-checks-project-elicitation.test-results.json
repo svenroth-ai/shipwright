@@ -1,0 +1,131 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-11-e2-checks-project-elicitation",
+    "date": "2026-09-11",
+    "unit": {
+      "status": "passed",
+      "passed": 10637,
+      "total": 10669
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "small-complexity iterate (F0.5 mandatory only at medium+); no startable web/CLI/API surface of its own \u2014 this is 4 new pure verifier-gate functions wired into the existing project_checks.run_project_checks dispatcher, driven entirely by the shared/tests + plugins/shipwright-run/tests unit suites (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "Basis column forbids a bare 'assumed' cell in a greenfield spec",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_basis_forbids_assumed_fails_on_a_bare_assumed_cell PASSED"
+        },
+        {
+          "behavior": "Basis column forbids a QUALIFIED 'assumed: <reason>' cell (fr_basis reports it 'malformed', not 'known') \u2014 the qualifier-smuggling loophole",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_basis_forbids_assumed_catches_a_qualified_assumed_cell, shared/tests/test_verifiers_project.py::test_check_basis_forbids_assumed_catches_a_qualified_assumed_cell PASSED"
+        },
+        {
+          "behavior": "the Basis ban is skipped for extension scope (greenfield-only per the ledger's own #4/#15 text)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_project.py::test_check_basis_forbids_assumed_skips_extension_scope PASSED"
+        },
+        {
+          "behavior": "only a NAMED Basis column is scored, never a positional/legacy cell",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_basis_forbids_assumed_ignores_a_positional_basis_column PASSED"
+        },
+        {
+          "behavior": "acceptance criteria carrying a code symbol / file path / ADR number are flagged, including against the REAL producer's bold-anchor + checkbox format (not just the heading-style fixture shape)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_criteria_free_of_implementation_detail_fails_on_a_file_path, ..._fails_on_an_adr_reference, ..._fails_on_a_code_symbol, ..._reads_the_real_bold_anchor_shape ALL PASSED"
+        },
+        {
+          "behavior": "a declared split with zero active FR rows fails; one with rows-only-under-Removed also counts as empty",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_no_empty_split_fails_when_one_split_has_no_active_fr_row, ..._treats_a_removed_only_row_as_empty PASSED"
+        },
+        {
+          "behavior": "a declared split whose spec.md is missing entirely, or exists but cannot be read, fails loud rather than passing vacuously",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_project.py::test_check_no_empty_split_fails_on_a_declared_split_with_no_spec_md_at_all, ..._fails_on_an_unreadable_spec_md PASSED"
+        },
+        {
+          "behavior": "a malformed / non-object / non-list project-config manifest fails loud instead of reading as 'zero splits declared'",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_project.py::test_check_no_empty_split_fails_loud_when_every_declared_name_is_unsafe, ..._fails_loud_when_splits_is_not_a_list, ..._fails_loud_on_non_object_config, ..._fails_loud_when_names_are_all_null_or_empty PASSED"
+        },
+        {
+          "behavior": "split-name enumeration is manifest-driven (config 'splits' list), never directory-enumeration \u2014 a reserved non-split dir (campaigns/, grill-traces/, adr/) is never mistaken for a split",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_project.py::test_check_no_empty_split_ignores_undeclared_planning_dirs PASSED"
+        },
+        {
+          "behavior": "a non-string / absolute / traversal / Windows-drive-relative / Windows-root-relative split name is filtered as unsafe, never crashes the validator",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_project.py::test_check_no_empty_split_ignores_an_unsafe_split_name, test_is_safe_split_name_rejects_windows_drive_and_root_relative_names PASSED"
+        },
+        {
+          "behavior": "starting guidance (CLAUDE.md + 3 agent_docs files) must exist AND be non-empty; skipped for extension scope; fails loud on a malformed/non-object config",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_starting_guidance_present_passes_when_all_four_are_non_empty, ..._fails_when_a_file_is_missing, ..._fails_when_a_file_is_empty; shared/tests/test_verifiers_project.py::test_check_starting_guidance_present_skips_extension_scope, ..._fails_on_missing_files_full_app, ..._fails_loud_on_malformed_config, ..._fails_loud_on_non_object_config ALL PASSED"
+        },
+        {
+          "behavior": "run_project_checks wires all four new gates, and the #8 floor's C4 citation (an ADR exists for the phase) actually fires",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_project.py::test_run_project_checks_includes_all_four_new_gates, ..._detects_missing_c4_adr PASSED"
+        },
+        {
+          "behavior": "the #10b coherence-judgement downgrade's prose still exists (drift test, not a gate)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras.py::test_split_heuristics_still_demands_cohesive_purpose PASSED"
+        },
+        {
+          "behavior": "the #8b link-back-judgement downgrade's prose still exists (drift test, not a gate)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_module_requires_hard_to_reverse_rationale_linked_from_the_requirement PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 14,
+        "tested": 14,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-11-e2-checks-project-elicitation",
+    "commit": "b6af39e2811dcf91b709e8e116fa79e9ffab562b",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -35,9 +35,14 @@ def build_arg_parser(description: str) -> argparse.ArgumentParser:
                               "project_name/summary — the sanctioned way to pass "
                               "free text from an interview (see module docstring); "
                               "mutually exclusive with the flags below")
-    parser.add_argument("--term", default=None)
-    parser.add_argument("--definition", default=None)
-    parser.add_argument("--avoid", default=None)
+    _legacy_warning = (
+        "legacy flag for trusted, non-shell-composed values only — never "
+        "substitute free interview text here (a single quote breaks the "
+        "shell quoting); use --payload-file for that"
+    )
+    parser.add_argument("--term", default=None, help=_legacy_warning)
+    parser.add_argument("--definition", default=None, help=_legacy_warning)
+    parser.add_argument("--avoid", default=None, help=_legacy_warning)
     parser.add_argument("--clear-avoid", action="store_true",
                          help="delete an existing --avoid line (omitting --avoid keeps it)")
     parser.add_argument("--project-name", default="", help="only used if CONTEXT.md is new")

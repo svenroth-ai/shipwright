@@ -16,7 +16,7 @@ Behavior:
   happen inside a single ``file_lock`` held on the run-config lock file so
   concurrent same-worktree finalize calls are serialized.
 * Retention drops the oldest unpinned entries beyond ``ITERATE_RETENTION``
-  (~50, not exactly -- see the constant). Full history: ``shipwright_events.jsonl``
+  (~200, not exactly -- see the constant). Full history: ``shipwright_events.jsonl``
 
 Canonical keys the caller may NOT set: ``run_id``, ``date`` (a full instant
 here, unlike ``phase_history``'s day-precision one) and ``event_at`` — Canon
@@ -66,7 +66,7 @@ from lib.iterate_test_results import (  # noqa: E402
 )
 
 
-ITERATE_RETENTION = 50  # ~50 unpinned entries, not exactly: pins add on top; cross-worktree merges can overshoot by one per branch and self-heal next append -- see F5c.md's retention section + test_retention_merge_overshoot.py.
+ITERATE_RETENTION = 200  # ~200 unpinned entries, not exactly: pins add on top; cross-worktree merges can overshoot by one per branch and self-heal next append -- see F5c.md's retention section + test_retention_merge_overshoot.py. Raised from 50 on 2026-09-12 for headroom against current iterate-branch concurrency; see that date's ADR amending iterate-2026-08-15-retention-cap-parallel-merge-retention-approximate.md.
 
 
 class IterateAppendError(RuntimeError):

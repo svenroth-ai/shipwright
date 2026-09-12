@@ -1,0 +1,27 @@
+{
+  "section": "iterate-2026-09-11-glossary-p41-review-followups",
+  "verdict": "PASS",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/context_md_format.py",
+      "line": 191,
+      "finding": "parse_language_entries' definition-continuation loop and the avoid-continuation loop duplicated the identical three-part stop condition verbatim.",
+      "suggestion": "Extract a private helper both loops call.",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Extracted `_absorb_continuation(body, i, n)`; both call sites now use it. Verified: 115 targeted tests still pass, ruff clean, file at 280/300 LOC."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/context-format.md",
+      "line": 46,
+      "finding": "The format doc's worked example shows a wrapped definition but not a wrapped _Avoid_ line, so a human hand-authoring CONTEXT.md can't discover the now-supported shape from the spec doc.",
+      "suggestion": "Optional follow-up: add a one-line wrapped-_Avoid_ example to context-format.md §2.",
+      "disposition": "rejected-with-reason",
+      "resolution": "Reviewer itself flagged this as not required by any of the 5 ACs and purely a documentation completeness note; deferring to keep this iterate scoped to the review's 5 deferred items."
+    }
+  ],
+  "summary": "No high/medium findings. Both low findings triaged: the duplication was fixed inline (in-scope, mechanical, verified green); the doc-example suggestion deferred as explicitly optional/out-of-scope by the reviewer's own assessment."
+}

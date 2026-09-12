@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-review-evidence-canonical-names",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T00:26:51.043946+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T01:18:24.897761+00:00",
+      "disposition": "external plan/iterate review is medium+ only (Phase Matrix); this run classified small with no risk flags (classify_complexity.py, no keyword match, history-capped)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": "shared/tests/test_review_payload_canonical_basenames.py",
+          "line": 54,
+          "finding": "The two registries (lib.review_payloads.CANONICAL_PAYLOAD_BASENAMES and the salvage hook's local CANONICAL_BASENAME mirror) were pinned to the same literals only one-sidedly, and no test exercised the hook's output feeding record_review_pass.py record -- the exact boundary the docstring promises.",
+          "suggestion": "Add a test pinning both dicts equal, and a round-trip test: run the hook against a fixture transcript, then record_review_pass.main([...]) against its output, asserting exit 0.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_record_review_pass_cli_regressions.py",
+          "line": 66,
+          "finding": "test_recording_a_marker_type_as_completed_requires_a_marker_status recorded --review-type external_code with CANONICAL_PAYLOAD_BASENAMES['plan'] -- passed only because marker-status validation runs before the basename check.",
+          "suggestion": "Use CANONICAL_PAYLOAD_BASENAMES['external_code'] so the test isolates the marker-status rule.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_payloads.py",
+          "line": 89,
+          "finding": "The usage error said the payload 'must be named ... under the run directory', but canonical_basename_error compares the basename only -- the parent directory is never checked, so the message overclaimed what is enforced.",
+          "suggestion": "Drop 'under the run directory' from the message; note the directory half as a documented boundary instead of enforcing it (out of this change's proportionate scope).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 181,
+          "finding": "Prose examples were inconsistent about the path prefix: some gave a relative '.shipwright/planning/iterate/{run_id}/...' path while others gave '{project_root}/...' -- a real cwd-resolution hazard for --payload-file, especially for the campaign orchestrator.",
+          "suggestion": "Prefix every example with '{project_root}/' so all four docs agree.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md",
+          "line": 601,
+          "finding": "The table footer states the table must always restate CANONICAL_PAYLOAD_BASENAMES verbatim, but nothing enforced that -- the prose table is the artifact agents actually read at runtime, so it is the more likely of the two to drift.",
+          "suggestion": "Add a test that reads iteration-reviews.md by path and asserts every CANONICAL_PAYLOAD_BASENAMES value appears in it.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T01:18:01.571425+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Enforcing ONE canonical basename at record time makes it SAFE for the PR-review classifier to extend to this family. — canonical_basename_error checks Path(payload_file).name only, not the directory. The classifier's hide rule is run-anchored on the full path, so a producer can write a correctly-named file outside the run directory, pass the new CLI check, get staged by F6, and still be shown to the reviewing model -- the exact PR #722 loop the task exists to close.",
+          "suggestion": "FIXED (rebuttal + docstring, not a code enforcement expansion): CANONICAL_PAYLOAD_BASENAMES now carries an explicit comment stating the boundary is basename-only by design, and that a later classifier-side change extending the exact-path allowlist must keep enforcing the directory itself. Full directory enforcement here would require rewriting ~10 test files' fixture layout (every payload() helper writes to a flat tmp_path) for a risk the classifier's own run-anchored regex already covers on its side.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The mandated stdout redirect at standalone Step 4 Branch A is runnable as written. — In a standalone medium+ iterate, the run directory is normally created as a side effect of the Internal Plan Review's record call at step 0 -- but that call is skipped entirely under degraded handling (Agent tool unavailable, shipwright-plan not installed, parse failure). The first medium+ run that degrades at step 0 would then hit 'No such file or directory' on Branch A's redirect.",
+          "suggestion": "FIXED: added `mkdir -p \"{project_root}/.shipwright/planning/iterate/{run_id}\"` immediately before the Branch A external_review.py call in iteration-planning.md, with a comment explaining why it is not always redundant.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: Writing the salvage directly to the canonical basename is harmless because the orchestrator's own write to the same file supersedes it. — That holds only when both writers target the same tree. The hook resolves its root from SHIPWRIGHT_PROJECT_ROOT or cwd; if unset/stale (main checkout cwd while the orchestrator works in a worktree), the hook can now plant a canonical-named stray in the MAIN tree -- one that F6's directory-add pattern would collide with on the next fast-forward, unlike the old distinctly-named salvage file which was a harmless leftover.",
+          "suggestion": "FIXED: added a wrong_root() guard in write-review-payload-on-stop.py -- if reviews.json is entirely absent under the resolved root, the hook refuses to salvage and never creates the directory, since SKILL.md Step 7's `init` always creates reviews.json before any of these three reviewers is spawned, so total absence means 'wrong tree', not 'not yet recorded'. Four existing tests updated to write a pending reviews.json first (the realistic precondition), one new test added for the refusal itself.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-ordering",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: A salvaged file at the canonical path always belongs to the run whose directory it sits in. — extract_run_id returns the FIRST regex match across the transcript; a spawn prompt that cites another run_id first could misroute the salvage into that run's directory if that run's row is not terminal there.",
+          "suggestion": "ACCEPTED RESIDUAL RISK, not fixed: the wrong_root() guard added for the medium finding above already eliminates the dominant failure mode (total absence of reviews.json). The narrower residual case -- an existing-but-different run whose row happens to still be pending -- is low severity, was measured to have zero real occurrences to date (no *_salvaged_raw.json stray ever found in this repo), and a full fix (preferring the run_id nearest a mandated phrase, or the last match) would need its own scoped change with its own tests. Left as a documented residual risk rather than expanded in this iterate.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: One basename per kind fits every producer of that kind. — Tracked run dirs already contain multi-round evidence when a pass loops (Stage 1 REJECT re-run, external revise verdict). With one name, round N overwrites round N-1 on disk, and the prose did not say which round is canonical.",
+          "suggestion": "FIXED: added one sentence to iteration-reviews.md's canonical-basename table footer -- the canonical file holds only the latest round, overwritten not suffixed; the recorded row is what persists the outcome.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The hook's write-surface change is documented where the repo says it must be. — .shipwright/agent_docs/architecture.md still records the hook's write surface as the old {review_type}_salvaged_raw.json name; docs/hooks-and-pipeline.md has a pre-existing (not introduced by this diff) inaccuracy describing the hook as calling record_review_pass.py.",
+          "suggestion": "DEFERRED to this run's own F3/F3a finalization phases: a new architecture.md entry for this run_id will supersede the stale 2026-08-09 entry (append, not edit -- matches this repo's append-only decision-log convention). The unrelated pre-existing hooks-and-pipeline.md inaccuracy is left alone, as it predates this change and is not about the filename.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The new exit-2 rejection is safe for runs already in flight. — Any open branch that wrote an ad-hoc-named payload file before this merges and calls record after rebasing gets exit 2; the recovery (rename to the canonical name) is stated nowhere.",
+          "suggestion": "DEFERRED to this run's F4 changelog drop: a one-line migration note will be added there for any run started before this change's merge date.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary-contract",
+          "file": null,
+          "line": null,
+          "finding": "Claim under doubt: The producer side is now closed: a wrong name is unrecordable, and the salvage hook backstops the write. — On this run itself, spec/code/doubt rows were still pending at review time -- the enforcement only bites at record time, not before.",
+          "suggestion": "ADDRESSED BY PROCESS: spec/code/doubt rows are being recorded from their canonical paths as part of this same run's Step 8, which exercises the new rule for real. The claim going forward is calibrated to 'wrong names are unrecordable', not 'the family is fully closed' (directory enforcement remains the classifier's own job, per the first doubt above).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T01:18:01.991986+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T01:18:25.117315+00:00",
+      "disposition": "external code cascade is the medium+ code-quality-floor alternative to the internal spec/code/doubt cascade; this run is small and the internal cascade (spec/code/doubt) already ran completed",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T01:18:01.350154+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T01:18:25.009249+00:00",
+      "disposition": "Internal Plan Review (opus-plan-reviewer) is medium+ only per iteration-planning.md step 0; this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

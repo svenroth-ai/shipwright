@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from screen_registry import (
     generate_manifest,
     parse_screen_linked_frs,
@@ -180,7 +182,10 @@ def test_scan_populates_linked_frs_from_the_screen_comment(tmp_project_with_desi
     assert login["linked_frs"] == ["FR-01.02"]
 
 
+@pytest.mark.covers("FR-01.04/AC04")
 def test_generate_manifest_renders_linked_frs_in_the_table(tmp_project_with_designs):
+    """FR-01.04/AC04: each covered requirement records which screen stands
+    for it — the manifest table renders the screen's own linked-FR ids."""
     designs = tmp_project_with_designs / ".shipwright" / "designs"
     (designs / "screens" / "01-login.html").write_text(
         "<!-- Requirements: FR-01.02, FR-01.05 -->\n<html></html>", encoding="utf-8"

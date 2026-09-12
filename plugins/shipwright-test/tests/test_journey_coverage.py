@@ -158,8 +158,9 @@ def test_no_e2e_directory_leaves_generation_to_the_existing_step(tmp_path):
 # AC2 — greenfield blocks, brownfield files a follow-up
 # ---------------------------------------------------------------------------
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC08")
 def test_greenfield_gaps_block(tmp_path):
+    # AC8's greenfield clause: an uncovered journey stops the phase.
     project = _project(tmp_path, specs=[("01-user-registration.spec.ts", "x")])
     report = check_journey_coverage(project, emit_triage=False)
 
@@ -167,8 +168,10 @@ def test_greenfield_gaps_block(tmp_path):
     assert report["blocking"] is True
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC08")
 def test_brownfield_gaps_do_not_block_and_leave_a_follow_up(tmp_path):
+    # AC8's brownfield clause: the gap is recorded as an onboarding follow-up
+    # instead of blocking.
     project = _project(tmp_path, adopted=True,
                        specs=[("01-user-registration.spec.ts", "x")])
     report = check_journey_coverage(project)

@@ -1,0 +1,203 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-t3-plan-design",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 18783,
+      "total": 18841
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Test-backfill unit binding existing FR-01.03/FR-01.04 ACs to existing/new tests + a coverage-baseline regen; no startable web/dev-server/CLI surface of its own -- verification is the unit-test suite itself (F0), run across the 2 touched ADR-044 roots (plugins/shipwright-plan/tests, plugins/shipwright-design/tests) per t0's seam survey."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "FR-01.03/AC01 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_sections.py::test_check_all_sections_written PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC02 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_missing_key_stop_and_ask_drift.py::test_missing_review_key_stop_and_ask_instruction_present PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC04 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates.py::test_no_marker_blocks_section_splitting PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC05 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_an_uncovered_requirement_fails PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC06 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_a_section_serving_no_requirement_fails PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC07 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_an_ill_formed_section_fails_even_in_a_new_plan PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC08 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_an_ill_formed_section_fails_even_in_a_new_plan PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC09 is proven by a new test invoking the real production CLI end-to-end, with only the network call stubbed (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan; ::test_architecture_cli_end_to_end_threads_the_brief_into_the_outgoing_prompt PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC10 is proven by a new test invoking the real production CLI (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_review_routing_contract.py::test_architecture_mode_requires_a_brief_not_the_plan PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC12 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_findings_count_unmatched_by_logged_entries_fails; ::test_findings_count_matched_by_logged_entries_passes PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC13 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates.py::test_an_undecided_reviewer_disagreement_blocks; ::test_recording_the_decision_unblocks_it PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC14 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_missing_e2e_file_fails_when_a_plugin_root_is_given; ::test_an_e2e_file_naming_a_flow_passes PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC15 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_sections.py::test_prerequisite_after_its_user_fails_the_gate PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC16 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_setup_planning_session.py::test_setup_resume_forces_step5_when_marker_missing; ::test_setup_resume_advances_when_marker_present PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC17 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates.py::test_boundary_fails_on_a_production_path PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC18 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_sections.py::test_no_planning_decision_logged_fails PASSED"
+        },
+        {
+          "behavior": "FR-01.03/AC19 is proven by new tests exercising the real reviewer-failure gate (plugins/shipwright-plan/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_plan_gates_reviewers.py::test_a_reviewer_that_never_answered_is_recorded_unavailable_not_reviewed; ::test_neither_reviewer_answering_fails_loudly_not_a_pass PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC01 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_an_orphan_fr_fails_fr_coverage PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC02 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_missing_visual_guidelines_fails_tokens PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC03 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_multi_screen_with_no_flow_fails PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC04 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_screen_registry.py::test_generate_manifest_renders_linked_frs_in_the_table PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC05 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_no_chrome_definition_fails_when_a_screen_uses_nav_markup PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC06 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_an_external_script_reference_fails PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC07 is proven by a new test exercising the real gate-policy CLI (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_setup_design.py::test_preview_approval_gate_always_stops_for_a_human PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC08 is proven by a new test exercising the real gate-policy CLI (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_setup_design.py::test_review_loop_finalize_gate_always_stops_for_a_human PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC09 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_a_modified_upload_fails PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC11 is proven by new tests exercising the real requirement-writeback CLIs (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_requirement_writeback_gate.py::test_declaring_a_behaviour_change_without_correcting_the_requirement_is_refused; ::test_declaring_a_behaviour_change_after_correcting_the_requirement_is_accepted PASSED"
+        },
+        {
+          "behavior": "FR-01.04/AC12 is proven by an existing, executable test at the seam t0's survey named for this cluster (plugins/shipwright-design/tests)",
+          "disposition": "tested",
+          "evidence": "test_check_design_gates.py::test_boundary_fails_on_a_production_path PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 28,
+        "tested": 28,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 28,
+        "covered_acs": 28
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-t3-plan-design",
+    "commit": "0cea788134a5d3b73414eac9c1b668a4ef01c5ed",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

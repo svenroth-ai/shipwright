@@ -1,0 +1,1 @@
+Migration note: an iterate branch started before this change that already wrote a review payload under a non-canonical filename will get 'exit 2' from record_review_pass.py record after rebasing onto it — rename the payload file to its kind's canonical basename (record_review_pass.py's own error names it) before recording.

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-test-results-orphan-triage",
+  "date": "2026-09-12",
+  "section": "Iterate — change: test-results orphan triage card",
+  "title": "Record the deferred test-results orphan defect instead of fixing or cleaning it now",
+  "context": "The retention rework (trg-b28a039c) fixed the entry-cap collision but deferred its sibling defect -- entry pruning orphans a run's .test-results.json -- to its own iterate, which was never filed.",
+  "decision": "Record the deferred defect as a standalone triage card (trg-42edfde6) with the measured orphan count and root cause; make no code change.",
+  "consequences": "The 127 pre-existing orphans and the ongoing leak stay visible and actionable instead of silently re-accumulating; fix and cleanup stay sequenced after the rework.",
+  "rationale": "Fixing or bulk-deleting now would preempt the rework's design decision on sweep unit, or manufacture new orphans before the rule changes; recording first keeps the finding from being lost twice.",
+  "rejected": "Fixing append_iterate_entry.py's retention now (preempts trg-b28a039c's rework); bulk-deleting the 127 orphans now (should follow the rework, per PR #736's own precedent).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
