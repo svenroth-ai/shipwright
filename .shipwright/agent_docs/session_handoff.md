@@ -1,35 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-12-e3-checks-test-security"
+run_id: "iterate-2026-09-12-generated-prefixes-provenance-anchor"
 phase: "iterate"
-reason: "iterate: FR-01.06/FR-01.07 checks-test-security"
-timestamp: "2026-09-12T08:05:25.784442+00:00"
+reason: "iterate: anchor or remove is_safe_to_skip_review's _GENERATED_PREFIXES skip-safety per prefix"
+timestamp: "2026-09-12T06:25:32.512191+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-12 08:05:25 UTC
+> Auto-generated 2026-09-12 06:25:32 UTC
 
 ## Session Info
 
-- **Session ID**: 6f1e2166-425e-4434-a2be-7019f6d817c6
-- **Timestamp**: 2026-09-12 08:05:25 UTC
-- **Reason**: iterate: FR-01.06/FR-01.07 checks-test-security
+- **Session ID**: 8d134d7c-6358-4d69-9360-d4b362d068d8
+- **Timestamp**: 2026-09-12 06:25:32 UTC
+- **Reason**: iterate completion: iterate-2026-09-12-generated-prefixes-provenance-anchor
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-12-test-results-orphan-triage
-- **Date**: 2026-09-12T06:10:45.047860Z
-- **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/test-results-orphan-triage
-- **ADR**: iterate-2026-09-12-test-results-orphan-triage
+- **Run ID**: iterate-2026-09-12-generated-prefixes-provenance-anchor
+- **Date**: 2026-09-12T06:25:32.304815Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **ADR**: iterate-2026-09-12-generated-prefixes-provenance-anchor
 - **Tests passed**: True
+- **Spec**: Anchor or remove PR-review skip-safety per _GENERATED_PREFIXES entry, closing the gap a confirmed deploy-gate consumer (ci-security.json) exposed.
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/e3-checks-test-security
-- **External Review Marker**: completed (external_review_state.json @ 2026-09-12T07:04:07)
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **External Review Marker**: missing
 - **Review Cascade**: no run_id resolved
 
 ### Mandatory replay on Resume
@@ -65,8 +66,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/e3-checks-test-security
-- **Last Commit**: fef2161c0 fix(test,security): address external code-review round 2 findings
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **Last Commit**: bf193f6a6 chore(churn): regenerate derived snapshots after main merge
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -82,17 +83,17 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a10cb7a9 | work_completed | iterate (Mechanise 5 FR-01.06/FR-01.07 AC-evidence-ledger lines (e2e count reconciliation, e2e-spec generation floor, design-fidelity triage) and downgrade 4 no-oracle lines (2 FR-01.06 constitution mentions, 2 FR-01.07 remediation-status lines) to drift-tested prompt-only (judgement), per campaign decision D7.) | 2026-09-12 |
 | evt-6c5ebe28 | work_completed | iterate (Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser.) | 2026-09-11 |
 | evt-b5e5c018 | work_completed | iterate (Record the deferred test-results-orphan retention defect (promised by trg-b28a039c, never filed) as its own triage card, with measured counts and root cause; no code fix.) | 2026-09-12 |
 | evt-636423bf | work_completed | iterate (Bind FR-01.06's and FR-01.07's unbound acceptance criteria to existing/new tests via @pytest.mark.covers and regenerate the AC coverage baseline) | 2026-09-12 |
 | evt-354973ae | work_completed | iterate (Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py, with all prose/code mirrors of the cap updated and a regression test guarding them.) | 2026-09-11 |
+| evt-ca92f53b | work_completed | iterate (Fix agent_doc_budget.entry_anchor() false-anchor-match hole: an incidental bold quote elsewhere in an entry's prose could be mistaken for its cross-diff identity, letting a new over-budget entry escape the budget gate by colliding with an unrelated base entry's anchor.) | 2026-09-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 624
-- **Last iterate**: change — Mechanise 5 FR-01.06/FR-01.07 AC-evidence-ledger lines (e2e count reconciliation, e2e-spec generation floor, design-fidelity triage) and downgrade 4 no-oracle lines (2 FR-01.06 constitution mentions, 2 FR-01.07 remediation-status lines) to drift-tested prompt-only (judgement), per campaign decision D7. (2026-09-12)
+- **Last iterate**: bug — Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser. (2026-09-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

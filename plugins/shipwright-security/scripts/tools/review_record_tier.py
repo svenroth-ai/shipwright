@@ -28,7 +28,7 @@ from _shipwright_shared_review_lib.review_record_schema import validate_record  
 PLUGIN_LIB = Path(__file__).resolve().parent.parent / "lib"
 if str(PLUGIN_LIB) not in sys.path:
     sys.path.insert(0, str(PLUGIN_LIB))
-from pr_review_generated import is_safe_to_skip_review  # noqa: E402
+from pr_review_skip_safety import is_safe_to_skip_review  # noqa: E402
 
 INTERNAL_REVIEW_TYPES = ("self", "spec", "code", "doubt")
 REVIEW_RECORD_RE = re.compile(r"^\.shipwright/planning/iterate/([A-Za-z0-9._-]+)/reviews\.json$")
