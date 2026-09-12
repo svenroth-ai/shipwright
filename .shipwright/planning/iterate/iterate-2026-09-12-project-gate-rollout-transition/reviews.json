@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-project-gate-rollout-transition",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:26.431190+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The grace lookup is keyed on `rollout_spec_texts.get(path)`, but the spec never says how a row (or split) knows which `spec.md` path it came from. In a multi-split project, `criteria_free_of_implementation_detail` presumably reads rows from several files; the pure function receives only a flat `rollout_spec_texts` dict. If the row→source-path mapping is implicit or wrong, a row from split B could be checked against split A's rollout text and either falsely inherit grace (false downgrade) or miss it (false HARD).",
+          "suggestion": "Make the row-hit data carry its source rel-path explicitly (or key the rollout texts the same way the collector keys files), and test the multi-split case explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "Byte-identical AC-text comparison is brittle against benign drift: a repo whose spec.md was reformatted, reflowed, or migrated (e.g., table column normalization, CRLF↔LF, trailing-whitespace cleanup) after the rollout instant loses all grace even though the violating content is unchanged — reintroducing the original bug this change is meant to fix. Also, a renamed/moved spec.md since rollout resolves \"path absent at that commit\" → no grace, fail-closed.",
+          "suggestion": "At minimum normalize line endings and whitespace before comparison (still \"essentially unchanged\" per the goal); document the moved/renamed-spec case as accepted fail-closed behavior, and add a test pinning that decision so it's deliberate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk /",
+          "file": null,
+          "line": null,
+          "finding": "Process-level caches for the resolved SHA and rollout texts can go stale within one process if the working tree/repo changes between calls (exactly what happens in the test suite, where multiple `tmp_path` repos are exercised, and potentially in long-lived runner processes that operate on many projects).",
+          "suggestion": "Key the cache on `(project_root, resolved_HEAD_sha)` and include project_root in the text cache key; invalidate or bypass in tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach /",
+          "file": null,
+          "line": null,
+          "finding": "GateResult.severity: str | None` reintroduces a stringly-typed severity next to the existing `common.Severity` — two spellings of the same concept that can drift (\"warning\" vs `Severity.WARNING`).",
+          "suggestion": "Acceptable to avoid the import, but centralize the literal `\"warning\"` as a module constant referenced by both the extras and wiring modules so the wiring's `CheckResult` construction can't silently mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case /",
+          "file": null,
+          "line": null,
+          "finding": "The repurposed-id rule (same FR id, different `Name` → no grace) is specified, but the inverse trick isn't covered: a violating row whose text is unchanged but whose `Name` was edited (title refactor) loses grace under the byte-identity + Name-match rule. That's arguably too strict for \"essentially unchanged,\" though safe (fail-closed).",
+          "suggestion": "Fine to keep fail-closed; add one test locking it in either way.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security /",
+          "file": null,
+          "line": null,
+          "finding": "git show <sha>:<path>` with `rel_paths` derived from repo-internal split listings — low injection surface, but if any path ever originates from user-controlled config, a leading `-` or `..` path could surprise git.",
+          "suggestion": "Assert paths are relative, POSIX-normalized, and don't start with `-`; use `--` or the `sha:path` form (already the plan) consistently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency /",
+          "file": null,
+          "line": null,
+          "finding": "The epoch constant and merge SHA are duplicated between the spec, the new module, and the ADR/changelog prose — a future gate landing in a different PR (as the out-of-scope siblings note) will need its own epoch, and drift here is silent.",
+          "suggestion": "Single definition of `GATE_ROLLOUT_AT_EPOCH` with the ISO string and SHA asserted against each other in a unit test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "A single `GateResult.severity` and `strict_exempt` cannot faithfully represent a gate with both grandfathered and newly introduced violations. If one row is legacy and another is new, the result must retain the advisory diagnostic while still hard-failing the new one; a single aggregate severity either hides the warning or incorrectly exempts the hard violation.",
+          "suggestion": "Model diagnostics per hit (or emit separate `CheckResult`s for hard and advisory subsets). Define aggregate behavior explicitly: any non-grandfathered hit is hard; grandfathered hits remain visible as warning/strict-exempt diagnostics.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "For empty splits, historical `spec.md` text alone does not prove the split was declared at rollout. A split newly declared after rollout could point at an older, already-empty `spec.md` file and receive grace incorrectly.",
+          "suggestion": "Snapshot and parse the rollout-era split declarations/index as well as the relevant `spec.md` files. Grant grace only when the same current split identity/path was declared at rollout and had zero active FR rows then.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Byte-identical” AC text is stronger than equality of parser-produced criteria tuples if parsing trims whitespace, normalizes line endings, or drops formatting. The proposed tuple comparison could grandfather an edited criterion that merely normalizes to the prior value.",
+          "suggestion": "Compare the exact source representation used by the spec format, preserving line endings and whitespace, or explicitly prove that the existing parser retains byte-level text. Add tests for whitespace-only and line-ending changes.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Process-level caches are underspecified around the symbolic `\"HEAD\"` input. Caching under `\"HEAD\"` can become stale if the process evaluates more than one repository state (especially in tests or long-lived tooling), yielding a wrong rollout snapshot.",
+          "suggestion": "Resolve `HEAD` to its immutable SHA before caching and key both commit and text caches by canonical project root plus resolved SHA plus path. Include a test that advances `HEAD` within one process.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Adding `severity` and `strict_exempt` to `GateResult` assumes every `GateResult` consumer and `CheckResult` constructor accepts and correctly renders those semantics. The plan only names the two wrappers, so an unsupported field or ignored advisory state could silently turn grandfathered hits into passes without a visible warning.",
+          "suggestion": "Audit the `GateResult`/`CheckResult` conversion path and reporting/strict-mode consumers before changing the model. Add wiring tests for mixed hard/advisory hits and for the final rendered severity and strict behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "rollout_spec_texts` will construct git revision/path arguments from project-derived paths. POSIX normalization alone is not containment validation.",
+          "suggestion": "Invoke git with argument arrays and `shell=False`; validate paths are non-absolute, project-relative, and free of traversal/ambiguous revision syntax before forming `<sha>:<path>`.  The rollout-transition concept is appropriate and avoids the incorrect permanent extension-scope exemption. It needs a richer result representation and a declaration-aware historical snapshot before it can reliably meet the stated per-hit guarantees. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:59.360815+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** The grace lookup is keyed on `rollout_spec_texts.get(path)`, but the spec never says how a *row* (or split) knows which `spec.md` path it came from. In a multi-split project, `criteria_free_of_implementation_detail` presumably reads rows from several files; the pure function receives only a flat `rollout_spec_texts` dict. If the row→source-path mapping is implicit or wrong, a row from split B could be checked against split A's rollout text and either falsely inherit grace (false downgrade) or miss it (false HARD).\n  **Suggestion:** Make the row-hit data carry its source rel-path explicitly (or key the rollout texts the same way the collector keys files), and test the multi-split case explicitly.\n\n- **Category: edge-case / Severity: medium**\n  **Finding:** Byte-identical AC-text comparison is brittle against benign drift: a repo whose spec.md was reformatted, reflowed, or migrated (e.g., table column normalization, CRLF↔LF, trailing-whitespace cleanup) after the rollout instant loses all grace even though the violating *content* is unchanged — reintroducing the original bug this change is meant to fix. Also, a renamed/moved spec.md since rollout resolves \"path absent at that commit\" → no grace, fail-closed.\n  **Suggestion:** At minimum normalize line endings and whitespace before comparison (still \"essentially unchanged\" per the goal); document the moved/renamed-spec case as accepted fail-closed behavior, and add a test pinning that decision so it's deliberate.\n\n- **Category: risk / Severity: low**\n  **Finding:** Process-level caches for the resolved SHA and rollout texts can go stale within one process if the working tree/repo changes between calls (exactly what happens in the test suite, where multiple `tmp_path` repos are exercised, and potentially in long-lived runner processes that operate on many projects).\n  **Suggestion:** Key the cache on `(project_root, resolved_HEAD_sha)` […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** A single `GateResult.severity` and `strict_exempt` cannot faithfully represent a gate with both grandfathered and newly introduced violations. If one row is legacy and another is new, the result must retain the advisory diagnostic while still hard-failing the new one; a single aggregate severity either hides the warning or incorrectly exempts the hard violation.  \n   **Suggestion:** Model diagnostics per hit (or emit separate `CheckResult`s for hard and advisory subsets). Define aggregate behavior explicitly: any non-grandfathered hit is hard; grandfathered hits remain visible as warning/strict-exempt diagnostics.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** For empty splits, historical `spec.md` text alone does not prove the split was *declared* at rollout. A split newly declared after rollout could point at an older, already-empty `spec.md` file and receive grace incorrectly.  \n   **Suggestion:** Snapshot and parse the rollout-era split declarations/index as well as the relevant `spec.md` files. Grant grace only when the same current split identity/path was declared at rollout and had zero active FR rows then.\n\n3. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Byte-identical” AC text is stronger than equality of parser-produced criteria tuples if parsing trims whitespace, normalizes line endings, or drops formatting. The proposed tuple comparison could grandfather an edited criterion that merely normalizes to the prior value.  \n   **Suggestion:** Compare the exact source representation used by the spec format, preserving line endings and whitespace, or explicitly prove that the existing parser retains byte-level text. Add tests for whitespace-only and line-ending changes.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Process-level caches are underspecified around the symbolic `\"HEAD\"` input. Caching under `\"HEAD\"` can […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/common.py",
+          "line": 700,
+          "finding": "summarise()/verify_phase.py's blocking calc (`blocking = summary.errors > 0 or (args.strict and summary.warnings > 0)`) never consults CheckResult.strict_exempt, so `verify_phase.py --phase project --strict` (and `--phase all --strict` / `--phase iterate --strict`) still hard-blocks on a fully-graced rollout-transition warning. This directly contradicts this diff's own docstring claim in _project_gate_extras.py/_project_gate_wiring.py that the result is 'never promoted to a hard failure under --strict, the same strict_exempt contract layer_coverage_binding.py's own advisory branch already uses' — only the separate verify_iterate_finalization.py CLI actually filters strict_exempt warnings (lines 80-89). Pre-existing gap (shared with layer_coverage.py/plan_gate_checks.py, not introduced here), but this diff adds a third reliance on the same false invariant without disclosing it, and no new test exercises the gate through verify_phase.py to catch it.",
+          "suggestion": "Either make common.summarise()/verify_phase.py's blocking calc exclude strict_exempt warnings (mirroring verify_iterate_finalization.py's own calc), or add this as a disclosed, known gap in the ADR's 'Disclosed, not fixed' section so a future reader doesn't rely on the false guarantee.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py",
+          "line": 145,
+          "finding": "_rollout_declared_split_names's fallback loop treats 'shipwright_project_config.json exists but has no/invalid splits key at the historical commit' the same as 'file absent', falling through to shipwright_run_config.json — but the live-manifest reader (_project_gate_manifest._declared_split_names) treats project_config.json's mere existence as authoritative and never falls back in that case. A historical repo state where project_config.json existed (e.g. only carrying scope) while an old run_config.json still carried a stale splits list would let a split inherit grace the authoritative manifest at that same commit never granted — the exact 'stranger's grace' failure mode split_predates_rollout was built to prevent. Untested: the existing fallback test only covers project_config.json being entirely absent, not present-but-splits-less.",
+          "suggestion": "Mirror _declared_split_names's exact priority rule: only fall back to shipwright_run_config.json when shipwright_project_config.json did not exist at the historical commit, not merely when its `splits` key was unparseable/missing. Add a test pinning that project_config.json existing (splits-less) at rollout does NOT pick up run_config.json's splits.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/_project_gate_grace.py",
+          "line": 1,
+          "finding": "The ADR's External-Plan-Review-Findings table (#7, glm) claims 'multi-split behaviour test-pinned' for the row-to-source-path mapping, but no test actually exercises two splits with colliding/near-identical FR content to confirm cross-split isolation — the safety is by construction (graced_criteria_for_row always scopes the lookup to the row's own display path) rather than by an explicit regression test. Not a functional bug (the path-scoped design makes cross-contamination structurally impossible), just a minor overclaim in the disposition table.",
+          "suggestion": "Either add a small multi-split test with the same FR id appearing under two different split paths, or soften the disposition table's wording from 'test-pinned' to 'structurally impossible by design'.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:53.034739+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_project_gate_rollout.py (resolve_rollout_commit); shared/scripts/tools/verifiers/_project_gate_grace.py (graced_criteria_for_row, split_predates_rollout)",
+          "line": null,
+          "finding": "Claim under doubt: \"A genuinely new post-rollout violation still hard-blocks\" (stated as the mechanism's core safety invariant in the ADR's Context, Consequences, and the code's own module docstrings) — resolve_rollout_commit's only proof that content 'already existed' is the target project's own git commit committer timestamp, re-verified in Python but never anchored to anything the content's author does not themselves control. A committer date is a plain client-supplied field set with no server-side timestamping, no signature check, and no comparison against when the commit was actually pushed/received. Anyone who can push a branch to the target project can therefore fabricate one ancestor commit whose spec.md already contains, byte-for-byte (post-parse), the exact new FR row/criterion they want to introduce, dated before GATE_ROLLOUT_AT_EPOCH. resolve_rollout_commit will find it via rev-list --before, the grace comparators will match (the attacker controls both sides), and a criterion that is genuinely brand-new gets severity=\"warning\", strict_exempt=True instead of a hard block — precisely the outcome the ADR calls impossible. This gate family's own docstrings already state these checks run against untrusted PR content in CI, so an adversarial history-controlling author is already the assumed attacker for this module family, just not carried through to the timestamp-trust question.",
+          "suggestion": "Either (a) a written rebuttal narrowing the threat model, or (b) a follow-up that anchors 'did this exist before rollout' to something the content's author cannot themselves set — e.g. the PR's merge/push receipt time as recorded by the hosting platform, or requiring the rollout-predating commit to be reachable from a ref the repo already trusted BEFORE this PR's branch existed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras_rollout.py (no_empty_split)",
+          "line": null,
+          "finding": "Claim under doubt: the #10 (no_empty_split) grace path is a separate, lower-stakes instance of the same weakness and should be tracked alongside the #5 finding above, not dismissed as harmless — The same committer-timestamp forgery lets an attacker retroactively 'pre-declare' a newly-created empty split as already-declared+empty at rollout. Blast radius much smaller (downgrades an empty-split hard block, not banned content), but shares the exact same root cause and fix surface.",
+          "suggestion": "Same remediation as the #5 finding, applied uniformly — no separate action needed if the #5 fix is structural.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:53.158738+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py (~line 55, `_read_at_commit` cache key)",
+          "line": null,
+          "finding": "_TEXT_CACHE` is keyed by `(sha, posix_path)` but not `project_root`, while the actual git lookup path is `_repo_relative_prefix(project_root) + posix_path`. In a git repo containing two nested Shipwright projects (e.g. `repo/a/` and `repo/b/`, the exact nested-project shape the prefix fix exists for), both projects pass the same `rel_path` (`.shipwright/planning/<split>/spec.md`) against the same resolved rollout SHA — so project A's historical spec text is returned as project B's. That is a false-grace (or false-no-grace) leak across project boundaries in one process. Note the sibling `_MANIFEST_CACHE` does include `str(project_root)` in its key, which makes the omission look accidental rather than deliberate.",
+          "suggestion": "Key `_TEXT_CACHE` by `(str(project_root), sha, posix_path)`, mirroring `_MANIFEST_CACHE`, and add a test with two sibling nested projects sharing a repo/SHA and the same rel_path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras_rollout.py (~line 105, mixed hard+graced branch of `criteria_free_of_implementation_detail`)",
+          "line": null,
+          "finding": "The spec/design notes state the detail string \"still names every graced hit transparently\" so a graced hit is never hidden behind a hard one. In the mixed hard+graced branch, graced hits are summarized only as a count (`\"; N other hit(s) ... granted transition grace\"`) — the graced `path:FR-id` locations are never listed, unlike the fully-graced branch which lists them. `no_empty_split`'s mixed branch does list graced paths, so the two gates are inconsistent with each other and with the stated rationale.",
+          "suggestion": "Include the first N graced hit locations (same truncation policy as hard hits) in the mixed branch's detail string for #5.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py (`_PREFIX_CACHE`)",
+          "line": null,
+          "finding": "_PREFIX_CACHE` is unbounded and, unlike the other caches, has no `clear_snapshot_cache`-adjacent invalidation concern in production, but combined with the `_TEXT_CACHE` bug above it's part of the same cross-root contamination surface. Minor on its own; fixed implicitly by the key fix above.",
+          "suggestion": "None beyond the `_TEXT_CACHE` key fix.  Checked and found sound: the lazy first-pass/second-pass wiring (clean runs pay zero git calls; unresolved snapshot falls back to the hard result unchanged); `_row_identity_matches`'s refuse-on-unverifiable rule; the manifest fallback priority fix (`project_config` existence is authoritative); the git path-safety guard; the epoch re-verification against a lying `--before`; and the test quality — the real-git end-to-end wiring tests genuinely prove the `CheckResult` downgrades and that new post-rollout violations stay hard, so a broken implementation would fail them.  Overall: the design and implementation are solid and well-tested, but the `_TEXT_CACHE` cross-project collision is a real false-grace bug on the exact nested-project shape this change went out of its way to support — ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/_project_gate_rollout.py",
+          "line": 128,
+          "finding": "Grace eligibility is determined from the target repository’s mutable committer timestamp. An author can create a new violating change after rollout while setting its commit date before the cutoff; `rev-list --before` then selects it as the “legacy” snapshot and downgrades a new violation. This violates the requirement that post-rollout content remain HARD.",
+          "suggestion": "Anchor eligibility to a trusted, externally established history boundary (for example, a trusted ref or platform-observed merge time), rather than commit metadata supplied by the content author.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py",
+          "line": 94,
+          "finding": "_TEXT_CACHE` is keyed only by `(sha, rel_path)`, but historical reads are also dependent on `project_root` through `_repo_relative_prefix`. In one monorepo checked for two nested project roots at the same SHA, the second project can receive the first project’s historical `spec.md`, causing an incorrect grace or false HARD failure.",
+          "suggestion": "Include the canonical project root or repo-relative prefix in the text-cache key, and add a two-nested-project-roots regression test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/tools/verifiers/_project_gate_extras.py",
+          "line": 89,
+          "finding": "The new `strict_exempt` contract claims a fully graced warning is not promoted to a hard failure under `--strict`, but the direct `verify_phase.py --strict` path still blocks on all warnings and ignores this field. Thus the required advisory downgrade is ineffective for a supported strict project-phase invocation.",
+          "suggestion": "Update the shared strict blocking calculation to exclude `strict_exempt` warnings, with an integration test through the strict verifier path.  Ship-with-fixes: the main rollout behavior is largely implemented, but the timestamp trust bypass and strict-mode inconsistency prevent the grace rule from reliably meeting its stated guarantees.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T12:06:03.919227+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] I reviewed the diff against the iterate spec's acceptance criteria and hunted for concrete defects in the new rollout-grace modules, wiring, and tests.\n\n**Spec compliance overall:** all eight ACs are implemented — per-criterion membership grace, hard-dominates-aggregate, manifest-declaration requirement for #10, greenfield no-grace, per-repo resolution via `--before`, #4/#15/#11 untouched, and AC8's deferred `trg-9583d3a8` close follows the documented precedent. The epoch constant is correct (I verified 1789194186 == 2026-09-12T06:23:06Z, and there's a test pinning it).\n\nFindings:\n\n- Category: bug\n  Severity: high\n  File: shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py (~line 55, `_read_at_commit` cache key)\n  Finding: `_TEXT_CACHE` is keyed by `(sha, posix_path)` but **not** `project_root`, while the actual git lookup path is `_repo_relative_prefix(project_root) + posix_path`. In a git repo containing two nested Shipwright projects (e.g. `repo/a/` and `repo/b/`, the exact nested-project shape the prefix fix exists for), both projects pass the same `rel_path` (`.shipwright/planning/<split>/spec.md`) against the *same* resolved rollout SHA — so project A's historical spec text is returned as project B's. That is a false-grace (or false-no-grace) leak across project boundaries in one process. Note the sibling `_MANIFEST_CACHE` *does* include `str(project_root)` in its key, which makes the omission look accidental rather than deliberate.\n  Suggestion: Key `_TEXT_CACHE` by `(str(project_root), sha, posix_path)`, mirroring `_MANIFEST_CACHE`, and add a test with two sibling nested projects sharing a repo/SHA and the same rel_path.\n\n- Category: spec\n  Severity: low\n  File: shared/scripts/tools/verifiers/_project_gate_extras_rollout.py (~line 105, mixed hard+graced branch of `criteria_free_of_implementation_detail`)\n  Finding: The spec/design notes state the detail string \"still names every graced hit transparently\" so a graced hit is never hid […truncated]\n\n[openai] - Category: security\n- Severity: high\n- File: `shared/scripts/tools/verifiers/_project_gate_rollout.py:128`\n- Finding: Grace eligibility is determined from the target repository’s mutable committer timestamp. An author can create a new violating change after rollout while setting its commit date before the cutoff; `rev-list --before` then selects it as the “legacy” snapshot and downgrades a new violation. This violates the requirement that post-rollout content remain HARD.\n- Suggestion: Anchor eligibility to a trusted, externally established history boundary (for example, a trusted ref or platform-observed merge time), rather than commit metadata supplied by the content author.\n\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py:94`\n- Finding: `_TEXT_CACHE` is keyed only by `(sha, rel_path)`, but historical reads are also dependent on `project_root` through `_repo_relative_prefix`. In one monorepo checked for two nested project roots at the same SHA, the second project can receive the first project’s historical `spec.md`, causing an incorrect grace or false HARD failure.\n- Suggestion: Include the canonical project root or repo-relative prefix in the text-cache key, and add a two-nested-project-roots regression test.\n\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/_project_gate_extras.py:89`\n- Finding: The new `strict_exempt` contract claims a fully graced warning is not promoted to a hard failure under `--strict`, but the direct `verify_phase.py --strict` path still blocks on all warnings and ignores this field. Thus the required advisory downgrade is ineffective for a supported strict project-phase invocation.\n- Suggestion: Update the shared strict blocking calculation to exclude `strict_exempt` warnings, with an integration test through the strict verifier path.\n\nShip-with-fixes: the main rollout behavior is largely implemented, but the timestamp trust bypass and st […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:47.668663+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T12:06:10.763424+00:00",
+      "disposition": "opus-plan-reviewer sub-step was never spawned during this run's own Step 5 -- a genuine gap discovered late (Step 7), not a deliberate skip; recorded Ran: no in the iterate spec's new Internal Plan Review section. External Plan Review, Architecture Review, the full internal spec/code/doubt cascade, and the External Code-Review Cascade all ran independently, per iteration-planning.md's own framing this is one fewer independent review, not an unreviewed run.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -8,6 +8,16 @@ returning functions over already-read spec text, composed by
 ``starting_guidance_present`` (which, like ``design_gate_extras.uploads_preserved``,
 needs the project root directly).
 
+This module holds **#4/#15 and #11** — :func:`basis_forbids_assumed` and
+:func:`starting_guidance_present`, neither of which are rollout-transition-
+aware (see their own docstrings for why each already has a different,
+subject-matter-specific carve-out). **#5 and #10** —
+:func:`criteria_free_of_implementation_detail` and :func:`no_empty_split`,
+both rollout-transition-aware since 2026-09-12 (``trg-9583d3a8``) — split out
+into the sibling ``_project_gate_extras_rollout.py`` the moment internal plan
+review's revisions grew this file past the 300-LOC guideline (same precedent
+as every other split in this gate family).
+
 * :func:`basis_forbids_assumed` — **#4 + #15, revised 2026-09-11 (Stage-1
   spec-review REJECT on PR #729).** The first cut copied P4.2's
   grill-trace-layer "no exceptions" ban wholesale to the FR-row layer — an
@@ -32,17 +42,6 @@ needs the project root directly).
   *some* recorded criterion is as far as a mechanical gate can honestly
   go, and is documented as such rather than silently pretending to verify
   content.
-* :func:`criteria_free_of_implementation_detail` — **#5** "No
-  symbol/path/ADR/verb in the sentence." ``fr_hygiene_detectors.violations``
-  (I1) already exists but is applied only to the FR Name/Description
-  (``group_i`` advisory, ``check_fr_hygiene_on_touched_rows`` for
-  /shipwright-iterate's own touched rows) — never to the acceptance
-  CRITERIA text, and never as a block on /shipwright-project's own Step 8.
-  Reuses the identical detector against every active FR's criteria.
-* :func:`no_empty_split` — **#10** "Divided into cohesive parts, or
-  single-unit." ``split-heuristics.md`` states the rule; nothing checked
-  that a declared split actually carries at least one requirement. A split
-  with zero active FR rows is not a cohesive part of anything.
 * :func:`starting_guidance_present` — **#11** "Starting guidance exists."
   Step 7 writes CLAUDE.md + the agent_docs trio; Step 8's own prose lists
   their existence as a manual verification step, never code-enforced, and
@@ -61,14 +60,11 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib import fr_basis  # noqa: E402
 from lib import fr_criteria  # noqa: E402
-from lib import fr_hygiene_detectors  # noqa: E402
 from lib import fr_table_reader  # noqa: E402
 
 __all__ = [
     "GateResult",
     "basis_forbids_assumed",
-    "criteria_free_of_implementation_detail",
-    "no_empty_split",
     "starting_guidance_present",
 ]
 
@@ -77,6 +73,20 @@ __all__ = [
 class GateResult:
     ok: bool
     detail: str
+    #: Set only by a gate that grants rollout-transition grace (see
+    #: ``_project_gate_extras_rollout.py``, 2026-09-12) to a
+    #: hit-but-fully-graced result: the literal string ``"warning"`` (never
+    #: ``common.Severity`` — kept import-light, matching this module's
+    #: existing zero-``common``-import shape). The wiring layer
+    #: (`_project_gate_wiring.py`) forwards it onto the `CheckResult` it
+    #: builds. ``None`` (the default) means "let the caller use its own
+    #: default severity", unaffected for every other gate.
+    severity: str | None = None
+    #: Companion to ``severity`` — set alongside it so a fully-graced result
+    #: is visible but never promoted to a hard failure under ``--strict``,
+    #: the same ``strict_exempt`` contract `layer_coverage_binding.py`'s own
+    #: advisory branch already uses.
+    strict_exempt: bool = False
 
 
 # --------------------------------------------------------------------------- #
@@ -147,56 +157,6 @@ def basis_forbids_assumed(spec_texts: dict[str, str]) -> GateResult:
         True,
         "every 'assumed' Basis cell (if any) is paired with an acceptance "
         "criterion, and none smuggles its settlement into the Basis cell itself",
-    )
-
-
-# --------------------------------------------------------------------------- #
-# #5 — acceptance criteria free of implementation detail
-# --------------------------------------------------------------------------- #
-
-
-def criteria_free_of_implementation_detail(spec_texts: dict[str, str]) -> GateResult:
-    hits: list[str] = []
-    for path, text in spec_texts.items():
-        for row in fr_table_reader.read_active_fr_rows(text):
-            # fr_criteria.py: legacy label-paragraph exception
-            for criterion in fr_criteria.criteria_for(text, row.id, strict=False):
-                found = fr_hygiene_detectors.violations(criterion)
-                if found:
-                    hits.append(f"{path}:{row.id} ({'/'.join(found)})")
-    if hits:
-        shown = hits[:5]
-        suffix = f" (+{len(hits) - 5} more)" if len(hits) > 5 else ""
-        return GateResult(
-            False,
-            f"{len(hits)} acceptance criterion/criteria carry implementation "
-            f"detail: {'; '.join(shown)}{suffix}",
-        )
-    return GateResult(
-        True,
-        "no acceptance criterion carries a code symbol, file path, ADR "
-        "number, iterate slug, or HTTP verb",
-    )
-
-
-# --------------------------------------------------------------------------- #
-# #10 — no split with zero active requirements
-# --------------------------------------------------------------------------- #
-
-
-def no_empty_split(spec_texts: dict[str, str]) -> GateResult:
-    empty = sorted(
-        path for path, text in spec_texts.items()
-        if not fr_table_reader.read_active_fr_rows(text)
-    )
-    if empty:
-        return GateResult(
-            False,
-            f"split(s) with zero active FR rows — not a cohesive part of "
-            f"anything: {empty}",
-        )
-    return GateResult(
-        True, f"{len(spec_texts)} split(s), each with at least one active FR row",
     )
 
 

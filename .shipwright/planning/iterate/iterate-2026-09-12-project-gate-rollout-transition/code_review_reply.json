@@ -1,0 +1,29 @@
+{
+  "section": "iterate-2026-09-12-project-gate-rollout-transition",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/verifiers/common.py",
+      "line": 700,
+      "finding": "summarise()/verify_phase.py's blocking calc (`blocking = summary.errors > 0 or (args.strict and summary.warnings > 0)`) never consults CheckResult.strict_exempt, so `verify_phase.py --phase project --strict` (and `--phase all --strict` / `--phase iterate --strict`) still hard-blocks on a fully-graced rollout-transition warning. This directly contradicts this diff's own docstring claim in _project_gate_extras.py/_project_gate_wiring.py that the result is 'never promoted to a hard failure under --strict, the same strict_exempt contract layer_coverage_binding.py's own advisory branch already uses' — only the separate verify_iterate_finalization.py CLI actually filters strict_exempt warnings (lines 80-89). Pre-existing gap (shared with layer_coverage.py/plan_gate_checks.py, not introduced here), but this diff adds a third reliance on the same false invariant without disclosing it, and no new test exercises the gate through verify_phase.py to catch it.",
+      "suggestion": "Either make common.summarise()/verify_phase.py's blocking calc exclude strict_exempt warnings (mirroring verify_iterate_finalization.py's own calc), or add this as a disclosed, known gap in the ADR's 'Disclosed, not fixed' section so a future reader doesn't rely on the false guarantee."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/tools/verifiers/_project_gate_rollout_snapshot.py",
+      "line": 145,
+      "finding": "_rollout_declared_split_names's fallback loop treats 'shipwright_project_config.json exists but has no/invalid splits key at the historical commit' the same as 'file absent', falling through to shipwright_run_config.json — but the live-manifest reader (_project_gate_manifest._declared_split_names) treats project_config.json's mere existence as authoritative and never falls back in that case. A historical repo state where project_config.json existed (e.g. only carrying scope) while an old run_config.json still carried a stale splits list would let a split inherit grace the authoritative manifest at that same commit never granted — the exact 'stranger's grace' failure mode split_predates_rollout was built to prevent. Untested: the existing fallback test only covers project_config.json being entirely absent, not present-but-splits-less.",
+      "suggestion": "Mirror _declared_split_names's exact priority rule: only fall back to shipwright_run_config.json when shipwright_project_config.json did not exist at the historical commit, not merely when its `splits` key was unparseable/missing. Add a test pinning that project_config.json existing (splits-less) at rollout does NOT pick up run_config.json's splits."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/verifiers/_project_gate_grace.py",
+      "line": 1,
+      "finding": "The ADR's External-Plan-Review-Findings table (#7, glm) claims 'multi-split behaviour test-pinned' for the row-to-source-path mapping, but no test actually exercises two splits with colliding/near-identical FR content to confirm cross-split isolation — the safety is by construction (graced_criteria_for_row always scopes the lookup to the row's own display path) rather than by an explicit regression test. Not a functional bug (the path-scoped design makes cross-contamination structurally impossible), just a minor overclaim in the disposition table.",
+      "suggestion": "Either add a small multi-split test with the same FR id appearing under two different split paths, or soften the disposition table's wording from 'test-pinned' to 'structurally impossible by design'."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "AC8's cited divergence is resolved. The reviewed diff now satisfies the in-diff half of AC8 (both follow-up cards minted) and the deferred half is deferred by verified structural necessity, corrected in the spec itself inside this diff rather than papered over. AC1-AC7 stand as previously confirmed MET; the fix introduced no new spec divergence. Stage 2 (code-reviewer) may run."
+}
