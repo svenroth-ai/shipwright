@@ -45,6 +45,7 @@
       {
         "behavior": "every SubagentStop hooks.json wiring for spec/code/doubt-reviewer still salvages into the correct review type's canonical file when driven as a real subprocess",
         "disposition": "tested",
+        "category": "integration",
         "evidence": "plugins/shipwright-build/tests/test_review_payload_hook_wiring_integration.py::test_each_wired_command_salvages_into_the_correct_review_type PASSED"
       },
       {
