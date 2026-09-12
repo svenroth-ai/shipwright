@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-11-glossary-p41-review-followups",
+  "date": "2026-09-11",
+  "section": "Iterate — bug: glossary-generator P4.1 review follow-ups",
+  "title": "Fix 5 deferred PR #699 findings on the CONTEXT.md glossary producer",
+  "context": "PR #699 (P4.1 glossary generator) review deferred 5 non-blocking findings: misleading test names, missing CLI help text, an incomplete doc guard, a caller-unfriendly error message, and a real parser false-positive.",
+  "decision": "Fix all 5: rename tests, add argparse help, extend the doc guard, reword the blank-avoid error for both callers, and make parse_language_entries absorb a wrapped _Avoid_ continuation line the same way it already does for definitions.",
+  "consequences": "Closes a permanent, unrecoverable false-duplicate rejection triggered by a wrapped avoid-line cross-reference; no behavior change to the sanctioned --payload-file happy path.",
+  "rationale": "Item 5 was verified by direct reproduction before fixing. Reviewed by the full internal cascade (spec/code/doubt, all PASS) plus an external cascade (both legs approve) since the diff exceeded the 100-line review trigger.",
+  "rejected": "Considered leaving item 5 as a documented known limitation, but it has no hand-edit recovery path mid-interview, so a real correctness bug would stay live in the sanctioned interview-writing path.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

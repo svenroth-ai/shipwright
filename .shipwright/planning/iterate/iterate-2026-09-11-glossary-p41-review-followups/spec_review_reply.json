@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All 5 ACs in ad-hoc-spec.md are present and faithful: (1) test_wired_cli_* renamed + comment cross-ref updated (a stale reference survives only in the generated .shipwright/compliance/test-traceability.json, which is a pipeline-regenerated artifact, not a hand-authored cross-reference); (2) help= text added to --term/--definition/--avoid; (3) fenced-bash --term-absence assertion added to the correct doc-guard test (test_requirement_elicitation_discovery.py, verified test_requirement_elicitation_refs.py doesn't own that check); (4) blank-avoid message now names both 'avoid'/clear_avoid and the CLI flags, rejection behavior preserved, new payload-path test added; (5) _Avoid_-line continuation absorption fixed symmetrically to the existing definition-line absorption, regression test added, existing three hidden-duplicate tests unaffected. Code-reviewer may proceed."
+}

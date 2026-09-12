@@ -76,6 +76,70 @@ def test_normal_resharpen_of_a_well_formed_entry_is_not_flagged(tmp_path):
     assert read(ctx).count("**Order**") == 1
 
 
+def test_wrapped_avoid_line_cross_referencing_another_term_is_not_flagged(tmp_path):
+    """A hand-authored ``_Avoid_`` line that word-wraps onto a second
+    physical line, where that second line happens to START with a bolded
+    cross-reference to another term, used to orphan the wrapped remainder
+    into its own unparsed raw block (only a term's *definition* absorbed a
+    continuation line; its ``_Avoid_`` text did not). ``term_markup_count``
+    then counted that orphaned line-start ``**Cart**`` as a real duplicate
+    occurrence, and a fresh entry for "Cart" always added a second, so
+    upserting "Cart" was permanently rejected — with no hand-edit recovery
+    path available mid-interview (P4.1 final review, deferred finding).
+    The ``_Avoid_`` text must absorb its own wrapped continuation line the
+    same way a definition already does, so the reference never lands at a
+    line start in the first place."""
+    ctx = tmp_path / "CONTEXT.md"
+    ctx.write_text(
+        "# CONTEXT.md — Acme domain glossary\n\nAcme.\n\n"
+        "## Language\n\n"
+        "**Order** — a customer's confirmed purchase.\n"
+        "_Avoid_ using this term for anything resembling a\n"
+        "**Cart** that has not been confirmed yet.\n\n"
+        "## Relationships\n\n## Flagged ambiguities\n",
+        encoding="utf-8",
+    )
+
+    result = upsert_term(ctx, term="Cart", definition="an unconfirmed collection of items.")
+
+    assert result["status"] == "appended"
+    content = read(ctx)
+    assert (
+        "_Avoid_ using this term for anything resembling a **Cart** "
+        "that has not been confirmed yet." in content
+    )
+    assert "**Cart** — an unconfirmed collection of items." in content
+
+
+def test_unrelated_raw_line_after_avoid_is_not_swallowed_into_it(tmp_path):
+    """Continuation absorption after an ``_Avoid_`` line only swallows a
+    DIRECTLY adjacent non-blank line (doubt-reviewer, P4.1 final-review
+    Stage-3 follow-up on the wrapped-avoid fix above). A hand-written note
+    that is genuinely unrelated — separated from the avoid line by a blank
+    line, the same convention every other hand-written block in this file
+    already relies on — must survive as its own untouched raw block, not
+    get silently merged into the avoid text of the entry above it."""
+    ctx = tmp_path / "CONTEXT.md"
+    ctx.write_text(
+        "# CONTEXT.md — Acme domain glossary\n\nAcme.\n\n"
+        "## Language\n\n"
+        "**Order** — a confirmed purchase.\n"
+        "_Avoid_ mixing this up with a Cart.\n\n"
+        "Unrelated hand-written note about refund policy — not a continuation.\n\n"
+        "## Relationships\n\n## Flagged ambiguities\n",
+        encoding="utf-8",
+    )
+
+    result = upsert_term(ctx, term="Refund", definition="reversal of a confirmed Order.")
+
+    assert result["status"] == "appended"
+    content = read(ctx)
+    assert "_Avoid_ mixing this up with a Cart." in content
+    assert "mixing this up with a Cart. Unrelated" not in content
+    assert "Unrelated hand-written note about refund policy — not a continuation." in content
+    assert "**Refund** — reversal of a confirmed Order." in content
+
+
 def test_legitimate_bold_cross_reference_in_another_entry_is_not_flagged(tmp_path):
     """A term legitimately reappears bold as a cross-reference inside
     ANOTHER entry's definition prose (``context-format.md``'s own worked
