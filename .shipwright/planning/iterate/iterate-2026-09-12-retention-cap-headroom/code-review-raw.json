@@ -1,0 +1,56 @@
+{
+  "section": "iterate-2026-09-12-retention-cap-headroom",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "performance",
+      "file": "shared/tests/test_append_iterate_entry.py",
+      "line": 300,
+      "finding": "test_retention_trims_to_keep_last and test_apply_retention_handles_missing_file_gracefully each looped the FULL append_iterate_entry transaction 202/203 times (up from 52/53 at the old cap) -- O(n^2) I/O from _apply_retention's full directory rescan on every call.",
+      "suggestion": "Seed the first N-1 fixtures directly on disk (as test_retention_race.py's _seed_at_cap does) and call the real transaction only once or twice.",
+      "disposition": "fixed",
+      "resolution": "Added _write_entries_directly() helper; both tests now seed on disk and call append_iterate_entry once (test_retention_trims_to_keep_last) or twice (test_apply_retention_handles_missing_file_gracefully, to set up + trigger the race). File suite runtime dropped 14.72s -> 4.47s; full retention suite 22.41s -> 7.03s."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_retention_cap_headroom.py",
+      "line": 9,
+      "finding": "Module docstring said 'three prose mirrors' but the file guards five locations (docstring, inline comment, F5c.md, hooks-and-pipeline.md, guide.md x2).",
+      "suggestion": "Update the docstring to list all five.",
+      "disposition": "fixed",
+      "resolution": "Docstring now names all five locations."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_append_iterate_entry.py",
+      "line": 307,
+      "finding": "test_retention_trims_to_keep_last assigned entry['date'] three times in a row, two of them dead code (one via a malformed non-ISO pattern) with a misleading '# kept for sort' comment.",
+      "suggestion": "Drop the dead intermediate assignments.",
+      "disposition": "fixed",
+      "resolution": "Superseded by the performance fix above -- the whole loop (and its triple date assignment) was replaced by _write_entries_directly(), which computes the date once."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_append_iterate_entry.py",
+      "line": 322,
+      "finding": "test_retention_does_not_prune_during_migration's docstring claims it verifies migrate-fully-then-retain ordering, but only asserted a post-retention count -- indistinguishable from a hypothetical partial-view-during-migration bug landing on the same count.",
+      "suggestion": "Assert the exact survivor run_id set (newest RETENTION-1 legacy entries + the new one), not just the count.",
+      "disposition": "fixed",
+      "resolution": "Added an exact-set assertion (expected_legacy_survivors | {new run_id}) alongside the existing count assertion."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": ".shipwright/planning/adr/iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md",
+      "line": 91,
+      "finding": "ADR's Consequences bullet said 'three prose locations' but the ADR's own later Internal Plan Review section documents two more found afterward (five total) -- the summary bullet undercounted the fix's actual scope.",
+      "suggestion": "Update the Consequences bullet to list all five (or reference Internal Plan Review).",
+      "disposition": "fixed",
+      "resolution": "Consequences bullet now lists all five locations and cross-references Internal Plan Review for the two that grep initially missed."
+    }
+  ],
+  "verdict": "approve_with_fixes_applied"
+}

@@ -1,0 +1,49 @@
+{
+  "run_id": "iterate-2026-09-12-agent-doc-budget-anchor-falsematch",
+  "date": "2026-09-12T00:14:18.494050Z",
+  "event_at": "2026-09-12T00:13:38.740565+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/agent-doc-budget-anchor-falsematch",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-agent-doc-budget-anchor-falsematch",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "entry_anchor() ignores a bold span that appears anywhere other than the leading position (e.g. an incidental **Run-ID:** quote inside a date-lead entry's own prose)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_anchor_ignores_incidental_bold_not_at_lead PASSED"
+      },
+      {
+        "behavior": "entry_anchor() requires a LEADING bold span to also be run_id/ADR-NNN shaped -- a leading but non-canonical bold span still falls back to the body-head anchor",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_anchor_leading_bold_requires_run_id_or_adr_shape PASSED"
+      },
+      {
+        "behavior": "new_over_budget() no longer skips a genuinely NEW over-budget entry that happens to share an incidental bold quote with an unrelated base entry",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_agent_doc_budget.py::test_new_over_budget_does_not_skip_on_incidental_bold_collision PASSED"
+      },
+      {
+        "behavior": "a genuine leading run_id/ADR-NNN bold anchor (the canonical Convention/Architecture Updates shape) still resolves correctly -- no regression on the intended path",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_anchor_prefers_bold PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "internal parsing-helper fix inside agent_doc_budget.py (entry_anchor()); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+  }
+}

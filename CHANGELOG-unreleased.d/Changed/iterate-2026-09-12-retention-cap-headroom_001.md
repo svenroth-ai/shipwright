@@ -1,0 +1,1 @@
+Raised the iterate-entry retention cap (ITERATE_RETENTION) from 50 to 200 unpinned summaries under .shipwright/agent_docs/iterates/, giving headroom against current branch concurrency so parallel iterate branches stop scatter-pruning different other-run entry files near the old cap
