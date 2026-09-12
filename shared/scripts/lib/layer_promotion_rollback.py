@@ -102,22 +102,26 @@ def rollback_staged(worktree_path: Path, pre_sha: str, pre_untracked: set[str] |
     untracked content that predates this sweep entirely (external review,
     PR #725 round 7; round 6 introduced the untracked-file cleanup this
     scopes). When the untracked baseline is unavailable (``None``, before or
-    after), skip the destructive clean step rather than guess — a stray new
-    file left behind is a lesser risk than deleting real user data. Returns
-    whether the cleanup succeeded — a caller must escalate to
-    ``rollback_failed`` when it did not, since an ordinary terminal status
-    implies a clean rollback that never actually happened (external review,
-    PR #725)."""
+    after — a failing ``git status``), this reports FAILURE rather than
+    guessing at a clean skip: a partial untracked write from the promotion
+    tool may still be sitting in the worktree unremoved, and returning
+    ``True`` here would let an ordinary terminal status stand in for a clean
+    rollback that never actually happened, silencing the exact escalation
+    this return value exists to trigger (external review, PR #725 round 9;
+    round 7 treated the unavailable-baseline case as a lesser-risk skip, but
+    a caller cannot distinguish that skip from a genuine clean rollback
+    without this function saying so). Returns whether the cleanup succeeded
+    — a caller must escalate to ``rollback_failed`` when it did not."""
     if not pre_sha:
         return False
     reset = run_git_soft(["reset", "--hard", pre_sha], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT)
     if reset.returncode != 0:
         return False
     if pre_untracked is None:
-        return True
+        return False
     post_untracked = untracked_paths(worktree_path)
     if post_untracked is None:
-        return True
+        return False
     new_paths = sorted(post_untracked - pre_untracked)
     if not new_paths:
         return True

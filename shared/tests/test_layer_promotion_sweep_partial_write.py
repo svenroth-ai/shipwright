@@ -119,6 +119,36 @@ def test_partial_write_before_malformed_stdout_is_cleaned_up(monkeypatch, repo):
     assert porcelain.strip() == ""
 
 
+def test_untracked_status_failure_reports_rollback_failed_not_a_clean_skip(monkeypatch, repo):
+    """External review, PR #725 round 9: when ``git status`` itself fails (so
+    the untracked baseline can't be established, before or after), rollback
+    must not silently report an ordinary terminal status — the caller needs
+    the loud ``rollback_failed`` escalation, since a partial untracked write
+    from the promotion tool may still be sitting in the worktree unremoved
+    and nothing else would ever say so."""
+    import lib.layer_promotion_rollback as rollback_mod
+
+    real_run_git_soft = rollback_mod.run_git_soft
+
+    def _fake_run_git_soft(args, *a, **kw):
+        if args and args[0] == "status":
+            return subprocess.CompletedProcess(["git", *args], 1, "", "status failed")
+        return real_run_git_soft(args, *a, **kw)
+
+    monkeypatch.setattr(rollback_mod, "run_git_soft", _fake_run_git_soft)
+
+    def _fake_subprocess_run(cmd, *args, **kwargs):
+        if len(cmd) >= 2 and str(cmd[1]).endswith("promote_required_layers.py"):
+            (repo / "new_fr_spec.md").write_text("partial\n", encoding="utf-8")
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=120.0)
+        return _REAL_RUN(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", _fake_subprocess_run)
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "rollback_failed"
+
+
 def test_commit_failure_rolls_back_staged_residue(repo):
     """A failed commit must not leave staged residue behind for a later,
     unrelated commit to sweep up — forced via a real failing pre-commit
