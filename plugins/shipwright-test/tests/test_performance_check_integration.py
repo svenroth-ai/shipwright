@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 RUNNER = REPO_ROOT / "plugins" / "shipwright-test" / "scripts" / "lib" / "performance_check.py"
@@ -91,7 +93,9 @@ def test_all_pass_with_fake_lhci_and_sample_bundle(tmp_path):
 
 # ── (b) lighthouse fail under gate=block → exit 1 ────────────────────────────
 
+@pytest.mark.covers("FR-01.06/AC14")
 def test_block_gate_fails_when_lighthouse_below_budget(tmp_path):
+    # AC14's "gate=block stops the run" + "which budget, by how much" clauses.
     # cwd = a throwaway tmp project root, NOT the tracked FIXTURES dir: on a
     # failed sub-check the runner emits .shipwright/triage.jsonl under cwd, so
     # pointing it at FIXTURES would leak into version control. The bundle
@@ -126,7 +130,9 @@ def test_block_gate_fails_when_lighthouse_below_budget(tmp_path):
 
 # ── warn gate: same bad LHR but exit 0 + success true ────────────────────────
 
+@pytest.mark.covers("FR-01.06/AC14")
 def test_warn_gate_succeeds_even_on_lighthouse_failure(tmp_path):
+    # AC14's "gate=warn continues rather than stopping" clause.
     cwd = FIXTURES
     profile_path = _make_temp_profile(tmp_path, gate="warn")
     proc = _run(

@@ -60,6 +60,7 @@ class TestComparableGround:
         assert result["comparable"] == ["sast"]
         assert result["counts"]["resolved"] == 1
 
+    @pytest.mark.covers("FR-01.07/AC05")
     def test_class_not_covered_by_the_later_scan_is_not_resolved(self) -> None:
         """The whole point: gitleaks was uninstalled between runs, so the
         secret finding vanished from the output. It is NOT fixed."""

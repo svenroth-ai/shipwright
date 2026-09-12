@@ -63,7 +63,7 @@ def test_a_failing_browser_test_leaves_a_follow_up_per_spec_file(tmp_path):
     }
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC13")
 def test_a_failing_consistency_category_leaves_a_follow_up(tmp_path):
     _results(tmp_path, {"consistency": {
         "passed": 4, "total": 6,
@@ -261,7 +261,7 @@ def test_a_count_only_failure_stays_one_item_across_commits(tmp_path):
 # External review R2 — a persistent failure must not multiply
 # ---------------------------------------------------------------------------
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC09")
 def test_the_same_failure_across_two_commits_stays_one_follow_up(tmp_path):
     payload = {"e2e": {"passed": 0, "total": 1,
                        "failures": [{"title": "x", "file": "e2e/a.spec.ts"}]}}
@@ -325,8 +325,9 @@ def test_an_accepted_baseline_failure_does_not_become_a_follow_up(tmp_path):
     assert keys == {"test-warning:e2e:e2e/flows/04-pay.spec.ts"}
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC10")
 def test_the_returned_summary_names_accepted_and_genuine_separately(tmp_path):
+    # AC10's split clause: known-and-accepted vs. genuine, kept separate.
     from warning_followups import summarize_warning_layers  # noqa: PLC0415
 
     (tmp_path / "shipwright_known_failures.json").write_text(json.dumps({
@@ -346,8 +347,9 @@ def test_the_returned_summary_names_accepted_and_genuine_separately(tmp_path):
     assert summary["accepted_baseline"]["present"] is True
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC10")
 def test_the_summary_says_when_the_accepted_list_could_not_be_read(tmp_path):
+    # AC10's honesty clause: an unreadable list excuses nothing, and says so.
     from warning_followups import summarize_warning_layers  # noqa: PLC0415
 
     (tmp_path / "shipwright_known_failures.json").write_text("{broken", encoding="utf-8")
