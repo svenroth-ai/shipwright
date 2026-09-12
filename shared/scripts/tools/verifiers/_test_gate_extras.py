@@ -176,7 +176,16 @@ def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
             name, True, "no e2e layer recorded — e2e not run this cycle",
             severity=Severity.SKIPPED.value,
         )
-    if e2e.get("skipped"):
+    if e2e.get("skipped") is True:
+        # `skipped` is OVERLOADED in this record and only the boolean means
+        # "the layer did not run": playwright_runner.parse_playwright_json
+        # writes `skipped: <int>` (a count of skipped TESTS in a layer that
+        # very much ran), and iterate_tests_block reads it back through
+        # `_int_or_none`. A truthy test would therefore treat a normal run
+        # with >=1 skipped test as a skipped LAYER -- either hard-failing it
+        # as a fabricated claim below, or silently skipping the whole
+        # reconciliation. Identity against True, never truthiness.
+        #
         # External review round 2 (GLM, medium): a "skipped" claim is the
         # same fabrication/staleness class this check exists to catch if
         # the tool's own output contradicts it — check before trusting it.

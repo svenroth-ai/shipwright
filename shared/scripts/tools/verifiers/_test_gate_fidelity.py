@@ -49,6 +49,13 @@ _TRIAGE_RECORD_KEYS = {
     "unchecked": "unchecked",
 }
 
+# The categories whose PRESENCE obliges a recorded triage block. `resolved`
+# is deliberately absent: a screen that went partial -> pass got BETTER, and
+# a run whose only fidelity movement is improvement owes no triage entry.
+# All four keys still take part in the count comparison further down -- a
+# triage block that IS recorded must get `resolved` right too.
+_TRIAGE_REQUIRING_KEYS = ("regressions", "persistent_failures", "unchecked")
+
 
 def _categorize_fidelity_screen(build_status: object, current_status: object) -> str | None:
     """Pure function: (build-time status, test-time status) -> triage
@@ -83,9 +90,12 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
     ``design-fidelity-report.json``, OR one with an empty/absent ``screens``
     dict (no UI screens this project) even if ``design_fidelity`` is also
     absent at test time; OR a recomputation that finds ZERO screens needing
-    triage (every screen already passed structurally, so step 3.7 never
-    entered the triage branch — a missing ``triage`` block is then correct,
-    not a gap).
+    triage — every screen either passed outright or IMPROVED (``resolved``:
+    partial at build time, pass now), so step 3.7 never entered the triage
+    branch and a missing ``triage`` block is correct, not a gap. ``resolved``
+    is the reason the obligation is measured over ``_TRIAGE_REQUIRING_KEYS``
+    rather than over every count: a run whose only movement is improvement
+    owes nothing, and failing it would be a pure false alarm.
 
     Two distinct FAIL cases, both from the same external-review round on
     this sub-iterate's PR: a build report that DOES declare screens combined
@@ -165,10 +175,11 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
 
     recorded_triage = design_fidelity.get("triage")
     if not isinstance(recorded_triage, dict):
-        if any(expected_counts.values()):
+        needing_triage = sum(expected_counts[key] for key in _TRIAGE_REQUIRING_KEYS)
+        if needing_triage:
             return CheckResult(
                 name, False,
-                f"recomputation found {sum(expected_counts.values())} screen(s) "
+                f"recomputation found {needing_triage} screen(s) "
                 f"needing triage ({expected_counts}), but no triage block was "
                 f"recorded — a needs_review screen with no triage entry is "
                 f"exactly the 'regression == never-checked' gap this criterion "
@@ -177,7 +188,7 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
         return CheckResult(
             name, True,
             "no triage block recorded, and recomputation finds no screen that "
-            "needs one — every screen already passed structurally",
+            "needs one — every screen either passed or improved",
             severity=Severity.SKIPPED.value,
         )
 

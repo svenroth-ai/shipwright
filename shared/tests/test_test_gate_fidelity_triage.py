@@ -217,3 +217,63 @@ def test_malformed_build_screens_value_treated_as_empty(tmp_path):
     })
     r = check_design_fidelity_triage_matches_recomputation(tmp_path)
     assert r.ok is True
+
+
+def test_resolved_only_needs_no_triage_block(tmp_path):
+    """HIGH (Stage-2 code-reviewer, 2026-09-12): the no-triage-block branch
+    measured the obligation over EVERY recomputed count, `resolved`
+    included. A run whose only fidelity movement is an improvement —
+    partial at build time, pass now — then FAILED with a message claiming a
+    `needs_review` screen existed when none did. Improvement owes no triage
+    entry; only regressions/persistent failures/unchecked screens do."""
+    _write_build_report(tmp_path, {
+        "01-login.html": {"status": "partial"},
+        "02-dash.html": {"status": "partial"},
+    })
+    _write_test_results(tmp_path, {
+        "screens": [
+            {"mockup": "01-login.html", "status": "pass"},
+            {"mockup": "02-dash.html", "status": "pass"},
+        ],
+        # no "triage" key — correct, nothing needed triaging
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is True
+    assert r.is_skipped
+    assert "passed or improved" in r.detail
+
+
+def test_resolved_alongside_a_regression_still_obliges_a_triage_block(tmp_path):
+    """The narrowing must not let a real gap through: a `resolved` screen
+    sitting next to a regression leaves the block obligatory, and the count
+    reported is the one that needs triage (1), not the recomputed total (2)."""
+    _write_build_report(tmp_path, {
+        "01-login.html": {"status": "partial"},  # resolved
+        "02-dash.html": {"status": "full"},      # regression
+    })
+    _write_test_results(tmp_path, {
+        "screens": [
+            {"mockup": "01-login.html", "status": "pass"},
+            {"mockup": "02-dash.html", "status": "needs_review"},
+        ],
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "found 1 screen(s) needing triage" in r.detail
+
+
+def test_recorded_triage_block_must_still_get_resolved_right(tmp_path):
+    """`resolved` is excluded from the OBLIGATION only. Once a triage block
+    is recorded it is compared over all four keys, so a wrong `resolved`
+    count is still a mismatch."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {
+        "screens": [{"mockup": "01-login.html", "status": "pass"}],
+        "triage": {
+            "resolved": 0, "regressions": 0,
+            "persistent_failures": 0, "unchecked": 0,
+        },
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "resolved: recorded=0 recomputed=1" in r.detail

@@ -217,3 +217,38 @@ def test_symlinked_test_results_escaping_root_fails_as_missing_not_the_outside_c
         assert "missing" in r.detail
     finally:
         outside.unlink(missing_ok=True)
+
+
+def test_int_skipped_count_does_not_masquerade_as_a_skipped_layer(tmp_path):
+    """HIGH (Stage-2 code-reviewer, 2026-09-12): `skipped` is overloaded.
+    `playwright_runner.parse_playwright_json` writes it as a COUNT of
+    skipped tests in a layer that ran; only the boolean means the layer
+    itself did not run. Under the original truthiness test, an honest run
+    with >=1 skipped test was read as a skipped LAYER and then hard-failed
+    as a 'skipped claim the tool's own output contradicts' — a fabrication
+    accusation against a correct record."""
+    _write_pw_results(tmp_path, {"expected": 17, "unexpected": 0, "skipped": 3, "flaky": 0})
+    _write_test_results(tmp_path, {"skipped": 3, "total": 20, "passed": 17})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is True
+    assert not r.is_skipped
+    assert "matches playwright's own stats" in r.detail
+
+
+def test_int_skipped_count_still_reconciles_strictly(tmp_path):
+    """The same record with counts that do NOT match the tool still fails —
+    the fix restores the reconciliation, it does not weaken it."""
+    _write_pw_results(tmp_path, {"expected": 17, "unexpected": 0, "skipped": 3, "flaky": 0})
+    _write_test_results(tmp_path, {"skipped": 3, "total": 20, "passed": 20})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "passed: recorded=20 tool=17" in r.detail
+
+
+def test_boolean_skipped_layer_is_still_honoured(tmp_path):
+    """The boolean meaning is unchanged: a layer marked `skipped: true` with
+    no contradicting evidence still SKIPS rather than demanding counts."""
+    _write_test_results(tmp_path, {"skipped": True})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.is_skipped
+    assert "nothing to reconcile" in r.detail
