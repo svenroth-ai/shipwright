@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-review-evidence-canonical-names",
+  "date": "2026-09-12",
+  "section": "Iterate — change: canonical review-evidence basenames",
+  "title": "One canonical basename per review-evidence kind",
+  "context": "Review-evidence files were written with 40+ ad-hoc per-run filenames, so the PR-review classifier could not safely allowlist genuine review output without being too loose or unable to keep up (trg-3b206c08).",
+  "decision": "Give each kind (self/spec/code/doubt/plan/external_code) ONE canonical basename in a shared registry; record_review_pass.py rejects a mismatched --payload-file; every producer site (incl. the SubagentStop salvage hook) redirects to it.",
+  "consequences": "A future classifier exact-path allowlist can safely extend to this family. The salvage hook now writes into the same file the orchestrator writes, guarded by a wrong-root refusal so a misresolved project root cannot plant a stray in the main tree.",
+  "rationale": "spec/code/doubt reuse the exact names the classifier already anchors to; self keeps its established name; plan/external_code match the classifier's own cited external-*review*-raw.json example. Basename-only, not directory-anchored -- the classifier's own regex is already run-anchored.",
+  "rejected": "Widening the classifier wildcard or growing its allowlist ad hoc (both rejected by the prior filter-gap iterate); enforcing the run directory here too (would need rewriting ~10 test fixtures for a risk the classifier's regex already covers).",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-review-evidence-canonical-names-canonical-basenames.md"
+}

@@ -40,7 +40,10 @@ for _p in (SHARED_SCRIPTS, SHARED_SCRIPTS / "tools"):
 import external_review  # noqa: E402
 import record_review_pass  # noqa: E402
 from lib.review_findings import PARSE_STRUCTURED  # noqa: E402
-from lib.review_payloads import build_review_evidence  # noqa: E402
+from lib.review_payloads import (  # noqa: E402
+    CANONICAL_PAYLOAD_BASENAMES,
+    build_review_evidence,
+)
 from lib.review_record import entry_for, pending_types, read_record  # noqa: E402
 
 RUN_ID = "iterate-2026-08-06-compose-check"
@@ -200,7 +203,7 @@ def test_the_plan_row_is_not_this_passs_destination(
     envelope = _run_cli(monkeypatch, ["--mode", "architecture", "--spec-file", str(spec),
                                       "--brief-file", str(brief), "--plugin-root", str(proj),
                                       "--project-root", str(proj)], capsys)
-    payload = proj / "first.json"
+    payload = proj / CANONICAL_PAYLOAD_BASENAMES["plan"]
     payload.write_text(json.dumps(envelope), encoding="utf-8")
 
     def _record(path):
@@ -219,7 +222,7 @@ def test_the_plan_row_is_not_this_passs_destination(
         leg["feedback"] = leg["feedback"].replace(
             "the queue buys an ordering guarantee nothing needs",
             "ARCHITECTURE-ONLY FINDING that must not be lost")
-    second_payload = proj / "second.json"
+    second_payload = proj / CANONICAL_PAYLOAD_BASENAMES["plan"]
     second_payload.write_text(json.dumps(second), encoding="utf-8")
 
     # It does NOT error. Because the requested status equals the recorded one,
