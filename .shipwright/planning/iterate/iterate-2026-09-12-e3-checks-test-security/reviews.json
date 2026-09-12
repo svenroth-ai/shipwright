@@ -249,9 +249,9 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T07:04:16.288554+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-12T08:24:04.599418+00:00",
+      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: ledger paragraph (L205-206), ADR Consequences, and decision-drop consequences all assert re-measured totals 14 mechanisable / 80 enforced-tested, but running measure_ac_evidence_ledger.py --json against the committed branch state gives 15 / 82 -- the #6/#6b split's own prose double-counts two backticked status phrases after the measurement was taken. Verified independently by the orchestrator. PR left open for repair; code-reviewer not invoked.",
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
       "raw_excerpt": null
     },
