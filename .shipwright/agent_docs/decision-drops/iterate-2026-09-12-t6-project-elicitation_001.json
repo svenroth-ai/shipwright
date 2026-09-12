@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-t6-project-elicitation",
+  "date": "2026-09-12",
+  "section": "req3-05-test-backfill-mono t6: FR-01.02/FR-01.16 AC bindings",
+  "title": "Bind AC-proving tests to the real check function + its wiring; flag out-of-root seams",
+  "context": "25 ACs (FR-01.02 AC01-15, FR-01.16 AC01-10) were listed unbound in shipwright_ac_coverage_baseline.json. Two declared test roots: plugins/shipwright-project/tests, shared/tests.",
+  "decision": "21 of 25 ACs bound: enforced ACs tagged at the pure GateResult function AND paired with the run_project_checks wiring test; prompt-only ACs bound to drift tests pinning the exact rule sentence (never just the heading). 4 ACs (AC01, AC03, AC04, AC15) left unbound with recorded reasons; AC01/AC15's only full seam sits in a 3rd/4th ADR-044 root, flagged via trg-704cdb22 rather than self-authorized.",
+  "consequences": "shipwright_ac_coverage_baseline.json unbound_count 129->108 (repo-wide, since the manifest regen picked up other in-flight tags too; this unit's own contribution is exactly the 21 newly-bound FR-01.02/FR-01.16 ACs). Full per-AC disposition table in the linked spec-ref.",
+  "rationale": "External plan+code review both flagged wrapper-only bindings and mislabeled tags; fixed before finalization (paired FR-01.02 AC06/AC08/AC13/AC14 with the wiring test, added the missing FR-01.02/AC07 pure-function tag, dropped a mislabeled FR-01.16/AC10 tag).",
+  "rejected": "Forcing a weak/proxy binding on AC01/AC03/AC04/AC15 to reach 25/25 — rejected by the sub-iterate's own binding constraint. Self-authorizing a 3rd/4th test root for AC01/AC15 — rejected, mirrors t5's own precedent of flagging rather than deciding unilaterally.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-t6-project-elicitation-ac-bindings.md"
+}

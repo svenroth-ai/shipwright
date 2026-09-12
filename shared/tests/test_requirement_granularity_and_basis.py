@@ -84,6 +84,7 @@ def _norm(text: str) -> str:
 # Forward — the rules are still stated where the citations point
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.02/AC02")
 def test_fr_authoring_carries_the_granularity_section():
     body = FR_AUTHORING.read_text(encoding="utf-8")
     assert "## 3a. How big is one requirement?" in body
@@ -95,6 +96,7 @@ def test_fr_authoring_carries_the_granularity_section():
     assert "unable to enumerate what would settle it" in norm
 
 
+@pytest.mark.covers("FR-01.02/AC02")
 def test_granularity_section_keeps_the_judgement_human():
     """§3a must not read as though the check decides. I6 is a signal, not a verdict."""
     norm = _norm(FR_AUTHORING.read_text(encoding="utf-8"))

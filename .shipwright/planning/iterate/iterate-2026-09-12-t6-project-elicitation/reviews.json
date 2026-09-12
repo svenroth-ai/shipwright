@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-t6-project-elicitation",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T09:34:52.900248+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Step 5 regenerates `shipwright_ac_coverage_baseline.json` from a uncommitted regenerated `test-traceability.json`. If the local regeneration drifts (stale checkout, different pytest flags, environment), the committed baseline could be based on traceability data nobody can reproduce from the repo HEAD.",
+          "suggestion": "Note in the PR description (or a comment in the baseline regeneration step) the exact command/commit used to regenerate the manifest, so a reviewer can verify the baseline was derived from reproducible input.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 1 assumes the AC-evidence ledger's `#N` numbering maps 1:1 onto the current spec's `AC01..AC15`, \"verified bullet-by-bullet\" — but this verification was done manually during planning and isn't itself recorded anywhere reviewable. The ledger predates a later iterate that closed four rows (the 2026-09-11 e2 iterate), so numbering could have shifted when ACs were restructured.",
+          "suggestion": "Include the per-AC mapping table (old ledger `#N` → new `ACnn` → disposition) in the iterate ADR, not just referenced from it. That makes the 1:1 claim auditable rather than asserted, and protects against a silent off-by-one binding the wrong AC to the wrong test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Step 3's rule for \"tag existing tests\" vs \"write new drift tests\" relies on judging whether an existing test pins the rule sentence vs just a section heading. This is a judgement call per AC, and the plan gives no record of which existing tests were re-verified as genuinely proving their AC vs merely being reachable.",
+          "suggestion": "In the per-AC disposition table, for each \"tagged existing test\" entry include one line citing what in the test actually proves the AC (the asserted rule/behaviour). Cheap to record, and it's exactly what the \"test must PROVE the AC\" constraint requires a reviewer to check anyway.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Leaving 4 ACs unbound (2 flagged for root decision, 2 un-instructed) creates an implicit dependency on the campaign owner acting on the flags before or at t7, where the baseline is refreshed wholesale. If the root question on AC01/AC15's test roots isn't resolved, t7's compliance pass will carry the unbound entries forward.",
+          "suggestion": "Confirm the flag for the FR-01.02 AC01/AC15 root decision is filed somewhere the campaign owner will actually see (an issue / campaign log entry), not just buried in the iterate ADR.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Drift tests pinning exact rule sentences are brittle — any wording edit to `requirement-elicitation.md` or the project-surface doc breaks them, which can be noisy. This is inherent to the drift-test approach the campaign itself mandates (§6 verdict), so not a design flaw, but worth noting.",
+          "suggestion": "Where feasible, pin a stable substring (the operative phrase of the rule) rather than the full sentence, and give the drift tests failure messages that point to the doc and explain the test is a drift guard, so future editors know why it broke.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "None specific. This change adds tests and metadata only; no new inputs, auth surfaces, or data paths.",
+          "suggestion": "N/A.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not satisfy the required execution evidence: it names the two test roots but specifies neither the single pytest command per root nor the required distinct `--junitxml` outputs. “Runs green in CI” cannot be established from the proposed result alone.",
+          "suggestion": "Add the exact two commands, output locations, and a check that the JUnit files contain the expected collected tests and no collection/exit-4 failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Binding rule tests at the pure-function level alone may not prove ACs whose promised surface is `/shipwright-project`. A correct `GateResult` test can remain green if the command stops calling that gate, uses the wrong parser/fixture, or drops its result.",
+          "suggestion": "Keep the pure rule tests as the primary behavioral evidence, but pair them with the smallest existing command-level/wiring test needed to prove the gate is reachable through the declared project seam. Do not rely on wiring-only tests by themselves.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The binding constraint requires citing the t0 seam-survey row, but the plan only paraphrases its conclusion. That leaves the campaign’s pre-decided seam and the basis for excluding other roots unverifiable.",
+          "suggestion": "Cite the exact t0 row/reference in the iterate ADR or disposition table, including the rationale and allowed test roots.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC01 and AC15 are classified as unbound because their existing proving seams are in other test roots. That is not the same as “no existing seam can prove it,” which is the stated condition for an unbound reason. An administrative root restriction may leave these ACs noncompliant unless the campaign owner formally approves the exception.",
+          "suggestion": "Make the root decision an explicit prerequisite: either authorize those roots and run their required invocations, or record a durable, approved exception that the coverage tooling recognizes—not merely an iterate note.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Regenerating the baseline from an explicitly uncommitted traceability manifest risks a non-reproducible committed state. A later CI regeneration could differ, and it is unclear where the four reasons are represented in machine-readable form.",
+          "suggestion": "Confirm the baseline generator preserves per-AC reasons in the committed baseline or another committed authoritative exception artifact. Run a clean-tree regeneration/check to prove the committed artifacts reproduce the same result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The proposed 1:1 mapping from old ledger `#N` entries to current `ACNN` identifiers is asserted rather than made auditable. A reordered or subtly edited criterion could receive an apparently valid but incorrect `@covers` binding.",
+          "suggestion": "Include a compact per-AC mapping table with the current AC text/evidence location and validate each binding against the current `spec.md`, not just ordinal position.  Overall, the evidence strategy is sensible and appropriately avoids proxy tests, but it needs reproducible coverage artifacts, required test-run evidence, and an approved resolution for out-of-root ACs before it can be accepted.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T09:34:08.090499+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: low**\n**Finding:** Step 5 regenerates `shipwright_ac_coverage_baseline.json` from a *uncommitted* regenerated `test-traceability.json`. If the local regeneration drifts (stale checkout, different pytest flags, environment), the committed baseline could be based on traceability data nobody can reproduce from the repo HEAD.\n**Suggestion:** Note in the PR description (or a comment in the baseline regeneration step) the exact command/commit used to regenerate the manifest, so a reviewer can verify the baseline was derived from reproducible input.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Step 1 assumes the AC-evidence ledger's `#N` numbering maps 1:1 onto the current spec's `AC01..AC15`, \"verified bullet-by-bullet\" — but this verification was done manually during planning and isn't itself recorded anywhere reviewable. The ledger predates a later iterate that closed four rows (the 2026-09-11 e2 iterate), so numbering could have shifted when ACs were restructured.\n**Suggestion:** Include the per-AC mapping table (old ledger `#N` → new `ACnn` → disposition) in the iterate ADR, not just referenced from it. That makes the 1:1 claim auditable rather than asserted, and protects against a silent off-by-one binding the wrong AC to the wrong test.\n\n**Category: approach — Severity: low**\n**Finding:** Step 3's rule for \"tag existing tests\" vs \"write new drift tests\" relies on judging whether an existing test pins the *rule sentence* vs just a section heading. This is a judgement call per AC, and the plan gives no record of which existing tests were re-verified as genuinely proving their AC vs merely being reachable.\n**Suggestion:** In the per-AC disposition table, for each \"tagged existing test\" entry include one line citing what in the test actually proves the AC (the asserted rule/behaviour). Cheap to record, and it's exactly what the \"test must PROVE the AC\" constraint requires a reviewer to check anyway.\n\n**C […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan does not satisfy the required execution evidence: it names the two test roots but specifies neither the single pytest command per root nor the required distinct `--junitxml` outputs. “Runs green in CI” cannot be established from the proposed result alone.  \n   **Suggestion:** Add the exact two commands, output locations, and a check that the JUnit files contain the expected collected tests and no collection/exit-4 failure.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** Binding rule tests at the pure-function level alone may not prove ACs whose promised surface is `/shipwright-project`. A correct `GateResult` test can remain green if the command stops calling that gate, uses the wrong parser/fixture, or drops its result.  \n   **Suggestion:** Keep the pure rule tests as the primary behavioral evidence, but pair them with the smallest existing command-level/wiring test needed to prove the gate is reachable through the declared project seam. Do not rely on wiring-only tests by themselves.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The binding constraint requires citing the t0 seam-survey row, but the plan only paraphrases its conclusion. That leaves the campaign’s pre-decided seam and the basis for excluding other roots unverifiable.  \n   **Suggestion:** Cite the exact t0 row/reference in the iterate ADR or disposition table, including the rationale and allowed test roots.\n\n4. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** AC01 and AC15 are classified as unbound because their existing proving seams are in other test roots. That is not the same as “no existing seam can prove it,” which is the stated condition for an unbound reason. An administrative root restriction may leave these ACs noncompliant unless the campaign owner formally approves the exception.  \n   **Suggestion:** Make the root decision an explicit […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T09:34:24.002479+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T09:34:24.108428+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shipwright_ac_coverage_baseline.json` (diff hunk removing FR-01.02/AC01–AC15 and FR-01.16 entries)",
+          "line": null,
+          "finding": "The spec requires \"no entry for this cluster remains in `unbound` without a recorded reason.\" FR-01.02/AC01 and AC15 do remain in `unbound`, and their reasons are recorded only in the miniplan doc and a triage jsonl entry — not in the baseline artifact itself (or in any cited evidence path the ratchet tool reads). If the baseline schema (or the coverage-ratchet pass at t7) expects the reason adjacent to the unbound entry, this criterion is only partially satisfied, and the reason is invisible to anyone reading the baseline alone.",
+          "suggestion": "Record the reason in whatever field/mechanism the baseline format supports for unbound entries (or confirm the ratchet tooling pulls reasons from a sidecar), and make the diff show it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "plugins/shipwright-project/pyproject.toml:28` (new `covers` marker registration)",
+          "line": null,
+          "finding": "The `covers` marker is registered only in `plugins/shipwright-project/pyproject.toml`, but the bulk of the new `@pytest.mark.covers` tags live in `shared/tests/`. If the shared test root's pytest config has `--strict-markers` (directly or via inherited addopts), those tests will error as unknown markers. The diff shows no corresponding registration for the shared root.",
+          "suggestion": "Verify `shared/tests`' pytest config registers (or does not enforce) the `covers` marker; add the marker line to that root's config if strict-markers applies.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test |",
+          "file": "shared/tests/test_verifiers_project.py:287` (`test_run_project_checks_includes_all_four_new_gates` tagged with AC06/AC08/AC13/AC14)",
+          "line": null,
+          "finding": "This single wiring test is the only `covers` binding for none of the four (good — dedicated tests exist), but AC07's sole binding is `test_run_project_checks_detects_grill_trace_blank_dimension`, a wrapper-level test through `run_project_checks`. The miniplan's own rule says never bind to the wrapper-level integration test alone. AC07's underlying rule (blank-dimension STOP) is only tested at the pure-function level without a `covers` tag (`test_blank_dimension_fails_` are untagged in the completeness test file).",
+          "suggestion": "Add the `covers(\"FR-01.02/AC07\")` tag to the pure-function `check_blank_dimension` failure tests in `test_verify_grill_trace_completeness.py` (e.g. the blank-assumed-reason test), matching the pattern used for AC10 there.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_requirement_elicitation_rigor.py:194` and `:210` (`test_module_requires_adr_capture_at_the_decision_moment`, `test_module_requires_confirmation_before_writing_the_requirement`)",
+          "line": null,
+          "finding": "The assertions match strings containing embedded hard line breaks (`\"the why behind a\\nhard-to-reverse choice\"`, `\"The\\nconfirmation\"`) that depend on exact markdown line wrapping in the module doc. Any reflow of a paragraph (not a semantic change) breaks the test; conversely the AC's actual guarantee (glossary free of implementation detail) is only pinned by the presence of one sentence, which could remain while the surrounding rule is gutted.",
+          "suggestion": "Normalize whitespace (e.g. collapse `\\s+` to single spaces) before matching, as other tests in the suite already do with `_norm`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_requirement_elicitation_discovery.py:80` (`test_elicitation_surface_cites_the_module` tagged with both AC09 and AC10)",
+          "line": null,
+          "finding": "AC10 (per the rigor test's binding) is \"module separates enforced from prompt-only\" — a property of §6 of the module, not of the citing docs. Tagging the doc-citation parametrized test with AC10 means a hypothetical removal of §6's three-way verdict would be caught by the rigor test, so it's redundant but mislabeled; if the rigor test were deleted, this citation test would silently \"cover\" AC10 without proving it.",
+          "suggestion": "Drop the `FR-01.16/AC10` tag from the discovery test; leave AC10 bound only to `test_module_separates_enforced_from_prompt_only`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-12-t6-project-elicitation/risk_recheck.json",
+          "line": 18,
+          "finding": "ci_ack_recorded: false` while the unit's AC requires proving tests \"run green in CI.\" The diff contains no JUnit XML evidence or recorded CI acknowledgement for the two test roots, so the green-run claim is unverified in this change.",
+          "suggestion": "Record the CI acknowledgment / junitxml results (one per test root, per ADR-044) as the iterate's evidence.  Overall: the binding arithmetic is consistent (21 of 25 tagged, 4 unbound with documented reasoning) and the approach respects the seam/flag-don't-self-authorize constraints. The main gaps are the unbound-reason recording surface, possible missing `covers` marker registration in the shared test root, and a few tag placements that don't prove the AC they claim.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "[.shipwright/planning/iterate/2026-09-12-t6-project-elicitation-miniplan.md](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-qg9sqqql\\.shipwright\\planning\\iterate\\2026-09-12-t6-project-elicitation-miniplan.md:11)",
+          "line": null,
+          "finding": "The binding constraint requires citing the specific t0 seam-survey row for this cluster. The plan only generally attributes the two roots to “the campaign’s seam survey, t0,” so the mandated seam evidence is not actually recorded.",
+          "suggestion": "Add the exact t0 row identifier/path (and its stated root decision) to the plan or iterate record.  The test bindings and baseline update otherwise cover the stated 21 bindable ACs, while the four remaining unbound ACs have concrete reasons recorded in the plan. Ship with the seam citation corrected.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T09:34:14.496421+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: spec | Severity: medium\n  File: `shipwright_ac_coverage_baseline.json` (diff hunk removing FR-01.02/AC01–AC15 and FR-01.16 entries)\n  Finding: The spec requires \"no entry for this cluster remains in `unbound` without a **recorded reason**.\" FR-01.02/AC01 and AC15 do remain in `unbound`, and their reasons are recorded only in the miniplan doc and a triage jsonl entry — not in the baseline artifact itself (or in any cited evidence path the ratchet tool reads). If the baseline schema (or the coverage-ratchet pass at t7) expects the reason adjacent to the unbound entry, this criterion is only partially satisfied, and the reason is invisible to anyone reading the baseline alone.\n  Suggestion: Record the reason in whatever field/mechanism the baseline format supports for unbound entries (or confirm the ratchet tooling pulls reasons from a sidecar), and make the diff show it.\n\n- Category: bug | Severity: medium\n  File: `plugins/shipwright-project/pyproject.toml:28` (new `covers` marker registration)\n  Finding: The `covers` marker is registered only in `plugins/shipwright-project/pyproject.toml`, but the bulk of the new `@pytest.mark.covers` tags live in `shared/tests/*`. If the shared test root's pytest config has `--strict-markers` (directly or via inherited addopts), those tests will error as unknown markers. The diff shows no corresponding registration for the shared root.\n  Suggestion: Verify `shared/tests`' pytest config registers (or does not enforce) the `covers` marker; add the marker line to that root's config if strict-markers applies.\n\n- Category: test | Severity: medium\n  File: `shared/tests/test_verifiers_project.py:287` (`test_run_project_checks_includes_all_four_new_gates` tagged with AC06/AC08/AC13/AC14)\n  Finding: This single wiring test is the *only* `covers` binding for none of the four (good — dedicated tests exist), but AC07's sole binding is `test_run_project_checks_detects_grill_trace_blank_dimension`, a wrapper […truncated]\n\n[openai] - Category: spec\n- Severity: low\n- File: [.shipwright/planning/iterate/2026-09-12-t6-project-elicitation-miniplan.md](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-qg9sqqql\\.shipwright\\planning\\iterate\\2026-09-12-t6-project-elicitation-miniplan.md:11)\n- Finding: The binding constraint requires citing the specific t0 seam-survey row for this cluster. The plan only generally attributes the two roots to “the campaign’s seam survey, t0,” so the mandated seam evidence is not actually recorded.\n- Suggestion: Add the exact t0 row identifier/path (and its stated root decision) to the plan or iterate record.\n\nThe test bindings and baseline update otherwise cover the stated 21 bindable ACs, while the four remaining unbound ACs have concrete reasons recorded in the plan. Ship with the seam citation corrected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T09:34:23.893753+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T09:34:24.215563+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
