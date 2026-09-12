@@ -140,3 +140,51 @@ def test_missing_test_side_screens_with_declared_build_screens_fails(tmp_path):
     r = check_design_fidelity_triage_matches_recomputation(tmp_path)
     assert r.ok is False
     assert "never actually covered them" in r.detail
+
+
+def test_honest_skipped_layer_skips_even_with_declared_build_screens(tmp_path):
+    """Stage-2 code-reviewer (2026-09-12, PR #748 re-review): the round-1
+    Tier-3 fix above turned an honest could-not-run design_fidelity record
+    (`skipped: true`, its own documented record-template flag — step-3.7-
+    design-fidelity.md's own example JSON) into a false "fabrication" FAIL
+    whenever the build side declared screens but the skipped record's
+    `screens` list was absent or empty. A skipped layer owes nothing."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {"skipped": True})
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is True
+    assert r.is_skipped
+
+
+def test_skipped_layer_contradicted_by_real_screens_fails(tmp_path):
+    """A `skipped: true` claim alongside real screens or a recorded triage
+    block is the same fabrication/staleness class this check exists to
+    catch — the same discipline check_e2e_counts_reconciled already applies
+    to its own `e2e.skipped` field."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {
+        "skipped": True,
+        "screens": [{"mockup": "01-login.html", "status": "pass"}],
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "'skipped' claim its own record contradicts" in r.detail
+
+
+def test_junk_screen_entries_with_declared_build_screens_fails(tmp_path):
+    """Stage-2 code-reviewer (2026-09-12, PR #748 re-review): a non-empty
+    `screens` list holding only junk (non-dict) entries is outcome-identical
+    to the empty list the round-1 Tier-3 fix already closed — the
+    recomputation over zero usable entries still reconciles with a
+    fabricated all-zero triage block."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {
+        "screens": ["not-a-dict", 42, None],
+        "triage": {
+            "resolved": 0, "regressions": 0,
+            "persistent_failures": 0, "unchecked": 0,
+        },
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "never actually covered them" in r.detail

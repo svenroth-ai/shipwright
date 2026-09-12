@@ -89,13 +89,16 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
     SKIPPED when there is nothing to recompute: no build-time
     ``design-fidelity-report.json``, OR one with an empty/absent ``screens``
     dict (no UI screens this project) even if ``design_fidelity`` is also
-    absent at test time; OR a recomputation that finds ZERO screens needing
-    triage — every screen either passed outright or IMPROVED (``resolved``:
-    partial at build time, pass now), so step 3.7 never entered the triage
-    branch and a missing ``triage`` block is correct, not a gap. ``resolved``
-    is the reason the obligation is measured over ``_TRIAGE_REQUIRING_KEYS``
-    rather than over every count: a run whose only movement is improvement
-    owes nothing, and failing it would be a pure false alarm.
+    absent at test time; OR ``design_fidelity.skipped is True`` (the record
+    template's own boolean flag for "this layer never ran", uncontradicted by
+    real screens or a recorded triage block); OR a recomputation that finds
+    ZERO screens needing triage — every screen either passed outright or
+    IMPROVED (``resolved``: partial at build time, pass now), so step 3.7
+    never entered the triage branch and a missing ``triage`` block is
+    correct, not a gap. ``resolved`` is the reason the obligation is measured
+    over ``_TRIAGE_REQUIRING_KEYS`` rather than over every count: a run whose
+    only movement is improvement owes nothing, and failing it would be a
+    pure false alarm.
 
     Several distinct FAIL cases guard against a fabricated or incomplete
     comparison rather than an honestly empty one: a symlinked
@@ -185,25 +188,58 @@ def check_design_fidelity_triage_matches_recomputation(project_root: Path) -> Ch
             severity=Severity.SKIPPED.value,
         )
 
+    if design_fidelity.get("skipped") is True:
+        # Tier-3 CI review, round 2 (Stage-2 code-reviewer, PR #748): the
+        # record template documents a first-class boolean `skipped` flag
+        # meaning "this layer never ran" (step-3.7-design-fidelity.md's own
+        # example JSON), the same overload check_e2e_counts_reconciled
+        # already honours for its `e2e.skipped` field
+        # (warning_followups.py's `_layer` names the bool-vs-count split
+        # explicitly). The round-1 fix below must not turn this honest
+        # could-not-run outcome into a false "fabrication" FAIL just
+        # because its `screens` list is empty or absent. A `skipped: true`
+        # claim contradicted by real screens or a recorded triage block is
+        # still the fabrication/staleness class this check exists to catch.
+        screens_claim = design_fidelity.get("screens")
+        has_real_screens = isinstance(screens_claim, list) and any(
+            isinstance(entry, dict) for entry in screens_claim
+        )
+        if has_real_screens or isinstance(design_fidelity.get("triage"), dict):
+            return CheckResult(
+                name, False,
+                "design_fidelity recorded as skipped, but it also carries "
+                "screens or a triage block — a 'skipped' claim its own "
+                "record contradicts",
+            )
+        return CheckResult(
+            name, True,
+            "design fidelity layer recorded as skipped — nothing to recompute",
+            severity=Severity.SKIPPED.value,
+        )
+
     screens = design_fidelity.get("screens")
-    if not isinstance(screens, list) or (not screens and build_screens):
+    usable_screens = [s for s in screens if isinstance(s, dict)] if isinstance(screens, list) else []
+    if not isinstance(screens, list) or (not usable_screens and build_screens):
         # Tier-3 CI review (PR #748): a missing/malformed/empty `screens`
-        # list is not the same as "every screen resolved cleanly" when the
-        # build side declares real screens — that combination means the
-        # comparison never actually covered any of them, the same
-        # "comparison step never ran" gap already caught above for a
-        # missing `design_fidelity` block entirely. Silently coercing to
-        # `[]` let a fabricated all-zero triage block sail through without
-        # a single screen being checked.
+        # list — or one holding only junk (non-dict) entries the
+        # recomputation below can't use — is not the same as "every screen
+        # resolved cleanly" when the build side declares real screens: that
+        # combination means the comparison never actually covered any of
+        # them, the same "comparison step never ran" gap already caught
+        # above for a missing `design_fidelity` block entirely. Silently
+        # coercing it to `[]` let a fabricated all-zero triage block sail
+        # through without a single screen being checked.
         if build_screens:
             return CheckResult(
                 name, False,
                 f"design-fidelity-report.json declares {len(build_screens)} "
                 f"screen(s), but design_fidelity.screens is missing, "
-                f"malformed, or empty — the comparison step never actually "
-                f"covered them",
+                f"malformed, empty, or has no usable entries — the "
+                f"comparison step never actually covered them",
             )
         screens = []
+    else:
+        screens = usable_screens
 
     expected_counts = {key: 0 for key in _TRIAGE_RECORD_KEYS.values()}
     for screen in screens:

@@ -93,10 +93,13 @@ drift test pinning the instruction, not a gate.
    contradiction-detection).
 5. **Performance Basics** — pass. No DB access; globbing bounded to
    project-controlled directories; no N+1/unbounded-fetch patterns.
-6. **Naming & Structure** — pass. `_test_gate_extras.py` (#5, 264 lines) /
-   `_test_gate_specs.py` (#6, 143 lines) / `_test_gate_fidelity.py` (#7, 216
-   lines) — split proactively to stay under the 300-line guideline,
-   mirroring the `_project_gate_*.py` precedent.
+6. **Naming & Structure** — pass. `_test_gate_extras.py` (#5, 256 lines) /
+   `_test_gate_specs.py` (#6, 145 lines) / `_test_gate_fidelity.py` (#7, 294
+   lines) / `_test_gate_paths.py` (shared path-safety helpers, 80 lines) —
+   split proactively to stay under the 300-line guideline, mirroring the
+   `_project_gate_*.py` precedent. `_test_gate_paths.py` was split out of
+   `_test_gate_extras.py` a second time (Tier-3 CI review round, below) once
+   the escape/absence distinction pushed it back over 300 lines.
 7. **Affected Boundaries** (ADR-024) — pass, WITH an empirical finding (see
    Confidence Calibration below): new READERS only over three pre-existing
    serialized formats (`shipwright_test_results.json`, `e2e-results.json`,
@@ -174,3 +177,24 @@ Round 2 (7 findings, after round-1 fixes landed):
 | 5 | low | Ledger row #6 tagged bare `enforced, tested` despite the check's own weak-oracle caveat | accepted-and-fixed — split into #6/#6b, matching campaign's #8/#8b precedent |
 | 6 | low | `test_passes_when_counts_match` pinned an unrelated severity-default implementation detail | accepted-and-fixed — assertion dropped |
 | 7 | low | Heading regex `IGNORECASE` diverges from `journey_plan.py`'s real (case-sensitive) grammar | accepted-and-fixed — reverted to case-sensitive, exact mirror |
+
+Round 3 (Tier-3 CI review on PR #748, required check, 3 findings after
+rounds 1-2 landed):
+
+| # | Severity | Finding (short) | Disposition |
+|---|---|---|---|
+| 1 | high | Malformed/missing `screens` fields (build- and test-side) silently coerced to empty, letting a fabricated all-zero triage block pass without comparing any screens | accepted-and-fixed — both sides now FAIL on a present-but-wrong-type field; a declared-nonempty build side with a missing/empty test side also FAILs |
+| 2 | high | An escaping symlink for `design-fidelity-report.json` was treated identically to "absent" (SKIP), letting a project-controlled symlink suppress the whole gate | accepted-and-fixed — new `_project_file_or_escape` (`_test_gate_paths.py`) distinguishes absent from escaping; the fidelity check now FAILs on escape |
+| 3 | medium | `bool` is an `int` subclass in Python; recorded `total`/`passed`/`flaky` compared with plain `!=` let a malformed `total: true` reconcile against an expected value of 1 | accepted-and-fixed — validated as non-negative integers first, mirroring `_stat_field`'s existing discipline |
+
+Round 3's own fix introduced a regression the Stage-2 code-reviewer caught on
+re-review before merge: the round-3 fix #1 above did not honour
+`design_fidelity`'s own documented boolean `skipped` flag (step-3.7-design-
+fidelity.md's record template), so an honest could-not-run record now
+false-failed as fabrication whenever the build side declared screens. Fixed
+in the same PR: `skipped is True` now SKIPs (uncontradicted by real screens
+or a recorded triage block, which still FAIL as a self-contradiction) before
+the round-3 emptiness check runs; a related low finding (a non-empty
+`screens` list holding only non-dict junk entries reconciling the same way
+an empty list did) was closed in the same pass by measuring the obligation
+over usable (dict) entries only.
