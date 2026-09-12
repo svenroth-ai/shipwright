@@ -1,11 +1,13 @@
-"""Tests for ``check_no_empty_split`` (``_project_gate_wiring.py``) and
-``_is_safe_split_name``/manifest reading (``_project_gate_manifest.py``).
+"""Tests for ``check_no_empty_split`` (``_project_gate_wiring.py``) and its
+manifest reading (``_project_gate_manifest.py``).
 
 Split out of ``test_verifiers_project.py`` (shared bloat gate, 300-line
 limit; req3-06-enforcement-mono sub-iterate e2) — ``check_no_empty_split``
 carries the largest share of this module's external-review regression
-tests (manifest parsing, split-name safety, missing/unreadable specs), so
-it gets its own file. ``check_basis_forbids_assumed``,
+tests (manifest parsing, missing/unreadable specs), so it gets its own
+file. ``_is_safe_split_name`` itself is tested in
+``test_project_gate_split_name_safety.py`` (split out round 7, same
+300-line limit). ``check_basis_forbids_assumed``,
 ``check_criteria_free_of_implementation_detail`` and
 ``check_starting_guidance_present`` live in
 ``test_project_gate_basis_and_guidance.py``.
@@ -22,7 +24,6 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tools.verifiers._project_gate_manifest import _is_safe_split_name  # noqa: E402
 from tools.verifiers._project_gate_wiring import check_no_empty_split  # noqa: E402
 
 from _project_check_fixtures import _write_splits_config  # noqa: E402
@@ -231,27 +232,6 @@ def test_check_no_empty_split_fails_loud_on_a_split_dir_symlinked_outside_the_pr
     assert r.ok is False
     assert "leaked host content" not in r.detail
     assert "outside the project root" in r.detail
-
-
-def test_is_safe_split_name_rejects_windows_drive_and_root_relative_names():
-    """External code review (round 6, low+medium, both reviewers
-    independently): ``is_absolute()`` alone misses Windows DRIVE-relative
-    (``"C:foo"``) and ROOT-relative (``"\\\\outside"``) names — neither
-    counts as absolute to pathlib (it requires BOTH drive and root), but
-    either re-anchors ``planning_dir / name`` away from the planning tree."""
-    assert _is_safe_split_name("C:foo") is False
-    assert _is_safe_split_name("\\outside\\spec") is False
-    assert _is_safe_split_name("01-a") is True
-
-
-def test_is_safe_split_name_rejects_backslash_traversal_on_any_host_os():
-    """Required Tier-3 PR review (PR #729): the ``..``/``.`` segment check
-    used to parse ``name`` with the host-native ``Path``, so a backslash
-    traversal name stayed one literal part on POSIX (backslash isn't a
-    separator there) and was judged safe — but the name is committed data
-    later joined by whichever OS reads the manifest, where backslash IS a
-    separator. Must be rejected regardless of which OS runs this check."""
-    assert _is_safe_split_name("foo\\..\\..\\escape") is False
 
 
 def test_check_no_empty_split_fails_loud_when_splits_is_not_a_list(tmp_path):
