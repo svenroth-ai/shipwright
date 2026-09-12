@@ -144,10 +144,11 @@ def test_phase_history_missing_blocks_validation(tmp_path, monkeypatch):
     assert any("phase_history" in i["message"] for i in issues if i["severity"] == "ask")
 
 
+@pytest.mark.covers("FR-01.02/AC01")
 def test_legacy_pre_12_1_gate_still_fires(tmp_path, monkeypatch):
     """If the project plugin's pre-12.1 gate fails (no splits), the
     canon verifier doesn't even run — we fail fast with the legacy
-    ask message."""
+    ask message. AC01's other half: an empty catalogue must FAIL."""
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"status": "complete", "splits": []})
     )
