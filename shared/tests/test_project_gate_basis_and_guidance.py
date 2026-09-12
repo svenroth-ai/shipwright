@@ -11,8 +11,11 @@ and ``check_starting_guidance_present``. ``check_no_empty_split`` and
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -246,3 +249,25 @@ def test_check_starting_guidance_present_fails_loud_on_malformed_config(tmp_path
     r = check_starting_guidance_present(tmp_path)
     assert r.ok is False
     assert "could not be parsed" in r.detail
+
+
+def test_check_starting_guidance_present_fails_loud_on_claude_md_symlinked_outside_the_project(tmp_path):
+    """Tier-3 PR review (PR #729, round 9) — the same class of finding
+    round 7 fixed in ``_read_spec_texts`` (``_project_gate_manifest.py``):
+    fixed, well-known relative paths checked with ``exists()``/
+    ``read_text()`` without resolving them let a symlinked ``CLAUDE.md``
+    satisfy "present and non-empty" while reading an arbitrary host
+    file."""
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-claude-md"
+    outside.write_text("leaked host content", encoding="utf-8")
+    (tmp_path / "shipwright_project_config.json").write_text(
+        json.dumps({"scope": "full_app"}), encoding="utf-8",
+    )
+    try:
+        os.symlink(outside, tmp_path / "CLAUDE.md")
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+    r = check_starting_guidance_present(tmp_path)
+    assert r.ok is False
+    assert "leaked host content" not in r.detail
+    assert "outside the project root" in r.detail

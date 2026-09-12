@@ -217,13 +217,44 @@ _STARTING_GUIDANCE_FILES = (
 def starting_guidance_present(project_root: Path) -> GateResult:
     """Extension scope never writes these (they already exist) — the caller
     is responsible for skipping this check on that scope, exactly like
-    Step 8's own "Full Application only" annotations on items 3 and 4."""
+    Step 8's own "Full Application only" annotations on items 3 and 4.
+
+    Tier-3 review (PR #729, round 9) — the same class of finding round 7
+    fixed in ``_read_spec_texts`` (``_project_gate_manifest.py``) applies
+    here too: this gate ran against untrusted PR content in CI, and its
+    fixed, well-known relative paths made checking ``exists()``/calling
+    ``read_text()`` without resolving them a symlink escape — a hostile PR
+    could commit ``CLAUDE.md`` (or an agent-doc file) as a symlink
+    resolving outside the project root, satisfying "present and
+    non-empty" while reading an arbitrary host file. Each candidate is now
+    resolved and checked against the resolved project root before being
+    read; an escape is treated the same as "missing"."""
+    resolved_root = project_root.resolve()
     candidates = [project_root / rel for rel in _STARTING_GUIDANCE_FILES]
-    missing = [str(p) for p in candidates if not p.exists()]
+    missing: list[str] = []
+    escaped: list[str] = []
+    readable: list[Path] = []
+    for p in candidates:
+        try:
+            resolved = p.resolve(strict=False)
+        except OSError:
+            missing.append(str(p))
+            continue
+        if resolved != resolved_root and resolved_root not in resolved.parents:
+            escaped.append(str(p))
+            continue
+        if not p.exists():
+            missing.append(str(p))
+            continue
+        readable.append(p)
+    if escaped:
+        return GateResult(
+            False, f"starting-guidance file(s) resolve outside the project root: {escaped}",
+        )
     if missing:
         return GateResult(False, f"starting-guidance file(s) missing: {missing}")
     empty: list[str] = []
-    for p in candidates:
+    for p in readable:
         try:
             content = p.read_text(encoding="utf-8")
         except OSError as exc:

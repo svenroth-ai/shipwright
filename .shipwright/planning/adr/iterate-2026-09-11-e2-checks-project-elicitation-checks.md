@@ -407,6 +407,22 @@ deleted outright rather than kept as a "state=exception" baseline entry —
 there is no reason to retain committed debug output once its
 recommendations have already been read and acted on.
 
+## Tier-3 review history — same symlink-escape class in a sibling gate (PR #729)
+
+A ninth review pass found `check_starting_guidance_present`
+(`_project_gate_extras.py`, `starting_guidance_present`) had the identical
+gap round 7 closed in `_read_spec_texts`: its four fixed, well-known
+relative paths (`CLAUDE.md` and three agent-doc files) were checked with
+`exists()`/`read_text()` without ever being resolved, so a hostile PR
+could commit `CLAUDE.md` as a symlink resolving outside the project root
+and satisfy "present and non-empty" while the gate read an arbitrary host
+file. Round 7's fix only touched the manifest-driven spec-text reader; it
+never covered this sibling gate, whose candidate paths are fixed rather
+than manifest-declared. Fixed the same way: each candidate is resolved
+and checked against the resolved project root before being read, with an
+escape treated the same as "missing". Regression test follows the same
+`os.symlink()` + skip-on-unsupported pattern as round 7's.
+
 ## Stage-3 Doubt Review (PR #729, post Stage-2 fixes)
 
 Two findings, both verified genuine by direct reproduction / doc-reading
