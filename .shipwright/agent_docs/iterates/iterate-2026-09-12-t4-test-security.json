@@ -1,0 +1,157 @@
+{
+  "run_id": "iterate-2026-09-12-t4-test-security",
+  "date": "2026-09-12T04:08:32.070108Z",
+  "event_at": "2026-09-12T00:22:34.888341+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t4",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t4-test-security.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-t4-test-security",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "FR-01.06/AC01 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_test_runner.py::test_run_tests_failing PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC03 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_test_checks_accepted_baseline.py::test_an_empty_run_is_still_never_a_pass PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC04 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_test_runner.py::test_skip_if_missing_records_not_run_with_a_reason_never_a_pass PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC06 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_playwright_runner_flaky.py::test_a_legacy_multi_attempt_pass_is_not_silently_a_first_time_pass PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC08 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_journey_coverage.py::test_greenfield_gaps_block; ::test_brownfield_gaps_do_not_block_and_leave_a_follow_up PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC09 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_warning_followups.py::test_the_same_failure_across_two_commits_stays_one_follow_up PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC10 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_warning_followups.py::test_the_returned_summary_names_accepted_and_genuine_separately; ::test_the_summary_says_when_the_accepted_list_could_not_be_read PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC11 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_playwright_runner_flaky.py::test_retries_no_longer_inflate_the_total PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC13 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_warning_followups.py::test_a_failing_consistency_category_leaves_a_follow_up PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC14 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_performance_check_integration.py::test_block_gate_fails_when_lighthouse_below_budget; ::test_warn_gate_succeeds_even_on_lighthouse_failure PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC15 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_boundary_coverage_report.py::test_round_trip_detection_heuristic PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC16 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_boundary_coverage_report.py::test_drift_signal_fires_when_io_commit_lacks_section PASSED"
+      },
+      {
+        "behavior": "FR-01.06/AC17 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_boundary_coverage_report.py::test_merge_into_creates_key_in_existing_file PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC01 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_scan_cli.py::test_the_scan_examines_every_named_risk_category PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC02 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_normalizers.py::test_every_normalizer_produces_the_same_required_shape PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC03 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_scan_cli_degraded.py::test_degraded_returns_2_and_writes_marker PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC05 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_scan_compare.py::test_class_not_covered_by_the_later_scan_is_not_resolved PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC07 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_scan_cli.py::test_no_scanner_available_stops_with_setup_instructions_not_a_clean_result PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC09 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_normalizers.py::test_remediation_hint_says_the_credential_must_be_rotated PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC10 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_security_card.py::test_title_leads_with_the_severity_split_not_a_bare_total PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC12 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_run_scan_and_report.py::test_appends_shipwright_entry_when_gitignore_exists_without_it PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC15 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_run_scan_and_report.py::test_writes_latest_md_and_latest_json PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC16 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_gitleaks_config.py::test_project_config_is_extended_by_absolute_path PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC17 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_scan_cli.py::TestSarifDir::test_writes_default_sarif_files_on_clean_scan PASSED"
+      },
+      {
+        "behavior": "FR-01.07/AC18 is proven by an existing/strengthened test at the seam t0's survey named for this cluster (plugins/shipwright-test/tests or plugins/shipwright-security/tests per FR)",
+        "disposition": "tested",
+        "evidence": "test_finalize_security_compliance.py::test_finalize_skips_in_standalone_mode PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 25,
+      "tested": 25,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 25,
+      "covered_acs": 25
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Test-backfill unit binding existing FR-01.06/FR-01.07 ACs to existing/new tests plus a coverage-baseline regen; no startable web/dev-server/CLI surface of its own -- verification is the unit-test suite itself (F0), run across the 3 waived ADR-044 roots (plugins/shipwright-test/tests, plugins/shipwright-security/tests, shared/tests) per t0's seam survey + the 2026-09-12 operator root-count ruling."
+  }
+}

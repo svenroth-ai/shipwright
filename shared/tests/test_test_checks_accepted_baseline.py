@@ -50,7 +50,7 @@ def test_a_green_run_still_passes(tmp_path: Path):
     assert check_test_results_file_fresh(tmp_path).ok is True
 
 
-@pytest.mark.covers("FR-01.06")
+@pytest.mark.covers("FR-01.06/AC03")
 def test_an_empty_run_is_still_never_a_pass(tmp_path: Path):
     _results(tmp_path, {"passed": 0, "total": 0})
     r = check_test_results_file_fresh(tmp_path)

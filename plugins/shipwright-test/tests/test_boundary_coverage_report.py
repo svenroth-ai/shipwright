@@ -272,7 +272,7 @@ class TestScanSpecs:
 
 
 class TestCorrelateWithCommits:
-    @pytest.mark.covers("FR-01.06")
+    @pytest.mark.covers("FR-01.06/AC16")
     def test_drift_signal_fires_when_io_commit_lacks_section(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)
@@ -317,7 +317,7 @@ class TestCorrelateWithCommits:
         for r in rows:
             assert not r.drift_signal
 
-    @pytest.mark.covers("FR-01.06")
+    @pytest.mark.covers("FR-01.06/AC15")
     def test_round_trip_detection_heuristic(self, tmp_path):
         """If a test file mentions producer name, mark round_trip_tested=True."""
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
@@ -712,7 +712,7 @@ class TestMergeIntoFlag:
     the JSON output into shipwright_test_results.json#boundary_coverage_report.
     """
 
-    @pytest.mark.covers("FR-01.06")
+    @pytest.mark.covers("FR-01.06/AC17")
     def test_merge_into_creates_key_in_existing_file(self, tmp_path):
         planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
         planning_root.mkdir(parents=True)

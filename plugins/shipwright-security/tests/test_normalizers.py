@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 # Ensure scripts/lib is on path for normalizer imports
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
@@ -12,6 +14,34 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 from normalizers.semgrep import normalize as normalize_semgrep
 from normalizers.trivy import normalize as normalize_trivy
 from normalizers.gitleaks import normalize as normalize_gitleaks
+
+
+# ---------------------------------------------------------------------------
+# AC2 — findings arrive in one shape whichever check produced them
+# ---------------------------------------------------------------------------
+
+@pytest.mark.covers("FR-01.07/AC02")
+def test_every_normalizer_produces_the_same_required_shape(
+    sample_semgrep_output, sample_trivy_output, sample_gitleaks_output,
+):
+    """A flaw in the code (semgrep/SAST), a known-vulnerable dependency
+    (trivy/SCA) and a leaked secret (gitleaks) must all read, count and act on
+    identically — the same required key set regardless of which check found
+    them."""
+    required = {"id", "severity", "type", "rule", "source", "affected_file"}
+
+    all_findings = (
+        normalize_semgrep(sample_semgrep_output)
+        + normalize_trivy(sample_trivy_output)
+        + normalize_gitleaks(sample_gitleaks_output)
+    )
+    sources = {f["source"] for f in all_findings}
+    assert sources == {"semgrep", "trivy", "gitleaks"}, (
+        "expected findings from all three scanners so the shape check is real"
+    )
+    for finding in all_findings:
+        missing = required - finding.keys()
+        assert not missing, f"{finding.get('source')} finding missing {missing}"
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +151,18 @@ class TestGitleaksNormalizer:
     def test_basic_normalization(self, sample_gitleaks_output):
         findings = normalize_gitleaks(sample_gitleaks_output)
         assert len(findings) == 2
+
+    @pytest.mark.covers("FR-01.07/AC09")
+    def test_remediation_hint_says_the_credential_must_be_rotated(
+        self, sample_gitleaks_output,
+    ):
+        """AC9 — a leaked credential is reported as needing rotation, not as
+        fixed by deleting it from the code: what has been published stays
+        published."""
+        findings = normalize_gitleaks(sample_gitleaks_output)
+        for f in findings:
+            hint = f["remediation_hint"].lower()
+            assert "rotate" in hint, f["remediation_hint"]
 
     def test_finding_fields(self, sample_gitleaks_output):
         findings = normalize_gitleaks(sample_gitleaks_output)

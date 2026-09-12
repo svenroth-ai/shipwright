@@ -153,8 +153,8 @@ exact AC, or add a new qualified tag — do not assume the bare tag already "cou
 |---|---|---|---|---|---|---|
 | FR-01.01 | /shipwright-run | 8 / 7 | `plugins/shipwright-run/tests` (plugin-owned ACs); `shared/tests` (phase-history / completion-writer ACs — Finding 1) | `plugins/shipwright-run/tests/test_lifecycle_cli.py` (real subprocess CLI over `scripts/lib/orchestrator.py` — the highest E2E boundary this plugin has); `test_orchestrator.py`, `test_phase_state_machine.py` for in-process behavior | `shared/tests/test_phase_history.py` etc. → `FR-01.01/AC08` | t8 |
 | FR-01.02 | /shipwright-project | 15 / 15 | `plugins/shipwright-project/tests` | `test_integration.py` (drives `setup_session.py` end to end — the real skill entry point); `test_state.py`, `test_manifest.py`, `test_config.py` for individual ACs | none yet | t6 |
-| FR-01.03 | /shipwright-plan | 21 / 21 | `plugins/shipwright-plan/tests` | `test_integration.py` (`setup_planning_session.py` pipeline); `test_review_iterate.py` / `test_review_routing_contract.py` for the external-review ACs (AC02–AC04, AC09–AC13, AC19–AC21) | none yet | t3 |
-| FR-01.04 | /shipwright-design | 12 / 12 | `plugins/shipwright-design/tests` | `test_setup_design.py` (design-session pipeline); `test_screen_registry.py` (per-requirement screen mapping, AC01/AC04) | none yet | t3 |
+| FR-01.03 | /shipwright-plan | 21 / 21 | `plugins/shipwright-plan/tests` | `test_integration.py` (`setup_planning_session.py` pipeline); `test_review_iterate.py` / `test_review_routing_contract.py` for the external-review ACs (AC02–AC04, AC09–AC13, AC19–AC21) | AC20/AC21 have no deterministic surface (DeepSeek superseded by GLM) — **see Named Exception 6**; AC03/AC11 have no observable artifact — **see Named Exception 8** | t3 |
+| FR-01.04 | /shipwright-design | 12 / 12 | `plugins/shipwright-design/tests` | `test_setup_design.py` (design-session pipeline); `test_screen_registry.py` (per-requirement screen mapping, AC01/AC04) | AC10's full claim isn't enforced by production code — **see Named Exception 7** | t3 |
 | FR-01.05 | /shipwright-build | 8 / 8 | `plugins/shipwright-build/tests` | `test_integration.py`, `test_setup_implementation.py`, `test_sections.py` / `test_section_builder_contract.py` | none yet | t8 |
 | FR-01.06 | /shipwright-test | 18 / 18 | `plugins/shipwright-test/tests` | `test_test_runner.py`, `test_smoke_test.py`, `test_playwright_runner.py`, `test_journey_coverage.py`, `test_boundary_coverage_report.py` (already the plugin's densest suite — attach beside it) | none yet | t4 |
 | FR-01.07 | /shipwright-security | 18 / 14 | `plugins/shipwright-security/tests`; `shared/tests` for the shared scan-card/coverage surface (Finding 1) | `test_generate_security_report.py`, `test_gitleaks_*`, `test_coverage_*`; shared: `test_security_scan_card.py` | `shared/tests/test_security_scan_card.py` → `AC04, AC08, AC11`; `plugins/shipwright-security/tests/test_gitleaks_extend_smoke.py` → `AC06` | t4 |
@@ -382,6 +382,108 @@ future unit or auditor would actually look at (external plan review, openai +
 glm, medium: a decision-drop alone is not sufficient for a claim the
 acceptance criterion itself calls a "recorded reason").
 
+### Exception 6 — FR-01.03 AC20/AC21 (obsolete provider, found during t3 execution)
+
+`FR-01.03/AC21` names DeepSeek-specific ZDR-endpoint routing as part of the
+external-review reviewer roster. `shared/scripts/lib/external_review_routing.py`
+documents that GLM replaced DeepSeek as `/shipwright-plan`'s reviewer identity
+(`iterate-2026-09-02-glm-plan-code-review-swap`, predating this campaign) — no
+current plan-review code path invokes DeepSeek at all; DeepSeek's remaining ZDR
+routing now serves only the Tier-3 PR-review gate's operator-overridable model
+choice (FR-01.17, a different FR). This is not the same class as Exceptions 1/5
+("no seam ever existed") — a seam DID exist, for a provider the product has
+since retired. Binding AC21 to GLM's own routing test would misrepresent which
+provider the AC names; binding it to the Tier-3 gate's DeepSeek test would
+misrepresent which FR's behavior is proven.
+
+**AC20 amended into this exception (Stage-1 spec-review REJECT, corrected
+2026-09-12):** t3's first pass bound `FR-01.03/AC20` — "the default outside
+reviewers are invoked... identified truthfully as **DeepSeek and OpenAI**" —
+to two tests that actually assert the *current* roster (glm/openai) is
+identified truthfully, silently substituting the roster the AC names for the
+one the codebase currently runs. That is the identical obsolete-provider
+situation as AC21, given the opposite (wrong) treatment: quietly retargeted
+and marked bound instead of left unbound with a recorded reason. Corrected:
+the `@pytest.mark.covers("FR-01.03/AC20")` markers were removed from
+`plugins/shipwright-plan/tests/test_check_plan_gates_reviewers.py`'s
+`test_a_historical_schema_marker_is_still_read_truthfully` and
+`test_a_current_schema_marker_cannot_borrow_a_historical_reviewer_name` — both
+tests remain (they genuinely prove the *current* roster's truthful
+identification, a real and valuable guarantee), just not as AC20's binding.
+
+**Concrete machine outcome:** do NOT tag `FR-01.03/AC20` or `AC21`. Both stay
+in `shipwright_ac_coverage_baseline.json`'s `unbound` list, with this section
+as their recorded reason (same Named-Exception mechanism as Exceptions 1/4/5 —
+not a new convention). t3's own F3 decision drop and ADR
+(`.shipwright/planning/adr/iterate-2026-09-12-t3-plan-design-fr-01-03-01-04-ac-backfill.md`)
+carry the same reasoning; this section is the durable, campaign-wide record.
+If a future spec revision retargets AC20/AC21 at the current roster
+(GLM/openai), this exception is void and both should bind normally at that
+point.
+
+### Exception 7 — FR-01.04 AC10 (AC's full claim not enforced, found during t3 execution)
+
+`FR-01.04/AC10` — "given feedback on a single screen, when it is applied, then
+only that screen is regenerated and **the others are left untouched**" — was
+first bound to `test_a_flagged_screen_left_untouched_fails`, which only
+asserts the *flagged* screen was touched; it asserts nothing about other
+screens staying untouched. That gap is not a test-design oversight: the gate
+it calls, `iteration_touched_flagged_screens`
+(`shared/scripts/lib/design_gate_extras.py:279-300`), explicitly documents and
+implements the opposite of AC10's "others are left untouched" guarantee —
+extra modified files beyond the flagged set are a warning, not a failure,
+because Chrome Change Propagation legitimately touches every screen in one
+round. AC10 as written admits no such carve-out, so the production code
+cannot make the bound test's implied full claim true; binding it anyway would
+be a test shaped around what the implementation checks, not around what the
+AC actually requires (Stage-1 spec-review REJECT, corrected 2026-09-12,
+`plugins/shipwright-design/tests/test_check_design_gates.py`). Same class as
+Exception 4's conjunctive-AC guidance: a partially-provable clause does not
+make the whole AC provable.
+
+**Concrete machine outcome:** do NOT tag `FR-01.04/AC10`. It stays in
+`shipwright_ac_coverage_baseline.json`'s `unbound` list, with this section as
+its recorded reason. Resolving it for real needs a product decision this test
+backfill campaign does not make unilaterally: either tighten
+`iteration_touched_flagged_screens` to actually enforce "others untouched"
+(a behavior change, and Chrome Change Propagation's legitimate multi-screen
+case would need an explicit carve-out in AC10's own text first), or amend
+AC10's text to state the carve-out that already exists in production. Flagged
+to the operator rather than decided here.
+
+### Exception 8 — FR-01.03 AC03/AC11 (no observable artifact, found during t3 PR review)
+
+`FR-01.03/AC03` ("the plan's own author re-reading it never satisfies the
+review step unless the independent reviewer could not be reached either")
+and `FR-01.03/AC11` ("either reviewer's reject stops the run and asks a
+person to choose") were bound to drift-pin tests
+(`test_self_review_fallback_only_runs_when_no_independent_review_completed`,
+`test_architecture_reject_stops_and_asks_the_user_to_choose` in
+`plugins/shipwright-plan/tests/test_review_routing_contract.py`) that assert
+the instruction text is present in `step-5-external-review.md` — the same
+class of judgement-criterion AC that `FR-01.03/AC02` already uses this
+pattern for (`test_missing_key_stop_and_ask_drift.py`). The Tier-3 external
+PR review (openai/gpt-5.6-luna, high) found this insufficient to PROVE either
+AC: a production implementation that silently ignored the instruction would
+still pass, because the would-be observable artifact
+(`self_review_fallback_ran`) is write-only — nothing reads it — and AC11's
+"stopped and asked a person" has no recorded flag at all. Unlike AC02
+(already-merged, pre-existing precedent this unit did not introduce), AC03
+and AC11 are net-new bindings in this diff, so the campaign's actual
+required merge gate (not a documented precedent from an earlier unit) is the
+live arbiter here.
+
+**Concrete machine outcome:** do NOT tag `FR-01.03/AC03` or `FR-01.03/AC11`.
+Both stay in `shipwright_ac_coverage_baseline.json`'s `unbound` list, with
+this section as the recorded reason. The drift-pin tests are kept
+(unmarked) as a guard against the reference doc itself drifting, since that
+much is still worth catching even though it does not prove the AC. A future
+correction to AC02's own binding is a separate campaign-wide question this
+unit does not decide; wiring a real observable seam (e.g. making
+`self_review_fallback_ran` readable and asserting it, or recording the
+three-way choice for AC11) is a production change, not a test-selection one,
+and is flagged to the operator rather than decided here.
+
 ## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
 
 | Unit | FR(s) | Roots touched | Root count |
@@ -389,12 +491,12 @@ acceptance criterion itself calls a "recorded reason").
 | t1 | FR-01.11 | `plugins/shipwright-iterate/tests`, `shared/tests`, `shared/scripts/tools/tests` | 3 (found during execution — see Exception 3; **accepted by the campaign owner**, 2 of 27 ACs, no new harness) |
 | t2 | FR-01.14 | `shared/tests`, `shared/scripts/tools/tests` | 2 |
 | t3 | FR-01.03, FR-01.04 | `plugins/shipwright-plan/tests`, `plugins/shipwright-design/tests` | 2 |
-| t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (watch this one — see below) |
-| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests` | 3 (watch) |
+| t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12 — see below) |
+| t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12) |
 | t6 | FR-01.02, FR-01.16 | `plugins/shipwright-project/tests`, `shared/tests` | 2 |
 | t7 | FR-01.10, FR-01.18 | `plugins/shipwright-compliance/tests`, `plugins/shipwright-grade/tests` | 2 |
-| t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (watch — largest fan-out) |
-| t9 | FR-01.15, FR-01.17, FR-01.19, FR-01.20 | `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-iterate/tests` | 4 (watch) |
+| t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (**accepted by the campaign owner**, 2026-09-12 — largest fan-out) |
+| t9 | FR-01.15, FR-01.17, FR-01.19, FR-01.20 | `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-iterate/tests` | 4 (**accepted by the campaign owner**, 2026-09-12) |
 
 ADR-044 (repo-root `conftest.py`, exit 4) blocks a single pytest **process** from spanning
 roots — it does not cap how many roots a *unit* may touch across multiple invocations. t4, t5,
@@ -427,6 +529,11 @@ within two roots (e.g. split t4's FR-01.07 shared-scan-card ACs, t5's FR-01.09
 shared-aggregation ACs, or t8's `shared/scripts/tests`-only AC bucket from FR-01.12's real-seam
 rows, into their own passes). t0 recommends (a) for all four — the roots are forced by
 Finding 1 (behavior lives where it lives), not chosen — but does not decide it unilaterally.
-Triage card `trg-ff6ea5f0` names all five units, t1 marked resolved and t4/t5/t8/t9 still open
-(amended alongside this correction); see it for the campaign owner's decision point. A similar
-ruling for t4/t5/t8/t9 is expected but not yet finalized as of this writing.
+Triage card `trg-ff6ea5f0` names all five units; t1 was marked resolved on 2026-09-11, and
+**t4/t5/t8/t9 are now RESOLVED too** — the campaign owner (Sven) ruled on 2026-09-12: option (a)
+accepted for all four. Do not re-cut the FR groupings; keep them exactly as scoped. Run one
+`pytest` invocation per root, one `--junitxml` per root (ADR-044 governs pytest *processes*, not
+roots per unit — see the paragraph above), and merge the results afterward. Each of t4/t5/t8/t9's
+own evidence must state its root count and cite this waiver plus ADR-044. The triage card was
+dismissed by the operator on 2026-09-11T23:09:17Z with this same ruling; see its `status: dismissed`
+entry for the verbatim reason.
