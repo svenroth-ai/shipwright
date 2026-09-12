@@ -1,0 +1,142 @@
+"""Regression tests for the ``resolved``-obligation narrowing (Stage-2
+code-reviewer HIGH finding) and the Tier-3 CI review hardening (malformed
+screen data, escaping symlinks) in
+``check_design_fidelity_triage_matches_recomputation`` (FR-01.06 #7,
+sub-iterate ``e3-checks-test-security``). Split out of
+``test_test_gate_fidelity_triage.py`` when that file crossed 300 lines a
+second time (round 5, Tier-3 CI review on PR #748); the fixture helpers below
+are shared back with it.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from tools.verifiers._test_gate_fidelity import check_design_fidelity_triage_matches_recomputation
+
+
+def _write_build_report(root: Path, screens: dict) -> None:
+    (root / "design-fidelity-report.json").write_text(
+        json.dumps({"build_complete": True, "screens": screens})
+    )
+
+
+def _write_test_results(root: Path, design_fidelity: dict | None) -> None:
+    payload = {} if design_fidelity is None else {"design_fidelity": design_fidelity}
+    (root / "shipwright_test_results.json").write_text(json.dumps(payload))
+
+
+def test_malformed_build_screens_value_fails_closed(tmp_path):
+    """Tier-3 CI review (PR #748): a `screens` field that IS present but is
+    not an object is a malformed report, not an empty one — silently
+    coercing it to `{}` let a fabricated/corrupted build report masquerade
+    as "no screens declared" and pass whatever the test side claimed."""
+    (tmp_path / "design-fidelity-report.json").write_text(
+        json.dumps({"screens": "not-a-dict"})
+    )
+    _write_test_results(tmp_path, {
+        "screens": [{"mockup": "01-login.html", "status": "needs_review"}],
+        "triage": {"resolved": 0, "regressions": 0, "persistent_failures": 0, "unchecked": 1},
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "screens field is a str" in r.detail
+
+
+def test_resolved_only_needs_no_triage_block(tmp_path):
+    """HIGH (Stage-2 code-reviewer, 2026-09-12): the no-triage-block branch
+    measured the obligation over EVERY recomputed count, `resolved`
+    included. A run whose only fidelity movement is an improvement —
+    partial at build time, pass now — then FAILED with a message claiming a
+    `needs_review` screen existed when none did. Improvement owes no triage
+    entry; only regressions/persistent failures/unchecked screens do."""
+    _write_build_report(tmp_path, {
+        "01-login.html": {"status": "partial"},
+        "02-dash.html": {"status": "partial"},
+    })
+    _write_test_results(tmp_path, {
+        "screens": [
+            {"mockup": "01-login.html", "status": "pass"},
+            {"mockup": "02-dash.html", "status": "pass"},
+        ],
+        # no "triage" key — correct, nothing needed triaging
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is True
+    assert r.is_skipped
+    assert "passed or improved" in r.detail
+
+
+def test_resolved_alongside_a_regression_still_obliges_a_triage_block(tmp_path):
+    """The narrowing must not let a real gap through: a `resolved` screen
+    sitting next to a regression leaves the block obligatory, and the count
+    reported is the one that needs triage (1), not the recomputed total (2)."""
+    _write_build_report(tmp_path, {
+        "01-login.html": {"status": "partial"},  # resolved
+        "02-dash.html": {"status": "full"},      # regression
+    })
+    _write_test_results(tmp_path, {
+        "screens": [
+            {"mockup": "01-login.html", "status": "pass"},
+            {"mockup": "02-dash.html", "status": "needs_review"},
+        ],
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "found 1 screen(s) needing triage" in r.detail
+
+
+def test_recorded_triage_block_must_still_get_resolved_right(tmp_path):
+    """`resolved` is excluded from the OBLIGATION only. Once a triage block
+    is recorded it is compared over all four keys, so a wrong `resolved`
+    count is still a mismatch."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {
+        "screens": [{"mockup": "01-login.html", "status": "pass"}],
+        "triage": {
+            "resolved": 0, "regressions": 0,
+            "persistent_failures": 0, "unchecked": 0,
+        },
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "resolved: recorded=0 recomputed=1" in r.detail
+
+
+def test_escaping_report_symlink_fails_instead_of_skipping(tmp_path):
+    """Tier-3 CI review (PR #748): a fixed-name artifact that exists but
+    resolves outside the project root must FAIL, not SKIP the same as an
+    honestly absent one — a SKIP would let a project-controlled symlink
+    suppress this gate entirely."""
+    outside = tmp_path.parent / "outside-design-fidelity-report.json"
+    outside.write_text(json.dumps({"screens": {}}))
+    try:
+        (tmp_path / "design-fidelity-report.json").symlink_to(outside)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unsupported in this environment: {exc}")  # test-hygiene: allow-silent-skip: symlink needs OS/privilege (Windows dev-mode); POSIX CI exercises it
+
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "symlink escape" in r.detail
+
+
+def test_missing_test_side_screens_with_declared_build_screens_fails(tmp_path):
+    """Tier-3 CI review (PR #748): a fabricated all-zero triage block paired
+    with a missing/malformed `design_fidelity.screens` must not pass just
+    because the recomputation (over zero screens) happens to also be all
+    zero — the build side declared real screens that were never actually
+    compared."""
+    _write_build_report(tmp_path, {"01-login.html": {"status": "partial"}})
+    _write_test_results(tmp_path, {
+        "screens": "not-a-list",
+        "triage": {
+            "resolved": 0, "regressions": 0,
+            "persistent_failures": 0, "unchecked": 0,
+        },
+    })
+    r = check_design_fidelity_triage_matches_recomputation(tmp_path)
+    assert r.ok is False
+    assert "never actually covered them" in r.detail
