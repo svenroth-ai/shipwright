@@ -142,43 +142,15 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 3,
-      "findings": [
-        {
-          "severity": "low",
-          "category": "architecture",
-          "file": "docs/hooks-and-pipeline.md",
-          "line": 4631,
-          "finding": "Canon-coverage matrix 'test' row still lists only test_checks.py + check_test_results_file_fresh; the three new gates wired into run_test_checks (_test_gate_extras/_test_gate_specs/_test_gate_fidelity) are absent.",
-          "suggestion": "Append the three check names to the test row's Verifier-module cell in the same shape as the plan row.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/tools/verifiers/_test_gate_extras.py",
-          "line": 118,
-          "finding": "_skipped_claim_contradicted_by_evidence returns 0 on JSONDecodeError/OSError (SKIP-passes), while the non-skipped branch FAILs on identical corruption. Asymmetric fail-open.",
-          "suggestion": "Distinguish 'no file' (SKIP) from 'file present but unparseable' (FAIL or WARN) in the skipped-claim branch.",
-          "source": "code-reviewer"
-        },
-        {
-          "severity": "low",
-          "category": "correctness",
-          "file": "shared/scripts/tools/verifiers/_test_gate_specs.py",
-          "line": 58,
-          "finding": "_plan_declares_a_flow returns False when ## User Flows is absent, but journey_plan.parse_journeys falls back to scanning the whole plan text. Permissive-only divergence (under-fires, never false-fails).",
-          "suggestion": "Mirror the fallback or note the intentional divergence in the module comment.",
-          "source": "code-reviewer"
-        }
-      ],
+      "findings_count": 0,
+      "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T11:32:32.005655+00:00",
+      "completed_at": "2026-09-12T19:22:15.107459+00:00",
       "disposition": null,
-      "recorded_by": "code-reviewer",
+      "recorded_by": "claude",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus"
+      "model_tier": "inherit"
     },
     "doubt": {
       "review_type": "doubt",
@@ -186,11 +158,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T11:32:38.913510+00:00",
-      "disposition": "Stage 3 is conditional and did not trigger for this diff (no migrations, async/concurrency, cross-plugin imports, or irreversible ops; the symlink/path-containment logic was independently re-verified sound by both external review and Stage-2 code-reviewer); Stage 2 passed at 3f-bis",
-      "recorded_by": "orchestrator",
+      "completed_at": "2026-09-12T19:22:46.854374+00:00",
+      "disposition": "Stage 3 is conditional per campaign-mode.md 3f-bis (migrations/async/concurrency/cross-plugin imports/irreversible ops); this diff has none of those -- pure synchronous Python verifier checks, tests, and a path-safety helper module, no cross-plugin imports (ADR-045), no migrations, no async, no irreversible ops. Stage 2 passed clean at 3f-bis.",
+      "recorded_by": "claude",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "inherit"
     },
     "external_code": {
       "review_type": "external_code",
