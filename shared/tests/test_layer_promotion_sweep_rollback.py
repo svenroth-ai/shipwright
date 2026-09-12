@@ -80,6 +80,39 @@ def test_syntactically_valid_but_malformed_report_is_a_reported_error(monkeypatc
     assert "malformed report" in result.reason
 
 
+@pytest.mark.parametrize(
+    "unsafe_path",
+    [
+        pytest.param(".env", id="unrelated-file"),
+        pytest.param("/etc/passwd", id="absolute-path"),
+        pytest.param("../outside_spec.md", id="parent-traversal"),
+        pytest.param("", id="empty-path"),
+    ],
+)
+def test_report_naming_an_unsafe_path_cannot_be_delivered(monkeypatch, repo, unsafe_path):
+    """External review, PR #725 round 8: ``written_spec_paths`` is
+    subprocess-report-controlled and was passed straight to ``git add``
+    and, once committed, PUSHED to a public ``chore/layer-promotion-*``
+    branch and opened as a PR. An absolute path, a ``..`` traversal, an
+    empty path, or an unrelated in-repo file (e.g. ``.env``) must never be
+    staged, committed, or delivered."""
+    (repo / ".env").write_text("SECRET=do-not-leak\n", encoding="utf-8")
+    report = {
+        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
+        "written_spec_paths": [unsafe_path], "skipped": [], "escalated": [],
+    }
+    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "error"
+    assert "unsafe report path" in result.reason
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"], cwd=repo, capture_output=True, text=True,
+    ).stdout
+    assert ".env" not in staged  # never staged
+    assert (repo / ".env").read_text(encoding="utf-8") == "SECRET=do-not-leak\n"
+
+
 def test_diff_cached_real_git_error_rolls_back_instead_of_committing(monkeypatch, repo):
     """External review, PR #725: `git diff --cached --quiet` uses exit 1 for
     'a real staged delta exists' — any OTHER nonzero (e.g. 128, a genuine git

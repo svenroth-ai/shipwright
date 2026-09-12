@@ -96,6 +96,7 @@ from lib.layer_promotion_ledger import DEFAULT_LEDGER_RELPATH  # noqa: E402
 from lib.layer_promotion_rollback import bail as _bail  # noqa: E402
 from lib.layer_promotion_rollback import extract_report_fields as _extract_report_fields  # noqa: E402
 from lib.layer_promotion_rollback import untracked_paths as _untracked_paths  # noqa: E402
+from lib.layer_promotion_rollback import validate_written_paths as _validate_written_paths  # noqa: E402
 from lib.layer_promotion_sweep_result import (  # noqa: E402
     LayerPromotionSweepResult,
     sweep_warnings,
@@ -195,6 +196,14 @@ def run_layer_promotion_sweep(
         promoted, escalated, written_paths = _extract_report_fields(report)
     except ValueError as exc:
         return _bail(worktree_path, pre_sha, pre_untracked, "error", f"malformed report: {exc}", [], 0)
+
+    try:
+        written_paths = _validate_written_paths(worktree_path, written_paths)
+    except ValueError as exc:
+        return _bail(
+            worktree_path, pre_sha, pre_untracked, "error",
+            f"unsafe report path: {exc}", promoted, escalated,
+        )
 
     # The tool writes the ledger unconditionally whenever ANY FR is promoted
     # (its own "ledger BEFORE spec.md" ordering) even on a run that, for

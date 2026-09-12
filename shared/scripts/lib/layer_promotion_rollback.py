@@ -12,6 +12,7 @@ from pathlib import Path
 
 from lib.git_base import HOOK_GIT_TIMEOUT, run_git_soft
 from lib.layer_promotion_sweep_result import LayerPromotionSweepResult
+from lib.planning_discovery import SPEC_FILENAME
 
 
 def extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
@@ -37,6 +38,42 @@ def extract_report_fields(report: object) -> tuple[list[str], int, list[str]]:
     if not isinstance(written_paths, list) or not all(isinstance(p, str) for p in written_paths):
         raise ValueError("'written_spec_paths' is not a list of strings")
     return [d.get("fr", "") for d in raw_promoted], len(raw_escalated), written_paths
+
+
+def validate_written_paths(worktree_path: Path, written_paths: list[str]) -> list[str]:
+    """Reject any ``written_spec_paths`` entry that isn't a ``spec.md`` file
+    staying inside ``worktree_path`` — ``extract_report_fields`` only
+    checked that these are strings, but they are then handed straight to
+    ``git add`` and, once committed, PUSHED to a public
+    ``chore/layer-promotion-*`` branch and opened as a PR. A malformed or
+    compromised ``promote_required_layers.py`` report naming an absolute
+    path, a ``..`` traversal, or an unrelated in-repo file (e.g. ``.env``)
+    would otherwise have that file's content staged and published by this
+    delivery flow (external review, PR #725 round 8) — containment alone
+    (no traversal, no absolute path) does not catch the ``.env`` case, since
+    that is already a plain repo-relative path; the tool only ever produces
+    genuine ``spec.md`` paths (``lib.planning_discovery.SPEC_FILENAME``,
+    from each FR node's own ``spec_path`` field), so requiring that exact
+    basename is the precise allowlist, not an approximation. Returns
+    ``written_paths`` unchanged when every entry is safe; raises
+    :class:`ValueError` with a short reason for the first unsafe one."""
+    root = worktree_path.resolve()
+    for p in written_paths:
+        if not p:
+            raise ValueError("written_spec_paths contains an empty path")
+        candidate = Path(p)
+        if candidate.is_absolute():
+            raise ValueError(f"written_spec_paths contains an absolute path: {p!r}")
+        if ".." in candidate.parts:
+            raise ValueError(f"written_spec_paths contains a '..' path segment: {p!r}")
+        if candidate.name != SPEC_FILENAME:
+            raise ValueError(f"written_spec_paths contains a non-{SPEC_FILENAME} path: {p!r}")
+        resolved = (root / candidate).resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            raise ValueError(f"written_spec_paths path escapes the worktree: {p!r}") from None
+    return written_paths
 
 
 def untracked_paths(worktree_path: Path) -> set[str] | None:
@@ -105,4 +142,4 @@ def bail(
     return LayerPromotionSweepResult(status=status, reason=reason, promoted=promoted, escalated=escalated)
 
 
-__all__ = ["extract_report_fields", "untracked_paths", "rollback_staged", "bail"]
+__all__ = ["extract_report_fields", "validate_written_paths", "untracked_paths", "rollback_staged", "bail"]
