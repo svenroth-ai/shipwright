@@ -35,12 +35,17 @@ promotion in THIS worktree (so the tool's normal working-tree write lands
 somewhere real), push that one commit straight to a fresh
 ``chore/layer-promotion-<sha12>`` branch, then immediately hard-reset this
 worktree back to its pre-promotion HEAD — the commit exists on the remote
-branch, never on the iterate's own. ``gh pr create`` + a best-effort
-``gh pr merge --auto --squash`` land it on its own schedule; this sweep never
-waits for that PR to merge (unlike F11's own delivery — see
-``lib.pr_delivery`` — this is an opportunistic side artifact, not the run's
-deliverable, so "fire and forget" is the correct contract here, not the
-anti-pattern it would be for the iterate's own PR).
+branch, never on the iterate's own. ``gh pr create`` opens it and leaves it
+there, UN-armed for automerge (external review, PR #725 round 10: unlike
+F11's own delivery, which only arms ``gh pr merge --auto`` after the review
+cascade has run, this PR never enters a review cascade at all — it is not
+part of any iterate skill run, and its content is not a sensitive path, so
+arming automerge on it would let CI-green alone land unreviewed compliance
+state on the default branch). This sweep never waits for that PR to merge or
+be reviewed (unlike F11's own delivery — see ``lib.pr_delivery`` — this is an
+opportunistic side artifact, not the run's deliverable, so "fire and forget,
+left for a human to merge" is the correct contract here, not the anti-pattern
+it would be for the iterate's own PR).
 
 **Never a gate.** Unlike the F11 verifiers this repo also carries, a sweep
 that cannot run — no traceability manifest (most consumer projects), no

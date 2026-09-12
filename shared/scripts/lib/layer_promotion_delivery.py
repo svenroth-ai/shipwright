@@ -35,7 +35,7 @@ from lib.pr_delivery_host import gh, gh_json  # noqa: E402
 from repo_identity import resolve_repo_identity  # noqa: E402
 
 #: Best-effort budget for each individual git/gh network call this module
-#: makes once a promotion is found (push, PR create, automerge arm).
+#: makes once a promotion is found (push, PR create).
 _DELIVERY_SUBPROCESS_TIMEOUT = 30.0
 
 BRANCH_PREFIX = "chore/layer-promotion-"
@@ -118,7 +118,6 @@ def _attempt_delivery(
         return "not_delivered", f"pr create failed: {create.stderr.strip()[:300]}", "", branch
     pr_url = create.stdout.strip().splitlines()[-1] if create.stdout.strip() else ""
 
-    gh(["pr", "merge", branch, "--auto", "--squash", *repo_args], cwd=worktree_path)
     return "delivered", "", pr_url, branch
 
 
@@ -126,9 +125,22 @@ def deliver_as_own_pr(
     worktree_path: Path, default_branch: str, pre_sha: str, subject: str,
 ) -> tuple[str, str, str, str]:
     """Push the just-made local commit to its own remote branch, open a PR
-    against ``default_branch``, best-effort-arm automerge, then ALWAYS reset
-    ``worktree_path`` back to ``pre_sha`` — the commit must never remain part
-    of the iterate's own branch, whether delivery succeeds or not.
+    against ``default_branch``, then ALWAYS reset ``worktree_path`` back to
+    ``pre_sha`` — the commit must never remain part of the iterate's own
+    branch, whether delivery succeeds or not.
+
+    Deliberately does NOT arm ``gh pr merge --auto`` the way the iterate's own
+    PR does at F11: that delivery only arms automerge AFTER the review
+    cascade has run against the diff (spec/code/doubt, or Tier-3 external
+    review on a sensitive path). A promotion PR this module opens has been
+    through none of that — it never enters an iterate skill run at all, and
+    its content (``spec.md`` Layers bindings, the compliance ledger) is not a
+    sensitive path, so it would never even qualify for Tier-3 review. Arming
+    automerge on it would let CI-green alone land unreviewed compliance
+    state on the default branch (external review, PR #725 round 10). Leaving
+    it un-armed costs nothing this module's own contract needs: the sweep
+    never waits for this PR (see the module docstring's "fire and forget"),
+    and a human or a later run finds it and merges it explicitly.
 
     Returns ``(status, reason, pr_url, branch)``. ``status`` is
     ``"delivered"``/``"not_delivered"`` when the reset back to ``pre_sha``

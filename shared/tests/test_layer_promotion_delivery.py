@@ -106,6 +106,28 @@ def _stub_run(*, gh_list_result=None, gh_create_ok=True, gh_create_url="https://
     return _fake
 
 
+def test_delivery_never_arms_automerge_on_the_promotion_pr(monkeypatch, repo):
+    """External review, PR #725 round 10: a promotion PR never enters an
+    iterate skill run and its content (spec.md, the compliance ledger) is not
+    a sensitive path, so it never goes through any review cascade — arming
+    ``gh pr merge --auto`` on it would let CI-green alone land unreviewed
+    compliance state on the default branch. Delivery must open the PR and
+    leave it there for a human to merge explicitly."""
+    calls = []
+
+    def _fake(cmd, *args, **kwargs):
+        if cmd[0] == "gh":
+            calls.append(cmd[1:3])
+        return _stub_run()(cmd, *args, **kwargs)
+
+    (repo / "spec.md").write_text("Layers: unit, e2e\n", encoding="utf-8")
+    monkeypatch.setattr(subprocess, "run", _fake)
+    result = run_layer_promotion_sweep(repo, "iterate-x", "main")
+
+    assert result.status == "delivered"
+    assert ["pr", "merge"] not in calls
+
+
 def test_promotion_is_delivered_as_its_own_pr_and_local_branch_is_untouched(monkeypatch, repo):
     pre_sha = _head_sha(repo)
     (repo / "spec.md").write_text("Layers: unit, e2e\n", encoding="utf-8")
