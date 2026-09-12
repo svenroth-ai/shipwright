@@ -245,15 +245,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T08:24:04.599418+00:00",
-      "disposition": "Stage-1 spec-reviewer REJECTED at 3f-bis: ledger paragraph (L205-206), ADR Consequences, and decision-drop consequences all assert re-measured totals 14 mechanisable / 80 enforced-tested, but running measure_ac_evidence_ledger.py --json against the committed branch state gives 15 / 82 -- the #6/#6b split's own prose double-counts two backticked status phrases after the measurement was taken. Verified independently by the orchestrator. PR left open for repair; code-reviewer not invoked.",
+      "completed_at": "2026-09-12T10:46:56.147011+00:00",
+      "disposition": null,
       "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
