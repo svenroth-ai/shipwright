@@ -127,3 +127,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Retention cap raised to 200 for headroom against branch concurrency](iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md)
 - [Canonical review-evidence basenames per artifact kind](iterate-2026-09-12-review-evidence-canonical-names-canonical-basenames.md)
 - [ADR spec-ref: FR-01.03 + FR-01.04 AC backfill (t3, req3-05-test-backfill-mono)](iterate-2026-09-12-t3-plan-design-fr-01-03-01-04-ac-backfill.md)
+- [mark_status reports its outbox-vs-tracked write target](iterate-2026-09-12-triage-route-report-mark-status-route-reporting.md)

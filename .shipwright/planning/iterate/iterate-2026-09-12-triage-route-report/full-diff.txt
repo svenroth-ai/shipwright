@@ -1,0 +1,947 @@
+diff --git a/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/external-code-review-raw.json b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/external-code-review-raw.json
+new file mode 100644
+index 00000000..4bb3b4a4
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/external-code-review-raw.json
+@@ -0,0 +1,33 @@
++{
++  "review_schema": 2,
++  "success": true,
++  "provider": "codex",
++  "degraded": false,
++  "reviews_succeeded": 2,
++  "reviews": {
++    "glm": {
++      "feedback": "## Findings\n\n- Category: regression\n  Severity: high\n  File: shared/scripts/triage.py:718\u2013721 (`return (previous, resulting_item, to_outbox)`)\n  Finding: `mark_status(return_item=True)` silently changes its return type from a 2-tuple to a 3-tuple. The diff updates `triage_cli_commands.py`, but any other caller that unpacks two values (`prev, item = mark_status(...)`) or indexes the tuple will raise `ValueError: too many values to unpack` / read the wrong element. Since `return_item=True` already existed before this change, external callers (WebUI, other tools, tests outside this diff) are plausible and are not shown here.\n  Suggestion: Audit every `return_item=True` call site before merging; if any exists outside this diff, update it in the same change (or return the third element only via a separate opt-in flag / a small result object).\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/triage_cli_commands.py:241\u2013250 (`cmd_dismiss`)\n  Finding: The human (non-`--json`) path for `dismiss` delegates to `_status_flip`, which does not print the route note \u2014 so `dismiss` only gets route reporting in JSON mode, while `snooze` and `amend` get both. If the AC (\"where did my write just go?\" at write time) is meant to apply to all CLI writers, dismiss's human path is a partial implementation, and the new tests only cover the JSON path for dismiss.\n  Suggestion: Either add the note to `_status_flip`'s output for `dismiss` (and any other flips routed through it) and a matching test, or document explicitly why dismiss's human path is excluded.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_triage_route_report.py \u2014 dismiss/snooze JSON tests only\n  Finding: The tests never assert the negative/absent case for `route_note`'s tracked-on-default-branch branch (returns `None`), nor that the git-error path returns `None`. The `route_note` \"returns None when branch == default\" line is untested, so a bug that prints the branch note on idle main (wrongly claiming \"reaches main only with this branch's PR\") would pass the suite \u2014 the outbox note test happens to run on main with `to_outbox=True`, bypassing that code.\n  Suggestion: Add a test that flips to tracked while on the default branch with origin present (however that state is produced in this codebase) and asserts stderr carries no \"recorded on branch\" note.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/triage_route.py:48\u201352\n  Finding: `route_note`'s `try/except Exception` around branch resolution is fine as advisory, but the tracked note prints `branch != default` even when the branch *is* `origin/<default>` checked out in a worktree vs. a locally-named default mismatch \u2014 e.g. if `default_branch` returns a qualified `origin/main` while `current_branch` returns `main`, the note fires spuriously. Depends on `worktree_isolation`'s normalization, which isn't shown.\n  Suggestion: Confirm `current_branch` and `default_branch` use the same naming form (strip `origin/` prefixes) or normalize before comparing; add a test for the default-branch-checked-out case.\n\nThe `--json` additive-key design (`route` only when provided) is backwards-compatible, `route_label` is trivially correct, and the library-level tests do verify real behavior (file existence, tracked-file contents) rather than just calling the function.\n\nOverall: the core implementation is sound but the silent 2-tuple \u2192 3-tuple return-type change on a pre-existing public API is a real break risk until all call sites are confirmed, and dismiss's human path looks like a spec gap. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
++      "via": "openrouter",
++      "status": "success"
++    },
++    "openai": {
++      "feedback": "- Category: spec  \n  Severity: medium  \n  File: shared/scripts/lib/triage_cli_commands.py:253  \n  Finding: The human-facing `dismiss` path still delegates to `_status_flip` without calling `route_note`, so it emits no outbox or branch-delivery note. The stated CLI contract requires the stderr route note for status writes, not just `snooze` and `amend`.  \n  Suggestion: Capture the route for non-JSON dismisses as well and emit `route_note`, or extend `_status_flip`/`dismiss` to return and report the route.\n\n- Category: test  \n  Severity: medium  \n  File: shared/tests/test_triage_route_report.py:129  \n  Finding: `dismiss` is tested only for `--json`; there is no human-mode test for either its outbox or tracked-branch note. Consequently, the missing required behavior above passes the new suite.  \n  Suggestion: Add non-JSON `dismiss` tests for idle-main/outbox and non-default-branch/tracked output.\n\nShip-with-fixes: JSON route reporting and the new `mark_status` value appear aligned with the stated contract, but the required human `dismiss` route visibility is absent.\n\nSHIPWRIGHT_VERDICT: revise",
++      "via": "codex",
++      "status": "success"
++    }
++  },
++  "verdicts": {
++    "glm": "revise",
++    "openai": "revise"
++  },
++  "statuses": {
++    "glm": "success",
++    "openai": "success"
++  },
++  "contradiction": {
++    "detected": false,
++    "comparable": true,
++    "requires_resolution": false,
++    "reason": "verdicts agree within one step: glm=revise, openai=revise"
++  }
++}
+diff --git a/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/full-diff.txt b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/full-diff.txt
+new file mode 100644
+index 00000000..274b1cbb
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/full-diff.txt
+@@ -0,0 +1,15 @@
++diff --git a/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/external-code-review-raw.json b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/external-code-review-raw.json
++new file mode 100644
++index 00000000..4bb3b4a4
++--- /dev/null
+++++ b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/external-code-review-raw.json
++@@ -0,0 +1,33 @@
+++{
+++  "review_schema": 2,
+++  "success": true,
+++  "provider": "codex",
+++  "degraded": false,
+++  "reviews_succeeded": 2,
+++  "reviews": {
+++    "glm": {
+++      "feedback": "## Findings\n\n- Category: regression\n  Severity: high\n  File: shared/scripts/triage.py:718\u2013721 (`return (previous, resulting_item, to_outbox)`)\n  Finding: `mark_status(return_item=True)` silently changes its return type from a 2-tuple to a 3-tuple. The diff updates `triage_cli_commands.py`, but any other caller that unpacks two values (`prev, item = mark_status(...)`) or indexes the tuple will raise `ValueError: too many values to unpack` / read the wrong element. Since `return_item=True` already existed before this change, external callers (WebUI, other tools, tests outside this diff) are plausible and are not shown here.\n  Suggestion: Audit every `return_item=True` call site before merging; if any exists outside this diff, update it in the same change (or return the third element only via a separate opt-in flag / a small result object).\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/triage_cli_commands.py:241\u2013250 (`cmd_dismiss`)\n  Finding: The human (non-`--json`) path for `dismiss` delegates to `_status_flip`, which does not print the route note \u2014 so `dismiss` only gets route reporting in JSON mode, while `snooze` and `amend` get both. If the AC (\"where did my write just go?\" at write time) is meant to apply to all CLI writers, dismiss's human path is a partial implementation, and the new tests only cover the JSON path for dismiss.\n  Suggestion: Either add the note to `_status_flip`'s output for `dismiss` (and any other flips routed through it) and a matching test, or document explicitly why dismiss's human path is excluded.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_triage_route_report.py \u2014 dismiss/snooze JSON tests only\n  Finding: The tests never assert the negative/absent case for `route_note`'s tracked-on-default-branch branch (returns `None`), nor that the git-error path returns `None`. The `route_note` \"returns None when branch == default\" line is untested, so a bug that prints the branch note on idle main (wrongly claiming \"reaches main only with this branch's PR\") would pass the suite \u2014 the outbox note test happens to run on main with `to_outbox=True`, bypassing that code.\n  Suggestion: Add a test that flips to tracked while on the default branch with origin present (however that state is produced in this codebase) and asserts stderr carries no \"recorded on branch\" note.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/triage_route.py:48\u201352\n  Finding: `route_note`'s `try/except Exception` around branch resolution is fine as advisory, but the tracked note prints `branch != default` even when the branch *is* `origin/<default>` checked out in a worktree vs. a locally-named default mismatch \u2014 e.g. if `default_branch` returns a qualified `origin/main` while `current_branch` returns `main`, the note fires spuriously. Depends on `worktree_isolation`'s normalization, which isn't shown.\n  Suggestion: Confirm `current_branch` and `default_branch` use the same naming form (strip `origin/` prefixes) or normalize before comparing; add a test for the default-branch-checked-out case.\n\nThe `--json` additive-key design (`route` only when provided) is backwards-compatible, `route_label` is trivially correct, and the library-level tests do verify real behavior (file existence, tracked-file contents) rather than just calling the function.\n\nOverall: the core implementation is sound but the silent 2-tuple \u2192 3-tuple return-type change on a pre-existing pub
+\ No newline at end of file
+diff --git a/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/reviews.json b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/reviews.json
+new file mode 100644
+index 00000000..f502baec
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/reviews.json
+@@ -0,0 +1,90 @@
++{
++  "schema_version": 1,
++  "run_id": "iterate-2026-09-12-triage-route-report",
++  "reviews": {
++    "self": {
++      "review_type": "self",
++      "status": "completed",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": "2026-09-12T11:23:40.196891+00:00",
++      "disposition": null,
++      "recorded_by": "self-review",
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "plan": {
++      "review_type": "plan",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "code": {
++      "review_type": "code",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "doubt": {
++      "review_type": "doubt",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "external_code": {
++      "review_type": "external_code",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "spec": {
++      "review_type": "spec",
++      "status": "completed",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": "2026-09-12T11:27:35.290449+00:00",
++      "disposition": null,
++      "recorded_by": "spec-reviewer",
++      "parse_status": null,
++      "raw_excerpt": null
++    },
++    "plan_internal": {
++      "review_type": "plan_internal",
++      "status": "pending",
++      "findings_count": 0,
++      "findings": [],
++      "provider": null,
++      "completed_at": null,
++      "disposition": null,
++      "recorded_by": null,
++      "parse_status": null,
++      "raw_excerpt": null
++    }
++  }
++}
+diff --git a/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/self-review-payload.json b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/self-review-payload.json
+new file mode 100644
+index 00000000..4aa94fb4
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/self-review-payload.json
+@@ -0,0 +1,12 @@
++{
++  "items": [
++    {"name": "Spec Compliance", "verdict": "pass", "note": "mark_status now returns (previous, item, to_outbox); both direct CLI call sites (dismiss --json, snooze --json) and amend print the outbox note plus its converse (tracked-from-a-non-default-branch); webui _emit_result carries an additive route key. Deliberately did NOT turn the derivation into a caller flag, and left triage_promote.py's promote/defer/unpark paths untouched, matching the card's literal two-call-site scope."},
++    {"name": "Error Handling", "verdict": "pass", "note": "route_note() wraps its git branch lookups in try/except and returns None on failure — advisory only, never blocks or changes the CLI's exit code."},
++    {"name": "Security Basics", "verdict": "pass", "note": "No user input reaches SQL/HTML. Branch name is shown via repr(); git ref-name rules already forbid control characters, so no injection/console-encoding risk — consistent with this file's existing (unhardened) stderr writes."},
++    {"name": "Test Quality", "verdict": "pass", "note": "New dedicated module test_triage_route_report.py asserts observable outcomes only: 3-tuple values, JSON route key, exact stderr note text. Covers outbox + tracked-branch for dismiss/snooze/amend, a 3-tuple index-stability regression guard, and a show-has-no-route-key negative case."},
++    {"name": "Performance Basics", "verdict": "pass", "note": "No loops/N+1. route_note's two extra git subprocess calls happen once per CLI invocation, only on the human (non-json) output path."},
++    {"name": "Naming & Structure", "verdict": "pass", "note": "Extracted lib/triage_route.py to hold triage_cli_commands.py at its existing 324-line bloat-baseline budget (would otherwise have ratcheted it) — caught via shipwright_bloat_baseline.json + the anti-ratchet hook, which now passes clean."},
++    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer/consumer: CLI --json stdout (producer) -> WebUI Command Center (consumer, external repo). Producer-side round-trip probed via subprocess CLI invocation in the new test module (both to_outbox branches). Consumer can't be round-tripped from this repo; change is purely additive (new optional route key), so existing JSON.parse-based consumers are unaffected. Not touches_io_boundary-flagged: no .env*/hooks.json/settings.json/*_config.json/*_state.json touched, and no new anchored json.dump/load producer+consumer pair — only an additive key on an already-existing, already-tested json.dumps call."},
++    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "scan_test_hygiene.py --diff: no findings."}
++  ]
++}
+diff --git a/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/spec_review_reply.json b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/spec_review_reply.json
+new file mode 100644
+index 00000000..b4b84663
+--- /dev/null
++++ b/.shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/spec_review_reply.json
+@@ -0,0 +1,6 @@
++{
++  "stage": "spec-compliance",
++  "verdict": "PASS",
++  "spec_citations": [],
++  "summary": "All brief requirements present and faithful: mark_status returns a (previous, item, to_outbox) triple with return_item=False unchanged; the outbox note is now printed at both cmd_dismiss's --json branch and cmd_snooze (previously only cmd_amend had it); the converse tracked-branch note was added and wired into cmd_snooze and cmd_amend; _emit_result's additive route key covers the WebUI JSON path with correct omission on cmd_show. The derivation itself was not turned into a caller flag. Verified no regression in triage_promote.py (indexing, not destructuring) and confirmed no other mark_status(return_item=True) caller exists anywhere in the repo. triage_promote.py and the non-json _status_flip path were confirmed untouched per the explicit out-of-scope carve-out. Bloat budget respected: triage_cli_commands.py is exactly 324 lines, matching the existing baseline entry with no ratchet."
++}
+diff --git a/.shipwright/triage.jsonl b/.shipwright/triage.jsonl
+index dbdbbe37..bd0b1b07 100644
+--- a/.shipwright/triage.jsonl
++++ b/.shipwright/triage.jsonl
+@@ -2124,3 +2124,4 @@
+ {"event":"status","id":"trg-4fac93bf","ts":"2026-09-12T10:33:15.058243Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #745","promotedTaskId":null}
+ {"event":"append","id":"trg-0992a1bc","ts":"2026-09-12T10:38:12.474752Z","originalTs":"2026-09-12T10:38:12.474752Z","source":"cli","severity":"high","kind":"bug","title":"measure_ac_evidence_ledger counts backticked statuses in prose, the legend and the summary table - inflated totals produced a real but inverted Stage-1 REJECT on PR #748","detail":"MEASURED 2026-09-12 on branch iterate/e3-checks-test-security (PR #748), where it produced a\ngenuine-looking Stage-1 spec-reviewer REJECT whose repair would have written a WRONG number into the\none document whose purpose is to be the trustworthy count.\n\nTHE DEFECT, verbatim -- shared/scripts/tools/measure_ac_evidence_ledger.py::count_statuses (98-111)\n    for status in CANONICAL_STATUSES:\n        pattern = re.compile(\"`\" + re.escape(status) + \"`\")\n        matches = pattern.findall(remaining)\n        counts[status] = len(matches)\nIt counts every backtick-quoted status ANYWHERE in the document. Nothing restricts the match to a\nstatus CELL. The docstring guards only against prefix double-counting (\"`enforced, tested`\" must not\nalso increment bare \"`enforced`\") -- the far larger prose problem is unaddressed.\n\nWHAT IT WRONGLY COUNTS, measured on the ledger as it stands\nOf 15 whole-document matches for `prompt-only (mechanisable)`, at least three are not criterion rows:\n  L15    the VOCABULARY LEGEND defining what the status means\n  L201   a PROSE paragraph mentioning the status while explaining a row split\n  L1761  a SUMMARY TABLE row (\"| `prompt-only (mechanisable)` | 46 |\")\nRestricted to markdown table rows the count is 14, not 15.\n\nTHE INCIDENT IT CAUSED, and why it is expensive rather than cosmetic\nThe e3 sub-iterate added an explanatory paragraph (ledger L199-205) about the #6/#6b split. That\nprose contains `enforced, tested` twice and `prompt-only (mechanisable)` once. Re-running the script\nafterwards therefore returned 15 / 82 while the ledger paragraph, the ADR Consequences and the\ndecision-drop all said 14 / 80 -- measured before the paragraph existed. Stage-1 REJECTED on the\nmismatch, correctly, and the campaign STRICT-STOPped.\nPROVEN CAUSE: de-backticking the status names in that ONE paragraph, touching no row, returns the\nscript to exactly 14 and exactly 80. Both numbers, exact match.\nThe sub-iterate's own reading was that the documents were stale and should be updated to 15/82. That\nwould have recorded the artifact as fact. A document that exists to be counted cannot have a counter\nthat counts its own commentary.\n\nWHY THIS RECURS UNTIL FIXED: the ledger is prose-heavy by design -- every row carries a rationale,\nand rationales naturally name statuses. Any future explanatory paragraph reintroduces the same drift,\nand the failure presents as a credible REJECT pointing at the wrong side of the mismatch.\n\nTHE FIX: count only status CELLS. The ledger's rows are markdown tables, so the status is the cell\nin a known column of a \"|\"-delimited row -- parse the row and read that cell, rather than regexing\nthe whole file. Explicitly exclude the vocabulary legend and the summary table, which are themselves\n\"|\" rows.\n\nTWO CONSTRAINTS\n(1) THIS MOVES EVERY HISTORICAL NUMBER. Totals recorded in past ADRs, decision-drops and campaign\n    prose were produced by the loose counter. The unit must state the new totals, say plainly that\n    earlier recorded totals were measured differently, and NOT retroactively rewrite them -- the same\n    rule ADR numbering already follows (never renumber retroactively).\n(2) ADD A REGRESSION TEST with a fixture whose prose and legend mention every canonical status in\n    backticks, asserting the count reflects rows only. Without it this reverts silently, because the\n    symptom appears as a plausible reviewer REJECT rather than as a failure.\n\nINTERIM, until the fix lands: status names must not be backticked outside a status cell. Worth one\nsentence in the ledger near the totals, so the next author does not rediscover this the hard way.","evidencePath":null,"runId":null,"commit":null,"dedupKey":null,"launchPayload":null,"frId":null,"suiteId":null,"eventId":null,"status":"triage","suggestedPriority":"P1","suggestedDomain":"engineering"}
+ {"event":"append","id":"trg-de766d82","ts":"2026-09-12T10:39:44.742049Z","originalTs":"2026-09-12T10:39:44.742049Z","source":"cli","severity":"medium","kind":"bug","title":"mark_status derives its outbox-vs-tracked write target silently, unlike amend which reports it - three status flips were stranded on branches in one session","detail":"MEASURED 2026-09-12, after the same mistake was made three times in one session by an operator\nwho had read the routing code.\n\nTHE ASYMMETRY, at the code\n`amend_triage_item` returns its write target and the CLI SAYS SO -- lib/triage_cli_commands.py:272,\n284-291:\n    to_outbox, item = amend_result\n    ...\n    if to_outbox:\n        sys.stderr.write(\"note: buffered in the local outbox, not yet on any branch - \"\n                         \"delivered on the next iterate's sweep\\n\")\n`mark_status` derives the same target the same way (triage.py:672 `idle_main_routes_to_outbox =\nshould_route_to_outbox(project_root)`; its docstring calls the behaviour \"symmetric with\nappend_triage_item\") but returns the PREVIOUS STATUS, not the route. Both CLI call sites\n(triage_cli_commands.py:240 and :313) therefore print nothing about where the record went.\n\nWHY THAT MATTERS: THE TARGET DEPENDS ON GIT STATE THE CALLER DOES NOT THINK ABOUT\nshould_route_to_outbox (triage.py:141-174) requires an `origin` remote AND\n`current_branch == default_branch` AND not-CI. So the SAME call, from the SAME directory, writes to\na different file depending on which branch HEAD is on -- and every failure mode is silent:\n  on idle main   -> outbox, swept to a branch automatically by the next iterate's worktree setup\n  on any branch  -> tracked .shipwright/triage.jsonl, reaching origin ONLY via a commit and a PR\nNobody is told which happened.\n\nTHE INCIDENT: three flips in one session (trg-ff6ea5f0, trg-5ae23b62, trg-4fac93bf) were made from a\nfreshly-created branch -- `git switch -c <branch>` BEFORE calling mark_status, which is the natural\norder when you intend to commit. HEAD was then not the default branch, routing silently fell back to\ntracked, and each flip needed its own PR that the outbox path would have made unnecessary. One of\nthem (trg-ff6ea5f0) then sat invisible on the board for hours, because the record existed only on an\nunmerged branch -- the operator was told the card was closed while the board correctly showed it open.\n\nTHIS IS THE FAILURE lib/triage_delivery.py WAS WRITTEN TO SURFACE, verbatim from its docstring:\n\"a *status* decision stranded in the gitignored outbox was structurally invisible ... There was no\nsurface anywhere saying a decision had not left the clone.\" That module answers \"has it been\ndelivered?\" AFTER the fact, on a read. Nothing answers \"where did my write just go?\" AT THE MOMENT\nOF WRITING, which is when the mistake is cheap to fix.\n\nTHE FIX: give `mark_status` the same contract as `amend_triage_item` -- return the write target\nalongside the resolved item, and have both CLI call sites print the outbox note. Then add the\nconverse note, which amend lacks too: when a flip lands in the TRACKED store from a non-default\nbranch, say so (\"recorded on branch <x>; it reaches main only with this branch's PR\"). Silence\nshould never be the report for either branch of a derived decision.\n\nTWO NOTES FOR WHOEVER PICKS THIS UP\n(1) The WebUI JSON path (`_emit_result`) also carries no route field. Adding one there is the same\n    change and the Command Center has the same blind spot; check webui parity before shaping the key.\n(2) Do NOT turn the derived target into a caller flag. The derivation is deliberate -- triage.py's\n    own docstring calls it \"Write target is DERIVED (never a caller flag)\" and gives the data-loss\n    reasoning. This card asks only that the derivation REPORT itself.","evidencePath":null,"runId":null,"commit":null,"dedupKey":null,"launchPayload":null,"frId":null,"suiteId":null,"eventId":null,"status":"triage","suggestedPriority":"P2","suggestedDomain":"engineering"}
++{"event":"status","id":"trg-36d48195","ts":"2026-09-12T11:32:27.971470Z","newStatus":"dismissed","by":"githubImporter","reason":"prMerged","promotedTaskId":null}
+diff --git a/shared/scripts/lib/triage_cli_commands.py b/shared/scripts/lib/triage_cli_commands.py
+index 1b82489d..69b3c87f 100644
+--- a/shared/scripts/lib/triage_cli_commands.py
++++ b/shared/scripts/lib/triage_cli_commands.py
+@@ -39,6 +39,7 @@ from lib.triage_cross_tree import cross_tree_delivery_facts  # noqa: E402
+ from lib.triage_delivery import format_pending_delivery_notice  # noqa: E402
+ from lib.triage_integrity import store_facts  # noqa: E402
+ from lib.triage_render import format_item, render_deferred_section  # noqa: E402
++from lib.triage_route import route_label, route_note  # noqa: E402
+ from tools.triage_promote import (  # noqa: E402
+     TransitionPreconditionError,
+     defer,
+@@ -147,10 +148,13 @@ def _resolved_item(project_root: Path, item_id: str) -> dict:
+     raise KeyError(item_id)
+ 
+ 
+-def _emit_result(args: argparse.Namespace, operation: str, item: dict) -> None:
++def _emit_result(args: argparse.Namespace, operation: str, item: dict, *, route: str | None = None) -> None:
+     if getattr(args, "json", False):
+         ensure_utf8_stdout()
+-        sys.stdout.write(json.dumps({"operation": operation, "item": item}, ensure_ascii=False) + "\n")
++        payload = {"operation": operation, "item": item}
++        if route is not None:  # outbox/tracked, `lib.triage_route.route_note`'s JSON twin
++            payload["route"] = route
++        sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
+ 
+ 
+ def _command_error(exc: Exception) -> int:
+@@ -184,21 +188,19 @@ def cmd_promote(args: argparse.Namespace) -> int:
+     project_root = Path(args.project_root)
+     try:
+         result = promote(
+-            project_root,
+-            item_id=args.item_id,
+-            task_ref=args.task_ref,
+-            reason=args.reason,
+-            by=_BY_LABEL,
+-            include_item=True,
++            project_root, item_id=args.item_id, task_ref=args.task_ref,
++            reason=args.reason, by=_BY_LABEL, include_item=True,
+         )
+         item = result["item"]
+     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+         return _command_error(exc)
+ 
+     if getattr(args, "json", False):
+-        _emit_result(args, "promote", item)
++        _emit_result(args, "promote", item, route=result["route"])
+     else:
+         sys.stderr.write(f"promoted {result['id']} → {result['promotedTaskId']}\n")
++        if (note := route_note(Path(args.project_root), result["route"] == "outbox")) is not None:
++            sys.stderr.write(note + "\n")
+     return 0
+ 
+ 
+@@ -214,21 +216,19 @@ def _status_flip(
+     """
+     try:
+         result = decide(
+-            Path(args.project_root),
+-            item_id=args.item_id,
+-            reason=args.reason,
+-            by=_BY_LABEL,
+-            include_item=True,
+-            **extra,
++            Path(args.project_root), item_id=args.item_id, reason=args.reason,
++            by=_BY_LABEL, include_item=True, **extra,
+         )
+         item = result["item"]
+     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+         return _command_error(exc)
+ 
+     if getattr(args, "json", False):
+-        _emit_result(args, operation, item)
++        _emit_result(args, operation, item, route=result["route"])
+     else:
+         sys.stderr.write(f"{verb} {result['id']} (reason: {result['reason']})\n")
++        if (note := route_note(Path(args.project_root), result["route"] == "outbox")) is not None:
++            sys.stderr.write(note + "\n")
+     return 0
+ 
+ 
+@@ -237,13 +237,13 @@ def cmd_dismiss(args: argparse.Namespace) -> int:
+     if getattr(args, "json", False):
+         try:
+             reason = _optional_reason(args.reason)
+-            _, item = mark_status(
++            _, item, to_outbox = mark_status(
+                 Path(args.project_root), args.item_id, new_status="dismissed",
+                 by=_BY_LABEL, reason=reason, expected_status="triage", return_item=True,
+             )
+         except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+             return _command_error(exc)
+-        _emit_result(args, "dismiss", item)
++        _emit_result(args, "dismiss", item, route=route_label(to_outbox))
+         return 0
+     return _status_flip(dismiss, args, "dismissed", "dismiss")
+ 
+@@ -278,17 +278,11 @@ def cmd_amend(args: argparse.Namespace) -> int:
+         ("severity", args.severity), ("kind", args.kind),
+     ) if v is not None]
+     if getattr(args, "json", False):
+-        _emit_result(args, "amend", item)
++        _emit_result(args, "amend", item, route=route_label(to_outbox))
+         return 0
+     sys.stderr.write(f"amended {args.item_id} ({', '.join(changed)})\n")
+-    if to_outbox:
+-        # Delivery-visibility parity for `amend` is deferred scope (AC15) — this
+-        # is the operator's only signal the correction hasn't reached a branch
+-        # yet (Stage-3 doubt review, finding 1).
+-        sys.stderr.write(
+-            "note: buffered in the local outbox, not yet on any branch — "
+-            "delivered on the next iterate's sweep\n"
+-        )
++    if (note := route_note(Path(args.project_root), to_outbox)) is not None:  # AC15 parity
++        sys.stderr.write(note + "\n")
+     return 0
+ 
+ 
+@@ -310,7 +304,7 @@ def cmd_snooze(args: argparse.Namespace) -> int:
+     """WebUI-compatible park: unlike human ``defer``, reason/date are optional."""
+     try:
+         reason = _optional_reason(args.reason)
+-        _, item = mark_status(
++        _, item, to_outbox = mark_status(
+             Path(args.project_root), args.item_id, new_status="snoozed", by=_BY_LABEL,
+             reason=reason, revisit_at=args.revisit, expected_status="triage",
+             require_future_revisit=True, return_item=True,
+@@ -318,7 +312,9 @@ def cmd_snooze(args: argparse.Namespace) -> int:
+     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
+         return _command_error(exc)
+     if getattr(args, "json", False):
+-        _emit_result(args, "snooze", item)
++        _emit_result(args, "snooze", item, route=route_label(to_outbox))
+     else:
+         sys.stderr.write(f"snoozed {args.item_id}\n")
++        if (note := route_note(Path(args.project_root), to_outbox)) is not None:
++            sys.stderr.write(note + "\n")
+     return 0
+diff --git a/shared/scripts/lib/triage_route.py b/shared/scripts/lib/triage_route.py
+new file mode 100644
+index 00000000..17bed1a6
+--- /dev/null
++++ b/shared/scripts/lib/triage_route.py
+@@ -0,0 +1,58 @@
++"""Where a triage write just landed — outbox vs tracked, reported not derived.
++
++`triage.mark_status` / `amend_triage_item` already DERIVE the write target
++(`should_route_to_outbox`'s branch+origin check, or item residence) but until
++iterate-2026-09-12-triage-route-report neither said which one a given call
++used. Three same-session flips (`trg-ff6ea5f0`/`trg-5ae23b62`/`trg-4fac93bf`)
++landed tracked-on-a-freshly-created-branch instead of the outbox an idle-main
++flip would have used, and each needed its own PR before the operator noticed
++— `lib.triage_delivery` answers "has it been delivered?" after the fact, on a
++read; nothing answered "where did my write just go?" at write time. This
++module is the presentation layer for that answer — split out of
++`triage_cli_commands.py` to keep that file under its own 300-LOC budget
++(`shipwright_bloat_baseline.json`), not because the logic needs its own
++abstraction otherwise.
++
++Do NOT turn the derived target into a caller flag: `mark_status`'s own
++docstring is explicit that the residence/branch derivation is deliberate
++(data-loss reasoning). This module only reports what was already decided.
++"""
++
++from __future__ import annotations
++
++from pathlib import Path
++
++from lib.worktree_isolation import current_branch, default_branch
++
++
++def route_label(to_outbox: bool) -> str:
++    """The machine-readable route name for a JSON result payload."""
++    return "outbox" if to_outbox else "tracked"
++
++
++def route_note(project_root: Path, to_outbox: bool) -> str | None:
++    """Human-facing note for where a status/amend write just landed.
++
++    Outbox case reuses the wording `amend_triage_item`'s CLI caller already
++    printed. Tracked case is the converse `amend` lacked too: a write that
++    reached a branch, not `origin/<default>`, reaches main only with THAT
++    branch's PR. Returns ``None`` when there's nothing to add (idle main,
++    tracked target — the ordinary non-worktree case) or branch resolution
++    fails (advisory only; never blocks the CLI result on a git error).
++    """
++    if to_outbox:
++        return (
++            "note: buffered in the local outbox, not yet on any branch — "
++            "delivered on the next iterate's sweep"
++        )
++    try:
++        branch = current_branch(project_root)
++        default = default_branch(project_root)
++    except Exception:  # noqa: BLE001 — advisory note, never block the CLI result
++        return None
++    if branch and branch != default:
++        return (
++            f"note: recorded on branch {branch!r}; it reaches {default} "
++            "only with this branch's PR"
++        )
++    return None
+diff --git a/shared/scripts/tools/triage_promote.py b/shared/scripts/tools/triage_promote.py
+index 170ebb2b..2f1346a4 100644
+--- a/shared/scripts/tools/triage_promote.py
++++ b/shared/scripts/tools/triage_promote.py
+@@ -166,7 +166,7 @@ def promote(
+ ) -> dict:
+     """Promote a triage item to a backlog task.
+ 
+-    Returns ``{"id", "previousStatus", "newStatus", "promotedTaskId"}``.
++    Returns ``{"id", "previousStatus", "newStatus", "promotedTaskId", "route"}``.
+     Raises:
+         FileNotFoundError: triage store missing.
+         KeyError: item_id not found.
+@@ -192,15 +192,10 @@ def promote(
+         raise _not_triage_error(item_id, current, "promoted")
+ 
+     try:
+-        mark_result = mark_status(
+-            project_root,
+-            item_id,
+-            new_status="promoted",
+-            by=by,
+-            reason=reason_clean,
+-            promoted_task_id=task_ref_clean,
+-            expected_status="triage",
+-            return_item=include_item,
++        _previous, item_result, to_outbox = mark_status(  # always return_item=True: route needs to_outbox
++            project_root, item_id, new_status="promoted", by=by,
++            reason=reason_clean, promoted_task_id=task_ref_clean,
++            expected_status="triage", return_item=True,
+         )
+     except StatusPreconditionError as exc:
+         raise _not_triage_error(item_id, exc.actual, "promoted") from exc
+@@ -210,9 +205,10 @@ def promote(
+         "previousStatus": "triage",
+         "newStatus": "promoted",
+         "promotedTaskId": task_ref_clean,
++        "route": "outbox" if to_outbox else "tracked",
+     }
+     if include_item:
+-        result["item"] = mark_result[1]
++        result["item"] = item_result
+     return result
+ 
+ 
+@@ -252,28 +248,28 @@ def _transition(
+         raise _wrong_status_error(item_id, current, new_status, allowed)
+ 
+     try:
+-        mark_result = mark_status(
++        previous, item_result, to_outbox = mark_status(  # always return_item=True: route needs to_outbox
+             project_root, item_id, new_status=new_status, by=by,
+             reason=reason_clean, expected_status=allowed,
+             revisit_at=revisit_at,
+-            return_item=include_item,
++            return_item=True,
+         )
+     except StatusPreconditionError as exc:
+         raise _wrong_status_error(
+             item_id, exc.actual, new_status, allowed,
+         ) from exc
+ 
+-    previous = mark_result[0] if include_item else mark_result
+     result = {
+         "id": item_id,
+         "previousStatus": previous,
+         "newStatus": new_status,
+         "reason": reason_clean,
++        "route": "outbox" if to_outbox else "tracked",
+     }
+     if revisit_at is not None:
+         result["revisitAt"] = revisit_at
+     if include_item:
+-        result["item"] = mark_result[1]
++        result["item"] = item_result
+     return result
+ 
+ 
+@@ -287,7 +283,7 @@ def dismiss(
+ ) -> dict:
+     """Dismiss a triage item (false-positive / won't-fix).
+ 
+-    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
++    Returns ``{"id", "previousStatus", "newStatus", "reason", "route"}``.
+ 
+     Raises:
+         FileNotFoundError: triage store missing.
+@@ -325,7 +321,7 @@ def defer(
+     replaces the date, so a mistyped one is correctable without un-parking
+     first. `dismissed` and `promoted` are refused.
+ 
+-    Returns ``{"id", "previousStatus", "newStatus", "reason", "revisitAt"}``.
++    Returns ``{"id", "previousStatus", "newStatus", "reason", "revisitAt", "route"}``.
+     """
+     if revisit_at is None:
+         raise ValueError("revisit_at is required when deferring an item")
+@@ -355,7 +351,7 @@ def unpark(
+     passed reads `triage` and is refused as *already open*, rather than being
+     handed a second event that changes nothing.
+ 
+-    Returns ``{"id", "previousStatus", "newStatus", "reason"}``.
++    Returns ``{"id", "previousStatus", "newStatus", "reason", "route"}``.
+     """
+     return _transition(
+         project_root, item_id=item_id, new_status="triage",
+diff --git a/shared/scripts/triage.py b/shared/scripts/triage.py
+index a0c99ab1..cb426be9 100644
+--- a/shared/scripts/triage.py
++++ b/shared/scripts/triage.py
+@@ -581,13 +581,14 @@ def mark_status(
+     revisit_at: str | None = None,
+     require_future_revisit: bool = False,
+     return_item: bool = False,
+-) -> str | None | tuple[str | None, dict]:
++) -> str | None | tuple[str | None, dict, bool]:
+     """Append a status event for an existing item (never mutates prior lines).
+ 
+     Returns the status this event REPLACED — ``None`` when the item carries no
+     resolvable status. It returned nothing before
+     iterate-2026-07-31-it1-s2-expected-status, which left a caller unable to
+-    tell a real transition from a re-flip of an already-decided item.
++    tell a real transition from a re-flip of an already-decided item. With
++    ``return_item=True`` it is a ``(previous, resulting_item, to_outbox)`` triple — ``to_outbox`` mirrors :func:`amend_triage_item`'s return value.
+ 
+     ``expected_status`` / ``expected_by`` make the flip conditional: the item's currently
+     resolved status/provenance are compared inside the lock this function
+@@ -717,7 +718,7 @@ def mark_status(
+         _append_line(project_root, line, to_outbox=to_outbox)
+         resulting_item = next((it for it in read_all_items(project_root) if it.get("id") == item_id), {}) if return_item else None
+ 
+-    return (previous, resulting_item) if return_item else previous
++    return (previous, resulting_item, to_outbox) if return_item else previous
+ 
+ # ---------------------------------------------------------------------------
+ # Public API: amend
+diff --git a/shared/tests/test_triage_defer.py b/shared/tests/test_triage_defer.py
+index cd72388c..13ea8a6a 100644
+--- a/shared/tests/test_triage_defer.py
++++ b/shared/tests/test_triage_defer.py
+@@ -81,7 +81,7 @@ def test_defer_records_the_decision_and_its_reason(project: Path, item: str) ->
+     assert result == {
+         "id": item, "previousStatus": "triage",
+         "newStatus": "snoozed", "reason": "waiting on upstream fix",
+-        "revisitAt": FUTURE,
++        "revisitAt": FUTURE, "route": "tracked",
+     }
+     stored = _only(project)
+     assert stored["status"] == "snoozed"
+@@ -184,7 +184,7 @@ def test_dismiss_is_unchanged_by_the_shared_extraction(
+     result = dismiss(project, item_id=item, reason="not relevant")
+     assert result == {
+         "id": item, "previousStatus": "triage",
+-        "newStatus": "dismissed", "reason": "not relevant",
++        "newStatus": "dismissed", "reason": "not relevant", "route": "tracked",
+     }
+     stored = _only(project)
+     assert (stored["status"], stored["statusBy"]) == ("dismissed", "manualDismiss")
+diff --git a/shared/tests/test_triage_promote.py b/shared/tests/test_triage_promote.py
+index a6236f62..9d360403 100644
+--- a/shared/tests/test_triage_promote.py
++++ b/shared/tests/test_triage_promote.py
+@@ -99,7 +99,7 @@ def test_promote_happy_path(project: Path, triage_item: str) -> None:
+         "id": triage_item,
+         "previousStatus": "triage",
+         "newStatus": "promoted",
+-        "promotedTaskId": "EXT:linear-ENG-7",
++        "promotedTaskId": "EXT:linear-ENG-7", "route": "tracked",
+     }
+ 
+     [item] = read_all_items(project)
+@@ -280,7 +280,7 @@ def test_dismiss_happy_path(project: Path, triage_item: str) -> None:
+         "id": triage_item,
+         "previousStatus": "triage",
+         "newStatus": "dismissed",
+-        "reason": "notRelevant",
++        "reason": "notRelevant", "route": "tracked",
+     }
+ 
+     [item] = read_all_items(project)
+diff --git a/shared/tests/test_triage_route_report.py b/shared/tests/test_triage_route_report.py
+new file mode 100644
+index 00000000..3380b604
+--- /dev/null
++++ b/shared/tests/test_triage_route_report.py
+@@ -0,0 +1,227 @@
++"""Route reporting for triage status/amend writes (iterate-2026-09-12-triage-
++route-report).
++
++`mark_status` / `amend_triage_item` derive the outbox-vs-tracked write target
++(`should_route_to_outbox`) but, until this change, `mark_status` never told
++the caller which one it picked and neither CLI writer said so to the
++operator. Three same-session flips (`trg-ff6ea5f0`/`trg-5ae23b62`/
++`trg-4fac93bf`) landed tracked-on-a-freshly-created-branch instead of the
++outbox an idle-main flip would have used, and each needed its own PR before
++the operator noticed. This is a dedicated module (not folded into
++`test_triage_outbox.py`/`test_triage_cli_machine_transitions.py`) so those
++files' own bloat-baseline entries aren't ratcheted by an unrelated feature's
++tests.
++
++Library-level: `mark_status(return_item=True)`'s new `(previous, item,
++to_outbox)` triple. CLI-level: the `route` key in `--json` output and the
++stderr note for the human path, for `dismiss --json`/`snooze`/`amend`/`show`
++plus the negative (no-note) case. The extended dispatch coverage (`dismiss`
++non-json, `defer`, `unpark`, `promote`) lives in
++`test_triage_route_report_dispatch.py` to keep this file under budget.
++"""
++
++from __future__ import annotations
++
++import json
++import subprocess
++import sys
++from pathlib import Path
++
++import pytest
++
++_SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
++if str(_SHARED_SCRIPTS) not in sys.path:
++    sys.path.insert(0, str(_SHARED_SCRIPTS))
++
++from triage import (  # noqa: E402
++    OUTBOX_FILE,
++    TRIAGE_FILE,
++    append_triage_item,
++    mark_status,
++    should_route_to_outbox,
++)
++
++CLI = _SHARED_SCRIPTS / "tools" / "triage_cli.py"
++
++
++def _tracked_path(project: Path) -> Path:
++    return project / ".shipwright" / TRIAGE_FILE
++
++
++def _outbox_path(project: Path) -> Path:
++    return project / ".shipwright" / OUTBOX_FILE
++
++
++def _git(cwd: Path, *args: str) -> None:
++    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True, text=True)
++
++
++@pytest.fixture
++def git_repo(tmp_path: Path) -> Path:
++    _git(tmp_path, "init")
++    _git(tmp_path, "config", "user.email", "t@t.t")
++    _git(tmp_path, "config", "user.name", "t")
++    _git(tmp_path, "commit", "--allow-empty", "-m", "init")
++    _git(tmp_path, "branch", "-M", "main")
++    _git(tmp_path, "remote", "add", "origin", str(tmp_path / "origin-throwaway"))
++    return tmp_path
++
++
++@pytest.fixture
++def git_repo_no_origin(tmp_path: Path) -> Path:
++    """No origin remote → `should_route_to_outbox` is always False (tracked),
++    even while idle on the default branch — the case a note must stay silent for."""
++    _git(tmp_path, "init")
++    _git(tmp_path, "config", "user.email", "t@t.t")
++    _git(tmp_path, "config", "user.name", "t")
++    _git(tmp_path, "commit", "--allow-empty", "-m", "init")
++    _git(tmp_path, "branch", "-M", "main")
++    return tmp_path
++
++
++def _seed(project: Path) -> str:
++    return append_triage_item(
++        project, source="test", severity="medium", kind="bug",
++        title="Route report fixture", detail="d", dedup_key=None,
++    )
++
++
++def _run(project: Path, *args: str) -> subprocess.CompletedProcess[str]:
++    return subprocess.run(
++        [sys.executable, str(CLI), "--project-root", str(project), *args],
++        capture_output=True, text=True, check=False,
++    )
++
++
++# ---------------------------------------------------------------------------
++# Library contract: mark_status(return_item=True) -> (previous, item, to_outbox)
++# ---------------------------------------------------------------------------
++
++def test_mark_status_return_item_reports_outbox_route(git_repo: Path) -> None:
++    """Idle main + origin: the third element matches `should_route_to_outbox`."""
++    item_id = _seed(git_repo)
++    assert should_route_to_outbox(git_repo) is True  # precondition
++
++    previous, resulting_item, to_outbox = mark_status(
++        git_repo, item_id, new_status="dismissed", by="op", reason="r", return_item=True,
++    )
++    assert previous == "triage"
++    assert resulting_item["status"] == "dismissed"
++    assert to_outbox is True
++    assert _outbox_path(git_repo).exists()
++
++
++def test_mark_status_return_item_reports_tracked_route(git_repo: Path) -> None:
++    """A non-default (iterate) branch: the third element is False — tracked,
++    shipping in the PR — matching the residence it actually used."""
++    item_id = _seed(git_repo)
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    assert should_route_to_outbox(git_repo) is False  # precondition
++
++    _previous, _item, to_outbox = mark_status(
++        git_repo, item_id, new_status="dismissed", by="op", reason="r", return_item=True,
++    )
++    assert to_outbox is False
++    assert '"event":"status"' in _tracked_path(git_repo).read_text(encoding="utf-8")
++
++
++def test_mark_status_return_item_unpacks_as_three_values(tmp_path: Path) -> None:
++    """Regression guard: the new element is APPENDED (index 2), not inserted —
++    `previous`/`resulting_item` keep their original meaning at indices 0/1."""
++    item_id = _seed(tmp_path)
++    result = mark_status(tmp_path, item_id, new_status="dismissed", by="op", return_item=True)
++    assert len(result) == 3
++    assert result[0] == "triage"
++    assert result[1]["status"] == "dismissed"
++    assert result[2] is False  # no git repo here — should_route_to_outbox fails safe
++
++
++# ---------------------------------------------------------------------------
++# CLI contract: `route` in --json, stderr note for the human path
++# ---------------------------------------------------------------------------
++
++@pytest.mark.parametrize("command", ("dismiss", "snooze"))
++def test_status_flip_json_reports_tracked_route_on_a_branch(git_repo: Path, command: str) -> None:
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    item_id = _seed(git_repo)
++
++    result = _run(git_repo, command, item_id, "--json")
++
++    assert result.returncode == 0, result.stderr
++    assert json.loads(result.stdout)["route"] == "tracked"
++
++
++@pytest.mark.parametrize("command", ("dismiss", "snooze"))
++def test_status_flip_json_reports_outbox_route_on_idle_main(git_repo: Path, command: str) -> None:
++    item_id = _seed(git_repo)  # git_repo starts on "main" (idle)
++
++    result = _run(git_repo, command, item_id, "--json")
++
++    assert result.returncode == 0, result.stderr
++    assert json.loads(result.stdout)["route"] == "outbox"
++
++
++def test_amend_json_reports_the_route(git_repo: Path) -> None:
++    idle_id = _seed(git_repo)
++    idle_result = _run(git_repo, "amend", idle_id, "--title", "Corrected", "--json")
++    assert idle_result.returncode == 0, idle_result.stderr
++    assert json.loads(idle_result.stdout)["route"] == "outbox"
++
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    branch_id = _seed(git_repo)
++    branch_result = _run(git_repo, "amend", branch_id, "--title", "Corrected", "--json")
++    assert branch_result.returncode == 0, branch_result.stderr
++    assert json.loads(branch_result.stdout)["route"] == "tracked"
++
++
++def test_show_json_carries_no_route_key(tmp_path: Path) -> None:
++    """`show` is a read, not a write — nothing to derive a route from."""
++    item_id = _seed(tmp_path)
++    result = _run(tmp_path, "show", item_id, "--json")
++    assert "route" not in json.loads(result.stdout)
++
++
++def test_snooze_prints_the_outbox_note_on_idle_main(git_repo: Path) -> None:
++    item_id = _seed(git_repo)
++    result = _run(git_repo, "snooze", item_id)
++    assert result.returncode == 0, result.stderr
++    assert "buffered in the local outbox" in result.stderr
++
++
++def test_snooze_prints_the_tracked_branch_note_on_a_branch(git_repo: Path) -> None:
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    item_id = _seed(git_repo)
++    result = _run(git_repo, "snooze", item_id)
++    assert result.returncode == 0, result.stderr
++    assert "recorded on branch 'iterate/some-work'" in result.stderr
++    assert "reaches main only with this branch's PR" in result.stderr
++
++
++def test_amend_prints_the_tracked_branch_note_on_a_branch(git_repo: Path) -> None:
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    item_id = _seed(git_repo)
++    result = _run(git_repo, "amend", item_id, "--title", "Corrected")
++    assert result.returncode == 0, result.stderr
++    assert "recorded on branch 'iterate/some-work'" in result.stderr
++    assert "reaches main only with this branch's PR" in result.stderr
++
++
++def test_amend_prints_the_outbox_note_on_idle_main(git_repo: Path) -> None:
++    item_id = _seed(git_repo)
++    result = _run(git_repo, "amend", item_id, "--title", "Corrected")
++    assert result.returncode == 0, result.stderr
++    assert "buffered in the local outbox" in result.stderr
++
++
++def test_route_note_is_silent_when_tracked_on_the_default_branch(git_repo_no_origin: Path) -> None:
++    """GLM finding: no origin remote → tracked, but idle on `main` — neither
++    note applies, and a bug that fires the branch note on default-branch idle
++    would only be caught here."""
++    item_id = _seed(git_repo_no_origin)
++    result = _run(git_repo_no_origin, "dismiss", item_id, "--reason", "r", "--json")
++    assert result.returncode == 0, result.stderr
++    assert json.loads(result.stdout)["route"] == "tracked"
++
++    result = _run(git_repo_no_origin, "snooze", _seed(git_repo_no_origin))
++    assert result.returncode == 0, result.stderr
++    assert "note:" not in result.stderr
+diff --git a/shared/tests/test_triage_route_report_dispatch.py b/shared/tests/test_triage_route_report_dispatch.py
+new file mode 100644
+index 00000000..ea870be1
+--- /dev/null
++++ b/shared/tests/test_triage_route_report_dispatch.py
+@@ -0,0 +1,130 @@
++"""Route reporting extended to the `_status_flip`/`promote` dispatch
++(iterate-2026-09-12-triage-route-report).
++
++Split out of `test_triage_route_report.py` to keep that file under the
++300-LOC guideline. Covers `dismiss`'s non-`--json` path, `defer`, `unpark`
++and `promote` — the four writers that go through
++`shared/scripts/tools/triage_promote.py` rather than calling `mark_status`
++directly. External code review (GLM via OpenRouter and OpenAI/Codex,
++independently) flagged that `dismiss`'s non-JSON path was silent about its
++write target even after the direct-`mark_status` call sites were fixed,
++since it alone bypassed those call sites for `triage_promote.dismiss()`'s
++own result dict.
++"""
++
++from __future__ import annotations
++
++import json
++import subprocess
++import sys
++from pathlib import Path
++
++import pytest
++
++_SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
++if str(_SHARED_SCRIPTS) not in sys.path:
++    sys.path.insert(0, str(_SHARED_SCRIPTS))
++
++from triage import append_triage_item  # noqa: E402
++
++CLI = _SHARED_SCRIPTS / "tools" / "triage_cli.py"
++
++
++def _git(cwd: Path, *args: str) -> None:
++    subprocess.run(["git", "-C", str(cwd), *args], check=True, capture_output=True, text=True)
++
++
++@pytest.fixture
++def git_repo(tmp_path: Path) -> Path:
++    _git(tmp_path, "init")
++    _git(tmp_path, "config", "user.email", "t@t.t")
++    _git(tmp_path, "config", "user.name", "t")
++    _git(tmp_path, "commit", "--allow-empty", "-m", "init")
++    _git(tmp_path, "branch", "-M", "main")
++    _git(tmp_path, "remote", "add", "origin", str(tmp_path / "origin-throwaway"))
++    return tmp_path
++
++
++def _seed(project: Path) -> str:
++    return append_triage_item(
++        project, source="test", severity="medium", kind="bug",
++        title="Route report fixture", detail="d", dedup_key=None,
++    )
++
++
++def _run(project: Path, *args: str) -> subprocess.CompletedProcess[str]:
++    return subprocess.run(
++        [sys.executable, str(CLI), "--project-root", str(project), *args],
++        capture_output=True, text=True, check=False,
++    )
++
++
++def test_dismiss_non_json_reports_the_route(git_repo: Path) -> None:
++    outbox_id = _seed(git_repo)
++    result = _run(git_repo, "dismiss", outbox_id, "--reason", "r")
++    assert result.returncode == 0, result.stderr
++    assert "buffered in the local outbox" in result.stderr
++
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    branch_id = _seed(git_repo)
++    result = _run(git_repo, "dismiss", branch_id, "--reason", "r")
++    assert result.returncode == 0, result.stderr
++    assert "recorded on branch 'iterate/some-work'" in result.stderr
++
++
++def test_defer_reports_the_route(git_repo: Path) -> None:
++    outbox_id = _seed(git_repo)
++    result = _run(git_repo, "defer", outbox_id, "--reason", "r", "--revisit", "2099-01-01")
++    assert result.returncode == 0, result.stderr
++    assert "buffered in the local outbox" in result.stderr
++
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    branch_id = _seed(git_repo)
++    result = _run(git_repo, "defer", branch_id, "--reason", "r", "--revisit", "2099-01-01")
++    assert result.returncode == 0, result.stderr
++    assert "recorded on branch 'iterate/some-work'" in result.stderr
++
++
++def test_unpark_reports_the_route(git_repo: Path) -> None:
++    outbox_id = _seed(git_repo)
++    _run(git_repo, "defer", outbox_id, "--reason", "r", "--revisit", "2099-01-01")
++    result = _run(git_repo, "unpark", outbox_id, "--reason", "r")
++    assert result.returncode == 0, result.stderr
++    assert "buffered in the local outbox" in result.stderr
++
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    branch_id = _seed(git_repo)
++    _run(git_repo, "defer", branch_id, "--reason", "r", "--revisit", "2099-01-01")
++    result = _run(git_repo, "unpark", branch_id, "--reason", "r")
++    assert result.returncode == 0, result.stderr
++    assert "recorded on branch 'iterate/some-work'" in result.stderr
++
++
++def test_promote_reports_the_route(git_repo: Path) -> None:
++    outbox_id = _seed(git_repo)
++    result = _run(git_repo, "promote", outbox_id, "--task-ref", "EXT:x-1")
++    assert result.returncode == 0, result.stderr
++    assert "buffered in the local outbox" in result.stderr
++
++    _git(git_repo, "checkout", "-b", "iterate/some-work")
++    branch_id = _seed(git_repo)
++    result = _run(git_repo, "promote", branch_id, "--task-ref", "EXT:x-2")
++    assert result.returncode == 0, result.stderr
++    assert "recorded on branch 'iterate/some-work'" in result.stderr
++
++
++@pytest.mark.parametrize("command,extra", (
++    ("dismiss", ("--reason", "r")),
++    ("defer", ("--reason", "r", "--revisit", "2099-01-01")),
++    ("unpark", ("--reason", "r")),
++    ("promote", ("--task-ref", "EXT:x-3")),
++))
++def test_status_flip_and_promote_json_reports_the_route(
++    git_repo: Path, command: str, extra: tuple[str, ...],
++) -> None:
++    item_id = _seed(git_repo)
++    if command == "unpark":
++        _run(git_repo, "defer", item_id, "--reason", "r", "--revisit", "2099-01-01")
++    result = _run(git_repo, command, item_id, *extra, "--json")
++    assert result.returncode == 0, result.stderr
++    assert json.loads(result.stdout)["route"] == "outbox"

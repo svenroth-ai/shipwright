@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-triage-route-report",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T11:47:51.800904+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T11:48:40.762364+00:00",
+      "disposition": "medium-complexity bug/tooling iterate; external review ran in --mode code (Step 3.5 folds into the code-review pass), no separate plan-review row needed",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/triage_cli_commands.py",
+          "line": 202,
+          "finding": "cmd_promote and cmd_amend already bind `project_root = Path(args.project_root)` earlier in the function, but the route_note(...) call re-constructed the Path a second time instead of reusing that binding. FIXED in this same run: both now reuse the existing `project_root` binding.",
+          "suggestion": "Resolved.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/self-review-payload.json",
+          "line": 8,
+          "finding": "The self-review's 'Naming & Structure' note stated triage_cli_commands.py is 'exactly 324 lines, matching the existing baseline entry' while the file was actually 320-321 lines (under the 324 baseline, not at it). FIXED: the self-review payload was rewritten to state the file sits at-or-under its 324-line budget (currently 320) rather than claiming an exact match, and to reflect the scope extension into triage_promote.py that had also gone unmentioned in the prior payload text.",
+          "suggestion": "Resolved.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:40.210889+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T11:48:34.760404+00:00",
+      "disposition": "Stage-3 doubt-reviewer applies only to migrations/async/concurrency/cross-plugin imports/irreversible ops; this diff is triage CLI/library route-reporting with no such touch",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": "shared/scripts/triage.py:718–721 (`return (previous, resulting_item, to_outbox)`)",
+          "line": null,
+          "finding": "mark_status(return_item=True)` silently changes its return type from a 2-tuple to a 3-tuple. The diff updates `triage_cli_commands.py`, but any other caller that unpacks two values (`prev, item = mark_status(...)`) or indexes the tuple will raise `ValueError: too many values to unpack` / read the wrong element. Since `return_item=True` already existed before this change, external callers (WebUI, other tools, tests outside this diff) are plausible and are not shown here.",
+          "suggestion": "Audit every `return_item=True` call site before merging; if any exists outside this diff, update it in the same change (or return the third element only via a separate opt-in flag / a small result object).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/triage_cli_commands.py:241–250 (`cmd_dismiss`)",
+          "line": null,
+          "finding": "The human (non-`--json`) path for `dismiss` delegates to `_status_flip`, which does not print the route note — so `dismiss` only gets route reporting in JSON mode, while `snooze` and `amend` get both. If the AC (\"where did my write just go?\" at write time) is meant to apply to all CLI writers, dismiss's human path is a partial implementation, and the new tests only cover the JSON path for dismiss.",
+          "suggestion": "Either add the note to `_status_flip`'s output for `dismiss` (and any other flips routed through it) and a matching test, or document explicitly why dismiss's human path is excluded.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_route_report.py — dismiss/snooze JSON tests only",
+          "line": null,
+          "finding": "The tests never assert the negative/absent case for `route_note`'s tracked-on-default-branch branch (returns `None`), nor that the git-error path returns `None`. The `route_note` \"returns None when branch == default\" line is untested, so a bug that prints the branch note on idle main (wrongly claiming \"reaches main only with this branch's PR\") would pass the suite — the outbox note test happens to run on main with `to_outbox=True`, bypassing that code.",
+          "suggestion": "Add a test that flips to tracked while on the default branch with origin present (however that state is produced in this codebase) and asserts stderr carries no \"recorded on branch\" note.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_route.py:48–52",
+          "line": null,
+          "finding": "route_note`'s `try/except Exception` around branch resolution is fine as advisory, but the tracked note prints `branch != default` even when the branch is `origin/<default>` checked out in a worktree vs. a locally-named default mismatch — e.g. if `default_branch` returns a qualified `origin/main` while `current_branch` returns `main`, the note fires spuriously. Depends on `worktree_isolation`'s normalization, which isn't shown.",
+          "suggestion": "Confirm `current_branch` and `default_branch` use the same naming form (strip `origin/` prefixes) or normalize before comparing; add a test for the default-branch-checked-out case.  The `--json` additive-key design (`route` only when provided) is backwards-compatible, `route_label` is trivially correct, and the library-level tests do verify real behavior (file existence, tracked-file contents) rather than just calling the function.  Overall: the core implementation is sound but the silent 2-tuple → 3-tuple return-type change on a pre-existing public API is a real break risk until all call sites are confirmed, and dismiss's human path looks like a spec gap. Ship-with-fixes.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/triage_cli_commands.py",
+          "line": 253,
+          "finding": "The human-facing `dismiss` path still delegates to `_status_flip` without calling `route_note`, so it emits no outbox or branch-delivery note. The stated CLI contract requires the stderr route note for status writes, not just `snooze` and `amend`.",
+          "suggestion": "Capture the route for non-JSON dismisses as well and emit `route_note`, or extend `_status_flip`/`dismiss` to return and report the route.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_triage_route_report.py",
+          "line": 129,
+          "finding": "dismiss` is tested only for `--json`; there is no human-mode test for either its outbox or tracked-branch note. Consequently, the missing required behavior above passes the new suite.",
+          "suggestion": "Add non-JSON `dismiss` tests for idle-main/outbox and non-default-branch/tracked output.  Ship-with-fixes: JSON route reporting and the new `mark_status` value appear aligned with the stated contract, but the required human `dismiss` route visibility is absent.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T11:49:02.842630+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: regression\n  Severity: high\n  File: shared/scripts/triage.py:718–721 (`return (previous, resulting_item, to_outbox)`)\n  Finding: `mark_status(return_item=True)` silently changes its return type from a 2-tuple to a 3-tuple. The diff updates `triage_cli_commands.py`, but any other caller that unpacks two values (`prev, item = mark_status(...)`) or indexes the tuple will raise `ValueError: too many values to unpack` / read the wrong element. Since `return_item=True` already existed before this change, external callers (WebUI, other tools, tests outside this diff) are plausible and are not shown here.\n  Suggestion: Audit every `return_item=True` call site before merging; if any exists outside this diff, update it in the same change (or return the third element only via a separate opt-in flag / a small result object).\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/triage_cli_commands.py:241–250 (`cmd_dismiss`)\n  Finding: The human (non-`--json`) path for `dismiss` delegates to `_status_flip`, which does not print the route note — so `dismiss` only gets route reporting in JSON mode, while `snooze` and `amend` get both. If the AC (\"where did my write just go?\" at write time) is meant to apply to all CLI writers, dismiss's human path is a partial implementation, and the new tests only cover the JSON path for dismiss.\n  Suggestion: Either add the note to `_status_flip`'s output for `dismiss` (and any other flips routed through it) and a matching test, or document explicitly why dismiss's human path is excluded.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_triage_route_report.py — dismiss/snooze JSON tests only\n  Finding: The tests never assert the negative/absent case for `route_note`'s tracked-on-default-branch branch (returns `None`), nor that the git-error path returns `None`. The `route_note` \"returns None when branch == default\" line is untested, so a bug that prints the branch note on idle main (w […truncated]\n\n[openai] - Category: spec  \n  Severity: medium  \n  File: shared/scripts/lib/triage_cli_commands.py:253  \n  Finding: The human-facing `dismiss` path still delegates to `_status_flip` without calling `route_note`, so it emits no outbox or branch-delivery note. The stated CLI contract requires the stderr route note for status writes, not just `snooze` and `amend`.  \n  Suggestion: Capture the route for non-JSON dismisses as well and emit `route_note`, or extend `_status_flip`/`dismiss` to return and report the route.\n\n- Category: test  \n  Severity: medium  \n  File: shared/tests/test_triage_route_report.py:129  \n  Finding: `dismiss` is tested only for `--json`; there is no human-mode test for either its outbox or tracked-branch note. Consequently, the missing required behavior above passes the new suite.  \n  Suggestion: Add non-JSON `dismiss` tests for idle-main/outbox and non-default-branch/tracked output.\n\nShip-with-fixes: JSON route reporting and the new `mark_status` value appear aligned with the stated contract, but the required human `dismiss` route visibility is absent.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      },
+      "contradiction_resolution": "Both reviewers' 'revise' verdict findings were addressed in this run: dismiss's silent non-json path now reports its route (extended through triage_promote.py/_status_flip), the mark_status 2-tuple->3-tuple change was confirmed to have no other unaudited caller, a negative-case test for the tracked-on-default-branch scenario was added, and the branch-normalization edge case was confirmed a non-issue (default_branch already strips origin/ prefix)."
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "unfaithful",
+          "file": "shared/scripts/tools/triage_promote.py:203-209 (promote) and :262-268 (_transition); fixed assertions at shared/tests/test_triage_promote.py:98-103,279-284 and shared/tests/test_triage_defer.py:81-85,185-188",
+          "line": null,
+          "finding": "RESOLVED: triage_promote.py's promote()/_transition() added an unconditional 'route' key to their result dict (not gated by include_item like 'item' is), which broke 4 pre-existing exact-dict-equality tests that were never updated in the same diff: test_triage_promote.py::test_promote_happy_path, test_triage_promote.py::test_dismiss_happy_path, test_triage_defer.py::test_defer_records_the_decision_and_its_reason, test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction. Fixed by updating all 4 assertions to include \"route\": \"tracked\"; a follow-up spec-reviewer pass re-verified the fix (all 4 tests pass, 66/66 in the two files) and swept the rest of shared/tests/ for any other unguarded exact-equality assertion on promote/dismiss/defer/unpark results, finding none. — spec: task brief scope-extension checklist item 2 ('confirm ... existing dict-key access pattern isn't broken for callers')",
+          "suggestion": "task brief scope-extension checklist item 2 ('confirm ... existing dict-key access pattern isn't broken for callers')",
+          "source": "spec-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-12T12:05:40.140434+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T11:48:40.832680+00:00",
+      "disposition": "plan_internal is the internal arm of Stage-1 plan review; not applicable since plan itself is not_applicable for this complexity/change_type",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
