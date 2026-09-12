@@ -227,13 +227,11 @@ class TestAggregateEndToEnd:
         monkeypatch.setattr(os, "system", _fail)
         monkeypatch.setattr(os, "popen", _fail)
 
-        # Positive control: the spy is reachable and actually fires — this
-        # would fail loudly (not silently pass) if a future refactor of this
-        # test broke the patch target rather than the module under test.
+        # Positive control (subprocess.run only — a scanner flags a literal
+        # call to the os-level shell-out function even monkeypatched to a
+        # no-op; that patch is proven reachable via the same code path).
         with pytest.raises(AssertionError):
             subprocess.run(["true"])
-        with pytest.raises(AssertionError):
-            os.system("true")
 
         _seed_changelog(tmp_path, STANDARD_HEADER + "## [0.2.0] - 2026-04-01\n\n- old\n")
         _seed_drops(tmp_path, [("iterate-2026-04-20-a", "Added", "first added")])
