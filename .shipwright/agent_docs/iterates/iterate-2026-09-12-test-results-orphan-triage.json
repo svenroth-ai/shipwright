@@ -1,0 +1,23 @@
+{
+  "run_id": "iterate-2026-09-12-test-results-orphan-triage",
+  "date": "2026-09-12T06:10:45.047860Z",
+  "event_at": "2026-09-12T04:14:18.537301+00:00",
+  "type": "change",
+  "complexity": "trivial",
+  "prior_source": "history",
+  "branch": "iterate/test-results-orphan-triage",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-test-results-orphan-triage",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "trivial complexity, auto per the phase matrix -- this run adds no new code or testable behavior (a triage card + agent-doc entries via existing, already-tested tooling)."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "data/record-only change (one triage.jsonl card + agent-doc bookkeeping); no source code, route, or UI touched, so there is no startable surface -- verification is the F0 full test suite."
+  },
+  "declared_removals": []
+}
