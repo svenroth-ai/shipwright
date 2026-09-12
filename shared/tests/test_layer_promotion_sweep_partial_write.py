@@ -149,6 +149,42 @@ def test_untracked_status_failure_reports_rollback_failed_not_a_clean_skip(monke
     assert result.status == "rollback_failed"
 
 
+def test_report_naming_a_pathspec_magic_path_cannot_be_delivered(monkeypatch, repo):
+    """External review, PR #725 round 12: ``:(glob)**/spec.md`` passes every
+    prior check in ``validate_written_paths`` — ``Path(...).name`` is still
+    ``"spec.md"``, no ``..``/absolute component exists — but handed
+    unescaped to ``git add`` it IS a pathspec: the leading ``:`` triggers
+    Git's pathspec magic and matches every ``spec.md`` in the repo, not the
+    one file the report claimed to write. A second, unrelated ``spec.md``
+    elsewhere in the repo must never be staged or committed by it."""
+    other_spec = repo / "unrelated_component" / "spec.md"
+    other_spec.parent.mkdir(parents=True)
+    other_spec.write_text("do not publish me\n", encoding="utf-8")
+    _git(["add", "unrelated_component/spec.md"], repo)
+    _git(["commit", "-m", "unrelated component's own spec"], repo)
+    (repo / "spec.md").write_text("Layers: unit\n", encoding="utf-8")
+    other_spec.write_text("do not publish me\nmodified too\n", encoding="utf-8")
+
+    report = {
+        "promoted": [{"fr": "FR-01.01", "action": "promote"}],
+        "written_spec_paths": [":(glob)**/spec.md"], "skipped": [], "escalated": [],
+    }
+    monkeypatch.setattr(subprocess, "run", _stub_run(promote_stdout=json.dumps(report)))
+    result = run_layer_promotion_sweep(repo, "iterate-x")
+
+    assert result.status == "error"
+    assert "unsafe report path" in result.reason
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"], cwd=repo, capture_output=True, text=True,
+    ).stdout
+    assert "unrelated_component/spec.md" not in staged
+    # The bail path's `git reset --hard` legitimately reverts EVERY uncommitted
+    # tracked-file change repo-wide, not just ones this sweep touched — so
+    # other_spec's own uncommitted edit is expected to revert to its last
+    # committed content, same as it would for any other rollback.
+    assert other_spec.read_text(encoding="utf-8") == "do not publish me\n"
+
+
 def test_commit_failure_rolls_back_staged_residue(repo):
     """A failed commit must not leave staged residue behind for a later,
     unrelated commit to sweep up — forced via a real failing pre-commit

@@ -23,6 +23,12 @@ def _git(args, cwd):
     subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
+def _without_literal_pathspecs(args):
+    """Strip a leading ``--literal-pathspecs`` (added round 12) so a fake's
+    subcommand match keeps working regardless of that global option."""
+    return args[1:] if args[:1] == ["--literal-pathspecs"] else args
+
+
 @pytest.fixture
 def repo(tmp_path):
     root = tmp_path / "repo"
@@ -128,7 +134,7 @@ def test_diff_cached_real_git_error_rolls_back_instead_of_committing(monkeypatch
     real_run_git_soft = sweep_mod.run_git_soft
 
     def _fake_run_git_soft(args, *a, **kw):
-        if args[:2] == ["diff", "--cached"]:
+        if _without_literal_pathspecs(args)[:2] == ["diff", "--cached"]:
             return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: bad object")
         return real_run_git_soft(args, *a, **kw)
 
@@ -218,7 +224,7 @@ def test_add_failure_rolls_back_partially_staged_residue(monkeypatch, repo):
     real_run_git_soft = sweep_mod.run_git_soft
 
     def _fake_run_git_soft(args, *a, **kw):
-        if args[:1] == ["add"]:
+        if _without_literal_pathspecs(args)[:1] == ["add"]:
             # Actually stage spec.md (the partial success), then report the
             # whole invocation as failed — mirrors a real `git add` that
             # stages some pathspecs before erroring on another.
@@ -256,7 +262,7 @@ def test_add_failure_with_a_failing_rollback_reports_rollback_failed(monkeypatch
     real_rollback_run_git_soft = rollback_mod.run_git_soft
 
     def _fake_sweep_run_git_soft(args, *a, **kw):
-        if args[:1] == ["add"]:
+        if _without_literal_pathspecs(args)[:1] == ["add"]:
             return subprocess.CompletedProcess(["git", *args], 128, "", "fatal: pathspec did not match any files")
         return real_sweep_run_git_soft(args, *a, **kw)
 

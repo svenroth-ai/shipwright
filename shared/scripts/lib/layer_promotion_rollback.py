@@ -44,18 +44,36 @@ def validate_written_paths(worktree_path: Path, written_paths: list[str]) -> lis
     """Reject any ``written_spec_paths`` entry that isn't a ``spec.md`` file
     staying inside ``worktree_path`` — ``extract_report_fields`` only
     checked that these are strings, but they are then handed straight to
-    ``git add`` and, once committed, PUSHED to a public
-    ``chore/layer-promotion-*`` branch and opened as a PR. A malformed or
-    compromised ``promote_required_layers.py`` report naming an absolute
-    path, a ``..`` traversal, or an unrelated in-repo file (e.g. ``.env``)
-    would otherwise have that file's content staged and published by this
-    delivery flow (external review, PR #725 round 8) — containment alone
-    (no traversal, no absolute path) does not catch the ``.env`` case, since
-    that is already a plain repo-relative path; the tool only ever produces
-    genuine ``spec.md`` paths (``lib.planning_discovery.SPEC_FILENAME``,
-    from each FR node's own ``spec_path`` field), so requiring that exact
-    basename is the precise allowlist, not an approximation. Returns
-    ``written_paths`` unchanged when every entry is safe; raises
+    ``git add``/``git diff --cached``/``git commit`` as PATHSPECS and, once
+    committed, PUSHED to a public ``chore/layer-promotion-*`` branch and
+    opened as a PR. A malformed or compromised ``promote_required_layers.py``
+    report naming an absolute path, a ``..`` traversal, or an unrelated
+    in-repo file (e.g. ``.env``) would otherwise have that file's content
+    staged and published by this delivery flow (external review, PR #725
+    round 8) — containment alone (no traversal, no absolute path) does not
+    catch the ``.env`` case, since that is already a plain repo-relative
+    path; the tool only ever produces genuine ``spec.md`` paths
+    (``lib.planning_discovery.SPEC_FILENAME``, from each FR node's own
+    ``spec_path`` field), so requiring that exact basename is the precise
+    allowlist, not an approximation.
+
+    A value like ``":(glob)**/spec.md"`` passes every check above —
+    ``Path(...).name`` is still ``"spec.md"``, and no ``..``/absolute
+    component exists — yet, unescaped, IS a Git pathspec: the leading ``:``
+    triggers pathspec magic, and even without it Git's default (non-literal)
+    pathspec matching treats ``*``/``?``/``[...]`` as wildcards. Handed to
+    ``git add``, that stages and publishes every ``spec.md`` the pattern
+    matches, not the one literal file this validator approved (external
+    review, PR #725 round 12). The final check below — the resolved path
+    must be an EXISTING regular file — closes this: a magic/glob string
+    resolves to a literal, non-existent path on disk (Git's own pathspec
+    interpretation only happens once it reaches Git, never here), so it
+    fails this check regardless of what it could later match. The sweep's
+    own git calls additionally pass ``--literal-pathspecs`` as defense in
+    depth, so even an entry that somehow got past this validator cannot be
+    reinterpreted as a pattern by Git itself.
+
+    Returns ``written_paths`` unchanged when every entry is safe; raises
     :class:`ValueError` with a short reason for the first unsafe one."""
     root = worktree_path.resolve()
     for p in written_paths:
@@ -73,6 +91,8 @@ def validate_written_paths(worktree_path: Path, written_paths: list[str]) -> lis
             resolved.relative_to(root)
         except ValueError:
             raise ValueError(f"written_spec_paths path escapes the worktree: {p!r}") from None
+        if not resolved.is_file():
+            raise ValueError(f"written_spec_paths names a path that is not a real file: {p!r}")
     return written_paths
 
 

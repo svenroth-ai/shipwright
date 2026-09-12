@@ -219,7 +219,11 @@ def run_layer_promotion_sweep(
 
     paths = [*written_paths, DEFAULT_LEDGER_RELPATH]
 
-    add = run_git_soft(["add", "--", *paths], cwd=worktree_path)
+    # --literal-pathspecs: defense in depth alongside validate_written_paths'
+    # existing-regular-file check — neither `written_paths` nor the trusted
+    # ledger constant should ever be interpreted as Git pathspec magic/globs
+    # (external review, PR #725 round 12).
+    add = run_git_soft(["--literal-pathspecs", "add", "--", *paths], cwd=worktree_path)
     if add.returncode != 0:
         # `git add` with multiple pathspecs can partially stage before hitting
         # the one that fails — roll back rather than leave that residue for a
@@ -232,7 +236,7 @@ def run_layer_promotion_sweep(
     # Gate the commit on a REAL staged delta (mirrors lib.sweep_outbox's same
     # guard): an EOL-only rewrite of an already-tracked spec.md can leave
     # nothing staged even though the tool reported a write.
-    staged = run_git_soft(["diff", "--cached", "--quiet", "--", *paths], cwd=worktree_path)
+    staged = run_git_soft(["--literal-pathspecs", "diff", "--cached", "--quiet", "--", *paths], cwd=worktree_path)
     if staged.returncode == TIMEOUT_RETURNCODE:
         return _bail(worktree_path, pre_sha, pre_untracked, "error", "git_timeout: diff --cached", promoted, escalated)
     if staged.returncode == 0:
@@ -249,7 +253,8 @@ def run_layer_promotion_sweep(
 
     subject = f"chore(compliance): promote {len(promoted)} FR Layer(s) from confirmed CI evidence"
     commit = run_git_soft(
-        ["commit", "-m", subject, "--", *paths], cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
+        ["--literal-pathspecs", "commit", "-m", subject, "--", *paths],
+        cwd=worktree_path, timeout=HOOK_GIT_TIMEOUT,
     )
     if commit.returncode == TIMEOUT_RETURNCODE:
         return _bail(worktree_path, pre_sha, pre_untracked, "error", "commit_timeout", promoted, escalated)
