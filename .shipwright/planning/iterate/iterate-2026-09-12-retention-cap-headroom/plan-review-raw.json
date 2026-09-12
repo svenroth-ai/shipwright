@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: approach — Severity: low**\n  **Finding:** The fix is sound and correctly scoped. A cap bump addresses the actual failure generator (branches pruning from stale views) without adding the machinery the prior ADR declined. The investigation's retraction of the merge-conflict claim is handled honestly.\n  **Suggestion:** None — this is the right minimal intervention.\n\n- **Category: over-production — Severity: low**\n  **Finding:** `test_retention_constant_is_200` plus a doc-grep test (`test_docs_state_current_cap`) asserting the literal `200` appears in three prose locations is brittle mirror-coverage. Every future cap adjustment now requires touching four places plus updating a test that hardcodes the number — the test just moves the sync problem rather than solving it.\n  **Suggestion:** Simpler: keep the constant-assertion test (it guards against accidental reversion), and reduce the prose mirror count. Ideal: have docs/reference prose point at the constant (\"see `ITERATE_RETENTION` in append_iterate_entry.py\") instead of restating the number, so there's one source of truth and the grep test becomes unnecessary. If the three prose mirrors must stay, the grep test is defensible but know it's the weakest part of the plan.\n\n- **Category: risk — Severity: low**\n  **Finding:** Existing retention tests use the `ITERATE_RETENTION` symbol, but tests that *construct fixture state* near the cap (e.g. creating `ITERATE_RETENTION + N` files) will now create ~200 files each, slowing the suite. Nothing breaks, but runtime cost quadruples.\n  **Suggestion:** If suite runtime is noticeable, have tests parametrize on a smaller injected cap (if the function accepts one) or monkeypatch `ITERATE_RETENTION` in those tests — the pin-exclusion and overshoot behaviors are cap-value-agnostic, so a small test cap preserves semantics.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** 200 is justified against the current 53-entry working set, but there's no stated growth bound or re-check trigger. If iterate summaries accumulate without bound and eventually approach 200, the same stale-view pruning resumes at a larger scale.\n  **Suggestion:** Note in the ADR entry the expected re-evaluation trigger (e.g. \"if unpinned count on main exceeds ~150, escalate to the post-merge retention alternative\"). Cheap and makes the amendment actionable rather than just descriptive.\n\n- **Category: dependency — Severity: low**\n  **Finding:** None material. The ADR drop and F5c.md update are correctly identified as accompanying changes; no schema, hook, or config-file dependencies on the cap value were missed (pins are separate and unaffected).\n  **Suggestion:** None.\n\n- **Category: security — Severity: none**\n  No exposure change; a numeric threshold in an internal tool.\n\n## Overall assessment\n\nThis is a well-investigated, appropriately minimal fix with honest handling of a previously retracted claim — the approach itself needs no changes. The only real refinement is reducing the doc-mirroring/`200`-literal brittleness so future cap changes touch one place, not five.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** Raising the cap to 200 is a sound short-term mitigation, but it only postpones the same stale-branch deletion behavior. The plan calls 200 “well above realistic” concurrency without recording a measured peak finalization fan-out or a review trigger.  \n   **Suggestion:** In the ADR, state the capacity basis (current 51 unpinned entries plus expected burst headroom) and define a concrete revisit threshold, such as observed unpinned count nearing 150 or a recurrence of cross-run retention deletions.\n\n2. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan verifies only the three named tests and prose locations. It does not explicitly require a repository-wide check for other user-facing references to the old limit or code that relies on a 50-entry operational assumption.  \n   **Suggestion:** Add a final repository-wide search for `ITERATE_RETENTION` and retention-related occurrences of `50`; update any remaining authoritative guidance or explicitly document why unrelated matches are not retention references.\n\n3. **Category:** edge-case  \n   **Severity:** low  \n   **Finding:** The new regression test deliberately hardcodes `200`, which is appropriate for enforcing this policy decision, but the prose grep test can pass while documentation loses contextual correctness (for example, says “200” but misstates that pinned files are excluded or that events remain the full history).  \n   **Suggestion:** Keep the literal-cap assertion, but add focused assertions for the key retention semantics in the updated doc text, or keep the prose test narrowly scoped and rely on a manual ADR/doc review for semantic wording.\n\nOverall, the approach is proportional and preserves existing retention semantics while removing the immediate pressure causing incidental cross-run deletion. It should proceed once the cap rationale and a repository-wide reference check are made explicit.  \nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
