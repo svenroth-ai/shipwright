@@ -220,8 +220,10 @@ canon, and the final summary banner.
 1. All declared splits have spec.md files
 2. project-manifest.md exists and lists all splits with execution order
 3. CLAUDE.md exists (Full Application only)
-4. `.shipwright/agent_docs/` directory exists with all 5 files (Full
-   Application only)
+4. `.shipwright/agent_docs/` directory exists with all 3 files —
+   `architecture.md`, `decision_log.md`, `conventions.md` (Full Application
+   only; `session_handoff.md` is written later by the Stop hook, not
+   scaffolded here, and does not count toward this check)
 5. **Spec Completeness Gate** — Scope + FRs + NFRs in each spec.md
 6. **Manifest-Spec Consistency** — bijection between manifest and
    spec.md files
