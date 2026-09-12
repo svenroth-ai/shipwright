@@ -2594,6 +2594,88 @@ former canonical/secondary session-role machinery (`session_role.py`,
 unnecessary. B1 still classifies `iterate/*` branches via
 `list_iterate_branches.py` (`stale`/`locked`) for the resume menu.
 
+**B1a step 4.5 — opportunistic FR Layers promotion (2026-09-11, wiring the
+existing P3.5 promoter):** immediately after the worktree is cut, BEFORE the
+canon self-heal + D2 outbox sweep (doubt-review: `git push HEAD:refs/heads/<new>`
+ships full ancestry, so running this after either of those had already
+committed would carry that unrelated commit into the promotion's own PR too)
+and before the main-tree snapshot, `setup_iterate_worktree.py` calls
+`shared/scripts/lib/layer_promotion_sweep.run_layer_promotion_sweep` against
+the just-created worktree's `HEAD` — the one commit in the whole run
+guaranteed to equal `origin/<default>`'s freshly-fetched tip, so any CI
+execution evidence it resolves judges a commit CI has plausibly already seen.
+It subprocess-invokes `tools/promote_required_layers.py` (unwired anywhere
+until this iterate — no SKILL.md, plugin, or workflow had ever called it; see
+that tool's own module docstring for the promotion predicate). **A found
+promotion never lands on `iterate/<slug>` at all** (Stage-1 spec-review
+REJECT: the original design committed it onto this branch, "so it never
+mixes into that diff" — false, because F11's cross-layer coverage gate
+diffs THIS branch against its merge-base with `origin/<default>`, which for a
+freshly-cut worktree IS that promotion commit's own parent, so it sat
+squarely inside the range F11 recomputes and could HARD-fail finalization for
+an FR the run never touched). Instead: stage `written_spec_paths` plus
+`.shipwright/compliance/layer_promotion_ledger.json`, commit them locally,
+push that ONE commit straight to a fresh `chore/layer-promotion-<sha12>`
+branch (`shared/scripts/lib/layer_promotion_delivery.deliver_as_own_pr`),
+open a PR against `origin/<default>`, then unconditionally hard-reset the
+worktree back to its pre-promotion `HEAD` — the commit exists only on the new
+remote branch, mirroring `references/main-repair.md`'s "repair main as its
+own small PR" ritual. Deliberately does NOT arm `gh pr merge --auto`: unlike
+the iterate's own PR, this one never enters a review cascade (it is not part
+of any iterate skill run, and its content is not a sensitive path), so
+arming automerge on it would let CI-green alone land unreviewed compliance
+state on the default branch (external review, PR #725 round 10) — it is
+opened and left for a human to merge explicitly. This sweep never waits for
+that PR to merge or be reviewed (fire-and-forget is correct here — it is an
+opportunistic side artifact, not this run's deliverable). Result shape + `sweep_warnings()` live in a sibling module,
+`shared/scripts/lib/layer_promotion_sweep_result.py`, split out purely to
+keep `layer_promotion_sweep.py` under the file-size guideline (mirrors the
+existing `lib.sweep_result` split for the outbox sweep). **Never a gate:**
+every non-decisive outcome (no traceability manifest — most consumer
+projects, no network, a `gh`-auth failure, evidence not yet confirmed, an
+existing open promotion PR, `SHIPWRIGHT_ITERATE_NO_FETCH=1`) degrades to a
+`skipped`/`no_change`/`not_delivered` result; only a genuinely `delivered`
+PR, a `not_delivered` outcome, an `error`, or a standing escalation reaches
+`sweep_warnings()` (stderr + the JSON `warnings[]`) — it never fails iterate
+setup. **The guaranteed rollback is itself checked, not assumed** (Stage-2
+re-review): `pre_sha` is captured and its `rev-parse` returncode verified
+BEFORE anything is staged, every stage/commit failure best-effort
+hard-resets back to it so no residue survives into a later commit, and
+`deliver_as_own_pr`'s own final reset checks its returncode too — an
+unreadable `pre_sha` or a failing reset reports the loud, distinct
+`rollback_failed` status — SKILL.md §B1a tells the agent to check `warnings[]`
+for it and manually drop the stray commit before continuing, since a `0` exit
+alone would not say so. **On `rollback_failed`, `setup_iterate_worktree.py`
+also skips step 4.6/4.7/5's canon self-heal + outbox sweep entirely**
+(`lib.worktree_setup_sweeps.run_canon_and_outbox_sweeps`'s
+`skip_committing_sweeps` flag) rather than let either land a commit on top of
+a promotion commit that may still be sitting there — SKILL.md §B1a's recovery
+only knows how to drop that commit as the branch's TOP commit, and a
+self-heal/outbox commit landing above it would bury it and make that recovery
+refuse to act (external review, PR #725 round 13; pinned by
+`test_rollback_failed_skips_selfheal_and_outbox_sweep`). **The untracked-file
+cleanup's own `git clean` call is likewise `--literal-pathspecs`-hardened**
+(round 13): its `new_paths` come straight from `git status --porcelain`
+filenames, never validated the way `written_spec_paths` is, so a newly
+created file whose NAME itself contains pathspec-glob syntax (a bracket
+character class, say) could otherwise let `git clean` match and delete an
+unrelated, pre-existing untracked sibling too — pinned by
+`test_untracked_cleanup_does_not_glob_match_a_sibling_file`. Every `gh` call also pins `--repo` via
+`repo_identity.resolve_repo_identity` (doubt-review: this module had dropped
+`lib.pr_delivery_host`'s own "never infer the repo from a remote" property
+when it stopped routing through `Host`; falls back to `gh`'s own inference
+when the origin isn't a github.com remote, same as before). Pinned by
+`shared/tests/test_layer_promotion_sweep.py` (the tool-invocation
+degrade/no-change contract plus the pre-stage rev-parse and commit-failure
+rollback regressions), `shared/tests/test_layer_promotion_delivery.py`
+(the own-PR delivery + unconditional-rollback contract, including the
+empty-`pre_sha` and final-reset-failure `rollback_failed` regressions — the
+direct regression tests for the F11 hazard above), and
+`shared/tests/test_setup_iterate_worktree_sweeps.py`'s
+`test_layer_promotion_sweep_is_invoked_and_surfaces_warnings` (the wiring
+seam) and `test_layer_promotion_sweep_runs_before_selfheal_and_outbox_sweep`
+(the step-ordering regression, real git, doubt-review finding above).
+
 **B1b Shared-Branch Health (2026-07-28, FR-01.19):** immediately after B1a cuts
 the worktree — and again at F11 before auto-merge is armed — the skill reads
 `shared/scripts/tools/main_health.py`. It is a **read**, not a hook: no hook is
@@ -3218,6 +3300,7 @@ directly. `full` mode is an explicit operator fallback and is counted.
 | `conventions.md` | project | write_decision_log.py (convention impact), reflection protocol (build, test, deploy, iterate) |
 | `decision_log.md` | project (init) | plan, build, deploy (via write_decision_log.py); iterate writes a per-run drop under `.shipwright/agent_docs/decision-drops/` (write_decision_drop.py) → folded into `decision_log.md` at `/shipwright-changelog` via `aggregate_decisions.py`. **Iterate A.3 (2026-05-21)**: per-field length is hard-rejected at write time (500 char budget); overflow goes into `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` and is linked via `--spec-ref`. Drop schema: [shared/schemas/decision_drop.schema.json](../shared/schemas/decision_drop.schema.json). |
 | `.shipwright/planning/adr/<run_id_sanitized>-<slug>.md` | operator (during iterate F3) | manual edits; never overwritten by tooling. Named by `run_id` (via `lib.iterate_entry.sanitize_run_id_for_filename`), never a hand-guessed number — `run_id` is already globally unique, so nothing to coordinate across parallel iterates (iterate-2026-08-08-index-readers-adr-lock; an earlier `<NNN>-<slug>.md` convention let unaided branch-time guesses collide — 15 pre-existing files across 6 numbers, left unrenamed, reported in that run's collision report). The file's first `# ` heading is its `INDEX.md` label (an `ADR-NNN` prefix is stripped if present; the filename is the fallback) — retitle the ADR, never the index. New files should NOT put a numeric `ADR-NNN` token in the heading — the real number is assigned only later, at release. **`/shipwright-adopt` also writes into this folder**, under the older `<NNN>-<slug>.md` convention (`scripts/lib/adr_seeding.py::_seed_adr_spec_folder`, trg-50efc4c8) — safe here because Step E is a one-time onboarding step, not a parallel-iterate write path, so the collision this row's `run_id` convention exists to avoid does not apply; `_next_adr_start_number` reads both decision_log.md and the folder itself before picking a number, so a Step E re-run cannot collide with its own prior seed either. |
+| `.shipwright/compliance/layer_promotion_ledger.json` (P3.5) | `shared/scripts/tools/promote_required_layers.py` (per promoted FR, ledger BEFORE the spec.md cell it justifies — never the reverse), `record_layer_promotion_decision.py` (operator-only `demoted`/override entries) | The promoter itself (`latest_decision` gates every re-decision) and the F11 verifier `check_binding_completeness` (P3.3). **First real writer as of 2026-09-11** — the tool existed since P3.5 (#693) but nothing called it (see the B1a step-5.5 paragraph above). **Never lands in the triggering iterate's own PR:** B1a stages + commits this file and the affected `spec.md` together, then delivers that ONE commit as its own `chore(compliance):` PR against `origin/<default>` (`layer_promotion_delivery.deliver_as_own_pr`) and rolls the local commit back out of the iterate's own branch — see the B1a step-5.5 paragraph for why (the F11 hazard a promotion inside any iterate's own diff would create). |
 | `.shipwright/planning/adr/INDEX.md` | `shared/scripts/lib/adr_index.py` | Derived view of the ADR spec folder, regenerated by **three** producers: `write_decision_drop.py` (iterate F3, so the index row ships in the same commit as the ADR it points at — F6 must `git add` it explicitly), `aggregate_decisions.py` (every non-dry-run release pass, drops or not), and `/shipwright-adopt` Step E (`adr_seeding._refresh_adr_index`, via a subprocess call to `rebuild_adr_index.py` rather than an in-process import — see the shipwright-adopt section above for the ADR-045 rationale). Before iterate-2026-07-31-adr-index-producer the only refresh was a side-effect of *folding drops*, so an ADR an iterate wrote straight into the folder never reached the index. Refresh by hand with `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project-root .` — never with `aggregate_decisions.py`, which also folds and deletes pending drops. Staleness is caught by the drift guard in `shared/tests/test_adr_index_producers.py`. Deliberately NOT a `DERIVED_SNAPSHOTS` member: that list is for views that are *wrong* when derived on a branch, and a folder listing is correct on a branch. |
 | `.shipwright/agent_docs/decision_log_index.md` | `shared/scripts/lib/decision_log_index.py` | Derived view of `decision_log.md`, regenerated by **two** producers for the same reason `.shipwright/planning/adr/INDEX.md` is: `write_decision_log.py` (the direct-append path plan/build/deploy use) and `aggregate_decisions.py` (every non-dry-run release pass, drops or not) — either can be the last write to `decision_log.md` before a commit. `current-status` (`— superseded by ADR-NNN`) is derived from a `(supersedes ADR-NNN)` marker in a later entry's title, not from the sparse `**Status**` field. Refresh by hand with `uv run {shared_root}/scripts/tools/rebuild_decision_log_index.py --project-root .`. Staleness is caught by the drift guard in `shared/tests/test_decision_log_index_producers.py`. Deliberately NOT a `DERIVED_SNAPSHOTS` member, same reasoning as the ADR index. |
 | `.shipwright/agent_docs/decision-drops/*.json` (**git-tracked** since iterate-2026-08-08-track-decision-drops) | `write_decision_drop.py` (iterate F3, resolves against `project_root` directly — writes into the calling iterate's OWN worktree, no main-repo redirect) | `/shipwright-changelog` Step 6 (`aggregate_decisions.py` folds each into `decision_log.md` and deletes it on disk; the release commit's `git add -A` on this dir stages that deletion). Ships in the writing iterate's own PR via F6's explicit `git add` on the directory — durable at merge time, not deferred to the next release. Each drop is a uniquely-named new file per run, so it needs no `CHURN_ALLOWLIST` entry (mirrors `CHANGELOG-unreleased.d/`'s already-proven conflict-free pattern). |

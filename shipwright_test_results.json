@@ -1,16 +1,14 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
-    "date": "2026-09-07",
+    "run_id": "iterate-2026-09-11-wire-promote-required-layers",
+    "date": "2026-09-11",
     "unit": {
       "status": "passed",
-      "passed": 17569,
-      "total": 17627
+      "passed": 10482,
+      "total": 10482
     },
     "integration": {
-      "status": "passed",
-      "passed": 530,
-      "total": 530
+      "status": "not_run"
     },
     "pgtap": {
       "status": "not_run"
@@ -24,75 +22,77 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      "one unit was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path); flagged as trg-f64d1c27 for follow-up, does not affect this run's GREEN status"
+    ],
     "surface_verification": {
       "surface": "none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "monorepo tooling change (a new AC-provenance backfill script + its own tests); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0)."
+      "justification": "internal worktree-setup/finalization tooling (wires an existing CLI into the iterate lifecycle); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "footnote-slug uniqueness is computed DOCUMENT-WIDE, not per-FR, so a slug repeating across FRs is dropped everywhere",
+          "behavior": "a found promotion is delivered as its own small PR against the default branch, and the local (triggering) branch is reset back to its pre-promotion HEAD, untouched",
           "disposition": "tested",
-          "evidence": "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_drops_a_slug_unique_per_fr_but_reused_across_frs PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_promotion_is_delivered_as_its_own_pr_and_local_branch_is_untouched PASSED"
         },
         {
-          "behavior": "a slug unique within one FR and absent elsewhere is kept",
+          "behavior": "a ledger-only promotion (no code change) is still committed and delivered as its own PR",
           "disposition": "tested",
-          "evidence": "shared/tests/test_backfill_ac_provenance.py::test_unique_provenance_acs_keeps_a_slug_unique_within_a_single_fr_and_absent_elsewhere PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_ledger_only_promotion_is_still_committed_and_delivered PASSED"
         },
         {
-          "behavior": "a file claimed by two different (fr_id, ac_id) pairs is dropped from both, never arbitrarily resolved",
+          "behavior": "an already-open promotion PR causes this sweep to skip the push and report not_delivered rather than opening a duplicate",
           "disposition": "tested",
-          "evidence": "shared/scripts/tools/tests/test_backfill_ac_provenance_cli.py::test_a_file_claimed_by_two_different_acs_is_dropped_from_both PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_existing_open_pr_skips_push_and_reports_not_delivered PASSED"
         },
         {
-          "behavior": "an untagged test gets a new AC-scoped covers() tag inserted",
+          "behavior": "a push failure still resets the local branch back to pre-promotion HEAD",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_inserts_a_new_ac_scoped_tag_on_an_untagged_test PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_push_failure_still_resets_local_branch PASSED"
         },
         {
-          "behavior": "an existing bare FR-only covers() tag is widened to the derived AC, and only the real decorator line changes (never a lookalike string in a docstring/comment/assertion)",
+          "behavior": "a `gh pr create` failure (after a successful push) still resets the local branch",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_apply_skips.py::test_apply_upgrades_only_rewrites_the_real_decorator_never_lookalike_text PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_pr_create_failure_still_resets_local_branch PASSED"
         },
         {
-          "behavior": "a test already tagged for a different FR is never touched",
+          "behavior": "a push timeout degrades to not_delivered and still resets the local branch",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_never_touches_a_test_already_tagged_for_something_else PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_push_timeout_degrades_to_not_delivered_and_still_resets_local_branch PASSED"
         },
         {
-          "behavior": "re-running the write pass against its own output is a no-op (idempotent, no duplicate tags)",
+          "behavior": "an unreadable/empty pre-promotion HEAD sha is reported as rollback_failed rather than silently skipping the reset",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_apply_upgrades_is_idempotent_on_rerun PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_deliver_as_own_pr_with_empty_pre_sha_is_rollback_failed PASSED"
         },
         {
-          "behavior": "a post-write orphan tag (resolves to no minted AC) rolls back every file this run touched, byte-for-byte, before a non-zero exit",
+          "behavior": "the final rollback reset's own returncode is checked -- a failing reset is reported rollback_failed with a CRITICAL warning, never swallowed as success",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli.py::test_main_rolls_back_every_touched_file_when_an_orphan_tag_is_written PASSED"
+          "evidence": "shared/tests/test_layer_promotion_delivery.py::test_final_reset_failure_reports_rollback_failed PASSED"
         },
         {
-          "behavior": "the git join (Run-ID trailer -> commit -> added test files) resolves against a real repo, including the exact-trailer-line match that rejects a prefix-slug false-positive",
+          "behavior": "an unreadable pre-sha (rev-parse HEAD failure) bails out before any `git add` is run, so nothing is ever staged against an unknown base",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli_git.py::test_commits_for_run_id_does_not_cross_match_a_prefix_slug PASSED"
+          "evidence": "shared/tests/test_layer_promotion_sweep.py::test_unreadable_pre_sha_bails_before_staging PASSED"
         },
         {
-          "behavior": "derive()/main() end-to-end against a real 2-commit repo produces the exact candidate/no_commit_found/no_added_test_file_in_commit status split",
+          "behavior": "a commit failure after staging rolls back the staged residue (best-effort hard reset) instead of leaving the worktree dirty",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli_git.py::test_derive_end_to_end_against_a_real_repo PASSED"
+          "evidence": "shared/tests/test_layer_promotion_sweep.py::test_commit_failure_rolls_back_staged_residue PASSED"
         },
         {
-          "behavior": "a shallow clone is refused rather than silently under-reporting history",
+          "behavior": "the promotion sweep is invoked during worktree setup and its warnings (including a delivered promotion's PR url) surface in setup's own warnings[]",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_cli_git.py::test_main_refuses_a_shallow_clone PASSED"
+          "evidence": "shared/tests/test_setup_iterate_worktree_sweeps.py::test_layer_promotion_sweep_is_invoked_and_surfaces_warnings PASSED"
         },
         {
-          "behavior": "a candidate file that is non-Python, absent at HEAD, or unreadable (invalid UTF-8) is skipped with a named reason, never silently dropped or crashed on",
+          "behavior": "the promotion sweep runs BEFORE the canon self-heal + outbox sweep, so its own push never ships an unrelated self-heal/outbox commit riding along on the shared ancestry",
           "disposition": "tested",
-          "evidence": "test_backfill_ac_provenance_apply_skips.py::test_apply_upgrades_skips_a_non_python_candidate_file, ..._skips_a_file_absent_at_head, ..._skips_an_unreadable_file ALL PASSED"
+          "evidence": "shared/tests/test_setup_iterate_worktree_sweeps.py::test_layer_promotion_sweep_runs_before_selfheal_and_outbox_sweep PASSED"
         }
       ],
       "counts": {
@@ -100,10 +100,6 @@
         "tested": 12,
         "untestable": 0,
         "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
       }
     }
   },
@@ -114,8 +110,8 @@
     "measured_at": "2026-09-02T15:32:00Z"
   },
   "source_state": {
-    "run_id": "iterate-2026-09-07-p3-4-tagging-backfill",
-    "commit": "263c9197e6428134ad4e97c55384bf5dad89cbc1",
+    "run_id": "iterate-2026-09-11-wire-promote-required-layers",
+    "commit": "0178ba04db2bb353ad4cae2f845850e2c2fdd50d",
     "dirty": true,
     "base": null,
     "release": null
