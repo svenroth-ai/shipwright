@@ -49,6 +49,7 @@ from _review_cli_harness import (  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
+from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
 
 #: A Stage-1 PASS. Per `from_spec_reviewer`, an empty `spec_citations` list is
@@ -89,13 +90,15 @@ def campaign_root(tmp_path: Path) -> Path:
                                 "--provider", "openrouter",
                                 "--from", "external-review-json",
                                 "--payload-file", payload(
-                                    tmp_path, "plan.json", EXTERNAL_REVIEW_OUTPUT)]),
+                                    tmp_path, CANONICAL_PAYLOAD_BASENAMES["plan"],
+                                    EXTERNAL_REVIEW_OUTPUT)]),
         ("external_code", "completed", ["--recorded-by", "external-review",
                                          "--marker-status", "completed",
                                          "--provider", "openrouter",
                                          "--from", "external-review-json",
                                          "--payload-file", payload(
-                                             tmp_path, "code.json",
+                                             tmp_path,
+                                             CANONICAL_PAYLOAD_BASENAMES["external_code"],
                                              EXTERNAL_REVIEW_OUTPUT)]),
     ):
         rc, out = run_tool(root, "record", "--review-type", review_type,
@@ -115,7 +118,8 @@ def _promote(root: Path, tmp_path: Path, review_type: str, source: str,
     args = [
         "record", "--review-type", review_type, "--status", "completed",
         "--from", source,
-        "--payload-file", payload(tmp_path, f"{review_type}.txt", reply),
+        "--payload-file", payload(
+            tmp_path, CANONICAL_PAYLOAD_BASENAMES[review_type], reply),
         "--recorded-by", source,
     ]
     if force:

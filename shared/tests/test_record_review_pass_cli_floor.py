@@ -31,6 +31,7 @@ from _review_cli_harness import EXTERNAL_REVIEW_OUTPUT, payload  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
+from lib.review_payloads import CANONICAL_PAYLOAD_BASENAMES  # noqa: E402
 from tools.verifiers.review_record_check import check_review_record  # noqa: E402
 
 TOOL = str(REPO_ROOT / "shared" / "scripts" / "tools" / "record_review_pass.py")
@@ -116,7 +117,8 @@ def test_recording_one_real_review_clears_the_floor(project: Path):
         [sys.executable, TOOL, "record", "--review-type", "external_code",
          "--status", "completed", "--marker-status", "completed",
          "--from", "external-review-json", "--provider", "openrouter", "--force",
-         "--payload-file", payload(project, "external.json", EXTERNAL_REVIEW_OUTPUT),
+         "--payload-file", payload(
+             project, CANONICAL_PAYLOAD_BASENAMES["external_code"], EXTERNAL_REVIEW_OUTPUT),
          "--project-root", str(project), "--run-id", RUN_ID],
         capture_output=True, text=True, encoding="utf-8",
     )
@@ -141,3 +143,21 @@ def test_an_evidence_free_repair_is_rejected_before_write(project: Path):
     outcome = check_review_record(project, RUN_ID)
     assert outcome.is_failure
     assert "no code review ran" in outcome.detail.lower()
+
+
+def test_a_non_canonical_payload_basename_is_rejected(project: Path):
+    """trg-3b206c08: a payload file must use its kind's ONE canonical name —
+    the producer-side half of a family that had 40+ ad-hoc basenames on
+    origin/main. A wrong name is a usage error, not silently accepted."""
+    result = subprocess.run(
+        [sys.executable, TOOL, "record", "--review-type", "external_code",
+         "--status", "completed", "--marker-status", "completed",
+         "--from", "external-review-json", "--provider", "openrouter",
+         "--payload-file", payload(
+             project, "external-code-review.json", EXTERNAL_REVIEW_OUTPUT),
+         "--project-root", str(project), "--run-id", RUN_ID],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "external-code-review-raw.json" in result.stdout
+    assert check_review_record(project, RUN_ID).ok is False

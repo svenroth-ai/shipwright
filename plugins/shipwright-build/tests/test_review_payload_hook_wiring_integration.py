@@ -25,6 +25,13 @@ HOOKS_JSON = PLUGIN_ROOT / "hooks" / "hooks.json"
 
 RUN_ID = "iterate-2026-08-09-compaction-state-audit"
 
+# Mirrors write-review-payload-on-stop.py's own CANONICAL_BASENAME (trg-3b206c08).
+CANONICAL_BASENAME = {
+    "spec": "spec_review_reply.json",
+    "code": "code_review_reply.json",
+    "doubt": "doubt_review_reply.json",
+}
+
 
 def _subagent_stop_commands() -> dict[str, str]:
     """matcher (e.g. "shipwright-build:spec-reviewer") -> its command string."""
@@ -90,14 +97,19 @@ def test_each_wired_command_salvages_into_the_correct_review_type(tmp_path):
     for matcher, command in commands.items():
         review_type = matcher.rsplit("-", 1)[0].rsplit(":", 1)[1]
         project_root = tmp_path / review_type
-        project_root.mkdir()
+        run_dir = project_root / ".shipwright" / "planning" / "iterate" / RUN_ID
+        run_dir.mkdir(parents=True)
+        (run_dir / "reviews.json").write_text(json.dumps({
+            "schema_version": 1, "run_id": RUN_ID,
+            "reviews": {review_type: {"status": "pending"}},
+        }), encoding="utf-8")
 
         result = _run_wired_command(command, project_root, RUN_ID)
 
         assert result.returncode == 0, result.stderr
         salvage = (
             project_root / ".shipwright" / "planning" / "iterate" / RUN_ID
-            / f"{review_type}_salvaged_raw.json"
+            / CANONICAL_BASENAME[review_type]
         )
         assert salvage.exists(), f"{matcher}'s wired command did not salvage: {result.stderr}"
         assert json.loads(salvage.read_text(encoding="utf-8"))["verdict"] == "pass"

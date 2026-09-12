@@ -329,13 +329,23 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
 2. **Branch A — `available`:** run external review as today.
    ```bash
+   mkdir -p "{project_root}/.shipwright/planning/iterate/{run_id}"
    uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
      --mode iterate \
      --spec-file "{iterate_spec_path}" \
      --plan-file "{miniplan_path}" \
      --plugin-root "{plan_plugin_root}" \
-     --project-root "{project_root}" --run-id "{run_id}"
+     --project-root "{project_root}" --run-id "{run_id}" \
+     > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
    ```
+   (The `mkdir -p` is not always redundant: step 0's `record` call is what
+   normally creates this directory as a side effect, but it is skipped
+   entirely under degraded handling above — a bare redirect would then fail
+   with "no such directory" the first time step 0 degrades on a medium+ run.
+   The redirect itself writes the ONE canonical basename for this kind — see
+   "Recording each review pass" in [iteration-reviews.md](iteration-reviews.md);
+   step 5 below reads it from there. `record_review_pass.py record` REJECTS a
+   `--payload-file` under a different name, exit 2 — trg-3b206c08.)
    (`uv run --project` points uv at the plugin that declares the `openai`
    dependency `external_review.py` imports — without it, `uv run` resolves
    package context from cwd, which has no such declaration outside this
@@ -457,7 +467,8 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --status "{completed | not_run}" \
      --marker-status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
      --provider "{openrouter | null}" \
-     [--from external-review-json --payload-file "{external_review.py stdout}"] \
+     [--from external-review-json --payload-file \
+       "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"] \
      [--disposition "{why it did not run — required for not_run}"]
    ```
    This writes the run's review record AND dual-writes the legacy

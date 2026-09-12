@@ -10,14 +10,26 @@ the case a compaction lands between the subagent returning and that write
 happening — it fires synchronously as part of the subagent's own lifecycle,
 independent of the orchestrator's remaining context budget. It NEVER blocks:
 
+  * if the run has no ``reviews.json`` AT ALL under the resolved project
+    root, this hook resolved a different root than the orchestrator's
+    (SKILL.md Step 7's ``init`` always creates it before any of these three
+    reviewers is spawned, so total absence means "wrong tree", never "not
+    yet recorded") — no-op, and never creates the directory;
   * if the run's ``reviews.json`` already shows a terminal status for this
     review type, the orchestrator already recorded it — no-op;
   * otherwise, salvage the subagent's raw JSON reply from its own transcript
-    and write it to a well-known fallback path
-    (``.shipwright/planning/iterate/{run_id}/{review_type}_salvaged_raw.json``)
-    so a resuming session can feed it straight into
-    ``record_review_pass.py record --payload-file`` instead of losing the
-    findings to ``close-missing``'s ``not_run`` default;
+    and write it directly to the SAME canonical basename Step 8's own write
+    targets (``spec_review_reply.json`` / ``code_review_reply.json`` /
+    ``doubt_review_reply.json`` under
+    ``.shipwright/planning/iterate/{run_id}/`` — trg-3b206c08's
+    ``lib.review_payloads.CANONICAL_PAYLOAD_BASENAMES``, duplicated here
+    rather than imported for the ADR-044 reason below) so a resuming session
+    can feed that same path straight into
+    ``record_review_pass.py record --payload-file`` with no separate copy
+    step, instead of losing the findings to ``close-missing``'s ``not_run``
+    default. The orchestrator's own normal-path write to the same file, when
+    it happens, simply supersedes this one — both derive from the identical
+    subagent reply, so the overwrite is harmless;
   * if a ``run_id`` or a parseable reply cannot be resolved, it logs to
     stderr and exits 0 — it never blocks the subagent.
 
@@ -55,6 +67,15 @@ from typing import Any, Optional
 RUN_ID_RE = re.compile(r"iterate-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*")
 TERMINAL_STATUSES = {"completed", "not_run", "not_applicable"}
 _FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)```", re.DOTALL)
+
+# Mirrors lib.review_payloads.CANONICAL_PAYLOAD_BASENAMES for this hook's three
+# review types (trg-3b206c08) — duplicated, not imported, for the ADR-044
+# reason in the module docstring.
+CANONICAL_BASENAME = {
+    "spec": "spec_review_reply.json",
+    "code": "code_review_reply.json",
+    "doubt": "doubt_review_reply.json",
+}
 
 
 def _diag(message: str, **detail: Any) -> None:
@@ -150,21 +171,38 @@ def looks_like_review_payload(text: str) -> bool:
         return False
 
 
+def reviews_json_path(project_root: Path, run_id: str) -> Path:
+    return (
+        Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id
+        / "reviews.json"
+    )
+
+
+def wrong_root(project_root: Path, run_id: str) -> bool:
+    """True iff this run has NO ``reviews.json`` at all under the resolved
+    root — never true for a genuine "not yet recorded" case, since SKILL.md
+    Step 7's ``init`` always creates it before any of the three reviewers this
+    hook backstops is ever spawned. A total absence instead means the hook
+    resolved a DIFFERENT root than the orchestrator's — e.g.
+    ``SHIPWRIGHT_PROJECT_ROOT`` unset and cwd is the main checkout while the
+    orchestrator is working in a worktree (trg-3b206c08: now that the salvage
+    file shares the canonical basename the orchestrator's own write and F6's
+    directory-add target, planting it in the wrong tree is a stray the next
+    fast-forward of main can collide with, not just a leftover)."""
+    return not reviews_json_path(project_root, run_id).exists()
+
+
 def already_recorded(project_root: Path, run_id: str, review_type: str) -> bool:
     """True iff the orchestrator already closed this review type. Reads
     ``reviews.json`` directly rather than importing the schema module (see
     module docstring) — checks both the current ``reviews`` section and the
     legacy ``gates`` section (``spec`` only — the only type ever written
-    there). Any read/parse/shape failure — missing file, bad JSON, or a
-    structurally wrong document (list-shaped, a section holding a non-dict)
-    — is treated as "not recorded" so the salvage still runs; a redundant
-    salvage file is harmless, a lost one is not."""
-    path = (
-        Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id
-        / "reviews.json"
-    )
-    if not path.exists():
-        return False
+    there). Any read/parse/shape failure — bad JSON, or a structurally wrong
+    document (list-shaped, a section holding a non-dict) — is treated as "not
+    recorded" so the salvage still runs; a redundant salvage file is
+    harmless, a lost one is not. Total absence is handled by ``wrong_root``
+    before this is ever called."""
+    path = reviews_json_path(project_root, run_id)
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
         sections = [("reviews", review_type)]
@@ -182,7 +220,7 @@ def already_recorded(project_root: Path, run_id: str, review_type: str) -> bool:
 def salvage_path(project_root: Path, run_id: str, review_type: str) -> Path:
     return (
         Path(project_root) / ".shipwright" / "planning" / "iterate" / run_id
-        / f"{review_type}_salvaged_raw.json"
+        / CANONICAL_BASENAME[review_type]
     )
 
 
@@ -220,6 +258,13 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0
 
     project_root = resolve_project_root()
+
+    if wrong_root(project_root, run_id):
+        _diag("no reviews.json for this run under the resolved project root — "
+              "refusing to salvage (likely a stale cwd / unset "
+              "SHIPWRIGHT_PROJECT_ROOT pointing outside the run's worktree)",
+              run_id=run_id, project_root=str(project_root))
+        return 0
 
     if already_recorded(project_root, run_id, args.review_type):
         _diag(f"{args.review_type} already recorded in reviews.json — hook is a no-op",

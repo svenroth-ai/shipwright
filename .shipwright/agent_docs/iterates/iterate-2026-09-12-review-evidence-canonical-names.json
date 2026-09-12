@@ -1,0 +1,74 @@
+{
+  "run_id": "iterate-2026-09-12-review-evidence-canonical-names",
+  "date": "2026-09-12T01:49:59.627804Z",
+  "event_at": "2026-09-12T01:49:15.072243+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/review-evidence-canonical-names",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-review-evidence-canonical-names",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "record_review_pass.py record rejects a --payload-file whose basename doesn't match its review-type's canonical name (exit 2, nothing written)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_record_review_pass_cli_floor.py::test_a_non_canonical_payload_basename_is_rejected PASSED"
+      },
+      {
+        "behavior": "every canonical basename (self/spec/code/doubt/plan/external_code) is accepted by the validator; plan_internal (no payload kind) is never rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_payload_canonical_basenames.py::test_a_canonical_basename_passes_validation, ::test_a_type_with_no_payload_file_kind_is_never_rejected PASSED"
+      },
+      {
+        "behavior": "spec/code/doubt canonical names stay byte-identical to what the PR-review classifier's own anchored regex already expects",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_payload_canonical_basenames.py::test_the_reply_family_matches_what_the_pr_review_classifier_already_anchors_to PASSED"
+      },
+      {
+        "behavior": "the SubagentStop salvage hook's own local basename mirror stays pinned to the shared registry",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_payload_canonical_basenames.py::test_the_salvage_hooks_own_mirror_dict_matches_the_shared_registry PASSED"
+      },
+      {
+        "behavior": "the salvage hook's canonical-named output round-trips end to end into record_review_pass.py record (producer -> consumer, not just the two dicts)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_payload_canonical_basenames.py::test_the_hooks_salvaged_output_round_trips_into_record PASSED"
+      },
+      {
+        "behavior": "the salvage hook refuses to write (and never creates the run directory) when reviews.json is entirely absent at the resolved project root -- the wrong-tree guard added after Stage-3 doubt review",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-build/tests/test_review_payload_on_stop.py::test_noop_when_no_reviews_json_at_all PASSED"
+      },
+      {
+        "behavior": "every SubagentStop hooks.json wiring for spec/code/doubt-reviewer still salvages into the correct review type's canonical file when driven as a real subprocess",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-build/tests/test_review_payload_hook_wiring_integration.py::test_each_wired_command_salvages_into_the_correct_review_type PASSED"
+      },
+      {
+        "behavior": "the iteration-reviews.md SKILL table always restates the canonical basenames verbatim (drift guard on the prose an agent actually reads at runtime)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_payload_canonical_basenames.py::test_iteration_reviews_doc_restates_every_canonical_basename PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 8,
+      "tested": 8,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 0,
+      "covered_acs": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Pure library/CLI-validation logic + SKILL/agent prose changes (canonical review-evidence basenames); no startable web/CLI/API surface to drive beyond the pytest suites already run at F0 (18 units, 18849 tests, 0 failures, 100% diff coverage on the 3 changed source files)."
+  },
+  "declared_removals": []
+}
