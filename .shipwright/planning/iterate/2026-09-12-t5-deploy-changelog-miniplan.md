@@ -368,23 +368,27 @@ Cascade fires.
 `reviews.external_code`: `completed`, provider `openrouter`+`codex` (both
 legs), 12 findings total across both providers, all dispositioned above.
 
-### Post-PR Tier-3 CI PR-Review (PR #747)
+### Post-PR fixes (PR #747)
 
-The Tier-3 gate independently raised the *same* objection as finding #6
-above (AC15's rollback test has no data-tier mutation spy) — the third time
-this exact objection has surfaced (round-1 plan review finding #3, round of
-code review finding #6, now here), and the third time the same verification
-(`rollback.py` imports only `data_drift`, `rollback_report`, `deploy_profile`
-— no data-tier client exists in this code path) rejects it. Rather than
-rejecting-with-reason a third time on an unchanged record, converted the
-docstring claim into a machine-checked one: added
-`test_rollback_module_imports_no_data_tier_client` (AST-parses `rollback.py`,
-asserts no forbidden data-tier import), so the architectural guarantee is now
-enforced, not merely asserted. Also fixed an unrelated Tier-3 finding in the
-same round: a security-scanner-flagged `os.system("true")` positive-control
-call in `test_aggregation_never_shells_out_to_git_or_gh` (`shared/tests/
-test_changelog_aggregation.py`), removed in favor of the existing
-`subprocess.run(["true"])` positive control.
+Two independently-verifiable changes were made to the pushed diff after PR
+creation; a maintainer should confirm both against the current code rather
+than take this note as settling either:
+
+1. `shared/tests/test_changelog_aggregation.py` — removed a direct
+   `os.system("true")` positive-control call in
+   `test_aggregation_never_shells_out_to_git_or_gh` (flagged as a dangerous
+   pattern even though monkeypatched to a no-op); the existing
+   `subprocess.run(["true"])` positive control remains.
+2. `plugins/shipwright-deploy/tests/test_rollback.py` —
+   `test_completed_rollback_touches_no_data_tier_capability` replaces an
+   earlier, weaker AC15 test that only scanned `rollback.py`'s static
+   imports against a denylist of known database packages (gameable by an
+   unlisted client, a dynamic import, or reuse of an already-imported
+   module). The new test monkeypatches `subprocess.*`, `os.system`,
+   `os.popen`, `socket.socket`, and `socket.create_connection` to
+   fail-if-called (with a positive control proving the spies actually
+   fire), then completes a real rollback through the fake hosting client
+   fixture — verifiable directly by reading the test and running it.
 
 ## Confidence Calibration (Step 3.8)
 

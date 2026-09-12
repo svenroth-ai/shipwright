@@ -8,9 +8,10 @@ the returned payload. Clone-strategy and CLI-argument tests live in
 ``test_rollback_clone.py``.
 """
 
-import ast
+import os
+import socket
+import subprocess
 import urllib.error
-from pathlib import Path
 
 import pytest
 
@@ -239,22 +240,42 @@ def test_invalid_ref_forms_are_rejected_before_any_host_call(client, bad):
 
 
 @pytest.mark.covers("FR-01.08/AC15")
-def test_rollback_module_imports_no_data_tier_client():
-    """Spec FR-01.08/AC15: "stored data...stays where it is" is an
-    architectural guarantee here, not a runtime one to spy on — makes it
-    machine-checked instead of only docstring-asserted: a future import of
-    a database/migration-execution client would fail this test."""
-    forbidden = {"psycopg2", "psycopg", "sqlalchemy", "asyncpg", "pymysql", "sqlite3", "supabase"}
-    tree = ast.parse(Path(rollback.__file__).read_text(encoding="utf-8"))
-    imported = {
-        alias.name.split(".")[0]
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Import)
-        for alias in node.names
-    } | {
-        node.module.split(".")[0]
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module
-    }
-    hit = imported & forbidden
-    assert not hit, f"rollback.py must never import a data-tier client, found: {hit}"
+def test_completed_rollback_touches_no_data_tier_capability(client, monkeypatch):
+    """Spec FR-01.08/AC15: "stored data...stays where it is" is proven here
+    by blocking every capability a data-tier mutation would need -- raw
+    sockets (what every HTTP client, ORM, or DB driver ultimately calls
+    through, regardless of which named library is used or how it is
+    imported), subprocess, and os.system/popen -- then completing a real
+    rollback through the fake hosting client only. A prior version of this
+    test scanned rollback.py's static imports for a denylist of known DB
+    packages; Tier-3 PR review correctly rejected that as gameable (an
+    unlisted client, a dynamic import, or reuse of an already-imported
+    module could all bypass a name-based scan). A capability spy at the
+    interpreter's actual network/process primitives has no such blind spot:
+    if a broken implementation reached for ANY of them to touch stored data,
+    this fails loudly instead of passing by construction."""
+
+    def _fail(name):
+        def _raiser(*args, **kwargs):
+            raise AssertionError(f"rollback must not use {name} to reach a data tier")
+        return _raiser
+
+    for name in ("run", "Popen", "call", "check_call", "check_output"):
+        monkeypatch.setattr(subprocess, name, _fail(f"subprocess.{name}"))
+    monkeypatch.setattr(socket, "socket", _fail("socket.socket"))
+    monkeypatch.setattr(socket, "create_connection", _fail("socket.create_connection"))
+    monkeypatch.setattr(os, "system", _fail("os.system"))
+    monkeypatch.setattr(os, "popen", _fail("os.popen"))
+
+    # Positive control: the spy is reachable and actually fires.
+    with pytest.raises(AssertionError):
+        socket.socket()
+    with pytest.raises(AssertionError):
+        subprocess.run(["true"])
+
+    recording = client()
+
+    result = rollback.rollback_git("dev-demo", "v1.2.3")
+
+    assert result["success"] is True
+    assert recording.calls  # completed via the fake hosting client only
