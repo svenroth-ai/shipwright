@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-retention-sibling-sweep",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:29.143239+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:47.581567+00:00",
+      "disposition": "mini-plan is FEATURE-only at small complexity (or medium+ for CHANGE/BUG); this is a small-complexity BUG run per the Phase Matrix",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:48.043298+00:00",
+      "disposition": "small complexity, risk_flags=[], diff well under 100 lines, no security-sensitive files touched -- the Full Code Review Trigger's own 'When Self-Review is Sufficient' branch applies",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:48.215323+00:00",
+      "disposition": "Stage 3 requires a Stage 2 pass first (none ran) and only applies to a non-trivial surface (migrations/async/concurrency/cross-plugin imports/irreversible ops); this diff is none of those",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:48.377530+00:00",
+      "disposition": "External Code-Review Cascade trigger is independent but symmetric: diff under 100 lines, no security-sensitive files, complexity=small -- none of the three trigger conditions in iteration-reviews.md are met",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:47.891554+00:00",
+      "disposition": "Stage 1 gates the internal cascade, which is trigger-gated: small complexity, no risk flags, diff under 100 lines, no security-sensitive files -- none of the Full Code Review Trigger conditions in iteration-reviews.md are met, so the cascade does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T10:50:47.743261+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
