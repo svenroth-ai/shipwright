@@ -250,6 +250,20 @@ def test_fails_when_skipped_claim_evidence_has_no_stats_block(tmp_path):
     assert "no stats block to validate the claim" in r.detail
 
 
+def test_fails_when_skipped_claim_evidence_has_a_malformed_field(tmp_path):
+    """Tier-3 CI review (PR #748, round 5): a malformed *present* stats
+    field (`expected: true`) used to be silently excluded from the
+    contradiction sum instead of erroring — a garbage stats block with
+    every field malformed summed to 0 and read as "no contradiction",
+    letting the `skipped: true` claim through unvalidated."""
+    _write_pw_results(tmp_path, {"expected": True, "unexpected": 0, "skipped": 0, "flaky": 0})
+    _write_test_results(tmp_path, {"skipped": True})
+    r = check_e2e_counts_reconciled(tmp_path)
+    assert r.ok is False
+    assert "invalid stats field" in r.detail
+    assert "expected=True" in r.detail
+
+
 def test_boolean_skipped_layer_is_still_honoured(tmp_path):
     """The boolean meaning is unchanged: a layer marked `skipped: true` with
     no contradicting evidence still SKIPS rather than demanding counts."""

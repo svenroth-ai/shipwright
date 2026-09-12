@@ -58,15 +58,22 @@ def _project_file_or_escape(project_root: Path, relative_name: str) -> tuple[Pat
     Returns ``(path, escaped)``: ``(Path, False)`` when present and safe,
     ``(None, False)`` when genuinely absent or unreadable, ``(None, True)``
     when a file exists at that name but its resolved location escapes the
-    project root.
+    project root **or** the entry is a symlink that does not resolve to a
+    regular file at all (dangling, or pointing at a directory) — Tier-3 CI
+    review, PR #748, round 5: a dangling symlink used to fold into the same
+    ``(None, False)`` "genuinely absent" result via a plain ``is_file()``
+    check, even though a symlink dirent existing at all is itself the same
+    class of tamper signal an escaping symlink already is (a legitimate
+    build never leaves a broken symlink where an evidence file belongs).
     """
     candidate = project_root / relative_name
     try:
+        is_symlink = candidate.is_symlink()
         exists = candidate.is_file()
     except OSError:
         return None, False
     if not exists:
-        return None, False
+        return (None, True) if is_symlink else (None, False)
     if _is_within(project_root, candidate):
         return candidate, False
     return None, True

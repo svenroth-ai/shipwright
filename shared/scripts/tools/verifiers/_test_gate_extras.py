@@ -69,12 +69,16 @@ def _skipped_claim_contradicted_by_evidence(pw_path: Path | None) -> tuple[int, 
     non-zero stats field, contradicting a recorded ``e2e.skipped: true``
     claim. Returns ``(contradiction_count, error)``. ``error`` is set when
     the file EXISTS but cannot be validated (malformed JSON, unreadable, or
-    a missing/wrong-shaped ``stats`` block) — Tier-3 CI review (PR #748,
-    round 4): that case was previously folded into the same "0, no
-    contradiction" result as a genuinely absent file, letting a
-    ``skipped: true`` claim pass without the evidence ever being validated.
-    No file at all is the only case with neither a contradiction nor an
-    error — an honestly-skipped run writes none."""
+    a missing/wrong-shaped ``stats`` block, or a malformed individual field)
+    — Tier-3 CI review (PR #748): round 4 fixed the file-level cases (that
+    "0, no contradiction" result used to also cover a genuinely absent
+    file — the only case that still means "no contradiction, no error").
+    Round 5 closed the field-level gap round 4 left: a malformed *present*
+    field (``expected: true`` or ``expected: "bad"``) was silently excluded
+    from the sum instead of erroring, so a garbage stats block with every
+    field malformed summed to 0 and read as "no contradiction" — the same
+    fail-open ``_stat_field`` already guards against on the non-skipped
+    reconciliation path below, now applied here too."""
     if pw_path is None:
         return 0, None
     try:
@@ -84,13 +88,14 @@ def _skipped_claim_contradicted_by_evidence(pw_path: Path | None) -> tuple[int, 
     stats = pw_data.get("stats") if isinstance(pw_data, dict) else None
     if not isinstance(stats, dict):
         return 0, "exists but has no stats block to validate the claim against"
-    return sum(
-        1
-        for key in ("expected", "unexpected", "skipped", "flaky")
-        if isinstance(stats.get(key), int)
-        and not isinstance(stats.get(key), bool)
-        and stats[key] > 0
-    ), None
+    contradiction = 0
+    for key in ("expected", "unexpected", "skipped", "flaky"):
+        value, error = _stat_field(stats, key)
+        if error:
+            return 0, f"exists but has an invalid stats field ({error})"
+        if value > 0:
+            contradiction += 1
+    return contradiction, None
 
 
 def check_e2e_counts_reconciled(project_root: Path) -> CheckResult:
