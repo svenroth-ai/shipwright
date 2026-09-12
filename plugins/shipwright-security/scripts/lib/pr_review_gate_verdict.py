@@ -51,15 +51,24 @@ def decide_gate(
     positively-identified "nothing to review" case must never mask a real
     review failure. This is the guard hard constraint 4 asks for.
 
-    It must also never mask a WAIVER failure. A PR whose only changed path is
-    a corroborated review-record file (`.shipwright/planning/iterate/<run>/
-    reviews.json` — itself `is_generated_path`, via `_REVIEW_EVIDENCE_RE`) can
-    have `all_generated=True` and `needs_review=False` at once: the "Consume
-    the one-shot review waiver" step still runs in that case (gated on
-    `needs_review`, not `all_generated`) and can fail (a transient API error).
-    That failure must win too, so the waiver-failure check is ordered BEFORE
-    the `all_generated` short-circuit (Stage-2 code review, PR-shaped:
-    all-generated + waived + waiver-consumption failure).
+    It must also never mask a WAIVER failure. `all_generated=True` and
+    `needs_review=False` could once both hold for a PR whose only changed
+    path was a corroborated `reviews.json` (`is_generated_path` AND, at the
+    time, `is_safe_to_skip_review`); Round 4 of
+    iterate-2026-09-11-pr-review-evidence-filter-gap removed `reviews.json`'s
+    `is_safe_to_skip_review` grant, so `needs_review=False` now structurally
+    requires `reviews.json` among the changed paths (`review_record_tier
+    .decide`'s waiver-corroboration check) while that same path always makes
+    `classify_generated_only` return `False` — making this combination
+    currently unreachable through the real workflow. The check below stays
+    as defense-in-depth against a future loosening of either function, not
+    because the combination is reachable today: the "Consume the one-shot
+    review waiver" step still runs whenever `needs_review=False` (gated on
+    that, not on `all_generated`) and can fail (a transient API error), so if
+    the combination ever becomes reachable again that failure must win — the
+    waiver-failure check is ordered BEFORE the `all_generated` short-circuit
+    (Stage-2 code review, PR-shaped: all-generated + waived +
+    waiver-consumption failure).
 
     When a PR is BOTH all-generated and waived AND the waiver consumed
     cleanly, the `all_generated` branch still runs first and posts

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-retention-cap-headroom",
+  "date": "2026-09-12",
+  "section": "F3",
+  "title": "Raise ITERATE_RETENTION to 200 for branch-concurrency headroom",
+  "context": "Retention's self-heal (re-reads full disk state each append) was modeled for ~2 concurrent branches; actual concurrency has grown well past that, so different branches scatter-prune different other-run entry files near the old 50 cap.",
+  "decision": "Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py; update its docstring, inline comment, and F5c.md's retention prose to match; add a regression test guarding the three stay in sync.",
+  "consequences": "Directory can hold ~200 unpinned summaries before pruning resumes; shipwright_events.jsonl remains the durable full history regardless; two pre-existing tests with hardcoded fixture counts were parameterized on ITERATE_RETENTION.",
+  "rationale": "The mechanism (self-heal, pins) is unchanged and already covered by test_retention_merge_overshoot.py; only its sizing was stale. A cap bump is the smallest fix that stops the scatter-prune symptom without building new machinery.",
+  "rejected": "Main-only post-merge retention step (new machinery the 2026-08-15 ADR already declined); F6/pre-commit guard against staging another run's deletion (would defeat retention's designed function, since evicting other runs' oldest entries is the mechanism working as intended).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-retention-cap-headroom-cap-raised-to-200.md"
+}
