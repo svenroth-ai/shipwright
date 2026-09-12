@@ -53,9 +53,19 @@ SECTIONS: tuple[tuple[str, str], ...] = (
 # false-trigger enforcement on an otherwise-undated entry.
 _PAREN_DATE_RE = re.compile(r"\([^)]*?(\d{4})-(\d{2})-(\d{2})[^)]*?\)")
 
-# Bold anchor (``**run_id**`` / ``**ADR-NNN**``) used to identify an entry across
-# a base→current diff so a re-worded-but-same-entry edit is not seen as "new".
-_BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+# Leading bold anchor (``- **run_id**`` / ``- **ADR-NNN**``) used to identify an
+# entry across a base→current diff so a re-worded-but-same-entry edit is not
+# seen as "new". Anchored to the START of the entry and shape-restricted to a
+# run_id or ADR-NNN — a bold span ANYWHERE ELSE in the entry (e.g. a date-lead
+# Learnings entry quoting another entry's own ``**Run-ID:**``-style anchor in
+# its prose while describing it) must never qualify: matching an incidental
+# quote lets an unrelated base entry that happens to share the same quote
+# collide with it, and new_over_budget() then reads the collision as "this is
+# an edit of that", skipping the length check entirely
+# (iterate-2026-09-12-agent-doc-budget-anchor-falsematch).
+_LEADING_BOLD_ANCHOR_RE = re.compile(
+    r"^- \*\*(iterate-\d{4}-\d{2}-\d{2}-[a-z0-9-]+|ADR-\d{3,4})\*\*"
+)
 
 
 def iter_entries(text: str, section_header: str) -> list[str]:
@@ -107,13 +117,16 @@ def entry_date(entry: str) -> date | None:
 def entry_anchor(entry: str) -> str:
     """A stable identity for an entry, for a base→current diff.
 
-    Prefers the bold anchor (``**run_id**`` / ``**ADR-NNN**``); for the date-lead
-    Learnings form (``- (2026-06-13) phase — …``) falls back to the first 60
-    chars of the bullet body.
+    Prefers a LEADING run_id/ADR-NNN bold anchor (``- **run_id**`` /
+    ``- **ADR-NNN**``) — a bold span anywhere else in the entry never
+    qualifies, even one that looks like an anchor, because it may just be prose
+    quoting another entry's own anchor form. Falls back to the first 60 chars
+    of the bullet body — the case for the date-lead Learnings form
+    (``- (2026-06-13) phase — …``) and for any entry with no leading anchor.
     """
-    m = _BOLD_RE.search(entry)
+    m = _LEADING_BOLD_ANCHOR_RE.match(entry)
     if m:
-        return m.group(1).strip()
+        return m.group(1)
     body = entry[2:].strip() if entry.startswith("- ") else entry.strip()
     return body[:60]
 

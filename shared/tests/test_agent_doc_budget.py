@@ -96,6 +96,26 @@ def test_entry_anchor_falls_back_to_body_head_for_date_lead():
     assert a.startswith("(2026-06-13) iterate")
 
 
+def test_entry_anchor_ignores_incidental_bold_not_at_lead():
+    # Regression: a date-lead entry quoting another entry's own bold anchor
+    # form in prose (e.g. describing a `- **Run-ID:** <run_id>` bullet shape)
+    # must NOT pick that incidental bold span as its identity.
+    entry = (
+        "- (2026-07-19) iterate/F3+F11 — emits the `- **Run-ID:** <run_id>` "
+        "line that F11 resolves through."
+    )
+    a = entry_anchor(entry)
+    assert a != "Run-ID:"
+    assert a.startswith("(2026-07-19) iterate")
+
+
+def test_entry_anchor_leading_bold_requires_run_id_or_adr_shape():
+    # A leading bold span that is NOT run_id/ADR-NNN shaped (e.g. free prose)
+    # falls back to the body head too — only a canonical anchor qualifies.
+    a = entry_anchor("- **not a real anchor** (2026-06-13): x")
+    assert a != "not a real anchor"
+
+
 # --- over_budget (date-cutoff mode) -----------------------------------------
 
 
@@ -146,6 +166,27 @@ def test_new_over_budget_ignores_new_but_compliant():
     base = f"{header}\n- **old** (2026-06-01): short\n"
     current = base + "- **new** (2026-06-13): a tidy one-line pointer\n"
     assert new_over_budget(current, base, header) == []
+
+
+def test_new_over_budget_does_not_skip_on_incidental_bold_collision():
+    # Regression for the anchor false-match hole: an unrelated BASE entry that
+    # incidentally quotes "**Run-ID:**" in its prose must not let a NEW
+    # over-budget entry that quotes the same incidental text escape the
+    # length check by looking like "an edit of" that base entry.
+    header = "## Learnings"
+    base = (
+        f"{header}\n"
+        "- (2026-07-19) iterate/F3+F11 — emits the `- **Run-ID:** <run_id>` "
+        "line that F11 resolves through.\n"
+    )
+    big = "y" * (ENTRY_MAX_CHARS + 50)
+    current = (
+        base
+        + f"- (2026-09-12) iterate — an unrelated new learning that also "
+        f"quotes **Run-ID:** in passing: {big}\n"
+    )
+    bad = new_over_budget(current, base, header)
+    assert len(bad) == 1
 
 
 # --- claude_md_over_growth (CLAUDE.md net-growth rule) -----------------------
