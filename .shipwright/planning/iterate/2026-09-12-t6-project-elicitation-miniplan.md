@@ -78,13 +78,18 @@ table (`.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md`, the
   written against does not count and will be rejected in review." A
   forced binding on AC01/AC03/AC04/AC15 would misrepresent what is actually
   checked.
-- **Self-authorizing the 3rd/4th test root** the AC01/AC15 seams need.
-  Rejected: the sub-iterate spec explicitly forbids this and requires
-  flagging instead, mirroring t5's own precedent for the identical
-  situation on FR-01.09 AC12/AC13.
+- **Self-authorizing the 3rd/4th test root** the AC01/AC15 seams need,
+  at build time. Rejected then: the sub-iterate spec explicitly forbids
+  this and requires flagging instead, mirroring t5's own precedent for
+  the identical situation on FR-01.09 AC12/AC13. (The campaign owner
+  later approved the extra roots on 2026-09-12 after the flag was
+  raised — see the seam-survey t6 addendum — so AC01/AC15 are bound in
+  the final result below; the rejection was of self-authorizing it, not
+  of the roots themselves.)
 
 ## Result
 
-21 of 25 ACs bound; 4 recorded unbound with reasons (2 flagged for a root
-decision, 2 genuinely un-instructed). See the iterate ADR / F5c test-results
-ledger for the full per-AC disposition table.
+23 of 25 ACs bound; AC01/AC15 flagged then campaign-owner-approved for
+their 3rd/4th test roots; AC03/AC04 remain unbound (no seam anywhere
+checks interview completeness or "nothing invented"). See the iterate
+ADR / F5c test-results ledger for the full per-AC disposition table.
