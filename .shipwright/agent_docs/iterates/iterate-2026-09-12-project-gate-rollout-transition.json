@@ -84,5 +84,11 @@
     "tests_run": 0,
     "exit_code": 0,
     "justification": "pure Python verifier logic + git-history resolution inside the Shipwright framework itself; no startable web/cli/api surface for a target project exists to run against -- same as every sibling gate in this family and the binding-completeness-rollout-transition precedent, all surface:none for the identical reason."
-  }
+  },
+  "declared_removals": [
+    {
+      "path": "shared/tests/test_project_gate_extras.py",
+      "reason": "FR-01.02 #5/#10 tests (criteria_free_of_implementation_detail, no_empty_split) moved verbatim, including their @pytest.mark.covers tags, to the new shared/tests/test_project_gate_extras_rollout.py alongside the module split (trg-9583d3a8) -- not deleted, relocated in the same commit."
+    }
+  ]
 }
