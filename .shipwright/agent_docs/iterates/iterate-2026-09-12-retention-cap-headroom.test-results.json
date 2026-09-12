@@ -1,0 +1,82 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-retention-cap-headroom",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 10615,
+      "total": 10648
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "monorepo tooling change (retention cap constant + diagnostics text); no startable web/dev-server/CLI surface of its own -- verification is the unit test suite (F0/F5)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "ITERATE_RETENTION raised to 200",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_retention_cap_headroom.py::test_retention_constant_is_raised PASSED"
+        },
+        {
+          "behavior": "existing retention/self-heal/race tests still pass at the new cap value",
+          "disposition": "tested",
+          "evidence": "full run of test_retention_merge_overshoot.py, test_retention_race.py, test_append_iterate_entry.py (all read the ITERATE_RETENTION symbol, none hardcode 50) -- 37 passed"
+        },
+        {
+          "behavior": "all six prose/code mirrors of the cap (module docstring, inline comment, F5c.md, docs/hooks-and-pipeline.md, docs/guide.md x2, iterate_checks.py's operator diagnostic) state 200 and cannot drift back silently",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_retention_cap_headroom.py -- 7 passed, one assertion per location plus a negative assertion against the old value"
+        },
+        {
+          "behavior": "pinned entries stay excluded from the raised cap's eviction window",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "test_append_iterate_entry.py's pin-exclusion tests are cap-value-agnostic and already assert this against the (now 200) ITERATE_RETENTION symbol"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-retention-cap-headroom",
+    "commit": "5431c04521d18d72d46eae2fe48c454c5b23294f",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

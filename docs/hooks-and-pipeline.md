@@ -4463,7 +4463,7 @@ lock-serialised tools so every Canon caller lands in a consistent shape:
 - **`shared/scripts/tools/append_iterate_entry.py`** (file-per-iterate
   refactor) — writes one `.shipwright/agent_docs/iterates/<run_id>.json` entry atomically,
   runs legacy-array → dir migration on first touch under a state-machine
-  sentinel, applies 50-entry retention, quarantines invalid or duplicate
+  sentinel, applies 200-entry retention, quarantines invalid or duplicate
   legacy rows. Holds `shipwright_run_config.json.lock` for the full
   transaction so same-worktree concurrent finalize calls serialize.
 - **`shared/scripts/tools/write_changelog_drop.py`** — writes one

@@ -1,0 +1,79 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-agent-doc-budget-anchor-falsematch",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 18239,
+      "total": 18298
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "internal parsing-helper fix inside agent_doc_budget.py (entry_anchor()); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "entry_anchor() ignores a bold span that appears anywhere other than the leading position (e.g. an incidental **Run-ID:** quote inside a date-lead entry's own prose)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_anchor_ignores_incidental_bold_not_at_lead PASSED"
+        },
+        {
+          "behavior": "entry_anchor() requires a LEADING bold span to also be run_id/ADR-NNN shaped -- a leading but non-canonical bold span still falls back to the body-head anchor",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_anchor_leading_bold_requires_run_id_or_adr_shape PASSED"
+        },
+        {
+          "behavior": "new_over_budget() no longer skips a genuinely NEW over-budget entry that happens to share an incidental bold quote with an unrelated base entry",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_new_over_budget_does_not_skip_on_incidental_bold_collision PASSED"
+        },
+        {
+          "behavior": "a genuine leading run_id/ADR-NNN bold anchor (the canonical Convention/Architecture Updates shape) still resolves correctly -- no regression on the intended path",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_agent_doc_budget.py::test_entry_anchor_prefers_bold PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 4,
+        "tested": 4,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 88.0,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-12T00:13:05Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-agent-doc-budget-anchor-falsematch",
+    "commit": "8b491301d5527752793a17d2c6b11afd04c24d19",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
