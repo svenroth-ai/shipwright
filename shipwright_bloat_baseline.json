@@ -1203,7 +1203,7 @@
     {
       "path": "shared/tests/test_changelog_aggregation.py",
       "limit": 300,
-      "current": 325,
+      "current": 377,
       "state": "grandfathered",
       "adr": null
     },
@@ -1645,7 +1645,7 @@
     {
       "path": "shared/tests/tools/test_validate_deploy_profile.py",
       "limit": 300,
-      "current": 371,
+      "current": 391,
       "state": "grandfathered",
       "adr": null
     }

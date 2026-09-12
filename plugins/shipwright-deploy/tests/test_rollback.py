@@ -76,6 +76,7 @@ def test_pin_sends_the_full_project_object_with_only_the_branch_replaced(client,
     assert pinned["branch"] == "v1.2.3"
 
 
+@pytest.mark.covers("FR-01.08/AC14")
 def test_unreadable_project_config_refuses_instead_of_writing(client):
     """AC11 — if the current config cannot be read, do not risk a sparse write."""
     recording = client(fail_on={"getprojects"})
@@ -92,6 +93,7 @@ def test_unreadable_project_config_refuses_instead_of_writing(client):
 # AC3 / AC13 — the verdict never over-claims
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_readback_confirming_the_ref_reports_confirmed(client):
     client()
 
@@ -101,6 +103,7 @@ def test_readback_confirming_the_ref_reports_confirmed(client):
     assert result["verification_error"] is None
 
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_readback_returning_a_different_ref_is_a_failure(client):
     """AC3 — a mismatch is not a soft warning."""
     recording = client()
@@ -118,6 +121,7 @@ def test_readback_returning_a_different_ref_is_a_failure(client):
     assert result["halt"] is True
 
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_unavailable_readback_downgrades_the_claim_and_says_why(client):
     """AC3 — 'unconfirmed' keeps success but must never read as 'confirmed'."""
     recording = client()
@@ -140,6 +144,7 @@ def test_unavailable_readback_downgrades_the_claim_and_says_why(client):
     assert "not confirm" in result["message"]
 
 
+@pytest.mark.covers("FR-01.08/AC06")
 def test_a_raw_transport_failure_also_downgrades_rather_than_escaping(client, vcs_project):
     """A client that does not wrap URLError must still produce a report."""
     recording = client()
@@ -198,6 +203,8 @@ def test_refs_heads_prefix_compares_canonically(client):
 # AC12 — a half-done rollback names what it changed
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC13")
+@pytest.mark.covers("FR-01.08/AC14")
 def test_update_failure_reports_the_changed_configuration_and_the_previous_ref(client):
     client(fail_on={"update"})
 
@@ -217,6 +224,7 @@ def test_update_failure_reports_the_changed_configuration_and_the_previous_ref(c
 # AC13 — ref-form validation happens before anything is touched
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.08/AC14")
 @pytest.mark.parametrize("bad", ["HEAD; rm -rf /", "-oProxyCommand=x", "a..b", "with space", ""])
 def test_invalid_ref_forms_are_rejected_before_any_host_call(client, bad):
     recording = client()

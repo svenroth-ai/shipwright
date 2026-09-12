@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-t5-deploy-changelog",
+  "date": "2026-09-12",
+  "section": "Iterate — change: t5 deploy-changelog AC backfill",
+  "title": "Bind AC-proving tests at genuine seams; except with reasons where none exists",
+  "context": "FR-01.08 (/shipwright-deploy) and FR-01.09 (/shipwright-changelog) had 30 spec ACs with zero @covers bindings; the campaign rule requires binding at the highest existing user-observable seam, never simulating proof.",
+  "decision": "Bound 23/30 ACs to existing or new tests exercising real production code paths (4 new test functions total); recorded 7 unbound with evidence-grounded, per-AC reasons rather than forcing a weak binding.",
+  "consequences": "AC coverage baseline unbound_count 152->129; two grandfathered bloat baseline entries bumped for legitimate tag/docstring growth; a 4th ADR-044 test root used for 2 ACs, flagged for operator ratification.",
+  "rationale": "Verified each binding would actually fail if the AC described regression occurred; rejected two near-miss bindings during binding (a post-hoc verifier, a wrong code path) and three more during external plan/code review.",
+  "rejected": "Forcing AC02/AC05/AC08/AC11/AC12 (deploy) and AC01/AC15 (changelog) onto seams that do not prove them; inventing new production testability hooks to make them provable was out of this unit's scope.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

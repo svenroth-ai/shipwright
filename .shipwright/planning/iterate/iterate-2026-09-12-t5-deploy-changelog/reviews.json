@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-t5-deploy-changelog",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T05:59:49.884465+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The fourth pytest root (`shared/scripts/tools/tests`) is being used before the campaign owner has ratified it. Finding #5 from external review flagged exactly this and the disposition was \"rejected-with-reason\" — but rejecting the finding doesn't resolve the underlying dependency; it defers it. If ratification is denied, the baseline write, the AC12/AC13 bindings, and the junitxml merge all need coordinated rollback, which is more churn now than gating the work.",
+          "suggestion": "Either obtain Sven's ratification before merge (the mini-plan claims the precedent already applies to t1/t4/t8/t9 — citing that precedent in a one-line sign-off should be cheap), or record the AC12/AC13 bindings as provisional in the baseline so a rejection doesn't require regenerating the whole ratchet.  2. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The new AC11 spy test (`test_aggregation_never_shells_out_to_git_or_gh`) only patches `subprocess.run`/`Popen`/`check_call`/`check_output`. A regression could shell out via `os.system`, `os.popen`, `subprocess` imported under an alias, or a helper that re-imports `subprocess` inside the function — none of those trip the spy, so the test proves less than it claims. This is the exact \"test shaped around the implementation\" failure mode the spec forbids.",
+          "suggestion": "Also patch `os.system`/`os.popen` in the same spy, and state the test's guarantee honestly (\"does not invoke the enumerated shell-out seams\") in its docstring so the covers-tag claim matches what's proven.  3. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The AC09 negative test \"deletes the `rollback` block from a real profile\" — if it mutates a real file under `shared/profiles/deploy/` rather than a loaded-then-modified copy in memory, a test crash mid-mutation could leave the shipped profile broken for subsequent tests (depending on fixture setup, which the plan doesn't specify).",
+          "suggestion": "Confirm the test loads the profile into a dict, deletes the key, and validates the in-memory structure — never writes back to `shared/profiles/`.  4. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "test_sync_release_manifests_git.py` was trimmed to exactly 300 LOC — the hard limit with zero headroom (external finding #8 was deferred). Any future docstring or binding on that file immediately trips the hook, and the deferral means the next unit hits a wall the current unit created.",
+          "suggestion": "Acceptable to defer, but note it in the baseline entry or as a follow-up work-list item so it isn't rediscovered as a blocker later. A few lines of headroom (e.g. 295) would have been free insurance.  5. Category: approach — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The seven unbound ACs are all excepted for the same structural reason (agent-level SKILL.md prose / conjunctive clauses with no code artifact). That reasoning is consistent with campaign precedent and the per-AC justifications cite concrete modules read — this is sound. However, AC02 and AC05 both describe the most safety-critical behaviors in the deploy path (refusal on failing tests, auto-rollback on smoke failure), and the unit leaves them with zero automated coverage of any kind. That's a product gap this backfill surfaces but can't fix.",
+          "suggestion": "Not a blocker for this unit, but record these as a candidate follow-up: either a `--confirm-failed-tests` flag on `deploy.py` that the agent must pass (making the refusal code-provable), or a smoke-failure→rollback trigger in code. The exception reasons are honest; the underlying fragility deserves a ticket.  6. Category: dependency — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The compliance-report regen sweep (step 5→7) generates then reverts `test-traceability.json`. Step 6's baseline write depends on the traceability regeneration having run, but the reverted state means the committed tree's traceability no longer reflects the new bindings — presumably intentional (F5 regenerates it), but the plan doesn't state who regenerates it at merge time.",
+          "suggestion": "One line confirming F5/campaign finalize regenerates `test-traceability.json` post-merge, so the revert doesn't leave stale traceability in main if the merge flow changes.  7. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Bloat-baseline bumps (two files, twice each, total +56 LOC of tag/docstring growth) are done as `grandfathered` `current` bumps without ADR, on a t4 precedent. The reasoning checks out per the stated policy, but the pattern — every sub-iterate bumping the ceiling upward — is the grandfathered debt growing monotonically with no forcing function to split the files.",
+          "suggestion": "Fine for this unit; consider whether the baseline tooling should distinguish \"growth from binding tags\" (benign) from \"growth from new test logic\" (worth a split) so the ceiling doesn't silently ratchet up indefinitely.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The AC accounting is internally inconsistent. The approach says seven ACs remain unbound after FR-01.09/AC11 was bound, but the verification output lists eight exceptions and still includes FR-01.09/AC11; 152 → 130 likewise means only 22 of 30 were resolved.",
+          "suggestion": "Re-run the coverage tool after the AC11 binding and make the per-AC table, baseline, reported counts, and recorded-reason artifact agree exactly before merge.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The fourth pytest root is explicitly awaiting campaign-owner ratification. Proceeding with bindings and a baseline that depend on that exception leaves the change noncompliant if the deviation is declined.",
+          "suggestion": "Obtain and record the ADR-044/root-count approval before finalizing, or move AC12/AC13 into an already-approved root only if that still uses a genuine existing seam.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The stated verification commands omit the required `--junitxml` paths, despite saying those reruns occurred. “Merged by hand” is not reproducible without named output files and a documented merge/check step.",
+          "suggestion": "Record the exact four commands, XML destinations, and the deterministic merge/validation command or CI artifact location.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new FR-01.09/AC11 test only blocks selected `subprocess` APIs. A regression using `subprocess.call`, `os.system`, a direct GitHub client, or another publishing integration could still publish while the test passes.",
+          "suggestion": "Patch the module’s actual process/publishing seams comprehensively—at minimum include all subprocess entry points used by project conventions and `os.system`—and assert the aggregate operation makes no outbound publication calls.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan says only two new test functions were added, but later describes two additional new tests for AC09 and AC11. This weakens the audit trail for scope, LOC baseline changes, and test ownership.",
+          "suggestion": "Correct the change inventory and bloat-baseline explanation to enumerate all new test functions and their files.  Overall, the seam choices are generally careful and the rejection of post-hoc verifier tests is sound. Resolve the AC-count contradiction and ratify/document the fourth-root and JUnit evidence before treating this as complete.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T05:58:59.319242+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**1. Category: risk — Severity: medium**\n**Finding:** The fourth pytest root (`shared/scripts/tools/tests`) is being used before the campaign owner has ratified it. Finding #5 from external review flagged exactly this and the disposition was \"rejected-with-reason\" — but rejecting the finding doesn't resolve the underlying dependency; it defers it. If ratification is denied, the baseline write, the AC12/AC13 bindings, and the junitxml merge all need coordinated rollback, which is more churn now than gating the work.\n**Suggestion:** Either obtain Sven's ratification before merge (the mini-plan claims the precedent already applies to t1/t4/t8/t9 — citing that precedent in a one-line sign-off should be cheap), or record the AC12/AC13 bindings as provisional in the baseline so a rejection doesn't require regenerating the whole ratchet.\n\n**2. Category: edge-case — Severity: medium**\n**Finding:** The new AC11 spy test (`test_aggregation_never_shells_out_to_git_or_gh`) only patches `subprocess.run`/`Popen`/`check_call`/`check_output`. A regression could shell out via `os.system`, `os.popen`, `subprocess` imported under an alias, or a helper that re-imports `subprocess` inside the function — none of those trip the spy, so the test proves less than it claims. This is the exact \"test shaped around the implementation\" failure mode the spec forbids.\n**Suggestion:** Also patch `os.system`/`os.popen` in the same spy, and state the test's guarantee honestly (\"does not invoke the enumerated shell-out seams\") in its docstring so the covers-tag claim matches what's proven.\n\n**3. Category: edge-case — Severity: low**\n**Finding:** The AC09 negative test \"deletes the `rollback` block from a real profile\" — if it mutates a real file under `shared/profiles/deploy/` rather than a loaded-then-modified copy in memory, a test crash mid-mutation could leave the shipped profile broken for subsequent tests (depending on fixture setup, which the plan doesn't specif […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The AC accounting is internally inconsistent. The approach says seven ACs remain unbound after FR-01.09/AC11 was bound, but the verification output lists eight exceptions and still includes FR-01.09/AC11; 152 → 130 likewise means only 22 of 30 were resolved.  \n   **Suggestion:** Re-run the coverage tool after the AC11 binding and make the per-AC table, baseline, reported counts, and recorded-reason artifact agree exactly before merge.\n\n2. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The fourth pytest root is explicitly awaiting campaign-owner ratification. Proceeding with bindings and a baseline that depend on that exception leaves the change noncompliant if the deviation is declined.  \n   **Suggestion:** Obtain and record the ADR-044/root-count approval before finalizing, or move AC12/AC13 into an already-approved root only if that still uses a genuine existing seam.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The stated verification commands omit the required `--junitxml` paths, despite saying those reruns occurred. “Merged by hand” is not reproducible without named output files and a documented merge/check step.  \n   **Suggestion:** Record the exact four commands, XML destinations, and the deterministic merge/validation command or CI artifact location.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The new FR-01.09/AC11 test only blocks selected `subprocess` APIs. A regression using `subprocess.call`, `os.system`, a direct GitHub client, or another publishing integration could still publish while the test passes.  \n   **Suggestion:** Patch the module’s actual process/publishing seams comprehensively—at minimum include all subprocess entry points used by project conventions and `os.system`—and assert the aggregate operation makes no outbound publication calls.\n\n5. **Category:** approach  \n   **Severity:** low  \n   **F […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T05:59:23.908814+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T05:59:24.064678+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/tests/tools/test_validate_deploy_profile.py` (new test `test_missing_rollback_block_fails`, ~line +109..+121 in diff) and the mini-plan's per-AC tables",
+          "line": null,
+          "finding": "The plan documents the seven unbound ACs' reasons only in the mini-plan markdown, while `shipwright_ac_coverage_baseline.json` still contains those seven raw entries with no reason field visible in the diff. If the ratchet tool or a future reader consumes the baseline directly, the \"recorded reason\" requirement of the acceptance criteria is satisfied only in a planning artifact, not in the coverage artifact itself. Verify that the ratchet tool reads the mini-plan; if it doesn't, the reasons need to live somewhere tool-consumable.",
+          "suggestion": "Confirm `check_ac_coverage_ratchet.py` surfaces or links the recorded reasons; if not, record them in the baseline file (or its companion reasons file) so the exception set is self-documenting.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shipwright_bloat_baseline.json` — `\"path\": \"shared/tests/test_changelog_aggregation.py\"`, `\"current\": 362",
+          "line": null,
+          "finding": "The mini-plan's own bloat table states the file's final size after all Step 3.5 fixes is 356 lines (325 → 332 → 356), but the baseline is bumped to 362. One of the two numbers is wrong; either the baseline is inflated 6 lines beyond actual size or the plan's audit trail is inaccurate. Given this campaign's history of count inconsistencies (openai's round-2 high finding), this should be reconciled before merge.",
+          "suggestion": "Recompute `wc -l` on the final file and make the baseline `current`, the mini-plan table, and reality agree exactly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_changelog_aggregation.py` — `test_aggregation_never_shells_out_to_git_or_gh` (monkeypatch block)",
+          "line": null,
+          "finding": "The spy patches `subprocess.run/Popen/call/check_call/check_output` and `os.system/os.popen` as module attributes. This only catches call sites that reach the attribute at call time (i.e. `import subprocess; subprocess.run(...)`). If `aggregate_changelog.py` (or anything it calls) does `from subprocess import run` at module import time — which happens before the test patches — the spy is silently bypassed and the test proves nothing while passing. The test does not verify that the module under test actually resolves those names dynamically.",
+          "suggestion": "Check `aggregate_changelog.py` for `from subprocess import ...` / `from os import system` bindings; if any exist, patch them at the consuming module's namespace (`monkeypatch.setattr(aggregate_changelog_module, \"run\", _fail)`). Alternatively, assert the spy was at least reachable (e.g. a positive control inside the same test that one patched entry point does raise when invoked).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-deploy/tests/test_jelastic_client.py` — `test_deploy_from_git_creates_the_project_then_updates_when_absent",
+          "line": null,
+          "finding": "The fake's sequencing key is `endpoints.count(\"update\") == 1`, i.e. \"the first update fails, all later ones succeed.\" If the implementation were broken to retry `update` in a loop without ever calling `createproject`, the first retry would succeed and the test's `endpoints == [\"update\", \"createproject\", \"update\"]` assertion would still fail — that's fine — but a broken implementation that calls `createproject` then loops `update` N times with N>1 would pass the fake yet fail the endpoint-list assertion; conversely an implementation that probes existence via a different endpoint first would pass functionally but fail the exact-sequence assert. The exact-sequence assertion over-constrains to the current call order; the AC is about \"project put on target and made to run\", not the specific order.",
+          "suggestion": "Either loosen to \"createproject in endpoints and final result success\", or document in the docstring that the create-then-update order is part of the claimed contract so a future intentional reorder updates the test consciously.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "mini-plan \"Root count\" section and `shipwright_ac_coverage_baseline.json",
+          "line": null,
+          "finding": "The fourth pytest root (`shared/scripts/tools/tests`) is used before campaign-owner ratification. The plan flags this honestly and dispositions the external reviewer's identical concern as \"rejected-with-reason,\" but rejection doesn't remove the dependency: if ratification is denied, the AC12/AC13 bindings and this baseline regeneration must be rolled back together. This is a process risk, not a code defect.",
+          "suggestion": "Obtain the one-line sign-off (or record the bindings as provisional) before merge rather than after.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[plugins/shipwright-deploy/tests/test_jelastic_client.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/plugins/shipwright-deploy/tests/test_jelastic_client.py:186)",
+          "line": null,
+          "finding": "The new AC01 release-path test only asserts the endpoint sequence and success result. It never inspects the `createproject` or `update` requests for the requested repository and branch, so an implementation that deploys a hard-coded or incorrect ref would still pass.",
+          "suggestion": "Capture request URLs/bodies and assert that the repository URL and `main` ref supplied to `deploy_from_git()` are sent to the hosting API.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[plugins/shipwright-deploy/tests/test_jelastic_client.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/plugins/shipwright-deploy/tests/test_jelastic_client.py:203)",
+          "line": null,
+          "finding": "The second AC01 test only counts distinct `target_kind` strings in JSON files. It does not prove those profiles are selectable or that the deploy path honors the selected target; a regression that always deploys through Jelastic would still pass as long as unused profile files remain.",
+          "suggestion": "Exercise the target-selection/deployment entry point for at least two real target profiles and assert the corresponding target-specific client/command is chosen.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/tests/test_changelog_aggregation.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/shared/tests/test_changelog_aggregation.py:202)",
+          "line": null,
+          "finding": "The AC11 test only blocks selected stdlib process-launch APIs. `aggregate()` could begin publishing through an HTTP client or GitHub SDK and the test would remain green; the docstring explicitly acknowledges this gap. That does not prove the AC’s “publishes nothing by itself” guarantee.",
+          "suggestion": "Patch the project’s outbound-network/publishing seam as well (or introduce and test a single publication boundary) so any attempted external publication fails the test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[plugins/shipwright-deploy/tests/test_rollback_e2e_cli.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/plugins/shipwright-deploy/tests/test_rollback_e2e_cli.py:187)",
+          "line": null,
+          "finding": "The AC15 binding observes only that the result still reports `data_drift.drifted=True`; it has no data store or mutation spy. A rollback that altered/deleted stored data but left that result field unchanged would pass, so it does not prove the claimed “stored data stays where it is” behavior.",
+          "suggestion": "Add a target/data-tier fake with a fail-on-mutation hook and assert a completed rollback makes no data-tier calls while still reporting the configured data handling.  Ship-with-fixes: the backfill is largely targeted, but several new AC bindings are partial proofs and currently overstate coverage.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T06:05:56.641950+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ### Findings\n\n- Category: spec\n  Severity: medium\n  File: `shared/tests/tools/test_validate_deploy_profile.py` (new test `test_missing_rollback_block_fails`, ~line +109..+121 in diff) and the mini-plan's per-AC tables\n  Finding: The plan documents the seven unbound ACs' reasons only in the mini-plan markdown, while `shipwright_ac_coverage_baseline.json` still contains those seven raw entries with no reason field visible in the diff. If the ratchet tool or a future reader consumes the baseline directly, the \"recorded reason\" requirement of the acceptance criteria is satisfied only in a planning artifact, not in the coverage artifact itself. Verify that the ratchet tool reads the mini-plan; if it doesn't, the reasons need to live somewhere tool-consumable.\n  Suggestion: Confirm `check_ac_coverage_ratchet.py` surfaces or links the recorded reasons; if not, record them in the baseline file (or its companion reasons file) so the exception set is self-documenting.\n\n- Category: bug\n  Severity: medium\n  File: `shipwright_bloat_baseline.json` — `\"path\": \"shared/tests/test_changelog_aggregation.py\"`, `\"current\": 362`\n  Finding: The mini-plan's own bloat table states the file's final size after all Step 3.5 fixes is **356** lines (325 → 332 → 356), but the baseline is bumped to **362**. One of the two numbers is wrong; either the baseline is inflated 6 lines beyond actual size or the plan's audit trail is inaccurate. Given this campaign's history of count inconsistencies (openai's round-2 high finding), this should be reconciled before merge.\n  Suggestion: Recompute `wc -l` on the final file and make the baseline `current`, the mini-plan table, and reality agree exactly.\n\n- Category: test\n  Severity: medium\n  File: `shared/tests/test_changelog_aggregation.py` — `test_aggregation_never_shells_out_to_git_or_gh` (monkeypatch block)\n  Finding: The spy patches `subprocess.run/Popen/call/check_call/check_output` and `os.system/os.popen` as module attributes. This only c […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: [plugins/shipwright-deploy/tests/test_jelastic_client.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/plugins/shipwright-deploy/tests/test_jelastic_client.py:186)\n- Finding: The new AC01 release-path test only asserts the endpoint sequence and success result. It never inspects the `createproject` or `update` requests for the requested repository and branch, so an implementation that deploys a hard-coded or incorrect ref would still pass.\n- Suggestion: Capture request URLs/bodies and assert that the repository URL and `main` ref supplied to `deploy_from_git()` are sent to the hosting API.\n\n- Category: test\n- Severity: medium\n- File: [plugins/shipwright-deploy/tests/test_jelastic_client.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/plugins/shipwright-deploy/tests/test_jelastic_client.py:203)\n- Finding: The second AC01 test only counts distinct `target_kind` strings in JSON files. It does not prove those profiles are selectable or that the deploy path honors the selected target; a regression that always deploys through Jelastic would still pass as long as unused profile files remain.\n- Suggestion: Exercise the target-selection/deployment entry point for at least two real target profiles and assert the corresponding target-specific client/command is chosen.\n\n- Category: test\n- Severity: medium\n- File: [shared/tests/test_changelog_aggregation.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-i8mlc06b/shared/tests/test_changelog_aggregation.py:202)\n- Finding: The AC11 test only blocks selected stdlib process-launch APIs. `aggregate()` could begin publishing through an HTTP client or GitHub SDK and the test would remain green; the docstring explicitly acknowledges this gap. That does not prove the AC’s “publishes nothing by itself” guarantee.\n- Suggestion: Patch the project’s outbound-network/publishing seam as well (or introduce and test a singl […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T05:59:23.770724+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T05:59:24.228663+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

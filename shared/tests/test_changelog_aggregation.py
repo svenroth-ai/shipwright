@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import re
+import subprocess
 from pathlib import Path
 
+import pytest
 
 from changelog_splice import insert_section as _insert_section
 from tools.aggregate_changelog import (
@@ -101,6 +104,7 @@ class TestRender:
 
 
 class TestStructuralInsert:
+    @pytest.mark.covers("FR-01.09/AC06")
     def test_inserts_above_first_version_section(self):
         text = STANDARD_HEADER + "## [0.2.0] - 2026-04-01\n\n- old bullet\n"
         new = _insert_section(text, "## [0.3.0] - 2026-04-23\n\n### Added\n- new\n")
@@ -195,6 +199,49 @@ class TestAggregateEndToEnd:
         remaining = list(drop_dir(tmp_path).rglob("*.md"))
         assert remaining == []
 
+    @pytest.mark.covers("FR-01.09/AC11")
+    def test_aggregation_never_shells_out_to_git_or_gh(self, tmp_path, monkeypatch):
+        """Spec FR-01.09/AC11: preparing a release publishes nothing by
+        itself (no git push, no tag, no PR, no gh call). A fail-if-called
+        spy on every process-launching entry point stdlib offers (both
+        `subprocess.*` and `os.system`/`os.popen`), wrapped around a full
+        end-to-end aggregate() call, catches a regression the moment the
+        code reaches for any of them — this proves "does not shell out via
+        any of Python's process-launch primitives", not the narrower "does
+        not call subprocess.run specifically"; it cannot see a shell-out
+        made through a non-stdlib client library (e.g. a dedicated GitHub
+        SDK), which this codebase's changelog tooling does not use today. Nor
+        does it catch a name bound at import time (`from subprocess import
+        run`) before this patch runs — verified this does not apply here:
+        `aggregate_changelog.py` and everything it imports
+        (`changelog_splice`, `changelog_sections`, `write_changelog_drop`,
+        `atomic_write`, `file_lock`) import neither `subprocess` nor
+        `os.system`/`os.popen` in any form, so there is no local binding a
+        module-attribute patch could miss."""
+
+        def _fail(*args, **kwargs):
+            raise AssertionError(f"aggregate() must not shell out, got: {args!r} {kwargs!r}")
+
+        for name in ("run", "Popen", "call", "check_call", "check_output"):
+            monkeypatch.setattr(subprocess, name, _fail)
+        monkeypatch.setattr(os, "system", _fail)
+        monkeypatch.setattr(os, "popen", _fail)
+
+        # Positive control: the spy is reachable and actually fires — this
+        # would fail loudly (not silently pass) if a future refactor of this
+        # test broke the patch target rather than the module under test.
+        with pytest.raises(AssertionError):
+            subprocess.run(["true"])
+        with pytest.raises(AssertionError):
+            os.system("true")
+
+        _seed_changelog(tmp_path, STANDARD_HEADER + "## [0.2.0] - 2026-04-01\n\n- old\n")
+        _seed_drops(tmp_path, [("iterate-2026-04-20-a", "Added", "first added")])
+
+        result = aggregate(tmp_path, "0.3.0", release_date="2026-04-23")
+
+        assert result["changelog_updated"] is True  # the release itself still worked
+
     def test_dry_run_reports_without_writing(self, tmp_path):
         _seed_changelog(tmp_path, STANDARD_HEADER)
         _seed_drops(tmp_path, [("iterate-2026-04-23-d", "Added", "dry bullet")])
@@ -214,12 +261,17 @@ class TestAggregateEndToEnd:
         remaining = list(drop_dir(tmp_path).rglob("*.md"))
         assert len(remaining) == 1
 
+    @pytest.mark.covers("FR-01.09/AC03")
     def test_no_drops_produces_empty_section_and_no_update(self, tmp_path):
+        """Spec FR-01.09/AC03: no work recorded since the last release means
+        the aggregator reports that (an empty section, no bytes written)
+        rather than producing an empty release."""
         _seed_changelog(tmp_path, STANDARD_HEADER)
         result = aggregate(tmp_path, "0.3.0", release_date="2026-04-23")
         assert result["section_written"] == ""
         assert result["changelog_updated"] is False
 
+    @pytest.mark.covers("FR-01.09/AC09")
     def test_legacy_unreleased_bullets_preserved_and_warned(self, tmp_path, capsys):
         """Brittle markdown-parsing removed entirely. Legacy bullets stay
         untouched, operator gets a stderr warning, new version lands above
