@@ -37,6 +37,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from . import _project_gate_wiring as _gate_wiring
 from .common import (
     CheckResult,
     Severity,
@@ -203,6 +204,12 @@ def run_project_checks(
     results.append(check_project_config_status_complete(project_root))
     results.append(check_manifest_splits_match_dirs(project_root))
     results.extend(check_grill_trace_completeness(project_root))
+
+    # FR-01.02 #4/#15, #5, #10, #11 (req3-06-enforcement-mono sub-iterate e2)
+    results.append(_gate_wiring.check_basis_forbids_assumed(project_root))
+    results.append(_gate_wiring.check_criteria_free_of_implementation_detail(project_root))
+    results.append(_gate_wiring.check_no_empty_split(project_root))
+    results.append(_gate_wiring.check_starting_guidance_present(project_root))
 
     # Canon (generic helpers from common.py)
     results.append(check_c1_phase_event_recorded(project_root, "project"))
