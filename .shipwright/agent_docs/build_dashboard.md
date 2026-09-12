@@ -1,32 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-09-12 08:05 UTC | Session: 6f1e2166-425e-4434-a2be-7019f6d817c6 | Run: iterate-2026-09-12-e3-checks-test-security
+> Updated: 2026-09-11 00:40 UTC | Session: 7b98e634-2da0-4e90-a917-e1268eb84655 | Run: iterate-2026-09-11-glossary-p41-review-followups
 
-## Recent Changes (624 iterations)
+## Recent Changes (603 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Mechanise 5 FR-01.06/FR-01.07 AC-evidence-ledger lines (e2e count reconciliation, e2e-spec generation floor, design-fidelity triage) and downgrade 4 no-oracle lines (2 FR-01.06 constitution mentions, 2 FR-01.07 remediation-status lines) to drift-tested prompt-only (judgement), per campaign decision D7. | 12566/12610 |  | FR-01.06, FR-01.07 | 2026-09-12 |
 | bug | Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser. | 18500/18559 |  | tooling | 2026-09-11 |
-| change | Record the deferred test-results-orphan retention defect (promised by trg-b28a039c, never filed) as its own triage card, with measured counts and root cause; no code fix. | 18819/18878 |  | docs | 2026-09-12 |
-| change | Bind FR-01.06's and FR-01.07's unbound acceptance criteria to existing/new tests via @pytest.mark.covers and regenerate the AC coverage baseline | 11897/11936 | 3c2dafc | FR-01.06, FR-01.07 | 2026-09-12 |
-| change | Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py, with all prose/code mirrors of the cap updated and a regression test guarding them. | 10615/10648 |  | tooling | 2026-09-11 |
-| bug | Fix agent_doc_budget.entry_anchor() false-anchor-match hole: an incidental bold quote elsewhere in an entry's prose could be mistaken for its cross-diff identity, letting a new over-budget entry escape the budget gate by colliding with an unrelated base entry's anchor. | 18773/18832 |  | tooling | 2026-09-12 |
-| change | Name the three shared _layer_coverage_ helper modules (verifiers/_layer_coverage_ac.py, _layer_coverage_binding.py, _layer_coverage_core.py) that the keystone AC gate's own _keystone_*.py verifiers actually import in SENSITIVE_PATH_RE, closing the residual gap from trg-a719e3b7 without widening review onto the unrelated non-keystone layer-coverage gate's own maintenance PRs. | 18770/18829 |  | tooling | 2026-09-11 |
-| change | Bind FR-01.03s and FR-01.04s unbound acceptance criteria to existing/new tests via @pytest.mark.covers and regenerate the AC coverage baseline | 19317/19375 |  | FR-01.03, FR-01.04 | 2026-09-12 |
-| change | Canonical review-evidence basenames per kind so an exact-path allowlist can safely extend the PR-review classifier | 18790/18849 |  | tooling | 2026-09-12 |
-| change | Bind FR-01.14's unbound acceptance criteria to existing tests via @pytest.mark.covers and regenerate the AC coverage baseline | 11604/11647 |  | FR-01.14 | 2026-09-11 |
-| change | Bind FR-01.11's 27 unbound acceptance criteria to existing tests; fix the AC-coverage manifest scan gap that hid tags in shared/scripts/tests and shared/scripts/tools/tests | 12432/12476 |  | compliance | 2026-09-11 |
-| change | Clarify triage_delivery.format_pending_delivery_notice's docstring re: the local-wins asymmetry | 18700/18759 |  | docs | 2026-09-11 |
-| bug | Add a mechanical (env-var-checked) operator-only guard to record_ci_supplychain_ack.py so an autonomous loop unit can never self-author a CI supply-chain acknowledgement, plus a --commit mode and provenance stamp so operators retain a reachable remediation path pre- and post-commit. | 10602/10635 |  | tooling | 2026-09-11 |
-| bug | Close PR #722's review-evidence filter gap: hide reviewer-verdict-shaped transcripts from the PR-review model, and tighten the zero-model-call skip path to an exact, case-sensitive reviews.json match only. | 18573/18632 |  | tooling | 2026-09-11 |
-| change | Mechanise 9 FR-01.02/FR-01.16 acceptance-criterion checks for /shipwright-project and elicitation | 10637/10669 |  | FR-01.02, FR-01.16 | 2026-09-11 |
-| change | req3-05 test-backfill campaign t0 (seam survey): map all 20 FR-01.NN clusters to their existing test boundary so t1-t9 cite a row instead of re-deciding the seam | 18498/18556 |  | docs | 2026-09-11 |
-| change | Mechanise 18 flagged FR-01.03/FR-01.04 lines (plan/design AC-evidence ledger) with a check + test each, wired into check-plan-gates.py / check-design-gates.py; fix a leniency regression in the new Prerequisites check and a silent-cwd-default in check-plan-gates.py --project-root found by external code review. | 18613/18671 |  | tooling | 2026-09-11 |
-| change | Re-measure the REQ-3 AC-evidence ledger's backlog counts mechanically, write them into the ledger header, and make 7 previously prose-only lines' class + owning card explicit on the line itself; commit the re-measurement script. | 951/970 |  | tooling | 2026-09-10 |
-| change | one-time per-repo rollout transition rule for check_binding_completeness (F11, P3.3) | 10481/10514 |  | compliance | 2026-09-11 |
-| bug | AC coverage ratchet CI gate now also runs on push to main, closing the same-PR self-grandfathering escape via a push-only baseline-growth signal | 18522/18581 |  | infra | 2026-09-11 |
-| bug | triage.read_all_items: local status now always outranks a foreign (sibling-worktree) status event | 18505/18564 |  | infra | 2026-09-11 |
-| feature | Add advisory Group I check I9 (M7 rewritability): reports whether a requirement's recorded changes co-occur with a decision-drop/ADR via a shared run_id (a proxy signal, never a verified per-requirement link). New shared/scripts/lib/rewritability_links.py does the classification (linked/unlinked/could_not_determine); group_i_rewritability.py renders it; unconditionally advisory, never fails a build. Bundled with this run: a new advisory, never-blocking CI check (test-body-suspects, a P3.7 deferred item -- see shared/scripts/tools/check_test_body_suspects.py; provenance trg-d03a239d). | 18477/18535 |  | compliance | 2026-09-10 |
 | change | Add the keystone AC gate's own verifier source (check_keystone_ac_gate.py + verifiers/_keystone_*.py) to SENSITIVE_PATH_RE so an edit to its logic alone gets the same mandatory-review treatment as an edit to ci.yml. | 18325/18384 |  | tooling | 2026-09-10 |
 | change | Anchor Layers-promotion to the newest CI-verified ancestor commit when HEAD itself is not verified, with staleness re-verification per FR. | 18397/18456 |  | FR-01.11 | 2026-09-10 |
 | feature | Keystone AC gate's post-merge detective arm (ruling Q5): classify_commit composes resolve_ci_verification/resolve_execution_evidence to judge an already-merged commit against CI-verified trunk evidence, distinct from the preventive gate's own same-run producer. | 18344/18403 |  | FR-01.11 | 2026-09-10 |
@@ -631,7 +610,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-09-12 | Unit: 12032/12076 | Integration: 534/534 | Smoke: not_run | (iterate)
+Last run: 2026-09-11 | Unit: 17966/18025 | Integration: 534/534 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
