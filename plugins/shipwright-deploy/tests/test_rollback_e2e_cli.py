@@ -220,6 +220,30 @@ def test_acknowledging_the_drift_proceeds(host, app_repo, tmp_path):
     assert completed.returncode == 0
 
 
+@pytest.mark.covers("FR-01.08/AC15")
+def test_rollback_module_imports_no_data_tier_client():
+    """Spec FR-01.08/AC15: "stored data...stays where it is" is an
+    architectural guarantee here, not a runtime one to spy on — makes it
+    machine-checked instead of only docstring-asserted: a future import of
+    a database/migration-execution client would fail this test."""
+    import ast
+
+    forbidden = {"psycopg2", "psycopg", "sqlalchemy", "asyncpg", "pymysql", "sqlite3", "supabase"}
+    tree = ast.parse(Path(ROLLBACK).read_text(encoding="utf-8"))
+    imported = {
+        alias.name.split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    } | {
+        node.module.split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and node.module
+    }
+    hit = imported & forbidden
+    assert not hit, f"rollback.py must never import a data-tier client, found: {hit}"
+
+
 # --------------------------------------------------------------------------
 # AC9 / AC12 — a way back that fails names the state and stops
 # --------------------------------------------------------------------------

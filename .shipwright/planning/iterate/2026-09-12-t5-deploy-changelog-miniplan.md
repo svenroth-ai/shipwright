@@ -368,6 +368,24 @@ Cascade fires.
 `reviews.external_code`: `completed`, provider `openrouter`+`codex` (both
 legs), 12 findings total across both providers, all dispositioned above.
 
+### Post-PR Tier-3 CI PR-Review (PR #747)
+
+The Tier-3 gate independently raised the *same* objection as finding #6
+above (AC15's rollback test has no data-tier mutation spy) — the third time
+this exact objection has surfaced (round-1 plan review finding #3, round of
+code review finding #6, now here), and the third time the same verification
+(`rollback.py` imports only `data_drift`, `rollback_report`, `deploy_profile`
+— no data-tier client exists in this code path) rejects it. Rather than
+rejecting-with-reason a third time on an unchanged record, converted the
+docstring claim into a machine-checked one: added
+`test_rollback_module_imports_no_data_tier_client` (AST-parses `rollback.py`,
+asserts no forbidden data-tier import), so the architectural guarantee is now
+enforced, not merely asserted. Also fixed an unrelated Tier-3 finding in the
+same round: a security-scanner-flagged `os.system("true")` positive-control
+call in `test_aggregation_never_shells_out_to_git_or_gh` (`shared/tests/
+test_changelog_aggregation.py`), removed in favor of the existing
+`subprocess.run(["true"])` positive control.
+
 ## Confidence Calibration (Step 3.8)
 
 Does not fire: effective complexity is `small` (Step 3.4), and the only risk
