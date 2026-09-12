@@ -14,7 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-import pytest  # noqa: F401  — used for fixtures via conftest
+import pytest
 
 # phase_validators.py imports `lib.config` from shared/scripts/. At module
 # load it does its own `sys.path.insert(0, <shared/scripts>)` so we need
@@ -104,6 +104,7 @@ def test_legacy_path_still_works_when_canon_artifacts_missing(tmp_path, monkeypa
     assert any("[canon]" in m for m in ask_messages)
 
 
+@pytest.mark.covers("FR-01.02/AC01")
 def test_full_canon_project_passes(tmp_path, monkeypatch):
     _seed_basic_project(tmp_path)
     _seed_canon_artifacts(tmp_path, run_id="project-20260414-full")
