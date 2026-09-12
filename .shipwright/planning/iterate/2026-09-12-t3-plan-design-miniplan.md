@@ -172,10 +172,13 @@ submission of this mini-plan.
    live tree before touching the baseline (pitfall #5 in this unit's own
    spec).
 4. `uv run shared/scripts/tools/check_ac_coverage_ratchet.py --project-root .
-   --write` -> `unbound_count: 173` (from 205) — exactly 32 FR-01.03/FR-01.04
-   entries resolved (AC21 excepted, recorded reason); verified via
-   `git diff` that every removed baseline line starts with `FR-01.03/` or
-   `FR-01.04/` and nothing else moved.
+   --write` -> `unbound_count: 173` (from 205) at this original run, later
+   corrected to **175** after Stage-1 spec-review REJECTed 2 of the resolved
+   entries (see "Stage-1 spec-review REJECT" section below) — the final,
+   correct state is 30 FR-01.03/FR-01.04 entries resolved, 3 excepted with
+   recorded reason (AC20, AC21, AC10); verified via `git diff` that every
+   removed baseline line starts with `FR-01.03/` or `FR-01.04/` and nothing
+   else moved.
 5. `uvx ruff@0.15.15 check plugins/shipwright-plan/tests
    plugins/shipwright-design/tests` — clean.
 6. Post-code-review fixes (below) re-verified: `plugins/shipwright-plan/tests`

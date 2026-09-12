@@ -39,8 +39,10 @@ per-unit root-count table.
 ## Consequences (full)
 
 `shipwright_ac_coverage_baseline.json`'s `unbound` count dropped from 205 to
-173 — exactly the 32 bound ACs, verified via `git diff` that every removed
-line starts with `FR-01.03/` or `FR-01.04/` and nothing else moved.
+**175** (corrected; see "## Correction" below — the first push wrongly bound
+2 extra ACs, so the true drop is 30, not 32) — exactly the 30 genuinely bound
+ACs, verified via `git diff` that every removed line starts with
+`FR-01.03/` or `FR-01.04/` and nothing else moved.
 `.shipwright/compliance/test-traceability.json` was regenerated first via
 `update_compliance.py --phase build` (pitfall #5 in this unit's own spec),
 before writing the baseline, so the baseline write reads a fresh manifest
