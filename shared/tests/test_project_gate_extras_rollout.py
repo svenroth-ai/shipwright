@@ -18,6 +18,8 @@ actually said) is covered separately in ``test_project_gate_rollout.py`` and
 
 from __future__ import annotations
 
+import pytest
+
 from tools.verifiers import _project_gate_extras_rollout as ext_rollout
 
 _HEADER = "| ID | Name | Priority | Description | Basis |\n|---|---|---|---|---|\n"
@@ -48,6 +50,7 @@ class _FakeSnapshot:
 # --------------------------------------------------------------------------- #
 
 
+@pytest.mark.covers("FR-01.02/AC08")
 def test_criteria_free_of_implementation_detail_passes_on_clean_criteria():
     text = (
         _HEADER + _row("FR-01.01", "interview") + "\n"
@@ -84,6 +87,7 @@ def test_criteria_free_of_implementation_detail_fails_on_an_adr_reference():
     assert "adr-number" in result.detail
 
 
+@pytest.mark.covers("FR-01.02/AC08")
 def test_criteria_free_of_implementation_detail_fails_on_a_code_symbol():
     text = (
         _HEADER + _row("FR-01.01", "interview") + "\n"
@@ -210,6 +214,7 @@ def test_criteria_free_of_implementation_detail_no_grace_when_rollout_is_none():
 # --------------------------------------------------------------------------- #
 
 
+@pytest.mark.covers("FR-01.02/AC13")
 def test_no_empty_split_passes_when_every_spec_has_a_row():
     texts = {
         "01-a/spec.md": _HEADER + _row("FR-01.01", "interview"),
@@ -219,6 +224,7 @@ def test_no_empty_split_passes_when_every_spec_has_a_row():
     assert result.ok is True
 
 
+@pytest.mark.covers("FR-01.02/AC13")
 def test_no_empty_split_fails_when_one_split_has_no_active_fr_row():
     texts = {
         "01-a/spec.md": _HEADER + _row("FR-01.01", "interview"),

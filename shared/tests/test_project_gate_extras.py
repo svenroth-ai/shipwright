@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from tools.verifiers import _project_gate_extras as ext
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +23,7 @@ _SPLIT_HEURISTICS = (
 )
 
 
+@pytest.mark.covers("FR-01.02/AC13")
 def test_split_heuristics_still_demands_cohesive_purpose():
     """FR-01.02 #10b (req3-06-enforcement-mono, sub-iterate e2, round 3
     follow-up): ``no_empty_split`` only enforces the zero-row floor — a
@@ -49,6 +52,7 @@ def test_basis_forbids_assumed_passes_when_no_row_reads_assumed():
     assert result.ok is True
 
 
+@pytest.mark.covers("FR-01.02/AC06")
 def test_basis_forbids_assumed_fails_on_a_bare_assumed_cell():
     text = _HEADER + _row("FR-01.01", "assumed")
     result = ext.basis_forbids_assumed({"01-x/spec.md": text})
@@ -57,6 +61,7 @@ def test_basis_forbids_assumed_fails_on_a_bare_assumed_cell():
     assert "01-x/spec.md" in result.detail
 
 
+@pytest.mark.covers("FR-01.02/AC06")
 def test_basis_forbids_assumed_passes_on_a_bare_assumed_cell_with_a_criterion():
     """Revised post-merge (Stage-1 spec-review REJECT, PR #729): a bare
     ``assumed`` cell paired with a recorded acceptance criterion is legal
@@ -128,12 +133,14 @@ def _write_guidance(root, *, empty_one: bool = False) -> None:
     (agent_docs / "conventions.md").write_text("# Conventions\n", encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.02/AC14")
 def test_starting_guidance_present_passes_when_all_four_are_non_empty(tmp_path):
     _write_guidance(tmp_path)
     result = ext.starting_guidance_present(tmp_path)
     assert result.ok is True
 
 
+@pytest.mark.covers("FR-01.02/AC14")
 def test_starting_guidance_present_fails_when_a_file_is_missing(tmp_path):
     _write_guidance(tmp_path)
     (tmp_path / "CLAUDE.md").unlink()
