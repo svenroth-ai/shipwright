@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "23 of 25 ACs bound: 21 within the two originally-declared roots (plugins/shipwright-project/tests, shared/tests), plus AC01/AC15 which needed a 3rd/4th root (flagged via trg-704cdb22, campaign-owner-approved 2026-09-12); AC03/AC04 remain unbound (no seam anywhere). shipwright_ac_coverage_baseline.json regenerated via check_ac_coverage_ratchet.py --write; one pytest invocation per root planned for F0."},
+    {"name": "Error Handling", "verdict": "n/a", "note": "Test-only diff (plus two pyproject.toml marker registrations); no new runtime error paths introduced."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No new inputs, auth surfaces, or secrets; diff is tests + doc-reading assertions + a marker registration + a regenerated coverage baseline."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Each binding traced to the real code path proving the AC (pure GateResult functions, or the specific grill-trace STOP check), not a renderer/pin-only or gameable-proxy shape. External code review caught one wrapper-only binding (FR-01.02/AC07) and one mislabeled tag (FR-01.16/AC10 on the wrong test) -- both fixed before finalization by pairing the pure-function test and dropping the mislabel."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "No performance-sensitive code touched."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "New tests follow the existing test_<behavior> naming convention in each file; no dead code, no unused imports; three new test files stayed under the 300-line bloat-gate cap (checked explicitly for every touched/new file)."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "shipwright_ac_coverage_baseline.json is a producer(check_ac_coverage_ratchet.py --write)/consumer(the same script, read-only, plus CI's gate) boundary. Round-trip probe run: wrote the baseline from a freshly-regenerated manifest, then re-ran the read-only gate against the same manifest and confirmed status=clean with zero new_unbound -- the write and the read agree."}
+  ]
+}

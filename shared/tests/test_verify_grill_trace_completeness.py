@@ -8,6 +8,8 @@ in ``test_verify_grill_trace_completeness_integration.py`` (split at the
 
 from __future__ import annotations
 
+import pytest
+
 from tools.grill_trace_format import GrillTrace, parse_trace
 from tools.verify_grill_trace_completeness import (
     check_blank_dimension,
@@ -47,11 +49,13 @@ def _payload(**overrides) -> dict:
 # STOP 1 — blank dimension
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.16/AC01")
 def test_blank_dimension_passes_when_all_seven_are_answered_or_assumed_or_na():
     trace = parse_trace(_payload())
     assert check_blank_dimension(trace).ok is True
 
 
+@pytest.mark.covers("FR-01.16/AC01", "FR-01.02/AC07")
 def test_blank_dimension_fails_on_a_missing_key():
     """A missing dimensions key is now rejected earlier, at parse_trace() /
     write time (grill_trace_format._validate_dimensions — external code
@@ -98,6 +102,7 @@ def test_blank_dimension_fails_when_assumed_reason_is_blank():
 # STOP 2 — greenfield 'assumed'
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.16/AC07")
 def test_greenfield_assumed_fails_on_any_assumed_in_project_surface():
     payload = _payload()
     payload["dimensions"]["rationale"] = "assumed:nobody has decided yet, ask PO"
@@ -107,6 +112,7 @@ def test_greenfield_assumed_fails_on_any_assumed_in_project_surface():
     assert "rationale" in result.detail
 
 
+@pytest.mark.covers("FR-01.16/AC07")
 def test_greenfield_assumed_permits_n_a_in_project_surface():
     trace = parse_trace(_payload())  # rationale is n/a, not assumed
     assert check_greenfield_assumed(trace).ok is True
@@ -131,6 +137,7 @@ def test_greenfield_assumed_fails_a_non_project_surface_trace_as_a_data_integrit
 # STOP 3 — undefined term
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.02/AC10")
 def test_undefined_term_fails_when_a_declared_term_is_in_neither_source():
     trace = parse_trace(_payload(terms_used=["Widget"]))
     result = check_undefined_term(trace, known_terms=set())
@@ -211,6 +218,7 @@ def test_glossary_delta_declared_passes_when_every_delta_term_is_in_terms_used()
     assert check_glossary_delta_declared(trace).ok is True
 
 
+@pytest.mark.covers("FR-01.02/AC10")
 def test_glossary_delta_declared_fails_when_a_delta_term_is_missing_from_terms_used():
     trace = parse_trace(_payload(
         terms_used=[],
