@@ -59,6 +59,7 @@ def _write_reviews_json(project_root: Path, run_id: str, reviews: dict) -> None:
 # --- salvage path ------------------------------------------------------- #
 
 def test_salvages_reply_when_not_yet_recorded(tmp_path, monkeypatch):
+    _write_reviews_json(tmp_path, RUN_ID, {"code": {"status": "pending"}})
     transcript = _transcript(tmp_path, [
         {"role": "user", "content": f"Review this diff for run {RUN_ID}."},
         {"role": "assistant", "content": '```json\n{"section": "auth", "review": []}\n```'},
@@ -73,6 +74,7 @@ def test_salvages_reply_when_not_yet_recorded(tmp_path, monkeypatch):
 
 
 def test_salvages_raw_json_reply_without_fence(tmp_path, monkeypatch):
+    _write_reviews_json(tmp_path, RUN_ID, {"spec": {"status": "pending"}})
     transcript = _transcript(tmp_path, [
         {"role": "user", "content": f"Review this for {RUN_ID}."},
         {"role": "assistant", "content": '{"stage": "spec", "verdict": "pass", "spec_citations": []}'},
@@ -86,6 +88,7 @@ def test_salvages_raw_json_reply_without_fence(tmp_path, monkeypatch):
 
 
 def test_content_as_block_list_is_handled(tmp_path, monkeypatch):
+    _write_reviews_json(tmp_path, RUN_ID, {"doubt": {"status": "pending"}})
     transcript = _transcript(tmp_path, [
         {"role": "user", "content": [{"type": "text", "text": f"run {RUN_ID}"}]},
         {"role": "assistant", "content": [{"type": "text", "text": '{"verdict": "block", "findings": []}'}]},
@@ -94,6 +97,24 @@ def test_content_as_block_list_is_handled(tmp_path, monkeypatch):
                          {"transcript_path": transcript}, tmp_path)
     assert rc == 0
     assert hook.salvage_path(tmp_path, RUN_ID, "doubt").exists()
+
+
+# --- wrong-root guard ------------------------------------------------------- #
+
+
+def test_noop_when_no_reviews_json_at_all(tmp_path, monkeypatch):
+    """No reviews.json under the resolved root at all means this hook landed
+    in the wrong tree (SKILL.md Step 7's `init` always creates it first) —
+    refuse to salvage, and never create the directory."""
+    transcript = _transcript(tmp_path, [
+        {"role": "user", "content": f"Review this diff for run {RUN_ID}."},
+        {"role": "assistant", "content": '{"section": "x", "review": []}'},
+    ])
+    rc, err = _run_hook(monkeypatch, ["--review-type", "code"],
+                        {"transcript_path": transcript}, tmp_path)
+    assert rc == 0
+    assert not (tmp_path / ".shipwright" / "planning" / "iterate" / RUN_ID).exists()
+    assert "refusing to salvage" in err
 
 
 # --- no-op conditions ----------------------------------------------------- #
@@ -186,6 +207,7 @@ def test_noop_when_no_run_id_in_transcript(tmp_path, monkeypatch):
 
 
 def test_noop_when_reply_not_a_review_payload(tmp_path, monkeypatch):
+    _write_reviews_json(tmp_path, RUN_ID, {"code": {"status": "pending"}})
     transcript = _transcript(tmp_path, [
         {"role": "user", "content": f"{RUN_ID}"},
         {"role": "assistant", "content": "I could not complete the review."},
@@ -210,6 +232,7 @@ def test_never_blocks_on_missing_transcript_path(monkeypatch):
 
 
 def test_never_blocks_when_salvage_write_raises(tmp_path, monkeypatch):
+    _write_reviews_json(tmp_path, RUN_ID, {"code": {"status": "pending"}})
     transcript = _transcript(tmp_path, [
         {"role": "user", "content": f"{RUN_ID}"},
         {"role": "assistant", "content": '{"section": "x", "review": []}'},

@@ -1,0 +1,24 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "boundary-and-contract (shared text-parsing module with a second, cross-plugin caller per its own docstring)",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "extending continuation-absorption to _Avoid_ text is a safe, purely-fixing change with no new failure surface",
+      "file": "shared/scripts/tools/context_md_format.py",
+      "disposition": "accepted-and-fixed",
+      "resolution": "Added test_unrelated_raw_line_after_avoid_is_not_swallowed_into_it in shared/tests/test_write_context_term_duplicates.py: a genuinely unrelated hand-written note, separated from the _Avoid_ line by a blank line (the same convention every other block in this file already relies on), survives verbatim as its own raw block and is not merged into the avoid text. Confirms absorption is bounded by the existing blank-line-ends-a-field convention, not merely asserted by precedent."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the absorption stop condition unambiguously distinguishes 'continuation of the avoid text' from 'start of the next entry' in all cases",
+      "file": "shared/scripts/tools/context_md_format.py",
+      "disposition": "rejected-with-reason",
+      "resolution": "This is the identical, pre-existing ambiguity already accepted for definition-line wraps (same _TERM_RE-shaped-continuation edge case, same code path via the shared _absorb_continuation helper) - not a new failure surface introduced by this diff, just the same accepted tradeoff now reachable via one more field. No behavior regression; deferring a pinning test as out of scope for this deferred-items cleanup (the reviewer marked this optional)."
+    }
+  ],
+  "summary": "Both doubts addressed: the medium one with a new regression test proving the blank-line boundary holds; the low one with a rebuttal citing the identical pre-existing definition-wrap ambiguity this diff's own _absorb_continuation extraction makes explicit as shared, not new."
+}

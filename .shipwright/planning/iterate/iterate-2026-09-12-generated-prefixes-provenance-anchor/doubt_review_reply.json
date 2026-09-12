@@ -1,0 +1,24 @@
+{
+  "stage": "doubt",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "correctness",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
+      "line": null,
+      "claim_under_doubt": "Anchoring `.shipwright/agent_docs/iterates/` entries to `<run_id>.json` / `<run_id>.test-results.json` (with `run_id` matching `RUN_ID_STRICT`, already enforced at write time by `iterate_entry.py`/`iterate_test_results.py`) closes the same class of gap Round 4 closed for `reviews.json`, making it safe to keep skip-safe.",
+      "disproof_attempt": "`RUN_ID_STRICT` is a public, freely-choosable filename shape, not a signature — a contributor's own PR can commit a brand-new, self-authored, shape-valid file under this prefix carrying forged content; nothing about the write-time enforcement of that shape by the legitimate producer prevents an attacker from independently producing a file matching the same shape. A concrete real consumer trusts that content unauthenticated: `plugins/shipwright-iterate/scripts/lib/complexity_history.py::load_history_prior` globs every `*.json` directly under this dir and accepts any file with a valid `complexity` + parseable `date`, feeding it into later iterates' complexity default (`prior_source: history`) with zero authorship or provenance check. The claim conflated 'shape enforced at write time by the legitimate producer' with 'shape can only be produced by the legitimate producer' — Round 4 already showed those are not the same thing for `reviews.json`, and this anchor repeated exactly that mistake one directory over. Disproved.",
+      "what_would_resolve_it": "Either (a) apply the same treatment given to `.shipwright/compliance/` — remove `.shipwright/agent_docs/iterates/` from skip-safety entirely now that a concrete downstream truster (`complexity_history.load_history_prior`) is identified, accepting one extra trivial review call for iterate-record-only PRs, or (b) disclose this explicitly as an accepted residual risk."
+    },
+    {
+      "severity": "medium",
+      "lens": "readability",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py",
+      "line": null,
+      "claim_under_doubt": "The comment comparing the `CHANGELOG-unreleased.d/` wildcard's residual risk to the `external-*review*` hide-side wildcard treats the two as comparably low-stakes: both are described as leaving a shape-conforming but content-forged file 'hidden from one review call'.",
+      "disproof_attempt": "The two are not comparable. `external-*review*` is hide-only: even a forged file under that prefix still leaves the rest of the diff subject to a real model review, so it is hidden from one review call within an otherwise-reviewed PR. `CHANGELOG-unreleased.d/` is hidden AND skip-safe, so a PR whose only change is one shape-conforming drop gets zero review, human or model, not merely one hidden section. The comment's wording obscured this asymmetry.",
+      "what_would_resolve_it": "Reword the comment to state explicitly that a matching CHANGELOG-only PR gets zero review, and ground the acceptance in the absence of any content-trusting downstream reader for that prefix (drops are aggregated into CHANGELOG.md by a human-run `/shipwright-changelog`, never consumed as a gate oracle) rather than implying parity with the hide-side wildcard's residual risk."
+    }
+  ],
+  "summary": "Two doubts raised against the initial anchoring of `.shipwright/agent_docs/iterates/` and the CHANGELOG wildcard's risk disclosure; both confirmed and fixed. HIGH: iterates/ removed from skip-safety entirely (not merely re-anchored) — see `pr_review_skip_safety.py`'s rewritten PER-PREFIX ANCHORING comment and `is_safe_to_skip_review`, plus `test_pr_review_generated_skip_review.py::test_iterates_prefix_is_no_longer_safe_to_skip` and the updated `test_review_record_tier.py` fixtures. MEDIUM: CHANGELOG-unreleased.d/ bullet reworded to disclose zero-review explicitly; anchoring itself unchanged (no identified content-trusting consumer for that prefix). Full plugin suite (1031 passed, 7 skipped), lint, and verify_local.py all green after the fixes."
+}

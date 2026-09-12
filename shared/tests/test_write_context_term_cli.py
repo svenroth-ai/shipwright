@@ -37,7 +37,7 @@ def _run(*args: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_wired_cli_sharpens_a_term_into_context_md(tmp_path):
+def test_legacy_cli_flags_sharpen_a_term_into_context_md(tmp_path):
     proc = _run(
         "--project-root", str(tmp_path),
         "--term", "Order",
@@ -59,7 +59,7 @@ def test_wired_cli_sharpens_a_term_into_context_md(tmp_path):
     assert '_Avoid_ "cart" for a confirmed order — a cart is unconfirmed.' in content
 
 
-def test_wired_cli_second_sharpened_term_does_not_corrupt_first(tmp_path):
+def test_legacy_cli_flags_second_sharpened_term_does_not_corrupt_first(tmp_path):
     first = _run(
         "--project-root", str(tmp_path),
         "--term", "Order",
@@ -120,3 +120,20 @@ def test_cli_rejects_context_path_with_missing_parent(tmp_path):
     assert proc.returncode == 1
     assert "does not exist" in proc.stderr
     assert not bogus.parent.exists()
+
+
+def test_help_warns_against_shell_composed_interview_text_on_legacy_flags():
+    """The legacy --term/--definition/--avoid flags must not be a silent
+    trap for a future caller: their own --help text warns against
+    substituting shell-composed interview text and points at
+    --payload-file (P4.1 final-review deferred finding). argparse wraps
+    long help strings across lines, so normalize whitespace before the
+    substring check rather than assert on the raw wrapped text."""
+    proc = _run("--help")
+    assert proc.returncode == 0, proc.stderr
+    # argparse wraps long help text mid-word at the hyphen in
+    # "--payload-file" (-> "--payload-\nfile"), so whitespace-normalizing
+    # leaves a stray space around the hyphen rather than rejoining the word.
+    normalized = " ".join(proc.stdout.split())
+    assert normalized.count("never substitute free interview text") == 3
+    assert normalized.count("use --payload- file for that") == 3

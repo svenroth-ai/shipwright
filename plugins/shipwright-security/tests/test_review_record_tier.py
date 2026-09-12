@@ -222,10 +222,15 @@ def test_cli_reports_unreadable_inputs_when_changed_paths_file_is_missing(tmp_pa
 # ---------------------------------------------------------------------------
 
 def test_all_generated_paths_classify_true_with_a_naming_reason():
+    # `.shipwright/compliance/*` and `.shipwright/agent_docs/iterates/*` are
+    # deliberately absent here (iterate-2026-09-12-generated-prefixes-
+    # provenance-anchor): both lost skip-safety entirely, so these are the
+    # remaining shapes that still carry it (canonical basenames + the
+    # anchored changelog-drop shape).
     changed = [
-        ".shipwright/compliance/dashboard.md",
-        ".shipwright/compliance/sbom.md",
-        "CHANGELOG-unreleased.d/fix/some-drop.md",
+        "shipwright_events.jsonl",
+        ".shipwright/triage.jsonl",
+        "CHANGELOG-unreleased.d/Fixed/iterate-2026-01-01-x_001.md",
     ]
     all_generated, reason = tier.classify_generated_only(changed)
     assert all_generated is True
@@ -234,8 +239,8 @@ def test_all_generated_paths_classify_true_with_a_naming_reason():
 
 def test_one_sensitive_path_among_generated_ones_blocks_the_carve_out():
     changed = [
-        ".shipwright/compliance/dashboard.md",
-        ".shipwright/compliance/sbom.md",
+        "shipwright_events.jsonl",
+        "CHANGELOG-unreleased.d/Fixed/iterate-2026-01-01-x_001.md",
         ".github/workflows/ci.yml",
     ]
     all_generated, reason = tier.classify_generated_only(changed)
@@ -244,7 +249,7 @@ def test_one_sensitive_path_among_generated_ones_blocks_the_carve_out():
 
 
 def test_one_reviewable_source_path_blocks_the_carve_out():
-    changed = [".shipwright/compliance/dashboard.md", "plugins/shipwright-security/scripts/tools/pr_review.py"]
+    changed = ["shipwright_events.jsonl", "plugins/shipwright-security/scripts/tools/pr_review.py"]
     all_generated, reason = tier.classify_generated_only(changed)
     assert all_generated is False
 
@@ -252,13 +257,17 @@ def test_one_reviewable_source_path_blocks_the_carve_out():
 def test_empty_or_truncated_changed_paths_never_classify_true():
     assert tier.classify_generated_only([])[0] is False
     assert tier.classify_generated_only(
-        [".shipwright/compliance/dashboard.md", "sensitive_path_list_truncated"]
+        ["shipwright_events.jsonl", "sensitive_path_list_truncated"]
     )[0] is False
 
 
 def test_cli_emits_all_generated_outputs(tmp_path, capsys):
     changed = tmp_path / "changed.txt"
-    changed.write_text(".shipwright/compliance/dashboard.md\n.shipwright/compliance/sbom.md\n", encoding="utf-8")
+    changed.write_text(
+        "shipwright_events.jsonl\n"
+        "CHANGELOG-unreleased.d/Fixed/iterate-2026-01-01-x_001.md\n",
+        encoding="utf-8",
+    )
     exit_code = tier.main([
         "--changed-paths-file", str(changed),
         "--labels-json", "[]",

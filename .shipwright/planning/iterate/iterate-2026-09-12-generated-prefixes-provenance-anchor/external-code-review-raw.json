@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: edge-case\n  Severity: low\n  File: plugins/shipwright-security/scripts/lib/pr_review_skip_safety.py \u2014 `_SKIP_REVIEW_CHANGELOG_DROP_RE = re.compile(r\"^[^/]+_\\d{3}\\.md$\")`\n  Finding: The anchor assumes the producer's counter is always exactly three zero-padded digits. If `write_changelog_drop._next_counter_path` ever emits a 4-digit counter (a category with \u22651000 drops, or if padding is configurable), a legitimate drop would silently lose skip-safety. This fails safe (extra trivial review), not open, but the sync constraint with the producer isn't enforced or tested at a shared constant.\n  Suggestion: Either import/derive the pattern from `write_changelog_drop` (or assert sync in a test that reads the producer's `_next_counter_path` output format), or relax to `\\d{3,}`.\n\n- Category: regression\n  Severity: low\n  File: plugins/shipwright-security/scripts/lib/pr_review_generated.py (removal of `is_safe_to_skip_review` from `__all__` and module)\n  Finding: `is_safe_to_skip_review` was removed entirely from `pr_review_generated.py`. Only `review_record_tier.py` and the test file are updated in this diff; any other consumer importing it from the old module (none visible here, but the diff doesn't prove the repo-wide caller set) would break with an ImportError.\n  Suggestion: A grep of the repo for `from pr_review_generated import`/`pr_review_generated.is_safe_to_skip_review` should be recorded as verified; the self-review claims this was checked (\"sole caller confirmed\") but the diff itself carries no evidence. If any external plugin re-exports it, add a shim.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py \u2014 `test_changelog_drop_anchored_shape_stays_safe_to_skip`\n  Finding: The positive tests only cover `Fixed/` and `Security/` categories with counters `001` and `012`; there is no test that a category segment with trailing/leading whitespace or an attacker category that happens to be one of the six after unicode normalization is rejected. Minor \u2014 the closed frozenset comparison is exact \u2014 but the category check could also be exercised against a category that is a real name with trailing slash-less suffix like `Fixed2`, which the regex/`not in` set correctly rejects; that axis is untested.\n  Suggestion: Add `Fixed2/...` and a real-category-with-trailing-space case to the negative test.\n\nEverything material in the spec is implemented and verifiable in the diff: compliance/, iterates/, runtime/ removed from skip-safety; CHANGELOG-unreleased.d/ anchored to the six-category + `_<NNN>.md` shape; the zero-review disclosure rewording present in the PER-PREFIX comment; `is_generated_path` (hide side) untouched; sole visible caller `review_record_tier.py` import updated; tests assert both the hide-side preservation and the skip-side removal for each dropped prefix, and isolate single failure axes for the changelog anchor. No security regression introduced \u2014 the change strictly narrows the skip-gate.\n\nOverall assessment: ship-as-is; findings are hardening refinements, none block.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: security\n- Severity: medium\n- File: [pr_review_skip_safety.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-viudrcoh\\plugins\\shipwright-security\\scripts\\lib\\pr_review_skip_safety.py:204)\n- Finding: `strip()` turns a real Git path with leading or trailing whitespace into a canonical changelog-drop path. For example, ` CHANGELOG-unreleased.d/Fixed/x_001.md` would be allowed to make a PR skip review, despite not matching the required repo path shape.\n- Suggestion: Do not normalize the path in this security classifier (`p = path or \"\"`); preserve exact path bytes and reject whitespace-prefixed/suffixed lookalikes. Add negative tests for both cases.\n\nShip-with-fixes: the per-prefix decisions otherwise match the specification, but the new canonical-path check is bypassable for valid Git filenames containing boundary whitespace.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

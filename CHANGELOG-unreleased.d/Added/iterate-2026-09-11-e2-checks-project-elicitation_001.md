@@ -1,0 +1,1 @@
+project(checks): mechanise 9 FR-01.02/FR-01.16 acceptance-criterion checks for /shipwright-project (Basis forbids assumed, criteria free of implementation detail, no empty split, starting guidance present; cite P4.2's existing grill-trace enforcement for FR-01.16)

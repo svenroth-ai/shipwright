@@ -26,7 +26,7 @@ from tools import record_review_pass
 
 def _external_payload(
     tmp_path: Path, *, schema: int | None = 2, first: str = "glm",
-    second_verdict: str = "revise",
+    second_verdict: str = "revise", name: str | None = None,
 ) -> Path:
     payload = {
         "success": True,
@@ -43,7 +43,7 @@ def _external_payload(
     }
     if schema is not None:
         payload["review_schema"] = schema
-    path = tmp_path / f"{first}-{schema}.json"
+    path = tmp_path / (name or f"{first}-{schema}.json")
     path.write_text(json.dumps(payload), encoding="utf-8")
     return path
 
@@ -185,7 +185,9 @@ def test_skip_with_reviewer_evidence_blocks():
 
 
 def test_record_cli_main_dual_writes_verdicts_in_process(tmp_path, capsys):
-    payload = _external_payload(tmp_path, second_verdict="reject")
+    payload = _external_payload(
+        tmp_path, second_verdict="reject",
+        name=review_payloads.CANONICAL_PAYLOAD_BASENAMES["plan"])
     resolution = "Operator accepted OpenAI rejection and corrected the implementation."
     assert record_review_pass.main([
         "init", "--project-root", str(tmp_path), "--run-id", "run-1",
@@ -221,7 +223,9 @@ def test_record_cli_main_dual_writes_verdicts_in_process(tmp_path, capsys):
 
 
 def test_record_and_repair_cli_reject_skip_marker_for_completed_review(tmp_path, capsys):
-    payload = _external_payload(tmp_path, second_verdict="reject")
+    payload = _external_payload(
+        tmp_path, second_verdict="reject",
+        name=review_payloads.CANONICAL_PAYLOAD_BASENAMES["plan"])
     assert record_review_pass.main([
         "init", "--project-root", str(tmp_path), "--run-id", "run-1",
     ]) == 0

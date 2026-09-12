@@ -3,96 +3,34 @@
 Exercises the iterate 12.1 project-phase canon dispatcher plus the
 ``check_phase_history_has_run`` common helper (added in 12.1 for use by
 every phase-specific verifier module going forward).
+
+The FR-01.02 gate-specific tests (``check_basis_forbids_assumed``,
+``check_criteria_free_of_implementation_detail``, ``check_no_empty_split``,
+``check_starting_guidance_present``) live in
+``test_project_gate_basis_and_guidance.py`` and
+``test_project_gate_no_empty_split.py`` — split out to stay under the
+shared bloat gate's 300-line limit (req3-06-enforcement-mono sub-iterate e2).
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
-from tools.verifiers.common import (
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from tools.verifiers.common import (  # noqa: E402
     Severity,
     check_phase_history_has_run,
 )
-from tools.verifiers.project_checks import (
+from tools.verifiers.project_checks import (  # noqa: E402
     check_manifest_splits_match_dirs,
     check_project_config_status_complete,
     run_project_checks,
 )
 
-
-def seed_canon_project(
-    root: Path,
-    *,
-    splits: list[str] | None = None,
-    run_id: str = "project-20260414-test",
-    write_canon_artifacts: bool = True,
-) -> None:
-    """Produce a minimally-valid project that passes every check in
-    ``run_project_checks`` when ``write_canon_artifacts=True``.
-
-    Callers selectively tear down individual artifacts in failure-path
-    tests so we don't pay the seed cost every time.
-    """
-    splits = splits or ["01-auth", "02-dashboard"]
-
-    # Project config — status=complete, splits populated
-    (root / "shipwright_project_config.json").write_text(
-        json.dumps({
-            "status": "complete",
-            "splits": [{"name": s, "status": "complete"} for s in splits],
-        }),
-        encoding="utf-8",
-    )
-
-    # Planning dirs matching splits
-    for s in splits:
-        (root / ".shipwright" / "planning" / s).mkdir(parents=True)
-        (root / ".shipwright" / "planning" / s / "spec.md").write_text("# spec\n")
-
-    if not write_canon_artifacts:
-        return
-
-    # C1 — phase_completed event
-    (root / "shipwright_events.jsonl").write_text(
-        json.dumps({
-            "type": "phase_completed",
-            "phase": "project",
-            "timestamp": "2026-04-14T10:00:00Z",
-        }) + "\n",
-        encoding="utf-8",
-    )
-
-    # C2 — build_dashboard mentions project
-    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
-        "## Phases\n\n- project: complete\n"
-    )
-
-    # C3 — fresh session_handoff
-    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
-
-    # C4 — ADR referencing project
-    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
-        "### ADR-027: Project decomposition decision\n"
-        "- **Status:** accepted\n"
-    )
-
-    # C5 — CHANGELOG [Unreleased] Added bullet (root CHANGELOG)
-    (root / "CHANGELOG.md").write_text(
-        "# Changelog\n\n## [Unreleased]\n\n### Added\n"
-        "- Project initialized: demo (2 splits)\n"
-    )
-
-    # phase_history — seed via run_config
-    (root / "shipwright_run_config.json").write_text(
-        json.dumps({
-            "phase_history": {
-                "project": [{"run_id": run_id, "date": "2026-04-14"}]
-            },
-        }),
-        encoding="utf-8",
-    )
+from _project_check_fixtures import _write_grill_trace, seed_canon_project  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -262,6 +200,21 @@ def test_run_project_checks_with_empty_run_id_skips_phase_history(tmp_path):
     assert phase_history_results[0].ok is True  # skipped → neutral pass
 
 
+def test_run_project_checks_detects_missing_c4_adr(tmp_path):
+    """External plan review (e2-checks-project-elicitation, round 1): the
+    #8 ledger citation claims C4 (``check_c4_decision_log_has_phase_adr``)
+    already blocks on a missing phase ADR — proven here, not merely
+    asserted, mirroring the existing C1/C5/phase_history regression tests
+    in this same file."""
+    seed_canon_project(tmp_path, run_id="project-happy")
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
+        "# Decision Log\n\nNo entries yet.\n", encoding="utf-8",
+    )
+    results = run_project_checks(tmp_path, run_id="project-happy")
+    red = [r for r in results if not r.is_skipped and not r.ok]
+    assert any("C4" in r.name for r in red), [f"{r.name}: {r.detail}" for r in results]
+
+
 # ---------------------------------------------------------------------------
 # Grill-trace completeness gate (P4.2) — genuinely wired, not prose-only.
 #
@@ -274,38 +227,6 @@ def test_run_project_checks_with_empty_run_id_skips_phase_history(tmp_path):
 # `run_project_checks()` itself, the same list `_run_canon_checks`
 # (`phase_validators.py`) already iterates for every other canon check.
 # ---------------------------------------------------------------------------
-
-def _write_grill_trace(root: Path, *, requirement_key: str, **dimension_overrides: str) -> None:
-    """Write one valid-shaped grill-trace record, applying dimension
-    overrides so an individual test can push exactly one dimension into
-    STOP territory while keeping the other six/seven fields shape-valid."""
-    dimensions = {
-        "outcome": "answered",
-        "purpose": "answered",
-        "boundaries": "answered",
-        "failure": "answered",
-        "glossary": "answered",
-        "rationale": "answered",
-        "out_of_scope": "answered",
-    }
-    dimensions.update(dimension_overrides)
-    trace_dir = root / ".shipwright" / "planning" / "grill-traces"
-    trace_dir.mkdir(parents=True, exist_ok=True)
-    (trace_dir / f"{requirement_key}.json").write_text(
-        json.dumps({
-            "requirement_key": requirement_key,
-            "requirement_text": "Users can export their data",
-            "surface": "project",
-            "evidence": ["interview transcript line 42"],
-            "dimensions": dimensions,
-            "fit_criterion": "export completes in < 5s for a 10k-row account",
-            "glossary_delta": [],
-            "confirmed_by": "user",
-            "terms_used": [],
-        }),
-        encoding="utf-8",
-    )
-
 
 def test_run_project_checks_detects_grill_trace_greenfield_assumed(tmp_path):
     """AC2 fix: an 'assumed' dimension in the project surface (no
@@ -352,3 +273,18 @@ def test_run_project_checks_passes_with_a_clean_grill_trace(tmp_path):
     red = [r for r in results if not r.is_skipped and not r.ok
            and r.severity == Severity.ERROR.value]
     assert red == [], [f"{r.name}: {r.detail}" for r in red]
+
+
+# ---------------------------------------------------------------------------
+# FR-01.02 #4/#15, #5, #10, #11 (req3-06-enforcement-mono sub-iterate e2) —
+# wired into run_project_checks() via _project_gate_wiring.py.
+# ---------------------------------------------------------------------------
+
+def test_run_project_checks_includes_all_four_new_gates(tmp_path):
+    seed_canon_project(tmp_path, run_id="project-happy")
+    results = run_project_checks(tmp_path, run_id="project-happy")
+    names = [r.name for r in results]
+    assert any("FR-01.02 #4/#15" in n for n in names)
+    assert any("FR-01.02 #5" in n for n in names)
+    assert any("FR-01.02 #10" in n for n in names)
+    assert any("FR-01.02 #11" in n for n in names)

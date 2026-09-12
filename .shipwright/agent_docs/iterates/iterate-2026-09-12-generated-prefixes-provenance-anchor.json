@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-12-generated-prefixes-provenance-anchor",
+  "date": "2026-09-12T06:25:32.304815Z",
+  "event_at": "2026-09-11T19:58:33.680036+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/generated-prefixes-provenance-anchor",
+  "spec": "Anchor or remove PR-review skip-safety per _GENERATED_PREFIXES entry, closing the gap a confirmed deploy-gate consumer (ci-security.json) exposed.",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-generated-prefixes-provenance-anchor"
+}
