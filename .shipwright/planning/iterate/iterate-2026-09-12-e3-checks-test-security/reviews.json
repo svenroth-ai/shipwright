@@ -278,12 +278,12 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T12:04:56.822829+00:00",
+      "completed_at": "2026-09-12T19:01:03.990388+00:00",
       "disposition": null,
-      "recorded_by": "spec-reviewer",
+      "recorded_by": "claude",
       "parse_status": null,
       "raw_excerpt": null,
-      "model_tier": "opus"
+      "model_tier": "inherit"
     },
     "plan_internal": {
       "review_type": "plan_internal",
