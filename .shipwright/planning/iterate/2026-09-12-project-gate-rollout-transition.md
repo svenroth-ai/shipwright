@@ -82,7 +82,7 @@ extension included — the author had a gate-aware toolchain by then.
 - [x] `basis_forbids_assumed` and `starting_guidance_present` (#4/#15, #11)
       are untouched — this transition rule is scoped to the two gates named
       in `trg-9583d3a8` only.
-- [ ] `trg-9583d3a8` is closed, referencing this run's own PR, once that PR
+- [x] `trg-9583d3a8` is closed, referencing this run's own PR, once that PR
       exists — the same process the `trg-aedcfe7b` precedent actually used
       (its close event, `.shipwright/triage.jsonl`, references `PR:721` and
       postdates that PR's own diff; a `promote --task-ref PR:<N>` close event
