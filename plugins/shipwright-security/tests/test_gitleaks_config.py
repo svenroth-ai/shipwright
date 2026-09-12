@@ -70,6 +70,7 @@ class TestRenderConfig:
         body = render_config(("node_modules",), project_config_path=None)
         assert "cafebabe:deadbeef" in body
 
+    @pytest.mark.covers("FR-01.07/AC16")
     def test_project_config_is_extended_by_absolute_path(self, tmp_path: Path) -> None:
         cfg = tmp_path / PROJECT_CONFIG_NAME
         cfg.write_text("title = 'x'\n", encoding="utf-8")
