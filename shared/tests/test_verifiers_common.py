@@ -69,6 +69,31 @@ def test_summarise_counts_everything():
     assert summary.skipped == 1
 
 
+def test_strict_blocking_warnings_excludes_strict_exempt_findings():
+    """`trg-b996bc21`: a `strict_exempt` warning (a rollout-transition grace,
+    a layer-coverage advisory-collision/legacy finding) already decided
+    `--strict` must not promote it — `warnings` stays a raw display count,
+    but `strict_blocking_warnings` is the one `--strict` consumers should
+    read instead."""
+    results = [
+        CheckResult("graced", ok=False, severity=Severity.WARNING.value, strict_exempt=True),
+        CheckResult("real", ok=False, severity=Severity.WARNING.value, strict_exempt=False),
+    ]
+    summary = summarise(results)
+    assert summary.warnings == 2
+    assert summary.strict_blocking_warnings == 1
+
+
+def test_strict_blocking_warnings_zero_when_all_exempt():
+    results = [
+        CheckResult("graced-1", ok=False, severity=Severity.WARNING.value, strict_exempt=True),
+        CheckResult("graced-2", ok=False, severity=Severity.WARNING.value, strict_exempt=True),
+    ]
+    summary = summarise(results)
+    assert summary.warnings == 2
+    assert summary.strict_blocking_warnings == 0
+
+
 # ---------------------------------------------------------------------------
 # Readers
 # ---------------------------------------------------------------------------

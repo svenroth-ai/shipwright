@@ -66,11 +66,17 @@
         "behavior": "#4/#15 (check_basis_forbids_assumed) and #11 (check_starting_guidance_present) are behaviorally untouched",
         "disposition": "tested",
         "evidence": "shared/tests/test_project_gate_basis_and_guidance.py, shared/tests/test_project_gate_extras.py (unmodified except the #5/#10 tests moving out; full shared/tests re-run: 10743 passed, 0 failed)"
+      },
+      {
+        "behavior": "trg-b996bc21 post-merge fix: verify_phase.py's own argv->dispatch->blocking->sys.exit path (cross-component machinery per integration_coverage.py's own pattern list) correctly composes with ReportSummary.strict_blocking_warnings -- a fully graced (strict_exempt) warning does not block --strict, a genuine warning still does, and an error still blocks alongside a graced warning",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_verify_phase_strict.py (main() invoked end-to-end with real argv/argparse/sys.exit, only dispatch_project monkeypatched)"
       }
     ],
     "counts": {
-      "testable": 11,
-      "tested": 11,
+      "testable": 12,
+      "tested": 12,
       "untestable": 0,
       "untested_testable": 0
     },

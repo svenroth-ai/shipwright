@@ -269,13 +269,15 @@ instruction), rather than silently picking a side.
   otherwise-unchanged row forfeits grace — arguably stricter than strictly
   needed for "essentially unchanged," but the safe (fail-closed) direction,
   same disposition the precedent recorded for its own identical trade-off.
-- `strict_exempt=True` is honored by `verify_iterate_finalization.py` (the
+- ~~`strict_exempt=True` is honored by `verify_iterate_finalization.py` (the
   gate every real iterate actually goes through) but NOT by
   `common.summarise()`/`verify_phase.py`'s own `--strict` blocking calc, so
   a direct `verify_phase.py --phase project --strict` call still hard-blocks
   on a fully-graced rollout warning (code review, medium) — pre-existing gap
   shared with `layer_coverage.py`/`plan_gate_checks.py`, not introduced here;
-  see Code-Review-Findings #1, `trg-b996bc21`.
+  see Code-Review-Findings #1, `trg-b996bc21`.~~ **Fixed** post-merge — see
+  "Post-merge PR-review gate finding #2, fixed" below. `trg-b996bc21`
+  promoted/closed against this PR.
 
 ## Self-Review (references/iteration-reviews.md checklist)
 
@@ -357,7 +359,7 @@ reasoning; summarized:
 
 | # | Severity | Finding (short) | Disposition |
 |---|---|---|---|
-| 1 | medium | `common.summarise()`/`verify_phase.py`'s `blocking = errors > 0 or (strict and warnings > 0)` never reads `CheckResult.strict_exempt` — a direct `verify_phase.py --phase project --strict` invocation still hard-blocks on a fully-graced rollout warning, contradicting this diff's own docstring claim that grace is "never promoted to a hard failure under `--strict`" | accepted, disclosed not fixed — pre-existing gap shared with `layer_coverage.py`/`plan_gate_checks.py` (this diff adds a third reliance on it, doesn't introduce it); the actual finalization gate (`verify_iterate_finalization.py`) already filters `strict_exempt` correctly, so no real iterate is affected — only a manual CLI `--strict` invocation is; tracked as `trg-b996bc21` for a cross-cutting fix in `common.py` benefiting all three gate families at once, rather than a narrow, inconsistent fix scoped to just this diff |
+| 1 | medium | `common.summarise()`/`verify_phase.py`'s `blocking = errors > 0 or (strict and warnings > 0)` never reads `CheckResult.strict_exempt` — a direct `verify_phase.py --phase project --strict` invocation still hard-blocks on a fully-graced rollout warning, contradicting this diff's own docstring claim that grace is "never promoted to a hard failure under `--strict`" | **fixed** post-merge (see "Post-merge PR-review gate finding #2, fixed" below) — originally accepted/disclosed-not-fixed as a cross-cutting `common.py` fix out of proportion to this diff alone; the automated PR-review gate independently re-raised it as a blocker, so it was fixed here after all, once, in `common.py`, benefiting every gate family that sets the field (`layer_coverage.py`, `plan_gate_checks.py`, this one) |
 | 2 | medium | `_rollout_declared_split_names`'s fallback fell through to `shipwright_run_config.json` whenever `shipwright_project_config.json` was unparseable/`splits`-less at the historical commit, diverging from `_declared_split_names`'s live-manifest priority (existence alone is authoritative, no fallback) — could let a stale `run_config.json` split grant grace the authoritative manifest at that same commit never declared | fixed — `_rollout_declared_split_names` now checks the primary file's raw existence (via `_read_at_commit`'s `None`-means-absent contract) before ever reading the fallback, mirroring `_declared_split_names` exactly; new test `test_build_rollout_snapshot_declared_split_names_does_not_fall_back_when_project_config_exists_but_is_splitless` pins it |
 | 3 | low | ADR row #7 claimed multi-split cross-check isolation was "test-pinned"; no test actually exercises two splits with colliding FR content | fixed (wording) — row #7 above corrected to "structurally impossible by construction, not test-pinned" |
 
@@ -388,7 +390,7 @@ dispositions are "fix and re-ask for approval" in nature.
 | 1 | high | glm | `_TEXT_CACHE` keyed by `(sha, posix_path)` only, omitting `project_root` — two nested projects in one repo sharing a rollout SHA and the same relative spec.md path would read each other's historical text (the sibling `_MANIFEST_CACHE` already included `project_root`; this was an accidental omission) | accepted-and-fixed — key widened to `(str(project_root), sha, posix_path)`; new test `test_two_sibling_nested_projects_at_the_same_sha_do_not_share_text_cache_entries` pins two sibling nested projects at the same SHA/path resolving to their own distinct text |
 | 2 | medium | openai | Same `_TEXT_CACHE` finding, independently found | accepted-and-fixed — same fix as #1 |
 | 3 | high | openai | Rollout grace trusts the target project's own commit committer timestamp, which its author controls — a genuinely new post-rollout violation could be backdated into apparent legacy content | fixed, same disposition as Doubt-Review-Findings #1 — independently confirmed that finding at the same severity from a second, separate review route, and independently reproduced post-merge by the CI PR-review gate; see that section and "Post-merge PR-review gate finding, fixed" below |
-| 4 | medium | openai | `strict_exempt` not honored by `verify_phase.py --strict`'s blocking calc | acknowledged, same disposition as Code-Review-Findings #1 — independently confirms that finding; see `trg-b996bc21` |
+| 4 | medium | openai | `strict_exempt` not honored by `verify_phase.py --strict`'s blocking calc | fixed, same disposition as Code-Review-Findings #1 — independently confirmed that finding; see `trg-b996bc21` and "Post-merge PR-review gate finding #2, fixed" below |
 | 5 | low | glm | `criteria_free_of_implementation_detail`'s mixed hard+graced branch summarized graced hits as a bare count, unlike `no_empty_split`'s mixed branch which lists graced locations — inconsistent with the stated "every graced hit named transparently" rationale | accepted-and-fixed — mixed branch now lists the first 5 graced hit locations (same truncation policy as hard hits); test assertion added pinning the graced hit's own location string appears after "granted transition grace", not just a count |
 | 6 | low | glm | `_PREFIX_CACHE` unbounded, same cross-root contamination surface as #1 | acknowledged — fixed implicitly by #1's key widening (per the reviewer's own note) |
 
@@ -480,3 +482,47 @@ green; `uvx ruff@0.15.15 check .` clean.
 **Scope.** This PR's own gate family only (FR-01.02 #5/#10). The identical
 gap in the `check_binding_completeness` precedent (`_layer_coverage_rollout.py`)
 is untouched — see Disclosed, not fixed.
+
+## Post-merge PR-review gate finding #2, fixed (`trg-b996bc21`)
+
+After the trust-anchor fix above landed, CI's `PR Review` gate re-ran and
+passed on that finding — but blocked on a **second, distinct** one: the
+`strict_exempt` gap already named in this ADR's own Code-Review-Findings #1
+and External-Code-Review-Findings #4, and already disclosed above as
+deliberately out of scope for this diff (a cross-cutting `common.py` fix
+benefiting three gate families, not narrowly scoped to FR-01.02 #5/#10
+alone). The automated Tier-3 reviewer independently re-raised the identical,
+already-reviewed finding as a blocker. Per this PR's own stop condition
+("blocks again with a new distinct finding → stop and report"), this was
+reported back; the operator's decision was to fix it now, in this PR, rather
+than wait for a separate cross-cutting card or get a human reviewer to waive
+the gate.
+
+**Decision.** Added `ReportSummary.strict_blocking_warnings` to
+`common.py` — a count that excludes every `CheckResult.strict_exempt`
+warning, mirroring the filtered calc `verify_iterate_finalization.py`
+already carried on its own, separate path. `verify_phase.py`'s blocking
+line now reads `summary.strict_blocking_warnings` instead of the raw
+`summary.warnings`. `ReportSummary.warnings` itself is untouched — it stays
+a raw display count ("how many warnings fired"), not a blocking decision;
+`format_report`'s footer text is unaffected. This is the single shared fix
+site the original disclosure asked for: every gate family that sets
+`strict_exempt` (`layer_coverage.py`, `plan_gate_checks.py`, this one)
+benefits without a separate patch each. `verify_iterate_finalization.py`'s
+own inline calc is untouched — it was already correct, and refactoring it
+onto the new property is not needed to close this finding.
+
+**Tests.** `test_verifiers_common.py` gained two tests pinning
+`strict_blocking_warnings`' exempt-exclusion (a mix of exempt/non-exempt,
+and all-exempt). A new file, `test_verify_phase_strict.py` (no test file for
+`verify_phase.py` existed before this), adds the integration test the
+reviewer's finding literally asked for: `main()` invoked end-to-end with
+`--phase project --strict`, `dispatch_project` monkeypatched to a fixed
+`CheckResult` list, proving a fully-graced warning no longer blocks, a
+genuine warning still does under `--strict` (and not under a plain run),
+and an ERROR still blocks even alongside a fully-graced warning. Re-ran the
+full `shared/tests` suite and `uvx ruff@0.15.15 check .`, both green.
+
+**Scope.** `common.py`/`verify_phase.py` only — the one shared path every
+`--phase ... --strict` CLI invocation goes through. `trg-b996bc21` closed
+(promoted, task ref `PR:755`).

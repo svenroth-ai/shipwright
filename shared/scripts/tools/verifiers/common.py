@@ -696,6 +696,26 @@ class ReportSummary:
     skipped: int = 0
     results: list[CheckResult] = field(default_factory=list)
 
+    @property
+    def strict_blocking_warnings(self) -> int:
+        """Warnings ``--strict`` should actually promote to a failure —
+        excludes every ``CheckResult.strict_exempt`` warning (`trg-b996bc21`).
+
+        ``warnings`` above stays a raw, unfiltered count for display (the
+        report footer means "how many warnings fired", not "how many would
+        block"). A gate family that marks a warning ``strict_exempt`` (a
+        rollout-transition grace, a layer-coverage advisory-collision/legacy
+        finding, a plan-gate migration notice) has already decided that
+        finding must never become a hard failure just because a caller
+        passed ``--strict`` — this property is the one place every
+        ``--strict`` consumer should read instead of re-deriving its own
+        filtered count, mirroring what ``verify_iterate_finalization.py``'s
+        own separate calc already did correctly."""
+        return sum(
+            1 for r in self.results
+            if r.is_failure and r.severity == Severity.WARNING.value and not r.strict_exempt
+        )
+
 
 def summarise(results: list[CheckResult]) -> ReportSummary:
     summary = ReportSummary(results=list(results))
