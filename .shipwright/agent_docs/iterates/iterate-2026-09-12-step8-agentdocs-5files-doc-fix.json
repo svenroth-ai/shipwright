@@ -1,0 +1,23 @@
+{
+  "run_id": "iterate-2026-09-12-step8-agentdocs-5files-doc-fix",
+  "date": "2026-09-12T11:10:44.867015Z",
+  "event_at": "2026-09-12T11:08:30.835230+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/step8-agentdocs-5files-doc-fix",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-step8-agentdocs-5files-doc-fix",
+  "test_completeness": {
+    "status": "n/a",
+    "justification": "doc-only prose fix (2 skill-reference .md files); no code/behavior change and no cross_component machinery touched, so there is no behavior to enumerate."
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "pure documentation correction (2 skill-reference .md files); no code/behavior change and no startable web/dev-server/CLI surface of its own -- verification is the F0 unit test suite plus the mirrored merge gates."
+  },
+  "declared_removals": []
+}
