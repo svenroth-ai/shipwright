@@ -142,10 +142,20 @@
     "code": {
       "review_type": "code",
       "status": "completed",
-      "findings_count": 0,
-      "findings": [],
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/_test_gate_fidelity_categorize.py",
+          "line": 28,
+          "finding": "validate_triage_counts(recorded_triage: dict, keys) takes an untyped `keys` param that reads as a collection of key names, but the only call site passes expected_counts (a dict), relying on Python's implicit dict-iterates-keys behavior. Works correctly, but a reader could expect a list of key names.",
+          "suggestion": "Type-hint as Iterable[str] or pass expected_counts.keys() explicitly at the call site. Cosmetic only, no behavior change needed.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-12T19:22:15.107459+00:00",
+      "completed_at": "2026-09-12T20:08:28.382081+00:00",
       "disposition": null,
       "recorded_by": "claude",
       "parse_status": null,
@@ -158,8 +168,8 @@
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-12T19:22:46.854374+00:00",
-      "disposition": "Stage 3 is conditional per campaign-mode.md 3f-bis (migrations/async/concurrency/cross-plugin imports/irreversible ops); this diff has none of those -- pure synchronous Python verifier checks, tests, and a path-safety helper module, no cross-plugin imports (ADR-045), no migrations, no async, no irreversible ops. Stage 2 passed clean at 3f-bis.",
+      "completed_at": "2026-09-12T20:08:36.454139+00:00",
+      "disposition": "Stage 3 is conditional per campaign-mode.md 3f-bis (migrations/async/concurrency/cross-plugin imports/irreversible ops); this diff still has none of those in its round-3 delta (isinstance guards + a pure validator helper). Stage 2 passed with one non-blocking cosmetic finding only.",
       "recorded_by": "claude",
       "parse_status": null,
       "raw_excerpt": null,

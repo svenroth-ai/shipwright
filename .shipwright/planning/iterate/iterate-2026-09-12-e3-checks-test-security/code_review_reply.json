@@ -1,0 +1,13 @@
+{
+  "section": "e3-checks-test-security (9th cascade round, v12 diff)",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/tools/verifiers/_test_gate_fidelity_categorize.py",
+      "line": 28,
+      "finding": "validate_triage_counts(recorded_triage: dict, keys) takes an untyped `keys` param that reads as a collection of key names, but the only call site passes expected_counts (a dict), relying on Python's implicit dict-iterates-keys behavior. Works correctly, but a reader could expect a list of key names.",
+      "suggestion": "Type-hint as Iterable[str] or pass expected_counts.keys() explicitly at the call site. Cosmetic only, no behavior change needed."
+    }
+  ]
+}
