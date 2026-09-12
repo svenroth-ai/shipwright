@@ -197,13 +197,17 @@ campaign's own abort condition (no deterministic oracle:
 dead fields nothing ever writes), each drift-tested instead — the 7 lines
 this sub-iterate's own spec named. **Re-measured a third time, same
 sub-iterate, after external code review round 2**: splitting FR-01.06 #6
-into #6 (existence floor, `enforced, tested`) / #6b (per-journey matching,
-`prompt-only (mechanisable)`, deferred to `trg-2f7a840a`) — GLM correctly
-found the original bare `enforced, tested` tag over-claimed against the
+into #6 (existence floor, enforced-tested) / #6b (per-journey matching,
+prompt-only/mechanisable, deferred to `trg-2f7a840a`) — GLM correctly
+found the original bare enforced-tested tag over-claimed against the
 check's own documented weak-oracle caveat, the same split precedent this
 campaign already applies (#8/#8b, #10/#10b, #15/#15b):
 **14** prompt-only/mechanisable · **29** prompt-only/judgement ·
 **16** enforced-untested · **33** unimplemented · **80** enforced-tested.
+(Status names outside an actual status cell must stay un-backticked — the
+measurement script counts every backtick-quoted canonical status document-wide,
+not just table cells, so a backticked status name in prose silently inflates
+these totals.)
 
 The six genuine `judgement` rows from FR-01.02/FR-01.04, and why no gate may
 be built for them — each needs reading comprehension, so its honest ceiling
