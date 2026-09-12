@@ -53,7 +53,10 @@ purely for the 300-LOC budget after growth
 `test_check_plan_gates_sections.py` / `test_check_design_gates_tier3_review.py`
 splits.
 
-One AC — `FR-01.03/AC21` — is left unbound with a recorded reason: it names
+**Three ACs are left unbound with a recorded reason** (this paragraph
+originally said one — AC21 — at the time it was first written; corrected
+after Stage-1 spec-review found two more, see the "Stage-1 spec-review
+REJECT" section below for the full story). `FR-01.03/AC21` names
 DeepSeek-specific ZDR-endpoint routing for the plan review's OWN reviewer
 roster, but `shared/scripts/lib/external_review_routing.py` documents that
 "DeepSeek is no longer bound as a plan/code-review cascade identity ... GLM
@@ -63,10 +66,15 @@ operator-overridable model choice (FR-01.17's territory, not FR-01.03's) — no
 current `/shipwright-plan` code path invokes DeepSeek at all. Binding AC21 to
 either GLM's routing test (a different provider than the AC names) or the
 Tier-3 gate's DeepSeek test (a different FR's behavior) would misrepresent
-what is actually proven. Recorded here and in the F3 decision drop; a future
-correction to AC21's own text (naming GLM, or generalizing to "the active
-reviewer roster") is a spec-authoring question for the campaign/spec owner,
-not something this unit can resolve by picking a nearby test.
+what is actually proven. `FR-01.03/AC20` has the identical obsolete-provider
+problem (see seam survey Exception 6, amended). `FR-01.04/AC10`'s full claim
+("others left untouched") is not enforced by the production gate it would
+bind to (see seam survey Exception 7, new). Recorded here and in the F3
+decision drop; a future correction to AC20/AC21's own text (naming GLM, or
+generalizing to "the active reviewer roster") or to AC10's text (stating the
+Chrome Change Propagation carve-out) is a spec-authoring question for the
+campaign/spec owner, not something this unit can resolve by picking a nearby
+test.
 
 ## Per-AC seam mapping (executed)
 
