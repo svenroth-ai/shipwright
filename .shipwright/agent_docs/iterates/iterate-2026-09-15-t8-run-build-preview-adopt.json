@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-15-t8-run-build-preview-adopt",
+  "date": "2026-09-15T16:57:27.041374Z",
+  "event_at": "2026-09-15T16:57:00.312084+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t8",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t8-run-build-preview-adopt.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-15-t8-run-build-preview-adopt"
+}

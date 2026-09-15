@@ -131,3 +131,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR spec-ref: FR-01.03 + FR-01.04 AC backfill (t3, req3-05-test-backfill-mono)](iterate-2026-09-12-t3-plan-design-fr-01-03-01-04-ac-backfill.md)
 - [t6 — FR-01.02 / FR-01.16 AC-binding disposition table](iterate-2026-09-12-t6-project-elicitation-ac-bindings.md)
 - [t7 — FR-01.10 / FR-01.18 AC-binding disposition table](iterate-2026-09-12-t7-compliance-grade-ac-bindings.md)
+- [t8 — FR-01.01 / FR-01.05 / FR-01.12 / FR-01.13 AC-binding disposition table](iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)

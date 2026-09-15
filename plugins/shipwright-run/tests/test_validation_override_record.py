@@ -69,9 +69,7 @@ def _overrides(project_root):
     return load_run_config(project_root).get(VALIDATION_OVERRIDES_KEY, [])
 
 
-# --------------------------------------------------------------------------- #
 # The check runs regardless (AC1)
-# --------------------------------------------------------------------------- #
 
 def test_force_still_runs_the_phase_gate(run_project, mocker):
     """The regression this whole iterate exists for: `not force` used to gate the
@@ -91,10 +89,9 @@ def test_the_validate_phase_patch_target_still_intercepts(run_project, mocker):
     assert _overrides(run_project)[-1]["overridden_issues"] == [ASK]
 
 
-# --------------------------------------------------------------------------- #
 # Passed vs waved through (AC2, AC3)
-# --------------------------------------------------------------------------- #
 
+@pytest.mark.covers("FR-01.01/AC03")
 def test_a_clean_completion_records_no_override(run_project, mocker):
     """The other half of "tellable apart": a step that genuinely passed writes no
     record, so the mere presence of one is the signal."""
@@ -103,6 +100,7 @@ def test_a_clean_completion_records_no_override(run_project, mocker):
     assert VALIDATION_OVERRIDES_KEY not in load_run_config(run_project)
 
 
+@pytest.mark.covers("FR-01.01/AC03")
 def test_a_waved_through_completion_is_recorded_with_what_and_why(run_project, mocker):
     _gate(mocker, ASK, INFORM)
     update_step(run_project, "project", "complete", force=True, force_reason=REASON)
@@ -148,10 +146,9 @@ def test_the_record_survives_the_real_config_writer(run_project, mocker):
     assert _overrides(run_project)[-1]["reason"] == REASON
 
 
-# --------------------------------------------------------------------------- #
 # The pause rule is unchanged (AC5) + retry (O5)
-# --------------------------------------------------------------------------- #
 
+@pytest.mark.covers("FR-01.01/AC02")
 def test_ask_issues_without_force_still_pause_the_run(run_project, mocker):
     _gate(mocker, ASK)
     config = update_step(run_project, "project", "complete")

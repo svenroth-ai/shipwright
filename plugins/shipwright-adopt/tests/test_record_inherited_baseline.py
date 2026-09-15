@@ -129,6 +129,7 @@ def test_it_writes_the_register_the_audit_phase_reads(tmp_path: Path) -> None:
     assert out["written"] == "shipwright_known_failures.json"
 
 
+@pytest.mark.covers("FR-01.13/AC03")
 def test_onboarding_leaves_exactly_one_confirmation_follow_up(tmp_path: Path) -> None:
     """The card this whole run exists for: reading the code is a start, and
     onboarding must ask for the rest."""
