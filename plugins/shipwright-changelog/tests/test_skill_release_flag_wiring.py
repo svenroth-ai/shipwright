@@ -17,6 +17,15 @@ dropped from the actual ``aggregate_changelog.py`` invocation as long as the
 word survived somewhere in the surrounding prose. These tests now extract
 the fenced ``aggregate_changelog.py`` command block itself and assert the
 flag is a real argument INSIDE it.
+
+Tier-3 PR review round 8: the single combined command block used to show
+``--fail-if-empty`` as a bare (always-passed) argument on the SAME line as
+``[--dry-run]``, contradicting the prose exception ("except the --dry-run
+preview pass") — and ``aggregate_changelog.py`` itself raises on an empty
+release regardless of ``--dry-run``, so following the fenced example
+verbatim during a preview would fail instead of previewing. Step 4 now
+documents two separate invocations (preview, real release); these tests
+were split to pin each fence's flags independently.
 """
 
 import re
@@ -34,35 +43,64 @@ def _step_4_block() -> str:
     return text[start:end]
 
 
-def _aggregate_changelog_command() -> str:
-    """The fenced ``bash`` block invoking ``aggregate_changelog.py`` within
-    Step 4 — deliberately NOT the whole section, so a flag mentioned only in
-    surrounding prose cannot satisfy these assertions."""
+def _aggregate_changelog_fences() -> list[str]:
+    """All fenced ``bash`` blocks in Step 4 invoking ``aggregate_changelog.py``
+    — deliberately NOT the surrounding prose, so a flag mentioned only there
+    cannot satisfy these assertions."""
     block = _step_4_block()
-    for fence in re.findall(r"```bash\n(.*?)\n```", block, re.DOTALL):
-        if "aggregate_changelog.py" in fence:
+    return [
+        fence
+        for fence in re.findall(r"```bash\n(.*?)\n```", block, re.DOTALL)
+        if "aggregate_changelog.py" in fence
+    ]
+
+
+def _release_command() -> str:
+    """The real-release invocation — the fence that carries
+    ``--fail-if-empty``, distinct from the ``--dry-run`` preview fence which
+    must NOT carry it."""
+    for fence in _aggregate_changelog_fences():
+        if "--fail-if-empty" in fence:
             return fence
-    raise AssertionError("no ```bash fence invoking aggregate_changelog.py found in Step 4")
+    raise AssertionError("no aggregate_changelog.py fence carries --fail-if-empty")
+
+
+def _preview_command() -> str:
+    """The ``--dry-run`` preview invocation."""
+    for fence in _aggregate_changelog_fences():
+        if "--dry-run" in fence:
+            return fence
+    raise AssertionError("no aggregate_changelog.py fence carries --dry-run")
 
 
 def test_step_4_command_names_fail_if_empty():
-    command = _aggregate_changelog_command()
+    command = _release_command()
     assert "--fail-if-empty" in command
 
 
 def test_step_4_command_is_not_only_optional_flags():
     """Regression pin for the exact gap Tier-3 review round 6 named: the
     flag must be a bare argument on the command, not bracketed as optional
-    the way ``[--release-date ...]`` and ``[--dry-run]`` are — a truly
-    optional ``[--fail-if-empty]`` would defeat criterion 3 just as
-    thoroughly as dropping it outright.
+    the way ``[--release-date ...]`` is — a truly optional
+    ``[--fail-if-empty]`` would defeat criterion 3 just as thoroughly as
+    dropping it outright.
     """
-    command = _aggregate_changelog_command()
+    command = _release_command()
     assert "[--fail-if-empty]" not in command
     assert "--fail-if-empty" in command
 
 
-def test_step_4_instructs_always_passing_it_except_the_dry_run_preview():
+def test_dry_run_preview_command_omits_fail_if_empty():
+    """Regression pin for Tier-3 review round 8: the aggregator raises on an
+    empty release regardless of ``--dry-run``, so the documented preview
+    command must never carry ``--fail-if-empty`` — combining them would turn
+    a preview of "nothing pending" into a hard failure."""
+    command = _preview_command()
+    assert "--fail-if-empty" not in command
+
+
+def test_step_4_instructs_never_combining_fail_if_empty_with_dry_run():
     block = _step_4_block()
     assert "Always pass `--fail-if-empty`" in block
     assert "dry-run" in block.lower()
+    assert "Never pass `--fail-if-empty` alongside `--dry-run`" in block

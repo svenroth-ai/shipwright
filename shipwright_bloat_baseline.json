@@ -167,7 +167,7 @@
     {
       "path": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
       "limit": 400,
-      "current": 429,
+      "current": 443,
       "state": "exception",
       "adr": "ADR-348"
     },

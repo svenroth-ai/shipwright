@@ -163,21 +163,35 @@ existing `## [version]` heading, NOT blindly at the top — that would
 corrupt the `# Changelog` title), and deletes only the drop files that
 were actually aggregated.
 
+Use `--dry-run` first to preview the rendered section without modifying
+disk. **Never pass `--fail-if-empty` alongside `--dry-run`** — the check
+raises unconditionally on an empty release regardless of `--dry-run`, so
+combining them turns a preview of "nothing pending" into a hard failure
+instead of a preview:
+
 ```bash
 uv run "{shared_root}/scripts/tools/aggregate_changelog.py" \
   --project-root "{project_root}" \
   --version "{version}" \
   [--release-date "{YYYY-MM-DD}"] \
-  [--dry-run] \
+  --dry-run
+```
+
+Once satisfied with the preview, run for real. **Always pass `--fail-if-empty`**
+here — nothing recorded for a version never released before is refused
+(exit 1, `AggregatorError`), not silently tagged as an empty release;
+re-running an already-released version still converges as a safe no-op
+(unaffected):
+
+```bash
+uv run "{shared_root}/scripts/tools/aggregate_changelog.py" \
+  --project-root "{project_root}" \
+  --version "{version}" \
+  [--release-date "{YYYY-MM-DD}"] \
   --fail-if-empty
 ```
 
-Use `--dry-run` first to preview the rendered section without modifying
-disk. **Always pass `--fail-if-empty`** (except the `--dry-run` preview
-pass) — nothing recorded for a version never released before is refused
-(exit 1, `AggregatorError`), not silently tagged as an empty release;
-re-running an already-released version still converges as a safe no-op
-(unaffected). When the aggregator encounters legacy bullets under
+When the aggregator encounters legacy bullets under
 `## [Unreleased]` (e.g. from pre-refactor iterates that wrote directly
 to `CHANGELOG.md`), it prints a **loud stderr WARNING naming each bullet's
 own text**, not just a count. Those bullets are NOT migrated
