@@ -62,6 +62,14 @@ from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
 # risks exactly the sibling/registration collision ADR-045 exists to avoid.
 _SMOKE_RESULT_RELATIVE = Path(".shipwright") / "deploy" / "smoke-test-result.json"
 _ROLLBACK_HISTORY_RELATIVE = Path(".shipwright") / "deploy" / "rollback-history.jsonl"
+# Written by rollback.py's own except handler ONLY when the primary
+# rollback-history.jsonl write itself failed (lock timeout, unwritable
+# dir) — the durable degraded marker Tier-3 PR review round 4 asked for as
+# the alternative to failing rollback.py's own exit code closed on an
+# audit-write failure (which would misreport a real, successful rollback
+# as failed). Its presence, not its absence, is the check-manual-rollback
+# oracle for "a manual rollback may have happened but left no clean trail".
+_ROLLBACK_AUDIT_DEGRADED_RELATIVE = Path(".shipwright") / "deploy" / "rollback-audit-degraded.jsonl"
 
 _FAILED_RELEASE_OUTCOMES = frozenset({"failed", "rolled-back", "rolled_back"})
 
@@ -199,10 +207,24 @@ def check_test_gate_passed(project_root: Path) -> CheckResult:
     return CheckResult(name, True, f"unit {passed}/{total} passed, smoke OK")
 
 
-def _last_jsonl_entry(path: Path, *, where: dict | None = None) -> dict | None:
-    """Return the last well-formed JSON object in a JSONL file matching
-    every key/value in ``where`` (default: no filter — the overall last
-    entry), or ``None``.
+def _last_jsonl_entry(path: Path, *, where: dict | None = None) -> tuple[dict | None, str | None]:
+    """Return ``(entry, error)``: the last well-formed JSON object in a
+    JSONL file matching every key/value in ``where`` (default: no filter —
+    the overall last entry), or ``(None, None)`` when the file is absent or
+    genuinely has no matching entry.
+
+    ``error`` is set whenever a line could not be read as a matching
+    candidate at all — a malformed line, a non-object line, or the file
+    being unreadable — rather than being silently skipped. Tier-3 PR
+    review, e4-checks-deploy-changelog round 4: an append-only trail whose
+    whole design is "absence means pass" cannot tell "this kind of event
+    never happened" apart from "a line recording it exists but could not be
+    read", and a caller reconciling liveness evidence must fail closed on
+    the latter — a manual rollback silently swallowed by a torn or
+    unreadable line must not read the same as one that never occurred.
+    ``entry`` still returns the best VALID match found among the readable
+    lines, so a caller can act on real evidence even when an unrelated
+    line elsewhere in the file is corrupt.
 
     External code review (e4-checks-deploy-changelog): the original
     unfiltered version was used to find "the last manual rollback", which
@@ -213,8 +235,9 @@ def _last_jsonl_entry(path: Path, *, where: dict | None = None) -> dict | None:
     entry of the KIND being asked about, not merely the last entry.
     """
     if not path.exists():
-        return None
+        return None, None
     last: dict | None = None
+    error: str | None = None
     try:
         for line in path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
@@ -222,16 +245,18 @@ def _last_jsonl_entry(path: Path, *, where: dict | None = None) -> dict | None:
                 continue
             try:
                 parsed = json.loads(line)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as exc:
+                error = f"{path.name} contains an unparseable line: {exc}"
                 continue
             if not isinstance(parsed, dict):
+                error = f"{path.name} contains a non-object line ({type(parsed).__name__})"
                 continue
             if where and any(parsed.get(k) != v for k, v in where.items()):
                 continue
             last = parsed
-    except OSError:
-        return None
-    return last
+    except OSError as exc:
+        return None, f"could not read {path.name}: {exc}"
+    return last, error
 
 
 def check_failed_liveness_recorded_as_failed(project_root: Path) -> CheckResult:
@@ -359,10 +384,40 @@ def check_manual_rollback_proves_alive(project_root: Path) -> CheckResult:
     # mutated=False) — a rollback that changed nothing has nothing to prove
     # alive, and demanding liveness evidence for it is a false failure
     # (external code review, e4-checks-deploy-changelog).
-    latest = _last_jsonl_entry(
+    latest, history_error = _last_jsonl_entry(
         project_root / _ROLLBACK_HISTORY_RELATIVE,
         where={"invocation": "manual", "mutated": True},
     )
+    if history_error is not None:
+        # Fail closed, not "no operator-requested rollback recorded yet" —
+        # Tier-3 PR review round 4: a corrupt or unreadable line in this
+        # append-only trail could be exactly the manual-rollback record
+        # being searched for, and this criterion's word is "proves", not
+        # "assumes nothing happened".
+        return CheckResult(
+            name, False,
+            f"cannot confirm whether an operator-requested rollback happened: {history_error}",
+        )
+    degraded, degraded_error = _last_jsonl_entry(
+        project_root / _ROLLBACK_AUDIT_DEGRADED_RELATIVE,
+        where={"invocation": "manual"},
+    )
+    if degraded_error is not None:
+        return CheckResult(
+            name, False,
+            f"cannot confirm whether an operator-requested rollback happened: {degraded_error}",
+        )
+    if degraded is not None:
+        degraded_at = _parse_iso_utc(degraded.get("at"))
+        latest_at = _parse_iso_utc(latest.get("recorded_at")) if latest is not None else None
+        if degraded_at is not None and (latest_at is None or degraded_at > latest_at):
+            return CheckResult(
+                name, False,
+                f"a manual rollback's audit record failed to write at {degraded.get('at')} "
+                f"({degraded.get('reason')}) — cannot confirm it was ever followed by a "
+                "liveness check",
+            )
+
     if latest is None:
         return CheckResult(name, True, "no operator-requested rollback recorded yet")
 

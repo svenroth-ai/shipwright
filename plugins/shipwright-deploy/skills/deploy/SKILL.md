@@ -412,7 +412,13 @@ appended to `.shipwright/deploy/rollback-history.jsonl` by the script itself
 step) — **always pass `--project-root`, on the clone strategy too**: it
 defaults to `.` (external code review, e4-checks-deploy-changelog), so an
 omitted flag writes the audit trail relative to whatever the shell's cwd
-happens to be rather than the project it belongs to.
+happens to be rather than the project it belongs to. If that write itself
+fails (lock timeout, unwritable dir), `rollback.py` still exits with the
+real outcome — it does not fail the whole rollback over a logging problem —
+but it also writes a `rollback-audit-degraded.jsonl` marker next to the
+trail; `deploy_checks.check_manual_rollback_proves_alive` treats that
+marker's presence as "cannot confirm" and fails closed rather than reading
+the missing record as "no rollback happened" (Tier-3 PR review round 4).
 
 **Read the exit code — it is the instruction.** Full field table in
 [rollback-strategy.md](references/rollback-strategy.md).

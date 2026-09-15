@@ -105,6 +105,36 @@ def record(
     return entry
 
 
+def record_degraded(project_root: Path | str | None, *, invocation: str, reason: str) -> None:
+    """Best-effort fallback for when :func:`record` itself could not write.
+
+    Called ONLY from ``rollback.py``'s own except handler around
+    :func:`record` — Tier-3 PR review round 4 (e4-checks-deploy-changelog):
+    a lock timeout or unwritable audit dir used to be reduced to a stderr
+    warning with no durable trace, letting a real (possibly host-mutating)
+    manual rollback whose record was lost read, downstream, as "no
+    rollback happened" — the append-only trail's own fail-open-on-absence
+    design turned an audit failure into a false pass. This writes a
+    separate, unlocked marker file so ``deploy_checks.py``'s reader can
+    fail closed on ITS presence instead. Never raises: it runs from inside
+    an already-failing path, and a SECOND storage failure here must never
+    mask ``rollback.py``'s real exit code / ``operator_message`` for an
+    outcome that already happened.
+    """
+    try:
+        path = history_path(project_root).with_name("rollback-audit-degraded.jsonl")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "at": datetime.now(timezone.utc).isoformat(),
+            "invocation": invocation,
+            "reason": reason,
+        }
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, sort_keys=True) + "\n")
+    except OSError:
+        pass
+
+
 def last_entry(project_root: Path | str | None) -> dict | None:
     """Return the most recently recorded entry, or ``None`` when the file is
     absent, empty, or contains only unparseable lines.
@@ -125,4 +155,4 @@ def last_entry(project_root: Path | str | None) -> dict | None:
     return last
 
 
-__all__ = ["HISTORY_RELATIVE_PATH", "history_path", "last_entry", "record"]
+__all__ = ["HISTORY_RELATIVE_PATH", "history_path", "last_entry", "record", "record_degraded"]

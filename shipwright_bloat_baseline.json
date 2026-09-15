@@ -405,14 +405,14 @@
     {
       "path": "plugins/shipwright-deploy/scripts/lib/rollback.py",
       "limit": 300,
-      "current": 337,
+      "current": 342,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-deploy/skills/deploy/SKILL.md",
       "limit": 400,
-      "current": 514,
+      "current": 520,
       "state": "grandfathered",
       "adr": null
     },
@@ -1105,7 +1105,7 @@
     {
       "path": "shared/scripts/tools/verifiers/deploy_checks.py",
       "limit": 300,
-      "current": 444,
+      "current": 499,
       "state": "grandfathered",
       "adr": null
     },
@@ -1645,7 +1645,7 @@
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",
       "limit": 300,
-      "current": 777,
+      "current": 834,
       "state": "grandfathered",
       "adr": null
     },

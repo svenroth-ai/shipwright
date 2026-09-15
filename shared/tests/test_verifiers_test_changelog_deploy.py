@@ -670,6 +670,49 @@ def test_manual_rollback_check_passes_when_the_last_manual_entry_was_refused(tmp
     assert r.ok is True, r.detail
 
 
+def _write_degraded_marker(root: Path, *, invocation: str, at: str, reason: str = "lock timeout") -> None:
+    (root / ".shipwright" / "deploy").mkdir(parents=True, exist_ok=True)
+    with (root / ".shipwright" / "deploy" / "rollback-audit-degraded.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"invocation": invocation, "at": at, "reason": reason}) + "\n")
+
+
+def test_manual_rollback_check_fails_closed_on_a_degraded_marker_with_no_prior_entry(tmp_path):
+    """Tier-3 PR review round 4 (e4-checks-deploy-changelog): a manual
+    rollback whose audit write itself failed leaves a degraded marker
+    (``rollback_audit.record_degraded``) instead of a clean history entry —
+    this must fail closed, not read as "no operator-requested rollback
+    recorded yet"."""
+    _write_degraded_marker(tmp_path, invocation="manual", at="2026-09-15T09:00:00+00:00")
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is False
+    assert "audit record failed to write" in r.detail
+
+
+def test_manual_rollback_check_fails_closed_on_a_degraded_marker_newer_than_the_last_good_entry(tmp_path):
+    _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T08:00:00+00:00")
+    _write_smoke_result(tmp_path, success=True, checked_at="2026-09-15T08:05:00+00:00")
+    _write_degraded_marker(tmp_path, invocation="manual", at="2026-09-15T09:00:00+00:00")
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is False
+    assert "audit record failed to write" in r.detail
+
+
+def test_manual_rollback_check_ignores_a_degraded_marker_superseded_by_a_later_good_entry(tmp_path):
+    """A degraded marker OLDER than a later, cleanly-recorded-and-verified
+    manual rollback is superseded — the operator retried and it worked."""
+    _write_degraded_marker(tmp_path, invocation="manual", at="2026-09-15T08:00:00+00:00")
+    _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T09:00:00+00:00")
+    _write_smoke_result(tmp_path, success=True, checked_at="2026-09-15T09:05:00+00:00")
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is True, r.detail
+
+
+def test_manual_rollback_check_ignores_a_degraded_marker_for_a_different_invocation(tmp_path):
+    _write_degraded_marker(tmp_path, invocation="auto", at="2026-09-15T09:00:00+00:00")
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is True, r.detail
+
+
 def test_manual_rollback_check_still_demands_liveness_after_a_refused_entry(tmp_path):
     """A refused (mutated=False) manual entry must not mask an EARLIER real
     (mutated=True) manual rollback that still has no liveness evidence."""
@@ -698,30 +741,44 @@ def test_parse_iso_utc_fails_closed_on_a_naive_timestamp_instead_of_guessing_utc
     assert "missing a parseable timestamp" in r.detail
 
 
-def test_last_jsonl_entry_tolerates_blank_and_malformed_lines(tmp_path):
+def test_last_jsonl_entry_tolerates_a_blank_line_but_fails_closed_on_a_malformed_one(tmp_path):
     """``_last_jsonl_entry`` (used by the manual-rollback check above) must
-    skip a blank line, a line that isn't valid JSON, and a line that parses
-    to something other than an object — never crash, and still find the
-    real entry that follows.
+    skip a genuinely blank line without complaint, but a line that isn't
+    valid JSON, or one that parses to something other than an object, must
+    fail this check closed — Tier-3 PR review round 4
+    (e4-checks-deploy-changelog): an EARLIER version tolerated this and
+    still found the real entry that followed, but a corrupt/torn line in
+    an append-only "absence means pass" trail could be exactly the record
+    being searched for, not unrelated junk to skip past.
     """
     history = tmp_path / ".shipwright" / "deploy" / "rollback-history.jsonl"
     history.parent.mkdir(parents=True, exist_ok=True)
     history.write_text(
         "\n"
         "{not valid json\n"
-        "[1, 2, 3]\n"
         + json.dumps({"invocation": "manual", "recorded_at": "2026-09-15T09:00:00+00:00",
                       "success": True}) + "\n",
         encoding="utf-8",
     )
     _write_smoke_result(tmp_path, success=True, checked_at="2026-09-15T09:05:00+00:00")
     r = check_manual_rollback_proves_alive(tmp_path)
-    assert r.ok is True
+    assert r.ok is False
+    assert "unparseable line" in r.detail
 
 
-def test_last_jsonl_entry_returns_none_on_an_unreadable_file(tmp_path, monkeypatch):
+def test_last_jsonl_entry_fails_closed_on_a_non_object_line(tmp_path):
+    history = tmp_path / ".shipwright" / "deploy" / "rollback-history.jsonl"
+    history.parent.mkdir(parents=True, exist_ok=True)
+    history.write_text("[1, 2, 3]\n", encoding="utf-8")
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is False
+    assert "non-object line" in r.detail
+
+
+def test_last_jsonl_entry_fails_closed_on_an_unreadable_file(tmp_path, monkeypatch):
     """An OSError while reading the JSONL (permissions, a transient FS
-    error) must degrade to "no entry found", never crash the check."""
+    error) must fail this check closed, never silently read as "no
+    rollback happened" (Tier-3 PR review round 4)."""
     _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T09:00:00+00:00")
 
     real_read_text = Path.read_text
@@ -733,8 +790,8 @@ def test_last_jsonl_entry_returns_none_on_an_unreadable_file(tmp_path, monkeypat
 
     monkeypatch.setattr(Path, "read_text", _raise_on_history)
     r = check_manual_rollback_proves_alive(tmp_path)
-    assert r.ok is True
-    assert "no operator-requested rollback recorded yet" in r.detail
+    assert r.ok is False
+    assert "could not read" in r.detail
 
 
 # --------------------------------------------------------------------------

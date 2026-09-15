@@ -128,6 +128,32 @@ def test_main_records_a_preflight_profile_refusal_in_process(tmp_path):
     assert entry["invocation"] == "auto"
 
 
+def test_main_writes_a_degraded_marker_when_the_audit_write_itself_fails(tmp_path, monkeypatch):
+    """Tier-3 PR review round 4 (e4-checks-deploy-changelog): a
+    LockTimeout/OSError from ``rollback_audit.record`` must not be reduced
+    to a silent stderr warning — the real (here: refused) outcome's exit
+    code is unaffected, but a durable degraded marker must exist for
+    ``deploy_checks.check_manual_rollback_proves_alive`` to fail closed on.
+    """
+    import rollback_audit
+
+    def _boom(*args, **kwargs):
+        raise OSError("simulated audit write failure")
+
+    monkeypatch.setattr(rollback_audit, "record", _boom)
+
+    exit_status = rollback.main([
+        "--env-name", "dev-demo", "--strategy", "clone",
+        "--project-root", str(tmp_path), "--invocation", "manual",
+    ])
+
+    assert exit_status == rollback.EXIT_REFUSED  # no --clone-name given; real outcome intact
+    marker = tmp_path / ".shipwright" / "deploy" / "rollback-audit-degraded.jsonl"
+    entry = json.loads(marker.read_text(encoding="utf-8").splitlines()[-1])
+    assert entry["invocation"] == "manual"
+    assert "simulated audit write failure" in entry["reason"]
+
+
 def test_main_records_the_invocation_flag_verbatim(tmp_path):
     """``--invocation manual`` reaches the audit record unchanged — this
     script has no way to infer it, so it must never be defaulted away."""

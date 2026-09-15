@@ -328,6 +328,11 @@ def main(argv: list[str] | None = None) -> int:
         rollback_audit.record(args.project_root, result, invocation=args.invocation)
     except (LockTimeout, OSError) as exc:
         print(f"WARNING: rollback audit trail not recorded: {exc}", file=sys.stderr)
+        # Durable degraded marker (Tier-3 PR review round 4): the primary
+        # trail's own design treats absence as "nothing happened", so a
+        # lost record must not read that way downstream — see
+        # rollback_audit.record_degraded's docstring.
+        rollback_audit.record_degraded(args.project_root, invocation=args.invocation, reason=str(exc))
 
     print(json.dumps(result, indent=2))
     return exit_code(result)

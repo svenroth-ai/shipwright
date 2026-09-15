@@ -74,6 +74,29 @@ def test_result_cannot_clobber_the_audit_recorded_at_or_invocation_fields(tmp_pa
     assert entry["recorded_at"] != "bogus"
 
 
+def test_record_degraded_writes_a_marker_next_to_the_history_file(tmp_path):
+    rollback_audit.record_degraded(tmp_path, invocation="manual", reason="lock timeout")
+    marker = tmp_path / ".shipwright" / "deploy" / "rollback-audit-degraded.jsonl"
+    lines = marker.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    entry = json.loads(lines[0])
+    assert entry["invocation"] == "manual"
+    assert entry["reason"] == "lock timeout"
+    assert "at" in entry
+
+
+def test_record_degraded_never_raises_even_when_the_write_itself_fails(tmp_path, monkeypatch):
+    """This runs from inside rollback.py's own except handler around a
+    failed audit write — a SECOND storage failure here must never mask the
+    real rollback outcome (exit code / operator_message) that already
+    happened (Tier-3 PR review round 4)."""
+    def _boom(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(Path, "mkdir", _boom)
+    rollback_audit.record_degraded(tmp_path, invocation="manual", reason="lock timeout")
+
+
 def test_module_bootstraps_its_own_sys_path_when_not_already_present(monkeypatch):
     """The module's own sys.path bootstrap (mirroring ``rollback.py``'s,
     independently — the docstring's claim is that this module's import order
