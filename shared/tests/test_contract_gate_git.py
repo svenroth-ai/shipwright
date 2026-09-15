@@ -82,6 +82,13 @@ def published(tmp_path: Path) -> Path:
 
 
 class TestPublishedBaseline:
+    """@covers FR-01.15/AC01 — "the shape of that data is published alongside
+    it as a versioned contract... the reader can tell from the version alone
+    whether it understands what it received." A published, VERSIONED fixture
+    read back with its version is exactly that guarantee, exercised through
+    a real git repository rather than a synthetic dict."""
+
+    @pytest.mark.covers("FR-01.15/AC01")
     def test_reads_the_contract_main_published(self, published: Path):
         baseline = published_baseline(published, CONTRACTS, STEM)
         assert baseline is not None
@@ -89,6 +96,7 @@ class TestPublishedBaseline:
         assert version == "1.0"
         assert fixture["contract"]["skeleton"]["grade"] == "string"
 
+    @pytest.mark.covers("FR-01.15/AC01")
     def test_takes_the_highest_version_not_the_alphabetical_one(self, published: Path):
         # "1.10" sorts BEFORE "1.2" as a string; the baseline must be the newest
         # contract main actually published, not whichever name sorts last.

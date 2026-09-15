@@ -21,11 +21,14 @@ from lib.contract_skeleton import (  # noqa: E402
     bump_performed,
     diff_skeletons,
     flatten,
-    null_only_paths,
     require_bump,
     required_bump,
     skeleton_of,
 )
+
+# The "weak pin" (empty-array / null-only path) tests live in
+# test_contract_skeleton_weak_pins.py — split out to stay under the test-file
+# LOC budget (FR-01.15/AC05, req3-05 t9).
 
 
 class TestSkeletonOf:
@@ -232,8 +235,14 @@ class TestNullabilityIsBreaking:
     goes from always-an-object to sometimes-null, the key set is unchanged, the naive
     diff says "no change", the version stands, and the WebUI is told "keep rendering"
     right before it dereferences null. It must read as a RETYPE ⇒ major.
+
+    @covers FR-01.15/AC04 — "a part of the payload the reader relies on becomes
+    optional... counts as a breaking change even though no field disappeared."
+    A field becoming nullable is exactly that: nothing is removed from the key
+    set, yet the consumer's existing (non-null-checked) access now breaks.
     """
 
+    @pytest.mark.covers("FR-01.15/AC04")
     def test_an_object_gaining_a_null_arm_demands_a_major(self):
         base = skeleton_of({"unit": {"framework": "vitest"}})
         live = skeleton_of([{"unit": None}, {"unit": {"framework": "vitest"}}])[0]
@@ -257,6 +266,7 @@ class TestNullabilityIsBreaking:
 
         assert required_bump(diff_skeletons(base, live)) == "major"
 
+    @pytest.mark.covers("FR-01.15/AC04")
     def test_the_gate_rejects_a_newly_nullable_object_without_a_major(self):
         base = skeleton_of({"unit": {"framework": "vitest"}})
         live = skeleton_of([{"unit": None}, {"unit": {"framework": "vitest"}}])[0]
@@ -270,14 +280,3 @@ class TestNullabilityIsBreaking:
         base = skeleton_of({"tags": ["a"]})
         live = skeleton_of([{"tags": None}, {"tags": ["a"]}])[0]
         assert required_bump(diff_skeletons(base, live)) == "major"
-
-
-class TestNullOnlyPaths:
-    """The null twin of the empty-array guard: a leaf no sample ever exercised."""
-
-    def test_a_leaf_seen_only_as_null_is_reported(self):
-        assert null_only_paths(skeleton_of({"e2e": None, "unit": {"f": "x"}})) == ["e2e"]
-
-    def test_a_leaf_with_a_real_arm_is_not_reported(self):
-        merged = skeleton_of([{"e2e": None}, {"e2e": "playwright"}])[0]
-        assert null_only_paths(merged) == []

@@ -91,6 +91,7 @@ def _drive(tmp_path: Path, after: str | None) -> tuple[int, dict]:
     return proc.returncode, json.loads(proc.stdout or "{}")
 
 
+@pytest.mark.covers("FR-01.19/AC04")
 @pytest.mark.parametrize(
     ("label", "after", "kind"),
     [
@@ -103,16 +104,22 @@ def _drive(tmp_path: Path, after: str | None) -> tuple[int, dict]:
 def test_the_gate_refuses_every_way_of_making_the_suite_prove_less(
     tmp_path, label, after, kind
 ):
+    """FR-01.19/AC04 — a repair that makes a test ask for less than it did
+    is refused. (The SECOND refusal — by the code host using the version of
+    the rule the proposed change cannot edit — is
+    test_main_attribution_workflows.py::
+    test_the_repair_gate_runs_the_checker_from_the_base_not_from_the_branch.)"""
     code, payload = _drive(tmp_path, after)
     assert code == 2, f"{label}: exit {code} — the CI step keys on this"
     assert payload["verdict"] == "blocked"
     assert kind in [f["kind"] for f in payload["findings"]]
 
 
+@pytest.mark.covers("FR-01.19/AC05")
 def test_the_honest_repair_is_allowed_and_still_asked_to_explain_itself(tmp_path):
-    """Updating a count another change legitimately moved IS the repair. It
-    passes — and it is surfaced, so the pull request has to say why the new
-    number is the truth."""
+    """FR-01.19/AC05 — updating a count another change legitimately moved IS
+    the repair. It is allowed — and it is surfaced, so the pull request has
+    to say why the new number is the truth."""
     code, payload = _drive(tmp_path, PIN_UPDATED)
     assert code == 0
     assert payload["verdict"] == "review"

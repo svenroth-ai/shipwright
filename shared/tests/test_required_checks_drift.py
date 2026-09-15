@@ -25,6 +25,13 @@ from pathlib import Path
 
 import pytest
 
+# @covers FR-01.17/AC06 — "when [the configured must-pass set] no longer
+# matches the checks the project actually has, then that difference is
+# raised as a tracked follow-up." The comparison below is the derivation
+# half of that guarantee; test_check_required_checks_cli.py's
+# test_one_divergence_files_one_card_across_repeated_invocations proves the
+# other half (the difference is actually FILED, once, not merely computed).
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from lib.required_checks_drift import (  # noqa: E402
@@ -42,6 +49,7 @@ def test_identical_sets_are_in_sync() -> None:
     assert r["in_sync"] and not r["unenforced"] and not r["phantom"]
 
 
+@pytest.mark.covers("FR-01.17/AC06")
 def test_a_check_nobody_requires_is_unenforced() -> None:
     r = compare_required_checks(["gate", "ungated"], ["gate"])
     assert r["unenforced"] == ["ungated"]
@@ -50,12 +58,14 @@ def test_a_check_nobody_requires_is_unenforced() -> None:
     assert "gates nothing" in render_drift(r, "o/r")
 
 
+@pytest.mark.covers("FR-01.17/AC06")
 def test_a_required_check_nothing_produces_is_phantom() -> None:
     r = compare_required_checks(["gate"], ["gate", "renamed-away"])
     assert r["phantom"] == ["renamed-away"]
     assert "never reported" in render_drift(r, "o/r")
 
 
+@pytest.mark.covers("FR-01.17/AC06")
 def test_both_directions_are_reported_together() -> None:
     r = compare_required_checks(["a", "only-derived"], ["a", "only-configured"])
     assert r["unenforced"] == ["only-derived"]

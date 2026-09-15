@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-15-t9-contract-cihost-repair-contextcost",
+    "date": "2026-09-15",
+    "unit": {
+      "status": "passed",
+      "passed": 12433,
+      "total": 12433
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure test-tagging + a handful of new small test functions/files across 3 ADR-044 roots (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) plus two one-sentence documentation additions; no new/changed web/dev-server/CLI surface to browser-verify -- verification is the exercised unit test suites themselves (10922+517+994 = 12433 passed, 0 failed, 56 skipped, 22 deselected)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "FR-01.15/AC01 -- a published contract baseline is read from the highest version tag reachable from origin/main, not the alphabetically-last one",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_gate_git.py::TestPublishedBaseline::test_takes_the_highest_version_not_the_alphabetical_one PASSED"
+        },
+        {
+          "behavior": "FR-01.15/AC05 -- a list that was empty (or a leaf only ever seen null) in every observed sample is reported as a stated weakness, not silently pinned as a full description",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_contract_skeleton_weak_pins.py::TestEmptyArrayPaths::test_an_unobserved_list_element_is_reported_as_weak PASSED"
+        },
+        {
+          "behavior": "FR-01.17/AC01 -- this repository's own CI/security/CodeQL gates all fire unconditionally on pull_request (no path filter, no job- or step-level `if:` excluding it) for the specific steps that invoke pytest/ruff/semgrep/codeql-action",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_reruns_the_full_verification_on_pr.py (16 tests) PASSED"
+        },
+        {
+          "behavior": "FR-01.19/AC06 -- an escalation-worthy finding class (a class-red, too many implicated commits, two failed attempts) is escalated with an idempotent key; an ordinary overlap is not",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_main_health_diagnosis.py (4 tests) PASSED"
+        },
+        {
+          "behavior": "FR-01.20/AC02 -- an exchange counted while a phase was active carries that phase's label, proven both at the core dedup/attribution layer and end-to-end through the real Stop hook writing the live per-session file",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_context_cost_core_phase_labels.py::test_call_after_a_mark_gets_that_phase PASSED; shared/scripts/tools/tests/test_context_cost_summary.py::test_the_real_hook_writes_phase_buckets_show_then_actually_prints PASSED"
+        },
+        {
+          "behavior": "FR-01.20/AC05 -- both branches of the opt-in/default-toolcall dispatch (no --source flag defaults to toolcall; an explicit --source context-cost flag switches) meet at the one real CLI caller",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tests/test_context_pressure.py::TestCLIDefaultSource (2 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-15-t9-contract-cihost-repair-contextcost",
+    "commit": "7f24704879a7ff2412148393f159622de8ddaf98",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

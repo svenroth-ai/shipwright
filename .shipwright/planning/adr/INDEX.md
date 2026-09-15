@@ -132,3 +132,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [t6 — FR-01.02 / FR-01.16 AC-binding disposition table](iterate-2026-09-12-t6-project-elicitation-ac-bindings.md)
 - [t7 — FR-01.10 / FR-01.18 AC-binding disposition table](iterate-2026-09-12-t7-compliance-grade-ac-bindings.md)
 - [t8 — FR-01.01 / FR-01.05 / FR-01.12 / FR-01.13 AC-binding disposition table](iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)
+- [t9 — FR-01.15 / FR-01.17 / FR-01.19 / FR-01.20 AC-binding disposition table](iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md)
