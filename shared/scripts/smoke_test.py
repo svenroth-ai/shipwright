@@ -35,7 +35,9 @@ Output (JSON):
 
 import argparse
 import json
+import os
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -43,7 +45,34 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import deploy_profile
-from lib.atomic_write import durable_atomic_write
+
+# NOT `from lib.atomic_write import durable_atomic_write` (ADR-045): this
+# module is shared/scripts, imported IN-PROCESS by
+# plugins/shipwright-test/tests/test_smoke_test.py, whose own conftest puts
+# a plugin-local `lib` PACKAGE (plugins/shipwright-test/scripts/lib/) on
+# sys.path too. Whichever `lib` an EARLIER-collected test in that same
+# session imports first wins the `sys.modules["lib"]` cache for the rest of
+# the run — sys.path order at import time cannot fix an already-cached
+# module. Reproduced: `uv run pytest tests/` in that plugin fails collecting
+# test_smoke_test.py with `ModuleNotFoundError: No module named
+# 'lib.atomic_write'` even though shared/scripts precedes the plugin's own
+# scripts on sys.path, because a sibling test module had already cached the
+# plugin-local `lib`. A minimal local atomic write avoids the shared `lib`
+# namespace entirely.
+def _atomic_write_text(path: Path, text: str) -> None:
+    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 # The shortest request worth making. This is a FLOOR on the first attempt, not
 # a ceiling on any attempt: a deadline shorter than one second still gets one
@@ -258,7 +287,7 @@ def _write_output(path: str, result: dict) -> None:
         # JSON and block BOTH new deploy checks that reconcile against this
         # file, with a misleading reason — matching this same diff's other
         # evidence writer (aggregate_changelog._atomic_write).
-        durable_atomic_write(out, json.dumps(stamped, indent=2))
+        _atomic_write_text(out, json.dumps(stamped, indent=2))
     except OSError as exc:
         print(f"smoke_test: warning: could not write --output {path}: {exc}", file=sys.stderr)
 
