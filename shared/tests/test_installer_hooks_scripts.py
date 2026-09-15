@@ -127,26 +127,24 @@ def test_sh_write_failure_exits_nonzero_not_false_success(tmp_path):
     _require_bash()
     real_git = shutil.which("git")
     assert real_git, "git not found on PATH"
-    shim_dir = tmp_path / "shimbin"
-    shim_dir.mkdir()
-    shim = shim_dir / "git"
-    shim.write_text(
-        "#!/usr/bin/env bash\n"
-        'if [ "$1" = "config" ] && [ "$2" = "--local" ] && [ "$3" = "core.hooksPath" ] && [ "$4" = "scripts/hooks" ]; then\n'
-        '    echo "error: could not lock config file" >&2\n'
-        "    exit 255\n"
-        "fi\n"
-        f'exec "{real_git.replace(chr(92), "/")}" "$@"\n',
+    bash_env = tmp_path / "bash_env"
+    bash_env.write_text(
+        "git() {\n"
+        '    if [ "$1" = "config" ] && [ "$2" = "--local" ] && [ "$3" = "core.hooksPath" ] && [ "$4" = "scripts/hooks" ]; then\n'
+        '        echo "error: could not lock config file" >&2\n'
+        "        return 255\n"
+        "    fi\n"
+        f'    command "{real_git.replace(chr(92), "/")}" "$@"\n'
+        "}\n",
         encoding="utf-8",
     )
-    shim.chmod(0o755)
 
     repo = tmp_path / "repo"
     (repo / "scripts" / "hooks").mkdir(parents=True)
     (repo / "scripts" / "install-hooks.sh").write_text(_read(SH), encoding="utf-8")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
 
-    env = {**os.environ, "PATH": f"{shim_dir.as_posix()}:{os.environ.get('PATH', '')}"}
+    env = {**os.environ, "BASH_ENV": bash_env.as_posix()}
     res = subprocess.run(["bash", "scripts/install-hooks.sh"], cwd=repo, capture_output=True, text=True, env=env)
     assert res.returncode != 0, "a failed git config write must not exit 0"
     assert "core.hooksPath ->" not in res.stdout, "must not print the success message on a failed write"

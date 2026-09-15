@@ -1070,16 +1070,16 @@
     {
       "path": "shared/scripts/tools/verifiers/build_checks.py",
       "limit": 300,
-      "current": 455,
-      "state": "grandfathered",
-      "adr": null
+      "current": 461,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-15-codex-light-shipwright-bloat-exception.md"
     },
     {
       "path": "shared/scripts/tools/verifiers/common.py",
       "limit": 300,
-      "current": 757,
-      "state": "grandfathered",
-      "adr": null
+      "current": 869,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-15-codex-light-shipwright-bloat-exception.md"
     },
     {
       "path": "shared/scripts/tools/verifiers/infrastructure_checks.py",
@@ -1596,16 +1596,16 @@
     {
       "path": "shared/tests/test_verifiers_build.py",
       "limit": 300,
-      "current": 387,
-      "state": "grandfathered",
-      "adr": null
+      "current": 400,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-15-codex-light-shipwright-bloat-exception.md"
     },
     {
       "path": "shared/tests/test_verifiers_common.py",
       "limit": 300,
-      "current": 517,
-      "state": "grandfathered",
-      "adr": null
+      "current": 640,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-15-codex-light-shipwright-bloat-exception.md"
     },
     {
       "path": "shared/tests/test_verifiers_design.py",

@@ -203,7 +203,11 @@ def check_commit_sha_in_git(project_root: Path) -> CheckResult:
 # Per-section canon checks (C1 event + C4 ADR)
 # ---------------------------------------------------------------------------
 
-def check_per_section_work_completed_events(project_root: Path) -> CheckResult:
+def check_per_section_work_completed_events(
+    project_root: Path,
+    *,
+    require_sections: bool = False,
+) -> CheckResult:
     """C1 (hybrid): every completed section must have at least one
     ``work_completed`` event in ``shipwright_events.jsonl`` whose
     ``source == 'build'`` and ``section == <section name>``.
@@ -215,6 +219,8 @@ def check_per_section_work_completed_events(project_root: Path) -> CheckResult:
     name = "C1 per-section work_completed events recorded"
     sections = _completed_sections(project_root)
     if not sections:
+        if require_sections:
+            return CheckResult(name, False, "no complete sections to check (required)")
         return CheckResult(name, True, "no complete sections to check")
 
     events = read_events_jsonl(project_root)

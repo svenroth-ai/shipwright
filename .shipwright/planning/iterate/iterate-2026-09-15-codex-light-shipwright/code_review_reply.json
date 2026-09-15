@@ -1,0 +1,1 @@
+{"reviewer":"code-reviewer","verdict":"pass","summary":"The final --since delta preserves the machine-facing contract: malformed or timezone-naive values produce exactly one JSON not_done verdict with since_parse_failed=true and exit 1; valid timestamp and verdict behavior are unchanged.","review":[],"findings":[]}
