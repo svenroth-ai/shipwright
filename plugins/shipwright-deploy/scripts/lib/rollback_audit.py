@@ -51,10 +51,13 @@ def history_path(project_root: Path | str | None) -> Path:
 
     ``project_root`` is typed to allow ``None`` defensively — external code
     review (rounds 1 and 2, e4-checks-deploy-changelog) both flagged this
-    same shape even though the CLI's own ``--project-root`` default is
-    ``"."``, never ``None`` (verified empirically: no CLI code path
-    actually reaches this function with ``None``). Any OTHER caller of this
-    module is not bound by that CLI default, so falling back to
+    shape even though ``rollback.py``'s own ``--project-root`` was, at the
+    time, an optional flag defaulting to ``"."`` (round 7 made it required
+    instead, precisely because that silent default let a real rollback's
+    audit record land somewhere no verifier could find it — but this
+    module's own contract stays defensive regardless of what any ONE
+    caller's CLI currently requires). Any OTHER caller of this module is
+    not bound by ``rollback.py``'s own argument parsing, so falling back to
     ``Path.cwd()`` here — matching argparse's own default semantics —
     keeps the function correct on its own, not merely correct-by-accident
     via its one current caller.

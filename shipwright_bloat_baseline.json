@@ -405,14 +405,14 @@
     {
       "path": "plugins/shipwright-deploy/scripts/lib/rollback.py",
       "limit": 300,
-      "current": 342,
+      "current": 356,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-deploy/skills/deploy/SKILL.md",
       "limit": 400,
-      "current": 520,
+      "current": 529,
       "state": "grandfathered",
       "adr": null
     },
@@ -433,7 +433,7 @@
     {
       "path": "plugins/shipwright-deploy/tests/test_rollback_e2e_cli.py",
       "limit": 300,
-      "current": 459,
+      "current": 465,
       "state": "grandfathered",
       "adr": null
     },

@@ -390,31 +390,40 @@ reorder exists to prevent (`check_failed_liveness_recorded_as_failed`, FR-01.08
 second failure means stop.
 
 **DEV:** git-based. Passing `--project-root` + `--profile` is what arms the
-stored-data check and names the target's data-rollback strategy.
+stored-data check and names the target's data-rollback strategy. Both
+`--project-root` and `--invocation` are REQUIRED by the CLI itself now (Tier-3
+PR review round 7) — omitting either is a hard argument error, not a silent
+default.
 ```bash
 uv run "{plugin_root}/scripts/lib/rollback.py" \
   --env-name "{env_name}" --strategy git --target-ref "{last_known_good_tag}" \
-  --project-root "$(pwd)" --profile "{shared_root}/profiles/deploy/jelastic.json"
+  --project-root "$(pwd)" --profile "{shared_root}/profiles/deploy/jelastic.json" \
+  --invocation auto
 ```
 
 **PROD:** stop the failed env so the backup clone can take over.
 ```bash
 uv run "{plugin_root}/scripts/lib/rollback.py" \
   --env-name "{env_name}" --strategy clone --clone-name "{prod_env}-backup" \
-  --project-root "$(pwd)"
+  --project-root "$(pwd)" --invocation auto
 ```
 
-Both invocations above default to `--invocation auto` (this IS the automatic,
-smoke-test-triggered path); the Manual Rollback section below passes
-`--invocation manual` instead. Every invocation, whatever it decides, is
-appended to `.shipwright/deploy/rollback-history.jsonl` by the script itself
-(FR-01.08 #7 — "recorded" is now unconditional, not an agent-remembered
-step) — **always pass `--project-root`, on the clone strategy too**: it
-defaults to `.` (external code review, e4-checks-deploy-changelog), so an
-omitted flag writes the audit trail relative to whatever the shell's cwd
-happens to be rather than the project it belongs to. If that write itself
-fails (lock timeout, unwritable dir), `rollback.py` still exits with the
-real outcome — it does not fail the whole rollback over a logging problem —
+Both invocations above pass `--invocation auto` explicitly (this IS the
+automatic, smoke-test-triggered path); the Manual Rollback section below
+passes `--invocation manual` instead. Neither flag has a default any more —
+the CLI refuses to run without one (Tier-3 PR review round 7: a silently
+defaulted `--invocation auto` and a silently defaulted `--project-root "."`
+each let an actual manual rollback, or its audit trail, land somewhere the
+`check_manual_rollback_proves_alive` verifier could never find it, passing
+vacuously instead of catching the omission). Every invocation, whatever it
+decides, is appended to `.shipwright/deploy/rollback-history.jsonl` by the
+script itself (FR-01.08 #7 — "recorded" is now unconditional, not an
+agent-remembered step) — **always pass `--project-root`, on the clone
+strategy too**: an omitted flag used to write the audit trail relative to
+whatever the shell's cwd happened to be rather than the project it belongs
+to; now it is simply refused. If that write itself fails (lock timeout,
+unwritable dir), `rollback.py` still exits with the real outcome — it does
+not fail the whole rollback over a logging problem —
 but it also writes a `rollback-audit-degraded.jsonl` marker next to the
 trail; `deploy_checks.check_manual_rollback_proves_alive` treats that
 marker's presence as "cannot confirm" and fails closed rather than reading

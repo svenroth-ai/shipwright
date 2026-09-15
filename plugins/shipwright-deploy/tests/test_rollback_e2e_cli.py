@@ -85,6 +85,12 @@ def _run(script, args, base_url=None, cwd=None):
     env = {**os.environ, "JELASTIC_TOKEN": TOKEN}
     if base_url:
         env["JELASTIC_API_URL"] = base_url
+    # rollback.py's --invocation is required with no default (Tier-3 PR
+    # review round 7) — default it to "auto" here for tests that aren't
+    # specifically exercising the flag, same as this file's own
+    # --project-root convention.
+    if script == ROLLBACK and "--invocation" not in args:
+        args = [*args, "--invocation", "auto"]
     completed = subprocess.run(
         [sys.executable, script, *args],
         capture_output=True, text=True, encoding="utf-8", env=env,
@@ -290,7 +296,7 @@ def test_a_stop_only_clone_rollback_says_so(host, tmp_path):
     completed, result = _run(
         ROLLBACK,
         ["--env-name", "prod-demo", "--strategy", "clone",
-         "--clone-name", "prod-demo-backup"],
+         "--clone-name", "prod-demo-backup", "--project-root", str(tmp_path)],
         base_url, cwd=tmp_path,
     )
 
@@ -366,7 +372,7 @@ def test_a_refused_invocation_is_also_recorded(host, app_repo, tmp_path):
     history = _read_history(app_repo)
     assert len(history) == 1
     assert history[0]["success"] is False
-    assert history[0]["invocation"] == "auto"  # the default, when not passed
+    assert history[0]["invocation"] == "auto"  # this test's own --invocation auto (helper default)
 
 
 def test_an_unreadable_profile_is_still_recorded(host, app_repo, tmp_path):

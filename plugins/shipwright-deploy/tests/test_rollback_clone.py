@@ -17,6 +17,31 @@ SCRIPT = str(Path(__file__).resolve().parent.parent / "scripts" / "lib" / "rollb
 
 
 # --------------------------------------------------------------------------
+# Tier-3 PR review round 7 — --project-root and --invocation are REQUIRED,
+# no default: an omission is a hard argparse error, not a silent guess.
+# --------------------------------------------------------------------------
+
+def test_cli_refuses_to_run_without_project_root(tmp_path):
+    completed = subprocess.run(
+        [sys.executable, SCRIPT, "--env-name", "dev-demo", "--strategy", "clone",
+         "--clone-name", "backup", "--invocation", "auto"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert completed.returncode != 0
+    assert "--project-root" in completed.stderr
+
+
+def test_cli_refuses_to_run_without_invocation(tmp_path):
+    completed = subprocess.run(
+        [sys.executable, SCRIPT, "--env-name", "dev-demo", "--strategy", "clone",
+         "--clone-name", "backup", "--project-root", str(tmp_path)],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert completed.returncode != 0
+    assert "--invocation" in completed.stderr
+
+
+# --------------------------------------------------------------------------
 # AC10 — stopping is never reported as restoring
 # --------------------------------------------------------------------------
 
@@ -50,15 +75,19 @@ def test_clone_stop_failure_halts_and_names_the_state(client):
 # --------------------------------------------------------------------------
 
 def _run(*args, project_root=None):
-    """``--project-root`` MUST be passed (a tmp_path, normally) — the CLI's
-    ``rollback_audit.record`` call writes ``.shipwright/deploy/rollback-
-    history.jsonl`` relative to it unconditionally, and it defaults to
-    ``Path.cwd()`` when omitted, which would otherwise pollute wherever
-    pytest itself was invoked from.
+    """``--project-root`` and ``--invocation`` are both REQUIRED by the CLI
+    (Tier-3 PR review round 7) — this helper supplies a project_root (a
+    tmp_path, normally: the CLI's ``rollback_audit.record`` call writes
+    ``.shipwright/deploy/rollback-history.jsonl`` relative to it, which
+    would otherwise pollute wherever pytest itself was invoked from) and
+    defaults ``--invocation`` to ``auto`` for tests that aren't specifically
+    exercising that flag.
     """
     full_args = [sys.executable, SCRIPT, *args]
     if project_root is not None:
         full_args += ["--project-root", str(project_root)]
+    if "--invocation" not in args:
+        full_args += ["--invocation", "auto"]
     completed = subprocess.run(
         full_args,
         capture_output=True, text=True, encoding="utf-8",
@@ -119,6 +148,7 @@ def test_main_records_a_preflight_profile_refusal_in_process(tmp_path):
     exit_status = rollback.main([
         "--env-name", "dev-demo", "--strategy", "git", "--target-ref", "v1",
         "--project-root", str(tmp_path), "--profile", str(missing_profile),
+        "--invocation", "auto",
     ])
 
     assert exit_status == rollback.EXIT_REFUSED

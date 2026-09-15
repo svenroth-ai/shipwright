@@ -264,8 +264,15 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--target-ref", help="Git ref for git strategy")
     parser.add_argument("--clone-name", help="Clone name for clone strategy")
     parser.add_argument("--context", default="ROOT", help="VCS project context")
-    parser.add_argument("--project-root", default=".",
-                        help="Working tree used for the stored-data drift check")
+    parser.add_argument(
+        "--project-root", required=True,
+        help="Working tree used for the stored-data drift check and the "
+             "rollback audit trail. Required, no default: an omitted or "
+             "silently-defaulted value used to write the audit trail "
+             "relative to whatever the shell's cwd happened to be, where "
+             "the deploy-phase verifier that reconciles against it could "
+             "never find it (Tier-3 PR review round 7).",
+    )
     parser.add_argument("--migrations-dir", default=data_drift.DEFAULT_MIGRATIONS_DIR)
     parser.add_argument("--ack-data-drift", action="store_true",
                         help="Proceed even though stored data has moved past the target ref")
@@ -274,10 +281,17 @@ def _build_parser() -> argparse.ArgumentParser:
                              "flagged (drifted/unknown) stored-data report — written into the "
                              "durable rollback audit record, not just the console")
     parser.add_argument("--profile", help="Path to the target's deploy profile JSON")
-    parser.add_argument("--invocation", default="auto", choices=["auto", "manual"],
-                        help="Was this triggered automatically (smoke-test failure) or "
-                             "operator-requested (--rollback)? Recorded verbatim in the audit "
-                             "trail; this script has no way to infer it.")
+    parser.add_argument(
+        "--invocation", required=True, choices=["auto", "manual"],
+        help="Was this triggered automatically (smoke-test failure) or "
+             "operator-requested (--rollback)? Recorded verbatim in the audit "
+             "trail; this script has no way to infer it. Required, no "
+             "default: a silently-defaulted 'auto' used to make a real "
+             "manual rollback invisible to "
+             "deploy_checks.check_manual_rollback_proves_alive's "
+             "invocation=='manual' filter, passing that check vacuously "
+             "instead of catching the omission (Tier-3 PR review round 7).",
+    )
     return parser
 
 
