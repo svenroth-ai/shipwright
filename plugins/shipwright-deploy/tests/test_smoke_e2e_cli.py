@@ -119,3 +119,75 @@ def test_an_unreadable_profile_is_a_usage_error_not_a_silent_default(tmp_path):
     assert result["success"] is False
     assert "not found" in result["error"]
     assert completed.returncode == 2
+
+
+def test_a_usage_error_is_not_persisted_as_liveness_evidence(tmp_path):
+    """External code review round 2 (e4-checks-deploy-changelog): a bad
+    --profile is an operator/config mistake, not evidence the app is down
+    — even when --output is passed, it must not land in the same
+    smoke-test-result.json a liveness-reconciliation check reads, or a
+    config typo could get reconciled as a real failed liveness check.
+    """
+    out = tmp_path / "smoke-test-result.json"
+    completed, result = _run(
+        ["--url", DEAD_URL, "--profile", str(tmp_path / "nope.json"), "--output", str(out)],
+        tmp_path,
+    )
+
+    assert result["success"] is False
+    assert completed.returncode == 2
+    assert not out.exists()
+
+
+# --------------------------------------------------------------------------
+# Ledger FR-01.08 #4 / #8 — the liveness result is a durable record other
+# processes reconcile against, not just stdout.
+# --------------------------------------------------------------------------
+
+def test_output_persists_a_stamped_result_on_success(live_app, tmp_path):
+    out = tmp_path / "smoke-test-result.json"
+    completed, result = _run(["--url", live_app, "--output", str(out)], tmp_path)
+
+    assert completed.returncode == 0
+    written = json.loads(out.read_text(encoding="utf-8"))
+    assert written["success"] is True
+    assert "checked_at" in written
+
+
+def test_output_persists_a_stamped_result_on_failure(tmp_path):
+    out = tmp_path / "smoke-test-result.json"
+    completed, result = _run(
+        ["--url", DEAD_URL, "--timeout", "1", "--output", str(out)], tmp_path)
+
+    assert completed.returncode == 1
+    written = json.loads(out.read_text(encoding="utf-8"))
+    assert written["success"] is False
+    assert "checked_at" in written
+
+
+def test_the_real_producer_output_satisfies_the_real_consumer_check(tmp_path):
+    """ADR-024 round-trip probe: every other test on this reconciliation
+    (``deploy_checks.check_failed_liveness_recorded_as_failed``) hand-writes
+    a fixture JSON matching the SCHEMA smoke_test.py is believed to write.
+    This one runs the real CLI producer at the exact relative path the
+    check reads from, then calls the real consumer function on the same
+    project root — proving the two sides actually agree, not just that each
+    was independently tested against an assumed shape.
+    """
+    project_root = tmp_path
+    smoke_out = project_root / ".shipwright" / "deploy" / "smoke-test-result.json"
+    completed, _ = _run(
+        ["--url", DEAD_URL, "--timeout", "1", "--output", str(smoke_out)], project_root
+    )
+    assert completed.returncode == 1
+    assert smoke_out.exists()
+
+    sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
+    from tools.verifiers.deploy_checks import check_failed_liveness_recorded_as_failed
+
+    (project_root / "shipwright_run_config.json").write_text(
+        json.dumps({"phase_history": {"deploy": []}}), encoding="utf-8"
+    )
+    result = check_failed_liveness_recorded_as_failed(project_root)
+    assert result.ok is False
+    assert "never recorded" in result.detail

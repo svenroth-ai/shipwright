@@ -44,13 +44,18 @@ Environments:
 ### B. Validate Credentials
 
 ```bash
-uv run "{plugin_root}/scripts/checks/validate-deploy.py"
+uv run "{plugin_root}/scripts/checks/validate-deploy.py" --project-root "{project_root}"
 ```
 
 Checks for:
 - `JELASTIC_TOKEN` environment variable
 - Optionally: `SUPABASE_ACCESS_TOKEN` (for migrations)
 - Optionally: git repo with remote (for git-based deploy)
+- The upstream test gate (see B4 below) — `test_gate` in the JSON output is
+  `"passed"` / `"no-results"` (proceed, warns) or `"failing-unconfirmed"`
+  (blocks: `success: false`, an `errors` entry names it) /
+  `"failing-confirmed"` (proceeds, warns — only ever true when this SKILL
+  passed `--confirm-failing-tests`).
 
 ### B2. Detect Invocation Mode
 
@@ -100,11 +105,12 @@ Parse the JSON output:
 
 ### B4. Verify Tests Passed (MANDATORY)
 
-Before deploying, verify all tests passed:
+Step B already ran the deterministic test gate — this step is what to DO with
+its verdict, never a second, separate check of the same file (one oracle,
+read once).
 
-1. Read `shipwright_test_results.json`
-2. Check: `unit.status == "passed"` AND (`e2e.status == "passed"` OR `e2e.status == "skipped"`)
-3. If tests failed or file does not exist:
+1. **`test_gate == "passed"` or `"no-results"`** — continue to Step C.
+2. **`test_gate == "failing-unconfirmed"`** — deploy is refused. Print:
 
 ```
 ================================================================================
@@ -118,7 +124,12 @@ Run /shipwright-test first, or confirm to proceed at your own risk.
 ================================================================================
 ```
 
-**Ask user for confirmation before proceeding.** Do NOT deploy silently with failing tests.
+**Ask user for confirmation before proceeding.** Do NOT deploy silently with
+failing tests. If they confirm, **re-run Step B's command with
+`--confirm-failing-tests` appended** and use ITS fresh JSON (now
+`test_gate == "failing-confirmed"`) going forward — never continue past the
+refusal on the strength of the user's words alone; the confirmation only
+counts once it produced a passing gate.
 
 ### C. Determine Target
 
@@ -263,13 +274,17 @@ If environment doesn't exist yet: create it first via `create-env`.
 ```bash
 uv run "{shared_root}/scripts/smoke_test.py" \
   --url "https://{env_name}.jpc.infomaniak.com" \
-  --profile "{shared_root}/profiles/deploy/jelastic.json"
+  --profile "{shared_root}/profiles/deploy/jelastic.json" \
+  --output "$(pwd)/.shipwright/deploy/smoke-test-result.json"
 ```
 
 The **profile owns the deadline**: keep asking every `poll_interval_seconds`
 until the app answers or `max_wait_seconds` passes. A slow start-up is not a
 failed release — read `attempts` / `waited_ms` before concluding anything.
-Without `--profile` it makes a single attempt.
+Without `--profile` it makes a single attempt. **Always pass `--output`** —
+it stamps the result with `checked_at` and persists it durably; that file is
+the independent oracle `deploy_checks.check_failed_liveness_recorded_as_failed`
+reconciles against a failed release's `phase_history` entry (FR-01.08 #4).
 
 ---
 
@@ -350,6 +365,27 @@ If none: skip.
 
 ### Smoke Test Failed → Rollback
 
+**Record the failed release FIRST** — before attempting the way back, so a
+halted/interrupted rollback still leaves this deploy attempt correctly
+recorded as failed (FR-01.08 #4), never as `outcome: "success"` by omission:
+```bash
+: "${SHIPWRIGHT_RUN_ID:=deploy-$(date +%Y%m%d-%H%M%S)-{env_name}}"
+export SHIPWRIGHT_RUN_ID
+
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
+  --project-root "$(pwd)" --phase deploy --run-id "$SHIPWRIGHT_RUN_ID" \
+  --entry-json '{"target":"{env_name}","url":"{url}","version":"v{version}","outcome":"failed"}'
+```
+
+**If this command itself fails** (lock timeout, missing
+`shipwright_run_config.json`) — external review, e4-checks-deploy-changelog —
+**STOP and tell the operator before attempting the rollback below.** Proceeding
+to rollback anyway would leave a real failed liveness check with no
+`phase_history` record of it at all, which is a worse state than the one this
+reorder exists to prevent (`check_failed_liveness_recorded_as_failed`, FR-01.08
+#4). Retrying `append_phase_history.py` once after a lock timeout is fine; a
+second failure means stop.
+
 **DEV:** git-based. Passing `--project-root` + `--profile` is what arms the
 stored-data check and names the target's data-rollback strategy.
 ```bash
@@ -361,8 +397,19 @@ uv run "{plugin_root}/scripts/lib/rollback.py" \
 **PROD:** stop the failed env so the backup clone can take over.
 ```bash
 uv run "{plugin_root}/scripts/lib/rollback.py" \
-  --env-name "{env_name}" --strategy clone --clone-name "{prod_env}-backup"
+  --env-name "{env_name}" --strategy clone --clone-name "{prod_env}-backup" \
+  --project-root "$(pwd)"
 ```
+
+Both invocations above default to `--invocation auto` (this IS the automatic,
+smoke-test-triggered path); the Manual Rollback section below passes
+`--invocation manual` instead. Every invocation, whatever it decides, is
+appended to `.shipwright/deploy/rollback-history.jsonl` by the script itself
+(FR-01.08 #7 — "recorded" is now unconditional, not an agent-remembered
+step) — **always pass `--project-root`, on the clone strategy too**: it
+defaults to `.` (external code review, e4-checks-deploy-changelog), so an
+omitted flag writes the audit trail relative to whatever the shell's cwd
+happens to be rather than the project it belongs to.
 
 **Read the exit code — it is the instruction.** Full field table in
 [rollback-strategy.md](references/rollback-strategy.md).
@@ -375,10 +422,16 @@ uv run "{plugin_root}/scripts/lib/rollback.py" \
 
 A `1` from the stored-data gate means migrations exist that the older code does
 not know. Do not pass `--ack-data-drift` on the agent's own judgement — that is
-an ASK-FIRST decision about data, so put it to the user.
+an ASK-FIRST decision about data, so put it to the user. If the user says
+override: re-run with BOTH `--ack-data-drift` AND `--override-reason "<why,
+in the user's words>"` — the script itself refuses (exit 1) an ack with no
+reason, so this is not optional prose (FR-01.08 #5).
 
 Log every rollback in `.shipwright/agent_docs/decision_log.md`, including a
-halted one — an unfinished rollback is the entry that matters most.
+halted one — an unfinished rollback is the entry that matters most. This is
+IN ADDITION to `rollback-history.jsonl` above: the decision log is for a
+human reading the project's history; the JSONL trail is what a deterministic
+check reconciles against.
 
 ```
 ================================================================================
@@ -398,10 +451,22 @@ Action:     Fix the issue and re-deploy
 When invoked with `--rollback`:
 1. List available backup clones
 2. Present to user for selection
-3. Require explicit confirmation
-4. Stop the failed environment (this does **not** restore anything — `restored`
-   is false and the remaining steps are stated)
-5. Run smoke test on the environment that is now serving
+3. Require explicit confirmation (FR-01.08 #8 "confirms first" — this
+   `AskUserQuestion` is the whole mechanism; no artifact records that it
+   happened, so the AC-evidence ledger carries this half as `judgement`, not
+   `enforced`)
+4. Stop the failed environment with `rollback.py ... --invocation manual
+   --project-root "$(pwd)"` (this does **not** restore anything — `restored`
+   is false and the remaining steps are stated; `--invocation manual` is
+   what lets `deploy_checks.check_manual_rollback_proves_alive` tell this
+   apart from an automatic rollback, and `--project-root` is what makes sure
+   its record lands in the SAME `rollback-history.jsonl` step 5 and that
+   check both read)
+5. Run smoke test on the environment that is now serving, **with
+   `--output "$(pwd)/.shipwright/deploy/smoke-test-result.json"`** — FR-01.08
+   #8's "proves alive" half is exactly this file existing with a
+   `checked_at` timestamp after step 4's `recorded_at`; omitting `--output`
+   here is what the check reads as "never re-checked afterward"
 
 ---
 

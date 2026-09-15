@@ -12,6 +12,7 @@ import pytest
 from changelog_splice import insert_section as _insert_section
 from tools.aggregate_changelog import (
     CHANGELOG_NAME,
+    AggregatorError,
     _render_versioned_section,
     aggregate,
 )
@@ -290,6 +291,7 @@ class TestAggregateEndToEnd:
 
         result = aggregate(tmp_path, "0.3.0", release_date="2026-04-23")
         assert result["legacy_unreleased_bullets"] == 1
+        assert result["legacy_unreleased_bullet_texts"] == ["orphan legacy entry"]
 
         changelog = (tmp_path / CHANGELOG_NAME).read_text(encoding="utf-8")
         assert "orphan legacy entry" in changelog  # preserved
@@ -297,7 +299,36 @@ class TestAggregateEndToEnd:
 
         captured = capsys.readouterr()
         assert "legacy [Unreleased]" in captured.err
-        assert "1 bullet" in captured.err
+        # Spec FR-01.09 #7: each legacy bullet is named back to the operator,
+        # not just counted.
+        assert "orphan legacy entry" in captured.err
+
+    @pytest.mark.covers("FR-01.09/AC03")
+    def test_fail_if_empty_refuses_a_never_released_version(self, tmp_path):
+        """Spec FR-01.09 #3: nothing recorded means saying so and STOPPING —
+        not silently reporting an empty section a caller might tag anyway."""
+        _seed_changelog(tmp_path, STANDARD_HEADER)
+        with pytest.raises(AggregatorError, match="nothing to release for version 0.3.0"):
+            aggregate(tmp_path, "0.3.0", release_date="2026-04-23", fail_if_empty=True)
+        # Nothing was touched by the refusal.
+        assert (tmp_path / CHANGELOG_NAME).read_text(encoding="utf-8") == STANDARD_HEADER
+
+    @pytest.mark.covers("FR-01.09/AC03")
+    def test_fail_if_empty_still_converges_on_an_already_released_version(self, tmp_path):
+        """A re-run of a version that already has a section must stay a safe
+        no-op — fail_if_empty must not break the documented idempotent re-run."""
+        seeded = STANDARD_HEADER + "## [0.3.0] - 2026-04-23\n\n### Added\n\n- x\n"
+        _seed_changelog(tmp_path, seeded)
+        result = aggregate(tmp_path, "0.3.0", release_date="2026-04-23", fail_if_empty=True)
+        assert result["section_action"] == "none"
+        assert result["changelog_updated"] is False
+
+    @pytest.mark.covers("FR-01.09/AC03")
+    def test_fail_if_empty_does_not_affect_a_real_release(self, tmp_path):
+        _seed_changelog(tmp_path, STANDARD_HEADER)
+        _seed_drops(tmp_path, [("iterate-2026-04-23-e", "Added", "new release bullet")])
+        result = aggregate(tmp_path, "0.3.0", release_date="2026-04-23", fail_if_empty=True)
+        assert result["changelog_updated"] is True
 
     def test_selective_cleanup_preserves_drops_written_between_snapshot_and_cleanup(
         self, tmp_path, monkeypatch

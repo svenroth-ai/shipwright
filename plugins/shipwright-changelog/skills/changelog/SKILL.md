@@ -168,16 +168,21 @@ uv run "{shared_root}/scripts/tools/aggregate_changelog.py" \
   --project-root "{project_root}" \
   --version "{version}" \
   [--release-date "{YYYY-MM-DD}"] \
-  [--dry-run]
+  [--dry-run] \
+  --fail-if-empty
 ```
 
 Use `--dry-run` first to preview the rendered section without modifying
-disk. When the aggregator encounters legacy bullets under
+disk. **Always pass `--fail-if-empty`** (except the `--dry-run` preview
+pass) — nothing recorded for a version never released before is refused
+(exit 1, `AggregatorError`), not silently tagged as an empty release;
+re-running an already-released version still converges as a safe no-op
+(unaffected). When the aggregator encounters legacy bullets under
 `## [Unreleased]` (e.g. from pre-refactor iterates that wrote directly
-to `CHANGELOG.md`), it prints a **loud stderr WARNING** with the count.
-Those bullets are NOT migrated automatically — the operator chooses
-whether to fold them into the new version manually or accept the
-split-brain.
+to `CHANGELOG.md`), it prints a **loud stderr WARNING naming each bullet's
+own text**, not just a count. Those bullets are NOT migrated
+automatically — the operator chooses whether to fold them into the new
+version manually or accept the split-brain.
 
 **Re-running a release is safe.** The changelog is written before the
 drop files are consumed, so an interruption in that window leaves the

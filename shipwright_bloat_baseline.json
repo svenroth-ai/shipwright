@@ -167,7 +167,7 @@
     {
       "path": "plugins/shipwright-changelog/skills/changelog/SKILL.md",
       "limit": 400,
-      "current": 424,
+      "current": 429,
       "state": "exception",
       "adr": "ADR-348"
     },
@@ -403,9 +403,16 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+      "limit": 300,
+      "current": 326,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "plugins/shipwright-deploy/skills/deploy/SKILL.md",
       "limit": 400,
-      "current": 446,
+      "current": 511,
       "state": "grandfathered",
       "adr": null
     },
@@ -413,6 +420,20 @@
       "path": "plugins/shipwright-deploy/tests/test_migration_verifier.py",
       "limit": 300,
       "current": 347,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-deploy/tests/test_rollback.py",
+      "limit": 300,
+      "current": 334,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
+      "path": "plugins/shipwright-deploy/tests/test_rollback_e2e_cli.py",
+      "limit": 300,
+      "current": 459,
       "state": "grandfathered",
       "adr": null
     },
@@ -916,7 +937,7 @@
     {
       "path": "shared/scripts/tools/aggregate_changelog.py",
       "limit": 300,
-      "current": 413,
+      "current": 472,
       "state": "grandfathered",
       "adr": null
     },
@@ -1082,6 +1103,13 @@
       "adr": null
     },
     {
+      "path": "shared/scripts/tools/verifiers/deploy_checks.py",
+      "limit": 300,
+      "current": 363,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "shared/scripts/tools/verifiers/infrastructure_checks.py",
       "limit": 300,
       "current": 298,
@@ -1203,7 +1231,7 @@
     {
       "path": "shared/tests/test_changelog_aggregation.py",
       "limit": 300,
-      "current": 377,
+      "current": 406,
       "state": "grandfathered",
       "adr": null
     },
@@ -1617,7 +1645,7 @@
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",
       "limit": 300,
-      "current": 333,
+      "current": 683,
       "state": "grandfathered",
       "adr": null
     },

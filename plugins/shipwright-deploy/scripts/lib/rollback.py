@@ -24,6 +24,7 @@ import urllib.error
 from pathlib import Path
 
 import data_drift
+import rollback_audit
 from rollback_report import (
     EXIT_HALT,
     EXIT_OK,
@@ -101,6 +102,7 @@ def rollback_git(
     project_root: Path | str | None = None,
     migrations_dir: str = data_drift.DEFAULT_MIGRATIONS_DIR,
     ack_data_drift: bool = False,
+    override_reason: str | None = None,
     profile: dict | None = None,
 ) -> dict:
     """Put ``env_name`` back onto ``target_ref`` — or say why it is not there."""
@@ -122,6 +124,23 @@ def rollback_git(
     common["data_drift"] = drift
     if refusal:
         return refused("git", env_name, refusal, **common)
+
+    # FR-01.08 criterion 5: the stored-data gate OFFERS `--ack-data-drift` as
+    # the way past its own refusal (the message `gate()` builds above names
+    # it); overriding that offer needs a written record. `ack_data_drift`
+    # only MATTERS here when the report itself flagged something — an ack
+    # passed against a clean/not-applicable report overrode nothing, so no
+    # reason is demanded.
+    overrode_something = ack_data_drift and drift["status"] in ("drifted", "unknown")
+    if overrode_something and not (override_reason or "").strip():
+        return refused(
+            "git", env_name,
+            "an override needs a written reason: stored data was flagged "
+            f"({drift['status']!r}) and --ack-data-drift was used without "
+            "--override-reason — nothing was overridden without a record",
+            **common,
+        )
+    common["override_reason"] = override_reason if overrode_something else None
 
     errors = _hosting_errors()
     client = _client()
@@ -249,7 +268,15 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--migrations-dir", default=data_drift.DEFAULT_MIGRATIONS_DIR)
     parser.add_argument("--ack-data-drift", action="store_true",
                         help="Proceed even though stored data has moved past the target ref")
+    parser.add_argument("--override-reason",
+                        help="Required alongside --ack-data-drift when it actually overrides a "
+                             "flagged (drifted/unknown) stored-data report — written into the "
+                             "durable rollback audit record, not just the console")
     parser.add_argument("--profile", help="Path to the target's deploy profile JSON")
+    parser.add_argument("--invocation", default="auto", choices=["auto", "manual"],
+                        help="Was this triggered automatically (smoke-test failure) or "
+                             "operator-requested (--rollback)? Recorded verbatim in the audit "
+                             "trail; this script has no way to infer it.")
     return parser
 
 
@@ -257,14 +284,16 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
     profile = None
+    profile_error: str | None = None
     if args.profile:
         try:
             profile = deploy_profile.load_profile(args.profile)
         except deploy_profile.ProfileError as exc:
-            print(json.dumps(refused(args.strategy, args.env_name, str(exc)), indent=2))
-            return EXIT_REFUSED
+            profile_error = str(exc)
 
-    if args.strategy == "git":
+    if profile_error is not None:
+        result = refused(args.strategy, args.env_name, profile_error)
+    elif args.strategy == "git":
         if not args.target_ref:
             result = refused("git", args.env_name, "--target-ref required for git strategy")
         else:
@@ -274,12 +303,20 @@ def main(argv: list[str] | None = None) -> int:
                 project_root=args.project_root,
                 migrations_dir=args.migrations_dir,
                 ack_data_drift=args.ack_data_drift,
+                override_reason=args.override_reason,
                 profile=profile,
             )
     elif not args.clone_name:
         result = refused("clone", args.env_name, "--clone-name required for clone strategy")
     else:
         result = rollback_clone(args.env_name, args.clone_name)
+
+    # FR-01.08 criterion 7: every invocation is recorded, whatever it decided —
+    # including a pre-flight refusal such as an unreadable --profile. No branch
+    # above may return early without reaching this call (external review,
+    # e4-checks-deploy-changelog round 1: a --profile load failure used to
+    # return before the record() call, reopening the exact gap #7 closes).
+    rollback_audit.record(args.project_root, result, invocation=args.invocation)
 
     print(json.dumps(result, indent=2))
     return exit_code(result)

@@ -2,7 +2,7 @@
 """Validate deployment prerequisites.
 
 Usage:
-    uv run validate-deploy.py [--project-root <path>]
+    uv run validate-deploy.py [--project-root <path>] [--confirm-failing-tests]
 
 Output (JSON):
     {
@@ -12,9 +12,18 @@ Output (JSON):
         "supabase_linked": true/false,
         "has_migrations": true/false,
         "git_remote": "origin" | null,
+        "test_gate": "passed" | "failing-unconfirmed" | "failing-confirmed" | "no-results",
         "warnings": [],
         "errors": []
     }
+
+FR-01.08 criterion 1: a release is refused on failing tests until a person
+confirms. ``_test_gate`` reads the same fields shipwright-deploy's own SKILL.md
+Step B4 documents (``unit.status`` / ``e2e.status``) so both sides describe one
+rule. A person's confirmation reaches this script ONLY via ``--confirm-failing-
+tests`` — never inferred from an environment variable or a config default, so
+the refusal cannot be silenced by anything but the flag the SKILL.md sets after
+its own ``AskUserQuestion``.
 """
 
 import argparse
@@ -23,6 +32,95 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | None]:
+    """Return ``(state, error_or_none)``.
+
+    ``state`` is one of ``passed`` / ``failing-unconfirmed`` /
+    ``failing-confirmed`` / ``no-results``. Only ``failing-unconfirmed``
+    blocks (``error_or_none`` is set); a genuinely ABSENT results file is a
+    warning, not a hard refusal — the same distinction ``/shipwright-deploy``
+    SKILL.md Step B4 already draws in prose ("tests failed OR file does not
+    exist"), for the case where a project truly never ran a test phase.
+
+    A results file that EXISTS but fails to parse is treated as
+    ``failing-*``, not ``no-results`` — external review (round 1,
+    e4-checks-deploy-changelog): a present-but-corrupt file is not the same
+    as an absent one, and the sibling deploy-phase check built in this same
+    unit (``deploy_checks.check_test_gate_passed``) already blocks on
+    malformed JSON; treating this gate's malformed case as a silent pass
+    would have been inconsistent with that within one sub-iterate.
+    """
+    results_path = project_root / "shipwright_test_results.json"
+    if not results_path.exists():
+        return "no-results", None
+
+    unreadable_reason: str | None = None
+    try:
+        data = json.loads(results_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        unreadable_reason = str(exc)
+        data = {}
+    else:
+        # A syntactically valid JSON value that isn't an object (`[]`, `"x"`,
+        # `5`) would otherwise crash `.get()` below with AttributeError —
+        # external code review (e4-checks-deploy-changelog): only invalid
+        # JSON was caught, not valid-but-wrong-shaped JSON.
+        if not isinstance(data, dict):
+            unreadable_reason = f"root value is {type(data).__name__}, expected an object"
+            data = {}
+
+    if unreadable_reason is not None:
+        if confirmed:
+            return "failing-confirmed", None
+        return "failing-unconfirmed", (
+            f"shipwright_test_results.json exists but could not be read ({unreadable_reason}) "
+            "— re-run with --confirm-failing-tests only after a person has "
+            "explicitly confirmed the deploy should proceed anyway"
+        )
+
+    # shipwright_test_results.json is written in two shapes depending on
+    # which flow last produced it: the full-pipeline /shipwright-test phase
+    # writes unit/e2e/... at the TOP level (the shape _validate_test reads);
+    # /shipwright-iterate's F5 step nests the identical sub-keys under
+    # iterate_latest. A deploy can follow either flow, so this gate must
+    # recognise both, or it silently never fires in an iterate-run repo —
+    # caught by a real integration test against THIS repo's own file
+    # (e4-checks-deploy-changelog).
+    view = data
+    if not isinstance(data.get("unit"), dict):
+        nested = data.get("iterate_latest")
+        if isinstance(nested, dict):
+            view = nested
+
+    unit_raw = view.get("unit")
+    e2e_raw = view.get("e2e")
+    unit = unit_raw if isinstance(unit_raw, dict) else {}
+    e2e = e2e_raw if isinstance(e2e_raw, dict) else {}
+    unit_ok = unit.get("status") == "passed"
+    # E2E is non-blocking, matching the pipeline's own _validate_test
+    # convention (constitution: "E2E can be flaky" — an "inform" warning,
+    # never an "ask" gate). "not_run"/"skipped"/absent are the routine case
+    # for a backend-only change with no startable web surface and must not
+    # block; only a reported partial failure does. A blanket
+    # `status in (passed, skipped)` requirement was caught by a real
+    # integration test against THIS repo's own current results file, where
+    # e2e is routinely "not_run" — that stricter check would have refused
+    # every deploy here (e4-checks-deploy-changelog).
+    e2e_ok = e2e.get("status") != "partial"
+    if unit_ok and e2e_ok:
+        return "passed", None
+
+    if confirmed:
+        return "failing-confirmed", None
+
+    return "failing-unconfirmed", (
+        f"tests have not passed (unit={unit.get('status')!r}, "
+        f"e2e={e2e.get('status')!r}) — re-run with --confirm-failing-tests "
+        "only after a person has explicitly confirmed the deploy should "
+        "proceed anyway"
+    )
 
 
 def _has_migrations(project_root: Path) -> bool:
@@ -46,6 +144,10 @@ def _is_supabase_linked(project_root: Path) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate deployment prerequisites")
     parser.add_argument("--project-root", help="Path to project root")
+    parser.add_argument(
+        "--confirm-failing-tests", action="store_true",
+        help="A person has explicitly confirmed deploying despite failing/missing tests",
+    )
     args = parser.parse_args()
 
     project_root = Path(args.project_root) if args.project_root else Path.cwd()
@@ -57,6 +159,16 @@ def main() -> int:
     supabase_token = bool(os.environ.get("SUPABASE_ACCESS_TOKEN"))
     has_migrations = _has_migrations(project_root)
     supabase_linked = _is_supabase_linked(project_root)
+    test_gate, test_gate_error = _test_gate(project_root, args.confirm_failing_tests)
+
+    if test_gate_error:
+        errors.append(test_gate_error)
+    elif test_gate == "no-results":
+        warnings.append(
+            "shipwright_test_results.json not found — deploying without test verification"
+        )
+    elif test_gate == "failing-confirmed":
+        warnings.append("deploying with failing tests — confirmed by a person (--confirm-failing-tests)")
 
     if not jelastic_token:
         errors.append("JELASTIC_TOKEN not set — deployment will fail")
@@ -86,9 +198,6 @@ def main() -> int:
     except (FileNotFoundError, OSError):
         warnings.append("git not available")
 
-    success = jelastic_token and len(errors) <= (0 if has_migrations else 1)
-    # If only issue is missing Jelastic token, that's always a failure
-    # If migrations exist and supabase isn't set up, that's also a failure
     success = len(errors) == 0
 
     print(json.dumps({
@@ -98,6 +207,7 @@ def main() -> int:
         "supabase_linked": supabase_linked,
         "has_migrations": has_migrations,
         "git_remote": git_remote,
+        "test_gate": test_gate,
         "warnings": warnings,
         "errors": errors,
     }, indent=2))

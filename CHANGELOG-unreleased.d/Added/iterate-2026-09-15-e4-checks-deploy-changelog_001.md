@@ -1,0 +1,1 @@
+feat(deploy,changelog): mechanise FR-01.08/FR-01.09 prompt-only ledger lines — every rollback invocation is now durably recorded and reconciled against liveness evidence, and the changelog aggregator refuses to tag a never-released, nothing-pending version

@@ -49,7 +49,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from changelog_sections import section_end, unreleased_start  # noqa: E402
+from changelog_sections import section_end, section_starts, unreleased_start  # noqa: E402
 from changelog_splice import (  # noqa: E402 — ONE section SSoT (ADR-045)
     SectionConflict,
     apply_section,
@@ -215,12 +215,9 @@ def _atomic_write(path: Path, content: str) -> None:
 _BULLET_RE = re.compile(r"^\s*-\s+")
 
 
-def _warn_if_legacy_unreleased_has_bullets(changelog_text: str) -> int:
-    """Return the count of bullets under legacy ``## [Unreleased]``.
-
-    When non-zero, the aggregator prints a prominent warning to stderr so
-    the operator can decide whether to manually fold those bullets into
-    the new version or accept the temporary split-brain.
+def _legacy_unreleased_bullets(changelog_text: str) -> list[str]:
+    """Return the text of every bullet under legacy ``## [Unreleased]``,
+    stripped of its leading ``- ``, in document order.
 
     Uses the shared section predicates rather than a local regex. The local
     one was case-SENSITIVE and bounded the block at the next ``## [`` heading,
@@ -232,9 +229,13 @@ def _warn_if_legacy_unreleased_has_bullets(changelog_text: str) -> int:
     lines = changelog_text.splitlines(keepends=True)
     start = unreleased_start(lines)
     if start is None:
-        return 0
+        return []
     body = lines[start + 1:section_end(lines, start)]
-    return sum(1 for line in body if _BULLET_RE.match(line))
+    return [
+        _BULLET_RE.sub("", line).strip()
+        for line in body
+        if _BULLET_RE.match(line)
+    ]
 
 
 def aggregate(
@@ -244,19 +245,35 @@ def aggregate(
     release_date: str | None = None,
     dry_run: bool = False,
     strict: bool = False,
+    fail_if_empty: bool = False,
     lock_timeout_seconds: float = 10.0,
 ) -> dict[str, object]:
     """Run one aggregation pass.
 
     Returns a result dict with ``version``, ``release_date``,
     ``section_written`` (the rendered Markdown — empty when no drops
-    found), ``processed_files`` (relative paths), and
-    ``legacy_unreleased_bullets`` (count, for operator awareness).
+    found), ``processed_files`` (relative paths),
+    ``legacy_unreleased_bullets`` (count) and
+    ``legacy_unreleased_bullet_texts`` (each bullet's own text, so the
+    operator sees exactly what was left behind, not just how many).
 
     ``strict``: when True, any MSYS path-mangling finding (Git-Bash on
     Windows converted a leading-slash bullet into ``C:/Program Files/
     Git/...``) raises ``AggregatorError`` instead of just warning. Use
     in release CI to fail-fast.
+
+    ``fail_if_empty``: FR-01.09 criterion 3 — when True, raises
+    ``AggregatorError`` instead of quietly reporting an empty section IF
+    this version has never been released before (no drops pending AND
+    ``version`` does not already head a section in ``CHANGELOG.md``). This
+    checks drop files ONLY — legacy ``[Unreleased]`` bullets are a
+    deliberately separate signal (see ``_legacy_unreleased_bullets``) and do
+    not by themselves make this refuse; folding them in would re-merge the
+    two split-brain halves the file-per-iterate refactor kept apart. A
+    CONVERGING re-run of an already-released version — where "nothing
+    pending" is the correct, idempotent outcome (`rerunning-a-release.md`)
+    — is unaffected: the existing-section check is what tells the two
+    states apart.
     """
     project_root = project_root.resolve()
     release_date = release_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -291,13 +308,39 @@ def aggregate(
         if not section:
             # Nothing pending. This is also how a COMPLETED release re-runs:
             # the section is already recorded and its drops are gone, so the
-            # changelog is never read and no refusal arm can fire.
+            # changelog is never read and no refusal arm can fire — UNLESS
+            # fail_if_empty is asking us to tell the two apart.
+            if fail_if_empty:
+                already_released = False
+                if changelog_path.exists():
+                    existing_lines = changelog_path.read_text(
+                        encoding="utf-8"
+                    ).splitlines(keepends=True)
+                    already_released = bool(section_starts(existing_lines, version))
+                if not already_released:
+                    # External code review (e4-checks-deploy-changelog): this
+                    # branch never inspects legacy `[Unreleased]` bullets —
+                    # only `by_category` (drop files) — so the message must
+                    # not claim it checked them. Whether legacy bullets exist
+                    # is intentionally a SEPARATE question from "is there a
+                    # pending drop-file release": the two are deliberately
+                    # not merged (see FR-01.09 #7's own ledger row) — the
+                    # file-per-iterate mechanism and hand-edited Unreleased
+                    # text are independent split-brain halves, not one
+                    # combined "is there anything pending" signal.
+                    raise AggregatorError(
+                        f"nothing to release for version {version}: no changelog "
+                        "drops pending in CHANGELOG-unreleased.d/, and "
+                        f"{version} does not already exist in {CHANGELOG_NAME} "
+                        "— refusing to tag an empty release"
+                    )
             return {
                 "version": version,
                 "release_date": release_date,
                 "section_written": "",
                 "processed_files": [],
                 "legacy_unreleased_bullets": 0,
+                "legacy_unreleased_bullet_texts": [],
                 "msys_mangled_findings": [],
                 "changelog_updated": False,
                 "section_action": "none",
@@ -308,12 +351,14 @@ def aggregate(
             if changelog_path.exists()
             else "# Changelog\n\n"
         )
-        legacy_bullets = _warn_if_legacy_unreleased_has_bullets(changelog_text)
-        if legacy_bullets > 0:
+        legacy_bullet_texts = _legacy_unreleased_bullets(changelog_text)
+        if legacy_bullet_texts:
+            named = "\n".join(f"  - {b}" for b in legacy_bullet_texts)
             print(
                 f"[aggregate_changelog] WARNING: CHANGELOG.md still contains "
-                f"{legacy_bullets} bullet(s) under the legacy [Unreleased] "
-                f"section. These are NOT included in version {version}. "
+                f"{len(legacy_bullet_texts)} bullet(s) under the legacy "
+                f"[Unreleased] section, NOT included in version {version}:\n"
+                f"{named}\n"
                 f"Merge them manually or accept the split-brain.",
                 file=sys.stderr,
             )
@@ -352,7 +397,8 @@ def aggregate(
             "processed_files": [
                 str(p.relative_to(project_root)) for p in processed
             ],
-            "legacy_unreleased_bullets": legacy_bullets,
+            "legacy_unreleased_bullets": len(legacy_bullet_texts),
+            "legacy_unreleased_bullet_texts": legacy_bullet_texts,
             "msys_mangled_findings": [
                 {"category": cat, "drop_file": rp, "first_line": fl}
                 for cat, rp, fl in msys_findings
@@ -386,6 +432,18 @@ def main(argv: list[str] | None = None) -> int:
             "for release CI."
         ),
     )
+    parser.add_argument(
+        "--fail-if-empty",
+        action="store_true",
+        help=(
+            "Refuse (exit 1) instead of silently reporting an empty section "
+            "when this version has never been released before — a "
+            "converging re-run of an ALREADY-released version still "
+            "succeeds. Recommended for release CI (FR-01.09 #3: nothing "
+            "recorded means saying so and stopping, not tagging an empty "
+            "release)."
+        ),
+    )
     parser.add_argument("--lock-timeout", type=float, default=10.0)
     args = parser.parse_args(argv)
 
@@ -396,6 +454,7 @@ def main(argv: list[str] | None = None) -> int:
             release_date=args.release_date,
             dry_run=args.dry_run,
             strict=args.strict,
+            fail_if_empty=args.fail_if_empty,
             lock_timeout_seconds=args.lock_timeout,
         )
     except LockTimeout as exc:

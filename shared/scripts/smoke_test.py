@@ -39,6 +39,8 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
 
 import deploy_profile
 
@@ -191,6 +193,12 @@ def main() -> int:
     parser.add_argument("--max-wait", type=int,
                         help="Deadline in seconds; omit for a single attempt")
     parser.add_argument("--profile", help="Deploy profile supplying the target's deadline")
+    parser.add_argument(
+        "--output",
+        help="Also write the result JSON (plus a checked_at timestamp) to this "
+             "path — the durable liveness record FR-01.08 checks reconcile a "
+             "failed release / a manual rollback's post-check against.",
+    )
     args = parser.parse_args()
 
     try:
@@ -209,11 +217,44 @@ def main() -> int:
             policy_source=policy.source,
         )
     except (deploy_profile.ProfileError, ValueError) as exc:
-        print(json.dumps({"success": False, "url": args.url, "error": str(exc)}, indent=2))
+        # Deliberately NOT persisted via --output, even when requested:
+        # external code review, e4-checks-deploy-changelog round 2. A bad
+        # --profile path or malformed --url is an operator/config mistake,
+        # not evidence the app is down — writing it to the same
+        # smoke-test-result.json a liveness-reconciliation check reads
+        # would let a config typo get reconciled (or demanded to be
+        # reconciled) as if it were a real failed liveness check. Exit
+        # code 2 (distinct from the real failure code, 1) is this
+        # branch's own signal; it was never meant to double as durable
+        # liveness evidence.
+        result = {"success": False, "url": args.url, "error": str(exc)}
+        print(json.dumps(result, indent=2))
         return 2
+
+    if args.output:
+        _write_output(args.output, result)
 
     print(json.dumps(result, indent=2))
     return 0 if result["success"] else 1
+
+
+def _write_output(path: str, result: dict) -> None:
+    """Persist ``result`` with a ``checked_at`` timestamp so a later, separate
+    process (a deploy_checks verifier) can reconcile a liveness result it did
+    not itself observe. Best-effort: a write failure here must never mask the
+    smoke test's own exit code.
+    """
+    try:
+        # Microsecond precision, not truncated to whole seconds — external
+        # code review round 2 (e4-checks-deploy-changelog): its twin,
+        # rollback-history.jsonl's `recorded_at`, matches for the same
+        # same-second-ordering reason.
+        stamped = {**result, "checked_at": datetime.now(timezone.utc).isoformat()}
+        out = Path(path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(stamped, indent=2), encoding="utf-8")
+    except OSError as exc:
+        print(f"smoke_test: warning: could not write --output {path}: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":

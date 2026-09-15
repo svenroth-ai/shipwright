@@ -21,6 +21,7 @@ Phase-own:
 from __future__ import annotations
 
 import json
+from datetime import datetime as _datetime
 from pathlib import Path
 
 from .common import (
@@ -32,13 +33,67 @@ from .common import (
     check_c1_phase_event_recorded,
     check_c2_dashboard_reflects_phase,
     check_phase_history_has_run,
+    read_run_config,
 )
 from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
+
+# Both relative paths are the deploy plugin's own contract
+# (``rollback_audit.py`` / ``smoke_test.py --output``), duplicated here as
+# literals rather than imported: this module is shared/generic, and the
+# rollback/smoke tooling lives under the shipwright-deploy plugin's own
+# ``scripts/lib`` — a cross-plugin import of a plugin-local ``lib`` module
+# risks exactly the sibling/registration collision ADR-045 exists to avoid.
+_SMOKE_RESULT_RELATIVE = Path(".shipwright") / "deploy" / "smoke-test-result.json"
+_ROLLBACK_HISTORY_RELATIVE = Path(".shipwright") / "deploy" / "rollback-history.jsonl"
+
+_FAILED_RELEASE_OUTCOMES = frozenset({"failed", "rolled-back", "rolled_back"})
 
 
 # ---------------------------------------------------------------------------
 # Phase-own
 # ---------------------------------------------------------------------------
+
+def _parse_iso_utc(value: object) -> _datetime | None:
+    """Parse an ISO-8601 timestamp string into an aware ``datetime``, or
+    ``None`` if ``value`` isn't a string or doesn't parse.
+
+    External code review (e4-checks-deploy-changelog): comparing two ISO
+    timestamp STRINGS lexicographically (the original version of the two
+    staleness checks below) only sorts correctly when both writers use the
+    identical format/offset convention — never actually verified across
+    ``smoke_test.py`` (``isoformat(timespec="seconds")``) and
+    ``append_phase_history.py`` (bare ``isoformat()``). Parsing both into
+    real instants before comparing removes that assumption. Normalizes a
+    trailing ``Z`` (not accepted by ``datetime.fromisoformat`` before
+    Python 3.11) to ``+00:00``.
+    """
+    if not isinstance(value, str):
+        return None
+    try:
+        return _datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _load_json_object(path: Path) -> tuple[dict | None, str | None]:
+    """Read ``path`` as JSON, returning ``(obj, None)`` on a well-formed
+    object or ``(None, error)`` otherwise.
+
+    A syntactically valid JSON value that is not an object (``[]``, a bare
+    string, a number) is treated the same as malformed JSON — external code
+    review (e4-checks-deploy-changelog): every caller in this module used to
+    call ``.get()`` straight after ``json.loads``, which crashes with
+    ``AttributeError`` on exactly this input rather than returning a
+    ``CheckResult``.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return None, str(exc)
+    if not isinstance(data, dict):
+        return None, f"root value is {type(data).__name__}, expected an object"
+    return data, None
+
 
 def check_test_gate_passed(project_root: Path) -> CheckResult:
     """The test phase must have produced ``shipwright_test_results.json``
@@ -53,11 +108,23 @@ def check_test_gate_passed(project_root: Path) -> CheckResult:
             name, False,
             "shipwright_test_results.json missing — test phase never completed",
         )
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        return CheckResult(name, False, f"malformed test results: {exc}")
-    unit = data.get("unit") or {}
+    data, error = _load_json_object(path)
+    if error is not None:
+        return CheckResult(name, False, f"malformed test results: {error}")
+    # Two writers, two shapes: the full-pipeline /shipwright-test phase
+    # writes unit/e2e/smoke/... at the TOP level (_validate_test's own
+    # convention, which this check was written to mirror); /shipwright-
+    # iterate's F5 step nests the identical sub-keys under iterate_latest.
+    # Reading only the top level makes this gate a no-op in an iterate-run
+    # repo (unit is always None there) — a real integration test against
+    # this repo's own file caught it (e4-checks-deploy-changelog).
+    view = data
+    if not isinstance(data.get("unit"), dict):
+        nested = data.get("iterate_latest")
+        if isinstance(nested, dict):
+            view = nested
+    unit_raw = view.get("unit")
+    unit = unit_raw if isinstance(unit_raw, dict) else {}
     total = unit.get("total", 0)
     passed = unit.get("passed", 0)
     if not isinstance(total, int) or total <= 0:
@@ -70,13 +137,184 @@ def check_test_gate_passed(project_root: Path) -> CheckResult:
             name, False,
             f"unit {passed}/{total} (deploy blocked: tests failing)",
         )
-    smoke = data.get("smoke") or {}
+    smoke_raw = view.get("smoke")
+    smoke = smoke_raw if isinstance(smoke_raw, dict) else {}
     if smoke.get("status") == "fail":
         return CheckResult(
             name, False,
             "smoke test failed upstream — deploy should have been blocked",
         )
     return CheckResult(name, True, f"unit {passed}/{total} passed, smoke OK")
+
+
+def _last_jsonl_entry(path: Path, *, where: dict | None = None) -> dict | None:
+    """Return the last well-formed JSON object in a JSONL file matching
+    every key/value in ``where`` (default: no filter — the overall last
+    entry), or ``None``.
+
+    External code review (e4-checks-deploy-changelog): the original
+    unfiltered version was used to find "the last manual rollback", which
+    is wrong whenever a LATER entry of a different kind exists — e.g. a
+    manual rollback followed by an unrelated automatic one makes the
+    overall-last entry ``invocation: auto``, silently excusing the earlier,
+    never-verified manual rollback. Filtering by key/value finds the last
+    entry of the KIND being asked about, not merely the last entry.
+    """
+    if not path.exists():
+        return None
+    last: dict | None = None
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                parsed = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(parsed, dict):
+                continue
+            if where and any(parsed.get(k) != v for k, v in where.items()):
+                continue
+            last = parsed
+    except OSError:
+        return None
+    return last
+
+
+def check_failed_liveness_recorded_as_failed(project_root: Path) -> CheckResult:
+    """FR-01.08 criterion 4: a deploy-time liveness check that failed is
+    recorded as a failed release — never silently as a completed one.
+
+    Reconciles ``.shipwright/deploy/smoke-test-result.json`` (written by
+    ``smoke_test.py --output``, a source the deploy phase does not get to
+    rewrite after the fact) against the most recent
+    ``phase_history[deploy]`` entry. A green latest smoke result, or no
+    smoke result ever persisted, means there is nothing to reconcile.
+    """
+    name = "a failed liveness check is recorded as a failed deploy"
+    path = project_root / _SMOKE_RESULT_RELATIVE
+    if not path.exists():
+        return CheckResult(name, True, "no smoke-test-result.json recorded yet")
+    smoke, error = _load_json_object(path)
+    if error is not None:
+        return CheckResult(name, False, f"malformed smoke-test-result.json: {error}")
+    if smoke.get("success") is not False:
+        return CheckResult(name, True, "latest recorded liveness check succeeded")
+
+    history = read_run_config(project_root).get("phase_history")
+    entries = history.get("deploy") if isinstance(history, dict) else None
+    if not isinstance(entries, list) or not entries:
+        return CheckResult(
+            name, False,
+            "the latest recorded liveness check failed, but phase_history[deploy] "
+            "has no entry at all — the failure was never recorded",
+        )
+    latest = entries[-1]
+
+    # External review (round 1): a stale smoke-test-result.json could
+    # otherwise be reconciled against an UNRELATED, older phase_history
+    # entry that predates the failure and never had a chance to record it.
+    # Requiring the phase_history entry's own completion instant (`at`) to
+    # be no earlier than the failed liveness check's `checked_at` ties the
+    # two to the same event, without inventing a new release-ID convention
+    # this codebase does not otherwise have.
+    checked_at = smoke.get("checked_at")
+    recorded_at = latest.get("at")
+    checked_dt = _parse_iso_utc(checked_at)
+    # Fail-closed on BOTH sides of this comparison, not just one — external
+    # code review round 2 (e4-checks-deploy-changelog): round 1 fixed the
+    # fall-through when phase_history's `at` was missing, but left the
+    # mirror-image gap open: a `success: false` smoke result with no
+    # parseable `checked_at` used to skip staleness checking entirely too,
+    # letting it be satisfied by an arbitrarily old `outcome: "failed"`
+    # entry. A failed liveness check that cannot even prove WHEN it failed
+    # cannot be reconciled at all.
+    if checked_dt is None:
+        return CheckResult(
+            name, False,
+            "the latest recorded liveness check reports success=false but has no "
+            "parseable checked_at — cannot confirm which phase_history entry, if "
+            "any, records it",
+        )
+    recorded_dt = _parse_iso_utc(recorded_at)
+    # Fail-closed, not fail-open: a phase_history entry with no
+    # parseable `at` cannot be CONFIRMED as recording this failure
+    # either — external code review (e4-checks-deploy-changelog), the
+    # original `isinstance` guard silently skipped this check entirely
+    # (and fell through to the outcome check below) whenever `at` was
+    # missing, letting an untimestamped `outcome: "failed"` entry
+    # satisfy any failure regardless of age.
+    if recorded_dt is None or recorded_dt < checked_dt:
+        return CheckResult(
+            name, False,
+            f"the latest recorded liveness check failed at {checked_at}, but the "
+            f"latest phase_history[deploy] entry ({recorded_at!r}) has no parseable "
+            "timestamp confirming it, or predates the failure",
+        )
+
+    outcome = str(latest.get("outcome", "")).strip().lower()
+    if outcome in _FAILED_RELEASE_OUTCOMES:
+        return CheckResult(name, True, f"recorded as phase_history outcome={outcome!r}")
+    return CheckResult(
+        name, False,
+        f"the latest recorded liveness check failed, but the latest "
+        f"phase_history[deploy] outcome={outcome!r} (expected one of "
+        f"{sorted(_FAILED_RELEASE_OUTCOMES)})",
+    )
+
+
+def check_manual_rollback_proves_alive(project_root: Path) -> CheckResult:
+    """FR-01.08 criterion 8 (proves-alive half): an operator-requested
+    rollback (``rollback.py --invocation manual``) is followed by a
+    recorded liveness check that actually found the app alive — never
+    left unverified, and never satisfied by a check that ran but reported
+    the app still down (self-review, e4-checks-deploy-changelog: the
+    criterion's own word is "proves", not "attempts").
+
+    Reconciles the last ``invocation: manual`` entry in
+    ``.shipwright/deploy/rollback-history.jsonl`` against
+    ``.shipwright/deploy/smoke-test-result.json``'s ``success`` +
+    ``checked_at``. No manual rollback recorded yet → nothing to reconcile.
+    The "confirms first" half of this criterion has no artifact a script
+    can verify (an interactive ``AskUserQuestion`` leaves no trace) and
+    stays `judgement` — see the AC-evidence ledger.
+    """
+    name = "an operator-requested rollback is followed by a recorded liveness check that found the app alive"
+    latest = _last_jsonl_entry(project_root / _ROLLBACK_HISTORY_RELATIVE, where={"invocation": "manual"})
+    if latest is None:
+        return CheckResult(name, True, "no operator-requested rollback recorded yet")
+
+    smoke_path = project_root / _SMOKE_RESULT_RELATIVE
+    if not smoke_path.exists():
+        return CheckResult(
+            name, False,
+            "a manual rollback was recorded but no liveness check has been "
+            "recorded since (no smoke-test-result.json)",
+        )
+    smoke, error = _load_json_object(smoke_path)
+    if error is not None:
+        return CheckResult(name, False, f"malformed smoke-test-result.json: {error}")
+
+    checked_at = smoke.get("checked_at")
+    recorded_at = latest.get("recorded_at")
+    checked_dt = _parse_iso_utc(checked_at)
+    recorded_dt = _parse_iso_utc(recorded_at)
+    if checked_dt is None or recorded_dt is None:
+        return CheckResult(name, False, "smoke-test-result.json or rollback entry missing a parseable timestamp")
+    if checked_dt < recorded_dt:
+        return CheckResult(
+            name, False,
+            f"the last recorded liveness check ({checked_at}) predates the last "
+            f"manual rollback ({recorded_at}) — it was not re-checked afterward",
+        )
+    if smoke.get("success") is not True:
+        return CheckResult(
+            name, False,
+            f"a liveness check ran at {checked_at} (after the {recorded_at} rollback), but it "
+            f"reported success={smoke.get('success')!r} — the rollback did not prove the app alive",
+        )
+    return CheckResult(name, True, f"liveness checked at {checked_at}, after rollback at {recorded_at}")
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +330,8 @@ def run_deploy_checks(
     results: list[CheckResult] = []
 
     results.append(check_test_gate_passed(project_root))
+    results.append(check_failed_liveness_recorded_as_failed(project_root))
+    results.append(check_manual_rollback_proves_alive(project_root))
 
     # Canon (C4 + C5 skipped)
     results.append(check_c1_phase_event_recorded(project_root, "deploy"))
@@ -115,6 +355,8 @@ def run_all_checks(project_root: Path, run_id: str = "") -> list[CheckResult]:
 
 __all__ = [
     "Severity",
+    "check_failed_liveness_recorded_as_failed",
+    "check_manual_rollback_proves_alive",
     "check_test_gate_passed",
     "run_all_checks",
     "run_deploy_checks",

@@ -1,0 +1,93 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-15-e4-checks-deploy-changelog",
+    "date": "2026-09-15",
+    "unit": {
+      "status": "passed",
+      "passed": 19191,
+      "total": 19260
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "one unit (shared/tests) was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path); flagged as trg-f64d1c27 for follow-up, does not affect this run's GREEN status"
+    ],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "backend/CLI-only checks and verifiers (deploy rollback audit trail, deploy_checks reconciliation, changelog aggregator refusal) with no startable web/dev-server surface of their own; effective complexity is small (risk_recheck.json), so F0.5 is not mandatory. Verified via the unit test suite (F0) plus real CLI invocations against this repo's own artifacts (validate-deploy.py, rollback.py)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an --ack-data-drift override of a flagged (drifted/unknown) stored-data report is refused without a written --override-reason, before any hosting call is made",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_rollback.py::test_ack_data_drift_without_override_reason_is_refused PASSED"
+        },
+        {
+          "behavior": "every rollback.py invocation is durably recorded, including a pre-flight refusal such as an unreadable --profile",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_rollback_e2e_cli.py::test_an_unreadable_profile_is_still_recorded PASSED; plugins/shipwright-deploy/tests/test_rollback_clone.py::test_main_records_a_preflight_profile_refusal_in_process PASSED"
+        },
+        {
+          "behavior": "a failed liveness check (smoke_test.py --output) is reconciled against the latest phase_history[deploy] entry, fail-closed when EITHER side's timestamp is missing or unparseable",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_test_changelog_deploy.py::test_failed_liveness_* and fail-closed timestamp variants PASSED"
+        },
+        {
+          "behavior": "a manual (operator-requested) rollback only reads as \"proves alive\" when a LATER liveness check both post-dates it AND reports success:true",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_test_changelog_deploy.py::test_manual_rollback_check_* (incl. fails_when_the_follow_up_check_still_found_it_down, fails_closed_on_an_unparseable_*_timestamp) PASSED"
+        },
+        {
+          "behavior": "validate-deploy.py's test gate reads either shipwright_test_results.json producer shape (top-level or iterate_latest-nested) and treats E2E as non-blocking except on a reported partial failure",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_validate_deploy.py::test_test_gate_reads_the_iterate_latest_nested_shape, test_test_gate_e2e_not_run_does_not_block_a_passing_unit_layer, test_test_gate_e2e_partial_still_blocks PASSED"
+        },
+        {
+          "behavior": "aggregate_changelog.py --fail-if-empty refuses to tag a version that was never released and has nothing pending, with an accurate refusal message",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_changelog_aggregation.py PASSED"
+        },
+        {
+          "behavior": "FR-01.08 #8's \"confirms first\" half (an operator confirms before a manual rollback) has no artifact a script can verify \u2014 an interactive AskUserQuestion leaves no trace",
+          "disposition": "untestable",
+          "reason_code": "requires-interactive-tty",
+          "reason": "the confirmation is an interactive AskUserQuestion in the SKILL.md flow; only the proves-alive half (a later liveness check) leaves a durable artifact, which IS tested above. Downgraded to judgement in the AC-evidence ledger with this reasoning documented."
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 11,
+        "covered_acs": 11
+      }
+    }
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-15-e4-checks-deploy-changelog",
+    "commit": "39ae269c0372b4c5dc1c596ecef500c8213907b7",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
