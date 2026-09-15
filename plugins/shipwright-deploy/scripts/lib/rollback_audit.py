@@ -81,6 +81,14 @@ def record(
     path = history_path(project_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     entry = {
+        # ``**result`` first: the audit fields below must always win a key
+        # collision. ``result`` is rollback_report's growing "every field
+        # always present" dict, and a future field literally named
+        # ``invocation`` or ``recorded_at`` would otherwise silently clobber
+        # the two keys check_manual_rollback_proves_alive filters and orders
+        # on — matching smoke_test.py's own merge direction (external code
+        # review, e4-checks-deploy-changelog).
+        **result,
         # Microsecond precision, not truncated to whole seconds — external
         # code review round 2 (e4-checks-deploy-changelog): a rollback and
         # its post-check liveness probe can both land in the same wall-clock
@@ -89,7 +97,6 @@ def record(
         # against `smoke_test.py`'s `checked_at`, which now matches).
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "invocation": invocation,
-        **result,
     }
     lock_path = path.with_suffix(path.suffix + ".lock")
     with file_lock(lock_path, timeout_seconds=5.0):

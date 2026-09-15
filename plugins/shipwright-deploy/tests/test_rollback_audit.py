@@ -6,6 +6,7 @@ module's own contract in isolation, including a defensive edge the CLI
 path never reaches.
 """
 
+import json
 from pathlib import Path
 
 import rollback_audit
@@ -32,6 +33,45 @@ def test_record_with_a_none_project_root_does_not_crash(tmp_path, monkeypatch):
     entry = rollback_audit.record(None, {"success": True, "env_name": "dev"})
     assert entry["env_name"] == "dev"
     assert (tmp_path / ".shipwright" / "deploy" / "rollback-history.jsonl").exists()
+
+
+def test_two_records_append_rather_than_overwrite(tmp_path):
+    """Code review (e4-checks-deploy-changelog): the module's own docstring
+    calls the trail "append-only" — assert it, not merely that a call
+    succeeds."""
+    rollback_audit.record(tmp_path, {"success": True, "env_name": "first"})
+    rollback_audit.record(tmp_path, {"success": False, "env_name": "second"})
+    lines = rollback_audit.history_path(tmp_path).read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2
+    assert json.loads(lines[0])["env_name"] == "first"
+    assert json.loads(lines[1])["env_name"] == "second"
+
+
+def test_a_reason_containing_a_newline_stays_on_one_jsonl_line(tmp_path):
+    """Code review (e4-checks-deploy-changelog): the module's own docstring
+    claims ``json.dumps`` escapes an embedded newline so one ``record()``
+    call can never itself tear a line — assert it round-trips, not merely
+    that the module's prose says so."""
+    reason = "line one\nline two"
+    rollback_audit.record(tmp_path, {"success": True, "env_name": "dev", "override_reason": reason})
+    lines = rollback_audit.history_path(tmp_path).read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["override_reason"] == reason
+
+
+def test_result_cannot_clobber_the_audit_recorded_at_or_invocation_fields(tmp_path):
+    """Code review (e4-checks-deploy-changelog): a ``result`` dict that
+    happens to carry its own ``invocation`` or ``recorded_at`` key must
+    never displace the audit-owned values — ``check_manual_rollback_proves_alive``
+    filters and orders on exactly these two fields.
+    """
+    entry = rollback_audit.record(
+        tmp_path,
+        {"success": True, "env_name": "dev", "invocation": "auto", "recorded_at": "bogus"},
+        invocation="manual",
+    )
+    assert entry["invocation"] == "manual"
+    assert entry["recorded_at"] != "bogus"
 
 
 def test_module_bootstraps_its_own_sys_path_when_not_already_present(monkeypatch):

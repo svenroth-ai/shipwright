@@ -14,15 +14,33 @@ Completion Canon coverage at C1/C2/C3 only:
 Phase-own:
 
 - ``check_test_gate_passed`` — pre-condition: the upstream test phase
-  must have produced green results. Mirrors the legacy
-  ``_validate_test`` unit gate so deploy_checks can stand alone.
+  must have produced green results (by the layer's own ``status``
+  verdict, or genuine-failure-count when ``status`` is absent — never
+  the raw ``passed < total`` gap, which counts skips as failures).
+- ``check_failed_liveness_recorded_as_failed`` — a release the smoke
+  test found dead must be recorded as ``failed``, never silently as a
+  restore.
+- ``check_manual_rollback_proves_alive`` — an operator-requested
+  rollback that actually mutated the host must be followed by fresh
+  liveness evidence.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime as _datetime
+from datetime import timezone as _timezone
 from pathlib import Path
+
+# ``known_failures`` lives at ``shared/scripts/`` top level (not under a
+# ``lib/`` package) so importing it can never shadow a plugin's own
+# ``scripts/lib`` namespace — ADR-045. Same shim as test_checks.py.
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+from known_failures import genuine_failure_count  # noqa: E402
 
 from .common import (
     CheckResult,
@@ -70,9 +88,19 @@ def _parse_iso_utc(value: object) -> _datetime | None:
     if not isinstance(value, str):
         return None
     try:
-        return _datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = _datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+    # A naive timestamp (no offset — a plausible hand-written or
+    # third-party phase_history[deploy].at) must not reach the aware/naive
+    # comparisons below: that raises TypeError and crashes the verifier
+    # instead of fail-closing it, the one outcome the fail-closed design
+    # exists to prevent (external code review, e4-checks-deploy-changelog).
+    # Both canonical producers write aware UTC, so treating a naive value as
+    # UTC changes nothing for them and only helps a hand-edited file parse.
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=_timezone.utc)
+    return parsed
 
 
 def _load_json_object(path: Path) -> tuple[dict | None, str | None]:
@@ -132,11 +160,31 @@ def check_test_gate_passed(project_root: Path) -> CheckResult:
             name, False,
             f"unit.total={total}, expected >0 (deploy blocked: no tests ran)",
         )
-    if not isinstance(passed, int) or passed < total:
-        return CheckResult(
-            name, False,
-            f"unit {passed}/{total} (deploy blocked: tests failing)",
+    if not isinstance(passed, int):
+        passed = 0
+    # A skipped test is not a failure. The layer's own ``status`` verdict is
+    # authoritative when present (both writers set it); otherwise fall back
+    # to genuine_failure_count, never the bare ``passed < total`` gap — that
+    # arithmetic counts skips as failures and blocks a fully green run whose
+    # skips are host-gated (caught against this repo's own real results
+    # file, e4-checks-deploy-changelog — see known_failures.genuine_failure_count).
+    status = unit.get("status")
+    if isinstance(status, str):
+        if status != "passed":
+            return CheckResult(
+                name, False,
+                f"unit {passed}/{total}, status={status!r} (deploy blocked: tests failing)",
+            )
+    else:
+        failures = genuine_failure_count(
+            passed=passed, total=total,
+            failed=unit.get("failed"), skipped=unit.get("skipped"),
         )
+        if failures > 0:
+            return CheckResult(
+                name, False,
+                f"unit {passed}/{total} ({failures} genuine failures — deploy blocked)",
+            )
     smoke_raw = view.get("smoke")
     smoke = smoke_raw if isinstance(smoke_raw, dict) else {}
     if smoke.get("status") == "fail":
@@ -202,7 +250,12 @@ def check_failed_liveness_recorded_as_failed(project_root: Path) -> CheckResult:
     if smoke.get("success") is not False:
         return CheckResult(name, True, "latest recorded liveness check succeeded")
 
-    history = read_run_config(project_root).get("phase_history")
+    # ``read_run_config`` can return a non-dict root ([] / a bare string) on
+    # a malformed shipwright_run_config.json — guarded the same way the two
+    # ``_load_json_object`` reads above are, so this third read cannot crash
+    # the check with AttributeError (external code review, e4-checks-deploy-changelog).
+    run_config = read_run_config(project_root)
+    history = run_config.get("phase_history") if isinstance(run_config, dict) else None
     entries = history.get("deploy") if isinstance(history, dict) else None
     if not isinstance(entries, list) or not entries:
         return CheckResult(
@@ -281,7 +334,16 @@ def check_manual_rollback_proves_alive(project_root: Path) -> CheckResult:
     stays `judgement` — see the AC-evidence ledger.
     """
     name = "an operator-requested rollback is followed by a recorded liveness check that found the app alive"
-    latest = _last_jsonl_entry(project_root / _ROLLBACK_HISTORY_RELATIVE, where={"invocation": "manual"})
+    # ``mutated: True`` excludes a REFUSED manual rollback (a missing
+    # --clone-name, an invalid --target-ref, an unreadable --profile —
+    # rollback_report.refused() records these unconditionally with
+    # mutated=False) — a rollback that changed nothing has nothing to prove
+    # alive, and demanding liveness evidence for it is a false failure
+    # (external code review, e4-checks-deploy-changelog).
+    latest = _last_jsonl_entry(
+        project_root / _ROLLBACK_HISTORY_RELATIVE,
+        where={"invocation": "manual", "mutated": True},
+    )
     if latest is None:
         return CheckResult(name, True, "no operator-requested rollback recorded yet")
 

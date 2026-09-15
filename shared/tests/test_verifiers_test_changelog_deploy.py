@@ -377,6 +377,42 @@ def test_check_test_gate_passed_reads_the_iterate_latest_nested_shape(tmp_path):
     assert r.ok is True
 
 
+def test_check_test_gate_passed_does_not_block_a_green_run_with_skips(tmp_path):
+    """Code review (e4-checks-deploy-changelog): ``passed < total`` alone
+    counts SKIPPED tests as failures. Seeded from THIS repo's own real
+    ``iterate_latest.unit`` shape (``status: "passed"``, ``passed < total``,
+    no ``skipped`` key) — the balanced ``passed: 10, total: 10`` fixture
+    above cannot see this bug. The layer's own ``status`` verdict must be
+    authoritative over the bare count gap.
+    """
+    (tmp_path / "shipwright_test_results.json").write_text(json.dumps({
+        "iterate_latest": {
+            "unit": {"status": "passed", "passed": 19191, "total": 19260},
+            "smoke": {"status": "pass"},
+        },
+    }))
+    r = check_test_gate_passed(tmp_path)
+    assert r.ok is True, r.detail
+
+
+def test_check_test_gate_passed_blocks_on_status_failed_even_if_counts_look_close(tmp_path):
+    (tmp_path / "shipwright_test_results.json").write_text(json.dumps({
+        "unit": {"status": "failed", "passed": 9, "total": 10},
+    }))
+    r = check_test_gate_passed(tmp_path)
+    assert r.ok is False
+
+
+def test_check_test_gate_passed_falls_back_to_genuine_failure_count_without_status(tmp_path):
+    """No ``status`` key at all: falls back to explicit ``skipped``
+    accounting rather than the raw gap."""
+    (tmp_path / "shipwright_test_results.json").write_text(json.dumps({
+        "unit": {"passed": 8, "total": 10, "skipped": 2},
+    }))
+    r = check_test_gate_passed(tmp_path)
+    assert r.ok is True, r.detail
+
+
 # --------------------------------------------------------------------------
 # Ledger FR-01.08 #4 — a failed liveness check is recorded as a failed deploy
 # --------------------------------------------------------------------------
@@ -509,10 +545,13 @@ def test_failed_liveness_check_does_not_crash_on_a_non_object_smoke_result(tmp_p
 # Ledger FR-01.08 #8 (proves-alive half) — manual rollback → liveness check
 # --------------------------------------------------------------------------
 
-def _write_rollback_entry(root: Path, *, invocation: str, recorded_at: str) -> None:
+def _write_rollback_entry(root: Path, *, invocation: str, recorded_at: str, mutated: bool = True) -> None:
     (root / ".shipwright" / "deploy").mkdir(parents=True, exist_ok=True)
     with (root / ".shipwright" / "deploy" / "rollback-history.jsonl").open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps({"invocation": invocation, "recorded_at": recorded_at, "success": True}) + "\n")
+        fh.write(json.dumps({
+            "invocation": invocation, "recorded_at": recorded_at,
+            "success": True, "mutated": mutated,
+        }) + "\n")
 
 
 def test_manual_rollback_check_passes_when_no_rollback_recorded(tmp_path):
@@ -602,6 +641,41 @@ def test_manual_rollback_check_fails_closed_on_an_unparseable_rollback_timestamp
     r = check_manual_rollback_proves_alive(tmp_path)
     assert r.ok is False
     assert "missing a parseable timestamp" in r.detail
+
+
+def test_manual_rollback_check_passes_when_the_last_manual_entry_was_refused(tmp_path):
+    """Code review (e4-checks-deploy-changelog): ``rollback_report.refused()``
+    records ``mutated: False`` — a rollback stopped before changing anything
+    (missing ``--clone-name``, invalid ``--target-ref``, unreadable
+    ``--profile``). It has nothing to prove alive; demanding a liveness
+    check for it is a false failure the operator can only clear by running
+    an unnecessary smoke test.
+    """
+    _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T09:00:00+00:00", mutated=False)
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is True, r.detail
+
+
+def test_manual_rollback_check_still_demands_liveness_after_a_refused_entry(tmp_path):
+    """A refused (mutated=False) manual entry must not mask an EARLIER real
+    (mutated=True) manual rollback that still has no liveness evidence."""
+    _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T08:00:00+00:00", mutated=True)
+    _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T09:00:00+00:00", mutated=False)
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is False
+    assert "no liveness check has been recorded" in r.detail
+
+
+def test_parse_iso_utc_treats_a_naive_timestamp_as_utc_instead_of_crashing(tmp_path):
+    """Code review (e4-checks-deploy-changelog): a naive timestamp (no
+    offset — a plausible hand-written phase_history[deploy].at) used to
+    reach the aware/naive datetime comparison and raise TypeError, crashing
+    the verifier instead of fail-closing it.
+    """
+    _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T09:00:00")
+    _write_smoke_result(tmp_path, success=True, checked_at="2026-09-15T09:05:00")
+    r = check_manual_rollback_proves_alive(tmp_path)
+    assert r.ok is True, r.detail
 
 
 def test_last_jsonl_entry_tolerates_blank_and_malformed_lines(tmp_path):

@@ -405,7 +405,7 @@
     {
       "path": "plugins/shipwright-deploy/scripts/lib/rollback.py",
       "limit": 300,
-      "current": 326,
+      "current": 337,
       "state": "grandfathered",
       "adr": null
     },
@@ -1105,7 +1105,7 @@
     {
       "path": "shared/scripts/tools/verifiers/deploy_checks.py",
       "limit": 300,
-      "current": 363,
+      "current": 425,
       "state": "grandfathered",
       "adr": null
     },
@@ -1645,7 +1645,7 @@
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",
       "limit": 300,
-      "current": 683,
+      "current": 757,
       "state": "grandfathered",
       "adr": null
     },

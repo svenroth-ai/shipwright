@@ -49,6 +49,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 import deploy_profile  # noqa: E402
+from lib.file_lock import LockTimeout  # noqa: E402
 
 __all__ = [
     "EXIT_HALT", "EXIT_OK", "EXIT_REFUSED", "HostingError",
@@ -316,7 +317,17 @@ def main(argv: list[str] | None = None) -> int:
     # above may return early without reaching this call (external review,
     # e4-checks-deploy-changelog round 1: a --profile load failure used to
     # return before the record() call, reopening the exact gap #7 closes).
-    rollback_audit.record(args.project_root, result, invocation=args.invocation)
+    #
+    # Guarded: a lock timeout or unwritable audit dir must never swallow
+    # operator_message and the intended exit code — for a HALTED rollback
+    # that already mutated the host, losing that message is the one outcome
+    # rollback_report's whole design exists to prevent (external code
+    # review, e4-checks-deploy-changelog). The audit gap itself is loud on
+    # stderr, never silent.
+    try:
+        rollback_audit.record(args.project_root, result, invocation=args.invocation)
+    except (LockTimeout, OSError) as exc:
+        print(f"WARNING: rollback audit trail not recorded: {exc}", file=sys.stderr)
 
     print(json.dumps(result, indent=2))
     return exit_code(result)
