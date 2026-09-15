@@ -22,6 +22,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
 
 import phase_task_lifecycle  # noqa: E402
@@ -174,6 +176,7 @@ def test_next_dispatch_reclaim_is_idempotent(tmp_project):
 # apply — complete via lifecycle + advance
 # --------------------------------------------------------------------------- #
 
+@pytest.mark.covers("FR-01.01/AC01")
 def test_apply_success_advances_pointer_and_resolves_next(tmp_project):
     _ss_config(tmp_project)
     dispatch, applied = _drive(tmp_project, "project")

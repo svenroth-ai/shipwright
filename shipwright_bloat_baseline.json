@@ -104,7 +104,7 @@
     {
       "path": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py",
       "limit": 300,
-      "current": 472,
+      "current": 473,
       "state": "grandfathered",
       "adr": null
     },
@@ -559,7 +559,7 @@
     {
       "path": "plugins/shipwright-run/tests/test_orchestrator.py",
       "limit": 300,
-      "current": 605,
+      "current": 611,
       "state": "grandfathered",
       "adr": null
     },
@@ -580,7 +580,7 @@
     {
       "path": "plugins/shipwright-run/tests/test_single_session_loop.py",
       "limit": 300,
-      "current": 349,
+      "current": 352,
       "state": "grandfathered",
       "adr": null
     },
@@ -1231,7 +1231,7 @@
     {
       "path": "shared/tests/test_dev_server_multiservice.py",
       "limit": 300,
-      "current": 1104,
+      "current": 1111,
       "state": "grandfathered",
       "adr": null
     },

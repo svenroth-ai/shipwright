@@ -14,6 +14,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _LIB = Path(__file__).resolve().parents[1] / "scripts" / "lib"
 if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
@@ -29,6 +31,7 @@ def _install_fake_llm_review(monkeypatch, result: dict):
     monkeypatch.setitem(sys.modules, "llm_review", fake)
 
 
+@pytest.mark.covers("FR-01.13/AC07")
 def test_gateway_only_env_does_not_skip_before_llm_review_runs(monkeypatch, tmp_path):
     for k in ("OPENROUTER_API_KEY", "OPENAI_API_KEY"):
         monkeypatch.delenv(k, raising=False)

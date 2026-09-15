@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-15-t8-run-build-preview-adopt",
+  "date": "2026-09-15",
+  "section": "Iterate — campaign req3-05-test-backfill-mono, sub-iterate t8: FR-01.01/FR-01.05/FR-01.12/FR-01.13 AC-proving tests",
+  "title": "Bind 16 of 30 unbound ACs to real enforcing tests across /shipwright-run, /shipwright-build, /shipwright-preview, /shipwright-adopt",
+  "context": "shipwright_ac_coverage_baseline.json listed 30 unbound ACs across FR-01.01 (7), FR-01.05 (8), FR-01.12 (9), FR-01.13 (6) at the start of this run. Full per-AC table + review disposition: .shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md.",
+  "decision": "Tagged 16 ACs onto real enforcing tests with @pytest.mark.covers (FR-01.01 7/7, FR-01.05 0/8, FR-01.12 4/9, FR-01.13 5/6). Remaining 14 recorded unbound with a concrete no-seam reason each. See spec-ref for the full per-AC table.",
+  "consequences": "shipwright_ac_coverage_baseline.json unbound_count: 85 -> 69 repo-wide. Two of an original 18 taggings were retracted after external review found each proved less than the full AC (see spec-ref).",
+  "rationale": "Never bind a test that only proves part of a conjunctive AC's REQUIRED clause.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md"
+}

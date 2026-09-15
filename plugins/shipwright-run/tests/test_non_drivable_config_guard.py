@@ -95,6 +95,7 @@ NON_DRIVABLE = ("multi_session", None)
 # The loop refuses to dispatch
 # --------------------------------------------------------------------------- #
 
+@pytest.mark.covers("FR-01.01/AC07")
 def test_resolve_next_dispatch_refuses_stale_multi_session(tmp_project):
     _write_config(tmp_project, "multi_session")
     res = loop.resolve_next_dispatch(tmp_project)
@@ -106,6 +107,7 @@ def test_resolve_next_dispatch_refuses_stale_multi_session(tmp_project):
     assert "migrations/multi-session-to-single-session.md" in res["message"]
 
 
+@pytest.mark.covers("FR-01.01/AC07")
 def test_resolve_next_dispatch_refuses_mode_less_legacy_config(tmp_project):
     """A pre-SS1 config never declared a mode. It is NOT inferred — inferring one is
     exactly the silent reinterpretation this guard exists to prevent."""
@@ -197,6 +199,7 @@ def test_advancing_lifecycle_command_refused_on_non_drivable_config(
         assert _no_side_effects(tmp_project), command
 
 
+@pytest.mark.covers("FR-01.01/AC07")
 def test_read_only_lifecycle_commands_still_work_on_a_stale_config(tmp_project, capsys):
     """EXEMPT ON PURPOSE: the guard lives on the execution path, never the read path, so
     a historical run stays inspectable (WebUI run history, .shipwright/runs/**)."""
