@@ -197,6 +197,22 @@ def test_run_scoped_c1_accepts_only_the_requested_session(tmp_path):
     assert check_c1_run_scoped(tmp_path, "plan", session="sid").ok is True
 
 
+def test_run_scoped_c1_does_not_mix_exact_and_since_fallback_evidence(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text("\n".join([
+        json.dumps({"type": "phase_started", "phase": "plan", "session": "sid"}),
+        json.dumps({
+            "type": "phase_completed", "phase": "plan",
+            "ts": "2026-09-15T10:01:00Z",
+        }),
+    ]) + "\n")
+
+    result = check_c1_run_scoped(
+        tmp_path, "plan", session="sid", since="2026-09-15T10:00:00Z",
+    )
+
+    assert result.ok is False
+
+
 def test_read_run_events_compares_since_as_utc_instants(tmp_path):
     (tmp_path / "shipwright_events.jsonl").write_text("\n".join([
         json.dumps({"id": "before", "ts": "2026-09-15T10:30:00+01:00"}),

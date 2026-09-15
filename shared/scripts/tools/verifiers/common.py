@@ -437,6 +437,12 @@ def check_c1_run_scoped(
     """
     name = f"C1 run-scoped completion[{phase}]"
     events = read_run_events(project_root, session=session, since=since)
+    # A timestamp fallback is only for runs with no usable session identity.
+    # Once this run emitted any session-stamped evidence, a sessionless record
+    # might belong to a concurrent launch and must not certify its C1 result.
+    exact_events = [event for event in events if event.get("session") == session]
+    if exact_events:
+        events = exact_events
     hit = get_latest_phase_completed_event(events, phase)
     if hit is not None:
         stamp = hit.get("ts") or hit.get("timestamp") or "?"

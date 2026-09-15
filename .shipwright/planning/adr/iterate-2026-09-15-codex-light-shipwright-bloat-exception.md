@@ -11,8 +11,8 @@ The Codex Light specification requires additive public functions in the existing
 `common.py` verifier module, an additive option in `build_checks.py`, and
 regression coverage in their established test modules. Those files were already
 grandfathered above the normal 300-line limit. The required additions raise
-`common.py` to 861 lines, `build_checks.py` to 461 lines,
-`test_verifiers_common.py` to 608 lines, and `test_verifiers_build.py` to 400
+`common.py` to 867 lines, `build_checks.py` to 461 lines,
+`test_verifiers_common.py` to 624 lines, and `test_verifiers_build.py` to 400
 lines.
 
 ## Ousterhout Argument

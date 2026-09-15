@@ -216,16 +216,19 @@ def evaluate(
             }
     events = read_run_events(project_root, session=session, since=since)
     evidence = _evidence(events, session=session, since=since)
+    exact_events = [event for event in events if event.get("session") == session]
+    completion_events = exact_events or events
+    evidence["completion_scope"] = "exact" if exact_events else evidence["scope"]
     if phase in _C1_PHASES:
         result = check_c1_run_scoped(project_root, phase, session=session, since=since)
         evidence["check"] = result.detail
         verdict = "done" if result.ok else "not_done"
     elif phase == "build":
-        completed = _event_for_source(events, "build")
+        completed = _event_for_source(completion_events, "build")
         evidence["check"] = "work_completed[source=build]"
         verdict = "done" if completed is not None else "not_done"
     elif phase == "iterate":
-        verdict = _iterate_verdict(project_root, events, evidence)
+        verdict = _iterate_verdict(project_root, completion_events, evidence)
     else:
         evidence["reason"] = "no run-scoped completion oracle for this phase"
         verdict = "no_oracle"
