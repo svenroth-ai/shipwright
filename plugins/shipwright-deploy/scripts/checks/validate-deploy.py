@@ -33,6 +33,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+# The routine, non-blocking E2E outcomes for a change with no startable web
+# surface of its own. Anything else — "failed", "partial", "error", or an
+# unrecognised value — is treated as a real E2E failure and blocks, matching
+# criterion 1's actual intent (Tier-3 PR review round 5).
+_E2E_NONBLOCKING_STATUSES = frozenset({"passed", "skipped", "not_run"})
+
 
 def _test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | None]:
     """Return ``(state, error_or_none)``.
@@ -118,12 +124,18 @@ def _test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | None]:
     # convention (constitution: "E2E can be flaky" — an "inform" warning,
     # never an "ask" gate). "not_run"/"skipped"/absent are the routine case
     # for a backend-only change with no startable web surface and must not
-    # block; only a reported partial failure does. A blanket
-    # `status in (passed, skipped)` requirement was caught by a real
-    # integration test against THIS repo's own current results file, where
-    # e2e is routinely "not_run" — that stricter check would have refused
-    # every deploy here (e4-checks-deploy-changelog).
-    e2e_ok = e2e.get("status") != "partial"
+    # block. A blanket `status in (passed, skipped)` requirement was caught
+    # by a real integration test against THIS repo's own current results
+    # file, where e2e is routinely "not_run" — that stricter check would
+    # have refused every deploy here (e4-checks-deploy-changelog). An
+    # ALLOWLIST of the routine non-blocking statuses, not a blocklist of one
+    # bad value, is what actually implements "only a reported partial
+    # failure does [block]" — Tier-3 PR review round 5: the earlier
+    # `!= "partial"` blocklist let "failed", "error", or any other explicit
+    # failure status through as non-blocking too, which was never the
+    # intent.
+    e2e_status = e2e.get("status")
+    e2e_ok = e2e_status is None or e2e_status in _E2E_NONBLOCKING_STATUSES
     if unit_ok and e2e_ok:
         return "passed", None
 

@@ -547,6 +547,35 @@ def test_failed_liveness_check_passes_when_a_fresh_entry_confirms_it(tmp_path):
     assert r.ok is True
 
 
+def test_failed_liveness_check_fails_closed_on_a_different_target_url(tmp_path):
+    """Tier-3 PR review round 5: timestamp ordering alone binds two records
+    to "roughly the same time", not the same release — an unrelated LATER
+    failed deploy to a DIFFERENT target must not satisfy an earlier smoke
+    failure just by being newer."""
+    _write_smoke_result(tmp_path, success=False, checked_at="2026-09-15T10:00:00+00:00")
+    (tmp_path / "shipwright_run_config.json").write_text(json.dumps({
+        "phase_history": {"deploy": [
+            {"run_id": "r1", "at": "2026-09-15T10:05:00+00:00", "outcome": "failed",
+             "url": "https://a-completely-different-target.invalid"},
+        ]},
+    }))
+    r = check_failed_liveness_recorded_as_failed(tmp_path)
+    assert r.ok is False
+    assert "different target" in r.detail
+
+
+def test_failed_liveness_check_passes_when_the_target_url_matches(tmp_path):
+    _write_smoke_result(tmp_path, success=False, checked_at="2026-09-15T10:00:00+00:00")
+    (tmp_path / "shipwright_run_config.json").write_text(json.dumps({
+        "phase_history": {"deploy": [
+            {"run_id": "r1", "at": "2026-09-15T10:05:00+00:00", "outcome": "failed",
+             "url": "https://example.invalid"},
+        ]},
+    }))
+    r = check_failed_liveness_recorded_as_failed(tmp_path)
+    assert r.ok is True, r.detail
+
+
 def test_failed_liveness_check_does_not_crash_on_a_non_object_smoke_result(tmp_path):
     (tmp_path / ".shipwright" / "deploy").mkdir(parents=True, exist_ok=True)
     (tmp_path / ".shipwright" / "deploy" / "smoke-test-result.json").write_text('"just a string"')

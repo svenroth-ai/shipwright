@@ -224,3 +224,37 @@ def test_test_gate_e2e_partial_still_blocks(tmp_path):
     output = _run_with_project_root(tmp_path)
     assert output["test_gate"] == "failing-unconfirmed"
     assert output["success"] is False
+
+
+def test_test_gate_e2e_failed_status_blocks(tmp_path):
+    """Tier-3 PR review round 5: the earlier ``!= "partial"`` blocklist let
+    an explicit ``e2e.status == "failed"`` through as non-blocking too — an
+    allowlist of the routine statuses is what actually implements "only a
+    reported failure blocks"."""
+    (tmp_path / "shipwright_test_results.json").write_text(
+        json.dumps({"unit": {"status": "passed"}, "e2e": {"status": "failed"}}),
+        encoding="utf-8",
+    )
+    output = _run_with_project_root(tmp_path)
+    assert output["test_gate"] == "failing-unconfirmed"
+    assert output["success"] is False
+
+
+def test_test_gate_e2e_unrecognised_status_blocks(tmp_path):
+    (tmp_path / "shipwright_test_results.json").write_text(
+        json.dumps({"unit": {"status": "passed"}, "e2e": {"status": "error"}}),
+        encoding="utf-8",
+    )
+    output = _run_with_project_root(tmp_path)
+    assert output["test_gate"] == "failing-unconfirmed"
+    assert output["success"] is False
+
+
+def test_test_gate_e2e_skipped_status_does_not_block(tmp_path):
+    (tmp_path / "shipwright_test_results.json").write_text(
+        json.dumps({"unit": {"status": "passed"}, "e2e": {"status": "skipped"}}),
+        encoding="utf-8",
+    )
+    output = _run_with_project_root(tmp_path)
+    assert output["test_gate"] == "passed"
+    assert output["success"] is True

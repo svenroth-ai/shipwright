@@ -266,8 +266,11 @@ def check_failed_liveness_recorded_as_failed(project_root: Path) -> CheckResult:
     Reconciles ``.shipwright/deploy/smoke-test-result.json`` (written by
     ``smoke_test.py --output``, a source the deploy phase does not get to
     rewrite after the fact) against the most recent
-    ``phase_history[deploy]`` entry. A green latest smoke result, or no
-    smoke result ever persisted, means there is nothing to reconcile.
+    ``phase_history[deploy]`` entry — by completion time AND, when both
+    sides carry one, by target URL (Tier-3 PR review round 5: timestamp
+    ordering alone cannot tell "this release" from "some unrelated later
+    one"). A green latest smoke result, or no smoke result ever persisted,
+    means there is nothing to reconcile.
     """
     name = "a failed liveness check is recorded as a failed deploy"
     path = project_root / _SMOKE_RESULT_RELATIVE
@@ -348,6 +351,30 @@ def check_failed_liveness_recorded_as_failed(project_root: Path) -> CheckResult:
             f"the latest recorded liveness check failed at {checked_at}, but the "
             f"latest phase_history[deploy] entry ({recorded_at!r}) has no parseable "
             "timestamp confirming it, or predates the failure",
+        )
+
+    # Timestamp ordering alone binds two records to "roughly the same time",
+    # not to the same release — an unrelated LATER failed deploy to a
+    # DIFFERENT target could otherwise satisfy an earlier smoke failure just
+    # by being newer (Tier-3 PR review round 5). This codebase has no
+    # release/run-ID convention every producer here carries (documented
+    # residual limitation, ledger FR-01.08 #8), but both sides already
+    # carry the target URL (``smoke_test.py``'s ``url``,
+    # ``append_phase_history.py``'s ``"url"`` field) — requiring them to
+    # match when both are present narrows the false-pass window to
+    # same-target sequential incidents, without inventing new plumbing.
+    smoke_url = smoke.get("url")
+    latest_url = latest.get("url")
+    if (
+        isinstance(smoke_url, str) and smoke_url
+        and isinstance(latest_url, str) and latest_url
+        and smoke_url != latest_url
+    ):
+        return CheckResult(
+            name, False,
+            f"the latest recorded liveness check failed for {smoke_url!r}, but the "
+            f"latest phase_history[deploy] entry records a different target "
+            f"({latest_url!r}) — cannot confirm it records THIS failure",
         )
 
     outcome = str(latest.get("outcome", "")).strip().lower()
