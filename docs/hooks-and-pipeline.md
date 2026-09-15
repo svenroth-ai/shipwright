@@ -4685,6 +4685,7 @@ shape. Canon C3 hard-coded the `phase_history` bucket instead, which is how
 shared/scripts/tools/
   verify_phase.py                  # Unified CLI: --phase <phase>|all
   verify_iterate_finalization.py   # Thin wrapper, same CLI as before (backwards compat)
+  codex_completion_oracle.py       # Read-only run-scoped completion verdict: --project-root --phase --session [--since]
   append_changelog_entry.py        # Canon C5 write path
   append_phase_history.py          # phase_history write path
   verifiers/

@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-15-codex-light-shipwright",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T15:53:04.260014+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T15:53:04.355674+00:00",
+      "disposition": "external plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T20:34:16.743996+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T20:34:16.911926+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/codex_completion_oracle.py:101 (main, `--since` handling) / shared/scripts/tools/verifiers/common.py:206 (`_timestamp_after`)",
+          "line": null,
+          "finding": "A malformed `--since` value (or an ISO string Python can't parse) silently disables the entire since-fallback path: `_timestamp_after` catches the `ValueError` from parsing the floor and returns `False` for every event, so the oracle degrades to exact-session-only with no signal to the caller. A WebUI bug passing a bad timestamp would produce persistent `not_done` verdicts that look like legitimate \"agent didn't finish\" answers.",
+          "suggestion": "Validate `--since` once in `main()` (parse it, exit non-zero on failure), or at minimum surface a `\"since_parse_failed\"` marker in the evidence dict when the floor can't be parsed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/common.py:~206",
+          "line": null,
+          "finding": "_timestamp_after` uses strict `>`. An event stamped at exactly the `since` instant (e.g. `since` captured at launch and the first event emitted within the same clock tick) is excluded from the fallback scope. Given `since` is meant as a floor, `>=` is the safer boundary and avoids clock-quantization flakiness.",
+          "suggestion": "Change to `>=`, or document the exclusive boundary in the docstring and have the WebUI pass a slightly earlier timestamp.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/common.py:~430 (`check_c1_run_scoped`, iterate branch)",
+          "line": null,
+          "finding": "check_c1_run_scoped(..., \"iterate\", ...)` returns `True` on any run-scoped `work_completed[source=iterate]` event, but the oracle's iterate path requires PR-delivery confirmation (merged) before reporting `done`. Anyone calling the common.py function directly for `iterate` gets a weaker \"done\" than the CLI contract. Since the function is a public additive API and the spec's iterate semantics live in the oracle, this divergence will drift.",
+          "suggestion": "Either drop the iterate special-case from `check_c1_run_scoped` (letting it be C1-strict) or rename/document it explicitly as \"iterate work event recorded,\" not \"iterate complete.\"",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_codex_completion_oracle.py:66-86",
+          "line": null,
+          "finding": "test_main_maps_every_active_verdict_to_its_documented_exit_code` monkeypatches `evaluate` entirely, so it only exercises the dict-lookup in `main` — it would pass even if `evaluate` returned malformed payloads or if the exit map were wired to the wrong verdicts produced by real evaluation. The real `done`/`not_done` exit codes are only indirectly covered (and never via `main`). One CLI-level test writing a real `phase_completed` event and asserting exit 0, plus one asserting exit 1, would close this.",
+          "suggestion": "Add two end-to-end `main()` tests (done → 0, not_done → 1) that don't patch `evaluate`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/codex_completion_oracle.py:~131 (`_delivery_status`)",
+          "line": null,
+          "finding": "The watcher's return code and stderr are discarded; only stdout JSON is trusted. If `watch_pr_delivery.py --once` ever exits non-zero with valid JSON (e.g. a partial/failed gh call that still emits a status object), the oracle trusts that status. Combined with the unrecognized-status path this is handled for unknown statuses, but a non-zero exit with a stale \"merged\" status would be a false `done`. Check `result.returncode` and treat non-zero as indeterminate.",
+          "suggestion": "Guard with `if result.returncode != 0: return None` (or map to indeterminate) before parsing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_codex_completion_oracle.py",
+          "line": 20,
+          "finding": "The required six-phase dispatch table is not asserted independently: parametrization is derived from `oracle._C1_PHASES`. Removing a required phase (or emptying the set) would reduce/skip coverage and still pass.",
+          "suggestion": "Parametrize with the explicit required set (`changelog`, `deploy`, `design`, `plan`, `project`, `test`) and separately assert it equals `_C1_PHASES`.  Overall assessment: ship-with-fixes; the implementation otherwise appears to meet the stated additive, read-only oracle requirements, but the acceptance-critical phase table needs a non-self-referential regression test.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T15:53:04.554202+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: edge-case\n  Severity: medium\n  File: shared/scripts/tools/codex_completion_oracle.py:101 (main, `--since` handling) / shared/scripts/tools/verifiers/common.py:206 (`_timestamp_after`)\n  Finding: A malformed `--since` value (or an ISO string Python can't parse) silently disables the entire since-fallback path: `_timestamp_after` catches the `ValueError` from parsing the floor and returns `False` for every event, so the oracle degrades to exact-session-only with no signal to the caller. A WebUI bug passing a bad timestamp would produce persistent `not_done` verdicts that look like legitimate \"agent didn't finish\" answers.\n  Suggestion: Validate `--since` once in `main()` (parse it, exit non-zero on failure), or at minimum surface a `\"since_parse_failed\"` marker in the evidence dict when the floor can't be parsed.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/tools/verifiers/common.py:~206\n  Finding: `_timestamp_after` uses strict `>`. An event stamped at exactly the `since` instant (e.g. `since` captured at launch and the first event emitted within the same clock tick) is excluded from the fallback scope. Given `since` is meant as a floor, `>=` is the safer boundary and avoids clock-quantization flakiness.\n  Suggestion: Change to `>=`, or document the exclusive boundary in the docstring and have the WebUI pass a slightly earlier timestamp.\n\n- Category: bug\n  Severity: low\n  File: shared/scripts/tools/verifiers/common.py:~430 (`check_c1_run_scoped`, iterate branch)\n  Finding: `check_c1_run_scoped(..., \"iterate\", ...)` returns `True` on any run-scoped `work_completed[source=iterate]` event, but the oracle's iterate path requires PR-delivery confirmation (merged) before reporting `done`. Anyone calling the common.py function directly for `iterate` gets a weaker \"done\" than the CLI contract. Since the function is a public additive API and the spec's iterate semantics live in the oracle, this divergence will drift.\n  Su […truncated]\n\n[openai] - Category: test\n- Severity: low\n- File: shared/scripts/tools/tests/test_codex_completion_oracle.py:20\n- Finding: The required six-phase dispatch table is not asserted independently: parametrization is derived from `oracle._C1_PHASES`. Removing a required phase (or emptying the set) would reduce/skip coverage and still pass.\n- Suggestion: Parametrize with the explicit required set (`changelog`, `deploy`, `design`, `plan`, `project`, `test`) and separately assert it equals `_C1_PHASES`.\n\nOverall assessment: ship-with-fixes; the implementation otherwise appears to meet the stated additive, read-only oracle requirements, but the acceptance-critical phase table needs a non-self-referential regression test.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T11:10:48.297300+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "sonnet"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T15:53:04.454730+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

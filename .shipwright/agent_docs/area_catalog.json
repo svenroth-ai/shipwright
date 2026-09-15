@@ -2,6 +2,21 @@
   "areas": [
     {
       "cross_cutting_tags": [],
+      "id": "agents-md",
+      "path_patterns": [
+        "AGENTS.md/**"
+      ],
+      "planned_paths": [],
+      "priority": 0,
+      "realized_paths": [
+        "AGENTS.md"
+      ],
+      "requirements": [],
+      "source": "provisional",
+      "status": "active"
+    },
+    {
+      "cross_cutting_tags": [],
       "id": "changelog-unreleased-d",
       "path_patterns": [
         "CHANGELOG-unreleased.d/**"
@@ -417,11 +432,13 @@
         "shared/scripts/lib/host_resource_lease.py",
         "shared/scripts/tests/test_event_context.py",
         "shared/scripts/tools/area_catalog.py",
+        "shared/scripts/tools/codex_completion_oracle.py",
         "shared/scripts/tools/event_context.py",
         "shared/scripts/tools/run_test_suite.py",
         "shared/scripts/tools/suite_budget.py",
         "shared/scripts/tools/suite_gate_runtime.py",
         "shared/scripts/tools/suite_host_resources.py",
+        "shared/scripts/tools/tests/test_codex_completion_oracle.py",
         "shared/scripts/tools/tests/test_f0_cli_diff_coverage_e2e.py",
         "shared/scripts/tools/tests/test_host_resource_lease.py",
         "shared/scripts/tools/tests/test_host_resource_lease_process.py",
@@ -429,7 +446,11 @@
         "shared/scripts/tools/tests/test_run_test_suite_coverage.py",
         "shared/scripts/tools/tests/test_run_test_suite_faults.py",
         "shared/scripts/tools/tests/test_suite_host_resources.py",
-        "shared/scripts/tools/tests/test_suite_race_cli.py"
+        "shared/scripts/tools/tests/test_suite_race_cli.py",
+        "shared/scripts/tools/verifiers/build_checks.py",
+        "shared/scripts/tools/verifiers/common.py",
+        "shared/tests/test_verifiers_build.py",
+        "shared/tests/test_verifiers_common.py"
       ],
       "requirements": [],
       "source": "deterministic",
@@ -481,8 +502,8 @@
       "status": "active"
     }
   ],
-  "catalogue_version": 4,
-  "path_fingerprint": "cbdcd35a63de86427bf991e2fe4f828f7c4e58f9188fe8d32ec30f28cc30e058",
+  "catalogue_version": 5,
+  "path_fingerprint": "20200ae59a3bfb1dfa31345d3ad3fbfe62a61240c972a4f1e6d87d240cba3808",
   "producer": "shared/scripts/tools/area_catalog.py",
   "schema_version": 1,
   "sources": [
