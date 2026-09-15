@@ -268,6 +268,21 @@ def check_failed_liveness_recorded_as_failed(project_root: Path) -> CheckResult:
             "has no entry at all — the failure was never recorded",
         )
     latest = entries[-1]
+    # A malformed entry (`[null]`, `["bad"]`) would otherwise crash `.get()`
+    # below with AttributeError instead of failing this check closed — Tier-3
+    # PR review, e4-checks-deploy-changelog round 3. The outer
+    # `validation_record.py` exception containment already turns any raise
+    # here into a fail-closed ask-level gate error, but this check has its
+    # own well-defined fail-closed `CheckResult` for exactly this situation
+    # (an unreconcilable failed liveness check), so it should return that
+    # rather than lean on the outer containment for something reachable here.
+    if not isinstance(latest, dict):
+        return CheckResult(
+            name, False,
+            f"the latest recorded liveness check failed, but the latest "
+            f"phase_history[deploy] entry is malformed ({type(latest).__name__}, "
+            "expected an object) — cannot confirm it records the failure",
+        )
 
     # External review (round 1): a stale smoke-test-result.json could
     # otherwise be reconciled against an UNRELATED, older phase_history

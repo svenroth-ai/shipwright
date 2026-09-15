@@ -412,7 +412,7 @@
     {
       "path": "plugins/shipwright-deploy/skills/deploy/SKILL.md",
       "limit": 400,
-      "current": 511,
+      "current": 514,
       "state": "grandfathered",
       "adr": null
     },
@@ -1105,7 +1105,7 @@
     {
       "path": "shared/scripts/tools/verifiers/deploy_checks.py",
       "limit": 300,
-      "current": 429,
+      "current": 444,
       "state": "grandfathered",
       "adr": null
     },
@@ -1645,7 +1645,7 @@
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",
       "limit": 300,
-      "current": 763,
+      "current": 777,
       "state": "grandfathered",
       "adr": null
     },

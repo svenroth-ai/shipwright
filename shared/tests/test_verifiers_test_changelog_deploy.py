@@ -442,6 +442,20 @@ def test_failed_liveness_check_fails_when_no_phase_history_entry_at_all(tmp_path
     assert "never recorded" in r.detail
 
 
+def test_failed_liveness_check_fails_closed_on_a_malformed_latest_entry(tmp_path):
+    """Tier-3 PR review, e4-checks-deploy-changelog round 3: a non-dict
+    ``phase_history[deploy]`` element (``[null]``, ``["bad"]``) used to crash
+    this check with AttributeError on ``latest.get(...)`` instead of failing
+    it closed with a well-defined ``CheckResult``."""
+    _write_smoke_result(tmp_path, success=False, checked_at="2026-09-15T10:00:00+00:00")
+    (tmp_path / "shipwright_run_config.json").write_text(json.dumps({
+        "phase_history": {"deploy": [None]},
+    }))
+    r = check_failed_liveness_recorded_as_failed(tmp_path)
+    assert r.ok is False
+    assert "malformed" in r.detail
+
+
 def test_failed_liveness_check_fails_when_phase_history_still_says_success(tmp_path):
     _write_smoke_result(tmp_path, success=False, checked_at="2026-09-15T10:00:00+00:00")
     (tmp_path / "shipwright_run_config.json").write_text(json.dumps({

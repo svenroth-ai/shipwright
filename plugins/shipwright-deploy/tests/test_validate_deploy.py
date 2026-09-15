@@ -36,6 +36,13 @@ def run_validate(env: dict = None, project_root: Path = None) -> dict:
 
 
 def test_validate_with_token(monkeypatch, tmp_path):
+    # A green shipwright_test_results.json — this test is about the token
+    # check, not the test gate, and the test gate now refuses on a missing
+    # results file (FR-01.08 #1, Tier-3 PR review round 3).
+    (tmp_path / "shipwright_test_results.json").write_text(
+        json.dumps({"unit": {"status": "passed"}, "e2e": {"status": "passed"}}),
+        encoding="utf-8",
+    )
     monkeypatch.setenv("JELASTIC_TOKEN", "test-token")
     output = run_validate({"JELASTIC_TOKEN": "test-token"}, project_root=tmp_path)
     assert output["success"] is True
@@ -85,14 +92,23 @@ def _run_with_project_root(project_root: Path, extra_args: list[str] | None = No
     return json.loads(result.stdout)
 
 
-def test_test_gate_no_results_file_is_a_warning_not_a_refusal(tmp_path):
-    """Spec FR-01.08 #1: no results file at all is NOT the same as a known
-    failure — it warns and proceeds, matching SKILL.md Step B4's own
-    "tests failed OR file does not exist" language for the missing-file half."""
+def test_test_gate_no_results_file_refuses_without_confirmation(tmp_path):
+    """Spec FR-01.08 #1: a missing results file needs the same confirmation
+    as a known failure — SKILL.md's prior (pre-mechanisation) Step B4 already
+    required confirmation for "tests failed OR file does not exist", and
+    mechanising criterion 1 must not silently loosen that (Tier-3 PR review,
+    e4-checks-deploy-changelog round 3)."""
     output = _run_with_project_root(tmp_path)
     assert output["test_gate"] == "no-results"
+    assert output["success"] is False
+    assert any("--confirm-failing-tests" in e for e in output["errors"])
+
+
+def test_test_gate_no_results_file_proceeds_once_a_person_confirms(tmp_path):
+    output = _run_with_project_root(tmp_path, ["--confirm-failing-tests"])
+    assert output["test_gate"] == "no-results"
     assert output["success"] is True
-    assert any("not found" in w for w in output["warnings"])
+    assert any("confirmed by a person" in w for w in output["warnings"])
 
 
 def test_test_gate_refuses_on_failing_tests_without_confirmation(tmp_path):

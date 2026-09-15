@@ -52,10 +52,13 @@ Checks for:
 - Optionally: `SUPABASE_ACCESS_TOKEN` (for migrations)
 - Optionally: git repo with remote (for git-based deploy)
 - The upstream test gate (see B4 below) — `test_gate` in the JSON output is
-  `"passed"` / `"no-results"` (proceed, warns) or `"failing-unconfirmed"`
-  (blocks: `success: false`, an `errors` entry names it) /
-  `"failing-confirmed"` (proceeds, warns — only ever true when this SKILL
-  passed `--confirm-failing-tests`).
+  `"passed"` (proceed) / `"failing-unconfirmed"` (blocks: `success: false`,
+  an `errors` entry names it) / `"failing-confirmed"` (proceeds, warns) /
+  `"no-results"` — blocks exactly like `"failing-unconfirmed"` (a missing
+  `shipwright_test_results.json` needs the same confirmation as a failing
+  one) unless `--confirm-failing-tests` was passed, in which case it
+  proceeds with a warning too. Both `*-confirmed` states are only ever true
+  when this SKILL passed `--confirm-failing-tests`.
 
 ### B2. Detect Invocation Mode
 
@@ -109,15 +112,15 @@ Step B already ran the deterministic test gate — this step is what to DO with
 its verdict, never a second, separate check of the same file (one oracle,
 read once).
 
-1. **`test_gate == "passed"` or `"no-results"`** — continue to Step C.
-2. **`test_gate == "failing-unconfirmed"`** — deploy is refused. Print:
+1. **`test_gate == "passed"`** — continue to Step C.
+2. **`test_gate == "failing-unconfirmed"` or `"no-results"`** — deploy is refused. Print:
 
 ```
 ================================================================================
 SHIPWRIGHT-DEPLOY: Test Gate Failed
 ================================================================================
 
-Cannot deploy — tests have not passed.
+Cannot deploy — tests have not passed (or no results were found).
 Unit: {status}  |  E2E: {status}
 
 Run /shipwright-test first, or confirm to proceed at your own risk.
@@ -125,11 +128,11 @@ Run /shipwright-test first, or confirm to proceed at your own risk.
 ```
 
 **Ask user for confirmation before proceeding.** Do NOT deploy silently with
-failing tests. If they confirm, **re-run Step B's command with
+failing or missing tests. If they confirm, **re-run Step B's command with
 `--confirm-failing-tests` appended** and use ITS fresh JSON (now
-`test_gate == "failing-confirmed"`) going forward — never continue past the
-refusal on the strength of the user's words alone; the confirmation only
-counts once it produced a passing gate.
+`test_gate == "failing-confirmed"` or `"no-results"`, respectively) going
+forward — never continue past the refusal on the strength of the user's
+words alone; the confirmation only counts once it produced a passing gate.
 
 ### C. Determine Target
 

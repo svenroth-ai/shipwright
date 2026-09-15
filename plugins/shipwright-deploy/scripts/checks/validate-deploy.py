@@ -38,11 +38,20 @@ def _test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | None]:
     """Return ``(state, error_or_none)``.
 
     ``state`` is one of ``passed`` / ``failing-unconfirmed`` /
-    ``failing-confirmed`` / ``no-results``. Only ``failing-unconfirmed``
-    blocks (``error_or_none`` is set); a genuinely ABSENT results file is a
-    warning, not a hard refusal — the same distinction ``/shipwright-deploy``
-    SKILL.md Step B4 already draws in prose ("tests failed OR file does not
-    exist"), for the case where a project truly never ran a test phase.
+    ``failing-confirmed`` / ``no-results``. A genuinely ABSENT results file
+    is treated the same as a failing one — ``/shipwright-deploy`` SKILL.md's
+    prior (pre-mechanisation) Step B4 already required confirmation for
+    *either* case ("tests failed **or** file does not exist"), and nothing
+    in FR-01.08 asked to loosen that when mechanising criterion 1 into code.
+    ``no-results`` is still reported as its own distinct ``state`` (rather
+    than folded into ``failing-unconfirmed``) so a caller — and the
+    standalone-invocation path in particular — can still tell "no test phase
+    ran at all" apart from "tests ran and failed", but it BLOCKS exactly like
+    ``failing-unconfirmed`` unless ``--confirm-failing-tests`` was passed.
+    Tier-3 PR review, e4-checks-deploy-changelog round 3: an earlier version
+    of this function treated ``no-results`` as warn-and-proceed, silently
+    weakening the pre-existing confirmation requirement instead of
+    mechanising it.
 
     A results file that EXISTS but fails to parse is treated as
     ``failing-*``, not ``no-results`` — external review (round 1,
@@ -54,7 +63,13 @@ def _test_gate(project_root: Path, confirmed: bool) -> tuple[str, str | None]:
     """
     results_path = project_root / "shipwright_test_results.json"
     if not results_path.exists():
-        return "no-results", None
+        if confirmed:
+            return "no-results", None
+        return "no-results", (
+            "shipwright_test_results.json not found — re-run with "
+            "--confirm-failing-tests only after a person has explicitly "
+            "confirmed the deploy should proceed anyway"
+        )
 
     unreadable_reason: str | None = None
     try:
@@ -165,7 +180,8 @@ def main() -> int:
         errors.append(test_gate_error)
     elif test_gate == "no-results":
         warnings.append(
-            "shipwright_test_results.json not found — deploying without test verification"
+            "shipwright_test_results.json not found — deploying without test "
+            "verification, confirmed by a person (--confirm-failing-tests)"
         )
     elif test_gate == "failing-confirmed":
         warnings.append("deploying with failing tests — confirmed by a person (--confirm-failing-tests)")
