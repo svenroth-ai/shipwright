@@ -30,7 +30,6 @@ from __future__ import annotations
 import json
 import sys
 from datetime import datetime as _datetime
-from datetime import timezone as _timezone
 from pathlib import Path
 
 # ``known_failures`` lives at ``shared/scripts/`` top level (not under a
@@ -92,15 +91,20 @@ def _parse_iso_utc(value: object) -> _datetime | None:
     except ValueError:
         return None
     # A naive timestamp (no offset — a plausible hand-written or
-    # third-party phase_history[deploy].at) must not reach the aware/naive
-    # comparisons below: that raises TypeError and crashes the verifier
-    # instead of fail-closing it, the one outcome the fail-closed design
-    # exists to prevent (external code review, e4-checks-deploy-changelog).
-    # Both canonical producers write aware UTC, so treating a naive value as
-    # UTC changes nothing for them and only helps a hand-edited file parse.
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=_timezone.utc)
-    return parsed
+    # third-party phase_history[deploy].at) is treated as unparseable, not
+    # coerced to UTC: an earlier version of this fix assumed local-UTC and
+    # normalized it, but for a naive value written in a non-UTC local zone
+    # that reads the instant hours away from reality — in exactly the
+    # direction that can make a STALE phase_history entry appear to
+    # post-date a failure and satisfy the staleness guard below, the one
+    # fail-open outcome this reconciliation exists to prevent. Both
+    # canonical producers write aware UTC, so this never fires for real
+    # evidence; an unknown-zone timestamp is not evidence (doubt review,
+    # e4-checks-deploy-changelog — a raise here is already caught and
+    # surfaced as a fail-closed ask-level gate error one layer up in
+    # validation_record.py, so returning None loses nothing that a crash
+    # was protecting and gains a correct comparison direction).
+    return None if parsed.tzinfo is None else parsed
 
 
 def _load_json_object(path: Path) -> tuple[dict | None, str | None]:

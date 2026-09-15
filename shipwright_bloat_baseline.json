@@ -1105,7 +1105,7 @@
     {
       "path": "shared/scripts/tools/verifiers/deploy_checks.py",
       "limit": 300,
-      "current": 425,
+      "current": 429,
       "state": "grandfathered",
       "adr": null
     },
@@ -1645,7 +1645,7 @@
     {
       "path": "shared/tests/test_verifiers_test_changelog_deploy.py",
       "limit": 300,
-      "current": 757,
+      "current": 763,
       "state": "grandfathered",
       "adr": null
     },

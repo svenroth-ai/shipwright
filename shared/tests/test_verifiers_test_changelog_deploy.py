@@ -666,16 +666,22 @@ def test_manual_rollback_check_still_demands_liveness_after_a_refused_entry(tmp_
     assert "no liveness check has been recorded" in r.detail
 
 
-def test_parse_iso_utc_treats_a_naive_timestamp_as_utc_instead_of_crashing(tmp_path):
-    """Code review (e4-checks-deploy-changelog): a naive timestamp (no
-    offset — a plausible hand-written phase_history[deploy].at) used to
-    reach the aware/naive datetime comparison and raise TypeError, crashing
-    the verifier instead of fail-closing it.
+def test_parse_iso_utc_fails_closed_on_a_naive_timestamp_instead_of_guessing_utc(tmp_path):
+    """Doubt review (e4-checks-deploy-changelog): an earlier fix coerced a
+    naive timestamp (no offset — a plausible hand-written
+    phase_history[deploy].at) to UTC on the theory that the alternative was
+    an uncontained crash. It wasn't — a raise here is already caught one
+    layer up (validation_record.py) and surfaced as a fail-closed ask-level
+    gate error — and for a naive value actually written in a non-UTC local
+    zone, guessing UTC reads the instant hours away from reality, which can
+    make a STALE entry appear fresh. An unknown-zone timestamp must be
+    treated as unparseable, not guessed.
     """
     _write_rollback_entry(tmp_path, invocation="manual", recorded_at="2026-09-15T09:00:00")
     _write_smoke_result(tmp_path, success=True, checked_at="2026-09-15T09:05:00")
     r = check_manual_rollback_proves_alive(tmp_path)
-    assert r.ok is True, r.detail
+    assert r.ok is False
+    assert "missing a parseable timestamp" in r.detail
 
 
 def test_last_jsonl_entry_tolerates_blank_and_malformed_lines(tmp_path):

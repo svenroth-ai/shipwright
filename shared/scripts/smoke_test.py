@@ -43,6 +43,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import deploy_profile
+from lib.atomic_write import durable_atomic_write
 
 # The shortest request worth making. This is a FLOOR on the first attempt, not
 # a ceiling on any attempt: a deadline shorter than one second still gets one
@@ -252,7 +253,12 @@ def _write_output(path: str, result: dict) -> None:
         stamped = {**result, "checked_at": datetime.now(timezone.utc).isoformat()}
         out = Path(path)
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(stamped, indent=2), encoding="utf-8")
+        # Atomic (doubt review, e4-checks-deploy-changelog): a torn write
+        # left by a crash mid-write would otherwise read back as malformed
+        # JSON and block BOTH new deploy checks that reconcile against this
+        # file, with a misleading reason — matching this same diff's other
+        # evidence writer (aggregate_changelog._atomic_write).
+        durable_atomic_write(out, json.dumps(stamped, indent=2))
     except OSError as exc:
         print(f"smoke_test: warning: could not write --output {path}: {exc}", file=sys.stderr)
 

@@ -161,3 +161,76 @@ non-zero-padded `@pytest.mark.covers("FR-01.08/AC5")` — the canonical ID is
 - Inventing a new release/run-identity convention to bind the rollback,
   smoke, and changelog artifacts together — rejected as disproportionate
   scope for this sub-iterate; documented as a residual limitation instead.
+
+## Delegated campaign-mode review cascade (orchestrator-run, after this
+## runner's own build)
+
+Stage 1 (spec-reviewer, fresh context): **PASS** — independently hand-traced
+every ledger row claimed `enforced`/`enforced, tested` against the actual
+code before agreeing.
+
+Stage 2 (code-reviewer, fresh context): 1 HIGH + 4 MEDIUM + 5 LOW. The HIGH
+and all 4 MEDIUM were genuine and are fixed in a follow-up commit
+(`1af53f6d9`), each with a regression test seeded from real data rather than
+a balanced fixture:
+- `check_test_gate_passed` counted skipped tests as failures against this
+  repo's own real `shipwright_test_results.json` — now trusts the layer's
+  own `status` field first.
+- `_parse_iso_utc` could raise on a naive timestamp.
+- `check_manual_rollback_proves_alive` demanded liveness evidence for a
+  REFUSED (unmutated) manual rollback.
+- `rollback_audit.record()` was unguarded in `rollback.py`'s `main()`.
+- `rollback_audit.record()`'s entry dict let a future `result` field
+  collide with the audit's own `invocation`/`recorded_at` keys.
+Of the 5 LOW, the third-unguarded-`read_run_config().get()` call was fixed
+to match the other two; the rest (docstring accuracy, a test-only accessor,
+a bloat-baseline exception-vs-grandfathered label) were accepted as
+genuinely non-blocking.
+
+Stage 3 (doubt-reviewer, adversarial, fresh context): recorded 1 HIGH + 3
+MEDIUM + 4 LOW, disposition `not_applicable` (advisory, no blocking
+defect). It also **disproved a premise of the Stage-2 naive-timestamp
+fix** — a raise there is already caught and converted to a fail-closed
+ask-level gate error one layer up (`validation_record.py`), so coercing a
+naive value to UTC traded a contained crash for a real fail-open risk
+(a naive timestamp in a non-UTC local zone reads hours away from the real
+instant, in the direction that can make a stale entry look fresh). Reverted
+to fail-closed (`return None`) in the same follow-up commit, with the test
+updated to assert the corrected direction. Also fixed: `smoke_test.py`'s
+`--output` write made atomic (LOW), matching this diff's other evidence
+writer, so a torn write reads back as "malformed" rather than silently
+recharacterizing a real failure as absent evidence.
+
+**Accepted as known, disclosed limitations rather than engineered away —
+consistent with D7's "honest downgrade over a fake/weak gate," applied here
+to mean "honest disclosure over silent or over-engineered closure":**
+
+1. **HIGH — enforcement depends on three agent-typed CLI flags.**
+   `smoke_test.py --output`, `rollback.py --project-root`, and
+   `rollback.py --invocation manual` are each SKILL.md-prescribed, not
+   code-enforced; omitting any one makes the corresponding check return
+   `True` on absent evidence rather than blocking. This is a narrower gap
+   than the one criterion 7 actually closed (recording itself is now
+   unconditional, not agent-remembered) — but criteria 4 and 8's "was the
+   evidence produced at all" step is still agent-remembered. Closing it
+   fully needs an independent completeness check (e.g. "a completed deploy
+   phase must have a `smoke-test-result.json`") — out of scope for this
+   sub-iterate; the ledger rows for #4 and #8 should be read with this
+   caveat until such a check exists.
+2. **MEDIUM — `smoke-test-result.json` is a single overwritable slot shared
+   by two checks with opposing evidentiary needs.** Satisfying criterion 8
+   (a fresh liveness check after a manual rollback) overwrites the record
+   criterion 4 needs (a failed liveness check stays recorded as failed).
+   Benign under today's SKILL.md ordering (no post-auto-rollback re-probe
+   exists yet); would silently reopen criterion 4 as a no-op if one is ever
+   added, with no test to catch it. An append-only history for smoke
+   results (mirroring `rollback-history.jsonl`) would close this; deferred.
+3. **MEDIUM — the audit trail's readers treat an unparseable line as "no
+   entry" rather than "corruption."** `_last_jsonl_entry` and
+   `rollback_audit.last_entry` both skip a malformed line rather than
+   flagging it, and `rollback.py`'s guard (fix above) can itself leave the
+   trail missing a write after a lock timeout — so a corrupted or lost
+   record currently reads back identically to "nothing happened," which is
+   fail-open for an append-only trail whose whole design is "absence means
+   pass." Deferred: counting/flagging unparseable lines, and a durable
+   degraded-marker on a failed audit write.
