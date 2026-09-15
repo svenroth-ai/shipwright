@@ -171,7 +171,8 @@ def read_run_events(
 ) -> list[dict[str, Any]]:
     """Return records belonging to one runtime session across all worktrees.
 
-    Exact ``session`` matches are always included.  ``since`` is a deliberate
+    Exact ``session`` matches are included only when they are newer than
+    ``since`` (when a boundary is supplied).  ``since`` is a deliberate
     degradation path for launchers whose child shell did not preserve the
     session environment variable: only records with no ``session`` field and
     a timestamp strictly later than ``since`` are admitted.  This is weaker evidence
@@ -197,10 +198,11 @@ def read_run_events(
             # A discovered worktree can disappear before its event file is read.
             continue
         for event in events:
-            if event.get("session") == session:
-                selected.append(event)
-                continue
             timestamp = event.get("ts") or event.get("timestamp")
+            if event.get("session") == session:
+                if since is None or _timestamp_after(timestamp, since):
+                    selected.append(event)
+                continue
             if (
                 since is not None
                 and "session" not in event

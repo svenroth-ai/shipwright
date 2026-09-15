@@ -135,7 +135,7 @@ def test_read_run_events_scans_main_and_worktrees_with_exact_and_degraded_scope(
     )
 
     events = read_run_events(tmp_path, session="sid", since="2026-09-15T10:00:00Z")
-    assert {event["id"] for event in events} == {"main", "worktree", "fallback"}
+    assert {event["id"] for event in events} == {"worktree", "fallback"}
 
 
 def test_read_run_events_keeps_root_evidence_when_worktree_discovery_fails(tmp_path, monkeypatch):
@@ -199,12 +199,28 @@ def test_run_scoped_c1_accepts_only_the_requested_session(tmp_path):
 
 def test_run_scoped_c1_does_not_mix_exact_and_since_fallback_evidence(tmp_path):
     (tmp_path / "shipwright_events.jsonl").write_text("\n".join([
-        json.dumps({"type": "phase_started", "phase": "plan", "session": "sid"}),
+        json.dumps({
+            "type": "phase_started", "phase": "plan", "session": "sid",
+            "ts": "2026-09-15T10:00:01Z",
+        }),
         json.dumps({
             "type": "phase_completed", "phase": "plan",
             "ts": "2026-09-15T10:01:00Z",
         }),
     ]) + "\n")
+
+    result = check_c1_run_scoped(
+        tmp_path, "plan", session="sid", since="2026-09-15T10:00:00Z",
+    )
+
+    assert result.ok is False
+
+
+def test_run_scoped_c1_rejects_exact_completion_before_since_boundary(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text(json.dumps({
+        "type": "phase_completed", "phase": "plan", "session": "sid",
+        "ts": "2026-09-15T09:59:59Z",
+    }) + "\n")
 
     result = check_c1_run_scoped(
         tmp_path, "plan", session="sid", since="2026-09-15T10:00:00Z",

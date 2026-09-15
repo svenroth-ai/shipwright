@@ -80,7 +80,10 @@ def test_c1_since_fallback_certifies_only_events_after_the_boundary(tmp_path):
 def test_c1_exact_session_evidence_blocks_a_newer_since_fallback(tmp_path):
     _write_events(
         tmp_path,
-        {"type": "phase_started", "phase": "plan", "session": "sid"},
+        {
+            "type": "phase_started", "phase": "plan", "session": "sid",
+            "ts": "2026-09-15T10:00:01Z",
+        },
         {
             "type": "phase_completed", "phase": "plan",
             "ts": "2026-09-15T10:01:00Z",
@@ -93,6 +96,22 @@ def test_c1_exact_session_evidence_blocks_a_newer_since_fallback(tmp_path):
 
     assert result["verdict"] == "not_done"
     assert result["evidence"]["completion_scope"] == "exact"
+
+
+def test_c1_exact_completion_before_since_boundary_is_not_done(tmp_path):
+    _write_events(
+        tmp_path,
+        {
+            "type": "phase_completed", "phase": "plan", "session": "sid",
+            "ts": "2026-09-15T09:59:59Z",
+        },
+    )
+
+    result = oracle.evaluate(
+        tmp_path, "plan", session="sid", since="2026-09-15T10:00:00Z",
+    )
+
+    assert result["verdict"] == "not_done"
 
 
 def test_no_oracle_is_explicit_and_uses_the_documented_exit_code(tmp_path, capsys):
