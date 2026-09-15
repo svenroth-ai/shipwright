@@ -132,3 +132,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [t6 — FR-01.02 / FR-01.16 AC-binding disposition table](iterate-2026-09-12-t6-project-elicitation-ac-bindings.md)
 - [t7 — FR-01.10 / FR-01.18 AC-binding disposition table](iterate-2026-09-12-t7-compliance-grade-ac-bindings.md)
 - [ADR — Mechanise FR-01.08/FR-01.09 prompt-only-mechanisable ledger lines](iterate-2026-09-15-e4-checks-deploy-changelog-mechanise-fr0108-fr0109.md)
+- [t8 — FR-01.01 / FR-01.05 / FR-01.12 / FR-01.13 AC-binding disposition table](iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)

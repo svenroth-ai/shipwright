@@ -70,6 +70,7 @@ def make_register(**kw):
 # Coverage gaps — what has no test
 # --------------------------------------------------------------------------- #
 
+@pytest.mark.covers("FR-01.13/AC04")
 def test_a_requirement_with_no_tagged_test_is_an_inherited_gap() -> None:
     gaps = coverage_gaps(["FR-01.01", "FR-01.02", "FR-01.03"], BACKFILL, SKIPS)
     assert gaps["requirements_without_tests"] == ["FR-01.03"]
@@ -135,6 +136,7 @@ def test_gaps_never_feed_the_number_that_excuses_failures() -> None:
     assert reg["known_failures"] == []
 
 
+@pytest.mark.covers("FR-01.13/AC04")
 def test_an_observed_red_baseline_is_recorded_as_inherited() -> None:
     observed = parse_observed_failures({
         "source": "adopt baseline run",

@@ -479,6 +479,7 @@ def test_wait_for_service_http_uses_declared_host(tmp_path):
 
 @patch("dev_server._is_pid_running", return_value=True)
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
+@pytest.mark.covers("FR-01.12/AC04", "FR-01.12/AC05")
 def test_start_already_running_only_when_pid_owned(mock_port, mock_pid, tmp_path):
     state = {
         "version": 2,
@@ -493,6 +494,7 @@ def test_start_already_running_only_when_pid_owned(mock_port, mock_pid, tmp_path
 
 
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
+@pytest.mark.covers("FR-01.12/AC06")
 def test_start_port_busy_no_state_errors_no_kill(mock_port, tmp_path):
     """Port in use but no state file → error, do NOT kill anything.
 
@@ -509,6 +511,7 @@ def test_start_port_busy_no_state_errors_no_kill(mock_port, tmp_path):
 
 
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
+@pytest.mark.covers("FR-01.12/AC06")
 def test_start_port_busy_state_file_mismatch_errors_no_kill(mock_port, tmp_path):
     # State references a different service set
     state = {
@@ -829,6 +832,7 @@ def test_state_v1_not_rewritten_on_read(tmp_path):
     assert on_disk.get("pid") == 12345
 
 
+@pytest.mark.covers("FR-01.12/AC05")
 def test_state_v2_round_trip(tmp_path):
     state = {
         "version": 2,
@@ -929,6 +933,7 @@ def test_status_v2_multi_service_top_level_from_primary(mock_port, mock_pid, tmp
 @patch("dev_server._is_port_in_use_for_host", return_value=False)
 @patch("dev_server._wait_for_service", return_value=(True, ""))
 @patch("dev_server.subprocess.Popen")
+@pytest.mark.covers("FR-01.12/AC05")
 def test_cli_legacy_invocation_still_works(mock_popen, mock_wait, mock_port, tmp_path):
     """Regression guard: existing callers using `start --profile X --cwd Y`
     should produce a single-service start with legacy top-level keys."""
@@ -1033,6 +1038,7 @@ def test_warning_emitted_only_once_per_invocation(tmp_path, capsys):
 # AC11 — vite-hono profile loading
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.12/AC08")
 def test_profile_loader_reads_vite_hono_services_block(monkeypatch, tmp_path):
     """Confirm shipped vite-hono.json profile has 2 services with expected shape.
 
@@ -1071,6 +1077,7 @@ def test_profile_loader_reads_vite_hono_services_block(monkeypatch, tmp_path):
     assert frontend["ready_path"] == "/"
 
 
+@pytest.mark.covers("FR-01.12/AC08")
 def test_vite_hono_topo_order_is_backend_then_frontend(monkeypatch, tmp_path):
     repo = REPO
     profile_path = repo / "profiles" / "vite-hono.json"

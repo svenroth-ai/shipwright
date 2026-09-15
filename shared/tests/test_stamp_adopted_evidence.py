@@ -63,6 +63,7 @@ def _tree_is_clean(root: Path) -> bool:
 # --- AC-1: the recorded commit reaches the banner ----------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_stamps_every_markdown_member_with_the_supplied_base(adopted_repo, capsys):
     sha = head_sha(adopted_repo)
     code, report = _stamp(adopted_repo, capsys, "--base", sha)

@@ -210,3 +210,39 @@ def test_verify_artifacts_rejects_non_string_or_blank_entry(tmp_project):
     # A malformed artifacts entry (non-str / blank) is reported missing, never
     # silently skipped — it cannot correspond to a persisted file.
     assert verify_artifacts_exist(tmp_project, [123, "   "]) == ["123", "   "]
+
+
+# --------------------------------------------------------------------------- #
+# resume-time document distinguishes finished from interrupted (FR-01.01/AC04)
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.covers("FR-01.01/AC04")
+def test_reload_context_states_which_phase_was_interrupted(tmp_project):
+    """The returning person's document (the reload context handed to the master
+    on resume) must say which phases finished and which one was interrupted —
+    not just that the run is 'in progress'. A finished phase carries a real
+    result (``ok``, ``summary``); the interrupted one is the one still
+    ``in_progress`` with no result at all, and it must be identifiable by
+    status, not merely absent from the completed set."""
+    tasks = [
+        _done_task("project", summary="requirements captured", artifacts=["a.md"]),
+        _done_task("design", summary="mockups approved", artifacts=["b.md"]),
+        {
+            "phaseTaskId": "pt-plan", "phase": "plan", "splitId": None,
+            "status": "in_progress", "result": None,
+        },
+    ]
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps(_config_with(tasks)), encoding="utf-8",
+    )
+    ctx = reload_orchestrator_context(tmp_project)
+
+    by_phase = {s["phase"]: s for s in ctx["phaseSummaries"]}
+    assert by_phase["project"]["status"] == "done"
+    assert by_phase["project"]["ok"] is True
+    assert by_phase["design"]["status"] == "done"
+    assert by_phase["design"]["ok"] is True
+    # The interrupted phase is named explicitly, distinct from "finished".
+    assert by_phase["plan"]["status"] == "in_progress"
+    assert by_phase["plan"]["ok"] is None
+    assert by_phase["plan"]["summary"] is None

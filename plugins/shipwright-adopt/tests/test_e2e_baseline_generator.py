@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from lib.e2e_baseline_generator import render_baseline_spec, write_baseline_spec
 
 
@@ -31,6 +33,7 @@ def test_render_empty_routes() -> None:
     assert "No routes crawled" in out
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_write_to_filesystem(tmp_path: Path) -> None:
     path = write_baseline_spec(tmp_path, SAMPLE_ROUTES)
     assert path.exists()
