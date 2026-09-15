@@ -512,6 +512,53 @@ unit does not decide; wiring a real observable seam (e.g. making
 three-way choice for AC11) is a production change, not a test-selection one,
 and is flagged to the operator rather than decided here.
 
+### Exception 9 — FR-01.05 AC01-AC06, AC08 (no deterministic seam, found during t8 execution)
+
+This survey's row for FR-01.05 (above) named `plugins/shipwright-build/tests` with
+`test_integration.py` / `test_setup_implementation.py` / `test_sections.py` /
+`test_section_builder_contract.py` as harnesses, and its precedent column read "none
+yet" — silent on whether a seam actually exists for each AC, not merely on whether one
+had been used. Executing t8 found that `/shipwright-build` has **no `scripts/`
+implementation of the build behavior itself** (unlike run/adopt): the plugin's own
+scripts only track section STATE (`update_section_state.py`, `sections.py`) and scaffold
+a session (`setup_implementation_session.py`); the actual "write working code, read the
+mockup, stop on contradiction, keep changes in scope, deliver as one unit" behavior is
+executed entirely by the agent from `SKILL.md` / `agents/section-builder.md` prose — the
+same class Exception 1 already established for `/shipwright-preview`.
+
+Per-AC disposition (`spec.md` FR-01.05 AC01-AC08):
+
+| AC | What it asks | Seam? | Reason |
+|---|---|---|---|
+| AC01 | finished section is working code, not a description | no | `update_section_state.py --commit` accepts any string; nothing verifies it names a real commit or that real code exists at it |
+| AC02 | build without a named section refuses, points at change workflow | no | `setup_implementation_session.py --file` is `argparse`-required, but whether `/shipwright-build` is invoked with a section at all is a `SKILL.md` routing decision, not a script the request ever reaches |
+| AC03 | built section matches its spec exactly, nothing extra | no | no code path compares delivered code against the section's ACs — that comparison is the reviewer cascade's judgement (`spec-reviewer`), which the campaign's own precedent (Exception 8) already treats as unobservable from a test |
+| AC04 | mockup read first as baseline, screen checked back against it | **partial, not tagged** | `update_section_state.py --design-fidelity/--design-groups-file` records a check-BACK result (`design-fidelity-report.json`), a real and tested mechanism (`test_update_section_state_design_fidelity_fields`) — but nothing records that the mockup was read FIRST, before code was written. A conjunctive AC with one proven clause and one absent stays unbound (same rule as Exception 4) |
+| AC05 | mockup/spec contradiction stops the build for a person to decide | no | the only related code, `iteration_touched_flagged_screens` (design gate), is a warning not a build-stopping gate, and it lives in `/shipwright-design`, not `/shipwright-build` — no code in this plugin halts on a detected contradiction |
+| AC06 | shared-file touch outside the section stays minimal and is recorded as the section's own | no | no field or check records which files a section's commit touched outside its own scope |
+| AC08 | complete section delivered as one unit — one section, one branch, one commit | no | the AC's own text says build "follows rather than restates" the constitution's delivery discipline — by design this plugin does not implement it; the enforcing seam, if any, would be the generic iterate/git delivery discipline, not `/shipwright-build` |
+
+**Concrete machine outcome:** none of AC01-AC06, AC08 are tagged. All seven stay in
+`shipwright_ac_coverage_baseline.json`'s `unbound` list, with this section as the
+recorded reason.
+
+**AC07 amended into this exception (external plan review, openai, high — corrected
+2026-09-15):** t8's first pass bound `FR-01.05/AC07` ("declared done only when tests
+pass") to a new negative-case test proving the section-builder result contract schema
+(`agents/section_builder_contract.schema.json`) REQUIRES `tests_passed`/`tests_total`
+on any `status: "complete"` payload. Corrected: requiring the FIELDS to be present is
+not proof that the reported numbers are truthful, that the tests actually ran, or that
+no other code path (e.g. `update_section_state.py`, which accepts any string as
+`--commit` with zero verification) can mark a section complete without them — a
+self-reported required field is the same class of gap as Exception 2's AC02
+("the comparison FUNCTION being unit-testable does not make the gate PROVEN"). The
+`@pytest.mark.covers("FR-01.05/AC07")` marker was removed from
+`plugins/shipwright-build/tests/test_section_builder_contract.py`'s
+`test_complete_without_test_counts_is_rejected` — the test itself is kept (unmarked)
+as a real, valuable regression guard on the contract's required-field shape, the same
+treatment Exception 8 gives its drift-pin tests. `FR-01.05/AC07` stays in `unbound`
+alongside its seven siblings.
+
 ## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
 
 | Unit | FR(s) | Roots touched | Root count |

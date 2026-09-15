@@ -65,6 +65,7 @@ def test_basis_matches_the_table_vocabulary() -> None:
     assert cat.by_basis == {"assumed": 1, "code": 1, "observed": 1}
 
 
+@pytest.mark.covers("FR-01.13/AC02")
 def test_nothing_adopt_derives_today_counts_as_confirmed() -> None:
     """`code` / `observed` / `assumed` all mean *no person has said so*."""
     cat = summarize(FEATURES, split_name="01-adopted")
@@ -98,6 +99,7 @@ def test_a_zero_detection_repo_summarizes_the_placeholder_row() -> None:
 # The banner — visible to a human, invisible to every table reader
 # --------------------------------------------------------------------------- #
 
+@pytest.mark.covers("FR-01.13/AC02")
 def test_banner_states_the_count_and_that_nobody_confirmed_it() -> None:
     banner = render_provenance_banner(summarize(FEATURES, split_name="01-adopted"))
     assert "3" in banner

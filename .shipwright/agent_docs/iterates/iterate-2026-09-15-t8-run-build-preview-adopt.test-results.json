@@ -1,0 +1,87 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-15-t8-run-build-preview-adopt",
+    "date": "2026-09-15",
+    "unit": {
+      "status": "passed",
+      "passed": 12295,
+      "total": 12295
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure test-tagging + 3 new small test functions/files across 4 ADR-044 roots (plugins/shipwright-run/tests, plugins/shipwright-build/tests, plugins/shipwright-adopt/tests, shared/tests); no new/changed web/dev-server/CLI surface to browser-verify -- verification is the exercised unit test suites themselves (572+149+673+10901 = 12295 passed, 0 failed, 43 skipped, 20 deselected)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the resume-time reload context (reload_orchestrator_context) distinguishes a finished phase (status done, ok true) from the one still interrupted (status in_progress, ok/summary null) -- FR-01.01/AC04's second clause",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-run/tests/test_orchestrator_context_reload.py::test_reload_context_states_which_phase_was_interrupted PASSED"
+        },
+        {
+          "behavior": "a section-builder result payload marked complete without tests_passed/tests_total is rejected by the contract schema (shape guard only -- does not prove tests actually ran, see seam survey Exception 9)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_section_builder_contract.py::test_complete_without_test_counts_is_rejected PASSED"
+        },
+        {
+          "behavior": "an onboarding catalogue with unconfirmed derived requirements files a tracked Triage Inbox follow-up card naming the exact unconfirmed count",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_catalogue_followup.py::test_unconfirmed_requirements_leave_a_tracked_follow_up PASSED"
+        },
+        {
+          "behavior": "a fully-confirmed catalogue files no follow-up card (no false positive)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_catalogue_followup.py::test_a_fully_confirmed_catalogue_files_no_follow_up PASSED"
+        },
+        {
+          "behavior": "the follow-up card states its counts as-of-onboarding, not as a claim that stays live as the project evolves",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_catalogue_followup.py::test_the_card_states_totals_as_of_onboarding_not_a_live_count PASSED"
+        },
+        {
+          "behavior": "the real onboarding step (record_inherited_baseline) actually calls confirmation_triage and persists exactly one follow-up card into the Triage Inbox (integration-level half of FR-01.13/AC03, requested by external plan review)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_record_inherited_baseline.py::test_onboarding_leaves_exactly_one_confirmation_follow_up PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 6,
+        "tested": 6,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-15-t8-run-build-preview-adopt",
+    "commit": "39ae269c0372b4c5dc1c596ecef500c8213907b7",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

@@ -12,6 +12,8 @@ egress policy, not merely be an inconvenience.
 import sys
 from pathlib import Path
 
+import pytest
+
 _LIB_DIR = Path(__file__).resolve().parents[1] / "scripts" / "lib"
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
@@ -35,6 +37,7 @@ def _clear_all_provider_env(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.13/AC07")
 def test_run_review_gateway_success_uses_model_1_model_2_role_pair(monkeypatch):
     _clear_all_provider_env(monkeypatch)
     monkeypatch.setenv("SHIPWRIGHT_REVIEW_GATEWAY_BASE_URL", "https://gw.example.com/v1")
@@ -80,6 +83,7 @@ def test_run_review_gateway_fallback_catch_also_redacts_secrets(monkeypatch):
     assert "***redacted***" in reason_1
 
 
+@pytest.mark.covers("FR-01.13/AC07")
 def test_run_review_gateway_failure_never_falls_back_to_openrouter_or_direct(monkeypatch):
     """The rationale is explicit: when an egress policy requires all traffic
     through the gateway, a silent fallback to a direct/openrouter API call is
