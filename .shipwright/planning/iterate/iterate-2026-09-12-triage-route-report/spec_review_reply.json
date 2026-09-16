@@ -1,0 +1,13 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "REJECT",
+  "spec_citations": [
+    {
+      "spec_ref": "task brief scope-extension checklist item 2 ('confirm ... existing dict-key access pattern isn't broken for callers')",
+      "divergence": "RESOLVED: triage_promote.py's promote()/_transition() added an unconditional 'route' key to their result dict (not gated by include_item like 'item' is), which broke 4 pre-existing exact-dict-equality tests that were never updated in the same diff: test_triage_promote.py::test_promote_happy_path, test_triage_promote.py::test_dismiss_happy_path, test_triage_defer.py::test_defer_records_the_decision_and_its_reason, test_triage_defer.py::test_dismiss_is_unchanged_by_the_shared_extraction. Fixed by updating all 4 assertions to include \"route\": \"tracked\"; a follow-up spec-reviewer pass re-verified the fix (all 4 tests pass, 66/66 in the two files) and swept the rest of shared/tests/ for any other unguarded exact-equality assertion on promote/dismiss/defer/unpark results, finding none.",
+      "diff_location": "shared/scripts/tools/triage_promote.py:203-209 (promote) and :262-268 (_transition); fixed assertions at shared/tests/test_triage_promote.py:98-103,279-284 and shared/tests/test_triage_defer.py:81-85,185-188",
+      "kind": "unfaithful"
+    }
+  ],
+  "summary": "Initial re-review REJECTed: the scope-extension change added an unconditional 'route' key to triage_promote.py's result dict, breaking 4 pre-existing exact-dict-equality tests. Fixed in the same run (4 assertions updated, 66 tests re-verified passing) and re-confirmed by a follow-up spec-reviewer pass, which additionally swept all of shared/tests/ for similar unguarded exact-equality assertions and found none, and confirmed all touched files remain within their bloat baselines (320/324, 416/420, 375/375, 366/366)."
+}

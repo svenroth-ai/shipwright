@@ -1154,7 +1154,7 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 909,
+      "current": 910,
       "state": "exception",
       "adr": "ADR-121"
     },

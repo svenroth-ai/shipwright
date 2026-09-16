@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "is_generated_path's .strip() call is removed; a docstring note mirroring the sibling's (PR #746) was added explaining the whitespace-borrowing risk and that hiding-only is lower stakes than skip-safety; a regression test (test_whitespace_variant_of_a_generated_shape_is_NOT_generated) was added covering all three match shapes (startswith prefix, exact-path frozenset membership, basename-rsplit membership). No other classification logic, and the sibling module is unchanged."
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-generated-path-no-strip",
+  "date": "2026-09-16",
+  "section": "shipwright-security PR-review generated-path classifier",
+  "title": "Stop normalizing whitespace in is_generated_path",
+  "context": "is_safe_to_skip_review (pr_review_skip_safety.py) used to .strip() its input before matching generated-artifact paths, letting a whitespace-padded real file borrow a canonical shape's classification; fixed on PR #746. Its sibling is_generated_path (pr_review_generated.py) had the identical .strip() and was never fixed to match.",
+  "decision": "Removed .strip() from is_generated_path. Also narrowed _clean_diff_path's blanket .strip() to .rstrip(chr(13)) only (CRLF), its one legitimate purpose, as hardening — investigated and found NOT an active end-to-end gap given filter_generated_paths's all-paths-must-be-generated exclusion rule, but a blanket strip served no other purpose.",
+  "consequences": "A real file whose name differs from a canonical generated/hidden path only by leading or trailing whitespace is no longer misclassified and hidden from the PR-reviewing model. No change to is_safe_to_skip_review or the match-rule tables themselves.",
+  "rationale": "Stage-2 code review raised a claimed end-to-end gap (trailing whitespace surviving through _clean_diff_path); investigated and empirically disproved via reverting the fix and re-running the new end-to-end test, which stayed green thanks to the diff --git header's own redundant path capture plus the all-sides exclusion rule. The _clean_diff_path narrowing was kept anyway as a hardening measure, not as the closure of an active vulnerability.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

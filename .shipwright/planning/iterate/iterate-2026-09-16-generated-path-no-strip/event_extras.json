@@ -1,0 +1,15 @@
+{
+  "intent": "change",
+  "spec_impact": "none",
+  "affected_frs": [],
+  "new_frs": [],
+  "change_type": "tooling",
+  "none_reason": "internal shipwright-security PR-review-gate helper bugfix (whitespace normalization in a path classifier); not tied to any tracked FR",
+  "description": "is_generated_path no longer strips whitespace before matching generated-artifact paths, mirroring the already-fixed sibling is_safe_to_skip_review; _clean_diff_path narrowed to CRLF-only stripping as hardening",
+  "changed_files": [
+    "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+    "plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py",
+    "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py",
+    ".shipwright/agent_docs/conventions.md"
+  ]
+}
