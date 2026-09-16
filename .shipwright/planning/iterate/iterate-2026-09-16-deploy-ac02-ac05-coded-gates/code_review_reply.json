@@ -1,0 +1,14 @@
+{
+  "section": "deploy-ac02-ac05-coded-gates",
+  "verdict": "ACCEPT",
+  "review": [
+    {"severity": "high", "category": "security", "finding": "test_release_e2e_cli.py named TOKEN like test_rollback_e2e_cli.py's token-leak guard but never asserted it. Fixed: added TOKEN-not-in-stdout/stderr assertions to the confirm-and-deploy and auto-rollback E2E tests.", "outcome": "fixed"},
+    {"severity": "medium", "category": "architecture", "finding": "_client()/_hosting_errors() duplicated from rollback.py instead of extracted, contradicting this same diff's own 'one oracle' rationale for test_gate.py. Fixed: extracted to new hosting.py, both rollback.py and release.py import from there.", "outcome": "fixed"},
+    {"severity": "medium", "category": "correctness", "finding": "deploy_from_git failure path was untested and multiplexed into the same exit code/reason shape as a smoke failure. Fixed: added failure_stage field (deploy/smoke/smoke_config), renamed EXIT_SMOKE_FAILED to EXIT_NOT_RELEASED, added test_a_deploy_failure_is_reported_not_raised.", "outcome": "fixed"},
+    {"severity": "low", "category": "readability", "finding": "release() did five things in one function.", "outcome": "fixed", "note": "extracted _verify_and_maybe_roll_back()"},
+    {"severity": "low", "category": "readability", "finding": "redundant canonical_ref() re-application on an already-canonical previous_ref.", "outcome": "fixed"},
+    {"severity": "low", "category": "readability", "finding": "import placement in release.py did not actually match rollback.py's own convention despite claiming to.", "outcome": "fixed"},
+    {"severity": "low", "category": "correctness", "finding": "run_smoke_test/smoke_policy ValueError/ProfileError for bad --smoke-* flags was uncaught, crashing with a traceback instead of a structured result.", "outcome": "fixed", "note": "added smoke_config failure_stage + test_an_invalid_smoke_poll_interval_is_reported_not_raised"},
+    {"severity": "low", "category": "correctness", "finding": "jelastic_client.deploy_from_git never re-pins the branch for an already-existing VCS project (pre-existing, out of scope for this diff).", "outcome": "skipped", "note": "not introduced by this diff; jelastic_client.py untouched. Filed as a follow-up note in F3a reflection, not actioned here."}
+  ]
+}

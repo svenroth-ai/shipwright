@@ -1,0 +1,143 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-16-deploy-ac02-ac05-coded-gates",
+    "date": "2026-09-16",
+    "unit": {
+      "status": "passed",
+      "passed": 19376,
+      "total": 19446
+    },
+    "integration": {
+      "status": "passed"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path); pre-existing, tracked as trg-f64d1c27, does not affect this run's GREEN status or this diff (untouched by it)"
+    ],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Backend-only Python CLI entry point (release.py) mechanising FR-01.08 AC02/AC05; no client/** UI, API route, SSE/WS handler, or message contract is touched -- nothing for a browser/API surface runner to drive. Verified with 177 in-process pytest tests plus 4 real-subprocess E2E CLI tests (test_release_e2e_cli.py) exercising the module across a process boundary."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "AC02: a release is refused before any host contact when tests are failing and unconfirmed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_refuses_before_contacting_the_host_when_tests_failing PASSED"
+        },
+        {
+          "behavior": "AC02: a release proceeds once a person confirms despite failing tests",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_proceeds_once_a_person_confirms_despite_failing_tests PASSED"
+        },
+        {
+          "behavior": "AC02: no test-results file at all refuses (unconfirmed) and proceeds once confirmed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_refuses_before_contacting_the_host_when_no_test_results, ::test_a_confirmed_release_proceeds_even_with_no_test_results_at_all PASSED"
+        },
+        {
+          "behavior": "AC02: a corrupt/unparseable results file and a non-object JSON root are both treated as failing, not silently as no-results",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_refuses_on_a_corrupt_results_file_without_confirmation, ::test_a_corrupt_results_file_proceeds_once_confirmed, ::test_refuses_when_the_results_file_root_is_not_an_object PASSED"
+        },
+        {
+          "behavior": "AC02: the gate recognises both the top-level and iterate_latest-nested shipwright_test_results.json shapes",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_proceeds_when_results_are_nested_under_iterate_latest PASSED"
+        },
+        {
+          "behavior": "a deploy (host) failure mid-release is reported with its own failure_stage, never raised or conflated with a smoke failure",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_a_deploy_failure_is_reported_not_raised PASSED"
+        },
+        {
+          "behavior": "PROD stays ASK-FIRST: an unrecognised --target and a PROD target without --confirm-prod both refuse before any host contact; PROD proceeds once confirmed",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release.py::test_an_unrecognised_target_is_refused_before_contacting_the_host, ::test_a_prod_release_is_refused_without_explicit_confirmation, ::test_a_prod_release_proceeds_once_confirmed PASSED"
+        },
+        {
+          "behavior": "AC05: a successful smoke check never triggers a rollback",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_rollback.py::test_smoke_success_never_triggers_a_rollback PASSED"
+        },
+        {
+          "behavior": "AC05: a failed smoke check with a configured polling deadline automatically rolls back to the previously-live ref, recorded invocation=auto in the audit trail, and the restored ref is re-verified healthy (or reported unhealthy) by a post-rollback recheck",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_rollback.py::test_smoke_failure_automatically_rolls_back_to_the_previous_ref, ::test_a_recovered_rollback_is_confirmed_healthy_by_the_recheck PASSED"
+        },
+        {
+          "behavior": "AC05: auto-rollback is skipped (not fired) when no polling deadline was configured -- a single fixed-timeout attempt is not trusted to trigger a host mutation",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_rollback.py::test_smoke_failure_skips_rollback_when_no_deadline_is_configured PASSED"
+        },
+        {
+          "behavior": "AC05: auto-rollback is skipped, with a named reason, when there is no distinct previous ref (new environment) or the deployed ref matches the previous one",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_rollback.py::test_smoke_failure_with_no_previous_ref_skips_rollback, ::test_smoke_failure_skips_rollback_when_deployed_ref_matches_previous PASSED"
+        },
+        {
+          "behavior": "AC05: a lock-timeout writing the rollback audit trail never crashes an auto-rollback that already mutated the host -- it degrades to the durable marker",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_rollback.py::test_a_failed_audit_write_never_crashes_the_auto_rollback PASSED"
+        },
+        {
+          "behavior": "an invalid --smoke-poll-interval (discovered only once smoke verification is reached, after deploy) degrades to a structured smoke_config failure, never an uncaught traceback",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_rollback.py::test_an_invalid_smoke_poll_interval_is_reported_not_raised PASSED"
+        },
+        {
+          "behavior": "the CLI's argv-to-release() wiring maps refused/released/not_released outcomes to the documented exit codes, and a --profile load error is reported before any release attempt",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_cli.py (5 tests) PASSED"
+        },
+        {
+          "behavior": "release.py works end to end as a real subprocess across a process boundary: refusal, confirmed deploy, auto-rollback, and skip-smoke-when-no-url paths, with the hosting token never leaked to stdout/stderr",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_release_e2e_cli.py (4 tests) PASSED"
+        },
+        {
+          "behavior": "the shared hosting.hosting_errors() classification degrades gracefully when the jelastic_client module does not define JelasticError, and includes it when present",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_hosting.py (2 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 15,
+        "tested": 15,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-16-deploy-ac02-ac05-coded-gates",
+    "commit": "e6cb6dff0bd2bc898216f48e59eee8fbdde7b652",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

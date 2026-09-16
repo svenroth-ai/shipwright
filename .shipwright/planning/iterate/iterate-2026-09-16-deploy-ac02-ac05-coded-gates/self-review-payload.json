@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "1. Spec Compliance", "verdict": "pass", "note": "AC02/AC05 closed with coded artifacts (release.py) + E2E CLI tests. Refusal is structural (shared test_gate.py oracle); auto-rollback is a coded trigger, not agent prose."},
+    {"name": "2. Error Handling", "verdict": "pass", "note": "Found+fixed during self-review: the auto-rollback path called rollback_audit.record without rollback.py main()'s own LockTimeout/OSError -> record_degraded fallback. Mirrored it, added a regression test."},
+    {"name": "3. Security Basics", "verdict": "pass", "note": "No new raw HTTP calls, no new secret handling, token flow untouched."},
+    {"name": "4. Test Quality", "verdict": "pass", "note": "Outcome-based (host call log, JSON result, audit file contents); one happy + one error/edge path per branch."},
+    {"name": "5. Performance Basics", "verdict": "pass", "note": "No new loops; reuses existing smoke-poll/rollback mechanics unchanged."},
+    {"name": "6. Naming & Structure", "verdict": "pass", "note": "Private helpers mirror rollback.py's own; one shared test-gate oracle instead of two independently-maintained copies."},
+    {"name": "7. Affected Boundaries", "verdict": "pass", "note": "Reads/writes existing JSON boundary files via already-tested functions; no new format; no risk flag fired (diff-driven file-path detector confirmed no io_boundary/cross_component paths touched)."}
+  ]
+}

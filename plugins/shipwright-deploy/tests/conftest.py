@@ -71,6 +71,10 @@ class RecordingClient:
         self._maybe_fail("update")
         return {"result": 0}
 
+    def deploy_from_git(self, env_name, repo_url, branch="main", context="ROOT"):
+        self.calls.append(("deploy_from_git", {"envName": env_name, "branch": branch, "context": context}))
+        return self.vcs_update(env_name, context)
+
     def stop_env(self, env_name):
         self.calls.append(("stopenv", {"envName": env_name}))
         self._maybe_fail("stopenv")

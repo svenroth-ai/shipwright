@@ -515,10 +515,14 @@ _Where the work detail lives_ at the end of this document.
   long to keep asking is the hosting target's own setting rather than a fixed
   wait — so a slow start is not mistaken for a failed release. Asking once and
   giving up is not enough. When no deadline is configured, it is asked once.
-- (E) [AC05] Given a release that has failed, when that is established, then the
-  previously working version is put back without a person having to intervene —
-  the way back is part of releasing, not a separate procedure somebody has to
-  know about.
+- (E) [AC05] Given a release that has failed and a deadline was configured for how
+  long to keep checking, when that failure is established, then the previously
+  working version is put back without a person having to intervene — the way
+  back is part of releasing, not a separate procedure somebody has to know
+  about. Given no deadline was configured, the single check AC04 allows is not
+  by itself treated as enough evidence for this automatic action: the failure
+  is still reported, but the previous version is put back only when a person
+  or a separate, deliberate step asks for it.
 - (E) [AC06] Given a return to a named previous version, when it runs, then that
   version is what is sent to the hosting target, and success is reported only
   when the target has been asked to run it and did not object — never for a

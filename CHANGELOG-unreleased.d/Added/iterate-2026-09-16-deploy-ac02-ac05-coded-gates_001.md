@@ -1,0 +1,1 @@
+shipwright-deploy: coded release.py entry point mechanises FR-01.08 AC02 (refuse release on failing tests until confirmed) and AC05 (auto-rollback on smoke-test failure), previously SKILL.md-only agent prose; requires --target {dev,prod} with PROD refused without --confirm-prod.
