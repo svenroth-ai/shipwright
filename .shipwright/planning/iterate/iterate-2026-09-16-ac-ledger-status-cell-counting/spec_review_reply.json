@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Re-review of the 3 Stage-1 citations (a stale first-pass duplication finding, a stale self-review-contradiction finding, and a genuine test-accounting undercount): all resolved and verified in the current tree by fresh reads. No new divergence introduced by the fixes. The counting fix is faithful to the spec, the ledger's published totals (1/25/13/25/92) are exactly what the delivered algorithm produces, historical numbers are untouched, and no scope creep. Proceed to code-reviewer."
+}

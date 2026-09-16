@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-ac-ledger-status-cell-counting",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:08.931821+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The exclusion rule is \"any table block whose header row's first column is literally `Status`.\" A future criterion table that legitimately puts `Status` first would be silently and entirely excluded from the count — exactly the class of silent drift this change exists to prevent, just inverted. The spec argues no real table does this today, but nothing enforces it tomorrow.",
+          "suggestion": "Either document this invariant in the ledger's authoring convention (e.g., \"Status must never be the first column of a criterion table\") near where new tables are defined, or add a debug/warning mode to the script that lists which table blocks were excluded so a reviewer can eyeball that only legend/summary-shaped tables were dropped. Cheap insurance for a tool whose output is treated as fact.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The `|`-prefix test for \"is this a table row\" has unhandled shape variants: rows with leading whitespace (some markdown renderers accept indented table rows), escaped pipes (`\\|`) inside cells (present in the ledger already — the Test Completeness Ledger uses `\\| Status \\|`), and table blocks interrupted by a blank line inside a section. If a criterion row is indented or a table is split by a blank line mid-body, rows silently drop out of the count.",
+          "suggestion": "Define \"table row\" as `line.lstrip().startswith('|')` at minimum. Verify against the live ledger that the by-hand cross-check (25 prompt-only/judgement) still holds — the plan reports it does, so the immediate risk is low, but pin the lstrip behavior in a test since the ledger is hand-edited prose where indentation creep is plausible.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The interim mitigation note (\"keep status names un-backticked outside a status cell\") is still in the live ledger and is not listed in Files to modify. After this fix it's dead instruction that future authors will either follow unnecessarily or, worse, conclude the tool still has the bug.",
+          "suggestion": "Remove or annotate the mitigation note in the same ledger edit that appends the re-measured paragraph (the file is already being touched, so this is free).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The reconciliation is forward-only (new paragraph, old numbers untouched), which matches ADR convention — but the drift-guard test `test_real_ledger_header_matches_the_live_measurement` now implicitly anchors to the new totals in the appended paragraph. If the ledger later gains another explanatory table (e.g., a third summary table with `Status` first), counts shift again and the guard fires with no way to distinguish \"real row change\" from \"another structural false positive.\"",
+          "suggestion": "Acceptable as-is, but consider having the script's human-readable output print which table blocks were excluded (overlaps with finding 1) so the next STRICT-STOP diagnosis takes minutes instead of an incident.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The remaining known imprecision — backticked statuses in non-status columns of real criterion rows — is acknowledged but only defended by one test about split rows. This means the count is still not \"the status cell count\" the title claims; it's \"table-row-line count.\"",
+          "suggestion": "Fine to accept (the rejected alternative's fragility argument is sound), but the rewritten module docstring should state this residual explicitly with the split-row convention as the reason, so the next reader doesn't assume cell-level precision.  No security concerns (local file read, no injection surface, no data exposure). No missing dependencies — the grep-verified \"no other callers\" claim covers the blast radius, and the plan correctly identifies that all downstream recorded numbers change, which is handled by the forward-reconciliation policy.  Overall assessment: Sound, well-scoped fix with the right alternative rejected for the right reason and unusually good empirical validation. The findings above are hardening refinements — the two medium-severity edge cases (Status-first criterion table, row-shape variants) are the only ones worth addressing before merge, and both are small.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed algorithm still counts canonical statuses anywhere in a real criterion-table row, including the rationale/evidence column. That leaves the same class of inflation possible whenever a rationale backtick-quotes another status—especially plausible in this prose-heavy ledger.",
+          "suggestion": "Parse each table’s header generically, find a column named `Status`, and count matches only in that column. This is simpler and safer than special-casing `Status`-first tables, and avoids needing per-table-shape rules.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Contiguous `|`-prefixed lines” is not by itself reliable table identification. It can count pipe-prefixed examples inside fenced code blocks, while missing valid Markdown rows that omit the leading pipe. Header matching also needs normalization for indentation and cell whitespace.",
+          "suggestion": "Define and test the supported Markdown-table grammar explicitly: ignore fenced code, normalize header cells before comparing, and add fixtures for indentation, separator rows, and pipe-containing non-table content.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The test accounting is inconsistent: the plan says to replace one pre-existing test, but later says all eight prior tests pass “unmodified.” That makes it unclear which prior behavior remains intentionally covered.",
+          "suggestion": "State the exact resulting suite composition—for example, seven unchanged tests, one replaced obsolete test, and three new regressions—and preserve any still-relevant sweep behavior in the replacement tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The historical reconciliation depends on the drift-guard’s selection of the authoritative measurement paragraph, but the plan does not specify how that test distinguishes the newly appended result from older “Re-measured” entries.",
+          "suggestion": "Add or confirm an explicit test that the guard reads the latest dated reconciliation entry (or a uniquely labeled current-measurement field), so future append-only history cannot make the guard validate against stale numbers.  No material security concern is apparent: the inputs are local Markdown and the status vocabulary is fixed. The intended row-only fix is directionally sound, but it should count actual status cells rather than all content in table rows before being accepted.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T16:29:42.336702+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review findings\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The exclusion rule is \"any table block whose header row's first column is literally `Status`.\" A future *criterion* table that legitimately puts `Status` first would be silently and entirely excluded from the count — exactly the class of silent drift this change exists to prevent, just inverted. The spec argues no real table does this today, but nothing enforces it tomorrow.\n  **Suggestion:** Either document this invariant in the ledger's authoring convention (e.g., \"Status must never be the first column of a criterion table\") near where new tables are defined, or add a debug/warning mode to the script that lists which table blocks were excluded so a reviewer can eyeball that only legend/summary-shaped tables were dropped. Cheap insurance for a tool whose output is treated as fact.\n\n- **Category: edge-case — Severity: medium**\n  **Finding:** The `|`-prefix test for \"is this a table row\" has unhandled shape variants: rows with leading whitespace (some markdown renderers accept indented table rows), escaped pipes (`\\|`) inside cells (present in the ledger already — the Test Completeness Ledger uses `\\| Status \\|`), and table blocks interrupted by a blank line inside a section. If a criterion row is indented or a table is split by a blank line mid-body, rows silently drop out of the count.\n  **Suggestion:** Define \"table row\" as `line.lstrip().startswith('|')` at minimum. Verify against the live ledger that the by-hand cross-check (25 prompt-only/judgement) still holds — the plan reports it does, so the immediate risk is low, but pin the lstrip behavior in a test since the ledger is hand-edited prose where indentation creep is plausible.\n\n- **Category: risk — Severity: low**\n  **Finding:** The interim mitigation note (\"keep status names un-backticked outside a status cell\") is still in the live ledger and is not listed in Files to modify. After this fix it's dead instruction th […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed algorithm still counts canonical statuses anywhere in a real criterion-table row, including the rationale/evidence column. That leaves the same class of inflation possible whenever a rationale backtick-quotes another status—especially plausible in this prose-heavy ledger.  \n   **Suggestion:** Parse each table’s header generically, find a column named `Status`, and count matches only in that column. This is simpler and safer than special-casing `Status`-first tables, and avoids needing per-table-shape rules.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “Contiguous `|`-prefixed lines” is not by itself reliable table identification. It can count pipe-prefixed examples inside fenced code blocks, while missing valid Markdown rows that omit the leading pipe. Header matching also needs normalization for indentation and cell whitespace.  \n   **Suggestion:** Define and test the supported Markdown-table grammar explicitly: ignore fenced code, normalize header cells before comparing, and add fixtures for indentation, separator rows, and pipe-containing non-table content.\n\n3. **Category:** risk  \n   **Severity:** low  \n   **Finding:** The test accounting is inconsistent: the plan says to replace one pre-existing test, but later says all eight prior tests pass “unmodified.” That makes it unclear which prior behavior remains intentionally covered.  \n   **Suggestion:** State the exact resulting suite composition—for example, seven unchanged tests, one replaced obsolete test, and three new regressions—and preserve any still-relevant sweep behavior in the replacement tests.\n\n4. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The historical reconciliation depends on the drift-guard’s selection of the authoritative measurement paragraph, but the plan does not specify how that test distinguishes the newly appended result from older “Re-measured” ent […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 2,
+          "finding": "Module docstring at 111 lines, 37% of a 299-line file, zero headroom; run-specific provenance material belongs in the spec/ADR per CLAUDE.md.",
+          "suggestion": "Trim to behavioral-contract paragraphs + one pointer line to the spec.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 86,
+          "finding": "Docstring falsely claims to contain a fenced-code-block example itself.",
+          "suggestion": "Remove the false claim.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py",
+          "line": 208,
+          "finding": "Header-match test's docstring advertises whitespace/single-cell variants it does not exercise.",
+          "suggestion": "Add the missing variants.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 191,
+          "finding": "Block-scoped exclusion's blank-line dependency is untested, contradicting the '0 untested-testable' Confidence Calibration claim.",
+          "suggestion": "Add a fixture pinning the merged-block (non-excluded) behavior.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 184,
+          "finding": "Unterminated fence silently discards the rest of the document with no audit signal.",
+          "suggestion": "Surface an unterminated_fence flag in measure()'s payload.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 226,
+          "finding": "measure() recomputes _table_row_text a second time; correct but asks the reader to trust the two calls agree.",
+          "suggestion": "Add a one-line comment explaining the deliberate trade-off.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/measure_ac_evidence_ledger.py",
+          "line": 158,
+          "finding": "Unreachable else-branch in _table_header_first_cell.",
+          "suggestion": "Collapse to a single return expression.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:48:31.746825+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:48:55.248920+00:00",
+      "disposition": "doubt-reviewer (Stage 3) is conditional on non-trivial touches (migrations, async/concurrency, cross-plugin imports, irreversible ops) per shipwright-build:doubt-reviewer's own trigger criteria; this diff is a pure-function text-processing fix with no such touch",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T17:02:38.281260+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] I reviewed the diff against the spec, the stated acceptance criteria, the Test Completeness Ledger, and the plan-review/external-review dispositions.\n\n**Spec compliance check:**\n- Table-row-only restriction: implemented in `_table_row_text` / `count_statuses` — matches.\n- `Status`-first-header structural exclusion (stripped, casefolded, split on `|`): implemented in `_table_header_first_cell`; not a literal prefix — matches Plan Review finding 2's fix.\n- `excluded_tables` audit output in `measure()` and human-readable CLI listing: implemented and asserted (including the `== 2` drift-guard assertion) — matches findings 2 and external review finding 1.\n- Fenced-code-block skip + `unterminated_fence` flag with CLI warning: implemented and tested — matches findings 4 and code-review finding 5.\n- Reworded drift-guard failure message (row-edit vs structure-change triage): present in the new real-ledger test file — matches finding 3.\n- Ledger reconciliation paragraph appended with the new totals and the narrowed \"prose vs non-status-cell\" claim (with the FR-01.03 #5 example): present — matches finding 1.\n- Deleted superseded test and split of the real-ledger test into its own file: done, with the sole `pytest.skip` moved intact.\n- Test ledger behaviors 1–12 each map to a test that actually exists in the diff and asserts outcomes (counts / `excluded_tables` / `unterminated_fence`), not implementation internals.\n\n**Correctness of the changed code:**\n- `_table_header_first_cell`: `strip().strip(\"|\").split(\"|\")[0].strip().casefold()` correctly handles `| Status |`, `|Status|Rows|`, `|  Status  |`, and single-cell `|Status|` — the three variants are pinned by the structural test.\n- Block walking in `_table_row_text` is correct: contiguous pipe-prefixed runs, 1-indexed line numbers, fence toggle before the pipe test so fence contents are never rows. An unterminated fence correctly yields `in_fence=True` at EOF.\n- The glued-legend case (no blank line) merges blocks a […truncated]\n\n[openai] No concrete defects found. The change implements the specified row-only counting, `Status`-first table exclusion, fence handling/auditing, and reconciliation guard; tests cover the intended regression paths. Ship as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "openai": "approve",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:40:19.660337+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:29:40.548207+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

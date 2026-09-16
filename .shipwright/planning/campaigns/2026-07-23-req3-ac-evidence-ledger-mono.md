@@ -361,6 +361,52 @@ So `untested` means *no test was found by a targeted search of the suite*, not
 *no test exists*. Every row is a candidate for the backfill track to re-check,
 not a proven absence.
 
+**Re-measured again 2026-09-16 (iterate `ac-ledger-status-cell-counting`,
+campaign `req3-06-enforcement-mono`) — fixed the measurement script itself,
+not a row.** `count_statuses` previously counted every backtick-quoted status
+occurrence anywhere in the document; it now counts only markdown table rows,
+and excludes the vocabulary legend and the 2026-07-26 historical end-check
+summary table (both structurally identifiable: their first column is headed
+`Status`, which no real criterion table does). This closes exactly the drift
+a `e3-checks-test-security` explanatory paragraph exposed on 2026-09-12 — a
+spec-reviewer REJECT whose proposed fix would have overwritten this
+document's own trustworthy totals with the inflated ones instead of fixing
+the counter (full account: the
+`iterate-2026-09-16-ac-ledger-status-cell-counting` spec). **One consequence
+of the fix, narrower than it first sounds: a status name mentioned OUTSIDE
+any table — running prose, a recap paragraph — no longer affects the count
+at all. A status name backtick-quoted INSIDE a table row but outside its
+own status cell (an "Evidence / gap" note narrating what a row used to be,
+for example) still counts** — the script restricts to table rows, not to
+the status cell within a row, and the live document already has this shape
+(FR-01.03 #5's evidence cell reads "Was `no-oracle`: the manifest is a
+flat…" on a row whose actual status is `unimplemented`). So the "keep
+status names un-backticked outside a status cell" notes on the paragraphs
+above are **narrowed, not retired**: they still matter for backticks
+inside a criterion table's non-status columns, and only stopped mattering
+for backticks outside tables entirely. Left in place as history, not
+repeated here.
+
+Every total in every "Re-measured" paragraph above this one was produced by
+the old, whole-document counter and is **not** being rewritten — the same
+rule ADR numbering already follows (never renumber retroactively), and the
+same is true of every pre-2026-09-16 total quoted elsewhere (the
+`iterate-2026-09-12-e3-checks-test-security-fr0106-fr0107-checks` and
+`iterate-2026-09-16-e6-judgement-drift-tests-closure` ADRs, and the
+`e0-ledger-accounting` decision-drop) — a mismatch against those documents
+means the method changed, not that either number is wrong. This is a fresh
+measurement under the corrected method, so it is lower across the board,
+not a correction of those numbers:
+**1** prompt-only/mechanisable · **25** prompt-only/judgement ·
+**13** enforced-untested · **25** unimplemented · **92** enforced-tested.
+
+The "met at zero" paragraph above explains its count of 3 as 1 real row
+(FR-01.06 #6b) plus the legend definition plus the 2026-07-26 historical
+summary table. Those two are exactly the blocks this fix's `excluded_tables`
+rule now drops structurally — so the corrected count for that same claim is
+exactly 1, confirming that paragraph's own by-hand reasoning rather than
+contradicting it.
+
 ---
 
 ## FR-01.03 — /shipwright-plan  ✅ walked 2026-07-23
