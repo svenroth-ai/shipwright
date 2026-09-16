@@ -154,7 +154,10 @@ def record_phase_end(
     top-level ``--split-id``/``splitId`` field). The per-phase span derives as
     min(``phase_started``) .. max(``phase_completed``) across the phase's splits;
     per-split duration bars derive from each split's own start/end. A single-split
-    phase carries ``splitId=None`` and pairs exactly, as before.
+    phase carries ``splitId=None`` and pairs exactly, as before — WITHIN one
+    ``SHIPWRIGHT_SESSION_ID``. Since iterate-2026-09-16-codex-light-phase-dedup-
+    session, a genuinely later completion of the SAME ``(phase, splitId)`` under
+    a DIFFERENT session id records its own end instead of being deduped away.
     (iterate-2026-07-11-phase-completed-per-split, following M-Pre-1.)
     """
     event_type = "phase_failed" if status == "failed" else "phase_completed"

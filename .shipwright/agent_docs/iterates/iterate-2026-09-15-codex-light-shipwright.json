@@ -1,0 +1,59 @@
+{
+  "run_id": "iterate-2026-09-15-codex-light-shipwright",
+  "date": "2026-09-15T20:39:55.936718Z",
+  "event_at": "2026-09-12T21:05:20.023927+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/codex-light-shipwright",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-15-codex-light-shipwright",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "run-scoped C1 checks use session identity and exclude unscoped legacy fallbacks",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verifiers_common.py PASSED"
+      },
+      {
+        "behavior": "legacy C1 callers retain their existing fail-open behavior",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verifiers_common.py::test_legacy_c1_callers_remain_unchanged PASSED"
+      },
+      {
+        "behavior": "build section checking can require at least one section without changing the default",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verifiers_build.py PASSED"
+      },
+      {
+        "behavior": "the completion oracle maps all supported phases to JSON verdicts and documented exit codes",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_codex_completion_oracle.py PASSED"
+      },
+      {
+        "behavior": "the iterate oracle reads delivery state without invoking the mutating delivery tool",
+        "disposition": "tested",
+        "evidence": "shared/scripts/tools/tests/test_codex_completion_oracle.py::test_iterate_delivery_pending_uses_read_only_watch_once PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 5,
+      "tested": 5,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 38,
+    "exit_code": 0,
+    "justification": "The completion oracle is a read-only CLI; its direct CLI tests cover JSON verdicts and exit codes."
+  },
+  "declared_removals": []
+}

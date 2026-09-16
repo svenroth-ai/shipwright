@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-15-codex-light-shipwright",
+  "date": "2026-09-15",
+  "section": "Iterate — change: Codex Light completion oracle",
+  "title": "Add a read-only, run-scoped completion oracle for Codex Light",
+  "context": "The WebUI needs a single local query surface that can tell whether one Codex-run phase has completed without changing delivery state.",
+  "decision": "Add session-scoped verifier siblings and one CLI that returns JSON verdicts for C1 phases, build work, and read-only iterate delivery state.",
+  "consequences": "Existing C1 callers retain their broad historical fallbacks; the new oracle deliberately excludes unscoped fallbacks and never invokes deliver_pr.py.",
+  "rationale": "Run identity from session stamps is stronger than shared project-level completion signals and keeps the WebUI from duplicating Shipwright semantics.",
+  "rejected": "Changing the legacy C1 function or using deliver_pr.py as an oracle would broaden regression risk or mutate PR delivery.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

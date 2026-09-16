@@ -1,0 +1,11 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "AC1 ('19 lines' drift test) satisfied for the verified-live count of 25 judgement rows, discrepancy from the campaign card's stale count documented in the ledger's own e6 re-measurement paragraph; AC2 (no pass/fail gate on content) satisfied — only literal substring/whitespace-normalized presence assertions added, zero LLM call, zero heuristic scorer."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Missing-source-file reads raise FileNotFoundError naturally, matching every sibling drift test in the repo (test_missing_key_stop_and_ask_drift.py, test_remediation_judgement_drift.py) — the established idiom for this test class."},
+    {"name": "Security Basics", "verdict": "pass", "note": "Pure local-file text assertions over static markdown; no secrets, no auth surface, no network/subprocess calls."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Each assertion pins one specific literal sentence with a failure message explaining the guarantee it protects; whitespace normalized uniformly across all 8 new assertions after external plan review (GLM) flagged soft-wrap brittleness as the reason 6 of the 25 rows' existing coverage went uncited."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "Trivial single-file reads, no loops, negligible cost — full new-test set runs in well under 1 second."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Follows existing repo naming (test_<subject>_instruction_present) and placement (per-plugin tests/ dir for plugin-specific docs, shared/tests/ for the shared elicitation module) — matches shipwright-plan/shipwright-security precedent exactly. All 5 touched/new files stay well under the 300-LOC bloat-baseline cap (42-244 lines)."},
+    {"name": "Affected Boundaries", "verdict": "not_applicable", "note": "No serialized-format producer/consumer boundary is touched by this change — pure prose drift tests reading static markdown source files, not structured data interchange. No round-trip probe applies (ADR-024)."}
+  ]
+}

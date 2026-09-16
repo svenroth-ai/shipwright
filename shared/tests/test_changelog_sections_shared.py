@@ -91,7 +91,7 @@ def test_aggregator_carries_no_section_heading_pattern_of_its_own() -> None:
 
     The scan covers any regex construction on a line mentioning `##`, not only
     `re.compile`. The narrower filter missed a surviving inline `re.search` for
-    `^##\\s+\\[Unreleased\\]` in `_warn_if_legacy_unreleased_has_bullets`,
+    `^##\\s+\\[Unreleased\\]` in `_legacy_unreleased_bullets`,
     which was case-SENSITIVE where the shared `insertion_index` lowercases — so
     a history spelling it `## [unreleased]` got the correct insertion point and
     NO split-brain warning. That reader now goes through `unreleased_start`.

@@ -60,6 +60,7 @@ def base(strategy: str, env_name: str, **extra) -> dict:
         "verification_error": None,
         "restored": False,
         "data_drift": None,
+        "override_reason": None,
         "message": "",
         "operator_message": "",
         "error": None,

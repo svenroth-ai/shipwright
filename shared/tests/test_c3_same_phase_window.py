@@ -129,7 +129,7 @@ def test_a_completion_with_no_anchor_never_consults_the_clock(tmp_path):
 @pytest.mark.covers("FR-01.01/AC08")
 def test_a_rerun_under_a_sticky_id_with_no_new_event_passes(tmp_path):
     """The reproduced regression. `record_event` dedups `phase_completed`
-    first-wins, so a re-run appends NO event: the marker is rewritten but
+    first-wins within a session, so a same-session re-run appends NO event: the marker is rewritten but
     re-derives the same anchor, and the new completion records that same anchor.
     Equal anchors mean "written by this block", not "you skipped a step"."""
     _splits(tmp_path, marker_ts=EARLY, entries=_anchored((RUN, EARLY), (RUN, EARLY)))

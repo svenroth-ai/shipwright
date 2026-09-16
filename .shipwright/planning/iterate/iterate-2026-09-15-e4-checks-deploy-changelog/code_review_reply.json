@@ -1,0 +1,44 @@
+{
+  "section": "e4-checks-deploy-changelog",
+  "review": [
+    {"severity":"high","category":"correctness","file":"shared/scripts/tools/verifiers/deploy_checks.py","line":135,
+     "finding":"check_test_gate_passed blocks a green run: `passed < total` counts SKIPPED tests as failures. Against this repo's own committed shipwright_test_results.json (iterate_latest.unit = {status:\"passed\", passed:19191, total:19260}) the new iterate_latest fallback makes the check return ok=False \"unit 19191/19260 (deploy blocked: tests failing)\". The ADR claims the fallback fixed the iterate-run no-op; it converted a wrong 'no tests ran' verdict into a wrong 'tests failing' verdict. The regression test at test_verifiers_test_changelog_deploy.py:370 uses passed:10/total:10 and cannot see it. Sibling check test_checks.py:103 already uses genuine_failure_count(passed,total,failed,skipped) (known_failures.py:197) for exactly this bug class; that same file also shows the two gates in this unit read different FIELDS for one question (status vs counts), which is the sharper form of the E2E divergence Stage 1 flagged.",
+     "suggestion":"Treat the producer's own verdict as authoritative: pass when view['unit'].get('status') == 'passed'; otherwise fall back to genuine_failure_count(...) <= 0 instead of `passed < total`. Add a regression test seeded from the REAL nested shape (status passed, passed<total, no `skipped` key) rather than a balanced fixture, and reconcile the E2E/smoke semantics with validate-deploy.py::_test_gate in a short comment either way."},
+
+    {"severity":"medium","category":"correctness","file":"shared/scripts/tools/verifiers/deploy_checks.py","line":56,
+     "finding":"_parse_iso_utc does not guarantee the aware datetime its own docstring promises. `datetime.fromisoformat(\"2026-09-15T10:00:00\")` (no offset) returns a NAIVE datetime, and the comparisons at :248 and :305 then raise TypeError comparing offset-naive and offset-aware datetimes — the verifier CRASHES instead of fail-closing. Both canonical producers happen to write aware UTC, so no current test hits it; the checks read files any operator can edit.",
+     "suggestion":"In _parse_iso_utc: `dt = datetime.fromisoformat(...); return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)` (or return None to fail closed). Add a naive-timestamp test for BOTH checks."},
+
+    {"severity":"medium","category":"correctness","file":"shared/scripts/tools/verifiers/deploy_checks.py","line":284,
+     "finding":"check_manual_rollback_proves_alive filters only on invocation == 'manual', so a REFUSED manual rollback satisfies the filter. rollback_report.refused() returns mutated:False, state:'refused-no-change', and this diff deliberately records those unconditionally — a missing --clone-name, invalid --target-ref, unreadable --profile. The check then falsely reports the alive-proof is missing for a rollback that changed nothing and has nothing to prove alive.",
+     "suggestion":"where={'invocation':'manual','mutated':True}, or explicitly exclude state == 'refused-no-change'. Add a test that a refused manual rollback does not demand liveness evidence."},
+
+    {"severity":"medium","category":"correctness","file":"plugins/shipwright-deploy/scripts/lib/rollback.py","line":319,
+     "finding":"rollback_audit.record() is called BEFORE print(json.dumps(result)) and return exit_code(result), and it is unguarded. A LockTimeout or OSError on the JSONL append propagates out of main(): the operator_message is never printed and the intended exit code is lost, for a HALTED rollback that already mutated the host.",
+     "suggestion":"Print the result and compute the exit code first, or wrap record() in try/except (LockTimeout, OSError) that emits a loud stderr warning while still delivering operator_message and exit_code(result). State the chosen trade-off in the module docstring."},
+
+    {"severity":"medium","category":"correctness","file":"plugins/shipwright-deploy/scripts/lib/rollback_audit.py","line":92,
+     "finding":"record() builds {\"recorded_at\":…, \"invocation\":…, **result} — a future `result` carrying its own `invocation` or `recorded_at` key silently clobbers the two audit fields check_manual_rollback_proves_alive filters and orders on. The twin writer (smoke_test.py) merges the OTHER way ({**result, \"checked_at\": …}, audit key wins), so the two stamped-record writers in this same unit disagree about which side wins a collision.",
+     "suggestion":"entry = {**result, \"recorded_at\": …, \"invocation\": invocation} so the audit fields always win (matching smoke_test.py). Add a test that a result dict containing an `invocation` key cannot displace the audit value."},
+
+    {"severity":"low","category":"correctness","file":"shared/scripts/tools/verifiers/deploy_checks.py","line":205,
+     "finding":"read_run_config(project_root).get('phase_history') — a shipwright_run_config.json whose root is not an object (e.g. `[]` or a string) makes `.get` raise AttributeError out of the check. This diff added _load_json_object specifically to close that class of bug on the other two reads in the unit; this third read is the one left open.",
+     "suggestion":"Guard locally: `cfg = read_run_config(...); history = cfg.get('phase_history') if isinstance(cfg, dict) else None`, with a non-object-root test mirroring the two that already exist."},
+
+    {"severity":"low","category":"correctness","file":"plugins/shipwright-deploy/tests/test_rollback_audit.py","line":32,
+     "finding":"The new unit tests do not assert append-only (two record() calls produce two lines, first preserved) or that a --override-reason containing a newline stays on one JSONL line — both stated as the module's contract in its own docstring.",
+     "suggestion":"Add test_two_records_append_rather_than_overwrite and test_a_reason_with_a_newline_stays_one_jsonl_line."},
+
+    {"severity":"low","category":"architecture","file":"plugins/shipwright-deploy/scripts/lib/rollback_audit.py","line":101,
+     "finding":"last_entry() has no production caller — only tests use it. Non-blocking boy-scout item.",
+     "suggestion":"Either drop last_entry() and have tests read the trail directly, or document in the docstring that it exists as the module's read side for consumers/tests."},
+
+    {"severity":"low","category":"readability","file":"shared/scripts/tools/verifiers/deploy_checks.py","line":14,
+     "finding":"Module docstring's Phase-own index omits check_failed_liveness_recorded_as_failed and check_manual_rollback_proves_alive, and still claims check_test_gate_passed 'mirrors the legacy _validate_test unit gate', which is inaccurate (_validate_test only requires unit.total > 0).",
+     "suggestion":"Add the two new checks to the Phase-own list and correct the _validate_test mirroring claim once the HIGH finding is fixed."},
+
+    {"severity":"low","category":"architecture","file":"shipwright_bloat_baseline.json","line":1106,
+     "finding":"deploy_checks.py crosses 300 LOC in this diff (122->363), but the baseline entry records state:'grandfathered', adr:null, under-declaring a new crossing that has an ADR in the same diff.",
+     "suggestion":"Record it as state:'exception' with adr:'<the e4 ADR>' so the reason for the crossing travels with the entry."}
+  ]
+}

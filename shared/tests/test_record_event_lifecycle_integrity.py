@@ -176,3 +176,34 @@ class TestIdempotentAppend:
         # Exactly the injected event — our duplicate was NOT appended.
         events = _events(tmp_path)
         assert len(events) == 1 and events[0]["id"] == "evt-injected1"
+
+    def test_dedup_scan_inside_the_lock_compares_session(self, tmp_path, monkeypatch):
+        """Same as above, but both events carry a session id.
+
+        Exercises the session-comparison branch (not just the sessionless
+        unconditional-duplicate branch) under the F14 lock, proving the
+        2026-09-16 session-aware dedup still runs atomically with the append.
+        """
+        from lib.events_log import resolve_events_path
+
+        events_path = resolve_events_path(tmp_path)
+        injected = {**_phase_completed("build", "evt-injected2"), "session": "same-session"}
+        injected_line = json.dumps(injected) + "\n"
+
+        real_lock = record_event._FileLock
+
+        class _InjectingLock(real_lock):
+            def __enter__(self):
+                ctx = super().__enter__()
+                with open(events_path, "a", encoding="utf-8") as fp:
+                    fp.write(injected_line)
+                return ctx
+
+        monkeypatch.setattr(record_event, "_FileLock", _InjectingLock)
+
+        mine = {**_phase_completed("build", "evt-mine00002"), "session": "same-session"}
+        eid, skipped = record_event.append_event_idempotent(tmp_path, mine)
+        assert eid is None, "same-session duplicate must still be caught under the lock"
+        assert skipped == {"reason": "duplicate_phase", "phase": "build"}
+        events = _events(tmp_path)
+        assert len(events) == 1 and events[0]["id"] == "evt-injected2"
