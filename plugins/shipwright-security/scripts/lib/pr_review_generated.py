@@ -140,7 +140,7 @@ _REVIEW_EVIDENCE_RE = re.compile(
 _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
     r"^[^/]+/("
     r"(spec|code|doubt)_review_reply\.json"
-    r"|external-[^/]*review[^/]*\.(json|md)"
+    r"|(external|architecture)-[^/]*review[^/]*\.(json|md)"
     r")$"
 )
 
@@ -184,6 +184,22 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
 # does NOT close the underlying gap PR #722 waits on; `is_generated_path`'s
 # hide-only wildcard stays exactly as wide as before this iterate started,
 # unchanged from the pre-existing regex above.
+
+# Round 6 (iterate-2026-09-16-ac-ledger-status-cell-counting's own PR #767):
+# `external_review.py --mode architecture` writes the SAME kind of transcript
+# (including the literal `SHIPWRIGHT_VERDICT: approve` marker Round 5's
+# family exists to hide) as the `--mode code`/`--mode plan` calls, but the
+# caller-chosen output name follows an `architecture-review...` convention,
+# not `external-...` — confirmed via `git log --diff-filter=A` across three
+# prior iterates (2026-08-09, 2026-09-12, and this one), so it is an
+# established naming convention, not a one-off. The run-anchored alternative
+# only matched the `external-` prefix, so an architecture-review transcript
+# was never hidden and got flagged as "suspicious instruction-like content"
+# by the reviewing model itself. Same accepted-risk wildcard shape as the
+# `external-` branch (the tool has no fixed output name for this call either,
+# so an exact-basename allowlist has the same 40-name problem the Round 5
+# note describes) — added as a second alternative prefix on the same regex,
+# not a new mechanism.
 
 
 def is_generated_path(path: str) -> bool:
