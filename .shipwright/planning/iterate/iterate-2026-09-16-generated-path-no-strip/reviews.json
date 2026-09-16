@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-generated-path-no-strip",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:16:57.181991+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:17:08.970264+00:00",
+      "disposition": "small complexity CHANGE skips the mini-plan per the phase matrix, so there is no external plan review to run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py",
+          "line": 84,
+          "finding": "The only production caller of the now-fixed is_generated_path is filter_generated_paths, via _clean_diff_path, which still does a blanket .strip() on the diff-header remainder before is_generated_path ever runs, so a trailing-whitespace-padded lookalike of a generated path would still be silently normalized and hidden from the reviewing model through the real call path.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+          "line": 192,
+          "finding": "The docstring doesn't mention the caller-side normalization boundary.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:10.293079+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:53.245439+00:00",
+      "disposition": "diff touches no migrations, async/concurrency, cross-plugin imports, or irreversible ops — pure synchronous string-matching functions; Stage 3's conditional trigger does not apply",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py (`_clean_diff_path`, narrowed strip)",
+          "line": null,
+          "finding": "The old blanket `.strip()` also removed trailing `\\t` and any stray `\\n`. If any caller of `_clean_diff_path` feeds a line that still carries a trailing newline or tab (e.g., a diff variant with a timestamp after the path, `+++ b/foo.py\\t2024-01-01`, which unified-diff tools other than git emit, or a section whose `+++` line is the final line with a retained terminator), the new code preserves that and the path no longer matches `a/`/`b/` slicing semantics correctly — it would return e.g. `\"foo.py\\t...\"` as a \"path\". The docstring asserts git never emits these, which holds for git-produced diffs, but the function is generic enough to receive non-git unified diffs.",
+          "suggestion": "If only git diffs are ever fed in, this is acceptable — note that assumption explicitly in the docstring. Otherwise strip `\\r` and at most `\\n`/`\\t` after the `a/`/`b/` prefix is consumed rather than before.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py:~60 (`test_trailing_whitespace_lookalike_stays_reviewable_end_to_end`)",
+          "line": null,
+          "finding": "The end-to-end test is explicitly documented as passing even with a regression in `_clean_diff_path` (reverting to blanket `.strip()` keeps it green). That's honest, but it means the narrowing of `_clean_diff_path` has no regression protection at the integration level — only the direct unit tests cover it, and they bypass the real call path. A future change to `_DIFF_GIT_RE` (e.g., making its captures greedy) would silently re-open the gap with no end-to-end test failing.",
+          "suggestion": "Acceptable as-is given the direct unit tests; optionally add an end-to-end test that renames a file to a trailing-space name in a context where the header's `a/`-side leak argument doesn't apply (e.g., `/dev/null` add-side), to pin the end-to-end behavior independently of the header-regex quirk.  Otherwise the change is faithful to the spec:  - AC 1: `.strip()` removed from `is_generated_path`; match rules otherwise untouched. ✓ - AC 2: No widening/narrowing of the match tables; `pr_review_skip_safety.py` untouched. ✓ - AC 3: Direct regression test covers leading/trailing space across all three match strategies (prefix, basename, exact path), and correctly notes why the trailing-space×prefix combination is absent (it genuinely cannot differ). ✓ - AC 4: `_clean_diff_path` narrowed to `.rstrip(\"\\r\")` as scoped; the docstring trace of the end-to-end non-vulnerability is coherent with the \"every collected path must be generated\" exclusion rule, and the CRLF test pins the one legitimate normalization. ✓  No security issues (this is a hardening change, not an exposure). No caller regressions visible: `is_generated_path`'s return type and semantics are unchanged for canonical (whitespace-free) inputs.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py",
+          "line": 58,
+          "finding": "The direct regression test covers prefix and exact/basename matching, but not either review-evidence regex. An implementation that preserved whitespace for these tested branches but still stripped before regex matching would pass every new test while violating acceptance criterion 1.",
+          "suggestion": "Add a leading- or trailing-whitespace variant of a path that is classified solely by each review-evidence regex, and assert `is_generated_path` returns `False`.  Ship-with-fixes: the implementation itself follows the required no-strip behavior and the `_clean_diff_path` hardening is scoped correctly, but the regression suite leaves one specified classification branch unprotected.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T16:33:58.266893+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py (`_clean_diff_path`, narrowed strip)\n  Finding: The old blanket `.strip()` also removed trailing `\\t` and any stray `\\n`. If any caller of `_clean_diff_path` feeds a line that still carries a trailing newline or tab (e.g., a diff variant with a timestamp after the path, `+++ b/foo.py\\t2024-01-01`, which unified-diff tools other than git emit, or a section whose `+++` line is the final line with a retained terminator), the new code preserves that and the path no longer matches `a/`/`b/` slicing semantics correctly — it would return e.g. `\"foo.py\\t...\"` as a \"path\". The docstring asserts git never emits these, which holds for git-produced diffs, but the function is generic enough to receive non-git unified diffs.\n  Suggestion: If only git diffs are ever fed in, this is acceptable — note that assumption explicitly in the docstring. Otherwise strip `\\r` and at most `\\n`/`\\t` after the `a/`/`b/` prefix is consumed rather than before.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py:~60 (`test_trailing_whitespace_lookalike_stays_reviewable_end_to_end`)\n  Finding: The end-to-end test is explicitly documented as passing even with a regression in `_clean_diff_path` (reverting to blanket `.strip()` keeps it green). That's honest, but it means the narrowing of `_clean_diff_path` has no regression protection at the integration level — only the direct unit tests cover it, and they bypass the real call path. A future change to `_DIFF_GIT_RE` (e.g., making its captures greedy) would silently re-open the gap with no end-to-end test failing.\n  Suggestion: Acceptable as-is given the direct unit tests; optionally add an end-to-end test that renames a file to a trailing-space name in a context where the header's `a/`-side leak argument doesn't apply (e.g., `/dev/null` add-side), to pin the end-to […truncated]\n\n[openai] - Category: test\n- Severity: low\n- File: `plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py:58`\n- Finding: The direct regression test covers prefix and exact/basename matching, but not either review-evidence regex. An implementation that preserved whitespace for these tested branches but still stripped before regex matching would pass every new test while violating acceptance criterion 1.\n- Suggestion: Add a leading- or trailing-whitespace variant of a path that is classified solely by each review-evidence regex, and assert `is_generated_path` returns `False`.\n\nShip-with-fixes: the implementation itself follows the required no-strip behavior and the `_clean_diff_path` hardening is scoped correctly, but the regression suite leaves one specified classification branch unprotected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:19:26.969035+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:17:09.136349+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
