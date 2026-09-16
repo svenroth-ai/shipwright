@@ -7,6 +7,10 @@ descriptions as bullet-point ACs.
 
 Used only when `enrichment.acceptance_draft` is empty / "TBD" — the
 enrichment is the richest source when it exists.
+
+Hygiene-filtering behavior (trg-ac2ef362 — mined bullets must never carry
+implementation detail) has its own sibling file,
+`test_test_acceptance_miner_hygiene.py`, split out at the 300-line guideline.
 """
 
 from __future__ import annotations
