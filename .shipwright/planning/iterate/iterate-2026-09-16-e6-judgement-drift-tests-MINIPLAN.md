@@ -6,9 +6,13 @@
 of the 19 lines has a drift test on its instruction text" and "No judgement
 line gained a pass/fail gate on content" — governed by campaign decision D7
 (naive LLM-judge flag rate 98%, purpose-built precision 0.52-0.66, ignored
-within weeks). The spec's own "19" is asserted, not authoritative, and the
-spec explicitly instructs verifying it against the live ledger rather than
-trusting it.
+within weeks). The spec's own "19" is asserted, not authoritative — the spec
+file itself (`sub-iterates/e6-judgement-drift-tests.md`, 11 lines) names no
+verification instruction; that instruction came from the campaign
+orchestrator's launch brief for this run, which explicitly directs verifying
+the count against the live ledger rather than trusting it (flagged by
+Stage-1 spec-review, round 1, as a provenance mis-attribution in an earlier
+revision of this section, which wrongly credited the spec file).
 
 ## Investigation (done before writing any test)
 
