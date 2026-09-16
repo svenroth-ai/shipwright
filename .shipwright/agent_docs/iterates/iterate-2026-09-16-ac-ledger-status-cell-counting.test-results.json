@@ -1,0 +1,120 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-16-ac-ledger-status-cell-counting",
+    "date": "2026-09-16",
+    "unit": {
+      "status": "passed",
+      "passed": 19352,
+      "total": 19422
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "one unit (shared/tests) was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path); already tracked as trg-f64d1c27, does not affect this run's GREEN status"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 1,
+      "exit_code": 0,
+      "runner": "uv run shared/scripts/tools/measure_ac_evidence_ledger.py --project-root .",
+      "evidence_path": ".shipwright/runs/iterate-2026-09-16-ac-ledger-status-cell-counting/surface_verification.log"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "A status backtick-quoted in ordinary prose (non-table-row) does not affect the count",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_prose_mention_of_a_status_does_not_inflate_the_count PASSED"
+        },
+        {
+          "behavior": "A table whose header starts with `| Status |` (legend/summary shape) is excluded even though it is a table",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_legend_and_summary_tables_are_excluded_by_their_status_first_header PASSED"
+        },
+        {
+          "behavior": "Both exclusions hold simultaneously, for every canonical status, against a fixture naming all 8 in prose, the legend, and real rows",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_fixture_naming_every_status_in_prose_and_legend_counts_rows_only PASSED"
+        },
+        {
+          "behavior": "Real criterion tables (status in a later column) are counted normally, unaffected by the header rule",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_legend_and_summary_tables_are_excluded_by_their_status_first_header (criterion-row assertion) PASSED"
+        },
+        {
+          "behavior": "The live measurement against the real ledger still matches its own header paragraph (drift guard)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger_real_ledger.py::test_real_ledger_header_matches_the_live_measurement PASSED"
+        },
+        {
+          "behavior": "Pre-existing counting behaviors (longest-alternative-first, split rows, backlog-line formatting, CLI JSON/human output, missing-file error) are unaffected",
+          "disposition": "tested",
+          "evidence": "of origin/main's 9 prior tests: 7 pass unmodified (test_counts_each_canonical_status_once_per_occurrence, test_qualified_status_does_not_double_count_as_bare_enforced, test_split_row_contributes_to_both_halves, test_backlog_line_excludes_enforced_and_no_oracle, test_main_reads_a_file_and_reports_json, test_main_reports_infra_error_on_missing_file, test_main_human_readable_output_shows_the_backlog_line); 1 deliberately deleted (test_legend_and_summary_style_text_inflates_by_a_known_fixed_amount, superseded premise); 1 modified (test_real_ledger_header_matches_the_live_measurement)"
+        },
+        {
+          "behavior": "Excluded table blocks are reported in measure()'s output for audit",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_excluded_tables_are_reported_for_audit PASSED"
+        },
+        {
+          "behavior": "The header-cell match is structural (whitespace-tolerant), not a literal string prefix",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_status_header_match_is_structural_not_a_literal_prefix PASSED"
+        },
+        {
+          "behavior": "A pipe-prefixed example table inside a fenced code block is not counted",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_fenced_code_block_table_example_is_not_counted PASSED"
+        },
+        {
+          "behavior": "A legend glued to a preceding table with no blank line is NOT excluded (documents the exclusion's actual block-scoped behavior)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_legend_glued_to_a_preceding_table_with_no_blank_line_is_not_excluded PASSED"
+        },
+        {
+          "behavior": "An unterminated fence is reported (unterminated_fence) and excludes the rest of the document, not silently miscounted",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_unterminated_fence_is_reported_and_excludes_the_rest_of_the_document PASSED, test_balanced_fence_reports_no_unterminated_fence PASSED"
+        },
+        {
+          "behavior": "The Status-first header match tolerates whitespace variants and a single-cell header, not only one fixture shape",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py::test_status_header_match_is_structural_not_a_literal_prefix (3 variants: no_space, extra_space, single_cell) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-16-ac-ledger-status-cell-counting",
+    "commit": "4cbb58fec03da5cf041d29688ec180953caab318",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

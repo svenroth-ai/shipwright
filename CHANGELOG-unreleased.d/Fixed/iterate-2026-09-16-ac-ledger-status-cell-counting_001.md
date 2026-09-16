@@ -1,0 +1,1 @@
+AC-evidence ledger status counting is now restricted to markdown table rows (legend and historical-summary tables excluded by their `Status`-first header), fixing false REJECTs caused by backtick-quoted status names in prose outside status cells.

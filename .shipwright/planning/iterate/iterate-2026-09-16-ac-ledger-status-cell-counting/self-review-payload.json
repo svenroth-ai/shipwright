@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Implements exactly the spec + mini-plan, as amended by the plan-review cascade findings."},
+    {"name": "Error Handling", "verdict": "pass", "note": "No new I/O paths; pre-existing OSError handler untouched."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input, SQL, HTML output, or secrets; reads one local tracked markdown file."},
+    {"name": "Test Quality", "verdict": "pass", "note": "6 new tests assert on outcomes (counts, excluded_tables); each fails against the pre-fix implementation."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "Single-pass line walk, O(document length); well under a second on the real 2100+-line ledger."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Source file 299 lines (at guideline). Test file crossed to 311 lines and was split along its own docstring's pre-existing fixture/real-ledger distinction into two files, both now under 300."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "Reads a hand-written markdown file, not a machine-generated serialized format; touches_io_boundary did not fire at classification. New excluded_tables JSON key is additive; no other module imports this script."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "No new pytest.skip/xfail/.only in the diff; the file's one pytest.skip is pre-existing (a legitimate file-moved/renamed runtime guard)."}
+  ]
+}

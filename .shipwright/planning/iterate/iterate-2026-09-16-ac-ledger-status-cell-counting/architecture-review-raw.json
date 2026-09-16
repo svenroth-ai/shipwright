@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **Yes** \u2014 no new standing mechanism is needed; narrowly scoping the existing counter to criterion-table rows is proportionate.\n\n2. **The smallest thing that would do:** the proposed line-level table-row filter plus exclusion of `Status`-first tables.\n\n3. **What it costs to keep:** preserving those two markdown conventions and updating the counter if a real criterion table ever puts `Status` first.\n\n4. **What it forecloses:** criterion tables with `Status` as their first column without extending the rule.\n\n5. **Findings**\n\nNo findings. (verdict recorded structurally below, not repeated here)",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **Answer:** Yes \u2014 but nothing new standing is being created; this is a fix to an existing measurement tool, and the fix is the right shape and roughly the smallest thing that would do.\n\n2. **Smallest thing that would do:** Exactly what's proposed \u2014 restrict the existing regex to table-row lines plus one header-shape exclusion. The only meaningfully smaller alternative would be dropping the `Status`-header exclusion and instead subtracting a known fixed inflation (the old approach, just table-scoped) \u2014 but that recreates the exact failure mode that caused the incident, so the exclusion is the cheaper option, not the bigger one.\n\n3. **Cost to keep:** None beyond what the script already obligates. If anything, the standing cost goes down: the interim \"don't backtick status names in prose\" convention \u2014 a rule only humans enforced \u2014 is retired by a rule the tool enforces, which is the right direction of travel.\n\n4. **What it forecloses:** none identified. The one structural rule (first-column `Status` header) is a small future constraint: if a future criterion table ever legitimately puts `Status` in the first column it would be silently excluded. That's a low-probability, test-detectable drift, and the module docstring now documents the rule.\n\n5. **Findings:** none bearing on existence. The alternative \"fix the documents instead of the tool\" would have recorded a bug artifact as fact in the document whose purpose is trustworthy counts \u2014 the tool was the right thing to change. The alternative \"keep the prose convention\" is a standing mechanism that requires a human to notice it is broken, which is precisely the kind that eventually is.\n\nNo findings. (verdict recorded structurally below, not repeated here)",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

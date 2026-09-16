@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The change implements the specified row-only counting, `Status`-first table exclusion, fence handling/auditing, and reconciliation guard; tests cover the intended regression paths. Ship as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "I reviewed the diff against the spec, the stated acceptance criteria, the Test Completeness Ledger, and the plan-review/external-review dispositions.\n\n**Spec compliance check:**\n- Table-row-only restriction: implemented in `_table_row_text` / `count_statuses` \u2014 matches.\n- `Status`-first-header structural exclusion (stripped, casefolded, split on `|`): implemented in `_table_header_first_cell`; not a literal prefix \u2014 matches Plan Review finding 2's fix.\n- `excluded_tables` audit output in `measure()` and human-readable CLI listing: implemented and asserted (including the `== 2` drift-guard assertion) \u2014 matches findings 2 and external review finding 1.\n- Fenced-code-block skip + `unterminated_fence` flag with CLI warning: implemented and tested \u2014 matches findings 4 and code-review finding 5.\n- Reworded drift-guard failure message (row-edit vs structure-change triage): present in the new real-ledger test file \u2014 matches finding 3.\n- Ledger reconciliation paragraph appended with the new totals and the narrowed \"prose vs non-status-cell\" claim (with the FR-01.03 #5 example): present \u2014 matches finding 1.\n- Deleted superseded test and split of the real-ledger test into its own file: done, with the sole `pytest.skip` moved intact.\n- Test ledger behaviors 1\u201312 each map to a test that actually exists in the diff and asserts outcomes (counts / `excluded_tables` / `unterminated_fence`), not implementation internals.\n\n**Correctness of the changed code:**\n- `_table_header_first_cell`: `strip().strip(\"|\").split(\"|\")[0].strip().casefold()` correctly handles `| Status |`, `|Status|Rows|`, `|  Status  |`, and single-cell `|Status|` \u2014 the three variants are pinned by the structural test.\n- Block walking in `_table_row_text` is correct: contiguous pipe-prefixed runs, 1-indexed line numbers, fence toggle before the pipe test so fence contents are never rows. An unterminated fence correctly yields `in_fence=True` at EOF.\n- The glued-legend case (no blank line) merges blocks and, per the test, intentionally does not exclude \u2014 documented behavior, matching the exclusion's stated block scoping.\n- The double `_table_row_text` walk in `measure()` is pure and deterministic, so the two results cannot diverge; the in-code comment addresses the readability concern.\n\n**Tests:** The prose regression test compares counts with and without the paragraph and asserts specific values, so the pre-fix whole-document sweep would fail it (prose mentions would inflate). The all-8-statuss fixture covers every status across prose/legend/row in one pass. The drift guard takes the *last* regex match, which is the newly appended paragraph (the diff shows prior \"Re-measured\" paragraphs are above it), and asserts both the five numbers and exactly two excluded tables.\n\n**Regressions / edge cases:** The only pre-existing behavior intentionally removed is the pinned legend/summary inflation, which is the point of the fix. Residual limitations (status backticked in a non-status cell of a real row, an indented/`Enforcement`-headed table, a glued legend) are all explicitly documented in the docstring and ledger rather than silently mishandled. No callers outside the script and its tests consume `count_statuses` or the JSON output, and the `excluded_tables`/`unterminated_fence` keys are additive.\n\nI found no defects. The implementation matches the spec and every claimed review-cascade fix; the documented known limitations are real but consciously disclosed and tested where testable.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

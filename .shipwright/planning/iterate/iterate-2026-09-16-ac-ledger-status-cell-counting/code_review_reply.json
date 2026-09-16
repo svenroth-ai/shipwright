@@ -1,0 +1,13 @@
+{
+  "section": "iterate-2026-09-16-ac-ledger-status-cell-counting",
+  "review": [
+    {"severity": "medium", "category": "readability", "file": "shared/scripts/tools/measure_ac_evidence_ledger.py", "line": 2, "finding": "Module docstring at 111 lines, 37% of a 299-line file, zero headroom; run-specific provenance material belongs in the spec/ADR per CLAUDE.md.", "suggestion": "Trim to behavioral-contract paragraphs + one pointer line to the spec."},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/tools/measure_ac_evidence_ledger.py", "line": 86, "finding": "Docstring falsely claims to contain a fenced-code-block example itself.", "suggestion": "Remove the false claim."},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/tests/test_measure_ac_evidence_ledger.py", "line": 208, "finding": "Header-match test's docstring advertises whitespace/single-cell variants it does not exercise.", "suggestion": "Add the missing variants."},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/measure_ac_evidence_ledger.py", "line": 191, "finding": "Block-scoped exclusion's blank-line dependency is untested, contradicting the '0 untested-testable' Confidence Calibration claim.", "suggestion": "Add a fixture pinning the merged-block (non-excluded) behavior."},
+    {"severity": "low", "category": "correctness", "file": "shared/scripts/tools/measure_ac_evidence_ledger.py", "line": 184, "finding": "Unterminated fence silently discards the rest of the document with no audit signal.", "suggestion": "Surface an unterminated_fence flag in measure()'s payload."},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/tools/measure_ac_evidence_ledger.py", "line": 226, "finding": "measure() recomputes _table_row_text a second time; correct but asks the reader to trust the two calls agree.", "suggestion": "Add a one-line comment explaining the deliberate trade-off."},
+    {"severity": "low", "category": "readability", "file": "shared/scripts/tools/measure_ac_evidence_ledger.py", "line": 158, "finding": "Unreachable else-branch in _table_header_first_cell.", "suggestion": "Collapse to a single return expression."}
+  ],
+  "summary": "PASS with advisories. Fix is the right shape; all 7 findings (1 medium, 6 low) addressed before commit."
+}

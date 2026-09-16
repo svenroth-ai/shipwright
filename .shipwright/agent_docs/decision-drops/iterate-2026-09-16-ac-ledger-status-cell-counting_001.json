@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-ac-ledger-status-cell-counting",
+  "date": "2026-09-16",
+  "section": "Iterate — bug: AC-evidence ledger status counting restricted to table rows",
+  "title": "Row-scoped status counting for the AC-evidence ledger",
+  "context": "count_statuses counted every backtick-quoted canonical status anywhere in the 2100+-line REQ-3 ledger, not just status-cell content. On 2026-09-12 a sub-iterate's prose paragraph inflated the live count past the ADR's recorded totals, producing a false spec-reviewer REJECT.",
+  "decision": "Restrict counting to markdown table-row lines only, excluding table blocks whose header's first cell is structurally 'Status' (legend + historical summary tables), with fence-tracking so code-block examples never count.",
+  "consequences": "Every historical total moves; past ADRs/decision-drops/ledger totals are NOT rewritten (same convention as ADR numbering). New totals stated in a forward-only reconciliation paragraph: 1/25/13/25/92 (mechanisable/judgement/untested/unimplemented/tested).",
+  "rationale": "Table-row + structural header exclusion is verified against the live ledger (incl. a real table headed 'Enforcement' instead of 'Status'), and cross-checked against an independent by-hand recount (25) already recorded in the ledger.",
+  "rejected": "Column-name-based parsing (find a 'Status' column, count only that column) — rejected: the live ledger has a real criterion table whose status column is headed 'Enforcement', so column-name matching would silently undercount it.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-16-ac-ledger-status-cell-counting.md"
+}
