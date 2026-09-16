@@ -226,6 +226,44 @@ Sonder-Check):
 (Status names outside an actual status cell must stay un-backticked — see the
 note directly above.)
 
+**Re-measured again 2026-09-16 (sub-iterate `e5-checks-remainder`, same
+campaign) — the mechanisable remainder, closed.** Investigated the whole
+document for every remaining prompt-only/mechanisable occurrence before
+building anything (per this sub-iterate's own spec instruction to verify
+rather than assume): of the 4 the prior count carried, 2 are not live
+criterion rows at all (the legend's own definition line, and the historical
+2026-07-26 end-check distribution table, both superseded prose kept for
+history — see "Zero unclassified `prompt-only` rows remain" below), leaving
+exactly 2 genuine table rows. FR-01.06 #6b (see its own row above) was
+already correctly addressed by `e3-checks-test-security` with an explicit,
+specific reason and a filed follow-up (`trg-2f7a840a` — a producer-side
+ADR-045 relocation this checks-only campaign does not own) and needed no
+further action; re-verified, not re-litigated. FR-01.14 #1's mechanisable
+half — "the producer contract has no gate, and a new producer calling the
+plain append writes duplicates freely" — is the one that closed this unit:
+built the row's own named oracle, a meta-test over the call sites
+(`shared/tests/test_triage_append_producer_registry.py`), after first
+confirming empirically that every automated producer in the live tree
+already called the idempotent path and exactly one production call site
+(`triage_add.py`, the manual operator CLI) called the plain one — the AST
+registry now makes that fact self-enforcing rather than merely accidentally
+true:
+**3** prompt-only/mechanisable · **31** prompt-only/judgement ·
+**16** enforced-untested · **32** unimplemented · **94** enforced-tested (the
+central criterion this row's mechanisable half tags stays enforced-and-tested
+either way, so the enforced-tested count itself does not move). (Status names
+outside an actual status cell must stay un-backticked — see the note above.)
+
+**The AC's "no line left unaddressed" is met at zero, stated explicitly so a
+future auditor need not re-derive it:** the mechanical re-measurement above
+still counts 3 because two of the three are not criterion rows at all (the
+legend definition and the 2026-07-26 historical end-check table, both prose,
+neither promising anything about the live product), and the third
+(FR-01.06 #6b) carries its own explicit reason and follow-up trigger
+(`trg-2f7a840a`) rather than a silent drop. Zero rows anywhere in this
+document currently read as a bare, unexplained prompt-only/mechanisable
+promise with no build, no downgrade, and no named follow-up behind it.
+
 The six genuine `judgement` rows from FR-01.02/FR-01.04, and why no gate may
 be built for them — each needs reading comprehension, so its honest ceiling
 is a drift test that the instruction is still present:
@@ -1127,7 +1165,7 @@ changed.
 | # | Criterion | Status | Mechanism / gap |
 |---|---|---|---|
 | C | **every raised finding is here, one entry each, each stating whether it is open, taken into work, deferred or dismissed — so "what is still open?" is answerable in one place** | `enforced, untested` | **central, added.** The 14 opened with a dedup rule; nothing said what the thing *is* |
-| 1 | recorded exactly once, even from simultaneous producers | `enforced, tested` (concurrency) + `prompt-only (mechanisable)` (producer opt-in) | the dedup scan and the append share ONE lock critical section — tested. But the idempotent path is **opt-in**: the producer contract has no gate, and a new producer calling the plain append writes duplicates freely. Oracle: a meta-test over the call sites |
+| 1 | recorded exactly once, even from simultaneous producers | `enforced, tested` | **Closed iterate-2026-09-16-e5-checks-remainder.** The dedup scan and the append already shared one lock critical section; the gap was the producer contract's opt-in idempotent path having no gate against a new producer calling the plain, non-deduplicating `append_triage_item` instead. Oracle: `shared/scripts/lib/triage_plain_append_scan.py::find_plain_append_callers`, a repo-wide AST scanner with a real lexical scope-chain resolver (`triage_plain_append_scope.py`), fails on any call site not on the explicit allowlist in `shared/tests/test_triage_append_producer_registry.py`. `triage_add.py` (the manual operator CLI) is the sole registered exception — a human typing one command is not the "simultaneous producers" this criterion means. Full round-by-round history (11 external review rounds, defects found and fixed, named/accepted detection limits): [iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md](../adr/iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md). Tests: `test_triage_append_producer_registry.py`, `test_triage_plain_append_scan.py`, `test_triage_plain_append_scan_edge_cases.py`, `test_triage_plain_append_scope.py`. |
 | 2 | **three** decisions — taken into work, dismissed, or deferred — and the entry afterwards carries the same recorded decision whichever way it was made | `enforced, tested` (the record) + `unimplemented` (defer from the terminal) → `trg-813d2305` | **rewritten; the old wording was wrong twice.** There are three decisions, not two: `snoozed` is a real status the Command Center writes and the terminal cannot |
 | 3 | **creating the work is the Command Center's; from the terminal the operator names work that already exists** | `enforced, tested` (this repo's half) | **added** — the other half of the old "same recorded result either way". The Command Center's promote is a cross-store transaction that creates and back-links the task; the terminal takes a reference to something that exists. Operator: split the promise, do not overclaim parity |
 | 4 | one entry per action, ready-to-paste instruction, visible placeholder when it is missing | `enforced, tested` | placeholder exists on **both** surfaces — the terminal's `[!]` line and the Command Center's red-toned warning branch. A suspicion that it was terminal-only did not survive the lookup |
