@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: spec | Severity: medium\n  File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` (~line 275 in the new re-measurement paragraph) / diff coverage of the FR-01.13 table\n  Finding: The re-measurement paragraph claims six rows \"had simply never had the test cited back onto their own row (FR-01.02 #6, FR-01.11 #4, FR-01.13 #2, FR-01.16 #1/#5/#7 \u2014 citations added this pass)\", but the diff contains no edit to FR-01.13's #2 row. Five of the six citation additions are visible (FR-01.02 #6, FR-01.11 #4, FR-01.16 #1/#5/#7); FR-01.13 #2's is absent, so the \"25/25 live judgement rows now carry a drift test\" claim is not backed by the diff for that row.\n  Suggestion: Either add the FR-01.13 #2 citation edit (with the actual test path/function) or correct the paragraph to say only five citations were added and account for the remaining row's coverage separately.\n\n- Category: bug | Severity: low\n  File: `plugins/shipwright-preview/pyproject.toml:26` vs the three other new plugin test files\n  Finding: The `covers` pytest marker is registered only for `shipwright-preview`. The new tests in `shipwright-build`, `shipwright-changelog`, and `shipwright-deploy` all use `@pytest.mark.covers(...)`; if any of those plugins' pytest configs use `--strict-markers` or treat unknown markers as errors (or later tighten to), the new tests will fail to collect/run. The plan asserts the others already register it but the diff provides no confirmation.\n  Suggestion: Verify each touched plugin's `pyproject.toml`/pytest config registers `covers`, and add the registration where missing, or drop the unverified assertion from the plan.\n\n- Category: test | Severity: low\n  File: `plugins/shipwright-deploy/tests/test_deploy_judgement_drift.py:42-45` (and similar pins in the other new files, e.g. the `spec-reviewer.md` `**Faithful?**` / `**Mockup-consistent?**` assertions)\n  Finding: Several pinned strings include markdown formatting tokens (`**`, backticks, section-heading `##` prefixes like `\"## Step 7: Create PR (Optional)\"`). Because the assertion runs against whitespace-normalized *raw* text, any purely cosmetic formatting change (heading level shift, bold removed) trips the test even though the governing instruction is unchanged. This is partially by design, but the self-review payload claims uniform whitespace normalization was applied to avoid non-semantic failures while these punctuation/format-sensitive pins reintroduce that brittleness.\n  Suggestion: Pin the prose sentence (or strip markdown emphasis before asserting) rather than formatting-decorated headings; keep one heading anchor per test at most.\n\n- Category: spec | Severity: low\n  File: `.shipwright/planning/iterate/iterate-2026-09-16-e6-judgement-drift-tests/reviews.json` \u2014 code/spec/doubt reviews all `not_run` with \"blocker 1 (no Agent tool)\" and `external_code` `pending`\n  Finding: The sub-iterate closes its own ledger rows and records spec compliance as \"pass\" in the self-review payload while the mandatory spec-review and code-review arms were not run and the external code review is still `pending`. The ledger paragraph presents the work as closed (\"Result: 25/25... zero gates were built\") before the review cascade that would verify it completed.\n  Suggestion: Don't mark the campaign ledger rows as closed/re-measured until the pending/deferred reviews complete, or record the review status limitation inside the re-measurement paragraph itself.\n\nNo security issues: the change is pure substring assertions over local static markdown. No gate, scorer, or LLM judge was built, satisfying AC2's spirit. AC1 is satisfied for the rows actually edited, modulo the FR-01.13 gap above.\n\nOverall: the approach is correct and D7-compliant; ship after fixing the missing FR-01.13 #2 citation (or correcting the claim) and confirming marker registration in the other three plugins.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec\n- Severity: medium\n- File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md:1365`\n- Finding: FR-01.16 #1 is counted as drift-tested, but the cited test only pins \u00a72/\u00a73 section anchors; the ledger explicitly says the instruction prose is \u201cunpinned at sentence level.\u201d Deleting or changing \u201cone question at a time,\u201d the recommendation requirement, or \u201cfacts are found, not asked\u201d while retaining the headings would still pass, so this does not meet the required instruction-text drift test.\n- Suggestion: Add literal (whitespace-normalized if needed) assertions for the governing \u00a72 and \u00a73 instruction sentences, rather than relying on section headings.\n\nShip-with-fixes: the no-gate approach is aligned with the specification, but at least one claimed judgement-line drift test does not actually protect its instruction text.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}

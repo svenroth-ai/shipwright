@@ -1,0 +1,106 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-16-e6-judgement-drift-tests",
+    "date": "2026-09-16",
+    "unit": {
+      "status": "passed",
+      "passed": 10987,
+      "total": 10987
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "this sub-iterate only adds drift tests + ledger/citation edits (docs and pytest files); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "FR-01.02 AC03 (every described capability is present) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_fit_criterion_names_every_described_capability_present PASSED"
+        },
+        {
+          "behavior": "FR-01.02 AC04 (nothing invented that was not asked for) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_negative_space_pass_names_the_yagni_mirror PASSED"
+        },
+        {
+          "behavior": "FR-01.16 AC02 (one question at a time / recommended answer / look-it-up) still carries its instruction sentences, not just its section headings",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_module_pins_one_question_at_a_time_and_look_it_up_rules PASSED"
+        },
+        {
+          "behavior": "FR-01.05 AC03 (implements exactly the section's spec, none skipped/downgraded/extra) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_build_judgement_drift.py::test_spec_reviewer_still_checks_faithful_and_in_scope PASSED"
+        },
+        {
+          "behavior": "FR-01.05 AC04 (UI section matches its design mockup) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-build/tests/test_build_judgement_drift.py::test_spec_reviewer_still_checks_mockup_consistency PASSED"
+        },
+        {
+          "behavior": "FR-01.08 AC12 confirms-first half (operator-requested rollback requires explicit confirmation) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-deploy/tests/test_deploy_judgement_drift.py::test_manual_rollback_requires_explicit_confirmation_instruction_present PASSED"
+        },
+        {
+          "behavior": "FR-01.12 AC03 (missing settings walked through, not 'check the logs') still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-preview/tests/test_preview_judgement_drift.py::test_missing_settings_walked_through_instruction_present PASSED"
+        },
+        {
+          "behavior": "FR-01.12 AC07 addressing half (start failure cause addressed, not merely reported) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-preview/tests/test_preview_judgement_drift.py::test_start_failure_cause_addressed_instruction_present PASSED"
+        },
+        {
+          "behavior": "FR-01.09 AC01 request-opening half (gh pr create, conditional on being off-main) still carries its instruction text",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-changelog/tests/test_changelog_judgement_drift.py::test_create_pr_step_instruction_present PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 2,
+        "covered_acs": 2
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-16-e6-judgement-drift-tests",
+    "commit": "b8f4a18c9d3b93278d766e0f1f3d8ebb5af27ac0",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

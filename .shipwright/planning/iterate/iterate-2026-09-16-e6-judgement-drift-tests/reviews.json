@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-e6-judgement-drift-tests",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T09:41:52.693843+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan changes the work unit from the specified 19 lines to 25 based on an investigation whose “live ledger is authoritative” rule is not present in the supplied change specification. Even if 25 is correct, silently redefining scope makes acceptance ambiguous.",
+          "suggestion": "Obtain or record an explicit scope clarification: either update the change specification to say all 25 current judgement rows are covered, or provide a stable mapping showing how the original 19 are satisfied and why the six additions belong in this iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The approach cites 16 pre-existing tests but does not state that they will be run, nor that each is independently tied to the exact current instruction text. A ledger citation alone can mask tests that assert an adjacent sentence, a stale copy, or a different document.",
+          "suggestion": "Create a concise 25-row evidence matrix with source path, exact instruction/normalized form, test file/function, and test command; run the full relevant suites before closing the ledger.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Whitespace-normalized form” is underspecified. A broad normalizer can make meaningful textual edits—including punctuation, line joining, or markdown restructuring—pass while the governing instruction has materially changed.",
+          "suggestion": "Use literal assertions wherever possible. Where normalization is necessary, normalize only whitespace and assert an unambiguous, complete sentence; keep the expected canonical text in the test so reviewers can see precisely what is protected.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "New tests under four plugin-specific directories may not run in the repository’s normal CI/test-discovery paths, especially if plugins have separate pytest configuration or are excluded from root collection.",
+          "suggestion": "Verify each new test is collected by the same commands used in CI and that its package dependencies are available there. Registering the marker is appropriate, but confirm equivalent marker configuration for the other touched test environments.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The ledger correction for FR-01.02 #4b is reasonable, but it combines historical data cleanup with the new drift-test change and relies on a stale status-tag diagnosis.",
+          "suggestion": "Cite the existing mechanism and its specific test directly on that row, and state that this is a metadata correction rather than evidence newly created by e6.  Overall, the no-gate, literal-instruction-test approach is aligned with D7 and appropriately minimal. It needs an explicit resolution of the 19-versus-25 scope and a verifiable coverage map before implementation is considered complete. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T09:40:49.727861+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: approach** — **Severity: low**\nThe investigation-first method is exactly right for this change: re-measuring the ledger rather than trusting the \"19\", classifying each occurrence by hand, and verifying claimed coverage against actual passing tests is the honest version of D7's ceiling. The 8 genuinely-new substring assertions are the correct primitive — no LLM, no scoring, no heuristic. This is the simplest thing that satisfies the acceptance criteria.\n\n**Category: risk** — **Severity: medium**\nThe ledger status flip for FR-01.02 #4b (from judgement to `enforced, tested`) is the only mutation of shared state beyond appending citations. If any tooling or downstream iterate consumes ledger status tags (e.g., the AC-coverage baseline script, gate reports, or future e-iterates counting \"unbound\" ACs), reclassifying a row changes their output. Suggestion: re-run `measure_ac_evidence_ledger.py` and the coverage baseline after the flip and confirm the only diffs are the intended ones; note this in the re-measurement paragraph.\n\n**Category: risk** — **Severity: low**\nDrift tests asserting exact sentences will fail on any legitimate copy edit to the five source docs. That's by design, but the plan should state the failure is a prompt-to-update-the-test signal, not a test bug — otherwise a future maintainer \"fixes\" it by deleting the test, which is how the e-series coverage decays (the 6 uncited tests found here are evidence that exact failure mode already happened). Consider asserting whitespace-normalized text uniformly (the plan mentions it only as a fallback for wrapped lines — make it the rule for all 8) to avoid soft-wrap-only false failures.\n\n**Category: edge-case** — **Severity: low**\nThe plan counts 25 rows via the `prompt-only (judgement)` marker, but 6 occurrences were excluded by manual classification (legend, prose, historical table cell, sibling pointer). These exclusions are sound but currently live only in this mini-plan's […truncated]\n\n[openai] 1. Category: approach  \n   Severity: high  \n   Finding: The plan changes the work unit from the specified 19 lines to 25 based on an investigation whose “live ledger is authoritative” rule is not present in the supplied change specification. Even if 25 is correct, silently redefining scope makes acceptance ambiguous.  \n   Suggestion: Obtain or record an explicit scope clarification: either update the change specification to say all 25 current judgement rows are covered, or provide a stable mapping showing how the original 19 are satisfied and why the six additions belong in this iterate.\n\n2. Category: dependency  \n   Severity: medium  \n   Finding: The approach cites 16 pre-existing tests but does not state that they will be run, nor that each is independently tied to the exact current instruction text. A ledger citation alone can mask tests that assert an adjacent sentence, a stale copy, or a different document.  \n   Suggestion: Create a concise 25-row evidence matrix with source path, exact instruction/normalized form, test file/function, and test command; run the full relevant suites before closing the ledger.\n\n3. Category: edge-case  \n   Severity: medium  \n   Finding: “Whitespace-normalized form” is underspecified. A broad normalizer can make meaningful textual edits—including punctuation, line joining, or markdown restructuring—pass while the governing instruction has materially changed.  \n   Suggestion: Use literal assertions wherever possible. Where normalization is necessary, normalize only whitespace and assert an unambiguous, complete sentence; keep the expected canonical text in the test so reviewers can see precisely what is protected.\n\n4. Category: risk  \n   Severity: low  \n   Finding: New tests under four plugin-specific directories may not run in the repository’s normal CI/test-discovery paths, especially if plugins have separate pytest configuration or are excluded from root collection.  \n   Suggestion: Verify each new test is collected b […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T09:42:01.290247+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T09:42:01.395116+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` (~line 275 in the new re-measurement paragraph) / diff coverage of the FR-01.13 table",
+          "line": null,
+          "finding": "The re-measurement paragraph claims six rows \"had simply never had the test cited back onto their own row (FR-01.02 #6, FR-01.11 #4, FR-01.13 #2, FR-01.16 #1/#5/#7 — citations added this pass)\", but the diff contains no edit to FR-01.13's #2 row. Five of the six citation additions are visible (FR-01.02 #6, FR-01.11 #4, FR-01.16 #1/#5/#7); FR-01.13 #2's is absent, so the \"25/25 live judgement rows now carry a drift test\" claim is not backed by the diff for that row.",
+          "suggestion": "Either add the FR-01.13 #2 citation edit (with the actual test path/function) or correct the paragraph to say only five citations were added and account for the remaining row's coverage separately.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "plugins/shipwright-preview/pyproject.toml:26` vs the three other new plugin test files",
+          "line": null,
+          "finding": "The `covers` pytest marker is registered only for `shipwright-preview`. The new tests in `shipwright-build`, `shipwright-changelog`, and `shipwright-deploy` all use `@pytest.mark.covers(...)`; if any of those plugins' pytest configs use `--strict-markers` or treat unknown markers as errors (or later tighten to), the new tests will fail to collect/run. The plan asserts the others already register it but the diff provides no confirmation.",
+          "suggestion": "Verify each touched plugin's `pyproject.toml`/pytest config registers `covers`, and add the registration where missing, or drop the unverified assertion from the plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-deploy/tests/test_deploy_judgement_drift.py:42-45` (and similar pins in the other new files, e.g. the `spec-reviewer.md` `Faithful?` / `Mockup-consistent?` assertions)",
+          "line": null,
+          "finding": "Several pinned strings include markdown formatting tokens (``, backticks, section-heading `##` prefixes like `\"## Step 7: Create PR (Optional)\"`). Because the assertion runs against whitespace-normalized raw text, any purely cosmetic formatting change (heading level shift, bold removed) trips the test even though the governing instruction is unchanged. This is partially by design, but the self-review payload claims uniform whitespace normalization was applied to avoid non-semantic failures while these punctuation/format-sensitive pins reintroduce that brittleness.",
+          "suggestion": "Pin the prose sentence (or strip markdown emphasis before asserting) rather than formatting-decorated headings; keep one heading anchor per test at most.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-16-e6-judgement-drift-tests/reviews.json` — code/spec/doubt reviews all `not_run` with \"blocker 1 (no Agent tool)\" and `external_code` `pending",
+          "line": null,
+          "finding": "The sub-iterate closes its own ledger rows and records spec compliance as \"pass\" in the self-review payload while the mandatory spec-review and code-review arms were not run and the external code review is still `pending`. The ledger paragraph presents the work as closed (\"Result: 25/25... zero gates were built\") before the review cascade that would verify it completed.",
+          "suggestion": "Don't mark the campaign ledger rows as closed/re-measured until the pending/deferred reviews complete, or record the review status limitation inside the re-measurement paragraph itself.  No security issues: the change is pure substring assertions over local static markdown. No gate, scorer, or LLM judge was built, satisfying AC2's spirit. AC1 is satisfied for the rows actually edited, modulo the FR-01.13 gap above.  Overall: the approach is correct and D7-compliant; ship after fixing the missing FR-01.13 #2 citation (or correcting the claim) and confirming marker registration in the other three plugins.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 1365,
+          "finding": "FR-01.16 #1 is counted as drift-tested, but the cited test only pins §2/§3 section anchors; the ledger explicitly says the instruction prose is “unpinned at sentence level.” Deleting or changing “one question at a time,” the recommendation requirement, or “facts are found, not asked” while retaining the headings would still pass, so this does not meet the required instruction-text drift test.",
+          "suggestion": "Add literal (whitespace-normalized if needed) assertions for the governing §2 and §3 instruction sentences, rather than relying on section headings.  Ship-with-fixes: the no-gate approach is aligned with the specification, but at least one claimed judgement-line drift test does not actually protect its instruction text.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T09:45:05.643672+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec | Severity: medium\n  File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md` (~line 275 in the new re-measurement paragraph) / diff coverage of the FR-01.13 table\n  Finding: The re-measurement paragraph claims six rows \"had simply never had the test cited back onto their own row (FR-01.02 #6, FR-01.11 #4, FR-01.13 #2, FR-01.16 #1/#5/#7 — citations added this pass)\", but the diff contains no edit to FR-01.13's #2 row. Five of the six citation additions are visible (FR-01.02 #6, FR-01.11 #4, FR-01.16 #1/#5/#7); FR-01.13 #2's is absent, so the \"25/25 live judgement rows now carry a drift test\" claim is not backed by the diff for that row.\n  Suggestion: Either add the FR-01.13 #2 citation edit (with the actual test path/function) or correct the paragraph to say only five citations were added and account for the remaining row's coverage separately.\n\n- Category: bug | Severity: low\n  File: `plugins/shipwright-preview/pyproject.toml:26` vs the three other new plugin test files\n  Finding: The `covers` pytest marker is registered only for `shipwright-preview`. The new tests in `shipwright-build`, `shipwright-changelog`, and `shipwright-deploy` all use `@pytest.mark.covers(...)`; if any of those plugins' pytest configs use `--strict-markers` or treat unknown markers as errors (or later tighten to), the new tests will fail to collect/run. The plan asserts the others already register it but the diff provides no confirmation.\n  Suggestion: Verify each touched plugin's `pyproject.toml`/pytest config registers `covers`, and add the registration where missing, or drop the unverified assertion from the plan.\n\n- Category: test | Severity: low\n  File: `plugins/shipwright-deploy/tests/test_deploy_judgement_drift.py:42-45` (and similar pins in the other new files, e.g. the `spec-reviewer.md` `**Faithful?**` / `**Mockup-consistent?**` assertions)\n  Finding: Several pinned strings include markdown formatting tokens (`**`,  […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: `.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md:1365`\n- Finding: FR-01.16 #1 is counted as drift-tested, but the cited test only pins §2/§3 section anchors; the ledger explicitly says the instruction prose is “unpinned at sentence level.” Deleting or changing “one question at a time,” the recommendation requirement, or “facts are found, not asked” while retaining the headings would still pass, so this does not meet the required instruction-text drift test.\n- Suggestion: Add literal (whitespace-normalized if needed) assertions for the governing §2 and §3 instruction sentences, rather than relying on section headings.\n\nShip-with-fixes: the no-gate approach is aligned with the specification, but at least one claimed judgement-line drift test does not actually protect its instruction text.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T09:42:01.181367+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T09:42:01.497788+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
