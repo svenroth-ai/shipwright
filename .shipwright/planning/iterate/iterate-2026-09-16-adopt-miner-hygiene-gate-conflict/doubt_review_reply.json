@@ -1,0 +1,23 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin-imports",
+  "doubts": [
+    {
+      "severity": "low",
+      "claim_under_doubt": "shared_loader dependency on fr_hygiene_detectors.py is test-pinned like the other 8 rewired scaffolders",
+      "resolution": "fixed — test_acceptance_miner added to test_shared_loader.py's census test import list + its own symbol assertion"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "module-level load_shared_module call creates a new hard shared/-presence requirement for this module",
+      "resolution": "rebutted with a docstring note — matches the identical precedent already set by the plugin's other 8 shared_loader consumers; shared/ absent is not a supported distribution shape for any shipwright plugin"
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "load_shared_module's check-then-exec sys.modules caching is unsafe under concurrent callers",
+      "resolution": "rebutted — no threading/asyncio/multiprocessing usage anywhere under plugins/shipwright-adopt/scripts (grep-verified); inherited property of shared_loader.py itself, not introduced or worsened by this diff, no live call site races it"
+    }
+  ],
+  "summary": "No high or blocking doubt found. Two of three low findings fixed (census test, docstring note); the concurrency finding is a pre-existing, non-live property of shared_loader.py rebutted with a grep-verified absence of any concurrent caller."
+}

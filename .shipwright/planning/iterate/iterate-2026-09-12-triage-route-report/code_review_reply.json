@@ -1,0 +1,21 @@
+{
+  "section": "iterate-2026-09-12-triage-route-report",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/triage_cli_commands.py",
+      "line": 202,
+      "finding": "cmd_promote and cmd_amend already bind `project_root = Path(args.project_root)` earlier in the function, but the route_note(...) call re-constructed the Path a second time instead of reusing that binding. FIXED in this same run: both now reuse the existing `project_root` binding.",
+      "suggestion": "Resolved."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": ".shipwright/planning/iterate/iterate-2026-09-12-triage-route-report/self-review-payload.json",
+      "line": 8,
+      "finding": "The self-review's 'Naming & Structure' note stated triage_cli_commands.py is 'exactly 324 lines, matching the existing baseline entry' while the file was actually 320-321 lines (under the 324 baseline, not at it). FIXED: the self-review payload was rewritten to state the file sits at-or-under its 324-line budget (currently 320) rather than claiming an exact match, and to reflect the scope extension into triage_promote.py that had also gone unmentioned in the prior payload text.",
+      "suggestion": "Resolved."
+    }
+  ]
+}

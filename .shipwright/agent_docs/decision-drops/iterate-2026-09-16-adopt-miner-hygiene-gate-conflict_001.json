@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-adopt-miner-hygiene-gate-conflict",
+  "date": "2026-09-16",
+  "section": "Iterate — change: adopt miner hygiene gate conflict",
+  "title": "Producer-side hygiene filtering for mined acceptance criteria",
+  "context": "Rollout-transition grace only helps pre-rollout spec.md content; every future /shipwright-adopt onboarding mines gate-violating bullets with no grace at all (trg-ac2ef362).",
+  "decision": "Filter every mined bullet through the shared fr_hygiene_detectors.violations() gate before appending; drop dirty bullets, strip a dirty describe prefix when the bare it-label is clean, dedup per file, filter before the 10-item cap.",
+  "consequences": "Mined ACs are gate-clean at generation time for every future onboarding. An all-dirty candidate file now falls through to its next sibling. New hard module-level shared/ dependency, matching 8 existing precedents.",
+  "rationale": "Internal + 2 rounds external architecture review (glm+openai) approved fixing the producer over extending gate-side grace: generalizes to all future onboardings, no gate change needed, reuses an existing cross-plugin loader idiom.",
+  "rejected": "Gate-side grace extension (would need to grow indefinitely); a dropped-bullets reporting feature (real but separable); AST test parsing (not worth the dep); remediating the installed-base window (tracked separately as trg-655cf276).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-16-adopt-miner-hygiene-gate-conflict.md"
+}

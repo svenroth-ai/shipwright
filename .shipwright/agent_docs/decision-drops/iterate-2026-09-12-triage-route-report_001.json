@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-12-triage-route-report",
+  "date": "2026-09-12",
+  "section": "mark_status route reporting",
+  "title": "mark_status reports its outbox-vs-tracked write target",
+  "context": "mark_status() silently derives outbox-vs-tracked for a status flip (should_route_to_outbox: origin+default-branch+not-CI), unlike amend_triage_item() which reports it. Three same-session flips landed tracked-on-a-branch unnoticed, one invisible on the board for hours.",
+  "decision": "mark_status(return_item=True) now returns (previous, item, to_outbox), additive. New lib/triage_route.py centralizes route_label/route_note. All four CLI writers (dismiss/snooze/amend/promote+defer+unpark) report route in --json and human stderr. Derivation stays non-overridable.",
+  "consequences": "Scope grew to triage_promote.py's promote()/_transition() and cmd_promote/_status_flip after two external reviewers (GLM, Codex) flagged dismiss's silent non-json path. A Stage-1 spec-reviewer pass caught the extension breaking 4 pre-existing exact-dict-equality tests; fixed same-run.",
+  "rationale": "Reporting through the shared dispatch, not just the two named call sites, closes the gap for every writer; the derivation itself stays git-state-only per the card's explicit constraint.",
+  "rejected": "A caller --route flag (rejected: reintroduces the data-loss risk the derivation prevents). Fixing only the two literal call sites (rejected: leaves dismiss silent, defeating the change's purpose).",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-12-triage-route-report-mark-status-route-reporting.md"
+}

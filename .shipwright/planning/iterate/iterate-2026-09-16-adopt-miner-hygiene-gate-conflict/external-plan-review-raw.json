@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- **Category: edge-case \u2014 Severity: medium**\n  Prefix-stripping is only defined for the *innermost* describe. Real JS test suites frequently nest describes (\"renders UserProfileCard > when props change > shows the avatar\"). The plan says \"if there was a prefix and `it_label` alone is clean, keep `it_label`\" \u2014 but what if `combined` uses only the innermost prefix and a middle-level describe carries the PascalCase symbol (e.g., innermost describe is clean, outer is dirty, and the dirty outer name is not in the combined string at all)? Confirm the combined-string construction actually includes all ancestor describes or only innermost; if only innermost, a dirty outer `describe('UserProfileCard')` never appears in the bullet and never trips anything \u2014 fine \u2014 but if the code joins all ancestors, the strip should iterate outermost-inward, not just drop one prefix. Suggestion: specify strip-all-ancestors-until-clean (or drop) and test a two-level nest case.\n\n- **Category: edge-case \u2014 Severity: low**\n  Dedup is scoped per-file, but mined bullets are merged across files into one `spec.md` AC list. Prefix-stripping can collapse bullets from *different* files into identical text (\"validates input\" from `auth.test.ts` and `user.test.ts`). First-seen order across files isn't specified. The existing behavior already allowed cross-file dupes, so this is not a regression, but the new AC's rationale (\"spec.md must not carry a literal duplicate line\") argues for cross-file dedup or at least acknowledging the scope limit.\n\n- **Category: approach \u2014 Severity: low**\n  Silent dropping with zero signal is acknowledged as out-of-scope, but the practical failure mode is real: an adopt onboarding of a heavily PascalCase-describe codebase (typical React/TS) could lose most of its mined bullets with no trace, and a maintainer reviewing \"why does spec.md have 2 ACs for this repo\" has no answer. The \"N bullets dropped\" one-line counter is ~3 lines of code against the existing return value. Consider pulling it in or making the follow-up card explicitly cover it, not just the installed-base window.\n\n- **Category: risk \u2014 Severity: low**\n  `shared_loader.load_shared_module` at module import time means the shared path must resolve in every context that imports the miner (the plugin's own tests run it fine per the precedent, but any consumer importing `test_acceptance_miner` outside the plugin's directory \u2014 e.g., a future root-level test \u2014 would need the path to hold). The gitleaks precedent implies this works; just ensure the load is lazy or fails loudly (not a silent `None` / broad `except ImportError`) so a path break surfaces at import, not as \"all bullets suddenly dirty-dropped\" or \"all kept.\"\n\n- **Category: dependency \u2014 Severity: low**\n  `trg-ac2ef362` closure depends on the follow-up PR append \u2014 the spec correctly sequences this, but it's an easy orphan. Ensure the new follow-up card minting (installed-base window) and the PR-append closure land in the same commit trail as the code change so the run can't half-complete.\n\nThe approach itself \u2014 producer-side filtering with the gate's own detector imported, not reimplemented \u2014 is clearly the right resolution, and the write-path trace (mine \u2192 `feat[\"acceptance_criteria\"]` \u2192 renderer) closing the \"is the gate re-reading the same bytes\" question is solid. Findings above are refinements to edges, not objections to the design.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** This adds a runtime dependency from `shipwright-adopt` to a shared gate module. The plan cites an in-repo loader precedent, but the proposed test evidence only establishes source-tree package-context import; it does not explicitly prove that the deployed/adoptable plugin layout includes and resolves `shared/scripts/lib/fr_hygiene_detectors.py`.  \n   **Suggestion:** Add a focused integration assertion that invokes mining through the installed-plugin/test harness and confirms the loaded detector is the shared module. Verify the plugin packaging/install contract includes that shared path.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Per-file deduplication is an acceptance criterion, but it is absent from the Mini-Plan\u2019s actual miner steps. Filtering alone will not prevent two dirty `describe` prefixes from collapsing into the same clean `it` label.  \n   **Suggestion:** Explicitly add an ordered per-file `seen` set at the point candidates are appended, after prefix stripping/filtering and before returning from each miner helper. Keep the specified first-seen behavior.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The required installed-base follow-up triage card is described in the specification but is not included in the Mini-Plan\u2019s execution steps; only closure of `trg-ac2ef362` is listed. This would leave a known high-severity affected population untracked.  \n   **Suggestion:** Add an explicit triage-mint step with the installed-base window, affected gate behavior, and remediation question, then reference that card in the implementation PR and close `trg-ac2ef362` after the PR exists.\n\nThe producer-side solution is sound, appropriately small, and avoids weakening the universal gate. With the loader deployment check, explicit dedup implementation, and required follow-up card made concrete, it is ready to implement.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}

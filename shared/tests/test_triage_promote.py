@@ -99,7 +99,7 @@ def test_promote_happy_path(project: Path, triage_item: str) -> None:
         "id": triage_item,
         "previousStatus": "triage",
         "newStatus": "promoted",
-        "promotedTaskId": "EXT:linear-ENG-7",
+        "promotedTaskId": "EXT:linear-ENG-7", "route": "tracked",
     }
 
     [item] = read_all_items(project)
@@ -280,7 +280,7 @@ def test_dismiss_happy_path(project: Path, triage_item: str) -> None:
         "id": triage_item,
         "previousStatus": "triage",
         "newStatus": "dismissed",
-        "reason": "notRelevant",
+        "reason": "notRelevant", "route": "tracked",
     }
 
     [item] = read_all_items(project)

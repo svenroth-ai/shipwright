@@ -1,0 +1,122 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-triage-route-report",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 10712,
+      "total": 10747
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "triage CLI/library route-reporting change; no startable web/dev-server surface of its own to browser-verify \u2014 verification is the subprocess CLI round-trip tests plus the full shared/ unit suite (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "mark_status(return_item=True) reports outbox route on idle main",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_mark_status_return_item_reports_outbox_route PASSED"
+        },
+        {
+          "behavior": "mark_status(return_item=True) reports tracked route on a non-default branch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_mark_status_return_item_reports_tracked_route PASSED"
+        },
+        {
+          "behavior": "the new to_outbox element is appended at index 2, previous/item keep indices 0/1 (backward-compat regression guard)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_mark_status_return_item_unpacks_as_three_values PASSED"
+        },
+        {
+          "behavior": "dismiss/snooze --json emit route=tracked on a non-default branch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_status_flip_json_reports_tracked_route_on_a_branch[dismiss,snooze] PASSED"
+        },
+        {
+          "behavior": "dismiss/snooze --json emit route=outbox on idle main",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_status_flip_json_reports_outbox_route_on_idle_main[dismiss,snooze] PASSED"
+        },
+        {
+          "behavior": "amend --json emits route for both outbox and tracked cases",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_amend_json_reports_the_route PASSED"
+        },
+        {
+          "behavior": "show --json carries no route key (a read, not a write, has nothing to derive)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_show_json_carries_no_route_key PASSED"
+        },
+        {
+          "behavior": "snooze/amend human (non-json) mode prints the outbox note on idle main",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_snooze_prints_the_outbox_note_on_idle_main, test_amend_prints_the_outbox_note_on_idle_main PASSED"
+        },
+        {
+          "behavior": "snooze/amend human mode prints the converse tracked-branch note off the default branch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_snooze_prints_the_tracked_branch_note_on_a_branch, test_amend_prints_the_tracked_branch_note_on_a_branch PASSED"
+        },
+        {
+          "behavior": "no note at all when tracked AND on the default branch (no origin remote) \u2014 the negative case a spec-reviewer flagged as missing",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report.py::test_route_note_is_silent_when_tracked_on_the_default_branch PASSED"
+        },
+        {
+          "behavior": "dismiss (non-json)/defer/unpark/promote print the route note (outbox and tracked-branch cases) via the shared _status_flip/cmd_promote dispatch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report_dispatch.py::test_dismiss_non_json_reports_the_route, test_defer_reports_the_route, test_unpark_reports_the_route, test_promote_reports_the_route PASSED"
+        },
+        {
+          "behavior": "dismiss/defer/unpark/promote --json emit the route key via the shared dispatch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_route_report_dispatch.py::test_status_flip_and_promote_json_reports_the_route[dismiss,defer,unpark,promote] PASSED"
+        },
+        {
+          "behavior": "extending route reporting into triage_promote.py does not silently break pre-existing promote/dismiss/defer exact-dict-equality assertions",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_triage_promote.py::test_promote_happy_path, test_dismiss_happy_path + shared/tests/test_triage_defer.py::test_defer_records_the_decision_and_its_reason, test_dismiss_is_unchanged_by_the_shared_extraction \u2014 all updated to assert the additive route key, 66/66 passing"
+        }
+      ],
+      "counts": {
+        "testable": 13,
+        "tested": 13,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-triage-route-report",
+    "commit": "c6a3e835b06e3196a4483928f36faf9d84963050",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

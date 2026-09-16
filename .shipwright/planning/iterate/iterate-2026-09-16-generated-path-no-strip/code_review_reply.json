@@ -1,0 +1,23 @@
+{
+  "section": "generated-path-no-strip",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py",
+      "line": 84,
+      "finding": "The only production caller of the now-fixed is_generated_path is filter_generated_paths, via _clean_diff_path, which still does a blanket .strip() on the diff-header remainder before is_generated_path ever runs, so a trailing-whitespace-padded lookalike of a generated path would still be silently normalized and hidden from the reviewing model through the real call path.",
+      "disposition": "investigated, claim partially inaccurate: _clean_diff_path was narrowed to .rstrip(\"\\r\") anyway (a blanket strip had no legitimate purpose beyond CRLF handling), but the specific end-to-end vulnerability claimed does not reproduce. _section_paths also collects the `diff --git a/X b/X` header line's own path capture (via _DIFF_GIT_RE), and for a non-rename real file whose name ends in whitespace, that header line's literal separator space plus the name's own trailing space collide, and the regex resolves the padding onto the a/-side capture regardless of _clean_diff_path. Combined with filter_generated_paths's 'every collected path must be generated to exclude' rule, that header-side leak alone already keeps such a file reviewable once is_generated_path (Stage 1 of this same iterate) stopped stripping. Verified empirically: reverted _clean_diff_path to a blanket .strip() and the new end-to-end regression test (test_trailing_whitespace_lookalike_stays_reviewable_end_to_end) still passed. Full trace in plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py's module docstring and pr_review_diff_filter.py's corrected _clean_diff_path docstring.",
+      "outcome": "fixed"
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-security/scripts/lib/pr_review_generated.py",
+      "line": 192,
+      "finding": "The docstring doesn't mention the caller-side normalization boundary.",
+      "disposition": "moot given the medium finding's correction above — no caller-side normalization gap exists once is_generated_path itself stopped stripping, so no caveat is needed.",
+      "outcome": "no_change_needed"
+    }
+  ]
+}
