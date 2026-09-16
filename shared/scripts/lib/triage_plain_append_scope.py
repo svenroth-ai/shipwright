@@ -30,6 +30,13 @@ iterate-2026-09-16-e5) found successive defects on the way to this shape:
   without checking `node.level`, so a RELATIVE import literally named
   `.triage` (`from .triage import append_triage_item`) matched as if it
   were the real, absolute module -- fixed by requiring `level == 0`.
+- Round 11 (external code review, req3-06 e5, low): two binding shapes
+  were invisible to the walk entirely -- a `match`/`case` capture
+  (`ast.MatchAs`/`MatchStar`/`MatchMapping.rest`), the same false-
+  positive-shadowing bug class the round-7 parameter fix closed for
+  `def`; and a non-target sibling import FROM the target module
+  (`from triage import read_all_items`), which could shadow or conflict
+  with a same-scope `from triage import append_triage_item` unnoticed.
 
 `build_scope_bindings` + `resolve` close all four: a name is visible to a
 call if bound to the searched-for thing in that call's own scope or any
@@ -139,14 +146,22 @@ def build_scope_bindings(tree: ast.AST, *, target_name: str, module_name: str):
       binds the name to the thing we want" from "this scope ALSO binds the
       name to something else" -- the latter makes a same-scope match
       ambiguous, not a hit (round 8 finding).
-    - `call_scope`: every `ast.Call` node mapped to the scope it lexically
-      sits in.
+    - `reference_scope`: every `ast.Name`/`ast.Attribute` node in Load
+      context mapped to the scope it lexically sits in -- every place the
+      tree READS a name, not only where it is called. A `Call`'s own
+      `func` is one such node like any other, visited the same way as a
+      bare `return triage.append_triage_item` would be, so a caller
+      checking this dict for a hit needs no separate "is this a call"
+      branch (round 11, external code review, req3-06 e5, medium: a
+      Call-only check let a STORED or RETURNED reference evade detection
+      entirely -- see `triage_plain_append_scan.py`'s module docstring,
+      limit #2).
     """
     parent: dict[ast.AST, ast.AST | None] = {tree: None}
     plain_names: dict[ast.AST, set[str]] = {}
     module_aliases: dict[ast.AST, set[str]] = {}
     other_names: dict[ast.AST, set[str]] = {}
-    call_scope: dict[ast.Call, ast.AST] = {}
+    reference_scope: dict[ast.AST, ast.AST] = {}
 
     def bind_other(scope: ast.AST, name: str) -> None:
         other_names.setdefault(scope, set()).add(name)
@@ -169,6 +184,14 @@ def build_scope_bindings(tree: ast.AST, *, target_name: str, module_name: str):
                     plain_names.setdefault(scope, set()).add(target_name)
                 elif alias.name == target_name:
                     plain_names.setdefault(scope, set()).add(alias.asname or alias.name)
+                else:
+                    # Round 11 (external code review, req3-06 e5, low): a
+                    # sibling import FROM the target module that is NOT
+                    # the target name (`from triage import read_all_items`,
+                    # or `... as triage` shadowing the module alias) is a
+                    # real binding too -- previously recorded nowhere,
+                    # unlike every other import shape here.
+                    bind_other(scope, alias.asname or alias.name)
         elif isinstance(node, ast.ImportFrom):
             # Not FROM the target module -- still a real binding, so it can
             # shadow (or, at the same scope, conflict with) a same-named
@@ -182,14 +205,27 @@ def build_scope_bindings(tree: ast.AST, *, target_name: str, module_name: str):
                     module_aliases.setdefault(scope, set()).add(alias.asname or alias.name)
                 else:
                     bind_other(scope, alias.asname or alias.name.split(".", 1)[0])
-        elif isinstance(node, ast.Call):
-            call_scope[node] = scope
         elif isinstance(node, ast.arg):
             bind_other(scope, node.arg)
         elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
             bind_other(scope, node.id)
+        elif isinstance(node, (ast.Name, ast.Attribute)) and isinstance(node.ctx, ast.Load):
+            # Every READ of a name or attribute, whether it is a `Call`'s
+            # `func`, a bare `return`, an assignment RHS, or a tuple
+            # element -- the caller decides which of these are a hit by
+            # checking `.id` / `.attr` against the resolved bindings above.
+            reference_scope[node] = scope
         elif isinstance(node, ast.ExceptHandler) and node.name:
             bind_other(scope, node.name)
+        elif isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name:
+            # Round 11 (external code review, req3-06 e5, low): a `case`
+            # capture (`case Writer() as triage:`) binds a name exactly
+            # like a parameter or assignment target does -- previously
+            # invisible to this walk, the same false-positive-shadowing
+            # bug class the round-7 parameter fix closed for `def`.
+            bind_other(scope, node.name)
+        elif isinstance(node, ast.MatchMapping) and node.rest:
+            bind_other(scope, node.rest)
         for child in ast.iter_child_nodes(node):
             if isinstance(child, _SCOPE_BOUNDARIES):
                 if isinstance(child, _NAMED_SCOPE_BOUNDARIES):
@@ -200,7 +236,7 @@ def build_scope_bindings(tree: ast.AST, *, target_name: str, module_name: str):
                 visit(child, scope)
 
     visit(tree, tree)
-    return parent, plain_names, module_aliases, other_names, call_scope
+    return parent, plain_names, module_aliases, other_names, reference_scope
 
 
 def resolve(

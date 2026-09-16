@@ -55,10 +55,22 @@ scope miss):
    relative import resolver to guard against a shape this codebase has
    never once used is the over-engineering the campaign's D7 abort
    condition warns against.
-2. Accepted gap: a call reached through `getattr(triage,
-   "append_triage_item")`, or a name stored and invoked indirectly (`fn =
-   triage.append_triage_item; fn(...)`). Real Python, but no producer in
-   this repo's history has ever reached the function this way.
+2. Accepted gap: a call reached through a STRING-KEYED indirect access --
+   `getattr(triage, "append_triage_item")` or `getattr(triage,
+   name_variable)`. A string literal never becomes an `ast.Attribute`
+   node the way `triage.append_triage_item` does, so this is a structural
+   AST blind spot, not a missed case. **A bare stored/returned reference
+   is NOT a gap** (round 11, external code review, req3-06 e5, medium,
+   full history in the ADR): `fn = triage.append_triage_item; fn(...)`
+   and `return triage.append_triage_item` are now caught the same way a
+   direct call is -- every scope-resolved LOAD is checked, not only one
+   used as `Call.func`. Previously listed here as a gap on the claim that
+   "no producer has ever reached the function this way" -- checked
+   against the wrong function name: `plugins/shipwright-compliance/
+   scripts/{audit/triage_bundle,lib/sbom_generator,lib/test_evidence}.py`
+   all reach the SAFE sibling `append_triage_item_idempotent` via exactly
+   this stored-reference idiom today, so it is this repo's established
+   house pattern, just not (yet) applied to the dangerous plain form.
 3. Accepted imprecision, in the SAFE direction -- see
    `triage_plain_append_scope.py`'s own docstring: a `ClassDef` body's own
    import is treated as visible to that class's methods, though real
@@ -80,7 +92,9 @@ have hidden.
 from __future__ import annotations
 
 import ast
+import os
 import tokenize
+from functools import lru_cache
 from pathlib import Path
 
 from lib.triage_plain_append_scope import build_scope_bindings, resolve
@@ -162,21 +176,28 @@ def _calls_plain_append(tree: ast.AST) -> bool:
     """Uses `triage_plain_append_scope.py`'s scope-chain engine, bound to
     THIS module's two targets: the plain `append_triage_item` name, and the
     `triage` module itself (see `TARGET_NAME` / `_TRIAGE_MODULE_NAME`).
+
+    Checks every scope-resolved LOAD of a bound name/attribute, not only
+    one used as `Call.func` -- round 11 (external code review, req3-06 e5,
+    medium): a bare `Call`-only check let a STORED or RETURNED reference
+    evade the scan (see the module docstring's limit #2 for the concrete
+    shape and why it matters). `build_scope_bindings` records every
+    `ast.Name`/`ast.Attribute` LOAD -- a Call's own `func` is one such
+    LOAD like any other, so this subsumes the old call-only check.
     """
-    parent, plain_names, triage_aliases, other_names, call_scope = build_scope_bindings(
+    parent, plain_names, triage_aliases, other_names, reference_scope = build_scope_bindings(
         tree, target_name=TARGET_NAME, module_name=_TRIAGE_MODULE_NAME
     )
-    for call, scope in call_scope.items():
-        func = call.func
-        if isinstance(func, ast.Name) and resolve(
-            scope, func.id, plain_names, other_names, parent
+    for node, scope in reference_scope.items():
+        if isinstance(node, ast.Name) and resolve(
+            scope, node.id, plain_names, other_names, parent
         ):
             return True
         if (
-            isinstance(func, ast.Attribute)
-            and func.attr == TARGET_NAME
-            and isinstance(func.value, ast.Name)
-            and resolve(scope, func.value.id, triage_aliases, other_names, parent)
+            isinstance(node, ast.Attribute)
+            and node.attr == TARGET_NAME
+            and isinstance(node.value, ast.Name)
+            and resolve(scope, node.value.id, triage_aliases, other_names, parent)
         ):
             return True
     return False
@@ -185,30 +206,61 @@ def _calls_plain_append(tree: ast.AST) -> bool:
 def _scan_paths(repo_root: Path, bases: tuple[str, ...]) -> list[Path]:
     """Every in-scope `.py` file under `bases`.
 
-    `rglob` can follow a symlinked directory that escapes `repo_root`
-    entirely, at which point `Path.relative_to` raises `ValueError` (round 4
-    external review, GLM, low) -- caught and skipped rather than crashing
-    the whole scan over one stray link. This repo carries no such symlink
-    today (checked, not assumed), so this is defence-in-depth, not a
-    response to a live defect.
+    `os.walk` with `dirnames` PRUNED IN PLACE, not `Path.rglob` filtered
+    after the fact (round 11, external code review, req3-06 e5, medium):
+    `rglob` enumerated every file under `bases` first, including the full
+    contents of `.venv` and every sibling `.worktrees/*` checkout, and
+    only dropped them once yielded -- the same walk class that has hung
+    sessions here before. Pruning `EXCLUDED_PARTS` out of `dirnames`
+    before descending means those trees are never entered at all.
+    `os.walk`'s `followlinks=False` default also means a symlinked
+    directory is listed but never descended into; the `try/except
+    ValueError` below stays anyway as cheap defence-in-depth.
     """
     paths: list[Path] = []
     for base in bases:
         base_dir = repo_root / base
         if not base_dir.is_dir():
             continue
-        for path in base_dir.rglob("*.py"):
-            try:
-                rel_parts = path.relative_to(repo_root).parts
-            except ValueError:
-                continue
-            rel = "/".join(rel_parts)
-            if rel == DEFINITION_MODULE:
-                continue
-            if any(part in EXCLUDED_PARTS for part in rel_parts):
-                continue
-            paths.append(path)
+        for dirpath, dirnames, filenames in os.walk(base_dir):
+            dirnames[:] = [d for d in dirnames if d not in EXCLUDED_PARTS]
+            for filename in filenames:
+                if not filename.endswith(".py"):
+                    continue
+                path = Path(dirpath) / filename
+                try:
+                    rel_parts = path.relative_to(repo_root).parts
+                except ValueError:
+                    continue
+                if "/".join(rel_parts) == DEFINITION_MODULE:
+                    continue
+                paths.append(path)
     return paths
+
+
+@lru_cache(maxsize=32)
+def _scan(repo_root: Path, bases: tuple[str, ...]) -> tuple[frozenset[str], frozenset[str]]:
+    """One walk, one parse pass, producing BOTH the callers set and the
+    unparseable set -- `find_plain_append_callers` and
+    `find_unparseable_files` each read one half instead of each
+    independently walking and re-parsing the whole tree (round 11,
+    external code review, req3-06 e5, medium; round 10's GLM leg already
+    flagged the duplication). `lru_cache`, not a plain module-level dict:
+    `repo_root`/`bases` are hashable, and a production `.py` file changing
+    mid-process is the same staleness class every other in-process AST
+    cache here already accepts. `maxsize=32` comfortably covers this
+    module's realistic (repo_root, bases) cardinality per test session.
+    """
+    found: set[str] = set()
+    unparseable: set[str] = set()
+    for path in _scan_paths(repo_root, bases):
+        tree = _parse(path)
+        if tree is None:
+            unparseable.add(path.relative_to(repo_root).as_posix())
+            continue
+        if _calls_plain_append(tree):
+            found.add(path.relative_to(repo_root).as_posix())
+    return frozenset(found), frozenset(unparseable)
 
 
 def find_plain_append_callers(
@@ -223,14 +275,8 @@ def find_plain_append_callers(
     which the registry test checks separately so a broken file cannot both
     hide a violation AND stay invisible.
     """
-    found: set[str] = set()
-    for path in _scan_paths(repo_root, bases):
-        tree = _parse(path)
-        if tree is None:
-            continue
-        if _calls_plain_append(tree):
-            found.add(path.relative_to(repo_root).as_posix())
-    return found
+    found, _ = _scan(repo_root, bases)
+    return set(found)
 
 
 def find_unparseable_files(
@@ -245,8 +291,5 @@ def find_unparseable_files(
     at the named file(s) before the registry's "found == registered" claim
     can be trusted.
     """
-    return {
-        path.relative_to(repo_root).as_posix()
-        for path in _scan_paths(repo_root, bases)
-        if _parse(path) is None
-    }
+    _, unparseable = _scan(repo_root, bases)
+    return set(unparseable)

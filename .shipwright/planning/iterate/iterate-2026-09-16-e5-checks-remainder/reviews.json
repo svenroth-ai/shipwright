@@ -209,15 +209,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-16T07:21:42.012205+00:00",
-      "disposition": "Stage-1 spec-reviewer is orchestrator-run only; runner never performs this pass",
-      "recorded_by": "none",
+      "completed_at": "2026-09-16T07:37:09.943200+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",

@@ -42,6 +42,7 @@ must be explicitly, visibly registered here -- the same allowlist discipline
 
 from __future__ import annotations
 
+import ast
 import sys
 import tokenize
 from pathlib import Path
@@ -153,11 +154,19 @@ def test_every_registered_caller_is_documented_as_manual() -> None:
                 "a RATIONALE guard cannot check wording it cannot read; fix "
                 "the registry entry or the file before trusting this pin"
             ) from exc
-        assert "manual" in text.lower(), (
-            f"{entry} no longer describes itself as a manual CLI in its own "
-            "text -- this is a RATIONALE guard: re-check by hand whether the "
-            "file still qualifies for the plain-append exception before "
-            "touching the wording that keeps this test green"
+        # Round 11 (external code review, req3-06 e5, low): checking the
+        # WHOLE file's text let any incidental occurrence of "manual"
+        # satisfy this pin -- a `--source manual` usage example, an
+        # unrelated comment -- even though the guard's own docstring above
+        # claims to protect "the one sentence that justifies" the entry.
+        # The MODULE DOCSTRING is that sentence's actual home.
+        docstring = ast.get_docstring(ast.parse(text)) or ""
+        assert "manual" in docstring.lower(), (
+            f"{entry}'s module docstring no longer describes itself as a "
+            "manual CLI -- this is a RATIONALE guard: re-check by hand "
+            "whether the file still qualifies for the plain-append "
+            "exception before touching the wording that keeps this test "
+            "green"
         )
 
 

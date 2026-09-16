@@ -149,6 +149,51 @@ def test_a_package_qualified_import_is_a_named_accepted_gap(
     )
 
 
+def _rogue_producer(root: Path, relative_dir: str) -> None:
+    excluded_dir = root / "shared" / "scripts" / relative_dir
+    excluded_dir.mkdir(parents=True)
+    (excluded_dir / "rogue_producer.py").write_text(
+        "import triage\n"
+        "def emit(root):\n"
+        "    return triage.append_triage_item(root, source='x', "
+        "severity='low', kind='bug', title='t', detail='d')\n",
+        encoding="utf-8",
+    )
+
+
+def test_a_producer_under_venv_is_excluded_from_the_scan(tmp_path: Path) -> None:
+    """Round 11 (external code review, req3-06 e5, low): the directory-name
+    EXCLUSION itself was never positively pinned -- only the package-
+    qualified-import gap above was. If a future edit dropped `.venv` from
+    `EXCLUDED_PARTS`, nothing would catch a real producer's registry test
+    turning into a full site-packages scan. This is a positive pin of the
+    EXCLUSION, not the detection: a plain-append call under `.venv/` must
+    stay invisible, the same as if it were never scanned at all.
+    """
+    _rogue_producer(tmp_path, ".venv/some_package")
+    found = find_plain_append_callers(tmp_path, bases=("shared/scripts",))
+    assert found == set(), (
+        "a producer under .venv/ was found -- EXCLUDED_PARTS no longer "
+        "excludes .venv, or the exclusion mechanism itself changed"
+    )
+
+
+def test_a_producer_under_a_tests_dir_is_excluded_from_the_scan(
+    tmp_path: Path,
+) -> None:
+    """Sibling to the `.venv` pin above -- `tests/` is the OTHER directory
+    name this scanner's own registry test suite lives under, so an
+    exclusion regression there would be the most self-defeating possible
+    failure: this scanner's own tests would start tripping it.
+    """
+    _rogue_producer(tmp_path, "tests")
+    found = find_plain_append_callers(tmp_path, bases=("shared/scripts",))
+    assert found == set(), (
+        "a producer under tests/ was found -- EXCLUDED_PARTS no longer "
+        "excludes tests/, or the exclusion mechanism itself changed"
+    )
+
+
 def test_a_relative_import_of_an_unrelated_function_is_not_a_false_positive(
     tmp_path: Path,
 ) -> None:
