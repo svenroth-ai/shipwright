@@ -135,3 +135,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [ADR — Mechanise FR-01.08/FR-01.09 prompt-only-mechanisable ledger lines](iterate-2026-09-15-e4-checks-deploy-changelog-mechanise-fr0108-fr0109.md)
 - [t8 — FR-01.01 / FR-01.05 / FR-01.12 / FR-01.13 AC-binding disposition table](iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)
 - [ADR: AST meta-test gate for the plain `append_triage_item` producer contract](iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md)
+- [Judgement-line drift tests close the 19/25 discrepancy, no gate built](iterate-2026-09-16-e6-judgement-drift-tests-closure.md)

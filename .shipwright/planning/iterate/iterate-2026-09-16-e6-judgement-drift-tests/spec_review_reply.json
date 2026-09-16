@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "AC-1 and AC-2 both met. All 9 new tests are pure literal substring assertions (`assert \"<literal>\" in \" \".join(text.split())`) over static markdown -- no regex, no LLM, no scorer, no threshold, no semantic evaluation of whether the instruction is followed. Zero new production code paths; the only non-test change is a one-line `covers` pytest-marker registration in shipwright-preview's pyproject.toml. The 19-vs-25 count discrepancy is documented in four places with an explicit exclusion taxonomy and internally consistent arithmetic. Code-reviewer (Stage 2) may proceed. Non-blocking observation for Stage 2/operator: the ADR's finding #6 disposition and the mini-plan's Problem section attribute the re-measurement authorization to 'the spec file itself', but the spec (e6-judgement-drift-tests.md, 11 lines) contains no such instruction -- the authorization is real but came from the orchestrator's launch payload, not the spec. Provenance mis-attribution only, not a behavioral divergence; worth correcting."
+}

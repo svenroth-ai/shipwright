@@ -207,3 +207,68 @@ def test_module_requires_confirmation_before_writing_the_requirement():
         "The confirmation is the hand-off from *their* mental model to *the "
         "recorded one*" in normalized
     ), "§9 must still name confirmation as the hand-off from their model to the recorded one"
+
+
+@pytest.mark.covers("FR-01.02/AC03")
+def test_fit_criterion_names_every_described_capability_present():
+    """FR-01.02 AC03 (req3-06-enforcement-mono, sub-iterate e6): 'every
+    capability the person described is present as a requirement — nothing
+    they raised is silently dropped.' Comparing an interview transcript to a
+    written catalogue is reading comprehension — no deterministic oracle
+    exists (campaign decision D7). The honest ceiling is a drift test
+    pinning the worked fit-criterion example §8 uses to teach the rule.
+    """
+    normalized = " ".join(MODULE.read_text(encoding="utf-8").split())
+    assert (
+        "every capability the person described appears in it, and none "
+        "appears that they did not" in normalized
+    ), (
+        "§8's fit-criterion worked example must survive verbatim — it is "
+        "the only concrete statement of AC03's completeness promise"
+    )
+
+
+@pytest.mark.covers("FR-01.02/AC04")
+def test_negative_space_pass_names_the_yagni_mirror():
+    """FR-01.02 AC04 (req3-06-enforcement-mono, sub-iterate e6): 'none
+    describes work the person did not ask for or confirm.' Same no-oracle
+    situation as AC03 — whether a requirement was genuinely asked for is a
+    reading question, not a field comparison. Pin §8.1's explicit statement
+    of the YAGNI-mirror direction.
+    """
+    normalized = " ".join(MODULE.read_text(encoding="utf-8").split())
+    assert "nothing gets built that was not asked for" in normalized, (
+        "§8.1's negative-space pass must still name the un-requested-work "
+        "direction verbatim — it is the mirror AC04 requires and coverage "
+        "in the other direction alone does not imply it"
+    )
+
+
+@pytest.mark.covers("FR-01.16/AC02")
+def test_module_pins_one_question_at_a_time_and_look_it_up_rules():
+    """FR-01.16 AC02 (req3-06-enforcement-mono, sub-iterate e6): 'one
+    question is put at a time, each carrying a recommended answer, and a
+    fact that can be read from the code or the tools is looked up instead
+    of being asked.' `test_requirement_elicitation_refs.py`'s
+    `test_module_retains_cited_sections` only pins §2/§3's HEADINGS —
+    deleting or rewording the rule sentences underneath while keeping the
+    headings would still pass that check (external code review, both
+    providers, 2026-09-16). Pin the governing sentences themselves.
+    """
+    normalized = " ".join(MODULE.read_text(encoding="utf-8").split())
+    assert (
+        "Never dump a numbered list of ten questions" in normalized
+    ), (
+        "§2 must still forbid dumping multiple questions at once — the "
+        "one-question-at-a-time half of AC02"
+    )
+    assert "Every question carries a recommended answer" in normalized, (
+        "§2 must still require a recommended answer on every question — "
+        "the second half of AC02"
+    )
+    assert (
+        "look it up rather than asking me" in normalized
+    ), (
+        "§3 must still require a findable fact to be looked up rather than "
+        "asked — the facts-are-found-not-asked half of AC02"
+    )
