@@ -1,0 +1,45 @@
+{
+  "run_id": "iterate-2026-09-16-layer-coverage-rollout-trust-anchor",
+  "date": "2026-09-16T16:42:23.253454Z",
+  "event_at": "2026-09-16T10:05:37.833666+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/layer-coverage-rollout-trust-anchor",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-16-layer-coverage-rollout-trust-anchor",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "resolve_rollout_commit refuses a forged, backdated, unmerged branch commit (GIT_COMMITTER_DATE alone no longer grants rollout grace)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_rollout_trust_anchor.py::test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit PASSED"
+      },
+      {
+        "behavior": "resolve_rollout_commit still grants grace to a genuine pre-rollout commit already reachable from the project's own corroborated trunk",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_rollout_trust_anchor.py::test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit PASSED"
+      },
+      {
+        "behavior": "resolve_rollout_commit withholds grace when no corroborated trunk boundary exists (no origin remote, non-trunk local branch name)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_layer_coverage_rollout_trust_anchor.py::test_resolve_rollout_commit_none_without_a_corroborated_trunk_anchor PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "internal F11-verifier trust-anchor fix (git ancestry check inside a verifier function); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+  },
+  "declared_removals": []
+}

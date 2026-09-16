@@ -44,9 +44,54 @@ clean run (the overwhelming common case), so ``layer_coverage_binding.py``
 calls this ONLY after finding at least one candidate HARD gap, not
 unconditionally on every F11 invocation.
 
+**Trust anchor, `trg-4380c61a`.** A committer-date claim alone is a claim
+whoever controls ``commit_hash`` can forge: ``commit_hash`` is typically an
+open PR's own HEAD, so a contributor can create a NEW commit on their own
+branch with ``GIT_COMMITTER_DATE`` backdated before :data:`GATE_ROLLOUT_AT_EPOCH`
+— it satisfies every check that only reads ``commit_hash``'s own reachable
+history, having never actually existed at that instant.
+:func:`resolve_rollout_commit` additionally requires the candidate to be an
+ancestor of (or equal to) the corroborated boundary where the branch actually
+left the project's own already-merged trunk (``origin/main``/``origin/master``/
+local fallbacks — reuses ``git_helpers._branch_base_commit``, the same
+hardened trunk-corroboration pattern its sibling module
+(``_project_gate_rollout.py``, closing this same finding for its own gate
+family) already trusts). Only content that was genuinely already on that
+trunk before the branch's own commits could be introduced passes; a
+self-authored commit sitting ON the branch, however dated, never can. No
+corroborated trunk boundary (no ``origin`` remote, an ambiguous/renamed trunk
+name) withholds grace entirely — the same fail-closed direction as every
+other branch in this function, not a special case. Fixed here for this
+module's own ``check_binding_completeness`` gate family
+(`iterate-2026-09-16-layer-coverage-rollout-trust-anchor`); this was the
+`check_binding_completeness` precedent named as still-open in the
+`iterate-2026-09-12-project-gate-rollout-transition` ADR's own "Post-merge
+PR-review gate finding, fixed" section.
+
+**Invariant (Stage-3 doubt review, iterate-2026-09-16-layer-coverage-rollout-trust-anchor):
+this anchor is only meaningful when the calling environment's ``origin``
+remote-tracking refs come from a fetch the checked commit's author does not
+control** (a genuine CI/merge-time checkout of the real remote) — not a
+local, pre-push iterate run alone, which can write to
+``refs/remotes/origin/*`` directly. Shared, unchanged property of
+``_project_gate_rollout.py``'s identical, already-shipped anchor; not
+introduced or worsened by this fix, simply not previously written down.
+
 **Disclosed, not fixed** (mirrors the original P3.3 ADR's own precedent of
 naming a residual gap rather than eliminating it at disproportionate cost):
 
+- ``check_binding_completeness``'s own base/head diff (``_layer_coverage_regen._merge_base``,
+  the caller one level up from this module) still carries a less-hardened
+  ``@{u}`` candidate than :func:`resolve_rollout_commit` now uses — but it is
+  tried only AFTER ``origin/HEAD``, which resolves successfully (to the same
+  effective target) in a normal clone/worktree; reachable only when
+  ``origin/HEAD`` is absent or broken, not in the default flow (verified
+  empirically before disclosure, downgraded from an initial overbroad
+  claim — see `trg-945e4854`, Stage-3 doubt review,
+  iterate-2026-09-16-layer-coverage-rollout-trust-anchor). Out of scope here:
+  hardening ``_merge_base``'s fallback-only gap is a change to a shared
+  base/head-diff primitive other layer-coverage gates also depend on, not a
+  like-for-like trust-anchor mirror.
 - A repo whose visible history was reshaped (a shallow clone, or a brownfield
   repo onboarded via ``/shipwright-adopt`` with regenerated/rewritten history)
   may have no commit reachable at-or-before the rollout instant even though
@@ -97,7 +142,7 @@ import tempfile
 from pathlib import Path
 
 from ._layer_coverage_regen import _archive_tree, _build, _load_collector
-from .git_helpers import _run_git
+from .git_helpers import _branch_base_commit, _run_git
 
 #: Same bound `git_helpers._GIT_TIMEOUT_SECONDS` uses on the F11 hot path: a wedged
 #: `index.lock` or a stalled filesystem must degrade this OPTIONAL leniency lookup to
@@ -136,13 +181,18 @@ def _is_shallow(project_root: Path) -> bool:
 
 def resolve_rollout_commit(project_root: Path, commit_hash: str) -> str | None:
     """The calling project's own commit at-or-before :data:`GATE_ROLLOUT_AT_EPOCH`,
-    reachable from ``commit_hash``, or ``None`` when no such commit exists —
+    reachable from ``commit_hash`` AND an ancestor of the project's own
+    corroborated trunk boundary, or ``None`` when no such commit exists —
     a repo born entirely after the gate's rollout (the documented
     no-legacy-valve-for-greenfield case, now extended to this valve too), a
-    shallow clone (see :func:`_is_shallow`), or any git failure. Verifies the
-    resolved commit's OWN committer time in Python rather than trusting
-    git's ``--before`` parse alone (module docstring: a malformed cutoff
-    silently resolves to "now", which this catches)."""
+    shallow clone (see :func:`_is_shallow`), an uncorroborated/absent trunk
+    anchor, or any git failure. Verifies the resolved commit's OWN committer
+    time in Python rather than trusting git's ``--before`` parse alone
+    (module docstring: a malformed cutoff silently resolves to "now", which
+    this catches), and — see the module docstring's "Trust anchor" note,
+    `trg-4380c61a` — that the commit is not merely a self-authored, unmerged
+    commit on ``commit_hash``'s own branch carrying a forged early committer
+    date."""
     if not commit_hash or _is_shallow(project_root):
         return None
     rc, sha, _ = _run_git(
@@ -162,6 +212,15 @@ def resolve_rollout_commit(project_root: Path, commit_hash: str) -> str | None:
         return None
     if committer_epoch > GATE_ROLLOUT_AT_EPOCH:
         return None  # git's answer postdates our cutoff — refuse rather than trust it
+
+    base = _branch_base_commit(project_root, commit_hash)
+    if base is None:
+        return None  # no corroborated trunk boundary — an unverifiable ancestry claim is not grace
+    rc3, count_out, _ = _run_git(
+        project_root, "rev-list", "--count", f"{base}..{sha}", timeout=_GIT_TIMEOUT_SECONDS,
+    )
+    if not (rc3 == 0 and count_out.strip() == "0"):
+        return None  # sha is not reachable from the trusted trunk boundary — refuse
     return sha
 
 

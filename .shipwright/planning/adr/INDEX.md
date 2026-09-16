@@ -139,3 +139,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Producer-side hygiene filtering for mined acceptance criteria](iterate-2026-09-16-adopt-miner-hygiene-gate-conflict.md)
 - [ADR: AST meta-test gate for the plain `append_triage_item` producer contract](iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md)
 - [Judgement-line drift tests close the 19/25 discrepancy, no gate built](iterate-2026-09-16-e6-judgement-drift-tests-closure.md)
+- [Corroborated-trunk-ancestry check for the check_binding_completeness rollout grace (`trg-4380c61a`)](iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md)
