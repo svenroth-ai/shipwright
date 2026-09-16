@@ -239,7 +239,8 @@ def cmd_dismiss(args: argparse.Namespace) -> int:
             reason = _optional_reason(args.reason)
             _, item, to_outbox = mark_status(
                 Path(args.project_root), args.item_id, new_status="dismissed",
-                by=_BY_LABEL, reason=reason, expected_status="triage", return_item=True,
+                by=_BY_LABEL, reason=reason, expected_status="triage",
+                return_item=True, return_route=True,
             )
         except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
             return _command_error(exc)
@@ -307,7 +308,7 @@ def cmd_snooze(args: argparse.Namespace) -> int:
         _, item, to_outbox = mark_status(
             Path(args.project_root), args.item_id, new_status="snoozed", by=_BY_LABEL,
             reason=reason, revisit_at=args.revisit, expected_status="triage",
-            require_future_revisit=True, return_item=True,
+            require_future_revisit=True, return_item=True, return_route=True,
         )
     except (ValueError, KeyError, FileNotFoundError, LockTimeout) as exc:
         return _command_error(exc)

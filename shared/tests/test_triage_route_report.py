@@ -12,8 +12,9 @@ the operator noticed. This is a dedicated module (not folded into
 files' own bloat-baseline entries aren't ratcheted by an unrelated feature's
 tests.
 
-Library-level: `mark_status(return_item=True)`'s new `(previous, item,
-to_outbox)` triple. CLI-level: the `route` key in `--json` output and the
+Library-level: `mark_status(return_route=True)`'s appended `to_outbox`, and
+the guard that `return_item=True` ALONE still returns the 2-tuple it always
+did (the flags append, they never rewrite an existing call site's shape). CLI-level: the `route` key in `--json` output and the
 stderr note for the human path, for `dismiss --json`/`snooze`/`amend`/`show`
 plus the negative (no-note) case. The extended dispatch coverage (`dismiss`
 non-json, `defer`, `unpark`, `promote`) lives in
@@ -94,7 +95,7 @@ def _run(project: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 # ---------------------------------------------------------------------------
-# Library contract: mark_status(return_item=True) -> (previous, item, to_outbox)
+# Library contract: the return-shape flags APPEND, never rewrite
 # ---------------------------------------------------------------------------
 
 def test_mark_status_return_item_reports_outbox_route(git_repo: Path) -> None:
@@ -103,7 +104,8 @@ def test_mark_status_return_item_reports_outbox_route(git_repo: Path) -> None:
     assert should_route_to_outbox(git_repo) is True  # precondition
 
     previous, resulting_item, to_outbox = mark_status(
-        git_repo, item_id, new_status="dismissed", by="op", reason="r", return_item=True,
+        git_repo, item_id, new_status="dismissed", by="op", reason="r",
+        return_item=True, return_route=True,
     )
     assert previous == "triage"
     assert resulting_item["status"] == "dismissed"
@@ -119,21 +121,40 @@ def test_mark_status_return_item_reports_tracked_route(git_repo: Path) -> None:
     assert should_route_to_outbox(git_repo) is False  # precondition
 
     _previous, _item, to_outbox = mark_status(
-        git_repo, item_id, new_status="dismissed", by="op", reason="r", return_item=True,
+        git_repo, item_id, new_status="dismissed", by="op", reason="r",
+        return_item=True, return_route=True,
     )
     assert to_outbox is False
     assert '"event":"status"' in _tracked_path(git_repo).read_text(encoding="utf-8")
 
 
-def test_mark_status_return_item_unpacks_as_three_values(tmp_path: Path) -> None:
-    """Regression guard: the new element is APPENDED (index 2), not inserted —
-    `previous`/`resulting_item` keep their original meaning at indices 0/1."""
-    item_id = _seed(tmp_path)
-    result = mark_status(tmp_path, item_id, new_status="dismissed", by="op", return_item=True)
+def test_return_item_alone_keeps_the_pair_it_always_returned(tmp_path: Path) -> None:
+    """COMPATIBILITY GUARD (PR-review gate finding on this PR). A caller that
+    predates the route feature writes `previous, item = mark_status(...,
+    return_item=True)`. Routing is opt-in precisely so that unpacking keeps
+    working: adding `to_outbox` to this shape would have raised ValueError in
+    every such caller, in this repo and in any project vendoring the store."""
+    previous, resulting_item = mark_status(
+        tmp_path, _seed(tmp_path), new_status="dismissed", by="op", return_item=True,
+    )
+    assert previous == "triage"
+    assert resulting_item["status"] == "dismissed"
+
+
+def test_each_flag_appends_its_own_value_in_a_fixed_order(tmp_path: Path) -> None:
+    """The three opt-in shapes, so a later flag cannot quietly reorder them.
+    `to_outbox` is False here: no git repo, `should_route_to_outbox` fails safe."""
+    kw = dict(new_status="dismissed", by="op")
+    assert mark_status(tmp_path, _seed(tmp_path), **kw) == "triage"
+
+    previous, to_outbox = mark_status(tmp_path, _seed(tmp_path), **kw, return_route=True)
+    assert (previous, to_outbox) == ("triage", False)
+
+    result = mark_status(tmp_path, _seed(tmp_path), **kw, return_item=True, return_route=True)
     assert len(result) == 3
     assert result[0] == "triage"
     assert result[1]["status"] == "dismissed"
-    assert result[2] is False  # no git repo here — should_route_to_outbox fails safe
+    assert result[2] is False
 
 
 # ---------------------------------------------------------------------------

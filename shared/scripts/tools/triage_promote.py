@@ -192,10 +192,10 @@ def promote(
         raise _not_triage_error(item_id, current, "promoted")
 
     try:
-        _previous, item_result, to_outbox = mark_status(  # always return_item=True: route needs to_outbox
+        _previous, item_result, to_outbox = mark_status(  # return_route: the CLI reports the write target
             project_root, item_id, new_status="promoted", by=by,
             reason=reason_clean, promoted_task_id=task_ref_clean,
-            expected_status="triage", return_item=True,
+            expected_status="triage", return_item=True, return_route=True,
         )
     except StatusPreconditionError as exc:
         raise _not_triage_error(item_id, exc.actual, "promoted") from exc
@@ -248,11 +248,11 @@ def _transition(
         raise _wrong_status_error(item_id, current, new_status, allowed)
 
     try:
-        previous, item_result, to_outbox = mark_status(  # always return_item=True: route needs to_outbox
+        previous, item_result, to_outbox = mark_status(  # return_route: the CLI reports the write target
             project_root, item_id, new_status=new_status, by=by,
             reason=reason_clean, expected_status=allowed,
             revisit_at=revisit_at,
-            return_item=True,
+            return_item=True, return_route=True,
         )
     except StatusPreconditionError as exc:
         raise _wrong_status_error(

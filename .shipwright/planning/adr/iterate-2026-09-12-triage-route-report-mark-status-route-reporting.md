@@ -14,9 +14,16 @@ operator noticed — one of them sat invisible on the board for hours.
 
 ## Decision
 
-`mark_status(..., return_item=True)` now returns a `(previous, item,
-to_outbox)` triple — additive; `return_item=False` still returns the bare
-`previous` scalar, unchanged. `shared/scripts/lib/triage_route.py` centralizes
+`mark_status()` gains a `return_route` flag. Each of `return_item` /
+`return_route` APPENDS its value in that fixed order, so `return_item=True`
+alone is the `(previous, item)` pair it has always been, `return_route=True`
+alone gives `(previous, to_outbox)`, and both give the triple;
+`return_item=False` still returns the bare `previous` scalar, unchanged.
+Routing is opt-in rather than folded into the existing pair because the PR
+gate on this PR was right that widening that pair is not additive: any caller
+writing `previous, item = mark_status(..., return_item=True)` — here or in a
+project vendoring the store — would have raised `ValueError` on unpack.
+`test_return_item_alone_keeps_the_pair_it_always_returned` pins it. `shared/scripts/lib/triage_route.py` centralizes
 `route_label`/`route_note` (the human-readable stderr note, or `None` when
 neither branch applies). All four CLI writers in
 `triage_cli_commands.py` — `dismiss` (json + non-json), `snooze`, `amend`,
@@ -37,7 +44,7 @@ cover `triage_promote.py`'s `promote()`/`_transition()` and the CLI's
 Codex) both flagged that `dismiss`'s non-json path stayed silent — the same
 "silence should never be the report" rationale the original card states.
 Extending the fix required `promote()`/`_transition()` to always call
-`mark_status(..., return_item=True)` regardless of the caller's own
+`mark_status(..., return_item=True, return_route=True)` regardless of the caller's own
 `include_item` flag, so a `route` key is always present in their result
 dict; a Stage-1 spec-reviewer pass on that extended diff caught a real
 regression this introduced — 4 pre-existing exact-dict-equality tests
