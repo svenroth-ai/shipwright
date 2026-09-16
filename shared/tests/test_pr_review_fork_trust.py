@@ -53,9 +53,11 @@ def test_stage2_is_triggered_by_workflow_run(path: Path) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.17/AC05")
 @pytest.mark.parametrize("path", ALL_STAGE2)
 def test_stage2_never_checks_out_contributor_code(path: Path) -> None:
-    """The pwn-request rule: read the diff, never run the code."""
+    """FR-01.17/AC05 — the pwn-request rule: read the diff, never run the code,
+    never hand a credentialed job the contributor's own checkout."""
     for job in jobs(path).values():
         for step in job.get("steps") or []:
             if not isinstance(step, dict):
@@ -238,12 +240,29 @@ def test_stage2_silences_cancelled_superseded_runs(path: Path) -> None:
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.17/AC04")
 @pytest.mark.parametrize("path", ALL_STAGE2)
 def test_stage2_posts_the_verdict_onto_the_change(path: Path) -> None:
-    """Not left in the log of a run nobody opens."""
+    """FR-01.17/AC04 — the verdict and its reasons land where the people
+    deciding whether to merge will read them, not left in the log of a run
+    nobody opens.
+
+    Posting SOME status is only half the AC; the "reasons" clause is the
+    `description=` field, and it must be a piped-in variable, not a fixed
+    string — a hardcoded description would post the same non-answer for
+    every failure and technically "post a status" while leaving a
+    merge-decider no better informed than the empty-log case AC04 exists to
+    rule out (doubt review, req3-05 t9). `decide_pr_review_gate_cli.py`
+    proves that variable actually carries scenario-specific reasoning text,
+    not a placeholder."""
     body = text(path)
     assert "statuses" in body, f"{path.name}: must post the commit status"
     assert re.search(r'context="(PR Review|Claude Code Review)"', body), (
         f"{path.name}: must post the required context by name — it is the sole "
         f"producer, and an absent status blocks the merge"
+    )
+    assert re.search(r'-f description="\$\{?desc\b', body), (
+        f"{path.name}: the posted description must be piped from a computed "
+        f"`desc` variable, not a hardcoded string — otherwise the same "
+        f"non-answer posts regardless of what actually happened"
     )

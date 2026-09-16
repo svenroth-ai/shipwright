@@ -18,6 +18,11 @@ ignores what it does not know, so an addition must not force a WebUI release.
 `schema_version` is **additive**: a snapshot written by an older adopt (without the key)
 stays readable, and no reader in this repo may come to require it.
 
+**This contract binds this side only.** It states what this repository publishes and
+how a change to it is announced (the version semantics above) — it makes no promise
+about how the receiving side behaves once it meets a version it does not recognise.
+That is the receiving side's own requirement, not one this repository makes for it.
+
 **Two subtrees are deliberately NOT pinned** — `stack.{frontend,backend,database,auth,runtime}`
 and `folders.loc_by_layer` are **maps keyed by whatever was detected** (`stack.frontend`
 is `{"react": …}` in one repo and `{"vue": …}` in the next). Their *keys are the

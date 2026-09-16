@@ -134,5 +134,6 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — completion-oracle verifier and regression-test files](iterate-2026-09-15-codex-light-shipwright-bloat-exception.md)
 - [ADR — Mechanise FR-01.08/FR-01.09 prompt-only-mechanisable ledger lines](iterate-2026-09-15-e4-checks-deploy-changelog-mechanise-fr0108-fr0109.md)
 - [t8 — FR-01.01 / FR-01.05 / FR-01.12 / FR-01.13 AC-binding disposition table](iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)
+- [t9 — FR-01.15 / FR-01.17 / FR-01.19 / FR-01.20 AC-binding disposition table](iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md)
 - [ADR: AST meta-test gate for the plain `append_triage_item` producer contract](iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md)
 - [Judgement-line drift tests close the 19/25 discrepancy, no gate built](iterate-2026-09-16-e6-judgement-drift-tests-closure.md)

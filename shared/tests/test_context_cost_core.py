@@ -47,60 +47,9 @@ def _write_transcript(path: Path, records: list[dict]) -> None:
     )
 
 
-def test_multi_record_single_response_dedups_to_one_call(tmp_path):
-    usage = {"input_tokens": 100, "output_tokens": 50}
-    transcript = tmp_path / "session.jsonl"
-    _write_transcript(
-        transcript,
-        [
-            _assistant_record("req-1", _T0, "claude-sonnet-5", usage),
-            _assistant_record("req-1", _T0, "claude-sonnet-5", usage),
-        ],
-    )
-    summary = ccc.compute_summary(transcript, tmp_path, run_id=None)
-    assert summary["calls"] == 1
 
-
-def test_call_before_first_mark_is_unphased(tmp_path):
-    ipg.append_mark(tmp_path, RUN_ID, "scope", ts=_iso(_T0 + timedelta(minutes=10)))
-    transcript = tmp_path / "session.jsonl"
-    _write_transcript(
-        transcript,
-        [_assistant_record("req-1", _T0, "claude-sonnet-5", {"input_tokens": 10})],
-    )
-    summary = ccc.compute_summary(transcript, tmp_path, run_id=RUN_ID)
-    assert summary["by_phase"].keys() == {"unphased"}
-
-
-def test_call_after_a_mark_gets_that_phase(tmp_path):
-    ipg.append_mark(tmp_path, RUN_ID, "scope", ts=_iso(_T0))
-    ipg.append_mark(tmp_path, RUN_ID, "build", ts=_iso(_T0 + timedelta(minutes=5)))
-    transcript = tmp_path / "session.jsonl"
-    _write_transcript(
-        transcript,
-        [
-            _assistant_record(
-                "req-1", _T0 + timedelta(minutes=6), "claude-sonnet-5", {"input_tokens": 10}
-            )
-        ],
-    )
-    summary = ccc.compute_summary(transcript, tmp_path, run_id=RUN_ID)
-    assert set(summary["by_phase"].keys()) == {"build"}
-
-
-def test_no_run_id_means_every_call_is_unphased(tmp_path):
-    ipg.append_mark(tmp_path, RUN_ID, "build", ts=_iso(_T0))
-    transcript = tmp_path / "session.jsonl"
-    _write_transcript(
-        transcript,
-        [
-            _assistant_record(
-                "req-1", _T0 + timedelta(minutes=1), "claude-sonnet-5", {"input_tokens": 10}
-            )
-        ],
-    )
-    summary = ccc.compute_summary(transcript, tmp_path, run_id=None)
-    assert set(summary["by_phase"].keys()) == {"unphased"}
+# Dedup-by-request-id and phase-attribution tests (FR-01.20/AC01-AC03) moved
+# to test_context_cost_core_phase_labels.py (300-line size guideline).
 
 
 @pytest.mark.parametrize(

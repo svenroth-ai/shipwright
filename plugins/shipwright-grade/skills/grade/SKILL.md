@@ -73,6 +73,12 @@ versioned fixture, and open the WebUI PR.
 malformed payload can still claim `1.0`. The consumer validates the shape *and* checks
 the version, and fails closed on an unknown major.
 
+**This contract binds this side only.** It says what this repository publishes and how
+a change to it is announced (the version semantics above) — it makes no promise about
+how the receiving side behaves once it meets a version it does not recognise. Whatever
+the WebUI does when it meets an unrecognised major is the receiving side's own requirement,
+not a guarantee this repository makes on its behalf.
+
 **Target resolution is part of the contract too.** `grade.py` accepts a local path **or a
 remote** (shallow-cloned into a throwaway tempdir, purged after; `--no-clone` opts out).
 The WebUI surfaces the clone step and its network cost explicitly — *"do not pretend a URL

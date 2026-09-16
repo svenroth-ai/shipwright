@@ -28,6 +28,7 @@ is why a guarded job could never be the producer.)
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -86,6 +87,7 @@ def test_unparseable_review_output_fails_closed(path: Path) -> None:
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.17/AC05")
 @pytest.mark.parametrize("path", ALL_STAGE1)
 def test_stage1_holds_no_secret(path: Path) -> None:
     """FR-01.17 (E)5 — an untrusted change is never handed the keys."""
@@ -115,9 +117,19 @@ def test_stage1_records_the_change_for_audit(path: Path) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.17/AC02")
 @pytest.mark.parametrize("path", ALL_STAGE1)
 def test_stage1_owns_no_pr_review_context(path: Path) -> None:
-    """Two producers of one context is the documented ambiguity."""
+    """FR-01.17/AC02 — "silence counts as not passing, not as passing." Two
+    producers of one context is the documented ambiguity.
+
+    A job's `name:` is the cosmetic half; the required-check mechanism GitHub
+    actually keys on is the commit-status `context=` string, a wholly
+    separate field a job could post under any job name at all. The name-only
+    check above stays (it is still a real, if narrower, guard), but the
+    binding for AC02 rests on this second assertion: no stage-1 shell body
+    may post either producer's context string under ANY job name (doubt
+    review, req3-05 t9)."""
     for job_id, job in jobs(path).items():
         name = (job.get("name") or job_id).strip()
         assert name.lower() not in ("pr review", "claude code review"), (
@@ -125,6 +137,11 @@ def test_stage1_owns_no_pr_review_context(path: Path) -> None:
             f"the required context in stage 1. The verdict is stage 2's "
             f"commit status; stage 1 must not emit a check under that name."
         )
+    assert not re.search(r'context="(PR Review|Claude Code Review)"', shell_code(path)), (
+        f"{path.name}: stage 1 must never post a commit status under the "
+        f"required context string, regardless of which job or step does it — "
+        f"that would re-create the two-producer race under an innocuous name."
+    )
 
 
 @pytest.mark.parametrize("path", ALL_STAGE1)
@@ -161,9 +178,10 @@ def test_stage2_top_level_token_is_read_only(path: Path) -> None:
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.covers("FR-01.17/AC07")
 @pytest.mark.parametrize("path", ALL_STAGE2)
 def test_waiver_cannot_cover_a_change_to_the_checks(path: Path) -> None:
-    """Whoever unlocks a door is not the one who decides it may be.
+    """FR-01.17/AC07 — whoever unlocks a door is not the one who decides it may be.
 
     Checked on STAGE 2, because that is where the waiver is now evaluated. In
     stage 1 the rule would be worthless: the contributor owns that file.

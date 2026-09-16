@@ -57,8 +57,11 @@ def _triggers(doc: dict) -> dict:
 # AC-1 — every commit on main is verified, and verified in parallel
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.19/AC01")
 @pytest.mark.parametrize("workflow", ["ci.yml", "security.yml"])
 def test_main_runs_are_never_cancelled(workflow):
+    """FR-01.19/AC01 — every commit on main is checked on its own, none
+    skipped because a later one arrived."""
     concurrency = _load(workflow)["concurrency"]
     assert "refs/heads/main" in str(concurrency["cancel-in-progress"]), (
         "cancel-in-progress must be conditional on the ref: cancelling on `main` "
@@ -69,6 +72,7 @@ def test_main_runs_are_never_cancelled(workflow):
     )
 
 
+@pytest.mark.covers("FR-01.19/AC01")
 @pytest.mark.parametrize("workflow", ["ci.yml", "security.yml"])
 def test_main_runs_get_their_own_group_so_they_do_not_queue(workflow):
     group = str(_load(workflow)["concurrency"]["group"])
@@ -83,7 +87,12 @@ def test_main_runs_get_their_own_group_so_they_do_not_queue(workflow):
 # AC-2 — the coverage gap
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.19/AC08")
 def test_bloat_check_runs_on_merges_to_main():
+    """FR-01.19/AC08 — "a size limit is only crossed when two separately-
+    acceptable changes combine... the crossing is visible on the shared
+    branch." Requires the check to actually run on a MERGE (push to main),
+    not only within each PR alone."""
     triggers = _triggers(_load("bloat-check.yml"))
     assert "push" in triggers, (
         "a file that crosses its baseline only when two PRs combine is invisible "
@@ -98,6 +107,7 @@ def test_bloat_check_still_only_comments_on_pull_requests():
     assert "pull_request" in str(comment["if"])
 
 
+@pytest.mark.covers("FR-01.19/AC08")
 def test_bloat_check_guards_every_shape_its_base_ref_can_take():
     steps = _load("bloat-check.yml")["jobs"]["bloat-check"]["steps"]
     resolve = next(s for s in steps if s.get("id") == "base")
@@ -134,10 +144,12 @@ def test_the_repair_gate_fires_on_the_same_grammar_the_claim_matcher_uses():
     assert not dx.REPAIR_BRANCH_RE.search("iterate/some-other-work")
 
 
+@pytest.mark.covers("FR-01.19/AC04")
 def test_the_repair_gate_runs_the_checker_from_the_base_not_from_the_branch():
-    """The enforcement boundary. Judging a repair with the checker that same
-    repair just edited is not enforcement — and it fails exactly when it
-    matters."""
+    """FR-01.19/AC04, second clause — "refused again by the code host using
+    the version of the rule the proposed change cannot edit." The enforcement
+    boundary. Judging a repair with the checker that same repair just edited
+    is not enforcement — and it fails exactly when it matters."""
     body = _repair_gate_step()["run"]
     assert "git show \"$base:shared/scripts/tools/check_repair_safety.py\"" in body
     assert "git show \"$base:shared/scripts/lib/assertion_weakening.py\"" in body
