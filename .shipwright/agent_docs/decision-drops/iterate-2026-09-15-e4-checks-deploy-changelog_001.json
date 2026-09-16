@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-15-e4-checks-deploy-changelog",
+  "date": "2026-09-15",
+  "section": "AC-evidence-ledger req3-06 e4: FR-01.08 / FR-01.09 prompt-only lines",
+  "title": "Mechanise FR-01.08/FR-01.09 prompt-only-mechanisable ledger lines",
+  "context": "FR-01.08/FR-01.09 ledger rows marked prompt-only (mechanisable) had no deterministic oracle proving the behaviour happens. Per D7, a fake/weak gate is worse than an honest downgrade with a documented reason.",
+  "decision": "Built real deterministic checks (rollback_audit.py append-only trail + deploy_checks verifiers reconciling smoke/rollback/phase_history with fail-closed timestamps; aggregate_changelog --fail-if-empty) for every row with a real oracle; downgraded 2 rows with documented residual-limitation reasons. See spec-ref.",
+  "consequences": "Two new durable write surfaces recorded in architecture.md. deploy_checks.py crosses 300 LOC (new baseline entry); several test files re-baselined upward. anti_ratchet_check.py --worktree clean.",
+  "rationale": "Two rounds each of external plan + code review (GLM+OpenAI) found and fixed 3 genuine fail-open bugs via ADR-024 round-trip probes, not hand fixtures; full detail in spec-ref.",
+  "rejected": "GLM: Path(None) crash claim empirically disproven (CLI default is '.', not None). OpenAI (2 rounds): aggregate() positional-regression claim disproven via existing '*,' keyword-only marker. Full detail in spec-ref.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-15-e4-checks-deploy-changelog-mechanise-fr0108-fr0109.md"
+}

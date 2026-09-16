@@ -279,3 +279,56 @@ def test_completed_rollback_touches_no_data_tier_capability(client, monkeypatch)
 
     assert result["success"] is True
     assert recording.calls  # completed via the fake hosting client only
+
+
+# --------------------------------------------------------------------------
+# FR-01.08 criterion 5 — an override without a written reason is refused
+# --------------------------------------------------------------------------
+
+@pytest.mark.covers("FR-01.08/AC05")
+def test_ack_data_drift_without_override_reason_is_refused(client, monkeypatch):
+    """``--ack-data-drift`` only MATTERS when the report itself flagged
+    something; when it did, overriding it without ``--override-reason``
+    must refuse before any hosting call is made — nothing overridden
+    without a written record.
+    """
+    import data_drift
+
+    monkeypatch.setattr(
+        data_drift, "gate",
+        lambda *a, **k: ({"status": "drifted", "drifted": True, "migrations": ["x.sql"],
+                           "reason": None}, None),
+    )
+    recording = client()
+
+    result = rollback.rollback_git(
+        "dev-demo", "v1.2.3", ack_data_drift=True, override_reason=None,
+    )
+
+    assert result["success"] is False
+    assert "override needs a written reason" in result["message"]
+    assert recording.endpoints == []
+
+
+@pytest.mark.covers("FR-01.08/AC05")
+def test_ack_data_drift_with_override_reason_proceeds(client, monkeypatch):
+    """The same flagged report, WITH a written reason, is not refused —
+    ``override_reason`` reaches the result payload for the audit trail."""
+    import data_drift
+
+    monkeypatch.setattr(
+        data_drift, "gate",
+        lambda *a, **k: ({"status": "unknown", "drifted": None, "migrations": [],
+                           "reason": "could not read migrations dir"}, None),
+    )
+    recording = client()
+
+    result = rollback.rollback_git(
+        "dev-demo", "v1.2.3", ack_data_drift=True,
+        override_reason="operator confirmed via incident #42",
+    )
+
+    assert result["success"] is True
+    assert result["override_reason"] == "operator confirmed via incident #42"
+    assert recording.endpoints != []
+    assert recording.calls  # completed via the fake hosting client only

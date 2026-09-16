@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-15-e4-checks-deploy-changelog",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T17:04:03.570581+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The SKILL.md flow change (write `outcome:\"failed\"` to phase history before attempting rollback) inverts the natural order and creates a new failure mode: if the rollback itself errors out before completing, phase_history now records a \"failed release\" that was never followed by a rollback attempt — or worse, the process crashes between the history write and the rollback, leaving state files inconsistent with the new `check_manual_rollback_proves_alive` reconciliation logic.",
+          "suggestion": "Make the history write and rollback ordering explicitly idempotent or document the crash-window behavior in the check itself; consider having `check_failed_liveness_recorded_as_failed` tolerate \"failed recorded but no rollback entry yet\" as a distinct intermediate state rather than a failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "rollback-history.jsonl` unconditional recording has no concurrency/atomicity story. Two simultaneous rollback invocations (or a crash mid-append) can interleave or truncate JSONL lines, and the deploy_checks verifiers parsing that file will hit malformed lines.",
+          "suggestion": "Document or handle malformed/trailing-partial lines in the verifier (skip-and-warn or fail-loud), and confirm `rollback_audit.record()` appends are single write calls (they typically are on POSIX for small writes, but the parser should still be defensive).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "override-reason` \"non-empty string\" is a weak oracle — `\".\"` or `\"asdf\"` satisfies it. The ledger row's intent is a written reason; the check enforces only presence.",
+          "suggestion": "Fine to keep as a mechanisable floor (per D7, this is better than nothing), but record this as a known limit of the gate so it isn't later cited as enforcing reason quality.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "no-results` for `shipwright_test_results.json` is treated as its own state, but the plan doesn't state whether `no-results` blocks deployment or requires the confirm flag. If it defaults to pass-through, a fresh checkout with no test ledger deploys cleanly.",
+          "suggestion": "Explicitly state the behavior — safest is treating `no-results` like `failing` for gating purposes, or requiring a distinct flag.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "_legacy_unreleased_bullets()` rename changes the return shape of an existing helper; any other caller of `_warn_if_legacy_unreleased_has_bullets` (or consumer of the result dict that now also gains `legacy_unreleased_bullet_texts`) could be affected.",
+          "suggestion": "Grep for existing callers/tests before the rename and confirm only the intended call sites changed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Duplicated constants across `deploy_checks.py` and plugin-local `scripts/lib/` will drift silently if a path changes in one place but not the other.",
+          "suggestion": "Acceptable given ADR-045, but add a test that cross-checks the constants (e.g. a test in one place asserting equality with the other, which doesn't constitute a runtime cross-import).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "aggregate_changelog.py` gaining `--fail-if-empty` does not enforce anything unless the release/tagging invocation is updated to pass that flag. The plan describes the library/CLI capability, but not the delivery workflow integration that makes an empty Unreleased section refuse a release.",
+          "suggestion": "Identify the canonical release command/workflow and make it pass `--fail-if-empty`; add an integration test proving the release path exits before tagging or publishing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The deploy checks appear to reconcile mutable, path-based artifacts without a stated release/run/environment identity. A stale successful smoke result or an older manual rollback history entry could satisfy a later failed release.",
+          "suggestion": "Include and verify a common release identifier (and target environment) in phase history, smoke output, and rollback audit records. Reject records from another run; timestamps should only be supplementary.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Every `rollback.py` invocation is recorded unconditionally” is fragile unless recording covers early argument-validation failures, `SystemExit`, exceptions, and audit-write failure. Recording only around the normal rollback branch will contradict the asserted guarantee.",
+          "suggestion": "Establish the audit record at command entry and finalize its outcome in a `finally` path. Decide explicitly whether an unavailable audit trail fails closed before a destructive rollback, and test refused, failed, interrupted, and successful invocations.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "no-results` is distinguished from `passing`, but the plan does not state whether deployment is allowed when test results are missing, malformed, stale, or omit either required status. Allowing any of these through creates a practical bypass of the test gate.",
+          "suggestion": "Define a fail-closed policy for missing/invalid/incomplete results, unless an explicit, audited override is intended. Validate artifact schema and freshness/run identity.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "JSONL audit append can produce interleaved or partially written records if deploy/rollback commands run concurrently or terminate during a write; later verifiers may then fail unpredictably or ignore audit evidence.",
+          "suggestion": "Use a lock or atomic append strategy appropriate to the runtime, make verifier handling of malformed trailing records explicit, and add a concurrency/partial-record test if parallel operator use is supported.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "A “non-empty” override reason can still be whitespace-only, and the plan does not say whether the audit records the final refusal/success state alongside the reason.",
+          "suggestion": "Require `reason.strip()` to be non-empty and record the decision, drift state, release identity, invocation type, and resulting outcome.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The changed smoke-failure flow now depends on `append_phase_history.py` succeeding before rollback. The plan does not state its failure behavior; a history write failure could either block recovery or permit rollback without the required evidence.",
+          "suggestion": "Define and test the operational policy. For a safety-critical rollback, preserve the ability to recover while emitting an explicit, durable failure/audit state that the verifier cannot mistake for compliant evidence.  Overall, the artifact-based approach is sound and avoids unnecessary abstraction, but enforcement must be wired into the real release path and evidence must be bound to the specific release run before this is reliable. The audit and missing-artifact failure semantics also need to be made explicit and tested. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T16:58:30.449197+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category: risk — Severity: medium**\n**Finding:** The SKILL.md flow change (write `outcome:\"failed\"` to phase history *before* attempting rollback) inverts the natural order and creates a new failure mode: if the rollback itself errors out before completing, phase_history now records a \"failed release\" that was never followed by a rollback attempt — or worse, the process crashes between the history write and the rollback, leaving state files inconsistent with the new `check_manual_rollback_proves_alive` reconciliation logic.\n**Suggestion:** Make the history write and rollback ordering explicitly idempotent or document the crash-window behavior in the check itself; consider having `check_failed_liveness_recorded_as_failed` tolerate \"failed recorded but no rollback entry yet\" as a distinct intermediate state rather than a failure.\n\n**Category: edge-case — Severity: medium**\n**Finding:** `rollback-history.jsonl` unconditional recording has no concurrency/atomicity story. Two simultaneous rollback invocations (or a crash mid-append) can interleave or truncate JSONL lines, and the deploy_checks verifiers parsing that file will hit malformed lines.\n**Suggestion:** Document or handle malformed/trailing-partial lines in the verifier (skip-and-warn or fail-loud), and confirm `rollback_audit.record()` appends are single write calls (they typically are on POSIX for small writes, but the parser should still be defensive).\n\n**Category: edge-case — Severity: low**\n**Finding:** `--override-reason` \"non-empty string\" is a weak oracle — `\".\"` or `\"asdf\"` satisfies it. The ledger row's intent is a *written reason*; the check enforces only presence.\n**Suggestion:** Fine to keep as a mechanisable floor (per D7, this is better than nothing), but record this as a known limit of the gate so it isn't later cited as enforcing reason quality.\n\n**Category: edge-case — Severity: low**\n**Finding:** `no-results` for `shipwright_test_results.json` is treated as i […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** `aggregate_changelog.py` gaining `--fail-if-empty` does not enforce anything unless the release/tagging invocation is updated to pass that flag. The plan describes the library/CLI capability, but not the delivery workflow integration that makes an empty Unreleased section refuse a release.  \n   **Suggestion:** Identify the canonical release command/workflow and make it pass `--fail-if-empty`; add an integration test proving the release path exits before tagging or publishing.\n\n2. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The deploy checks appear to reconcile mutable, path-based artifacts without a stated release/run/environment identity. A stale successful smoke result or an older manual rollback history entry could satisfy a later failed release.  \n   **Suggestion:** Include and verify a common release identifier (and target environment) in phase history, smoke output, and rollback audit records. Reject records from another run; timestamps should only be supplementary.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** “Every `rollback.py` invocation is recorded unconditionally” is fragile unless recording covers early argument-validation failures, `SystemExit`, exceptions, and audit-write failure. Recording only around the normal rollback branch will contradict the asserted guarantee.  \n   **Suggestion:** Establish the audit record at command entry and finalize its outcome in a `finally` path. Decide explicitly whether an unavailable audit trail fails closed before a destructive rollback, and test refused, failed, interrupted, and successful invocations.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** `no-results` is distinguished from `passing`, but the plan does not state whether deployment is allowed when test results are missing, malformed, stale, or omit either required status. Allowing any of these through creates […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 135,
+          "finding": "check_test_gate_passed blocks a green run: `passed < total` counts SKIPPED tests as failures. Against this repo's own committed shipwright_test_results.json (iterate_latest.unit = {status:\"passed\", passed:19191, total:19260}) the new iterate_latest fallback makes the check return ok=False \"unit 19191/19260 (deploy blocked: tests failing)\". The ADR claims the fallback fixed the iterate-run no-op; it converted a wrong 'no tests ran' verdict into a wrong 'tests failing' verdict. The regression test at test_verifiers_test_changelog_deploy.py:370 uses passed:10/total:10 and cannot see it. Sibling check test_checks.py:103 already uses genuine_failure_count(passed,total,failed,skipped) (known_failures.py:197) for exactly this bug class; that same file also shows the two gates in this unit read different FIELDS for one question (status vs counts), which is the sharper form of the E2E divergence Stage 1 flagged.",
+          "suggestion": "Treat the producer's own verdict as authoritative: pass when view['unit'].get('status') == 'passed'; otherwise fall back to genuine_failure_count(...) <= 0 instead of `passed < total`. Add a regression test seeded from the REAL nested shape (status passed, passed<total, no `skipped` key) rather than a balanced fixture, and reconcile the E2E/smoke semantics with validate-deploy.py::_test_gate in a short comment either way.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 56,
+          "finding": "_parse_iso_utc does not guarantee the aware datetime its own docstring promises. `datetime.fromisoformat(\"2026-09-15T10:00:00\")` (no offset) returns a NAIVE datetime, and the comparisons at :248 and :305 then raise TypeError comparing offset-naive and offset-aware datetimes — the verifier CRASHES instead of fail-closing. Both canonical producers happen to write aware UTC, so no current test hits it; the checks read files any operator can edit.",
+          "suggestion": "In _parse_iso_utc: `dt = datetime.fromisoformat(...); return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)` (or return None to fail closed). Add a naive-timestamp test for BOTH checks.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 284,
+          "finding": "check_manual_rollback_proves_alive filters only on invocation == 'manual', so a REFUSED manual rollback satisfies the filter. rollback_report.refused() returns mutated:False, state:'refused-no-change', and this diff deliberately records those unconditionally — a missing --clone-name, invalid --target-ref, unreadable --profile. The check then falsely reports the alive-proof is missing for a rollback that changed nothing and has nothing to prove alive.",
+          "suggestion": "where={'invocation':'manual','mutated':True}, or explicitly exclude state == 'refused-no-change'. Add a test that a refused manual rollback does not demand liveness evidence.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+          "line": 319,
+          "finding": "rollback_audit.record() is called BEFORE print(json.dumps(result)) and return exit_code(result), and it is unguarded. A LockTimeout or OSError on the JSONL append propagates out of main(): the operator_message is never printed and the intended exit code is lost, for a HALTED rollback that already mutated the host.",
+          "suggestion": "Print the result and compute the exit code first, or wrap record() in try/except (LockTimeout, OSError) that emits a loud stderr warning while still delivering operator_message and exit_code(result). State the chosen trade-off in the module docstring.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback_audit.py",
+          "line": 92,
+          "finding": "record() builds {\"recorded_at\":…, \"invocation\":…, **result} — a future `result` carrying its own `invocation` or `recorded_at` key silently clobbers the two audit fields check_manual_rollback_proves_alive filters and orders on. The twin writer (smoke_test.py) merges the OTHER way ({**result, \"checked_at\": …}, audit key wins), so the two stamped-record writers in this same unit disagree about which side wins a collision.",
+          "suggestion": "entry = {**result, \"recorded_at\": …, \"invocation\": invocation} so the audit fields always win (matching smoke_test.py). Add a test that a result dict containing an `invocation` key cannot displace the audit value.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 205,
+          "finding": "read_run_config(project_root).get('phase_history') — a shipwright_run_config.json whose root is not an object (e.g. `[]` or a string) makes `.get` raise AttributeError out of the check. This diff added _load_json_object specifically to close that class of bug on the other two reads in the unit; this third read is the one left open.",
+          "suggestion": "Guard locally: `cfg = read_run_config(...); history = cfg.get('phase_history') if isinstance(cfg, dict) else None`, with a non-object-root test mirroring the two that already exist.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-deploy/tests/test_rollback_audit.py",
+          "line": 32,
+          "finding": "The new unit tests do not assert append-only (two record() calls produce two lines, first preserved) or that a --override-reason containing a newline stays on one JSONL line — both stated as the module's contract in its own docstring.",
+          "suggestion": "Add test_two_records_append_rather_than_overwrite and test_a_reason_with_a_newline_stays_one_jsonl_line.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback_audit.py",
+          "line": 101,
+          "finding": "last_entry() has no production caller — only tests use it. Non-blocking boy-scout item.",
+          "suggestion": "Either drop last_entry() and have tests read the trail directly, or document in the docstring that it exists as the module's read side for consumers/tests.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 14,
+          "finding": "Module docstring's Phase-own index omits check_failed_liveness_recorded_as_failed and check_manual_rollback_proves_alive, and still claims check_test_gate_passed 'mirrors the legacy _validate_test unit gate', which is inaccurate (_validate_test only requires unit.total > 0).",
+          "suggestion": "Add the two new checks to the Phase-own list and correct the _validate_test mirroring claim once the HIGH finding is fixed.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shipwright_bloat_baseline.json",
+          "line": 1106,
+          "finding": "deploy_checks.py crosses 300 LOC in this diff (122->363), but the baseline entry records state:'grandfathered', adr:null, under-declaring a new crossing that has an ADR in the same diff.",
+          "suggestion": "Record it as state:'exception' with adr:'<the e4 ADR>' so the reason for the crossing travels with the entry.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-15T19:49:28.108374+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T20:07:31.442631+00:00",
+      "disposition": "No blocking defect; concurrency/locking design verified correct under adversarial attack. 1 HIGH + 3 MEDIUM + 4 LOW raised; 2 fixed (naive-timestamp fail-open premise disproven and reverted, atomic smoke-result write), rest accepted as disclosed limitations on ledger rows and ADR per D7.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py` — `check_failed_liveness_recorded_as_failed`, the `if checked_dt is not None:` guard",
+          "line": null,
+          "finding": "The staleness guard is gated on the smoke file's timestamp parsing, but not fail-closed: if `checked_at` is absent, non-string, or unparseable, `checked_dt is None` and the entire staleness block is skipped, falling straight through to the outcome check. A stale `success: false` result with no `checked_at` can be satisfied by an arbitrarily old `outcome: \"failed\"` phase-history entry. This is exactly the fail-open hole the round-1 review flagged for a missing phase_history `at` (which was fixed and tested) — but the mirror-image case on the smoke side was neither fixed nor tested. Note also the asymmetry with `check_manual_rollback_proves_alive`, which does fail when either timestamp is unparseable.",
+          "suggestion": "Fail when `checked_at` is missing/unparseable on a `success: false` result (\"cannot confirm this failure was recorded\"), mirroring the `recorded_dt is None` treatment; add a test with a `checked_at`-less failed smoke result.  2. Best-effort `--output` write guts FR-01.08 #4's enforcement",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/smoke_test.py` — `_write_output` (`except OSError: print warning`)",
+          "line": null,
+          "finding": "When a smoke test fails and the output write fails (unwritable dir, disk full), no durable failure record exists, so `check_failed_liveness_recorded_as_failed` returns ok (\"no smoke-test-result.json recorded yet\"). The external code review flagged precisely this; the diff keeps the best-effort semantics and only documents them. The ledger now marks the row `enforced, tested` without recording this known bypass.",
+          "suggestion": "Either make a failed `--output` write on a failed smoke test a distinct non-zero exit (so the SKILL.md flow stops), or record the bypass as a known limit on the ledger row per D7.  3. Usage-error results are persisted as failed liveness evidence",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/smoke_test.py` — the `ProfileError/ValueError` branch now calls `_write_output(args.output, result)` before returning 2",
+          "line": null,
+          "finding": "A profile load failure or bad `--url` (an operator/config error, not the app being down) now writes a `success: false, error: ...` smoke-test-result.json. `check_failed_liveness_recorded_as_failed` treats any `success: false` as a failed liveness check, so a typo in `--profile` during a later deploy can make the verifier demand a `phase_history` \"failed\" entry — or, worse, cause the operator to record a failed release for a release that was actually healthy. The check cannot distinguish `error`-shaped results from genuine liveness failures.",
+          "suggestion": "Either don't persist usage-error results, or have the verifier treat a result carrying a top-level `error` field (no `attempts`/`waited_ms`) as not-a-liveness-evidence record (skip-and-note rather than fail).  4. Positional-parameter regression in `aggregate()",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/tools/aggregate_changelog.py` — `fail_if_empty` inserted before `lock_timeout_seconds` in the public signature",
+          "line": null,
+          "finding": "Any existing caller passing `lock_timeout_seconds` positionally (the signature order was previously `... strict, lock_timeout_seconds`) now silently binds it to `fail_if_empty`, both enabling empty-release refusal unexpectedly and reverting the timeout to its default. The in-repo caller uses keywords, but `aggregate()` is a documented public API.",
+          "suggestion": "Move `fail_if_empty` after `lock_timeout_seconds`, or make the new parameters keyword-only (`, fail_if_empty: bool = False`).  5. `rollback_audit.record` crashes on a `None` project root",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback_audit.py` — `history_path` / `record`; caller `rollback.py main()",
+          "line": null,
+          "finding": "history_path` does `Path(project_root)` with no `None` handling. The SKILL.md prose asserts `--project-root` \"defaults to `.`\", but `rollback_git`'s own signature defaults to `None` and tolerates it; if the CLI parser's default is ever `None` (as the library default suggests), `record(None)` raises `TypeError` after the rollback result is computed but before it's printed — turning a successful rollback into a crash with no exit code. Every test passes `--project-root`, so this path is untested.",
+          "suggestion": "In `record()` (or `history_path`), fall back to `Path.cwd()` when `project_root` is `None`, and add a CLI test that omits `--project-root`.  6. No run-identity binding between the smoke result and the manual rollback it must verify",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py` — `check_manual_rollback_proves_alive",
+          "line": null,
+          "finding": "The check reconciles \"last manual entry\" against \"latest smoke result\" by timestamp only. A successful smoke test from an unrelated later deploy (or any later `--output` invocation) satisfies an earlier manual rollback's proves-alive requirement even if the rolled-back environment was never re-checked. The round-2 plan review flagged the lack of release/run identity; it was acknowledged but not implemented or recorded as a known limit on the ledger row.",
+          "suggestion": "Record the env name (or run id) in both artifacts and require a match, or record this as a documented known limit on the ledger row.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "regression",
+          "file": "plugins/shipwright-deploy/scripts/lib/rollback.py",
+          "line": 318,
+          "finding": "main()` now always calls `rollback_audit.record(args.project_root, ...)`, but `--project-root` remains optional. When omitted, `history_path()` calls `Path(None)` and raises `TypeError` after the rollback has run, so existing invocations no longer print a result or return the intended exit code.",
+          "suggestion": "Pass `args.project_root or Path.cwd()` to `record()` (or default the argparse option to the cwd) and add a CLI test with no `--project-root`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/smoke_test.py",
+          "line": 225,
+          "finding": "The new durable liveness artifact is best-effort: failure to create/write `--output` merely emits a warning. `check_failed_liveness_recorded_as_failed()` treats a missing output file as compliant, so a failed smoke test whose output path is unavailable is not enforced as a failed release.",
+          "suggestion": "Make a requested output-write failure return a distinct nonzero failure, or make the deploy verifier fail when the required liveness artifact is absent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "shared/scripts/tools/aggregate_changelog.py",
+          "line": 248,
+          "finding": "fail_if_empty` was inserted before the existing `lock_timeout_seconds` parameter in the public `aggregate()` signature. A caller using the old positional timeout argument will instead enable empty-release refusal and silently revert to the default timeout.",
+          "suggestion": "Move `fail_if_empty` after `lock_timeout_seconds`, or make newly added options keyword-only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 223,
+          "finding": "A failed smoke record without a parseable `checked_at` skips the freshness comparison and can pass solely because any latest phase-history entry says `failed`. This permits a malformed/stale smoke artifact to be reconciled with an unrelated old failure.",
+          "suggestion": "Require a parseable `checked_at` whenever `success` is `false`; otherwise return a failing `CheckResult`. Add a missing/invalid-`checked_at` test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/verifiers/deploy_checks.py",
+          "line": 279,
+          "finding": "The manual-rollback check accepts equal-second timestamps (`checked_dt < recorded_dt`). Since both producers truncate timestamps to seconds, a successful smoke result recorded before a manual rollback in the same second can incorrectly satisfy the required post-rollback liveness proof.",
+          "suggestion": "Preserve sub-second timestamps or add a monotonic sequence/run identifier and require the smoke record to be strictly subsequent; add an equal-timestamp regression test.  Ship-with-fixes: the core approach is sound, but the omitted-project-root crash and fail-open durable-smoke path break existing behavior and leave a stated deployment criterion unenforced.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T17:21:34.798583+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Fail-open when the smoke result's `checked_at` is missing or unparseable**\n- Category: bug\n- Severity: medium\n- File: `shared/scripts/tools/verifiers/deploy_checks.py` — `check_failed_liveness_recorded_as_failed`, the `if checked_dt is not None:` guard\n- Finding: The staleness guard is gated on the *smoke file's* timestamp parsing, but not fail-closed: if `checked_at` is absent, non-string, or unparseable, `checked_dt is None` and the entire staleness block is skipped, falling straight through to the outcome check. A stale `success: false` result with no `checked_at` can be satisfied by an arbitrarily old `outcome: \"failed\"` phase-history entry. This is exactly the fail-open hole the round-1 review flagged for a missing *phase_history* `at` (which was fixed and tested) — but the mirror-image case on the smoke side was neither fixed nor tested. Note also the asymmetry with `check_manual_rollback_proves_alive`, which *does* fail when either timestamp is unparseable.\n- Suggestion: Fail when `checked_at` is missing/unparseable on a `success: false` result (\"cannot confirm this failure was recorded\"), mirroring the `recorded_dt is None` treatment; add a test with a `checked_at`-less failed smoke result.\n\n**2. Best-effort `--output` write guts FR-01.08 #4's enforcement**\n- Category: spec\n- Severity: medium\n- File: `shared/scripts/smoke_test.py` — `_write_output` (`except OSError: print warning`)\n- Finding: When a smoke test *fails* and the output write fails (unwritable dir, disk full), no durable failure record exists, so `check_failed_liveness_recorded_as_failed` returns ok (\"no smoke-test-result.json recorded yet\"). The external code review flagged precisely this; the diff keeps the best-effort semantics and only documents them. The ledger now marks the row `enforced, tested` without recording this known bypass.\n- Suggestion: Either make a failed `--output` write on a failed smoke test a distinct non-zero exit (so the SKILL.md flow stops) […truncated]\n\n[openai] - Category: regression  \n  Severity: high  \n  File: plugins/shipwright-deploy/scripts/lib/rollback.py:318  \n  Finding: `main()` now always calls `rollback_audit.record(args.project_root, ...)`, but `--project-root` remains optional. When omitted, `history_path()` calls `Path(None)` and raises `TypeError` after the rollback has run, so existing invocations no longer print a result or return the intended exit code.  \n  Suggestion: Pass `args.project_root or Path.cwd()` to `record()` (or default the argparse option to the cwd) and add a CLI test with no `--project-root`.\n\n- Category: spec  \n  Severity: high  \n  File: shared/scripts/smoke_test.py:225  \n  Finding: The new durable liveness artifact is best-effort: failure to create/write `--output` merely emits a warning. `check_failed_liveness_recorded_as_failed()` treats a missing output file as compliant, so a failed smoke test whose output path is unavailable is not enforced as a failed release.  \n  Suggestion: Make a requested output-write failure return a distinct nonzero failure, or make the deploy verifier fail when the required liveness artifact is absent.\n\n- Category: regression  \n  Severity: medium  \n  File: shared/scripts/tools/aggregate_changelog.py:248  \n  Finding: `fail_if_empty` was inserted before the existing `lock_timeout_seconds` parameter in the public `aggregate()` signature. A caller using the old positional timeout argument will instead enable empty-release refusal and silently revert to the default timeout.  \n  Suggestion: Move `fail_if_empty` after `lock_timeout_seconds`, or make newly added options keyword-only.\n\n- Category: edge-case  \n  Severity: medium  \n  File: shared/scripts/tools/verifiers/deploy_checks.py:223  \n  Finding: A failed smoke record without a parseable `checked_at` skips the freshness comparison and can pass solely because any latest phase-history entry says `failed`. This permits a malformed/stale smoke artifact to be reconciled with an unrelated old failure.  \n   […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T19:41:41.926992+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T16:58:35.180331+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

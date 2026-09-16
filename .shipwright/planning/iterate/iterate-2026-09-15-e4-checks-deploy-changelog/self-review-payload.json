@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "All 11 ledger line-items (5 FR-01.08 rows plus a split, 4 FR-01.09 rows) enforced or downgraded with a documented reason, exceeding the spec's stated 10."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Every new/modified code path returns a structured failure state rather than raising; malformed and absent-file inputs are handled explicitly and tested (test_test_gate_refuses_on_a_present_but_malformed_results_file, test_an_unreadable_profile_is_still_recorded)."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No hardcoded secrets; every project-tree JSON read is type-checked (isinstance) before use; free-text override_reason is an intentional audit field consistent with the repo's existing decision_log.md pattern; rollback_audit.record() now takes a file lock against concurrent-write interleaving."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "12 new/updated tests this round address every external-review finding that required a code change, including 2 genuine producer-to-consumer round-trip probes (see Affected Boundaries)."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "pass",
+      "note": "No N+1 queries or unbounded fetches; JSONL last-entry reads are bounded by realistic per-project audit-trail sizes; no new sync-blocking-in-async code (this codebase has no async deploy path)."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "New check names follow the existing verifier naming convention (check_<subject>); docstrings explain why, matching repo convention; no premature abstraction (each check is a standalone function reading exactly the artifacts it reconciles)."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Three serialized-format boundaries identified: smoke-test-result.json (producer smoke_test.py --output, consumer deploy_checks checks), rollback-history.jsonl (producer rollback_audit.record(), consumers deploy_checks + rollback_audit.last_entry()), and shipwright_test_results.json itself (TWO producers: the full-pipeline /shipwright-test phase writing unit/e2e/smoke at the top level, and /shipwright-iterate's F5 step nesting the same sub-keys under iterate_latest). Real round-trip probes were added connecting ACTUAL producer to ACTUAL consumer for all three: test_the_real_producer_output_satisfies_the_real_consumer_check and test_the_real_rollback_and_smoke_producers_satisfy_the_real_consumer_check (found check_manual_rollback_proves_alive accepted any liveness check regardless of outcome, not just one that found the app alive), plus F0's own canonical run_test_suite.py driving integration-tests/test_devops_flow.py against THIS repo's real (iterate-shaped) shipwright_test_results.json — which found _test_gate and check_test_gate_passed both read only the top-level pipeline shape and were permanent no-ops against the iterate shape, and separately that a blanket e2e-status-in-(passed,skipped) requirement would refuse every deploy in an iterate-run, e2e-less repo. All three were fixed and re-probed, reaching the two-consecutive-no-finding asymptote."
+    }
+  ]
+}
