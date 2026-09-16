@@ -81,11 +81,13 @@ of that later run had no part in authoring.
       universal (extension and full-application specs alike, per the
       precedent's own established position) and un-softened; only the
       producer stops manufacturing violations of it.
-- [ ] `trg-ac2ef362` is closed, referencing this run's own PR, once that PR
-      exists — same process the `trg-9583d3a8`/`trg-aedcfe7b` precedent
-      closures used (a `promote --task-ref PR:<N>` close event cannot itself
-      carry a PR number that does not exist yet at review time, so it lands
-      as a small follow-up append once this run's PR is open).
+- [x] `trg-ac2ef362` is closed, referencing this run's own PR, once that PR
+      exists — landed as a `triage_cli.py dismiss --reason "Fixed via PR
+      #766: ..."` follow-up append once this run's PR was open (a close
+      event cannot itself carry a PR number that does not exist yet at
+      review time). Matches the `dismiss`-with-PR-reference pattern already
+      established for prior fixed findings (e.g. `trg-42edfde6`,
+      `trg-de766d82`).
 - [x] Within one mined file's bullets, any bullet that collides (exact string
       match) with another already-kept bullet from the same file is
       deduplicated, preserving first-seen order — applies uniformly, not only
