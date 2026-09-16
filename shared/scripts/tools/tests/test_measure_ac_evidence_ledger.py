@@ -208,16 +208,13 @@ def test_excluded_tables_are_reported_for_audit() -> None:
 def test_legend_glued_to_a_preceding_table_with_no_blank_line_is_not_excluded() -> None:
     """The exclusion is block-scoped: a blank line above the legend is what
     keeps it a separate block from a preceding criterion table. Documents
-    the real (non-excluded) behavior when that separator is missing — a
-    future edit that glues the two together silently stops excluding the
-    legend, and this test is the place a reader learns that from a passing
-    assertion rather than from a failure message (code review finding 3)."""
+    the real (non-excluded) behavior when that separator is missing
+    (code review finding 3)."""
     criterion_row = "| 1 | a | `unimplemented` | note |\n"
     legend_no_blank_line = "| Status | What it means |\n|---|---|\n| `unimplemented` | ... |\n"
     glued = criterion_row + legend_no_blank_line  # no blank line between them
     counts = measure_mod.count_statuses(glued)
-    # Merged into one block; its header is the criterion row, not "Status",
-    # so nothing is excluded and the legend's own mention now counts too.
+    # merged into one block; header is the criterion row, not "Status" -> not excluded
     assert counts["unimplemented"] == 2
 
 
@@ -270,3 +267,34 @@ def test_unterminated_fence_is_reported_and_excludes_the_rest_of_the_document() 
 def test_balanced_fence_reports_no_unterminated_fence() -> None:
     result = measure_mod.measure("```\n| `enforced` |\n```\n")
     assert result["unterminated_fence"] is False
+
+
+def test_tilde_fenced_code_block_table_example_is_not_counted() -> None:
+    """A ``~~~`` fence is as valid as a backtick fence (CI PR-review finding)."""
+    text = (
+        "Some real rows:\n"
+        "| 1 | a | `unimplemented` | note |\n\n"
+        "An example, not a real row:\n"
+        "~~~\n"
+        "| 2 | b | `enforced` | note |\n"
+        "~~~\n"
+    )
+    counts = measure_mod.count_statuses(text)
+    assert counts["unimplemented"] == 1
+    assert counts["enforced"] == 0
+
+
+def test_mismatched_fence_markers_do_not_close_each_other() -> None:
+    """A `~~~` line inside an open ``` fence is content, not a close marker —
+    CommonMark closes a fence only with a matching marker."""
+    text = (
+        "```\n"
+        "~~~\n"
+        "| `enforced` |\n"
+        "```\n"
+        "| `unimplemented` |\n"
+    )
+    result = measure_mod.measure(text)
+    assert result["unterminated_fence"] is False
+    assert result["status_counts"]["enforced"] == 0  # inside the ``` fence
+    assert result["status_counts"]["unimplemented"] == 1  # after it closed

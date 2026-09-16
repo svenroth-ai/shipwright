@@ -5,11 +5,8 @@
 **Why this exists.** The ledger
 (``.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md``)
 carries its own status distribution, hand-counted once and never re-derived
-since — a hand count is exactly the kind of number this ledger itself warns
-readers not to trust at face value: it reads as authoritative and silently
-goes stale (see the ``e0-ledger-accounting`` sub-iterate spec). This script
-re-derives the distribution mechanically, from the document's own text,
-every time it is run, so "trust the header" becomes "re-run the script".
+since. This script re-derives it mechanically, from the document's own
+text, every time it is run, so "trust the header" becomes "re-run the script".
 
 **What it counts, and why it is restricted to table rows.** Each of the
 ledger's 8 canonical status tags (``enforced``, ``enforced, untested``,
@@ -29,46 +26,37 @@ inflating the count.
 **Two tables are explicitly excluded even though they ARE table rows: the
 vocabulary legend (near the top) and the "Distribution after the end-check"
 historical summary table.** Both name every canonical status once, so
-without this exclusion they would still inflate every count by a small,
-constant amount. Both share one structural trait no real per-FR criterion
-table has: their **first** column is itself headed ``Status`` (every real
-criterion table puts ``Status`` in a later column). A table block is
-excluded when its header cell is structurally "status"
-(``_table_header_first_cell`` splits on ``|`` and compares stripped,
-casefolded text — not a literal string prefix, so a whitespace variant of
-the same header is still recognised); nothing else is special-cased. Every
-excluded block is recorded (line number + header text) in ``measure()``'s
-``excluded_tables`` output, so a reader can verify only the legend and the
-summary were dropped rather than trusting the rule silently. The exclusion
-is block-scoped: a blank line (or any non-table line) above the legend is
-what keeps it its own block, separate from a preceding criterion table —
-if a future edit ever glued the two together with no separator, the merged
-block's header would no longer read "status" and the legend would stop
-being excluded (the ``excluded_tables`` count dropping below 2 is the
-observable symptom).
+without this exclusion they would inflate every count by a small constant
+amount. Both share one trait no real per-FR criterion table has: their
+**first** column is itself headed ``Status`` (a real criterion table puts
+``Status`` in a later column). A table block is excluded when its header
+cell is structurally "status" (``_table_header_first_cell`` splits on
+``|`` and compares stripped, casefolded text, not a literal prefix); every
+excluded block is recorded (line + header) in ``measure()``'s
+``excluded_tables`` output for audit. The exclusion is block-scoped: a
+blank line above the legend is what keeps it a separate block from a
+preceding criterion table — gluing the two together with no separator
+would stop the legend from reading "status" and being excluded (a drop in
+``excluded_tables`` below 2 is the observable symptom).
 
 **What this does not fix: a status backtick-quoted in a non-status column
 of a real table row still counts.** Restricting to table rows stops prose
 *outside* tables from inflating the count; it does not restrict *inside* a
 row to only the status cell — an "Evidence / gap" column can itself narrate
-a status the row no longer holds, and that mention still counts. This is
-the same, already-tested, already-documented trade-off
-`test_split_row_contributes_to_both_halves` pins for the opposite case (a
-row legitimately naming two statuses because it splits a criterion in
-two) — the script cannot distinguish the two without reading comprehension.
-Column-position parsing (count only the literal "Status"-headed column,
-per row) was considered and rejected: at least one real, already-counted
+a status the row no longer holds, and that mention still counts (the same
+trade-off `test_split_row_contributes_to_both_halves` pins for the opposite
+case). Column-position parsing (count only the literal "Status"-headed
+column) was considered and rejected: at least one real, already-counted
 table in the live ledger headers its status column ``Enforcement``, not
-``Status``, so column-name matching would silently *undercount* real
-criterion rows on a table shape already in use.
+``Status``, which column-name matching would silently *undercount*.
 
-**Fenced code blocks are skipped.** A ` ``` ` toggle excludes everything
-between fence markers from the table-row sweep, so a pipe-prefixed example
-table inside a documentation code sample is never miscounted as a real
-row. An unterminated fence (an odd number of ` ``` ` markers) is treated as
-open through end-of-file, so everything after it is silently excluded too
-— `measure()`'s ``unterminated_fence`` flag reports this rather than
-letting a hand-edit mistake masquerade as a clean, if lower, count.
+**Fenced code blocks are skipped.** A backtick (```` ``` ````) or tilde
+(``~~~``) fence toggle excludes everything between two MATCHING markers
+from the table-row sweep, so a pipe-prefixed example table inside either
+kind of code sample is never miscounted as a real row. An unterminated
+fence is treated as open through end-of-file, so everything after it is
+silently excluded too — `measure()`'s ``unterminated_fence`` flag reports
+this rather than letting a hand-edit mistake masquerade as a clean count.
 
 **Historical numbers were measured differently and are not retroactively
 rewritten** — the same rule ADR numbering already follows (never renumber
@@ -123,6 +111,15 @@ BACKLOG_STATUSES = [
 ]
 
 
+_FENCE_MARKERS = ("```", "~~~")
+
+
+def _fence_marker(line: str) -> str | None:
+    """The fence marker (backtick or tilde) this line opens/closes with, if any."""
+    stripped = line.lstrip()
+    return next((m for m in _FENCE_MARKERS if stripped.startswith(m)), None)
+
+
 def _table_header_first_cell(line: str) -> str:
     """The first cell of a markdown table row, stripped and casefolded, e.g.
     ``"| Status | Rows |"`` -> ``"status"``, ``"|  Status  |Rows|"`` ->
@@ -137,10 +134,10 @@ class _TableRowFilter:
     `row_text`: the table-row-only text, ready for `count_statuses`'s regex
     sweep. `excluded`: every dropped block's 1-indexed line number + header
     text, surfaced as `measure()`'s `excluded_tables` — see `_table_row_text`.
-    `unterminated_fence`: whether the text ended with an odd number of
-    ` ``` ` markers, i.e. a fence that was still open at EOF (everything
-    after it was silently excluded as a precaution, since content inside an
-    unclosed fence cannot be told apart from real prose)."""
+    `unterminated_fence`: whether the text ended with an unclosed backtick
+    or tilde fence still open at EOF (everything after it was silently
+    excluded as a precaution, since content inside an unclosed fence
+    cannot be told apart from real prose)."""
 
     def __init__(self, row_text: str, excluded: list[tuple[int, str]], unterminated_fence: bool) -> None:
         self.row_text = row_text
@@ -152,9 +149,8 @@ def _table_row_text(text: str) -> _TableRowFilter:
     """Filter `text` down to its markdown table rows.
 
     A "table row" is a line whose first non-whitespace character is `|`,
-    outside a fenced code block (a ` ``` ` toggle skips fence contents, so a
-    pipe-prefixed example line inside a code sample is never read as a real
-    row). A contiguous run of such lines is one block; a block is entirely
+    outside a fenced code block (backtick or tilde). A contiguous run of
+    such lines is one block; a block is entirely
     excluded when its header (first line)'s first cell is structurally
     "status" (see `_table_header_first_cell`) — the shape of both the
     vocabulary legend and the historical distribution summary, and of no
@@ -164,12 +160,15 @@ def _table_row_text(text: str) -> _TableRowFilter:
     kept: list[str] = []
     excluded: list[tuple[int, str]] = []
     in_fence = False
+    fence_marker: str | None = None
     i = 0
     n = len(lines)
     while i < n:
         line = lines[i]
-        if line.lstrip().startswith("```"):
+        marker = _fence_marker(line)
+        if marker is not None and (not in_fence or marker == fence_marker):
             in_fence = not in_fence
+            fence_marker = marker if in_fence else None
             i += 1
             continue
         if in_fence or not line.lstrip().startswith("|"):
@@ -289,9 +288,9 @@ def main(argv: list[str] | None = None) -> int:
     if payload["unterminated_fence"]:
         print()
         print(
-            "WARNING: an unterminated ``` fence was found (odd number of markers) — "
-            "everything after it was excluded from the count as a precaution. "
-            "Check for a missing closing ``` in the ledger."
+            "WARNING: an unterminated ``` or ~~~ fence was found — everything "
+            "after it was excluded from the count as a precaution. Check for "
+            "a missing closing marker in the ledger."
         )
     return 0
 
