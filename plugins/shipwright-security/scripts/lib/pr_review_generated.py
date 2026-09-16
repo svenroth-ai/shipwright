@@ -140,7 +140,8 @@ _REVIEW_EVIDENCE_RE = re.compile(
 _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
     r"^[^/]+/("
     r"(spec|code|doubt)_review_reply\.json"
-    r"|(external|architecture)-[^/]*review[^/]*\.(json|md)"
+    r"|external-[^/]*review[^/]*\.(json|md)"
+    r"|architecture-review(-raw)?\.json"
     r")$"
 )
 
@@ -185,21 +186,27 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
 # hide-only wildcard stays exactly as wide as before this iterate started,
 # unchanged from the pre-existing regex above.
 
-# Round 6 (iterate-2026-09-16-ac-ledger-status-cell-counting's own PR #767):
-# `external_review.py --mode architecture` writes the SAME kind of transcript
-# (including the literal `SHIPWRIGHT_VERDICT: approve` marker Round 5's
-# family exists to hide) as the `--mode code`/`--mode plan` calls, but the
-# caller-chosen output name follows an `architecture-review...` convention,
-# not `external-...` — confirmed via `git log --diff-filter=A` across three
-# prior iterates (2026-08-09, 2026-09-12, and this one), so it is an
-# established naming convention, not a one-off. The run-anchored alternative
-# only matched the `external-` prefix, so an architecture-review transcript
+# Round 6 (iterate-2026-09-16-ac-ledger-status-cell-counting's own PR #767,
+# two passes). `external_review.py --mode architecture` writes the SAME kind
+# of transcript (including the literal `SHIPWRIGHT_VERDICT: approve` marker
+# Round 5's family exists to hide) as the `--mode code`/`--mode plan` calls,
+# under an `architecture-review...` name instead of `external-...` — so it
 # was never hidden and got flagged as "suspicious instruction-like content"
-# by the reviewing model itself. Same accepted-risk wildcard shape as the
-# `external-` branch (the tool has no fixed output name for this call either,
-# so an exact-basename allowlist has the same 40-name problem the Round 5
-# note describes) — added as a second alternative prefix on the same regex,
-# not a new mechanism.
+# by the reviewing model itself. First attempt mirrored the `external-`
+# wildcard shape (`architecture-[^/]*review[^/]*\.(json|md)`); the gate's
+# OWN next pass correctly rejected that as widening the exact review-evasion
+# surface Round 5's note warns about, and asked for an exact allowlist
+# instead — the fix Round 5 ruled out for the `external-` family only
+# because that family has 40+ ad-hoc caller-chosen names with no fixed
+# producer output. `architecture-review...` does NOT have that problem:
+# `git log --diff-filter=A --name-only -- '*architecture-review*'` across
+# this repo's full history finds exactly two basenames ever written,
+# `architecture-review-raw.json` and `architecture-review.json`, across
+# three iterates' architecture-review step (the `--mode architecture` call
+# in the iterate skill's Branch A). A closed two-name allowlist is
+# therefore both sufficient today and the right shape going forward: extend
+# it (like the `_reply.json` set above) if a future run invents a third
+# name, rather than widening to a wildcard.
 
 
 def is_generated_path(path: str) -> bool:

@@ -74,6 +74,23 @@ def test_architecture_review_transcripts_are_also_excluded():
         assert G.is_generated_path(f"{RUN}/{name}"), name
 
 
+def test_an_attacker_chosen_architecture_named_file_is_not_hidden():
+    """Round 6, second pass (PR #767): the gate's own next review correctly
+    rejected the first fix's `architecture-[^/]*review[^/]*\\.(json|md)`
+    wildcard as widening the exact review-evasion surface Round 5's note
+    describes for the sibling `external-` family — a contributor could name
+    an arbitrary file to match it and have its content hidden from the
+    reviewing model. The fix closed it to the two exact basenames this
+    repo's history has ever produced; anything merely shaped like them must
+    stay reviewable."""
+    for name in (
+        "architecture-review-injected.json",
+        "architecture-fake-review.md",
+        "architecture-review-raw.md",  # real basename's .json swapped for .md
+    ):
+        assert not G.is_generated_path(f"{RUN}/{name}"), name
+
+
 def test_self_review_payload_stays_reviewable():
     """Deliberately NOT excluded: this is the payload SENT TO a review
     stage, not a transcript OF one — the module docstring's warning about an
