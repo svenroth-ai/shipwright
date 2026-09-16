@@ -14,13 +14,74 @@ Non-goals (per the iterate spec):
 - No AST-level test parsing. Regex catches every common case; the
   accuracy delta is not worth a Jest/Babel dep.
 - No semantic interpretation. The mined string is the spec.
-- No deduping across describe-blocks — the user gets to see redundancy.
+- No deduping across *files* — a different FR's ACs (from a different
+  candidate file) are never merged or compared against this one's.
+  WITHIN one file's own bullet list, an exact-duplicate line is deduped,
+  first-seen order preserved (`_dedup_preserve_order`, below) — this
+  applies uniformly, not only to bullets the hygiene strip reshaped: two
+  literally-identical bullets add no information the reader doesn't
+  already have, whether the collision came from prefix-stripping two
+  differently-dirty describes to the same clean `it` text, or from the
+  source file's own test descriptions genuinely repeating verbatim.
+
+**Hygiene filtering (trg-ac2ef362).** A mined `describe`/`it`/`test_*` label
+routinely carries a code symbol (a PascalCase component name in `describe`)
+or an HTTP verb+path — exactly the implementation-detail shapes FR-01.02 #5
+(`_project_gate_extras_rollout.criteria_free_of_implementation_detail`, via
+`fr_hygiene_detectors.violations`) hard-blocks the next time
+`/shipwright-project` Step 8 re-verifies a project's spec.md. There is no
+rollout-transition grace for this: mining happens live, so a fresh
+onboarding after the gate's own rollout instant has no historical snapshot
+to grace against, and even a one-time grant would not stop the *next*
+mining run from manufacturing a new violation. The fix is at the source:
+every candidate bullet is checked against the identical shared detector the
+gate uses (loaded via `shared_loader.load_shared_module`, never a naive
+`from lib import ...` — both this plugin's own `lib/` and `shared/scripts/
+lib/` are packages named `lib`, and Python's regular-package resolution
+would shadow one with the other depending on import order, ADR-044/045) —
+a dirty bullet is dropped, except a JS `"<describe>: <it>"` combination
+whose bare `it` half is clean, which drops only the offending prefix rather
+than the whole bullet (describe-names-the-component is the single largest
+source of hits; discarding the whole bullet whenever a describe label
+happens to be a component name would gut mining output for a typical
+React/TS codebase).
 """
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
+
+try:  # tool context: lib/ is on sys.path (setup_adopt/_load_lib)
+    from shared_loader import load_shared_module
+except ImportError:  # test / package context: scripts/ on sys.path, lib is a package
+    from lib.shared_loader import load_shared_module
+
+_HYGIENE = load_shared_module(
+    "scripts/lib/fr_hygiene_detectors.py", "_shipwright_adopt_fr_hygiene_detectors"
+)
+# Called at MODULE import time (not lazily): this module now requires the
+# `shared/` tree at every import, matching the same precedent already set by
+# the plugin's other 8 shared_loader consumers (doubt review, low: `shared/`
+# absent is not a supported /shipwright-adopt distribution shape — every
+# plugin ships alongside `shared/`, dev repo and plugin cache alike).
+
+
+def _is_clean(text: str) -> bool:
+    return not _HYGIENE.violations(text)
+
+
+def _dedup_preserve_order(bullets: list[str]) -> list[str]:
+    """Prefix-stripping two distinct dirty bullets can collapse them to the
+    same clean text (e.g. two components both testing "validates input") —
+    the surviving list must not carry a literal duplicate line."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for b in bullets:
+        if b not in seen:
+            seen.add(b)
+            out.append(b)
+    return out
 
 # Sibling-resolution candidates. For `src/foo.ts` we try, in order:
 #   src/foo.test.ts, src/foo.spec.ts, src/foo.test.tsx, ... (same dir)
@@ -115,7 +176,22 @@ def _mine_js(test_file: Path) -> list[str]:
             chunk = body[d_end:it_pos]
             if chunk.count("{") > chunk.count("}"):
                 innermost = d_label
-        bullets.append(f"{innermost}: {it_label}" if innermost else it_label)
+        combined = f"{innermost}: {it_label}" if innermost else it_label
+        # External code review, medium: `it('')`/`test('')` captures a
+        # regex-non-empty-but-blank/whitespace-only label — `_is_clean`
+        # trivially passes it (no violations on blank text), so guard the
+        # same way `_mine_py` already does before ever appending.
+        if not it_label.strip():
+            continue
+        if _is_clean(combined):
+            bullets.append(combined)
+        elif innermost and _is_clean(it_label):
+            # The describe prefix (commonly a component/module name) is what
+            # carries the violation — keep the bare `it` label rather than
+            # discarding an otherwise-clean behavior description.
+            bullets.append(it_label)
+        # else: dirty on its own terms (no prefix to strip, or stripping
+        # didn't help) — dropped.
 
     return bullets
 
@@ -138,11 +214,17 @@ def _mine_py(test_file: Path) -> list[str]:
         fn = m.group(1)
         doc = (m.group(2) or m.group(3) or "").strip().splitlines()
         if doc:
-            bullets.append(doc[0].strip())
+            candidate = doc[0].strip()
         else:
             # Function name without docstring: humanize "test_foo_bar" -> "foo bar".
-            humanized = fn.removeprefix("test_").replace("_", " ")
-            bullets.append(humanized)
+            candidate = fn.removeprefix("test_").replace("_", " ")
+        # External code review, low: an all-underscore name (`test___`) or a
+        # whitespace-only docstring line humanizes/strips to blank — guard
+        # against emitting an empty or whitespace-only bullet, since
+        # `violations("")`/`violations("  ")` are both trivially clean.
+        if candidate.strip() and _is_clean(candidate):
+            bullets.append(candidate)
+        # else: dropped — no prefix to strip for a Python label.
     return bullets
 
 
@@ -150,8 +232,13 @@ def mine_acceptance_criteria(project_root: Path, source_file: str) -> list[str]:
     """Return up to _AC_CAP bullet-point ACs harvested from the FR's
     sibling test files. Empty list when no candidates are found.
 
-    The first existing candidate wins. We don't union across files to
-    avoid bloating spec.md when a single FR has many test files.
+    The first candidate that yields at least one *hygiene-clean* bullet
+    wins. We don't union across files to avoid bloating spec.md when a
+    single FR has many test files. A candidate whose every raw label is
+    dirty (trg-ac2ef362) falls through to the next sibling exactly like a
+    candidate with no `it`/`test_*` calls at all — both already meant "this
+    file yielded nothing usable" before hygiene filtering existed; a fully
+    dirty file is simply a second reason a file can yield nothing.
     """
     candidates = _candidate_test_files(project_root, source_file)
     if not candidates:
@@ -161,6 +248,7 @@ def mine_acceptance_criteria(project_root: Path, source_file: str) -> list[str]:
             bullets = _mine_py(cand)
         else:
             bullets = _mine_js(cand)
+        bullets = _dedup_preserve_order(bullets)
         if bullets:
             return bullets[:_AC_CAP]
     return []

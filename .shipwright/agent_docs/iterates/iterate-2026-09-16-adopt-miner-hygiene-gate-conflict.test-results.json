@@ -1,0 +1,141 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-16-adopt-miner-hygiene-gate-conflict",
+    "date": "2026-09-16",
+    "unit": {
+      "status": "passed",
+      "passed": 688,
+      "total": 688
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Pure Python string-filtering logic inside plugins/shipwright-adopt/scripts/lib/test_acceptance_miner.py's mining helper (hygiene filter against the shared fr_hygiene_detectors gate). No startable web/cli/api surface exists to drive: the change is a library function invoked by /shipwright-adopt's onboarding pipeline at analysis time, not an independently launchable process. Covered by 27 unit tests (12 pre-existing + 15 new hygiene tests) exercising every branch (JS combined/prefix-strip/drop, Python docstring/humanized-name/drop, dedup, cap-vs-filter ordering, all-dirty fallthrough)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a PascalCase-component describe prefix is stripped and a clean it-label survives on its own",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_dirty_describe_prefix_with_clean_it_strips_the_prefix PASSED"
+        },
+        {
+          "behavior": "a dirty it-label with no clean fallback is dropped entirely",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_dirty_it_label_is_dropped_entirely PASSED"
+        },
+        {
+          "behavior": "a bare (no describe wrapper) dirty it/test label with no prefix to strip is dropped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_bare_it_dirty_label_no_prefix_to_strip_is_dropped PASSED"
+        },
+        {
+          "behavior": "a blank/whitespace-only it/test label is dropped rather than emitted as an empty bullet",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_bare_empty_it_label_is_dropped PASSED"
+        },
+        {
+          "behavior": "an empty it-label under a dirty describe is dropped, not smuggled through as a blank bullet by the prefix-strip fallback",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_empty_it_under_dirty_describe_is_dropped_not_stripped_to_blank PASSED"
+        },
+        {
+          "behavior": "an it is attributed to its single innermost describe only; a dirty outer describe never enters the combined string and cannot trip or need stripping",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_nested_describe_only_innermost_prefix_is_considered PASSED"
+        },
+        {
+          "behavior": "two distinct dirty-prefixed bullets that collapse to the same clean it text after stripping are deduped, first-seen order preserved",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_prefix_stripping_dedupes_within_one_file PASSED"
+        },
+        {
+          "behavior": "per-file dedup also applies to bullets that were never stripped (genuine source-file duplication)",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_dedup_also_applies_to_bullets_never_stripped PASSED"
+        },
+        {
+          "behavior": "a JS candidate file whose every raw label is dirty yields an empty bullet list",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_js_all_candidates_dirty_returns_empty PASSED"
+        },
+        {
+          "behavior": "a Python candidate file whose every raw label is dirty yields an empty bullet list",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_py_all_candidates_dirty_returns_empty PASSED"
+        },
+        {
+          "behavior": "an all-underscore Python test name humanizes to a whitespace-only string and is dropped rather than emitted as a blank bullet",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_py_whitespace_only_humanized_name_is_dropped PASSED"
+        },
+        {
+          "behavior": "a dirty Python docstring-derived bullet is dropped",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_py_dirty_docstring_is_dropped PASSED"
+        },
+        {
+          "behavior": "a dirty Python humanized-name bullet (no docstring) is dropped rather than emitted half-humanized",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_py_dirty_humanized_name_is_dropped PASSED"
+        },
+        {
+          "behavior": "a candidate file whose every raw label is dirty falls through to the next sibling candidate, same as a file with no test calls at all",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_all_dirty_candidate_falls_through_to_next_sibling PASSED"
+        },
+        {
+          "behavior": "hygiene filtering happens before the 10-item cap, so dirty candidates never consume a cap slot",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_test_acceptance_miner_hygiene.py::test_hygiene_filter_runs_before_the_cap PASSED"
+        },
+        {
+          "behavior": "test_acceptance_miner is the 9th plugin module to resolve fr_hygiene_detectors via the shared_loader.load_shared_module idiom, pinned by the cross-plugin census test",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-adopt/tests/test_shared_loader.py::test_every_rewired_scaffolder_still_resolves_its_shared_symbol PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 16,
+        "tested": 16,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-16-adopt-miner-hygiene-gate-conflict",
+    "commit": "276e694d5f3b5aaef9e0a62eb2d95cbb785a5a8e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

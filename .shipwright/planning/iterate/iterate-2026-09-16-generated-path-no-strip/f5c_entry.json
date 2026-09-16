@@ -1,0 +1,53 @@
+{
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/generated-path-no-strip",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-16-generated-path-no-strip",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "is_generated_path no longer treats a leading/trailing-whitespace-padded path as matching a canonical generated prefix/basename/exact-path shape",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py::test_whitespace_variant_of_a_generated_shape_is_NOT_generated PASSED"
+      },
+      {
+        "behavior": "the same is true for the review-evidence prefix/regex match branch specifically (not just prefix/basename/exact-path)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py::test_whitespace_variant_of_a_generated_shape_is_NOT_generated (review-evidence cases) + test_review_evidence_paths_are_still_generated_unpadded (positive control) PASSED"
+      },
+      {
+        "behavior": "a real file whose name differs from a canonical generated/hidden path only by trailing whitespace stays in the reviewed diff end-to-end (filter_generated_paths), not merely that the classifier alone returns the right bool",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py::test_trailing_whitespace_lookalike_stays_reviewable_end_to_end PASSED"
+      },
+      {
+        "behavior": "_clean_diff_path preserves a real trailing space/tab in a diff-header path remainder instead of silently normalizing it away",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py::test_clean_diff_path_preserves_real_trailing_whitespace PASSED"
+      },
+      {
+        "behavior": "_clean_diff_path still strips a trailing CR (CRLF diffs) -- the one legitimate normalization it ever needed",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py::test_clean_diff_path_still_strips_trailing_CR PASSED"
+      },
+      {
+        "behavior": "is_safe_to_skip_review (the sibling, already fixed on a prior iterate) and the actual match-rule tables (_GENERATED_PREFIXES/_GENERATED_AGENT_DOCS/_GENERATED_BASENAMES) are unchanged by this diff",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-security/tests/test_pr_review_generated_skip_review.py (pre-existing, 15 tests) + test_pr_review_filter.py::TestIsGeneratedPath (7 tests) all still PASSED unmodified"
+      }
+    ],
+    "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+    "enumeration_basis": { "acs": 4, "covered_acs": 4 }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Pure library function change (unified-diff path classification) with no UI, CLI entry point, or HTTP surface -- small complexity CHANGE, no touches_io_boundary/UI flag; covered entirely by the plugin's pytest suite (1076 passed) run at F0"
+  },
+  "declared_removals": []
+}

@@ -187,8 +187,21 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
 
 
 def is_generated_path(path: str) -> bool:
-    """True iff ``path`` is a producer-generated artifact (not reviewable code)."""
-    p = (path or "").strip()
+    """True iff ``path`` is a producer-generated artifact (not reviewable code).
+
+    Deliberately does NOT `.strip()` the input (iterate-2026-09-16-generated-
+    path-no-strip, following `is_safe_to_skip_review`'s own PR #746 fix in the
+    sibling module). Normalizing whitespace before matching let a real,
+    distinct on-disk path such as `" .shipwright/compliance/x.md"` (leading
+    space) borrow the canonical prefix's classification — here that means the
+    file is HIDDEN from the reviewing model rather than merely mis-skipped,
+    which is exactly the failure mode this module's own docstring warns
+    about: an over-broad entry "silently hides the file AND tells the
+    maintainer it carried nothing worth reading." Lower stakes than the
+    sibling (hiding still leaves the rest of the diff reviewed; it never skips
+    the gate), but the same bug shape, so it gets the same fix.
+    """
+    p = path or ""
     if any(p.startswith(pre) for pre in _GENERATED_PREFIXES):
         return True
     if p in _GENERATED_AGENT_DOCS:

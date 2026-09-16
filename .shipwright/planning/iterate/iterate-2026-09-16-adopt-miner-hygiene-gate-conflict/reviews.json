@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-adopt-miner-hygiene-gate-conflict",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:30:35.563588+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "This adds a runtime dependency from `shipwright-adopt` to a shared gate module. The plan cites an in-repo loader precedent, but the proposed test evidence only establishes source-tree package-context import; it does not explicitly prove that the deployed/adoptable plugin layout includes and resolves `shared/scripts/lib/fr_hygiene_detectors.py`.",
+          "suggestion": "Add a focused integration assertion that invokes mining through the installed-plugin/test harness and confirms the loaded detector is the shared module. Verify the plugin packaging/install contract includes that shared path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Per-file deduplication is an acceptance criterion, but it is absent from the Mini-Plan’s actual miner steps. Filtering alone will not prevent two dirty `describe` prefixes from collapsing into the same clean `it` label.",
+          "suggestion": "Explicitly add an ordered per-file `seen` set at the point candidates are appended, after prefix stripping/filtering and before returning from each miner helper. Keep the specified first-seen behavior.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The required installed-base follow-up triage card is described in the specification but is not included in the Mini-Plan’s execution steps; only closure of `trg-ac2ef362` is listed. This would leave a known high-severity affected population untracked.",
+          "suggestion": "Add an explicit triage-mint step with the installed-base window, affected gate behavior, and remediation question, then reference that card in the implementation PR and close `trg-ac2ef362` after the PR exists.  The producer-side solution is sound, appropriately small, and avoids weakening the universal gate. With the loader deployment check, explicit dedup implementation, and required follow-up card made concrete, it is ready to implement.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:28:05.369087+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: edge-case — Severity: medium**\n  Prefix-stripping is only defined for the *innermost* describe. Real JS test suites frequently nest describes (\"renders UserProfileCard > when props change > shows the avatar\"). The plan says \"if there was a prefix and `it_label` alone is clean, keep `it_label`\" — but what if `combined` uses only the innermost prefix and a middle-level describe carries the PascalCase symbol (e.g., innermost describe is clean, outer is dirty, and the dirty outer name is not in the combined string at all)? Confirm the combined-string construction actually includes all ancestor describes or only innermost; if only innermost, a dirty outer `describe('UserProfileCard')` never appears in the bullet and never trips anything — fine — but if the code joins all ancestors, the strip should iterate outermost-inward, not just drop one prefix. Suggestion: specify strip-all-ancestors-until-clean (or drop) and test a two-level nest case.\n\n- **Category: edge-case — Severity: low**\n  Dedup is scoped per-file, but mined bullets are merged across files into one `spec.md` AC list. Prefix-stripping can collapse bullets from *different* files into identical text (\"validates input\" from `auth.test.ts` and `user.test.ts`). First-seen order across files isn't specified. The existing behavior already allowed cross-file dupes, so this is not a regression, but the new AC's rationale (\"spec.md must not carry a literal duplicate line\") argues for cross-file dedup or at least acknowledging the scope limit.\n\n- **Category: approach — Severity: low**\n  Silent dropping with zero signal is acknowledged as out-of-scope, but the practical failure mode is real: an adopt onboarding of a heavily PascalCase-describe codebase (typical React/TS) could lose most of its mined bullets with no trace, and a maintainer reviewing \"why does spec.md have 2 ACs for this repo\" has no answer. The \"N bullets dropped\" one-line counter is ~3 lines of code against the exi […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** This adds a runtime dependency from `shipwright-adopt` to a shared gate module. The plan cites an in-repo loader precedent, but the proposed test evidence only establishes source-tree package-context import; it does not explicitly prove that the deployed/adoptable plugin layout includes and resolves `shared/scripts/lib/fr_hygiene_detectors.py`.  \n   **Suggestion:** Add a focused integration assertion that invokes mining through the installed-plugin/test harness and confirms the loaded detector is the shared module. Verify the plugin packaging/install contract includes that shared path.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Per-file deduplication is an acceptance criterion, but it is absent from the Mini-Plan’s actual miner steps. Filtering alone will not prevent two dirty `describe` prefixes from collapsing into the same clean `it` label.  \n   **Suggestion:** Explicitly add an ordered per-file `seen` set at the point candidates are appended, after prefix stripping/filtering and before returning from each miner helper. Keep the specified first-seen behavior.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The required installed-base follow-up triage card is described in the specification but is not included in the Mini-Plan’s execution steps; only closure of `trg-ac2ef362` is listed. This would leave a known high-severity affected population untracked.  \n   **Suggestion:** Add an explicit triage-mint step with the installed-base window, affected gate behavior, and remediation question, then reference that card in the implementation PR and close `trg-ac2ef362` after the PR exists.\n\nThe producer-side solution is sound, appropriately small, and avoids weakening the universal gate. With the loader deployment check, explicit dedup implementation, and required follow-up card made concrete, it is ready to implement.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "test_test_acceptance_miner.py actually contains 12 pre-existing test functions, not the '14' the spec's Confidence Calibration/Ledger cited (12+10 hygiene tests = 22 total, matching the diff). Documentation-only discrepancy, not a dropped-test regression.",
+          "suggestion": "Correct the '14' references in the iterate spec to '12'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": null,
+          "line": null,
+          "finding": "The Test Completeness Ledger's 'every candidate dirty (JS and Python)' row cited only a JS test; no dedicated Python all-candidates-dirty test existed.",
+          "suggestion": "Add a Python-side all-dirty test to back the ledger's claim.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:39:11.238294+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "shared_loader dependency on fr_hygiene_detectors.py is test-pinned like the other 8 rewired scaffolders",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "module-level load_shared_module call creates a new hard shared/-presence requirement for this module",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "load_shared_module's check-then-exec sys.modules caching is unsafe under concurrent callers",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:44:39.832976+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": ".shipwright/triage.jsonl:2209` (the new `trg-655cf276` append) — `detail` states \"trg-ac2ef362 (closed by this run)\" and \"trg-ac2ef362 fixed the producer\", but the spec's own sixth AC leaves `trg-ac2ef362`'s closure explicitly unchecked pending a PR number, and no close event exists in this diff. The card asserts a closure that hasn't happened (this was also openai's external-code-rev […truncated]",
+          "line": null,
+          "finding": "reword the card to \"intended to be closed by this run once its PR exists,\" or land the close event in the same commit trail.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec (bookkeeping)",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-16-.../reviews.json` — `external_code` entry is `\"status\": \"pending\"` with zero findings, while `external-code-review-raw.json` in the same diff shows both reviewers completed with `revise` verdicts and concrete findings (the JS empty-label guard, now fixed in code). The run's own `advisory-must-address` gating implies this should be record […truncated]",
+          "line": null,
+          "finding": "update the `external_code` entry to completed with the disposition (findings fixed).  Verified sound (no defects found in the production code):  - The JS three-way branch matches the AC exactly: blank-label guard (`if not it_label.strip(): continue`) runs before both the combined-clean check and the prefix-strip fallback, closing the exact hole glm flagged (an empty `it` under a dirty describe would otherwise be stripped to `\"\"` and emitted). - `_mine_py` guards whitespace-only candidates the same way. - Filtering is structurally before the cap (`_mine_js`/`_mine_py` return pre-cap; `[:_AC_CAP]` applies after), and the cap test correctly discriminates orderings by placing the 10 dirty labels first — a cap-before-filter bug would return `[]` and fail the `len == 10` assertion. - Per-file dedup with first-seen order is implemented via `_dedup_preserve_order` and applied to every candidate's bullet list, matching the (deliberately broadened) AC; cross-file dedup is correctly out of scope given one FR uses exactly one winning file. - The `shared_loader.load_shared_module` import idiom matches the `gitleaks_config_scaffolder.py` precedent, and the census test in `test_shared_loader.py` was updated to pin the ninth consumer (`assert test_acceptance_miner._HYGIENE.violations`), which the doubt review required. - All-dirty fall-through to the next sibling candidate is implemented and genuinely tested (`test_all_dirty_candidate_falls_through_to_next_sibling`). - No gate-side files touched; no security surface (pure in-process string classification). - Tests assert on outcomes (exact returned lists), not implementation details; each branch of the filter has its own discriminating test.  Overall assessment: ship-with-fixes — the code and tests are correct and spec-compliant; the only defects are two small bookkeeping inconsistencies (the premature \"closed by this run\" claim in the triage card and the stale `external_code: pending` review status) that should be corrected before merge so task tracking stays truthful.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:54:14.222912+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings:**\n\n- Category: spec\n  Severity: low\n  File: `.shipwright/triage.jsonl:2209` (the new `trg-655cf276` append) — `detail` states \"trg-ac2ef362 (closed by this run)\" and \"trg-ac2ef362 fixed the producer\", but the spec's own sixth AC leaves `trg-ac2ef362`'s closure explicitly unchecked pending a PR number, and no close event exists in this diff. The card asserts a closure that hasn't happened (this was also openai's external-code-review finding, left undispositioned).\n  Suggestion: reword the card to \"intended to be closed by this run once its PR exists,\" or land the close event in the same commit trail.\n\n- Category: spec (bookkeeping)\n  Severity: low\n  File: `.shipwright/planning/iterate/iterate-2026-09-16-.../reviews.json` — `external_code` entry is `\"status\": \"pending\"` with zero findings, while `external-code-review-raw.json` in the same diff shows both reviewers completed with `revise` verdicts and concrete findings (the JS empty-label guard, now fixed in code). The run's own `advisory-must-address` gating implies this should be recorded as completed with a disposition.\n  Suggestion: update the `external_code` entry to completed with the disposition (findings fixed).\n\n**Verified sound (no defects found in the production code):**\n\n- The JS three-way branch matches the AC exactly: blank-label guard (`if not it_label.strip(): continue`) runs before both the combined-clean check and the prefix-strip fallback, closing the exact hole glm flagged (an empty `it` under a dirty describe would otherwise be stripped to `\"\"` and emitted).\n- `_mine_py` guards whitespace-only candidates the same way.\n- Filtering is structurally before the cap (`_mine_js`/`_mine_py` return pre-cap; `[:_AC_CAP]` applies after), and the cap test correctly discriminates orderings by placing the 10 dirty labels first — a cap-before-filter bug would return `[]` and fail the `len == 10` assertion.\n- Per-file dedup with first-seen order is implemented via `_dedup_preserve_order` a […truncated]\n\n[openai] No defects found. The miner reuses the shared gate detector, handles JS prefix fallback and dirty Python labels correctly, filters before capping, and deduplicates per file with targeted tests for the relevant branches.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:33:41.983346+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:24:09.430454+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    }
+  }
+}

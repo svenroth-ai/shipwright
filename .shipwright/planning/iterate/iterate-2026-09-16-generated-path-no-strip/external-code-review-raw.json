@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "Findings:\n\n- Category: bug\n  Severity: low\n  File: plugins/shipwright-security/scripts/lib/pr_review_diff_filter.py (`_clean_diff_path`, narrowed strip)\n  Finding: The old blanket `.strip()` also removed trailing `\\t` and any stray `\\n`. If any caller of `_clean_diff_path` feeds a line that still carries a trailing newline or tab (e.g., a diff variant with a timestamp after the path, `+++ b/foo.py\\t2024-01-01`, which unified-diff tools other than git emit, or a section whose `+++` line is the final line with a retained terminator), the new code preserves that and the path no longer matches `a/`/`b/` slicing semantics correctly \u2014 it would return e.g. `\"foo.py\\t...\"` as a \"path\". The docstring asserts git never emits these, which holds for git-produced diffs, but the function is generic enough to receive non-git unified diffs.\n  Suggestion: If only git diffs are ever fed in, this is acceptable \u2014 note that assumption explicitly in the docstring. Otherwise strip `\\r` and at most `\\n`/`\\t` after the `a/`/`b/` prefix is consumed rather than before.\n\n- Category: test\n  Severity: low\n  File: plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py:~60 (`test_trailing_whitespace_lookalike_stays_reviewable_end_to_end`)\n  Finding: The end-to-end test is explicitly documented as passing even with a regression in `_clean_diff_path` (reverting to blanket `.strip()` keeps it green). That's honest, but it means the narrowing of `_clean_diff_path` has no regression protection at the integration level \u2014 only the direct unit tests cover it, and they bypass the real call path. A future change to `_DIFF_GIT_RE` (e.g., making its captures greedy) would silently re-open the gap with no end-to-end test failing.\n  Suggestion: Acceptable as-is given the direct unit tests; optionally add an end-to-end test that renames a file to a trailing-space name in a context where the header's `a/`-side leak argument doesn't apply (e.g., `/dev/null` add-side), to pin the end-to-end behavior independently of the header-regex quirk.\n\nOtherwise the change is faithful to the spec:\n\n- AC 1: `.strip()` removed from `is_generated_path`; match rules otherwise untouched. \u2713\n- AC 2: No widening/narrowing of the match tables; `pr_review_skip_safety.py` untouched. \u2713\n- AC 3: Direct regression test covers leading/trailing space across all three match strategies (prefix, basename, exact path), and correctly notes why the trailing-space\u00d7prefix combination is absent (it genuinely cannot differ). \u2713\n- AC 4: `_clean_diff_path` narrowed to `.rstrip(\"\\r\")` as scoped; the docstring trace of the end-to-end non-vulnerability is coherent with the \"every collected path must be generated\" exclusion rule, and the CRLF test pins the one legitimate normalization. \u2713\n\nNo security issues (this is a hardening change, not an exposure). No caller regressions visible: `is_generated_path`'s return type and semantics are unchanged for canonical (whitespace-free) inputs.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: test\n- Severity: low\n- File: `plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py:58`\n- Finding: The direct regression test covers prefix and exact/basename matching, but not either review-evidence regex. An implementation that preserved whitespace for these tested branches but still stripped before regex matching would pass every new test while violating acceptance criterion 1.\n- Suggestion: Add a leading- or trailing-whitespace variant of a path that is classified solely by each review-evidence regex, and assert `is_generated_path` returns `False`.\n\nShip-with-fixes: the implementation itself follows the required no-strip behavior and the `_clean_diff_path` hardening is scoped correctly, but the regression suite leaves one specified classification branch unprotected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
