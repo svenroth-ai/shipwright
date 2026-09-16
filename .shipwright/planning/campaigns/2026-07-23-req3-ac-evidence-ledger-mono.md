@@ -268,18 +268,27 @@ promise with no build, no downgrade, and no named follow-up behind it.
 campaign) — the judgement lines, closed, per campaign decision D7.** The
 campaign card's own launch count (2026-09-06) named **19** judgement lines;
 the mechanical re-measurement on this date counted **31** backtick
-occurrences of the status phrase, of which **25** are genuine per-criterion
-table rows (the other **6** are: the legend definition; two abort-condition
-mentions in prose; row `#3`'s own status cell, which only forwards to its
-split-out `3b` sibling — counting both would double-count one criterion
-under two rows; and, from the 2026-07-25 End-check, two further mentions —
-a narrative-prose sentence and the separate distribution/count-table cell —
-verified by hand, per this sub-iterate's own instruction to confirm the
-count rather than trust it blindly, exactly the drift the "19" estimate
-itself turned out to be; corrected 2026-09-16 round 2, Stage-2 code-review
-on PR #763 — an earlier revision of this paragraph claimed "the other 6"
-but its own enumeration named only 5 items, collapsing the End-check's two
-separate mentions into one). Of the 25: **16 already carried a real drift
+occurrences of the status phrase, of which **25** carry live evidence (24
+per-criterion drift-tested rows plus one cross-cutting constitution rule,
+the "every AC tested at the layer that can falsify it" row in FR-01.06's
+test-pyramid mapping table, already drift-tested pre-existing — none of
+these 25 is one of the 6 excluded below): the legend definition; the D7
+abort-condition's own prose mention; the FR-01.06 downgrade paragraph's
+prose mention (a second, separate prose occurrence — not the same sentence
+as D7's); row `#3`'s own status cell, which only forwards to its split-out
+`3b` sibling — counting both would double-count one criterion under two
+rows; and, from the 2026-07-26 End-check (not 2026-07-25 — that date is the
+classification *sweep* the End-check critiques, not the End-check itself),
+two further mentions — a narrative-prose sentence and the separate
+distribution/count-table cell — verified by hand, per this sub-iterate's
+own instruction to confirm the count rather than trust it blindly, exactly
+the drift the "19" estimate itself turned out to be; corrected 2026-09-16
+round 2, Stage-2 code-review on PR #763 — an earlier revision of this
+paragraph claimed "the other 6" but its own enumeration named only 5 items,
+collapsing the End-check's two separate mentions into one, and a round-3
+Stage-2 re-review then caught the wrong End-check date and the ambiguity
+over which of the two abort-condition-adjacent prose mentions was meant.
+Of the 25: **16 already carried a real drift
 test** built by earlier sub-iterates closing D7's abort condition on their
 own mechanisable work (`e1`–`e5`, P4.2/P4.4) — six had simply never had the
 test cited back onto their own row (FR-01.02 #6, FR-01.11 #4, FR-01.13 #2,
