@@ -27,6 +27,12 @@ SKILL_PATH = (
 
 @pytest.mark.covers("FR-01.09/AC01")
 def test_create_pr_step_instruction_present():
+    """FR-01.09 AC01: opening the release request (`gh pr create`) stays a
+    best-effort, off-main-conditional instruction, not a mechanised check —
+    no local-state artifact exists to verify a PR actually opened without a
+    live network call. Pin the step heading, the invocation, and the
+    off-main condition together.
+    """
     normalized = " ".join(SKILL_PATH.read_text(encoding="utf-8").split())
     assert "## Step 7: Create PR (Optional)" in normalized, (
         "the Create PR step must still exist — it is the only place the "

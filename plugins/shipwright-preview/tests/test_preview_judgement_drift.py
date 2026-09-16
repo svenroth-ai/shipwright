@@ -27,6 +27,10 @@ SKILL_PATH = (
 
 @pytest.mark.covers("FR-01.12/AC03")
 def test_missing_settings_walked_through_instruction_present():
+    """FR-01.12 AC03: a missing setting is walked through with the user,
+    never just reported and left. Pin the refusal-of-the-lazy-answer
+    instruction and the walked-through obligation it pairs with.
+    """
     normalized = " ".join(SKILL_PATH.read_text(encoding="utf-8").split())
     assert 'Do NOT just tell the user to "check logs"' in normalized, (
         "the refusal-of-the-lazy-answer instruction must survive verbatim "
@@ -40,6 +44,10 @@ def test_missing_settings_walked_through_instruction_present():
 
 @pytest.mark.covers("FR-01.12/AC07")
 def test_start_failure_cause_addressed_instruction_present():
+    """FR-01.12 AC07: a start failure's cause is actively addressed, not
+    merely reported to the user. Pin the addressed-not-just-reported
+    instruction verbatim.
+    """
     normalized = " ".join(SKILL_PATH.read_text(encoding="utf-8").split())
     assert "Do not just report the error — help resolve it." in normalized, (
         "the addressed-not-merely-reported instruction must survive "

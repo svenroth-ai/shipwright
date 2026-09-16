@@ -30,15 +30,25 @@ SKILL_PATH = (
 
 @pytest.mark.covers("FR-01.08/AC12")
 def test_manual_rollback_requires_explicit_confirmation_instruction_present():
+    """FR-01.08 AC12: an operator-requested manual rollback confirms first,
+    via a live AskUserQuestion with no artifact a check can observe. Pin
+    the section heading, the confirms-first instruction (anchored to its
+    FR-01.08 #8 citation, not the bare phrase), and the self-documented
+    reason this stays judgement rather than enforced.
+    """
     normalized = " ".join(SKILL_PATH.read_text(encoding="utf-8").split())
     assert "## Manual Rollback (`--rollback`)" in normalized, (
         "the Manual Rollback section must still exist — it is where the "
         "confirms-first instruction lives"
     )
-    assert "Require explicit confirmation" in normalized, (
+    assert 'Require explicit confirmation (FR-01.08 #8 "confirms first"' in normalized, (
         "step 3's 'require explicit confirmation' instruction must survive "
         "verbatim — this is the only enforcement a judgement criterion can "
-        "have (D7); losing the sentence silently removes the guarantee"
+        "have (D7); losing the sentence silently removes the guarantee. "
+        "Anchored to the FR-01.08 #8 citation (not the bare phrase alone) "
+        "because 'Require explicit confirmation' by itself also appears in "
+        "SKILL.md's unrelated dry-run approval step and would still match "
+        "even if THIS step's sentence were deleted (code review, PR #763)"
     )
     assert "this `AskUserQuestion` is the whole mechanism" in normalized, (
         "the self-documented reason this stays judgement, not enforced, "

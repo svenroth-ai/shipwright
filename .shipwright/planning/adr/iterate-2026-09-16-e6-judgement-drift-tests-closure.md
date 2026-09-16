@@ -38,9 +38,12 @@ pins the actual `## 2`/`## 3` rule sentences, not just their headings.
 
 ## Consequences
 
-25/25 live judgement rows now carry a real drift test; zero gates were
-built anywhere. A future prose edit to any of the 9 governing docs fails
-the matching test — a deliberate signal to update the pinned text, not a
+All 25 rows now carry evidence: 24 remain live judgement rows and each
+carries a real drift test (16 pre-existing + 8 new); the 25th (FR-01.02
+#4b) is not a judgement row at all and carries its own pre-existing
+enforcement test instead. Zero gates were built anywhere. A future prose
+edit to any of the 9 governing docs fails the matching test — a deliberate
+signal to update the pinned text, not a
 bug. The ledger's own count is honest again (25, not the stale 19) and
 records *why* it moved, so the next re-measurement does not re-litigate
 the discrepancy.

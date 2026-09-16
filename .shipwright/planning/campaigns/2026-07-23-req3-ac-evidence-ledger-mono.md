@@ -269,15 +269,21 @@ campaign) — the judgement lines, closed, per campaign decision D7.** The
 campaign card's own launch count (2026-09-06) named **19** judgement lines;
 the mechanical re-measurement on this date counted **31** backtick
 occurrences of the status phrase, of which **25** are genuine per-criterion
-table rows (the other 6 are the legend definition, two abort-condition
-mentions in prose, one historical End-check table cell, and one row's own
-pointer to its split-out `3b` sibling — verified by hand, per this
-sub-iterate's own instruction to confirm the count rather than trust it
-blindly, exactly the drift the "19" estimate itself turned out to be). Of
-the 25: **16 already carried a real drift test** built by earlier
-sub-iterates closing D7's abort condition on their own mechanisable work
-(`e1`–`e5`, P4.2/P4.4) — six had simply never had the test cited back onto
-their own row (FR-01.02 #6, FR-01.11 #4, FR-01.13 #2, FR-01.16 #1/#5/#7 —
+table rows (the other **6** are: the legend definition; two abort-condition
+mentions in prose; row `#3`'s own status cell, which only forwards to its
+split-out `3b` sibling — counting both would double-count one criterion
+under two rows; and, from the 2026-07-25 End-check, two further mentions —
+a narrative-prose sentence and the separate distribution/count-table cell —
+verified by hand, per this sub-iterate's own instruction to confirm the
+count rather than trust it blindly, exactly the drift the "19" estimate
+itself turned out to be; corrected 2026-09-16 round 2, Stage-2 code-review
+on PR #763 — an earlier revision of this paragraph claimed "the other 6"
+but its own enumeration named only 5 items, collapsing the End-check's two
+separate mentions into one). Of the 25: **16 already carried a real drift
+test** built by earlier sub-iterates closing D7's abort condition on their
+own mechanisable work (`e1`–`e5`, P4.2/P4.4) — six had simply never had the
+test cited back onto their own row (FR-01.02 #6, FR-01.11 #4, FR-01.13 #2,
+FR-01.16 #1/#5/#7 —
 citations added this pass) — and **one more (FR-01.02 #4b) was not a
 judgement line
 at all**: `verify_grill_trace_completeness.check_blank_dimension` already
@@ -291,10 +297,12 @@ covered it.** The remaining **8 rows had no test anywhere** — FR-01.02
 request-opening half, FR-01.12 #2/#6's addressing half — each closed with
 exactly one new drift test asserting the governing instruction's exact
 sentence is still present, and nothing more: no LLM judge, no heuristic
-scorer, no semantic-similarity threshold. **Result: 25/25 live judgement
-rows now carry a drift test; zero gates were built.** No judgement line
-was upgraded to a gate anywhere in this pass — the honest ceiling stays
-the honest ceiling.
+scorer, no semantic-similarity threshold. **Result: all 25 rows now carry
+evidence — 24 remain live judgement rows and each has a literal drift test
+(16 pre-existing + 8 new); the 25th (FR-01.02 #4b) is not a judgement row
+at all and carries its own pre-existing enforcement test instead. Zero
+gates were built.** No judgement line was upgraded to a gate anywhere in
+this pass — the honest ceiling stays the honest ceiling.
 
 The six genuine `judgement` rows from FR-01.02/FR-01.04, and why no gate may
 be built for them — each needs reading comprehension, so its honest ceiling

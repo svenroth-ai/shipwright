@@ -42,8 +42,10 @@ def test_spec_reviewer_still_checks_faithful_and_in_scope():
         "none-downgraded half of AC03"
     )
     assert "each is a divergence" in normalized, (
-        "the divergence examples (renamed fields, relaxed validation, a "
-        "skipped edge case) must still be named as divergences, not notes"
+        "the verdict sentence naming the divergence examples as divergences "
+        "(not just the standalone 'Faithful?' heading) must still survive — "
+        "the examples themselves are not individually pinned by this "
+        "assertion, only that this closing sentence still calls them out"
     )
     assert "**In-scope?**" in normalized, (
         "spec-reviewer.md must still ask whether the diff added behaviour "
