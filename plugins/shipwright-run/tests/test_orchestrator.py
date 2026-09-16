@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
 
 from orchestrator import (
@@ -66,6 +68,7 @@ def test_update_step_complete(tmp_project):
     assert get_next_step(tmp_project)["next_step"] == "design"
 
 
+@pytest.mark.covers("FR-01.01/AC01")
 def test_update_step_all_complete(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
 
@@ -87,6 +90,7 @@ def test_update_step_failed(tmp_project):
     assert _phase_status(config, "build") == "failed"
 
 
+@pytest.mark.covers("FR-01.01/AC06")
 def test_build_pipeline_never_includes_security_post_decouple(monkeypatch):
     """Iterate sec-report-and-orchestrator-decouple removed security from
     the orchestrator phase list. build_pipeline() returns PIPELINE_STEPS
@@ -248,6 +252,7 @@ def test_migrate_in_flight_security_leaves_in_progress_alone(tmp_project):
     assert sec_task.get("claimedBySessionUuid") == "active-uuid"
 
 
+@pytest.mark.covers("FR-01.01/AC06")
 def test_compliance_runs_on_step_complete(tmp_project, mocker):
     """Compliance update is triggered when a step completes."""
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
@@ -359,6 +364,7 @@ def test_get_next_step_no_config(tmp_path):
     assert result["next_step"] == "project"
 
 
+@pytest.mark.covers("FR-01.01/AC04")
 def test_resume_midway(tmp_project):
     """Simulate interrupted pipeline and verify resume."""
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)

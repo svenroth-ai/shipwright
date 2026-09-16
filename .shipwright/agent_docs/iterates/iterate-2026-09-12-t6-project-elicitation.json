@@ -1,0 +1,146 @@
+{
+  "run_id": "iterate-2026-09-12-t6-project-elicitation",
+  "date": "2026-09-12T09:54:12.094321Z",
+  "event_at": "2026-09-12T09:51:34.290744+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-req3-05-test-backfill-mono-t6",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-05-test-backfill-mono/sub-iterates/t6-project-elicitation.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-12-t6-project-elicitation",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "FR-01.02/AC02: an FR judged too broad is divided, but the judgement itself stays human (I6 advisory)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_granularity_and_basis.py::test_fr_authoring_carries_the_granularity_section, ::test_granularity_section_keeps_the_judgement_human PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC03,AC04: every capability the person described is present in the catalogue, and nothing is invented beyond what was asked for",
+        "disposition": "untestable",
+        "reason_code": "requires-interactive-tty",
+        "reason": "an interview-to-catalogue completeness/no-invention cross-check is an agent judgement call made live during an interactive elicitation session (comparing free-form natural language against a written catalogue); no doc anywhere instructs a coded gate for it and no coded gate exists to exercise -- same class as t5s AC02/AC05/AC08/AC11/AC12 grouping (trg-704cdb22 covers the unresolved-root question for AC01/AC15 only; this pair has no seam in ANY root)"
+      },
+      {
+        "behavior": "FR-01.02/AC05: every Must-priority FR has acceptance criteria before it is considered finished",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_spec_generation_requires_criteria_before_a_requirement_finishes PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC06: a bare assumed Basis cell with no paired acceptance criterion is rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_extras.py::test_basis_forbids_assumed_fails_on_a_bare_assumed_cell, ::test_basis_forbids_assumed_passes_on_a_bare_assumed_cell_with_a_criterion PASSED; wired via shared/tests/test_verifiers_project.py::test_run_project_checks_includes_all_four_new_gates PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC07,FR-01.16/AC01: every one of the six/seven grill-trace context dimensions must be answered, assumed, or n/a -- a blank dimension is a STOP",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_blank_dimension_passes_when_all_seven_are_answered_or_assumed_or_na, ::test_blank_dimension_fails_on_a_missing_key PASSED; wired via shared/tests/test_verifiers_project.py::test_run_project_checks_detects_grill_trace_blank_dimension PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC08: an acceptance criterion containing a file path, ADR reference, or code symbol is rejected as implementation detail",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_extras.py::test_criteria_free_of_implementation_detail_passes_on_clean_criteria, ::test_criteria_free_of_implementation_detail_fails_on_a_code_symbol PASSED; wired via test_run_project_checks_includes_all_four_new_gates PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC09: FRs are stated in plain business language a product owner can read, never dropping a guarantee",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_fr_authoring_refs.py::test_project_positively_states_the_plain_language_rule PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC10: every glossary term used is declared, and every declared delta term is actually used",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_verify_grill_trace_completeness.py::test_undefined_term_fails_when_a_declared_term_is_in_neither_source, ::test_glossary_delta_declared_fails_when_a_delta_term_is_missing_from_terms_used PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC11: a hard-to-reverse choice has its rationale captured and linked back from the requirement it drove; an ADR must exist at all",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_module_requires_hard_to_reverse_rationale_linked_from_the_requirement PASSED (link-back rule); shared/tests/test_verifiers_project.py::test_run_project_checks_detects_missing_c4_adr PASSED (floor)"
+      },
+      {
+        "behavior": "FR-01.02/AC12: assumptions are surfaced before clarifying questions are asked",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-project/tests/test_assumptions_first_block.py::test_assumptions_listed_before_clarifying_questions, ::test_kern_step_1_surfaces_assumptions_first PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC13: a split with zero active FR rows is rejected, and a multi-row split must still be a cohesive purpose",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_extras.py::test_no_empty_split_passes_when_every_spec_has_a_row, ::test_no_empty_split_fails_when_one_split_has_no_active_fr_row, ::test_split_heuristics_still_demands_cohesive_purpose PASSED; wired via test_run_project_checks_includes_all_four_new_gates PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC14: CLAUDE.md and the three starting agent_docs files exist and are non-empty",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_project_gate_extras.py::test_starting_guidance_present_passes_when_all_four_are_non_empty, ::test_starting_guidance_present_fails_when_a_file_is_missing PASSED"
+      },
+      {
+        "behavior": "FR-01.02/AC01,AC15: a catalogue of individually deliverable requirements with starting guidance exists; a retired FR number stays permanently taken",
+        "disposition": "untestable",
+        "reason_code": "covered-by-existing-test",
+        "reason": "already pinned by pre-existing tests outside this unit's two declared ADR-044 roots: plugins/shipwright-run/tests/test_phase_validators_project.py::test_legacy_pre_12_1_gate_still_fires, ::test_full_canon_project_passes (AC01 non-empty-catalogue gate); plugins/shipwright-compliance/tests::test_retired_fr_number_must_not_be_reused (AC15 retired-number-stays-taken clause). Adding a covers tag to those files would be self-authorizing a 3rd/4th root beyond this unit's declared scope; flagged unresolved as trg-704cdb22 for campaign-owner ratification, mirroring t5 Exception-3 precedent"
+      },
+      {
+        "behavior": "FR-01.16/AC02: the shared elicitation method's sections exist, and every elicitation surface (project/adopt/iterate) actually cites it",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_retains_cited_sections[...] PASSED (parametrized, all 13 sections); shared/tests/test_requirement_elicitation_discovery.py::test_elicitation_surface_cites_the_module PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC03: the elicitation order is load-bearing (Sec 0)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_execution_order_rule_by_sentence PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC04: a used term triggers a glossary cross-check (Sec 4)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_glossary_cross_check_trigger_by_sentence PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC05: at least two scenarios are required per requirement (Sec 5)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_refs.py::test_module_pins_the_minimum_two_scenarios_rule_by_sentence PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC06: the rationale behind a hard-to-reverse choice is captured at the moment it is decided, devoid of implementation detail (Sec 7)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_module_requires_adr_capture_at_the_decision_moment PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC07: assumed is reserved for genuinely unobtainable answers; every dimension is still answered/assumed/n-a",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_assumed_is_only_for_unobtainable_answers PASSED; shared/tests/test_verify_grill_trace_completeness.py::test_blank_dimension_passes_when_all_seven_are_answered_or_assumed_or_na PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC08: work does not proceed until the requirement is confirmed as a shared understanding (Sec 9)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_module_requires_confirmation_before_writing_the_requirement PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC09: the set of elicitation-citing surfaces is discovered dynamically, not a hand-maintained list",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_discovery.py::test_discovery_finds_at_least_the_known_citing_docs, ::test_discovery_is_dynamic_a_new_reference_doc_is_picked_up PASSED"
+      },
+      {
+        "behavior": "FR-01.16/AC10: the method's enforced/prompt-only disclaimer rests on a real three-way verdict framework (Sec 6)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_requirement_elicitation_rigor.py::test_module_separates_enforced_from_prompt_only PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 23,
+      "tested": 21,
+      "untestable": 2,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 25,
+      "covered_acs": 25
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "test-only AC-binding backfill for FR-01.02/FR-01.16 (no source behavior changed); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the two declared ADR-044 test roots' own suites, run individually with their own --junitxml (plugins/shipwright-project: 64/64 passed; shared/tests: 10695/10729 passed, 34 skipped, 20 deselected)."
+  },
+  "declared_removals": []
+}

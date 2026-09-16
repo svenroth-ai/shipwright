@@ -250,6 +250,19 @@ def test_c1_per_section_fails_on_missing_event(tmp_path):
     assert "02-routes" in r.detail
 
 
+def test_c1_per_section_zero_sections_preserves_fail_open_default_and_can_require_one(tmp_path):
+    seed_canon_build(tmp_path)
+    (tmp_path / "shipwright_build_config.json").write_text(json.dumps({
+        "current_split": "01-auth",
+        "sections": [],
+    }))
+
+    assert check_per_section_work_completed_events(tmp_path).ok is True
+    required = check_per_section_work_completed_events(tmp_path, require_sections=True)
+    assert required.ok is False
+    assert "no complete sections" in required.detail
+
+
 def test_c1_per_section_ignores_non_build_source(tmp_path):
     seed_canon_build(tmp_path, sections=[
         {"name": "01-model", "status": "complete", "commit": "abc"},

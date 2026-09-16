@@ -25,12 +25,14 @@ from tools.verifiers.common import (
     check_adr_status_valid,
     check_adr_supersession_exists,
     check_c1_phase_event_recorded,
+    check_c1_run_scoped,
     check_c2_dashboard_reflects_phase,
     check_c4_decision_log_has_phase_adr,
     check_c5_changelog_unreleased_has_phase_entry,
     format_report,
     get_latest_phase_completed_event,
     read_events_jsonl,
+    read_run_events,
     read_run_config,
     summarise,
 )
@@ -69,6 +71,31 @@ def test_summarise_counts_everything():
     assert summary.skipped == 1
 
 
+def test_strict_blocking_warnings_excludes_strict_exempt_findings():
+    """`trg-b996bc21`: a `strict_exempt` warning (a rollout-transition grace,
+    a layer-coverage advisory-collision/legacy finding) already decided
+    `--strict` must not promote it — `warnings` stays a raw display count,
+    but `strict_blocking_warnings` is the one `--strict` consumers should
+    read instead."""
+    results = [
+        CheckResult("graced", ok=False, severity=Severity.WARNING.value, strict_exempt=True),
+        CheckResult("real", ok=False, severity=Severity.WARNING.value, strict_exempt=False),
+    ]
+    summary = summarise(results)
+    assert summary.warnings == 2
+    assert summary.strict_blocking_warnings == 1
+
+
+def test_strict_blocking_warnings_zero_when_all_exempt():
+    results = [
+        CheckResult("graced-1", ok=False, severity=Severity.WARNING.value, strict_exempt=True),
+        CheckResult("graced-2", ok=False, severity=Severity.WARNING.value, strict_exempt=True),
+    ]
+    summary = summarise(results)
+    assert summary.warnings == 2
+    assert summary.strict_blocking_warnings == 0
+
+
 # ---------------------------------------------------------------------------
 # Readers
 # ---------------------------------------------------------------------------
@@ -88,6 +115,127 @@ def test_read_events_jsonl_skips_malformed_lines(tmp_path):
     )
     events = read_events_jsonl(tmp_path)
     assert [e["type"] for e in events] == ["a", "b"]
+
+
+def test_read_run_events_scans_main_and_worktrees_with_exact_and_degraded_scope(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text(
+        "\n".join([
+            json.dumps({"id": "main", "session": "sid", "ts": "2026-09-15T10:00:00Z"}),
+            json.dumps({"id": "other", "session": "other", "ts": "2026-09-15T11:00:00Z"}),
+            json.dumps({"id": "old", "ts": "2026-09-15T09:00:00Z"}),
+        ]) + "\n"
+    )
+    worktree = tmp_path / ".worktrees" / "run-a"
+    worktree.mkdir(parents=True)
+    (worktree / "shipwright_events.jsonl").write_text(
+        "\n".join([
+            json.dumps({"id": "worktree", "session": "sid", "ts": "2026-09-15T10:01:00Z"}),
+            json.dumps({"id": "fallback", "ts": "2026-09-15T10:02:00Z"}),
+        ]) + "\n"
+    )
+
+    events = read_run_events(tmp_path, session="sid", since="2026-09-15T10:00:00Z")
+    assert {event["id"] for event in events} == {"worktree", "fallback"}
+
+
+def test_read_run_events_keeps_root_evidence_when_worktree_discovery_fails(tmp_path, monkeypatch):
+    (tmp_path / "shipwright_events.jsonl").write_text(
+        json.dumps({"id": "root", "session": "sid"}) + "\n"
+    )
+    worktrees = tmp_path / ".worktrees"
+    worktrees.mkdir()
+    original_iterdir = Path.iterdir
+
+    def disappearing_iterdir(path):
+        if path == worktrees:
+            raise OSError("worktree removed during discovery")
+        return original_iterdir(path)
+
+    monkeypatch.setattr(Path, "iterdir", disappearing_iterdir)
+
+    assert [event["id"] for event in read_run_events(tmp_path, session="sid")] == ["root"]
+
+
+def test_read_run_events_ignores_a_worktree_that_disappears_before_read(tmp_path, monkeypatch):
+    (tmp_path / "shipwright_events.jsonl").write_text(
+        json.dumps({"id": "root", "session": "sid"}) + "\n"
+    )
+    worktree = tmp_path / ".worktrees" / "gone"
+    worktree.mkdir(parents=True)
+    original_read = read_events_jsonl
+
+    def disappearing_read(root):
+        if root == worktree:
+            raise OSError("worktree removed before event read")
+        return original_read(root)
+
+    monkeypatch.setattr("tools.verifiers.common.read_events_jsonl", disappearing_read)
+
+    assert [event["id"] for event in read_run_events(tmp_path, session="sid")] == ["root"]
+
+
+def test_run_scoped_c1_does_not_change_legacy_c1_fallbacks(tmp_path):
+    drops = tmp_path / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "iterate-x_001.json").write_text("{}")
+    (tmp_path / "shipwright_run_config.json").write_text(json.dumps({"phase_history": {
+        "project": [{"outcome": "adopted"}],
+    }}))
+
+    assert check_c1_phase_event_recorded(tmp_path, "iterate").ok is True
+    assert check_c1_phase_event_recorded(tmp_path, "project").ok is True
+    assert check_c1_run_scoped(tmp_path, "iterate", session="sid").ok is False
+    assert check_c1_run_scoped(tmp_path, "project", session="sid").ok is False
+
+
+def test_run_scoped_c1_accepts_only_the_requested_session(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text("\n".join([
+        json.dumps({"type": "phase_completed", "phase": "plan", "session": "other"}),
+        json.dumps({"type": "phase_completed", "phase": "plan", "session": "sid"}),
+    ]) + "\n")
+
+    assert check_c1_run_scoped(tmp_path, "plan", session="sid").ok is True
+
+
+def test_run_scoped_c1_does_not_mix_exact_and_since_fallback_evidence(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text("\n".join([
+        json.dumps({
+            "type": "phase_started", "phase": "plan", "session": "sid",
+            "ts": "2026-09-15T10:00:01Z",
+        }),
+        json.dumps({
+            "type": "phase_completed", "phase": "plan",
+            "ts": "2026-09-15T10:01:00Z",
+        }),
+    ]) + "\n")
+
+    result = check_c1_run_scoped(
+        tmp_path, "plan", session="sid", since="2026-09-15T10:00:00Z",
+    )
+
+    assert result.ok is False
+
+
+def test_run_scoped_c1_rejects_exact_completion_before_since_boundary(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text(json.dumps({
+        "type": "phase_completed", "phase": "plan", "session": "sid",
+        "ts": "2026-09-15T09:59:59Z",
+    }) + "\n")
+
+    result = check_c1_run_scoped(
+        tmp_path, "plan", session="sid", since="2026-09-15T10:00:00Z",
+    )
+
+    assert result.ok is False
+
+
+def test_read_run_events_compares_since_as_utc_instants(tmp_path):
+    (tmp_path / "shipwright_events.jsonl").write_text("\n".join([
+        json.dumps({"id": "before", "ts": "2026-09-15T10:30:00+01:00"}),
+        json.dumps({"id": "after", "ts": "2026-09-15T10:30:00.001+00:00"}),
+    ]) + "\n")
+    events = read_run_events(tmp_path, session="sid", since="2026-09-15T10:00:00Z")
+    assert [event["id"] for event in events] == ["after"]
 
 
 def test_get_latest_phase_completed_event_picks_newest():

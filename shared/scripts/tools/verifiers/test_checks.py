@@ -14,6 +14,11 @@ Phase-own:
 
 - ``check_test_results_file_fresh`` — ``shipwright_test_results.json``
   exists and has ``unit`` layer with non-zero total. ERROR.
+- ``check_e2e_counts_reconciled`` (``_test_gate_extras.py``),
+  ``check_e2e_specs_exist_when_journeys_planned`` (``_test_gate_specs.py``),
+  and ``check_design_fidelity_triage_matches_recomputation``
+  (``_test_gate_fidelity.py``) — FR-01.06 #5/#6/#7, sub-iterate
+  ``e3-checks-test-security``. ERROR.
 
 Plus standard ``phase_history`` run-id check and ADR integrity helpers
 from ``common.py``.
@@ -50,6 +55,9 @@ from .common import (
     check_phase_history_has_run,
 )
 from .handoff_phase_canon import check_c3_session_handoff_fresh_after_phase
+from ._test_gate_extras import check_e2e_counts_reconciled
+from ._test_gate_fidelity import check_design_fidelity_triage_matches_recomputation
+from ._test_gate_specs import check_e2e_specs_exist_when_journeys_planned
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +161,11 @@ def run_test_checks(
 
     results.append(check_test_results_file_fresh(project_root))
 
+    # FR-01.06 #5/#6/#7 — sub-iterate e3-checks-test-security
+    results.append(check_e2e_counts_reconciled(project_root))
+    results.append(check_e2e_specs_exist_when_journeys_planned(project_root))
+    results.append(check_design_fidelity_triage_matches_recomputation(project_root))
+
     # Canon (C4 and C5 skipped by policy)
     results.append(check_c1_phase_event_recorded(project_root, "test"))
     results.append(check_c2_dashboard_reflects_phase(project_root, "test"))
@@ -175,6 +188,9 @@ def run_all_checks(project_root: Path, run_id: str = "") -> list[CheckResult]:
 
 __all__ = [
     "Severity",
+    "check_design_fidelity_triage_matches_recomputation",
+    "check_e2e_counts_reconciled",
+    "check_e2e_specs_exist_when_journeys_planned",
     "check_test_results_file_fresh",
     "run_all_checks",
     "run_test_checks",

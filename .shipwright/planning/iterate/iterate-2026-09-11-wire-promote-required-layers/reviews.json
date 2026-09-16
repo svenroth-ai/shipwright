@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-11-wire-promote-required-layers",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T01:03:29.385168+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:37:30.738167+00:00",
+      "disposition": "Phase Matrix: External LLM Review / Mini-Plan+approval are medium+ only; this run classified small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/layer_promotion_delivery.py",
+          "line": 100,
+          "finding": "deliver_as_own_pr's `finally` block runs `run_git_soft([\"reset\", \"--hard\", pre_sha], ...)` and discards the returned CompletedProcess without checking returncode. If `pre_sha` is empty (its unchecked source is layer_promotion_sweep.py:195's `rev-parse HEAD` with no returncode check) or the reset itself fails/times out, the just-created promotion commit silently remains on the iterate's own branch — the exact F11 layer-coverage hard-fail hazard this whole redesign exists to prevent.",
+          "suggestion": "Check the rev-parse HEAD returncode in run_layer_promotion_sweep before staging/committing; check the reset's returncode in deliver_as_own_pr and surface a loud, distinct failure. Add a regression test.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/layer_promotion_sweep.py",
+          "line": 220,
+          "finding": "On commit_failed/commit_timeout, the function returns immediately without unstaging the files a prior successful `git add` staged, leaving residue in the worktree's index that could later be swept into an unrelated commit. No test covered these branches.",
+          "suggestion": "On commit failure, attempt a rollback to unstage before returning status=\"error\", and add a test pinning the working tree is clean afterward.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T00:46:22.239938+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden-coupling",
+          "file": "shared/scripts/tools/setup_iterate_worktree.py",
+          "line": null,
+          "finding": "Claim under doubt: A found promotion ships as its own small PR, decoupled from the triggering iterate's own branch/PR. — The sweep ran AFTER the canon self-heal + outbox sweep, which already commit locally onto the same fresh worktree branch. `git push HEAD:refs/heads/<new>` transports the ENTIRE unpushed ancestry, not just the tip commit — so whenever self-heal/outbox fired in the same run as a promotion, their commits rode along into the promotion's supposedly-isolated small PR, and would duplicate-deliver when the iterate's own PR later merged the same content. FIXED: reordered the sweep to run FIRST (step 4.5), before self-heal/outbox (now 4.6/4.7/5), restoring the module's documented invariant that pre_sha equals origin/<default>'s freshly-fetched tip; new real-git regression test_layer_promotion_sweep_runs_before_selfheal_and_outbox_sweep proves it.",
+          "suggestion": "Reorder so the sweep's pre_sha is captured before any other step can commit on this branch, and add a real-git regression test.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/layer_promotion_sweep_result.py",
+          "line": null,
+          "finding": "Claim under doubt: rollback_failed is always surfaced, never silent. — It was 'loud' only as a CRITICAL-prefixed stderr line + JSON warnings[] entry, but setup's exit code stays 0 regardless and SKILL.md never told the calling agent to check for it — so the one outcome meaning the promotion commit may still be on the CURRENT iterate's own branch could pass unnoticed. FIXED: SKILL.md sec B1a now explicitly instructs checking warnings[] for the CRITICAL line and manually dropping the stray commit before continuing.",
+          "suggestion": "Have the calling skill explicitly check for and act on rollback_failed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-contract",
+          "file": "shared/scripts/lib/layer_promotion_delivery.py",
+          "line": null,
+          "finding": "Claim under doubt: This module reuses lib.pr_delivery_host's hardening rather than a weaker hand-rolled substitute. — Every gh call omitted this repo's established --repo pinning convention (pr_delivery_host's own docstring: 'the repository is never inferred from a remote'), unlike every other gh-calling module — a real deviation that could open/merge against the wrong repo on a fork-based or multi-remote setup with no error surfaced. FIXED: added repo_identity.resolve_repo_identity-based --repo pinning on every gh call, falling back to gh's own inference when unresolvable.",
+          "suggestion": "Pin --repo on every gh call the way the rest of the codebase does.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hygiene",
+          "file": "shared/scripts/lib/layer_promotion_sweep.py",
+          "line": null,
+          "finding": "Claim under doubt: The sweep leaves no residue anywhere when delivery does not complete. — A push that succeeds but whose gh pr create then fails leaves a permanent orphan chore/layer-promotion-<sha12> branch on the remote with no PR and no cleanup path. ACCEPTED as documented debt, same class as the existing 'duplicate-PR tradeoff, accepted' note: nothing is lost or corrupted, and orphan branches never block a later retry (dedup only checks OPEN PRs) — now documented explicitly in the module docstring.",
+          "suggestion": "A branch-cleanup follow-up, or accept as low-severity debt (chosen).",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-11T01:04:34.569386+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:37:31.179093+00:00",
+      "disposition": "Phase Matrix: External LLM Review is skip at small complexity",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-11T00:22:23.566427+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-10T23:37:30.927942+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

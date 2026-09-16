@@ -96,6 +96,24 @@ def test_adopt_positively_states_the_plain_language_rule():
     assert "❌" in body and "✅" in body
 
 
+@pytest.mark.covers("FR-01.02/AC09")
+def test_project_positively_states_the_plain_language_rule():
+    """FR-01.02 AC09: the sentence states the capability in language a
+    product owner can sign off without decoding jargon, and drops no
+    guarantee for the sake of plainness. Mirrors
+    `test_adopt_positively_states_the_plain_language_rule` for the
+    `/shipwright-project` surface itself (CITING_DOCS[1]) — its own worked
+    example was never pinned positively before this."""
+    body = (REPO_ROOT / CITING_DOCS[1]).read_text(encoding="utf-8")
+    assert "plain business language" in body
+    assert "product owner" in body
+    assert "❌" in body and "✅" in body
+    assert "Never drop a guarantee" in body, (
+        "spec-generation.md must still forbid dropping a behavioural "
+        "guarantee for the sake of plainness"
+    )
+
+
 @pytest.mark.parametrize("rel", CITING_DOCS[2:])  # the two iterate paths
 def test_iterate_paths_carry_the_mint_vs_fold_gate(rel):
     """The gate is the load-bearing half of the iterate change — pin it.
@@ -105,3 +123,17 @@ def test_iterate_paths_carry_the_mint_vs_fold_gate(rel):
     """
     body = (REPO_ROOT / rel).read_text(encoding="utf-8")
     assert "MINT" in body and "FOLD" in body
+
+
+@pytest.mark.covers("FR-01.02/AC15")
+@pytest.mark.parametrize("rel", CITING_DOCS[2:])  # the two iterate paths
+def test_iterate_paths_forbid_silently_deleting_a_retired_fr(rel):
+    """AC15's "moves into a retired section instead of being deleted" clause
+    has no code-level seam: `_layer_coverage_removal.py`'s removed-test gate
+    and the I4 number-reuse audit both tolerate a row deleted outright, as
+    long as no surviving test or number collision exists to catch it. This
+    REMOVE-classification instruction is the only place the rule lives at
+    all — pin it so an edit cannot drop it unnoticed."""
+    body = (REPO_ROOT / rel).read_text(encoding="utf-8")
+    assert "never silently delete" in body.lower()
+    assert "Removed Requirements" in body

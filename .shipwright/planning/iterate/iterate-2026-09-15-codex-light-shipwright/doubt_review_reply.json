@@ -1,0 +1,1 @@
+{"reviewer":"doubt-reviewer","verdict":"pass","summary":"Spec §1.7 requires one JSON verdict and reserves exit 2 for delivery_pending. The final --since handling now emits JSON not_done/exit 1 for invalid values and retains strict valid-timestamp behavior.","doubts":[],"findings":[]}

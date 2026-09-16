@@ -282,6 +282,22 @@ behavior remains unproven. Leave AC02 in `unbound`, citing this section's residu
 reason, until the gate script exists and a test invokes it against a real diff. The identical
 rule applies to AC03 and AC06 for the same reason (column above: "no" / not provable now).
 
+**AC08 amended into this exception (external plan review, glm medium + openai high, found
+during t9 execution, corrected 2026-09-15):** t9's first pass bound `FR-01.15/AC08` ("the
+contract binds this side only... makes no promise about what the receiving side does with
+that announcement") to a documentation sentence it added to both producers' SKILL.md /
+reference doc in the SAME run, pinned by a drift-pin test it also wrote in the same run. A
+test that pins prose the same commit introduced proves the sentence survives a later edit,
+not that any machine behavior enforces the scope claim — the identical self-fulfilling shape
+Exception 8 already names for its own drift-pin tests, and the same class of gap this
+document's own AC02/AC03/AC06 disposition above refuses to accept for a "library-only" proof.
+Corrected: the `@pytest.mark.covers("FR-01.15/AC08")` marker was removed from
+`test_cross_repo_contract_documented.py`'s `test_it_states_the_contract_binds_this_side_only`
+— the test and the two doc sentences are kept (unmarked), a real guard against the scope
+sentence being quietly deleted, the same treatment Exception 8 gives its own drift-pin tests.
+`FR-01.15/AC08` stays in `unbound` alongside AC02/AC03/AC06 — four of this FR's eight ACs are
+now residual-gate/documentation-only, not three.
+
 ### Exception 3 — FR-01.11 AC08/AC09 (found during t1 execution, not surveyed here)
 
 This survey's row for FR-01.11 (above) named 2 roots. Executing t1 found that 25 of the 27
@@ -346,6 +362,21 @@ specifically (2026-09-12)**, on the same substantive grounds as t1's and t4/t5/t
 root is forced by where the behavior lives, not chosen. Triage card `trg-fcfc385c` (filed and
 dismissed 2026-09-12) records this decision. t5's row in the per-unit root count table above is
 updated to 4 roots accordingly.
+
+**t6 addendum (found during t6 execution, 2026-09-12):** the same pattern recurred a third
+time. This survey's rows for FR-01.02/FR-01.16 (above) named `plugins/shipwright-project/tests`
+and `shared/tests` (2 roots). Executing t6 found that 2 of FR-01.02's ACs — **AC01** and
+**AC15** — do not fit either: AC01 ("a catalogue of requirements... exists") is only checked
+by `_validate_project`, tested in `plugins/shipwright-run/tests`; AC15's "a retired FR number
+stays permanently taken" clause is only checked by the Group I audit, tested in
+`plugins/shipwright-compliance/tests`. t6 did not self-authorize this — it flagged the
+deviation, unresolved, in its own report back to the orchestrator, per t5's precedent. **The
+campaign owner (Sven) approved the deviation for t6 (2026-09-12)**, on the same substantive
+grounds as t1's, t5's and t4/t8/t9's — the root is forced by where the real behavior/test
+lives, not chosen — and additionally instructed that this recurring pattern (an AC's only
+existing proving test living outside a unit's declared roots) no longer needs a fresh approval
+each time it recurs. Triage card `trg-704cdb22` (filed and dismissed 2026-09-12) records this
+decision. t6's row in the per-unit root count table above is updated to 4 roots accordingly.
 
 ### Exception 4 — FR-01.11 AC12, the ordering clause (found during t1 execution, external code review)
 
@@ -497,6 +528,145 @@ unit does not decide; wiring a real observable seam (e.g. making
 three-way choice for AC11) is a production change, not a test-selection one,
 and is flagged to the operator rather than decided here.
 
+### Exception 9 — FR-01.05 AC01-AC06, AC08 (no deterministic seam, found during t8 execution)
+
+This survey's row for FR-01.05 (above) named `plugins/shipwright-build/tests` with
+`test_integration.py` / `test_setup_implementation.py` / `test_sections.py` /
+`test_section_builder_contract.py` as harnesses, and its precedent column read "none
+yet" — silent on whether a seam actually exists for each AC, not merely on whether one
+had been used. Executing t8 found that `/shipwright-build` has **no `scripts/`
+implementation of the build behavior itself** (unlike run/adopt): the plugin's own
+scripts only track section STATE (`update_section_state.py`, `sections.py`) and scaffold
+a session (`setup_implementation_session.py`); the actual "write working code, read the
+mockup, stop on contradiction, keep changes in scope, deliver as one unit" behavior is
+executed entirely by the agent from `SKILL.md` / `agents/section-builder.md` prose — the
+same class Exception 1 already established for `/shipwright-preview`.
+
+Per-AC disposition (`spec.md` FR-01.05 AC01-AC08):
+
+| AC | What it asks | Seam? | Reason |
+|---|---|---|---|
+| AC01 | finished section is working code, not a description | no | `update_section_state.py --commit` accepts any string; nothing verifies it names a real commit or that real code exists at it |
+| AC02 | build without a named section refuses, points at change workflow | no | `setup_implementation_session.py --file` is `argparse`-required, but whether `/shipwright-build` is invoked with a section at all is a `SKILL.md` routing decision, not a script the request ever reaches |
+| AC03 | built section matches its spec exactly, nothing extra | no | no code path compares delivered code against the section's ACs — that comparison is the reviewer cascade's judgement (`spec-reviewer`), which the campaign's own precedent (Exception 8) already treats as unobservable from a test |
+| AC04 | mockup read first as baseline, screen checked back against it | **partial, not tagged** | `update_section_state.py --design-fidelity/--design-groups-file` records a check-BACK result (`design-fidelity-report.json`), a real and tested mechanism (`test_update_section_state_design_fidelity_fields`) — but nothing records that the mockup was read FIRST, before code was written. A conjunctive AC with one proven clause and one absent stays unbound (same rule as Exception 4) |
+| AC05 | mockup/spec contradiction stops the build for a person to decide | no | the only related code, `iteration_touched_flagged_screens` (design gate), is a warning not a build-stopping gate, and it lives in `/shipwright-design`, not `/shipwright-build` — no code in this plugin halts on a detected contradiction |
+| AC06 | shared-file touch outside the section stays minimal and is recorded as the section's own | no | no field or check records which files a section's commit touched outside its own scope |
+| AC08 | complete section delivered as one unit — one section, one branch, one commit | no | the AC's own text says build "follows rather than restates" the constitution's delivery discipline — by design this plugin does not implement it; the enforcing seam, if any, would be the generic iterate/git delivery discipline, not `/shipwright-build` |
+
+**Concrete machine outcome:** none of AC01-AC06, AC08 are tagged. All seven stay in
+`shipwright_ac_coverage_baseline.json`'s `unbound` list, with this section as the
+recorded reason.
+
+**AC07 amended into this exception (external plan review, openai, high — corrected
+2026-09-15):** t8's first pass bound `FR-01.05/AC07` ("declared done only when tests
+pass") to a new negative-case test proving the section-builder result contract schema
+(`agents/section_builder_contract.schema.json`) REQUIRES `tests_passed`/`tests_total`
+on any `status: "complete"` payload. Corrected: requiring the FIELDS to be present is
+not proof that the reported numbers are truthful, that the tests actually ran, or that
+no other code path (e.g. `update_section_state.py`, which accepts any string as
+`--commit` with zero verification) can mark a section complete without them — a
+self-reported required field is the same class of gap as Exception 2's AC02
+("the comparison FUNCTION being unit-testable does not make the gate PROVEN"). The
+`@pytest.mark.covers("FR-01.05/AC07")` marker was removed from
+`plugins/shipwright-build/tests/test_section_builder_contract.py`'s
+`test_complete_without_test_counts_is_rejected` — the test itself is kept (unmarked)
+as a real, valuable regression guard on the contract's required-field shape, the same
+treatment Exception 8 gives its drift-pin tests. `FR-01.05/AC07` stays in `unbound`
+alongside its seven siblings.
+
+### Exception 10 — FR-01.17 AC03 (waiver-authority half unseamable, found during t9 execution)
+
+`FR-01.17/AC03` conjoins two clauses: **(a)** a change proposed for merge is reviewed on
+the host automatically, without the author having to ask; and **(b)** only the person who
+owns the project can waive that review.
+
+| Clause | Provable now (existing seam)? | Real seam |
+|---|---|---|
+| (a) automatic, no ask | **yes** | `pr-review-run.yml` / `pr-review.yml` fire on `pull_request` — an active GitHub Actions trigger, not something the author invokes |
+| (b) only the owner can waive | **no** | applying the `skip-pr-review` label is gated by GitHub's own repository-permission model (write access), not by anything this codebase implements or can read from inside a workflow. No file in `.github/workflows/*.yml` restates or narrows who may apply the label (no `author_association`/`permission` check on the label-application path) — the guarantee, such as it is, lives entirely in GitHub's ACL, external to this repository's tests |
+
+**Concrete machine outcome:** do NOT tag `FR-01.17/AC03`. Same conjunctive-AC rule as
+Exception 2's AC02 and Exception 4: a partially-provable clause does not make the whole
+AC provable. It stays in `shipwright_ac_coverage_baseline.json`'s `unbound` list, with
+this section as the recorded reason. `test_pr_review_fail_closed.py` /
+`test_pr_review_fork_trust.py` continue to prove the *automatic* half and the surrounding
+trust boundary in their own right; neither is retargeted at this AC.
+
+**Provenance (external plan review, glm medium + openai medium: this exception is new
+this run and self-recorded by the same unit it benefits — does it need campaign-owner
+pre-approval first?):** no. t8's plan-review disposition #3
+(`.shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md`)
+already settled this exact question and its answer applies unchanged here: a unit
+recording a NEW no-seam finding during its own execution, with a decision-drop/ADR as the
+durable record, follows the same shape as Exceptions 5-9 (each filed unilaterally by the
+unit that found them, none gated on a t0 pre-approval) — distinct from the ROOT-COUNT
+question (Exception 3's addenda), which genuinely does require campaign-owner sign-off
+because it is a resource/scope decision, not a does-this-AC-have-a-seam judgment call.
+This exception is a does-this-AC-have-a-seam judgment call, backed by a concrete,
+independently-verifiable fact (no `.github/workflows/*.yml` file implements or narrows
+GitHub's own label-application ACL) — the same evidentiary bar Exceptions 5-9 met.
+
+### Exception 11 — FR-01.19 AC09/AC10 (misplaced spec text, no seam anywhere; corrected post-spec-review)
+
+`spec.md`'s FR-01.19 ("Recovery of a broken shared branch") lists 10 ACs, but AC09 and
+AC10's TEXT is not about branch recovery at all — it reads as `/shipwright-grade`
+domain content (network-disclosure and grade-scope language) misplaced under this FR:
+
+- `FR-01.19/AC09`: "Given anything did leave the machine, when the report is written,
+  then it states exactly what was fetched, so a reader can tell what the grade rests on
+  and what was sent away to find out."
+- `FR-01.19/AC10`: "Given a grade is quoted as an argument, when it is read, then it
+  claims only which controls a repository visibly has ... and it recommends nothing and
+  changes nothing."
+
+**Corrected finding (this section originally claimed both ACs were "already bound" via
+`FR-01.18/AC08` and `FR-01.18/AC07` respectively; Stage-1 spec-reviewer verification
+during t9's cascade found that claim false, and it is retracted here rather than left
+standing):** `FR-01.18/AC08`'s actual text ("nothing about it leaves the machine unless
+consent was given twice") is a consent-gating requirement, proven by
+`plugins/shipwright-grade/tests/test_network_policy.py` — none of those tests assert
+anything about what the report *states was fetched* (AC09's actual clause). `FR-01.18/
+AC07`'s actual text ("dimensions that could not be determined ... named ... rather than
+quietly dropped") is a completeness-of-reporting requirement, proven by
+`test_projector_fixtures.py`/`test_report_model.py` — neither test asserts the "claims
+only which controls are visible / recommends nothing and changes nothing" scope
+disclaimer that is AC10's actual clause. A repo-wide grep of `plugins/shipwright-grade`
+for AC09/AC10's actual language ("states exactly what was fetched", "recommends
+nothing", "changes nothing", "examination by a person", "estimate made from the
+outside") returns zero matches outside `spec.md` itself. The two FR-01.18 ACs are a
+similar *topic* (grading, network policy) but a different *clause* — binding AC09/AC10
+to them would have been exactly the shape-vs-behavior error this campaign's own
+discipline exists to catch, not a legitimate "already proven elsewhere" case.
+
+With the "already bound elsewhere" claim retracted, this collapses into the Exception
+1/5/9 shape after all: no test anywhere in the repository proves AC09's or AC10's actual
+clause, under FR-01.19 or any other FR. Nothing about `/shipwright-iterate`'s
+main-repair mechanics implements or could implement "grade" or "what left the machine",
+so no seam exists under FR-01.19's own domain either.
+
+**Concrete machine outcome:** do NOT tag `FR-01.19/AC09` or `FR-01.19/AC10`. Both stay in
+`shipwright_ac_coverage_baseline.json`'s `unbound` list, with this section as the
+recorded reason. This is a `spec.md` authoring defect (apparent copy-paste from FR-01.18
+during a later edit of FR-01.19, with no working implementation ever written for either
+clause under either FR), not a test-selection question this campaign resolves — flagged
+to the operator for a spec correction (retire the duplicate text, or, if two genuinely
+distinct ACs were intended for FR-01.19, replace them with text that is actually about
+branch recovery).
+
+**Provenance (external plan review, glm medium + openai medium — same standing question
+as Exception 10's, answered there in full; corrected post-spec-review per Stage-1's
+verified REJECT during t9's own review cascade): no campaign-owner pre-approval is
+needed for this finding.** It is a does-this-AC-have-a-seam judgment call in the shape
+of Exceptions 5-9, not a root-count resource decision in the shape of Exception 3 — see
+Exception 10's Provenance paragraph for the full reasoning, which applies unchanged
+here. The underlying fact is independently checkable by any later reader: `spec.md`'s
+FR-01.19 AC09/AC10 text describes `/shipwright-grade` subject matter that has no
+enforcing test anywhere in the repository, under FR-01.19 or FR-01.18 alike. The
+spec-correction half of this finding (retiring or replacing the duplicate text) is
+separately flagged to the operator above and is NOT something this exception, or this
+unit, resolves unilaterally — only the "does not tag" test-selection consequence is.
+
 ## Per-unit ADR-044 root count (for the "keep it at one or two roots" campaign constraint)
 
 | Unit | FR(s) | Roots touched | Root count |
@@ -506,7 +676,7 @@ and is flagged to the operator rather than decided here.
 | t3 | FR-01.03, FR-01.04 | `plugins/shipwright-plan/tests`, `plugins/shipwright-design/tests` | 2 |
 | t4 | FR-01.06, FR-01.07 | `plugins/shipwright-test/tests`, `plugins/shipwright-security/tests`, `shared/tests` | 3 (**accepted by the campaign owner**, 2026-09-12 — see below) |
 | t5 | FR-01.08, FR-01.09 | `plugins/shipwright-deploy/tests`, `plugins/shipwright-changelog/tests`, `shared/tests`, `shared/scripts/tools/tests` | 4 (3 surveyed, **accepted by the campaign owner**, 2026-09-12; a 4th found during t5's own execution — see Exception 3 addendum below; **also accepted by the campaign owner**, 2026-09-12) |
-| t6 | FR-01.02, FR-01.16 | `plugins/shipwright-project/tests`, `shared/tests` | 2 |
+| t6 | FR-01.02, FR-01.16 | `plugins/shipwright-project/tests`, `shared/tests`, `plugins/shipwright-run/tests`, `plugins/shipwright-compliance/tests` | 4 (2 surveyed; 2 more found during t6's own execution — see Exception 3 addendum below; **accepted by the campaign owner**, 2026-09-12) |
 | t7 | FR-01.10, FR-01.18 | `plugins/shipwright-compliance/tests`, `plugins/shipwright-grade/tests` | 2 |
 | t8 | FR-01.01, FR-01.05, FR-01.12, FR-01.13 | `plugins/shipwright-run/tests`, `plugins/shipwright-build/tests`, `plugins/shipwright-adopt/tests`, `shared/tests`, `shared/scripts/tests` | 5 (**accepted by the campaign owner**, 2026-09-12 — largest fan-out) |
 | t9 | FR-01.15, FR-01.17, FR-01.19, FR-01.20 | `shared/tests`, `shared/scripts/tests`, `shared/scripts/tools/tests`, `plugins/shipwright-iterate/tests` | 4 (**accepted by the campaign owner**, 2026-09-12) |

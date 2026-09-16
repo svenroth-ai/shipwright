@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-15-t9-contract-cihost-repair-contextcost",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T19:04:50.146994+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.15 AC08 is \"proven\" by adding a sentence to two SKILL.md files and a drift-pin test. A drift-pin on prose you just wrote proves the sentence stays there, not that any machine behavior enforces it. This is a self-fulfilling test — the same shape the plan itself rejects for FR-01.19 AC09/AC10 (\"a test built around a spec typo would prove nothing real\").",
+          "suggestion": "Either record AC08 as unbound with the same honesty applied elsewhere (\"no in-repo seam — it's a documentation-level guarantee\"), or pin the sentence to the actual gate behavior (e.g., assert the gate's error message/exit path references the binding-side semantics the doc claims).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Exceptions 10 and 11 are new this run and granted by the same unit that benefits from them, citing itself. FR-01.17/AC03's reasoning is solid (GitHub ACL is genuinely out-of-repo), but FR-01.19 AC09/AC10's \"spec authoring defect\" ruling is made unilaterally. The plan is otherwise scrupulous about not re-deciding seams from inside a unit (see FR-01.15 rejection) — this is an inconsistency in the same document.",
+          "suggestion": "If there is a spec-owner or campaign-lead channel (the plan mentions owner-acceptance for t0's table), route the AC09/AC10 duplication ruling there, even asynchronously, and record the ticket/reference. At minimum, the baseline's recorded reason should name who confirmed the duplication besides this unit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "test_ci_reruns_the_full_verification_on_pr.py` asserts that this repo's own workflows run tests/lint/security/code-analysis on PRs. This creates a maintenance coupling: any future workflow refactor (renaming jobs, splitting lint out) will break the AC test, and conversely the test only checks workflow files, not that checks are required (branch protection is enforced on GitHub's side, not in-repo).",
+          "suggestion": "Assert on stable identifiers (job purpose/step names) rather than exact job names, and document in the test docstring that it pins workflow files, not branch protection — the latter should be added to the AC's unbound-reason ledger if \"required\" is part of the AC text.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Derived files (`test-traceability.json`, baseline JSON) are left \"uncommitted-but-present\" per convention. For the final unit of the campaign, an uncommitted regeneration means the repo-wide unbound_count 69→44 claim exists only on this machine's working tree; a reviewer diffing the branch can't see it, and CI may regenerate from a different state.",
+          "suggestion": "Since t9 closes the campaign, consider committing the final regenerated baseline (or verifying CI regenerates-and-diffs it) so the campaign's terminal state is reviewable. If the convention forbids it, note the final numbers in the run record explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan notes the `test_links` collector \"cannot run standalone via relative import\" and must be run through `update_compliance.py`. If CI ever invokes it directly (or a future contributor does), regeneration silently breaks.",
+          "suggestion": "Out of scope for this unit, but record it as a tracked follow-up rather than leaving it as tribal knowledge in a mini-plan.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Splitting test files (`test_contract_skeleton_weak_pins.py`, `test_context_cost_core_phase_labels.py`) purely to hold a 300-line cap is fine, but the new names must be picked up by any per-file coverage/collection allowlists and the JUnit XML per-root reporting (ADR-044) — not mentioned.",
+          "suggestion": "Confirm the new files land in already-declared roots and appear in the per-root `--junitxml` output; nothing here suggests they don't, but it's the one mechanical step that could silently drop new tests from CI.  No security concerns — this is test-and-tagging work with no production code paths touched.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposed FR-01.15 AC08 proof is a documentation sentence plus a drift-pin test. That proves the sentence remains in two SKILL files, not that the contract actually binds only the intended producer side.",
+          "suggestion": "Add or tag a behavioral integration test that exercises the real contract producer/consumer boundary and demonstrates that an invalid change on the bound side fails while the other side is not treated as contract-bound.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Test-root declarations conflict: the scope names two roots, while the mini-plan declares four, including `shared/scripts/tests` and `plugins/shipwright-iterate/tests`. The “one pytest invocation per test root” constraint cannot be verified until the authoritative root list is resolved.",
+          "suggestion": "Cite the exact t0 root-count row and use that same list in the execution/reporting instructions, with one JUnit XML artifact per listed root.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Regenerating the traceability and baseline artifacts but leaving them “uncommitted-but-present” risks delivering a branch where CI/review sees stale coverage data—or no artifact changes at all on a clean checkout. This is especially material because the acceptance criteria explicitly require regeneration and recorded reasons.",
+          "suggestion": "Ensure CI deterministically regenerates and validates these files, or commit the required tracked derived artifacts. Confirm the ratchet preserves the six exception reasons in a clean CI run.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The FR-01.17 AC01 test could become a superficial workflow-text assertion. Merely finding four command names in YAML does not prove all four run for pull requests, particularly with path filters, job conditions, reusable workflows, or optional/failing steps.",
+          "suggestion": "Test the effective PR workflow graph: PR trigger, relevant conditions, and required verification jobs/steps. Include a negative mutation or fixture case showing that removal/conditional skipping of one required check fails the test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.17 AC03’s external-ACL exception and FR-01.19 AC09/AC10’s spec-duplication exception need durable, machine-visible records, not only prose in this mini-plan. The latter also requires a tracked specification correction; otherwise the same invalid ACs will remain indefinitely.",
+          "suggestion": "Put explicit exception IDs, evidence, and owner/follow-up references in the baseline/seam-survey data. File or link the spec correction for FR-01.19 and ensure the coverage tool distinguishes a justified exception from an omitted tag.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The result says FR-01.19 is “8/8” despite the stated ten ACs and two unbound ACs. The aggregate total is correct, but this ambiguity can hide an incomplete mapping.",
+          "suggestion": "State it as 8/10 bound, with AC09 and AC10 explicitly recorded as exceptions.  Overall, the approach is largely coherent and avoids unnecessary new harnesses, but the AC08 proof and root/artifact handling need correction before it can reliably demonstrate compliance in CI. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T19:04:03.310800+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- **Category: approach — Severity: medium**\n  **Finding:** FR-01.15 AC08 is \"proven\" by adding a sentence to two SKILL.md files and a drift-pin test. A drift-pin on prose you just wrote proves the sentence stays there, not that any machine behavior enforces it. This is a self-fulfilling test — the same shape the plan itself rejects for FR-01.19 AC09/AC10 (\"a test built around a spec typo would prove nothing real\").\n  **Suggestion:** Either record AC08 as unbound with the same honesty applied elsewhere (\"no in-repo seam — it's a documentation-level guarantee\"), or pin the sentence to the actual gate behavior (e.g., assert the gate's error message/exit path references the binding-side semantics the doc claims).\n\n- **Category: approach — Severity: medium**\n  **Finding:** Exceptions 10 and 11 are *new this run* and granted by the same unit that benefits from them, citing itself. FR-01.17/AC03's reasoning is solid (GitHub ACL is genuinely out-of-repo), but FR-01.19 AC09/AC10's \"spec authoring defect\" ruling is made unilaterally. The plan is otherwise scrupulous about not re-deciding seams from inside a unit (see FR-01.15 rejection) — this is an inconsistency in the same document.\n  **Suggestion:** If there is a spec-owner or campaign-lead channel (the plan mentions owner-acceptance for t0's table), route the AC09/AC10 duplication ruling there, even asynchronously, and record the ticket/reference. At minimum, the baseline's recorded reason should name who confirmed the duplication besides this unit.\n\n- **Category: edge-case — Severity: low**\n  **Finding:** `test_ci_reruns_the_full_verification_on_pr.py` asserts that this repo's own workflows run tests/lint/security/code-analysis on PRs. This creates a maintenance coupling: any future workflow refactor (renaming jobs, splitting lint out) will break the AC test, and conversely the test only checks workflow *files*, not that checks are *required* (branch protection is enforced on GitHub's side, not  […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposed FR-01.15 AC08 proof is a documentation sentence plus a drift-pin test. That proves the sentence remains in two SKILL files, not that the contract actually binds only the intended producer side.  \n   **Suggestion:** Add or tag a behavioral integration test that exercises the real contract producer/consumer boundary and demonstrates that an invalid change on the bound side fails while the other side is not treated as contract-bound.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** Test-root declarations conflict: the scope names two roots, while the mini-plan declares four, including `shared/scripts/tests` and `plugins/shipwright-iterate/tests`. The “one pytest invocation per test root” constraint cannot be verified until the authoritative root list is resolved.  \n   **Suggestion:** Cite the exact t0 root-count row and use that same list in the execution/reporting instructions, with one JUnit XML artifact per listed root.\n\n3. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Regenerating the traceability and baseline artifacts but leaving them “uncommitted-but-present” risks delivering a branch where CI/review sees stale coverage data—or no artifact changes at all on a clean checkout. This is especially material because the acceptance criteria explicitly require regeneration and recorded reasons.  \n   **Suggestion:** Ensure CI deterministically regenerates and validates these files, or commit the required tracked derived artifacts. Confirm the ratchet preserves the six exception reasons in a clean CI run.\n\n4. **Category:** approach  \n   **Severity:** medium  \n   **Finding:** The FR-01.17 AC01 test could become a superficial workflow-text assertion. Merely finding four command names in YAML does not prove all four run for pull requests, particularly with path filters, job conditions, reusable workflows, or optional/failing steps.  \n   **Suggest […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T19:04:57.421490+00:00",
+      "disposition": "sub-iterate runner has no Agent tool; the orchestrator runs the spec-reviewer/code-reviewer/doubt-reviewer cascade at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T19:04:57.574829+00:00",
+      "disposition": "sub-iterate runner has no Agent tool; the orchestrator runs the spec-reviewer/code-reviewer/doubt-reviewer cascade at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/planning/adr/iterate-2026-09-15-t9-...ac-bindings.md` — \"Regeneration provenance\" section (the line \"Both regenerations are left uncommitted-but-present in the worktree per t3-t8's identical, established precedent\"); same claim in the mini-plan Approach step 5.",
+          "line": null,
+          "finding": "The diff commits `shipwright_ac_coverage_baseline.json` (the file appears as a changed hunk), directly contradicting the ADR's and mini-plan's claim that it is left uncommitted. This is not just prose drift: external-review dispositions #7 and #8 were rejected on the explicit premise that the regenerated file is not committed (\"a reviewer diffing the branch can't see the campaign's terminal state\" — but they can, it's in the diff). Two reviewer findings were waved off using a factually false description of the change.",
+          "suggestion": "Either correct the ADR/mini-plan to state that the baseline is committed this run (and re-evaluate dispositions #7/#8 under that fact — they likely become moot), or drop the baseline hunk if the t3-t8 convention is truly binding. Pick one; the current state says both.  2. Category: test | Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/tests/test_context_cost_summary.py` — `test_show_breaks_the_running_total_down_by_phase_on_demand`.",
+          "line": null,
+          "finding": "The test writes the per-session summary (including `by_phase`) itself, then asserts `show` echoes it. It proves display passthrough only: if the hook/`compute_summary` path stopped writing `by_phase` into the live per-session file, this test still passes. The AC clause it claims (\"given the same running session... shown broken down by phase on demand, without waiting for the session to end\") hinges on the live file actually containing phase buckets mid-session, which nothing in this unit drives end-to-end. The composite with `test_context_cost_core_phase_labels.py` and the statusline test is only adequate if the statusline path is provably reading the same live file shape — the docstring's \"the phase buckets it wrote are what comes back\" glosses over who \"it\" is (the test).",
+          "suggestion": "Either drive the write through the real summary-writer (or a shared fixture that does), or add one assertion path that exercises the live-session file produced by the actual hook writer rather than a hand-authored dict.  3. Category: test / edge-case | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_ci_reruns_the_full_verification_on_pr.py` — `test_no_job_is_conditioned_out_of_the_pull_request_event`.",
+          "line": null,
+          "finding": "Only job-level `if:` is asserted; a step-level `if: github.event_name != 'pull_request'` on the very step that invokes pytest (or ruff/semgrep) would defeat the entire AC01 guarantee while every test in this file stays green. The docstring justifies skipping step-level checks because some steps legitimately gate on `github.event_name`, but that means the gate-carrying steps are unguarded. `test_ci_reruns_the_real_test_suite` checks only that \"pytest\" appears in a run body, not that the step is unconditional.",
+          "suggestion": "Assert step-level `if:` absence specifically for the steps whose `run` contains `pytest`/`ruff`/`semgrep` (a narrow allowlist of gate-carrying steps), rather than all steps.  4. Category: regression | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_context_cost_core.py` — post-move remnant.",
+          "line": null,
+          "finding": "Four tests using `iterate_phase_groups` (`ipg.append_mark`), `RUN_ID`, `_T0`, and `timedelta` were moved to `test_context_cost_core_phase_labels.py`, but the diff shows no removal of the corresponding imports/constants from the old file. If no remaining test in that file uses `ipg`, ruff F401 will fail CI on the next lint run (the ADR records pytest runs, not a ruff run, for these roots).",
+          "suggestion": "Verify the moved tests' imports were pruned from `test_context_cost_core.py` (or confirm remaining tests still use them); run ruff on `shared/tests` before merge.  5. Category: spec | Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/planning/iterate/...miniplan.md` — Approach step 4 (\"one new assertion added to an existing summary test proving `by_phase` is actually returned\").",
+          "line": null,
+          "finding": "The diff adds a new standalone test, not an assertion to an existing one. Trivial in isolation, but this campaign's currency is precisely-accurate provenance records, and the ADR's disposition table is what later units audit against.",
+          "suggestion": "Update the mini-plan wording to match the diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/tests/test_ci_reruns_the_full_verification_on_pr.py:85](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-77i2fxxk\\shared\\tests\\test_ci_reruns_the_full_verification_on_pr.py:85)",
+          "line": null,
+          "finding": "The job-condition check does not detect conditions that exclude pull requests. For example, `if: github.event_name == 'push'` contains no `pull_request`, so it passes even though the job never runs for PRs. Conversely, an explicit PR-only condition would fail despite being correct.",
+          "suggestion": "Evaluate or conservatively parse each job `if:` for PR reachability, or assert the expected verification jobs have no job-level condition. This is necessary for the AC01 test to prove the checks run on PRs rather than merely exist in workflow YAML.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/tests/test_contract_skeleton_weak_pins.py:33](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-77i2fxxk\\shared\\tests\\test_contract_skeleton_weak_pins.py:33)",
+          "line": null,
+          "finding": "The AC05 tests only call the two helper functions. They do not exercise the publishing/gate path or verify that a weak path is actually emitted as a warning/disclosure when the contract is published. A broken integration that stopped using these helpers would still pass all five tests.",
+          "suggestion": "Add an integration-level test that publishes or validates a contract containing an empty list/null-only field and asserts the resulting published output or gate result carries the weakness disclosure.  Ship-with-fixes: the traceability work is broadly complete, but these two tests overstate what they prove for their tagged acceptance criteria.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T19:18:23.575921+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: spec | Severity: medium**\nFile: `.shipwright/planning/adr/iterate-2026-09-15-t9-...ac-bindings.md` — \"Regeneration provenance\" section (the line \"Both regenerations are left **uncommitted-but-present** in the worktree per t3-t8's identical, established precedent\"); same claim in the mini-plan Approach step 5.\nFinding: The diff *commits* `shipwright_ac_coverage_baseline.json` (the file appears as a changed hunk), directly contradicting the ADR's and mini-plan's claim that it is left uncommitted. This is not just prose drift: external-review dispositions #7 and #8 were **rejected** on the explicit premise that the regenerated file is not committed (\"a reviewer diffing the branch can't see the campaign's terminal state\" — but they can, it's in the diff). Two reviewer findings were waved off using a factually false description of the change.\nSuggestion: Either correct the ADR/mini-plan to state that the baseline *is* committed this run (and re-evaluate dispositions #7/#8 under that fact — they likely become moot), or drop the baseline hunk if the t3-t8 convention is truly binding. Pick one; the current state says both.\n\n**2. Category: test | Severity: medium**\nFile: `shared/scripts/tools/tests/test_context_cost_summary.py` — `test_show_breaks_the_running_total_down_by_phase_on_demand`.\nFinding: The test writes the per-session summary (including `by_phase`) itself, then asserts `show` echoes it. It proves display passthrough only: if the hook/`compute_summary` path stopped writing `by_phase` into the *live* per-session file, this test still passes. The AC clause it claims (\"given the same running session... shown broken down by phase on demand, without waiting for the session to end\") hinges on the live file actually containing phase buckets mid-session, which nothing in this unit drives end-to-end. The composite with `test_context_cost_core_phase_labels.py` and the statusline test is only adequate if the statusline path is provab […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: [shared/tests/test_ci_reruns_the_full_verification_on_pr.py:85](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-77i2fxxk\\shared\\tests\\test_ci_reruns_the_full_verification_on_pr.py:85)\n- Finding: The job-condition check does not detect conditions that exclude pull requests. For example, `if: github.event_name == 'push'` contains no `pull_request`, so it passes even though the job never runs for PRs. Conversely, an explicit PR-only condition would fail despite being correct.\n- Suggestion: Evaluate or conservatively parse each job `if:` for PR reachability, or assert the expected verification jobs have no job-level condition. This is necessary for the AC01 test to prove the checks run on PRs rather than merely exist in workflow YAML.\n\n- Category: test\n- Severity: medium\n- File: [shared/tests/test_contract_skeleton_weak_pins.py:33](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-77i2fxxk\\shared\\tests\\test_contract_skeleton_weak_pins.py:33)\n- Finding: The AC05 tests only call the two helper functions. They do not exercise the publishing/gate path or verify that a weak path is actually emitted as a warning/disclosure when the contract is published. A broken integration that stopped using these helpers would still pass all five tests.\n- Suggestion: Add an integration-level test that publishes or validates a contract containing an empty list/null-only field and asserts the resulting published output or gate result carries the weakness disclosure.\n\nShip-with-fixes: the traceability work is broadly complete, but these two tests overstate what they prove for their tagged acceptance criteria.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T19:04:57.266347+00:00",
+      "disposition": "sub-iterate runner has no Agent tool; the orchestrator runs the spec-reviewer/code-reviewer/doubt-reviewer cascade at campaign-mode.md 3f-bis before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T19:04:10.817881+00:00",
+      "disposition": "plan review has no internal arm; external plan review (glm+openai) is the sole plan-review pass, per project_plan_review_has_no_internal_arm precedent",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

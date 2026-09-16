@@ -1,0 +1,24 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-module trust boundary / security-relevant gate bypass",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "\"A genuinely new post-rollout violation still hard-blocks\" (stated as the mechanism's core safety invariant in the ADR's Context, Consequences, and the code's own module docstrings)",
+      "disproof_attempt": "resolve_rollout_commit's only proof that content 'already existed' is the target project's own git commit committer timestamp, re-verified in Python but never anchored to anything the content's author does not themselves control. A committer date is a plain client-supplied field set with no server-side timestamping, no signature check, and no comparison against when the commit was actually pushed/received. Anyone who can push a branch to the target project can therefore fabricate one ancestor commit whose spec.md already contains, byte-for-byte (post-parse), the exact new FR row/criterion they want to introduce, dated before GATE_ROLLOUT_AT_EPOCH. resolve_rollout_commit will find it via rev-list --before, the grace comparators will match (the attacker controls both sides), and a criterion that is genuinely brand-new gets severity=\"warning\", strict_exempt=True instead of a hard block — precisely the outcome the ADR calls impossible. This gate family's own docstrings already state these checks run against untrusted PR content in CI, so an adversarial history-controlling author is already the assumed attacker for this module family, just not carried through to the timestamp-trust question.",
+      "file": "shared/scripts/tools/verifiers/_project_gate_rollout.py (resolve_rollout_commit); shared/scripts/tools/verifiers/_project_gate_grace.py (graced_criteria_for_row, split_predates_rollout)",
+      "what_would_resolve_it": "Either (a) a written rebuttal narrowing the threat model, or (b) a follow-up that anchors 'did this exist before rollout' to something the content's author cannot themselves set — e.g. the PR's merge/push receipt time as recorded by the hosting platform, or requiring the rollout-predating commit to be reachable from a ref the repo already trusted BEFORE this PR's branch existed."
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "the #10 (no_empty_split) grace path is a separate, lower-stakes instance of the same weakness and should be tracked alongside the #5 finding above, not dismissed as harmless",
+      "disproof_attempt": "The same committer-timestamp forgery lets an attacker retroactively 'pre-declare' a newly-created empty split as already-declared+empty at rollout. Blast radius much smaller (downgrades an empty-split hard block, not banned content), but shares the exact same root cause and fix surface.",
+      "file": "shared/scripts/tools/verifiers/_project_gate_extras_rollout.py (no_empty_split)",
+      "what_would_resolve_it": "Same remediation as the #5 finding, applied uniformly — no separate action needed if the #5 fix is structural."
+    }
+  ],
+  "summary": "1 high, 1 low doubt — both trace to the same root cause: the rollout-transition grace trusts a target project's self-reported git committer timestamp as proof-of-pre-existence, with no external anchor. Everything else attempted came up clean: in-process caches are safe against concurrent-invocation races (sequential call path, verified); the already-disclosed strict_exempt gap is exactly as scoped as the ADR states (no automated path calls verify_phase.py --strict); the per-criterion grace's exact-string identity comparison cannot be tricked by wrapping a new violation inside an old graced one; the git path-injection guard is structurally moot given how paths are built."
+}

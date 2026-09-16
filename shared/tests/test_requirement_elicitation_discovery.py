@@ -77,6 +77,7 @@ DISCOVERED_ELICITATION_DOCS = discover_elicitation_reference_docs(REPO_ROOT)
     "doc", DISCOVERED_ELICITATION_DOCS,
     ids=lambda p: p.relative_to(REPO_ROOT).as_posix(),
 )
+@pytest.mark.covers("FR-01.16/AC09")
 def test_elicitation_surface_cites_the_module(doc):
     assert doc_cites_the_module(doc), (
         f"{doc.relative_to(REPO_ROOT).as_posix()} elicits requirements "
@@ -86,6 +87,7 @@ def test_elicitation_surface_cites_the_module(doc):
     )
 
 
+@pytest.mark.covers("FR-01.16/AC09")
 def test_discovery_finds_at_least_the_known_citing_docs():
     """AC1 — the discovery function, run against the real repo, still finds
     (at least) the 4 currently-known docs.
@@ -157,6 +159,7 @@ def test_discovery_marker_does_not_sweep_in_known_near_misses():
     )
 
 
+@pytest.mark.covers("FR-01.16/AC09")
 def test_discovery_is_dynamic_a_new_reference_doc_is_picked_up(tmp_path):
     """AC2 — a reference doc added under any plugin's `references/` dir that
     carries the elicitation-surface marker is picked up WITHOUT editing this

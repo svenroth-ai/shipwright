@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-e5-checks-remainder",
+  "date": "2026-09-16",
+  "section": "FR-01.14 row #1 (triage producer contract)",
+  "title": "AST meta-test gate for the plain append_triage_item producer contract",
+  "context": "FR-01.14 row #1 named a mechanisable oracle but had no gate: a new producer could call the plain, non-deduplicating append_triage_item and write duplicates freely.",
+  "decision": "Built triage_plain_append_scan.py (AST scan, repo-wide) + triage_plain_append_scope.py (lexical scope-chain resolver) + test_triage_append_producer_registry.py (allowlist + reverse-drift guard). See spec-ref for full detail.",
+  "consequences": "A new automated producer using the plain append now fails CI by name. 10 external review rounds converged on a real scope-chain resolver; remaining gaps are named, empirically checked, and test-pinned. See spec-ref.",
+  "rationale": "The row own oracle named this mechanism; reuses the registry-plus-reverse-guard pattern test_triage_precondition_registry.py already established.",
+  "rejected": "Full symbolic import resolution (over-engineering, no real producer ever used it); changing triage_add.py concurrency behavior (out of scope, human-driven CLI not a background producer).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md"
+}

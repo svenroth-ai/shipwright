@@ -23,4 +23,5 @@ addopts = "-v --tb=short"
 pythonpath = [".", "scripts"]
 markers = [
     "integration: marks tests as integration tests",
+    "covers: binds a test to one or more FRs for requirement->test traceability (@FR tags, Spec D1)",
 ]

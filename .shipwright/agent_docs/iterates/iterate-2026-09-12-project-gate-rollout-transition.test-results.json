@@ -1,0 +1,119 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-12-project-gate-rollout-transition",
+    "date": "2026-09-12",
+    "unit": {
+      "status": "passed",
+      "passed": 10743,
+      "total": 10778,
+      "note": "shared/tests full run (the test root this diff's changes live in) \u2014 35 skipped, 20 deselected, 0 failed. Not a full-monorepo re-run across every plugin's own test root; this diff touches only shared/scripts/tools/verifiers/ + shared/tests/."
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 530,
+      "total": 530
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure Python verifier logic + git-history resolution inside the Shipwright framework itself; no startable web/cli/api surface for a target project exists to run against -- same as every sibling gate in this family and the binding-completeness-rollout-transition precedent, all surface:none for the identical reason."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "commit resolution: before/at/after cutoff, empty ref, unresolvable ref",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout.py"
+        },
+        {
+          "behavior": "shallow-clone refusal (real --depth 1 clone over a file:// URL, verified via --is-shallow-repository)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout.py::test_resolve_rollout_commit_none_for_a_shallow_clone"
+        },
+        {
+          "behavior": "SHA cache keyed by a concrete commit, never the symbolic HEAD",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout.py::test_cached_rollout_sha_caches_by_root_and_commit"
+        },
+        {
+          "behavior": "git's own --before answer is re-verified in Python and refused if it lies",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout.py::test_resolve_rollout_commit_none_when_gits_before_answer_postdates_cutoff"
+        },
+        {
+          "behavior": "nested project_root spec-text + manifest reads resolve correctly (the git show/-C path-resolution fix)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout_snapshot.py (nested-project_root tests)"
+        },
+        {
+          "behavior": "declared-split-names manifest priority + fallback + malformed-at-rollout handling",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout_snapshot.py"
+        },
+        {
+          "behavior": "historical spec-text read cache keyed by (sha, path)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout_snapshot.py::test_spec_text_is_cached_by_sha_and_path"
+        },
+        {
+          "behavior": "grace comparator matrix: identity match/refuse, cosmetic-title tolerance, repurposed-id refusal, split declaration requirement",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_grace.py"
+        },
+        {
+          "behavior": "#5/#10 pure-function grace partitioning: per-criterion membership, mixed hard+graced result, no-rollout fallback",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_extras_rollout.py"
+        },
+        {
+          "behavior": "end-to-end wiring: the CheckResult itself downgrades for pre-existing content, and a genuinely new post-rollout violation still hard-blocks",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_wiring_rollout.py"
+        },
+        {
+          "behavior": "#4/#15 (check_basis_forbids_assumed) and #11 (check_starting_guidance_present) are behaviorally untouched",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_basis_and_guidance.py, shared/tests/test_project_gate_extras.py (unmodified except the #5/#10 tests moving out; full shared/tests re-run: 10743 passed, 0 failed)"
+        }
+      ],
+      "counts": {
+        "testable": 11,
+        "tested": 11,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 7,
+        "covered_acs": 7
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-12-project-gate-rollout-transition",
+    "commit": "95845b9da93198e94c6591c4e7b6b2077778762e",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

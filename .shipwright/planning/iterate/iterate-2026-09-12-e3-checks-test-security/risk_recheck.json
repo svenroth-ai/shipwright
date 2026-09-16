@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-e3-checks-test-security",
+  "risk_recheck": {
+    "changed_file_count": 24,
+    "diff_loc": 1227,
+    "risk_flags": [
+      "touches_io_boundary"
+    ],
+    "diff_risk_flags": [
+      "touches_io_boundary"
+    ],
+    "complexity_floor": "small",
+    "stage1_complexity": "small",
+    "effective_complexity": "small",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

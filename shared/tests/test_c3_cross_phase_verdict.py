@@ -8,9 +8,11 @@ regressions of this check have lived in:
 
 * **#467** passed a phase that skipped its step, because a shared run id matched.
 * **This iterate's own round-2 draft** compared the two phases by the marker's
-  EVENT anchor. ``record_event`` dedups ``phase_completed`` on ``(phase, splitId)``
-  permanently, so a phase completing a second time inherits whatever anchor was
-  newest — routinely the note owner's. Ordered by that the two read as
+  EVENT anchor. Within one session, ``record_event`` dedups ``phase_completed``
+  on ``(phase, splitId)`` (a same-session re-run writes nothing new since
+  iterate-2026-09-16-codex-light-phase-dedup-session — cross-session completions
+  now each append their own event), so a same-session re-run inherits whatever
+  anchor was newest — routinely the note owner's. Ordered by that the two read as
   simultaneous, and the phase that ran LATER was reported as superseded by the
   EARLIER one. A silent SKIP, in the exact shape the iterate exists to remove.
 

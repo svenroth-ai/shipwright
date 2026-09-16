@@ -118,7 +118,6 @@ def _check_type(val, expected_type: str) -> bool:
         return False
     return isinstance(val, expected)
 
-
 class TestSchemaExists:
     def test_schema_file_exists(self):
         assert SCHEMA_PATH.exists(), f"Schema not found at {SCHEMA_PATH}"
@@ -129,7 +128,6 @@ class TestSchemaExists:
 
     def test_agent_md_exists(self):
         assert AGENT_MD_PATH.exists()
-
 
 class TestSchemaMatchesAgent:
     """Verify schema fields match what section-builder.md documents."""
@@ -163,7 +161,6 @@ class TestSchemaMatchesAgent:
                              "tests_passed", "tests_total", "debug_log"}
         for field in documented_fields:
             assert field in failure_props, f"Documented field {field!r} missing from schema"
-
 
 class TestSuccessPayloads:
     """Verify valid success payloads pass schema validation."""
@@ -210,7 +207,6 @@ class TestSuccessPayloads:
         errors = _validate(payload, schema)
         assert not errors, f"Validation errors: {errors}"
 
-
 class TestFailurePayloads:
     def test_minimal_failure(self, schema):
         payload = {
@@ -237,7 +233,6 @@ class TestFailurePayloads:
         }
         errors = _validate(payload, schema)
         assert not errors, f"Validation errors: {errors}"
-
 
 class TestInvalidPayloads:
     def test_missing_section(self, schema):
@@ -275,6 +270,18 @@ class TestInvalidPayloads:
         errors = _validate(payload, schema)
         assert errors
 
+    def test_complete_without_test_counts_is_rejected(self, schema):
+        # A "complete" result may never omit test-count fields. NOT bound to
+        # FR-01.05/AC07 — this proves the fields are required, not that the
+        # numbers are truthful (seam survey Exception 9 has AC07's reason).
+        payload = {
+            "section": "01-auth",
+            "status": "complete",
+            "commit": "abc123",
+            "branch": "build/x",
+        }
+        errors = _validate(payload, schema)
+        assert errors
 
 class TestAgentMdJsonExamples:
     """Extract JSON examples from section-builder.md and validate them."""

@@ -169,10 +169,14 @@ def test_missing_gh_exits_2_without_a_traceback(monkeypatch, capsys) -> None:
     assert "not installed" in capsys.readouterr().err
 
 
+@pytest.mark.covers("FR-01.17/AC06")
 def test_one_divergence_files_one_card_across_repeated_invocations(
     tmp_path, monkeypatch
 ) -> None:
-    """Repeated runs against unchanged drift must leave exactly one card.
+    """FR-01.17/AC06 — the configured/actual divergence is "raised as a
+    tracked follow-up", filed once (not once per session) so it does not
+    silently disappear or flood the inbox. Repeated runs against unchanged
+    drift must leave exactly one card.
 
     Idempotency was always the design — `append_triage_item_idempotent` keyed on
     the exact divergence — but it only became load-bearing when
@@ -243,6 +247,7 @@ def test_in_sync_repo_exits_0_and_files_nothing(monkeypatch, capsys) -> None:
     assert filed == [], "an in-sync repo must file nothing"
 
 
+@pytest.mark.covers("FR-01.17/AC06")
 def test_drift_files_one_item_keyed_on_repo_and_branch(monkeypatch, capsys) -> None:
     monkeypatch.setattr(crc.subprocess, "run", gh_router({
         "repos/o/r": REPO_OK,

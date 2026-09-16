@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "21 of 22 FR-01.10/FR-01.18 ACs bound to existing, real, passing tests via @pytest.mark.covers tags; the remaining AC06 is recorded unbound with an evidenced spec-vs-implementation discrepancy rather than a forced proxy binding, per the sub-iterate spec's own binding constraint."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "n/a",
+      "note": "This unit is a pure test-tagging exercise (0 new production code paths, 0 new test harnesses) — no new error-handling surface was introduced."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "n/a",
+      "note": "No new user input, auth surface, or secrets touched — decorator-only edits to existing test files plus one pyproject.toml marker registration and a regenerated coverage-baseline JSON."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Every binding targets the REAL enforcing code path (audit checks, engine_bridge, network_policy, stamp_test_results) rather than a renderer/wrapper-only proxy; conjunctive ACs (AC03, AC08, AC11, AC04) have every clause proven, verified against the AC's own spec text read verbatim rather than paraphrased."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "No runtime code changed; tagging has zero runtime performance impact."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "All touched files verified at or under their applicable line cap (bloat-baselined files held exactly at their grandfathered `current`; non-baselined files held at exactly 300) via wc -l after every edit; anti_ratchet_check.py exits clean."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "n/a",
+      "note": "No serialized format producer/consumer pair changed — shipwright_ac_coverage_baseline.json's shape (flat unbound list) is unchanged, only its contents shrank; test-traceability.json was regenerated locally purely to derive the baseline and then reverted, never committed as a new format."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reports 'no findings' against this diff's changed test files."
+    }
+  ]
+}

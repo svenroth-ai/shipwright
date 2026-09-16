@@ -185,12 +185,12 @@ def entry_wall_time(entry: dict[str, Any]) -> RecordedTime | None:
 
     Two phases are ordered against each other on this, because both come from
     one producer calling ``datetime.now()`` and are therefore mutually
-    comparable. The event anchor is not: ``record_event`` dedups
-    ``phase_completed`` on ``(phase, splitId)`` permanently, so a phase
-    completing a second time inherits whatever anchor was newest — routinely the
-    anchor of some OTHER phase's canon block. Ordering two phases by that read
-    them as simultaneous and announced the later one as superseded by the
-    earlier.
+    comparable. The event anchor is not: within one session, ``record_event``
+    still dedups ``phase_completed`` on ``(phase, splitId)`` (cross-session
+    completions each append their own event now), so a same-session re-run
+    inherits whatever anchor was newest — routinely the anchor of some OTHER
+    phase's canon block. Ordering two phases by that read them as simultaneous
+    and announced the later one as superseded by the earlier.
     """
     for key in ("at", "date"):
         parsed = recorded_time(entry.get(key))

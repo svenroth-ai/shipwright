@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from scripts.lib._traceability import (
     count_traced,
     iterate_test_coverage,
@@ -33,6 +35,7 @@ def _ev(source="iterate", affected_frs=None, new_frs=None, change_type="",
 
 
 class TestCountTraced:
+    @pytest.mark.covers("FR-01.10/AC09")
     def test_credits_fr_linked_and_satisfied_no_fr(self):
         events = [
             _ev(affected_frs=["FR-01.10"], spec_impact="modify"),       # FR-linked
@@ -41,6 +44,7 @@ class TestCountTraced:
         ]
         assert count_traced(events) == 3
 
+    @pytest.mark.covers("FR-01.10/AC09")
     def test_excludes_unclassified_and_legacy(self):
         events = [
             _ev(),                                       # unclassified
@@ -63,6 +67,7 @@ class TestRenderTracedRow:
     """INFORMATIONAL + grade-neutral: it reports the FR-tag mix but never WARNs —
     feature vs. maintenance composition is not a control signal."""
 
+    @pytest.mark.covers("FR-01.10/AC09")
     def test_lower_recent_rate_is_info_never_warn(self):
         # 10 FR-tagged then 25 no-FR: recent rate below all-time. Under the old
         # decline gate this WARNed; composition is now grade-neutral → INFO.
@@ -74,6 +79,7 @@ class TestRenderTracedRow:
         assert "INFO" in row
         assert "WARN" not in row
 
+    @pytest.mark.covers("FR-01.10/AC09")
     def test_zero_recent_is_info_not_a_freeze_warn(self):
         # A maintenance sprint (0 FR-tags in the recent window) is honest work,
         # not a control failure → INFO, never WARN / "frozen".

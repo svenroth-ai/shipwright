@@ -31,8 +31,12 @@ The ref has to be pinned onto the project first:
 ```bash
 uv run "{plugin_root}/scripts/lib/rollback.py" \
   --env-name "{env_name}" --strategy git --target-ref "{last_known_good_tag}" \
-  --project-root . --profile "{shared_root}/profiles/deploy/jelastic.json"
+  --project-root . --profile "{shared_root}/profiles/deploy/jelastic.json" \
+  --invocation auto
 ```
+
+`--project-root` and `--invocation` are both required by the CLI (no
+default) — see [SKILL.md](../SKILL.md) Step 5.
 
 ### What the result means
 

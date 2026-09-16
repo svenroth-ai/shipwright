@@ -79,6 +79,7 @@ def test_in_progress_banner_lists_pending(v2_project, capsys):
     assert "PIPELINE FAILED" not in err
 
 
+@pytest.mark.covers("FR-01.01/AC05")
 def test_in_progress_banner_tells_the_user_to_reinvoke_run(v2_project, capsys):
     """The banner must NOT render a `claude --session-id` launch card.
 

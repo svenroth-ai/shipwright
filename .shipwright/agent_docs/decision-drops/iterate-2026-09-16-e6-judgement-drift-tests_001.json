@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-e6-judgement-drift-tests",
+  "date": "2026-09-16",
+  "section": "Campaign req3-06-enforcement-mono e6 — judgement-line drift tests",
+  "title": "Judgement-line drift tests close the 19/25 discrepancy, no gate built",
+  "context": "Campaign named 19 judgement rows (2026-09-06); e1-e5 splits since then made the live count 25.",
+  "decision": "Wrote 9 new drift tests + 6 citations for pre-existing coverage; corrected 1 stale status tag. No gate.",
+  "consequences": "25/25 judgement rows now carry a real drift test; a prose edit to any source doc fails the matching test.",
+  "rationale": "D7's abort condition: no oracle for reading-comprehension judgements, so a drift test is the honest ceiling.",
+  "rejected": "Trusting the stale 19 count; leaving FR-01.02 4b mistagged judgement; a shared markdown-stripping helper.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-16-e6-judgement-drift-tests-closure.md"
+}

@@ -19,6 +19,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
@@ -28,6 +30,7 @@ from scripts.audit import group_e  # noqa: E402
 SKILL_MD = PLUGIN_ROOT / "skills" / "compliance" / "SKILL.md"
 
 
+@pytest.mark.covers("FR-01.10/AC05")
 def test_suggestion_names_a_path_that_can_actually_clear_the_finding() -> None:
     cmd = group_e._suggest("change_history")
     assert "--fix" in cmd, "the hand-edit case is still the common one"
@@ -41,6 +44,7 @@ def test_suggestion_names_a_path_that_can_actually_clear_the_finding() -> None:
     )
 
 
+@pytest.mark.covers("FR-01.10/AC05")
 def test_suggestion_names_only_flags_the_skill_actually_accepts() -> None:
     """Every flag in the remedy must appear in the skill's accepted-flag list.
 

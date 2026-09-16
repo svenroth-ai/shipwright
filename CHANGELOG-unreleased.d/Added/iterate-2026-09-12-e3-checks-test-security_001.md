@@ -1,0 +1,1 @@
+shipwright-test: mechanised gates for e2e count reconciliation, e2e-spec generation, and design-fidelity triage (FR-01.06); shipwright-security: downgraded 2 no-oracle remediation-status criteria to drift-tested judgement lines (FR-01.07)

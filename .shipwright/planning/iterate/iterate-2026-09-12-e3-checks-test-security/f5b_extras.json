@@ -1,0 +1,10 @@
+{
+  "intent": "change",
+  "description": "Mechanise 5 FR-01.06/FR-01.07 AC-evidence-ledger lines (e2e count reconciliation, e2e-spec generation floor, design-fidelity triage) and downgrade 4 no-oracle lines (2 FR-01.06 constitution mentions, 2 FR-01.07 remediation-status lines) to drift-tested prompt-only (judgement), per campaign decision D7.",
+  "summary": "Added automated checks for three test-quality promises and honestly downgraded four promises that had no way to verify them automatically.",
+  "spec_impact": "none",
+  "spec_impact_justification": "Adds enforcement mechanisms and drift tests around already-shipped FR-01.06/FR-01.07 capabilities; no FR's observable behavior changed, only whether it is now mechanically verified.",
+  "affected_frs": ["FR-01.06", "FR-01.07"],
+  "campaign": "req3-06-enforcement-mono",
+  "sub_iterate_id": "e3"
+}

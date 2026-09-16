@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from report_model import build_report_model
 
 
@@ -35,6 +37,7 @@ def _build(dims, **kw):
 
 
 class TestNaSemantics:
+    @pytest.mark.covers("FR-01.18/AC04", "FR-01.18/AC07")
     def test_na_dimension_is_excluded_and_listed_as_would_light(self):
         dims = [
             _dim("requirement_traceability", "Requirement traceability", 0.25, 0.9),
@@ -51,6 +54,7 @@ class TestNaSemantics:
         assert na.score is None  # never coerced to 0
         assert na.would_light_up is True
 
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_na_provenance_is_unavailable_scored_is_heuristic(self):
         dims = [
             _dim("change_traceability", "Change traceability", 0.15, 0.6),

@@ -95,6 +95,7 @@ def _write_frontend_assets(project_root: Path) -> None:
     )
 
 
+@pytest.mark.covers("FR-01.13/AC01")
 def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     _git_init(tmp_path)
     _write_snapshot(tmp_path)

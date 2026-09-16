@@ -9,6 +9,8 @@ import io
 import tokenize
 from pathlib import Path
 
+import pytest
+
 from detectors_bridge import _adopt_lib_dir, detect_all
 from engine_bridge import compliance_plugin_root
 from repo_context import RepoContext
@@ -56,6 +58,7 @@ class TestReusedCollectorsAreReadOnly:
             for token in _FORBIDDEN:
                 assert token not in src, f"{mod}.py contains forbidden token {token!r}"
 
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_detect_all_writes_nothing(self, well_run_repo: Path):
         before = sorted(p.name for p in well_run_repo.iterdir())
         detect_all(well_run_repo)
@@ -78,6 +81,7 @@ class TestG2ReusedComplianceCollectorsAreReadOnly:
             for token in _FORBIDDEN:
                 assert token not in code, f"{rel} contains forbidden token {token!r}"
 
+    @pytest.mark.covers("FR-01.18/AC01")
     def test_dependency_signal_writes_nothing(self, well_run_repo: Path):
         from dependency_signal import compute_dependency_signal
         before = sorted(p.name for p in well_run_repo.iterdir())

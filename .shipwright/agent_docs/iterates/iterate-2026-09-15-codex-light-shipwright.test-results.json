@@ -1,0 +1,90 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-15-codex-light-shipwright",
+    "date": "2026-09-15",
+    "unit": {
+      "status": "passed",
+      "passed": 19247,
+      "total": 19247
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 534,
+      "total": 534
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "F0 retained reports completed green but the local retention parent exited before publishing its manifest; the 18 retained JUnit reports were inspected directly."
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 38,
+      "exit_code": 0,
+      "justification": "The completion oracle is a read-only CLI; its direct CLI tests cover JSON verdicts and exit codes."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "run-scoped C1 checks use session identity and exclude unscoped legacy fallbacks",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_common.py PASSED"
+        },
+        {
+          "behavior": "legacy C1 callers retain their existing fail-open behavior",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_common.py::test_legacy_c1_callers_remain_unchanged PASSED"
+        },
+        {
+          "behavior": "build section checking can require at least one section without changing the default",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_verifiers_build.py PASSED"
+        },
+        {
+          "behavior": "the completion oracle maps all supported phases to JSON verdicts and documented exit codes",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_codex_completion_oracle.py PASSED"
+        },
+        {
+          "behavior": "the iterate oracle reads delivery state without invoking the mutating delivery tool",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_codex_completion_oracle.py::test_iterate_delivery_pending_uses_read_only_watch_once PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 5,
+        "covered_acs": 5
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-15-codex-light-shipwright",
+    "commit": "a3a15f1e5c268cdbe459f12d02b64305dfbf41a5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

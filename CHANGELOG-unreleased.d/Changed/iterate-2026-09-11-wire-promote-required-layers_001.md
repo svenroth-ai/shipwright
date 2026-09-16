@@ -1,0 +1,1 @@
+Iterate worktree setup now opportunistically runs the FR Layers promotion tool (P3.5); any CI-confirmed promotion it finds ships as its own small PR against the default branch, never inside the triggering iterate's own PR.

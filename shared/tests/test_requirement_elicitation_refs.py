@@ -75,6 +75,7 @@ def test_context_format_exists_and_is_non_empty():
     assert CONTEXT_FORMAT.read_text(encoding="utf-8").strip(), "format doc is empty"
 
 
+@pytest.mark.covers("FR-01.16/AC02")
 @pytest.mark.parametrize("section", REQUIRED_SECTIONS)
 def test_module_retains_cited_sections(section):
     body = MODULE.read_text(encoding="utf-8")
@@ -158,6 +159,7 @@ def test_module_pins_the_load_bearing_rules_by_sentence():
     )
 
 
+@pytest.mark.covers("FR-01.16/AC03")
 def test_module_pins_the_execution_order_rule_by_sentence():
     """Sec.0 precedes Sec.1 and is the module's own load-bearing claim about
     itself ("the order is load-bearing") — yet `REQUIRED_SECTIONS` had no
@@ -174,6 +176,7 @@ def test_module_pins_the_execution_order_rule_by_sentence():
     )
 
 
+@pytest.mark.covers("FR-01.16/AC05")
 def test_module_pins_the_minimum_two_scenarios_rule_by_sentence():
     """FR-01.16 AC05: Sec.5's stress-test minimum ("two per requirement, put
     to the person") is a concrete, falsifiable number the module derived from
@@ -189,6 +192,7 @@ def test_module_pins_the_minimum_two_scenarios_rule_by_sentence():
     )
 
 
+@pytest.mark.covers("FR-01.16/AC04")
 def test_module_pins_the_glossary_cross_check_trigger_by_sentence():
     """FR-01.16 AC04: Sec.4's glossary cross-check has a concrete TRIGGER
     ("every time a term is captured, check it against the terms already

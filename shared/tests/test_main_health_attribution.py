@@ -17,6 +17,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -35,6 +37,7 @@ def _verdicts(commits, states):
     return {c["sha"]: st for c, st in zip(commits, states)}
 
 
+@pytest.mark.covers("FR-01.19/AC01")
 def test_clean_anchor_gives_exact_attribution():
     commits = _commits("bad", "good")
     verdicts = _verdicts(commits, ["red", "green"])
@@ -45,7 +48,12 @@ def test_clean_anchor_gives_exact_attribution():
     assert out["gaps"] == []
 
 
+@pytest.mark.covers("FR-01.19/AC01")
 def test_first_bad_is_the_oldest_red_and_latest_red_is_reported_separately():
+    """FR-01.19/AC01 — "every one of them is checked on its own and none is
+    skipped because a later one arrived." c3/c2/c1 are each individually red;
+    the answer is the OLDEST (c1), not the one that happened to arrive last —
+    proving each commit was actually judged on its own, not lumped together."""
     commits = _commits("c3", "c2", "c1", "green")
     verdicts = _verdicts(commits, ["red", "red", "red", "green"])
     out = mh.attribute(commits, verdicts)
@@ -71,7 +79,10 @@ def test_a_running_commit_is_a_gap_not_a_green():
     assert out["gaps"][0]["verdict"] == "running"
 
 
+@pytest.mark.covers("FR-01.19/AC03")
 def test_no_green_anchor_in_the_window_refuses_to_attribute():
+    """FR-01.19/AC03 — "the answer cannot be established... when the shared
+    branch is examined, then that is what comes back, never 'it is fine'."""
     commits = _commits("red", "red", "red")
     verdicts = _verdicts(commits, ["red", "red", "red"])
     out = mh.attribute(commits, verdicts)
@@ -80,6 +91,7 @@ def test_no_green_anchor_in_the_window_refuses_to_attribute():
     assert out["first_bad_commit"] is None
 
 
+@pytest.mark.covers("FR-01.19/AC03")
 def test_saturated_run_history_that_stops_short_is_truncated_not_attributed():
     """The round-3 finding: reruns can crowd older commits out of a saturated
     response. Saturation plus a walk that needs a commit older than the oldest
@@ -167,7 +179,10 @@ def test_partners_refuse_when_the_pr_association_is_unavailable():
     assert out["reason_code"] == "pr_association_unavailable"
 
 
+@pytest.mark.covers("FR-01.19/AC02")
 def test_partners_list_the_merges_the_bad_commit_never_saw():
+    """FR-01.19/AC02 — "which other changes that one had never been tested
+    alongside" is part of what a repair needs without assembling it by hand."""
     between = [{"sha": "1" * 40, "subject": "other merge"}]
     out = mh.candidate_partners(base_sha="0" * 40, commits_between=between)
     assert out["base_sha"] == "0" * 40

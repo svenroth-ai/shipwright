@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 _HERE = Path(__file__).resolve().parent
 if str(_HERE.parent) not in sys.path:
     sys.path.insert(0, str(_HERE.parent))
@@ -32,6 +34,7 @@ def _spec_file(tmp_path, fr_id, priority="Must"):
         f"| {fr_id} | x | {priority} |\n", encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.10/AC08")
 def test_d1_hardened_untested_event_no_longer_covers(tmp_path):
     """AC4 regression — an FR whose ONLY covering event recorded ``tests_total:0``
     (a docs/refactor 0/0 commit) is NO LONGER covered."""

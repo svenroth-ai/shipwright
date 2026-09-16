@@ -1,0 +1,298 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-15-t8-run-build-preview-adopt",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T16:32:39.392340+00:00",
+      "disposition": "7-item checklist run, all pass/n-a, recorded in the iterate ADR's Self-Review section (.shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 13,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The new test `test_reload_context_states_which_phase_was_interrupted` targets the one state (\"in_progress\") that the existing suite demonstrably never exercised. That is precisely where latent bugs live — if `single_session_recovery.py` mishandles the interrupted state, this test turns the sub-iterate green-run assumption into a red CI and a scope expansion (fixing recovery logic inside a tagging change).",
+          "suggestion": "Run the new tests locally before claiming the bound; if they fail, that's a separate bug-fix iterate, not a tag — say so explicitly rather than absorbing the fix.  2. Category: risk — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Same pattern for `test_catalogue_followup.py` — `confirmation_triage` is described as \"completely UNTESTED,\" so 3 new tests against never-executed code carry the same latent-failure risk, plus a naming risk: an untested function may not conform to what the AC's \"tracked human follow-up\" language expects.",
+          "suggestion": "Same as above: pre-run and pre-classify. Also confirm the 3 tests cover the AC02 handover-count clause, not just the function's happy path.  3. Category: approach — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Counting FR-01.12 AC01's \"spawn half\" as bound (5/9) slightly overstates coverage — only half the AC is proven and the baseline will show it bound. The plan does disclose this, and Exception 1 mandates it, but the recorded reason in the baseline should say \"half-bound, no-seam for precondition\" rather than a plain bound tag.",
+          "suggestion": "Ensure the baseline entry (or its reason field) carries the half-bound annotation so downstream ratchet checks don't treat AC01 as fully proven.  4. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "test_complete_without_test_counts_is_rejected` assumes the section-builder schema contract is the only gate. If any other code path accepts a complete payload (e.g., a lenient parser elsewhere, or the section-state recording that \"accepts any string\"), the AC's \"never declared done on unproven code\" claim is only partially enforced and the negative test proves less than the AC.",
+          "suggestion": "Verify the schema validator is the sole enforcement point for completion; if a parallel lenient path exists, note it in the Exception 9 record for AC07 rather than implying full coverage.  5. Category: dependency — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The two-step regeneration order (traceability collector first, then `check_ac_coverage_ratchet.py --write`) is load-bearing — regenerating the baseline from a stale `test-traceability.json` would silently undercount. The plan states the order but nothing enforces it.",
+          "suggestion": "Make the regen a single scripted step or at least assert post-regen that the unbound count matches the expected 18-bound/12-unbound split before finishing.  6. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Leaving the regenerated baseline manifest uncommitted relies on CI rebuilding it from fresh JUnit output. If any of the five test roots produces a different tag set in CI (e.g., the adopt/dev_server files that were \"simply untagged\" get re-tagged only via the collector in some environment-specific way), the committed-vs-CI baseline can drift.",
+          "suggestion": "Spot-check CI's regen output once after merge and confirm the unbound delta matches the local 85 → 67 figure.  7. Category: approach — Severity: low (positive)",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Rejecting the FR-01.05 proxy binding (section-state accepting any string as a commit) is the correct call and directly honors the \"prove the AC\" constraint. Exception 9 mirroring Exception 1 is consistent precedent.",
+          "suggestion": "None — keep the rejection rationale in the survey record, it's the right artifact for reviewers.  No security concerns: this is test-and-tag work with no production code paths touched beyond read access.  Overall assessment: This is a disciplined, well-evidenced tagging pass that correctly distinguishes tagging gaps from testing gaps and resists proxy-binding to inflate the count. The main watch items are the latent-failure risk in the three genuinely new tests against never-exercised code, and keeping the half-bound AC01 clearly annotated in the baseline.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.12/AC01 is counted as bound although the plan explicitly says its “at least one build section is complete” precondition cannot be proved. A spawn/URL test proves only one half of a conjunctive AC.",
+          "suggestion": "Record AC01 as unbound/partial with the precondition’s no-seam reason, or add a seam that creates a completed build section and proves the server behavior under that state. Recalculate the totals accordingly (17 bound / 13 unbound if no other AC changes).",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "FR-01.05/AC07 is treated as proven by requiring `tests_passed` and `tests_total` fields on a `complete` payload. Required self-reported counts do not prove tests actually ran, passed, or apply to the delivered code.",
+          "suggestion": "Keep AC07 unbound unless the completion path consumes verified test-run evidence (for example, a result artifact or trusted runner output) and the test exercises rejection when that evidence is absent or failing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan introduces “Exception 9, written this run” for `/shipwright-build`, while the binding constraint requires using the t0 seam-survey row rather than re-deciding a seam. The plan cites t0 for preview but does not establish that t0 already approved this new build exception.",
+          "suggestion": "Amend the t0 survey first, with the owner-accepted row and explicit AC-level reasons for FR-01.05, then cite that stable row in this iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The new `catalogue_followup.confirmation_triage` tests appear unit-focused, but AC03 requires a human follow-up to be tracked. Testing an otherwise uncalled function’s return value would not prove the application creates and persists/escalates follow-up during the adoption workflow.",
+          "suggestion": "Include an integration-level assertion from the real adoption path through to the persisted/auditable follow-up record, alongside targeted unit cases for triage branches.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The execution plan does not name the exact pytest/JUnit invocations or reconcile roots. It names five surveyed roots, while the scope names four plugin test roots and the preview proof is actually in `shared/tests`. This leaves ADR-044 compliance and coverage collection reproducibility ambiguous.",
+          "suggestion": "State one concrete command and JUnit output path for each actual root, including `shared/tests` and any `shared/scripts/tests` invocation, and run the collector/ratchet against those outputs before finalizing the baseline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Uncommitted-but-present” traceability output risks a baseline that only passes locally. If CI regenerates from JUnit differently, the committed coverage baseline can drift or the new links may disappear.",
+          "suggestion": "Add a clean-worktree verification that runs the exact CI sequence and confirms regenerated traceability and baseline are identical to the intended checked-in coverage result (or explicitly commit the required source manifest if it is an input).  No new runtime security exposure is apparent from these test and traceability changes. The general reuse-first direction is sound, but the plan currently overstates two partial proofs and needs its seam-governance and CI regeneration details tightened before implementation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T16:31:57.196801+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**1. Category: risk — Severity: medium**\n**Finding:** The new test `test_reload_context_states_which_phase_was_interrupted` targets the one state (\"in_progress\") that the existing suite demonstrably never exercised. That is precisely where latent bugs live — if `single_session_recovery.py` mishandles the interrupted state, this test turns the sub-iterate green-run assumption into a red CI and a scope expansion (fixing recovery logic inside a tagging change).\n**Suggestion:** Run the new tests locally before claiming the bound; if they fail, that's a separate bug-fix iterate, not a tag — say so explicitly rather than absorbing the fix.\n\n**2. Category: risk — Severity: medium**\n**Finding:** Same pattern for `test_catalogue_followup.py` — `confirmation_triage` is described as \"completely UNTESTED,\" so 3 new tests against never-executed code carry the same latent-failure risk, plus a naming risk: an untested function may not conform to what the AC's \"tracked human follow-up\" language expects.\n**Suggestion:** Same as above: pre-run and pre-classify. Also confirm the 3 tests cover the AC02 handover-count clause, not just the function's happy path.\n\n**3. Category: approach — Severity: low**\n**Finding:** Counting FR-01.12 AC01's \"spawn half\" as bound (5/9) slightly overstates coverage — only half the AC is proven and the baseline will show it bound. The plan does disclose this, and Exception 1 mandates it, but the recorded reason in the baseline should say \"half-bound, no-seam for precondition\" rather than a plain bound tag.\n**Suggestion:** Ensure the baseline entry (or its reason field) carries the half-bound annotation so downstream ratchet checks don't treat AC01 as fully proven.\n\n**4. Category: edge-case — Severity: low**\n**Finding:** `test_complete_without_test_counts_is_rejected` assumes the section-builder schema contract is the only gate. If any *other* code path accepts a complete payload (e.g., a lenient parser elsewhere, or the sec […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** FR-01.12/AC01 is counted as bound although the plan explicitly says its “at least one build section is complete” precondition cannot be proved. A spawn/URL test proves only one half of a conjunctive AC.  \n   **Suggestion:** Record AC01 as unbound/partial with the precondition’s no-seam reason, or add a seam that creates a completed build section and proves the server behavior under that state. Recalculate the totals accordingly (17 bound / 13 unbound if no other AC changes).\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** FR-01.05/AC07 is treated as proven by requiring `tests_passed` and `tests_total` fields on a `complete` payload. Required self-reported counts do not prove tests actually ran, passed, or apply to the delivered code.  \n   **Suggestion:** Keep AC07 unbound unless the completion path consumes verified test-run evidence (for example, a result artifact or trusted runner output) and the test exercises rejection when that evidence is absent or failing.\n\n3. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan introduces “Exception 9, written this run” for `/shipwright-build`, while the binding constraint requires using the t0 seam-survey row rather than re-deciding a seam. The plan cites t0 for preview but does not establish that t0 already approved this new build exception.  \n   **Suggestion:** Amend the t0 survey first, with the owner-accepted row and explicit AC-level reasons for FR-01.05, then cite that stable row in this iterate.\n\n4. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The new `catalogue_followup.confirmation_triage` tests appear unit-focused, but AC03 requires a human follow-up to be tracked. Testing an otherwise uncalled function’s return value would not prove the application creates and persists/escalates follow-up during the adoption workflow.  \n   **Suggestion:** Include an integration-level asser […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T16:32:34.307696+00:00",
+      "disposition": "Runner has no Agent tool; code-reviewer cascade delegated to orchestrator at 3f-bis before merge.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T16:32:34.434737+00:00",
+      "disposition": "Runner has no Agent tool; doubt-reviewer cascade delegated to orchestrator at 3f-bis before merge.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-09-15-t8-run-build-preview-adopt-miniplan.md:~100-109` (Result section) and step 3",
+          "line": null,
+          "finding": "The mini-plan's Result section still reflects the pre-correction state: it claims \"18 of 30 ACs bound (FR-01.05: 1/8 …)\" and \"85 -> 67 unbound\", directly contradicting the ADR's corrected numbers (FR-01.05: 0/8, 67 -> 68, 17 effective bindings after the AC07 marker revert per openai finding #2). Step 3 of the mini-plan also still describes AC07 as having a \"real, if partial, seam\" that was tagged. The mini-plan was not updated after the accepted-and-fixed finding.",
+          "suggestion": "Update the mini-plan's Result section and step 3 to match the ADR's final state (FR-01.05 0/8, 85→68, 17-of-30). A reviewer reading only the mini-plan gets a wrong coverage picture.  2. Category: test — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_dev_server_multiservice.py:482`, `:936` — multi-argument `@pytest.mark.covers(\"FR-01.12/AC04\", \"FR-01.12/AC05\")",
+          "line": null,
+          "finding": "The diff uses the `covers` marker with multiple positional args in several places, but nothing in the diff shows the traceability collector (`test_links.py`) actually iterating `mark.args` rather than reading a single string. If the collector reads only one tag (or does `mark.args[0]`), the second AC silently loses its binding and the regenerated baseline would not match what the ADR's table claims. The newly registered marker description in `plugins/shipwright-build/pyproject.toml` says \"one or more FRs\", but that is documentation, not proof.",
+          "suggestion": "Verify (or show in the ADR) that `test_links.py` handles multi-arg `covers` markers; otherwise split into stacked single-arg decorators, which is the pattern used everywhere else in this diff.  3. Category: spec — Severity: low (contested, disclosed)",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:515` (Exception 9) and `shipwright_ac_coverage_baseline.json",
+          "line": null,
+          "finding": "The sub-iterate's binding constraint says \"cite the row t0 produced … rather than re-deciding the seam,\" yet Exception 9 for FR-01.05 was written by t8 itself mid-run. The ADR's rejection of openai's HIGH finding relies on precedent (Exceptions 5–8) rather than a t0 decision, so the letter of the binding constraint is not met even if the spirit is. Also, `FR-01.12/AC01` was removed from `unbound` while being only half-bound, and the baseline schema (per the ADR's own finding #9) cannot record \"half-bound\" — so the machine-readable artifact overstates the binding that only prose discloses.",
+          "suggestion": "Get explicit owner sign-off on Exception 9 retroactively (or note it as pending), and consider whether AC01's half-bind should stay in `unbound` until the schema can represent it, matching openai's recalculated 17/13 split.  4. Category: test — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-adopt/tests/test_catalogue_followup.py:52,",
+          "line": 70,
+          "finding": "The assertions `\"3\" in card[\"title\"]` / `\"5\" in card[\"detail\"]` / `\"as of onboarding\" in card[\"detail\"]` are substring checks that can pass on coincidental digit matches (e.g. a date, a count of a different field, or an FR-id fragment) and would survive wording drift that removes the semantic claim. The docstring-anchored `\"as of onboarding\"` assertion is a literal-string pin that breaks on any rewording without proving the snapshot semantics.",
+          "suggestion": "Assert the count against a computed expectation (e.g. a regex like `r\"\\b3 unconfirmed\\b\"` or parse the number out) rather than a bare substring, so the test proves the count is actually derived from the catalogue.  5. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-run/tests/test_orchestrator_context_reload.py:214-247` (new test)",
+          "line": null,
+          "finding": "The new test uses `_done_task` and `_config_with` helpers and `json`/`reload_orchestrator_context` without visible imports/definitions in the diff hunk — presumably existing in the file, but the ADR's local-green claim is the only evidence the fixture shapes match production serialization (e.g. whether a real interrupted run writes `result: None` vs. omitting the key). If production omits `result` rather than writing `None`, the test would pass on a state production never produces.",
+          "suggestion": "Confirm the fixture shape matches what `update_step`/recovery actually persists for an interrupted phase (ideally by generating one via the real code path in the test, not a hand-written dict).  6. Category: regression — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-run/tests/test_validation_override_record.py:72-74` and `plugins/shipwright-build/tests/test_section_builder_contract.py:121-236",
+          "line": null,
+          "finding": "Decorative separator-comment removals were made purely to stay under a bloat cap (Self-Review item 6). While not a functional bug, the blank-line-before-class removals in `test_section_builder_contract.py` degrade readability for zero behavioral gain and are churn unrelated to the AC work; also the new `test_complete_without_test_counts_is_rejected` was added directly after a blank-line deletion, making the class boundary ambiguous in `TestInvalidPayloads`.",
+          "suggestion": "Skip cosmetic line-count games; if a file must be trimmed, trim dead weight, not visual structure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shipwright_ac_coverage_baseline.json",
+          "line": 40,
+          "finding": "FR-01.12/AC01` is removed from `unbound` even though its tagged test only proves server spawn/URL output and explicitly does not prove the AC’s required “at least one build section is complete” precondition. The coverage gate will therefore treat a conjunctive AC as fully proven.",
+          "suggestion": "Keep AC01 unbound/partial with the no-seam reason until a test can establish the completed-section precondition and exercise preview under that state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md",
+          "line": 82,
+          "finding": "The recorded test commands omit the required `--junitxml` argument for every exercised root. This violates the explicit ADR-044 constraint of one pytest invocation and one JUnit XML output per root, and leaves the claimed regenerated traceability evidence unreproducible.",
+          "suggestion": "Run and record one command per actual root with distinct `--junitxml` paths, then regenerate coverage from those outputs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": ".shipwright/planning/iterate/2026-09-15-t8-run-build-preview-adopt-miniplan.md",
+          "line": 98,
+          "finding": "The final accounting claims “18 of 30 ACs bound” and “12” unbound, but the committed baseline changes from 85 to 68 unbound: only 17 entries were removed. Moreover, one of those 17 is the partial FR-01.12/AC01 binding, while FR-01.05/AC07 is explicitly retracted. The evidence artifacts therefore overstate coverage.",
+          "suggestion": "Correct the plan/ADR totals to match the baseline and distinguish fully proven, partial, and unbound ACs.  Overall assessment: ship-with-fixes. The change contains useful test bindings, but it currently marks a partially proven AC as complete and does not meet the required JUnit execution evidence.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-15T16:40:46.867337+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: spec — Severity: medium**\n- File: `.shipwright/planning/iterate/2026-09-15-t8-run-build-preview-adopt-miniplan.md:~100-109` (Result section) and step 3\n- Finding: The mini-plan's Result section still reflects the pre-correction state: it claims \"18 of 30 ACs bound (FR-01.05: 1/8 …)\" and \"85 -> 67 unbound\", directly contradicting the ADR's corrected numbers (FR-01.05: 0/8, 67 -> 68, 17 effective bindings after the AC07 marker revert per openai finding #2). Step 3 of the mini-plan also still describes AC07 as having a \"real, if partial, seam\" that was tagged. The mini-plan was not updated after the accepted-and-fixed finding.\n- Suggestion: Update the mini-plan's Result section and step 3 to match the ADR's final state (FR-01.05 0/8, 85→68, 17-of-30). A reviewer reading only the mini-plan gets a wrong coverage picture.\n\n**2. Category: test — Severity: medium**\n- File: `shared/tests/test_dev_server_multiservice.py:482`, `:936` — multi-argument `@pytest.mark.covers(\"FR-01.12/AC04\", \"FR-01.12/AC05\")`\n- Finding: The diff uses the `covers` marker with multiple positional args in several places, but nothing in the diff shows the traceability collector (`test_links.py`) actually iterating `mark.args` rather than reading a single string. If the collector reads only one tag (or does `mark.args[0]`), the second AC silently loses its binding and the regenerated baseline would not match what the ADR's table claims. The newly registered marker description in `plugins/shipwright-build/pyproject.toml` says \"one or more FRs\", but that is documentation, not proof.\n- Suggestion: Verify (or show in the ADR) that `test_links.py` handles multi-arg `covers` markers; otherwise split into stacked single-arg decorators, which is the pattern used everywhere else in this diff.\n\n**3. Category: spec — Severity: low (contested, disclosed)**\n- File: `.shipwright/planning/iterate/2026-09-11-req3-05-seam-survey.md:515` (Exception 9) and `shipwright_ac_coverage_ […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: shipwright_ac_coverage_baseline.json:40  \n  Finding: `FR-01.12/AC01` is removed from `unbound` even though its tagged test only proves server spawn/URL output and explicitly does not prove the AC’s required “at least one build section is complete” precondition. The coverage gate will therefore treat a conjunctive AC as fully proven.  \n  Suggestion: Keep AC01 unbound/partial with the no-seam reason until a test can establish the completed-section precondition and exercise preview under that state.\n\n- Category: spec  \n  Severity: medium  \n  File: .shipwright/planning/adr/iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md:82  \n  Finding: The recorded test commands omit the required `--junitxml` argument for every exercised root. This violates the explicit ADR-044 constraint of one pytest invocation and one JUnit XML output per root, and leaves the claimed regenerated traceability evidence unreproducible.  \n  Suggestion: Run and record one command per actual root with distinct `--junitxml` paths, then regenerate coverage from those outputs.\n\n- Category: spec  \n  Severity: medium  \n  File: .shipwright/planning/iterate/2026-09-15-t8-run-build-preview-adopt-miniplan.md:98  \n  Finding: The final accounting claims “18 of 30 ACs bound” and “12” unbound, but the committed baseline changes from 85 to 68 unbound: only 17 entries were removed. Moreover, one of those 17 is the partial FR-01.12/AC01 binding, while FR-01.05/AC07 is explicitly retracted. The evidence artifacts therefore overstate coverage.  \n  Suggestion: Correct the plan/ADR totals to match the baseline and distinguish fully proven, partial, and unbound ACs.\n\nOverall assessment: ship-with-fixes. The change contains useful test bindings, but it currently marks a partially proven AC as complete and does not meet the required JUnit execution evidence.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T16:32:34.178123+00:00",
+      "disposition": "Runner has no Agent tool; spec-reviewer cascade delegated to orchestrator at 3f-bis before merge (record_review_pass rule for the runner's own limit).",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-15T16:32:05.836913+00:00",
+      "disposition": "No internal arm for plan review exists (project_plan_review_has_no_internal_arm) — permanently not_run, documented gap.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

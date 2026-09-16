@@ -66,7 +66,6 @@ def _exists_in(root: Path, sha: str, rel: str) -> bool:
     """Is ``rel`` present in the tree of ``sha``? ``cat-file -e`` without raising."""
     return _git(root, "cat-file", "-e", f"{sha}:{rel}", check=False).returncode == 0
 
-
 def _tool(root: Path, *args: str) -> tuple[int, dict]:
     """The real CLI, as a subprocess — the process boundary is the point."""
     proc = subprocess.run(
@@ -187,6 +186,7 @@ def test_a_writer_between_stamp_and_commit_is_caught(onboarded: Path) -> None:
         )
 
 
+@pytest.mark.covers("FR-01.10/AC04")
 def test_a_repository_with_no_commits_can_still_be_onboarded(tmp_path: Path) -> None:
     """AC-2 end to end: no commit to name, so none is named — and it still ships.
 

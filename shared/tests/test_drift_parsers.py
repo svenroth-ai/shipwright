@@ -318,7 +318,7 @@ REMOVED_REQ_FIXTURE = (
     "| FR-01.02 | another live requirement | Should |\n"
 )
 
-
+@pytest.mark.covers("FR-01.02/AC15")
 def test_parse_fr_table_excludes_removed_requirements_section():
     frs = parse_fr_table(REMOVED_REQ_FIXTURE, split="01", spec_path="x")
     ids = {f.id for f in frs}

@@ -302,6 +302,17 @@ Only the literal word `inferred` in parentheses counts — `(auto)` or `(guess)`
 not, and a cell marked that way is read as a binding declaration. Mind the
 space: `unit (inferred)` parses, `unit(inferred)` silently yields no layers.
 
+**Why this is authored by hand here, and not by an automated writer.** A newly
+minted FR has no CI-confirmed test evidence yet — it is new *right now* — so
+there is nothing an evidence-based writer could promote a cell from.
+`shared/scripts/tools/promote_required_layers.py` (P3.5) exists precisely for
+the opposite case: it *widens* an already-existing binding once a LATER CI run
+confirms a higher layer, and it is wired to run opportunistically at iterate
+worktree setup. It never mints a first cell for a row that did not exist when
+its evidence was produced. Hand-authoring this cell on a new FR is therefore
+the complete mechanism for this path, not a stand-in for one that has not been
+built yet.
+
 ### Acceptance Criteria
 
 **FR-{NN}.01: {Short name}**

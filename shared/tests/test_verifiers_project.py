@@ -18,6 +18,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from tools.verifiers.common import (  # noqa: E402
@@ -200,6 +202,7 @@ def test_run_project_checks_with_empty_run_id_skips_phase_history(tmp_path):
     assert phase_history_results[0].ok is True  # skipped → neutral pass
 
 
+@pytest.mark.covers("FR-01.02/AC11")
 def test_run_project_checks_detects_missing_c4_adr(tmp_path):
     """External plan review (e2-checks-project-elicitation, round 1): the
     #8 ledger citation claims C4 (``check_c4_decision_log_has_phase_adr``)
@@ -246,6 +249,7 @@ def test_run_project_checks_detects_grill_trace_greenfield_assumed(tmp_path):
     ]
 
 
+@pytest.mark.covers("FR-01.02/AC07")
 def test_run_project_checks_detects_grill_trace_blank_dimension(tmp_path):
     """A second, independently-triggerable STOP condition — proves the
     wiring carries every one of the four closed-vocabulary STOPs, not
@@ -280,6 +284,7 @@ def test_run_project_checks_passes_with_a_clean_grill_trace(tmp_path):
 # wired into run_project_checks() via _project_gate_wiring.py.
 # ---------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.02/AC06", "FR-01.02/AC08", "FR-01.02/AC13", "FR-01.02/AC14")
 def test_run_project_checks_includes_all_four_new_gates(tmp_path):
     seed_canon_project(tmp_path, run_id="project-happy")
     results = run_project_checks(tmp_path, run_id="project-happy")

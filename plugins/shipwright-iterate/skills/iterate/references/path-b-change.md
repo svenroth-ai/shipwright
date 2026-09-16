@@ -45,6 +45,15 @@ differences:
        (`shared/fr-authoring.md` §1) — an edit must not smuggle a file path,
        symbol, or ADR number into a row that was previously clean. The
        run_id/ADR provenance belongs in the AC line, not the description.
+     - **If this MODIFY widens what the FR must be tested at** (the change
+       adds coverage at a layer the row's `Layers` cell does not already
+       name), widen the cell by hand now — do not wait for the automated
+       path. The automated one (`promote_required_layers.py` at worktree
+       setup, B1a step 5.5) only fires on CI-CONFIRMED evidence from an
+       already-merged commit, so it can never see THIS iterate's own
+       not-yet-run tests; it exists to catch a widening a PRIOR iterate left
+       unrecorded, not to substitute for hand-widening the FR you are
+       modifying right now.
    - **ADD** (rare for CHANGE) — only when the modification carves out a
      genuinely new user-visible capability alongside the old one, and only
      after the gate above says MINT: append a new FR table row + an

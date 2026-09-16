@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 from scripts.lib.data_collector import (
     ComplianceData,
     DependencyInfo,
@@ -24,6 +25,7 @@ from triage import append_triage_item  # noqa: E402
 
 
 class TestGenerate:
+    @pytest.mark.covers("FR-01.10/AC01")
     def test_produces_dashboard(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
@@ -42,6 +44,7 @@ class TestGenerate:
         assert "| All unit tests passing | 16/16 | PASS |" in result
         assert "| Copyleft license risk | 0 | PASS |" in result
 
+    @pytest.mark.covers("FR-01.10/AC01")
     def test_compliance_artifacts_links(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
@@ -91,7 +94,6 @@ class TestGenerate:
         assert "# Compliance Dashboard" in result
         assert "| All sections completed | 0/0 | WARN |" in result
 
-
 class TestGenerateFile:
     def test_writes_file(self, project_root: Path):
         data = collect_all(project_root)
@@ -134,7 +136,6 @@ def _build_event_data(
     ]
     data.phase_events = phase_events or []
     return data
-
 
 class TestAdoptedModeIndicators:
     """B.1 — adopted projects show n/a for pipeline phases and HIDE
@@ -180,7 +181,6 @@ class TestAdoptedModeIndicators:
         result = generate(data)
         assert "| Pipeline phases completed | 7/7 |" in result
         assert "9/7" not in result  # would be the raw list length pre-fix
-
 
 class TestWhyWarnColumn:
     """B.1 — every quality-indicator table has a 'Why warn?' 4th column;

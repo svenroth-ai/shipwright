@@ -46,8 +46,13 @@ ADOPT_CONTRACT = [ADOPT_SKILL, ADOPT_CONTRACT_REF]
 @pytest.mark.parametrize("paths", [GRADE_CONTRACT, ADOPT_CONTRACT],
                          ids=["grade", "adopt"])
 class TestTheSkillPointsAtTheConsumer:
-    """Whichever file it lives in, the trail from the producer must reach the contract."""
+    """Whichever file it lives in, the trail from the producer must reach the contract.
 
+    @covers FR-01.15/AC07 — "the capability producing it states plainly that
+    it has an outside reader and what the contract is."
+    """
+
+    @pytest.mark.covers("FR-01.15/AC07")
     def test_the_skill_itself_flags_the_contract(self, paths: list[Path]):
         # The Kern is what a maintainer skims. It must at minimum RAISE THE FLAG, even
         # when the detail is one hop away in references/.
@@ -58,6 +63,7 @@ class TestTheSkillPointsAtTheConsumer:
 
 @pytest.mark.parametrize("path", [GRADE_SKILL, ADOPT_CONTRACT_REF], ids=["grade", "adopt"])
 class TestSkillStatesTheContract:
+    @pytest.mark.covers("FR-01.15/AC07")
     def test_it_has_a_cross_repo_contract_section(self, path: Path):
         assert "Cross-repo contract" in _text(path), (
             f"{path.name} no longer states that its output has an external consumer. "
@@ -65,6 +71,7 @@ class TestSkillStatesTheContract:
             "has no reason to know the WebUI renders it."
         )
 
+    @pytest.mark.covers("FR-01.15/AC07")
     def test_it_names_the_consumer(self, path: Path):
         text = _text(path)
         assert all(marker in text for marker in CONSUMER_MARKERS), (
@@ -92,10 +99,25 @@ class TestSkillStatesTheContract:
         text = _text(path)
         assert "origin/main" in text and "frozen" in text
 
+    def test_it_states_the_contract_binds_this_side_only(self, path: Path):
+        """Drift guard only — NOT bound to FR-01.15/AC08 (external plan
+        review, glm medium + openai high: a doc sentence authored in this
+        same run, pinned by a test authored in this same run, proves the
+        sentence survives, not that any machine behavior enforces the
+        scope claim it makes — a self-fulfilling test, the identical class
+        Exception 8 already names for its own drift-pin tests). Kept
+        unmarked as a real, valuable guard against the sentence being
+        quietly deleted later; see the seam survey's Exception 2 addendum
+        for the recorded no-seam reason this AC stays unbound under."""
+        text = _text(path)
+        assert "binds this side only" in text
+        assert "receiving side's own requirement" in text
+
 
 class TestProducerCarriesTheWarning:
     """The SKILL.md is where you read; the producer is where you EDIT."""
 
+    @pytest.mark.covers("FR-01.15/AC07")
     @pytest.mark.parametrize("path", [GRADE_PRODUCER, ADOPT_PRODUCER],
                              ids=["report_model", "analyze_codebase"])
     def test_the_module_docstring_warns_before_the_first_field(self, path: Path):

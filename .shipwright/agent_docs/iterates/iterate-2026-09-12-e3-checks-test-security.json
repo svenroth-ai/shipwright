@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-12-e3-checks-test-security",
+  "date": "2026-09-12T08:06:01.940818Z",
+  "event_at": "2026-09-12T08:05:25.784442+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/e3-checks-test-security",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+  "adr": "iterate-2026-09-12-e3-checks-test-security"
+}

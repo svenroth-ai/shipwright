@@ -102,6 +102,7 @@ class TestAllFiveRenderers:
         doc = RENDERERS[key](_data(tmp_path))
         assert sum(ln.startswith(BANNER_PREFIX) for ln in doc.splitlines()) == 1
 
+    @pytest.mark.covers("FR-01.10/AC03")
     @pytest.mark.parametrize("key", sorted(RENDERERS))
     def test_the_banner_names_the_run(self, key, tmp_path: Path):
         assert parse_banner_line(RENDERERS[key](_data(tmp_path))).run_id == RUN
@@ -112,6 +113,7 @@ class TestAllFiveRenderers:
         # dirty — the exact defect deterministic timestamps were introduced to fix.
         assert RENDERERS[key](_data(tmp_path)) == RENDERERS[key](_data(tmp_path))
 
+    @pytest.mark.covers("FR-01.10/AC03")
     @pytest.mark.parametrize("key", sorted(RENDERERS))
     def test_no_events_renders_unknown_not_a_guess(self, key, tmp_path: Path):
         doc = RENDERERS[key](_data(tmp_path, events=[]))
@@ -146,6 +148,7 @@ class TestOneEventForBothFields:
         assert latest_work_event([newest, older]).adr_id == RUN
         assert latest_work_event([older, newest]).adr_id == RUN
 
+    @pytest.mark.covers("FR-01.10/AC03")
     @pytest.mark.parametrize("key", sorted(RENDERERS))
     def test_document_reports_the_newest_run_not_an_earlier_one(self, key, tmp_path: Path):
         events = [_event(OLDER, "2026-07-20T08:00:00Z"), _event(RUN, "2026-07-27T10:00:00Z")]

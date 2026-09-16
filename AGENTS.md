@@ -53,6 +53,7 @@ CHANGELOG-unreleased.d/     # Pending changelog drop files (aggregated at releas
 - Do not use `xhigh` or `max` unless concrete risk, complexity, or a failed review justifies it.
 - `shipwright_model_config.json` contains Claude model tiers. Do not reinterpret or edit those values as Codex model names.
 - For triage-item implementation, follow the locally installed Shipwright iterate skill. In this monorepo its source is `plugins/shipwright-iterate/skills/iterate/SKILL.md`; the active Claude Code runtime resolves Shipwright from `~/.claude/plugins/cache/shipwright/`.
+- A webui-driven Codex launch path is documented in `Spec/codex-light-webui.md`.
 - Use one isolated worktree and branch per iterate; never push `main` directly.
 - Preserve unrelated and unexplained changes. Do not rewrite, discard, or absorb them silently.
 - Reviews through the configured OpenRouter route are authorized.

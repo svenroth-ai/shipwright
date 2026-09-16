@@ -14,7 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-import pytest  # noqa: F401  — used for fixtures via conftest
+import pytest
 
 # phase_validators.py imports `lib.config` from shared/scripts/. At module
 # load it does its own `sys.path.insert(0, <shared/scripts>)` so we need
@@ -104,6 +104,7 @@ def test_legacy_path_still_works_when_canon_artifacts_missing(tmp_path, monkeypa
     assert any("[canon]" in m for m in ask_messages)
 
 
+@pytest.mark.covers("FR-01.02/AC01")
 def test_full_canon_project_passes(tmp_path, monkeypatch):
     _seed_basic_project(tmp_path)
     _seed_canon_artifacts(tmp_path, run_id="project-20260414-full")
@@ -143,10 +144,10 @@ def test_phase_history_missing_blocks_validation(tmp_path, monkeypatch):
     assert any("phase_history" in i["message"] for i in issues if i["severity"] == "ask")
 
 
+@pytest.mark.covers("FR-01.02/AC01")
 def test_legacy_pre_12_1_gate_still_fires(tmp_path, monkeypatch):
-    """If the project plugin's pre-12.1 gate fails (no splits), the
-    canon verifier doesn't even run — we fail fast with the legacy
-    ask message."""
+    """No splits fails fast on the legacy pre-12.1 gate before the canon
+    verifier even runs. AC01's other half: an empty catalogue must FAIL."""
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"status": "complete", "splits": []})
     )

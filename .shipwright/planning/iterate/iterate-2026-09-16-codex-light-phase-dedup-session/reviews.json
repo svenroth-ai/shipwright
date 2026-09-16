@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-codex-light-phase-dedup-session",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:31:11.763663+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:31:18.690285+00:00",
+      "disposition": "small complexity BUG fix — below the medium threshold that buys a mini-plan/external plan review",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "shared/scripts/lib/phase_history.py",
+          "line": 189,
+          "finding": "shared/scripts/lib/phase_history.py:188-193 stated the stale rationale 'record_event dedups phase_completed on (phase, splitId) permanently' as the justification for wall-clock ordering in entry_wall_time — the code-side twin of a doc passage already corrected elsewhere in the same diff. Fixed by qualifying it to 'within one session'.",
+          "suggestion": "Apply the same session-scoped qualification used at docs/hooks-and-pipeline.md:4429.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 4410,
+          "finding": "docs/hooks-and-pipeline.md:4410, 19 lines above the corrected passage in the same C3 section, still asserted the dedup was unconditional ('every phase re-run where record_event's first-wins dedup meant no fresh event landed'). Fixed by qualifying to 'every same-session phase re-run'.",
+          "suggestion": "Qualify the same way as the corrected passage below it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "correctness",
+          "file": "shared/tests/test_c3_cross_phase_verdict.py",
+          "line": 11,
+          "finding": "shared/tests/test_c3_cross_phase_verdict.py:11-12 carried a third verbatim copy of the corrected sentence in its module docstring. Fixed with the same session-scoped qualification.",
+          "suggestion": "Same one-line qualification as the other two copies.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "test-coverage",
+          "file": "shared/tests/test_record_event_lifecycle_integrity.py",
+          "line": 145,
+          "finding": "test_dedup_scan_runs_inside_the_lock only exercised the sessionless unconditional-duplicate branch under the F14 file lock, not the new session-comparison branch, so the concurrency invariant proof did not cover the code path that now decides it.",
+          "suggestion": "Add a sibling test stamping both events with the same session id, asserting the skip still fires under the lock.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "documentation",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 3366,
+          "finding": "docs/hooks-and-pipeline.md:3366's session-scoped clause omitted that a matching event with no session of its own still blocks unconditionally, and that an environment with no SHIPWRIGHT_SESSION_ID set never stamps one at all.",
+          "suggestion": "Add a clause covering both degradations.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": null,
+          "category": "readability",
+          "file": "shared/tests/test_c3_same_phase_window.py",
+          "line": 131,
+          "finding": "test_c3_same_phase_window.py:131-132 and test_completion_writers.py:193-194 assert unconditional 'first-wins' dedup in their docstrings; the premise is now 'first-wins within a session'. Tests still pass since both drive record_event twice under an unchanged env, but the prose is stale.",
+          "suggestion": "Two-word qualification while the neighbourhood is open.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T07:31:11.884811+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "efficacy",
+          "file": "shared/scripts/lib/event_dedup.py",
+          "line": 140,
+          "finding": "Claim under doubt: A matching phase_completed event with no session of its own can safely, unconditionally block a session-aware caller's write, as the original fix design specified. — has_phase_event returns on the FIRST matching event in scan order, so a single legacy sessionless event for a (phase, splitId) pair permanently re-arms the exact swallowing bug this fix exists to remove, for every later session — and sessionless events are common in practice: convert_configs_to_events.py's migration output, SHIPWRIGHT_SESSION_ID env-var loss in a child shell, and this repo's own shipwright_events.jsonl carries one. Fixed by changing the semantics so a sessionless prior event only blocks a session-blind caller (the historical default); a session-aware caller now proceeds past it, since it cannot be proven to be the same completion. New tests: test_has_phase_event_sessioned_caller_not_blocked_by_sessionless_prior and test_phase_completed_not_deduped_when_prior_event_is_sessionless_via_cli.",
+          "suggestion": "Narrow the sessionless-blocks rule to only apply to session-blind callers, and prove it with a test that a sessioned caller's write is NOT swallowed by a pre-existing sessionless match.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "completeness",
+          "file": "plugins/shipwright-run/scripts/lib/orchestrator_pkg/events.py",
+          "line": 157,
+          "finding": "Claim under doubt: All copies of the stale 'record_event dedups phase_completed permanently' claim were corrected by the code-review round. — plugins/shipwright-run/scripts/lib/orchestrator_pkg/events.py:150-158, the phase-end emitter's own contract docstring, carried a 4th, out-of-diff copy ('pairs exactly, as before') that code-review's file list did not cover. Fixed by qualifying it to 'within one SHIPWRIGHT_SESSION_ID' with a pointer to this iterate.",
+          "suggestion": "Grep the whole repo, not just the files already in the diff, for the exact stale phrase before considering doc-drift closed.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "defensive-robustness",
+          "file": "shared/scripts/lib/event_dedup.py",
+          "line": 141,
+          "finding": "Claim under doubt: The isinstance(existing_session, str) guard is sufficient on its own; the caller's session value never needs the same guard. — session was checked only for truthiness while existing_session was isinstance-guarded — a non-string truthy session would fail open (compare False against every existing_session, disabling dedup entirely for that call). Not reachable from the CLI today (record_event.py and finalize_iterate.py both source it from os.environ.get, always str), but append_event_idempotent is public API with an existing external caller in shipwright-compliance's _grade_snapshot.py. Fixed by isinstance(session, str)-guarding the caller's session symmetrically before entering the comparison branch.",
+          "suggestion": "Guard both sides of the comparison identically.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T07:31:12.009546+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:31:18.928483+00:00",
+      "disposition": "small complexity BUG fix — external code review gate applies at medium+ only",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:30:12.143436+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:31:18.810478+00:00",
+      "disposition": "small complexity BUG fix — no plan phase, no internal plan reviewer",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

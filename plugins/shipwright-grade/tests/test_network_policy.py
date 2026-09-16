@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from gh_bridge import GhResult
 from network_policy import resolve_network_policy
 
@@ -16,6 +18,7 @@ def _gh(visibility="PUBLIC", *, error=""):
     return fake
 
 
+@pytest.mark.covers("FR-01.18/AC08")
 def test_default_is_local_only():
     p = resolve_network_policy(
         allow_network=False, allow_private=False, remote_url=_REMOTE, gh=_gh())
@@ -24,6 +27,7 @@ def test_default_is_local_only():
     assert "local-only" in p.note
 
 
+@pytest.mark.covers("FR-01.18/AC08")
 def test_public_repo_enriches_when_requested():
     p = resolve_network_policy(
         allow_network=True, allow_private=False, remote_url=_REMOTE, gh=_gh("PUBLIC"))
@@ -32,6 +36,7 @@ def test_public_repo_enriches_when_requested():
     assert p.visibility == "public"
 
 
+@pytest.mark.covers("FR-01.18/AC08")
 def test_private_repo_auto_disabled():
     p = resolve_network_policy(
         allow_network=True, allow_private=False, remote_url=_REMOTE, gh=_gh("PRIVATE"))
@@ -40,6 +45,7 @@ def test_private_repo_auto_disabled():
     assert "--allow-network-private" in p.note
 
 
+@pytest.mark.covers("FR-01.18/AC08")
 def test_private_repo_override_enables():
     p = resolve_network_policy(
         allow_network=True, allow_private=True, remote_url=_REMOTE, gh=_gh("PRIVATE"))

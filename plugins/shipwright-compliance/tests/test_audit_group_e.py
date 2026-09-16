@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
@@ -103,6 +105,7 @@ def test_e_passes_when_on_disk_matches_snapshot(tmp_path):
         assert by_id[cid].source == SOURCE_DETECTIVE_ONLY
 
 
+@pytest.mark.covers("FR-01.10/AC02")
 def test_e_flags_stale_doc_against_snapshot(tmp_path):
     _seed_iterate_snapshot(tmp_path)
     # Hand-edit the RTM post-snapshot.
@@ -128,6 +131,7 @@ def test_e_flags_stale_doc_against_snapshot(tmp_path):
         assert by_id[cid].status == "pass"
 
 
+@pytest.mark.covers("FR-01.10/AC02")
 def test_e_flags_missing_doc_on_disk(tmp_path):
     _seed_iterate_snapshot(tmp_path)
     # Delete the RTM post-snapshot — file missing == stale.

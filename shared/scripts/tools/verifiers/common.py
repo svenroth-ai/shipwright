@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -160,6 +161,69 @@ def read_events_jsonl(project_root: Path) -> list[dict[str, Any]]:
     # the caller's choice to make, and the verifiers' contract is that
     # corruption reaches the operator as a CheckResult, never as a warning.
     return list(result.records)
+
+
+def read_run_events(
+    project_root: Path,
+    *,
+    session: str,
+    since: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return records belonging to one runtime session across all worktrees.
+
+    Exact ``session`` matches are included only when they are newer than
+    ``since`` (when a boundary is supplied).  ``since`` is a deliberate
+    degradation path for launchers whose child shell did not preserve the
+    session environment variable: only records with no ``session`` field and
+    a timestamp strictly later than ``since`` are admitted.  This is weaker evidence
+    than an exact session match: a concurrent run which also lacks a session
+    stamp cannot be distinguished, so launchers should supply ``session``
+    whenever possible.
+    """
+    roots = [project_root]
+    worktrees = project_root / ".worktrees"
+    if worktrees.is_dir():
+        try:
+            roots.extend(path for path in sorted(worktrees.iterdir()) if path.is_dir())
+        except OSError:
+            # Worktrees are mutable runtime state.  Keep exact-session evidence
+            # from the project root if a sibling disappears during discovery.
+            pass
+
+    selected: list[dict[str, Any]] = []
+    for root in roots:
+        try:
+            events = read_events_jsonl(root)
+        except OSError:
+            # A discovered worktree can disappear before its event file is read.
+            continue
+        for event in events:
+            timestamp = event.get("ts") or event.get("timestamp")
+            if event.get("session") == session:
+                if since is None or _timestamp_after(timestamp, since):
+                    selected.append(event)
+                continue
+            if (
+                since is not None
+                and "session" not in event
+                and _timestamp_after(timestamp, since)
+            ):
+                selected.append(event)
+    return selected
+
+
+def _timestamp_after(timestamp: Any, since: str) -> bool:
+    """Compare ISO-8601 instants; malformed timestamps never enter a run."""
+    if not isinstance(timestamp, str):
+        return False
+    try:
+        value = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        floor = datetime.fromisoformat(since.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if value.tzinfo is None or floor.tzinfo is None:
+        return False
+    return value.astimezone(timezone.utc) > floor.astimezone(timezone.utc)
 
 
 def read_decision_log(project_root: Path) -> str:
@@ -356,6 +420,54 @@ def check_c1_phase_event_recorded(project_root: Path, phase: str) -> CheckResult
         f"no phase_completed event for phase={phase} "
         "(no work_completed / decision-drop / phase_history evidence)",
     )
+
+
+def check_c1_run_scoped(
+    project_root: Path,
+    phase: str,
+    *,
+    session: str,
+    since: str | None = None,
+) -> CheckResult:
+    """C1 evidence limited to the supplied session.
+
+    This intentionally does not use the ``phase_history`` or decision-drop
+    fallbacks from :func:`check_c1_phase_event_recorded`: neither carries a
+    timestamp plus a session identity, so either could certify a different
+    run as complete.  It establishes only C1 event evidence; the completion
+    oracle adds iterate PR-delivery evidence before returning ``done``.
+    """
+    name = f"C1 run-scoped completion[{phase}]"
+    events = read_run_events(project_root, session=session, since=since)
+    # A timestamp fallback is only for runs with no usable session identity.
+    # Once this run emitted any session-stamped evidence, a sessionless record
+    # might belong to a concurrent launch and must not certify its C1 result.
+    exact_events = [event for event in events if event.get("session") == session]
+    if exact_events:
+        events = exact_events
+    hit = get_latest_phase_completed_event(events, phase)
+    if hit is not None:
+        stamp = hit.get("ts") or hit.get("timestamp") or "?"
+        return CheckResult(name, True, f"found run-scoped phase_completed event @ {stamp}")
+
+    if phase == "iterate":
+        wc = next(
+            (
+                event for event in events
+                if event.get("type") == "work_completed"
+                and event.get("source") == "iterate"
+            ),
+            None,
+        )
+        if wc is not None:
+            stamp = wc.get("ts") or wc.get("timestamp") or "?"
+            return CheckResult(
+                name,
+                True,
+                f"run-scoped work_completed[source=iterate] event @ {stamp}",
+            )
+
+    return CheckResult(name, False, f"no run-scoped completion event for phase={phase}")
 
 
 def check_c2_dashboard_reflects_phase(project_root: Path, phase: str) -> CheckResult:
@@ -695,6 +807,26 @@ class ReportSummary:
     passes: int = 0
     skipped: int = 0
     results: list[CheckResult] = field(default_factory=list)
+
+    @property
+    def strict_blocking_warnings(self) -> int:
+        """Warnings ``--strict`` should actually promote to a failure —
+        excludes every ``CheckResult.strict_exempt`` warning (`trg-b996bc21`).
+
+        ``warnings`` above stays a raw, unfiltered count for display (the
+        report footer means "how many warnings fired", not "how many would
+        block"). A gate family that marks a warning ``strict_exempt`` (a
+        rollout-transition grace, a layer-coverage advisory-collision/legacy
+        finding, a plan-gate migration notice) has already decided that
+        finding must never become a hard failure just because a caller
+        passed ``--strict`` — this property is the one place every
+        ``--strict`` consumer should read instead of re-deriving its own
+        filtered count, mirroring what ``verify_iterate_finalization.py``'s
+        own separate calc already did correctly."""
+        return sum(
+            1 for r in self.results
+            if r.is_failure and r.severity == Severity.WARNING.value and not r.strict_exempt
+        )
 
 
 def summarise(results: list[CheckResult]) -> ReportSummary:

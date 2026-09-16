@@ -81,7 +81,10 @@ def test_the_green_path_costs_exactly_one_api_call(host, capsys):
 # failing honestly — the property the whole tool rests on
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.19/AC03")
 def test_a_gh_failure_is_unknown_not_green(host, monkeypatch, capsys):
+    """FR-01.19/AC03 — a health answer that reads "I could not tell" as
+    "healthy" is worse than none, because it is believed."""
     def _boom(cwd, branch, limit):
         raise gh.ShellError("gh: command not found")
 
@@ -92,6 +95,7 @@ def test_a_gh_failure_is_unknown_not_green(host, monkeypatch, capsys):
     assert "gh: command not found" in out
 
 
+@pytest.mark.covers("FR-01.19/AC03")
 def test_a_git_failure_is_unknown_and_names_git(host, monkeypatch, capsys):
     def _boom(cwd, ref, window):
         raise gh.ShellError("not a git repository")
@@ -101,6 +105,7 @@ def test_a_git_failure_is_unknown_and_names_git(host, monkeypatch, capsys):
     assert '"source": "git"' in capsys.readouterr().out
 
 
+@pytest.mark.covers("FR-01.19/AC03")
 def test_no_runs_at_all_is_unknown(host, monkeypatch, capsys):
     monkeypatch.setattr(gh, "list_runs", lambda cwd, b, limit: [])
     assert _exit() == 4
@@ -138,6 +143,7 @@ def red_host(host, monkeypatch):
     return host
 
 
+@pytest.mark.covers("FR-01.19/AC02")
 def test_red_exits_two_and_names_the_first_bad_commit(red_host, capsys):
     assert _exit() == 2
     out = capsys.readouterr().out
@@ -145,9 +151,12 @@ def test_red_exits_two_and_names_the_first_bad_commit(red_host, capsys):
     assert TIP in out
 
 
+@pytest.mark.covers("FR-01.19/AC02")
 def test_the_red_path_carries_the_failing_step_and_an_untrusted_excerpt(
     red_host, capsys
 ):
+    """FR-01.19/AC02 — "what comes back names... what failed" — everything a
+    repair needs, without assembling it by hand."""
     _exit()
     out = capsys.readouterr().out
     assert "Run shared tests" in out
@@ -155,6 +164,7 @@ def test_the_red_path_carries_the_failing_step_and_an_untrusted_excerpt(
     assert '"untrusted": true' in out
 
 
+@pytest.mark.covers("FR-01.19/AC02")
 def test_the_red_path_carries_the_partners_it_was_never_tested_against(
     red_host, capsys
 ):

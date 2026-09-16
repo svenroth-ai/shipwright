@@ -39,11 +39,13 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.gitattributes_selfheal import self_heal_gitattributes  # noqa: E402
-from lib.gitignore_selfheal import self_heal_gitignore  # noqa: E402
 from lib.file_lock import LockTimeout  # noqa: E402
 from lib.iterate_phase_groups import append_mark as _mark_phase  # noqa: E402
-from lib.sweep_outbox import sweep_outbox_to_branch, sweep_warnings  # noqa: E402
+from lib.layer_promotion_sweep import (  # noqa: E402
+    run_layer_promotion_sweep,
+    sweep_warnings as layer_sweep_warnings,
+)
+from lib.worktree_setup_sweeps import run_canon_and_outbox_sweeps  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
     WORKTREES_DIRNAME,
@@ -199,29 +201,24 @@ def setup(
             "detail": str(exc),
         }
 
-    # 4.5/4.6. Self-heal canon scaffolds into the worktree as chore commits (ship
-    #      in PR; fail-soft no-op outside the monorepo). Ordered: gitattributes
-    #      (4.5) before gitignore (4.6 — D3 outbox-ignore block); both must leave
-    #      a CLEAN index or the step-5 sweep's staged-changes guard false-skips.
-    ga = self_heal_gitattributes(worktree_path)
-    gi = self_heal_gitignore(worktree_path)
-    heal_warnings: list[str] = []
-    for _label, _heal in (("gitattributes", ga), ("gitignore", gi)):
-        if _heal.status == "error":
-            print(f"setup_iterate_worktree: {_label} self-heal {_heal.reason}",
-                  file=sys.stderr)
-        if _heal.status != "no_change":
-            heal_warnings.append(f"{_label} self-heal {_heal.status}"
-                                 + (f": {_heal.reason}" if _heal.reason else ""))
-
-    # 5. SWEEP the gitignored main-tree triage outbox into THIS worktree's tracked
-    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends
-    #    ride the PR, not local main. Surface any non-clean sweep — `skipped`/
-    #    QUARANTINE both used to look like clean runs.
-    sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
-    sweep_notes = sweep_warnings(sweep)
-    for note in sweep_notes:
+    # 4.5. Opportunistic FR Layers promotion (best-effort, never blocks setup;
+    #      never lands on THIS branch either — see lib.layer_promotion_sweep's
+    #      module docstring). Runs BEFORE the self-heal/outbox sweep below:
+    #      `git push HEAD:refs/heads/<new>` ships full ancestry, so running
+    #      this after a self-heal/outbox commit already landed would carry
+    #      that unrelated commit into the promotion's own PR (doubt-review).
+    layer_sweep = run_layer_promotion_sweep(worktree_path, run_id, db)
+    layer_sweep_notes = layer_sweep_warnings(layer_sweep)
+    for note in layer_sweep_notes:
         print(f"setup_iterate_worktree: {note}", file=sys.stderr)
+
+    # 4.6/4.7/5. Canon .gitattributes/.gitignore self-heal + D2 outbox sweep —
+    #      see lib.worktree_setup_sweeps for ordering + rollback_failed skip.
+    sweep_notes = run_canon_and_outbox_sweeps(
+        main_root, worktree_path, db,
+        note=lambda n: print(f"setup_iterate_worktree: {n}", file=sys.stderr),
+        skip_committing_sweeps=layer_sweep.status == "rollback_failed",
+    )
 
     # 6. Snapshot the main tree + write the per-session run pointer.
     snap_path = write_snapshot(main_root, run_id)
@@ -236,7 +233,9 @@ def setup(
     prune_stale_run_pointers(main_root)
     _mark_scope_started(worktree_path, run_id)
 
-    warnings = [w for w in (fetch_detail, base_warning, *heal_warnings, *sweep_notes) if w]
+    warnings = [
+        w for w in (fetch_detail, base_warning, *layer_sweep_notes, *sweep_notes) if w
+    ]
     return 0, {
         "action": "created",
         "in_worktree": False,

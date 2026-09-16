@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-15-t9-contract-cihost-repair-contextcost",
+  "date": "2026-09-15",
+  "section": "Iterate — campaign req3-05-test-backfill-mono, sub-iterate t9 (final unit): FR-01.15/FR-01.17/FR-01.19/FR-01.20 AC-proving tests",
+  "title": "Bind 24 of 31 unbound ACs to real enforcing tests across cross-repo contract, CI re-check, main-repair, and context-cost meter",
+  "context": "shipwright_ac_coverage_baseline.json listed 31 unbound ACs across FR-01.15 (8), FR-01.17 (7), FR-01.19 (10), FR-01.20 (6) at the start of this run — the campaign's final unit. Full per-AC table + review disposition: .shipwright/planning/adr/iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md.",
+  "decision": "Tagged 24 ACs onto real enforcing tests with @pytest.mark.covers (FR-01.15 4/8, FR-01.17 6/7, FR-01.19 8/10, FR-01.20 6/6). Remaining 7 recorded unbound with a concrete no-seam reason each (seam survey Exceptions 2, 10, 11). See spec-ref for the full per-AC table.",
+  "consequences": "shipwright_ac_coverage_baseline.json unbound_count: 69 -> 45 repo-wide. One of an original 25 taggings (FR-01.15/AC08) was retracted after external review found it proved persistence of a same-run doc sentence, not enforcement. This is the final unit of the campaign; all 10 sub-iterates (t0-t9) are now complete.",
+  "rationale": "Never bind a test that only proves persistence of a same-run artifact rather than real enforcement; never bind a conjunctive AC on one provable clause alone.",
+  "rejected": "Inventing new production wiring to prove FR-01.15/AC05 through a publish/gate call site that does not exist yet — rejected as re-deciding a seam t0 already assigned to the library functions themselves.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md"
+}

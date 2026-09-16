@@ -1,0 +1,8 @@
+{
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/e3-checks-test-security",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+  "adr": "iterate-2026-09-12-e3-checks-test-security"
+}

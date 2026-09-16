@@ -15,6 +15,8 @@ import json
 import textwrap
 from pathlib import Path
 
+import pytest
+
 from scripts.lib.data_collector import ComplianceData, RequirementInfo, WorkEvent
 from scripts.lib.test_evidence import generate
 from scripts.audit import group_d
@@ -44,6 +46,7 @@ class TestExplicitSkipRender:
     and separates genuine failures from skips; legacy events keep the charitable
     rendering (pinned in test_test_evidence.py::TestSkipAwareResult)."""
 
+    @pytest.mark.covers("FR-01.10/AC12")
     def test_disclosure_survives_when_passed_equals_total(self, tmp_path: Path):
         # Executed-totals recording — the gap-based renderer lost this; the
         # explicit count restores it (the exact information loss the request cites).
@@ -51,11 +54,13 @@ class TestExplicitSkipRender:
         assert "PASS (3 skipped)" in result
         assert "| FAIL |" not in result
 
+    @pytest.mark.covers("FR-01.10/AC12")
     def test_green_with_recorded_skips_and_gap(self, tmp_path: Path):
         result = generate(_render_data(tmp_path, passed=828, total=831, skipped=3))
         assert "PASS (3 skipped)" in result
         assert "FAIL" not in result
 
+    @pytest.mark.covers("FR-01.10/AC12")
     def test_explicit_skip_residual_renders_fail(self, tmp_path: Path):
         # total - passed - skipped = 831-826-3 = 2 genuine failures.
         result = generate(_render_data(tmp_path, passed=826, total=831, skipped=3))

@@ -33,7 +33,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-
+import pytest
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
@@ -396,7 +396,6 @@ def test_a4_walker_brace_iteration_skips_when_node_is_list(tmp_path):
     # No values yielded → no path-fields → A4 skips.
     assert a4.status == "skip"
 
-
 # ---------------------------------------------------------------------------
 # Group D — D1: spec FR uncovered in events
 # ---------------------------------------------------------------------------
@@ -406,7 +405,6 @@ def _spec_with_frs(frs: list[tuple[str, str, str]]) -> str:
     """Build a spec.md body with the given (id, text, priority) FR rows."""
     rows = "\n".join(f"| {fr_id} | {text} | {prio} |" for fr_id, text, prio in frs)
     return f"# Spec\n\n| FR | Description | Priority |\n| --- | --- | --- |\n{rows}\n"
-
 
 def test_d1_passes_when_every_must_fr_has_an_event(tmp_path):
     _write(
@@ -426,6 +424,7 @@ def test_d1_passes_when_every_must_fr_has_an_event(tmp_path):
     assert d1.status == "pass", d1.detail
 
 
+@pytest.mark.covers("FR-01.10/AC08")
 def test_d1_flags_uncovered_must_fr_as_high(tmp_path):
     _write(
         tmp_path / ".shipwright" / "planning" / "01-foo" / "spec.md",
@@ -485,6 +484,7 @@ def test_d1_skips_when_no_work_completed_events(tmp_path):
     assert d1.status == "skip"
 
 
+@pytest.mark.covers("FR-01.10/AC10")
 def test_d1_coverage_persists_across_later_spec_update(tmp_path):
     """BP-1: D1 has NO epoch floor — an FR covered by an event stays covered
     even after a later spec_updated ("untouched for months is under control")."""

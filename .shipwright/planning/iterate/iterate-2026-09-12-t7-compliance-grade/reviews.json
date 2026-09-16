@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-12-t7-compliance-grade",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T20:32:46.822063+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC06's disposition (D5 sets `status=\"fail\"`, contradicting the AC's \"without failing the audit\" clause) is a genuine production bug, but the plan only records it as an unbound-AC reason and an `unresolved_flags` entry. Test-coverage flags are easy to lose track of; there's no follow-up work item named.",
+          "suggestion": "Add an explicit defect/bug entry (or named future sub-iterate) for D5's fail-vs-warn semantics, so the discrepancy isn't buried in a result.json flag. Also verify the flag file location is actually consumed by a triage process, not write-only.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Step 3 stacks a second `@pytest.mark.covers` decorator on tests that already carry t6 tags. The plan doesn't verify that the coverage tooling (`check_ac_coverage_ratchet.py` / traceability manifest generation) correctly emits multiple covers bindings per test rather than last-wins, nor that JUnit XML/manifest parsing preserves them.",
+          "suggestion": "Before bulk-tagging, hand-verify one stacked test produces both bindings in a regenerated `test-traceability.json`. If last-wins, the t6 bindings will silently disappear from the baseline — a regression of t6's own acceptance criterion.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Tagging `shared/tests/test_stamp_test_results.py` for FR-01.10/AC03 puts bindings in a third root whose tests also run in other units' pytest invocations (or CI's shared root). If AC-coverage is computed per-root, AC03 could be double-bound or, worse, dropped from the compliance root's manifest if shared tests run only in a different invocation without `--junitxml` feeding this root's manifest.",
+          "suggestion": "Confirm which JUnit report the shared tests land in and that the compliance root's regenerated manifest actually picks up the AC03 binding. Cite the coverage tool's cross-root resolution rule explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Step 6 depends on CI's regeneration of `test-traceability.json` from \"this run's real JUnit reports,\" but locally the baseline regeneration (`--write`) will use the locally-regenerated manifest. If local JUnit runs are stale or partial (e.g., only two roots run locally), the committed baseline could show ACs as unbound that CI would bind — a flaky ratchet.",
+          "suggestion": "Regenerate the manifest from the same two `--junitxml` artifacts produced by the exact CI-equivalent pytest invocations (one per root), and state that in the run record.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC04's \"unbound\" reason attributes the \"onboarding still finishes\" clause to FR-01.13's unit. If that unit's t-sub-iterate also disclaims it (same logic, different direction), the clause falls through both.",
+          "suggestion": "Add a one-line cross-check in the result: either FR-01.13's unit has a test proving the clause, or note that it needs a cross-plugin seam in a future iterate. Cheap insurance against a coverage hole neither unit owns.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "\"Re-derive from the file; do not copy a count out of this spec\" — the plan asserts 14 + 8 = 22 and \"20 of 22 bound\" but never states the re-derivation step's output was checked against the seam-survey counts.",
+          "suggestion": "Record the actual re-derived unbound list length; if it differs from 22, the disposition table (and possibly AC numbering) shifts.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC03 depends on `shared/tests/test_stamp_test_results.py`, a third test root, but the plan does not state how that root’s single JUnit report is produced and included in the fresh traceability regeneration. Merely adding `@covers` decorators there will not bind the AC if CI only aggregates the two declared plugin-root reports.",
+          "suggestion": "Explicitly verify the existing CI aggregation includes a JUnit report from `shared/tests`; if it does not, add the required one-invocation/one-JUnit step and configure regeneration to consume it. Show the resulting manifest entry for AC03 before updating the baseline.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The proposal to prove a conjunctive AC by tagging two independent tests is not inherently a proof of the conjunction. A coverage tool will see two tags, but it cannot establish that the required conditions hold in one relevant workflow or state transition.",
+          "suggestion": "For each conjunctive AC, identify an existing end-to-end test that exercises the complete condition. If none exists, add the smallest focused test at the real seam; otherwise record it as unprovable rather than treating separately tagged unit tests as equivalent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan names concrete evidence only for AC03, AC04, AC06, and part of AC14. The other 18 bindings are deferred to an unspecified ADR, so there is no reviewable assurance that the chosen tests assert the AC language rather than merely execute adjacent code—particularly for all eight grade ACs.",
+          "suggestion": "Include a compact AC-to-test matrix before implementation: AC ID, exact test path/name, production seam, and the assertion(s) that prove it. This can remain lightweight while making tag-only backfills auditable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“No seam in this unit’s declared root” is not sufficient evidence for AC04’s required recorded reason, because the AC deliberately spans onboarding and compliance. An existing adopt or integration seam may prove the full behavior even if it is outside the unit root.",
+          "suggestion": "Search the adopt and cross-plugin integration suites for the complete onboarding fallback workflow. If no full seam exists, record that specific absence and route the missing test/implementation responsibility to the owning unit rather than describing it only as out of scope.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "AC06 is a confirmed specification-versus-implementation conflict. Recording it only in `result.json.unresolved_flags` may not satisfy the acceptance criterion or the baseline schema’s requirement for a recorded reason, and a later baseline regeneration may silently restore it as an unexplained `unbound` entry.",
+          "suggestion": "Use the ratchet’s supported exception/reason mechanism in the committed coverage baseline (or its canonical companion file), assert that the reason survives regeneration, and create a triage item that explicitly chooses whether to change the specification or make D5 non-fatal.  Overall, tag reuse is a sensible low-code direction, but the cross-root traceability path, conjunctive-proof standard, and durable exception handling need to be specified and verified before this can be considered complete. There are no practical new security concerns from test metadata alone.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T20:30:42.389229+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: risk — Severity: medium**\n**Finding:** AC06's disposition (D5 sets `status=\"fail\"`, contradicting the AC's \"without failing the audit\" clause) is a genuine production bug, but the plan only records it as an unbound-AC reason and an `unresolved_flags` entry. Test-coverage flags are easy to lose track of; there's no follow-up work item named.\n**Suggestion:** Add an explicit defect/bug entry (or named future sub-iterate) for D5's fail-vs-warn semantics, so the discrepancy isn't buried in a result.json flag. Also verify the flag file location is actually consumed by a triage process, not write-only.\n\n**Category: edge-case — Severity: medium**\n**Finding:** Step 3 stacks a second `@pytest.mark.covers` decorator on tests that already carry t6 tags. The plan doesn't verify that the coverage tooling (`check_ac_coverage_ratchet.py` / traceability manifest generation) correctly emits *multiple* covers bindings per test rather than last-wins, nor that JUnit XML/manifest parsing preserves them.\n**Suggestion:** Before bulk-tagging, hand-verify one stacked test produces both bindings in a regenerated `test-traceability.json`. If last-wins, the t6 bindings will silently disappear from the baseline — a regression of t6's own acceptance criterion.\n\n**Category: risk — Severity: low**\n**Finding:** Tagging `shared/tests/test_stamp_test_results.py` for FR-01.10/AC03 puts bindings in a third root whose tests also run in other units' pytest invocations (or CI's shared root). If AC-coverage is computed per-root, AC03 could be double-bound or, worse, dropped from the compliance root's manifest if shared tests run only in a different invocation without `--junitxml` feeding this root's manifest.\n**Suggestion:** Confirm which JUnit report the shared tests land in and that the compliance root's regenerated manifest actually picks up the AC03 binding. Cite the coverage tool's cross-root resolution rule explicitly.\n\n**Category: dependency — Severity: low**\n**F […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** AC03 depends on `shared/tests/test_stamp_test_results.py`, a third test root, but the plan does not state how that root’s single JUnit report is produced and included in the fresh traceability regeneration. Merely adding `@covers` decorators there will not bind the AC if CI only aggregates the two declared plugin-root reports.  \n   **Suggestion:** Explicitly verify the existing CI aggregation includes a JUnit report from `shared/tests`; if it does not, add the required one-invocation/one-JUnit step and configure regeneration to consume it. Show the resulting manifest entry for AC03 before updating the baseline.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The proposal to prove a conjunctive AC by tagging two independent tests is not inherently a proof of the conjunction. A coverage tool will see two tags, but it cannot establish that the required conditions hold in one relevant workflow or state transition.  \n   **Suggestion:** For each conjunctive AC, identify an existing end-to-end test that exercises the complete condition. If none exists, add the smallest focused test at the real seam; otherwise record it as unprovable rather than treating separately tagged unit tests as equivalent.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan names concrete evidence only for AC03, AC04, AC06, and part of AC14. The other 18 bindings are deferred to an unspecified ADR, so there is no reviewable assurance that the chosen tests assert the AC language rather than merely execute adjacent code—particularly for all eight grade ACs.  \n   **Suggestion:** Include a compact AC-to-test matrix before implementation: AC ID, exact test path/name, production seam, and the assertion(s) that prove it. This can remain lightweight while making tag-only backfills auditable.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** “No seam in t […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T20:31:04.487732+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T20:31:04.590990+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": ".shipwright/planning/iterate/2026-09-12-t7-compliance-grade-miniplan.md` (Approach step 5, bullet AC04)",
+          "line": null,
+          "finding": "The mini-plan's Approach section still instructs recording AC04 as unbound (\"No seam in this unit's declared root proves the full AC04 conjunction\"), directly contradicting the ADR and the plan's own Result section, which say AC04 is bound via `integration-tests/test_adopt_evidence_stamp_e2e.py`. The plan was not updated after the External Plan Review re-derivation; a reader following the Approach section would reproduce the wrong disposition.",
+          "suggestion": "Rewrite Approach step 5's AC04 bullet to reflect the found integration seam (or remove it and point at the ADR's findings table), leaving only AC06 as the unbound case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": ".shipwright/planning/adr/iterate-2026-09-12-t7-compliance-grade-ac-bindings.md` (findings #5/#6 disposition) and `shipwright_ac_coverage_baseline.json",
+          "line": null,
+          "finding": "The AC \"no entry for this cluster remains in `unbound` without a recorded reason\" is only partially satisfied. The baseline's schema is a flat string list, so the reason lives in `result.json.unresolved_flags` and a triage card — but the triage card itself is not in this diff. The ADR says \"see Reflection / F3a for the card reference,\" and no Reflection section or F3a appears anywhere in the diff, so the durable follow-up artifact the disposition depends on is unreferenced/unverifiable.",
+          "suggestion": "Either include the triage card file (or its ID/path) in this change, or point to a concrete file:line where the card lives. As it stands, the \"recorded reason\" for FR-01.10/AC06 resolves to a dangling reference.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug |",
+          "file": "integration-tests/test_adopt_evidence_stamp_e2e.py:189` and `shared/tests/test_stamp_test_results.py:80,181",
+          "line": null,
+          "finding": "The `covers` pytest marker is newly registered only in `plugins/shipwright-grade/pyproject.toml`. The diff adds `@pytest.mark.covers` usages in `integration-tests/` and `shared/tests/`, but no corresponding marker registration (or evidence of pre-existing registration) for those roots appears in the diff. If those roots run with `--strict-markers` or `filterwarnings = error`, collection fails; otherwise every run emits `PytestUnknownMarkWarning`, and the binding silently depends on the marker name being merely a warning-level unknown.",
+          "suggestion": "Confirm (and if missing, add) the `covers` marker registration to `integration-tests/` and `shared/tests/` pytest config. The diff already demonstrates the pattern for shipwright-grade, so the omission elsewhere is likely an oversight.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "plugins/shipwright-grade/tests/test_report_model.py",
+          "line": 40,
+          "finding": "@pytest.mark.covers(\"FR-01.18/AC04\", \"FR-01.18/AC07\")` uses the two-argument form while every other site in this diff uses stacked single-argument decorators. The two forms are only equivalent if the coverage collector iterates `iter_markers` and flattens `marker.args` — the same last-wins/accumulation question GLM finding #7 raised, but verified only for the stacked form. The multi-arg form was never verified.",
+          "suggestion": "Either convert to stacked decorators (matching the verified pattern) or verify the multi-arg form produces both bindings in a regenerated manifest.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": ".shipwright/planning/iterate/iterate-2026-09-12-t7-compliance-grade/reviews.json` (`self` review)",
+          "line": null,
+          "finding": "The self review is `status: pending` with zero findings; code, doubt, and spec reviews are all `not_run` with blocker dispositions. This change ships with no completed code-level review record — the only completed review is the plan review. Not a code defect, but the process evidence the campaign's own ADR cites (external reviews) does not substitute for a code review of the tagging changes themselves.",
+          "suggestion": "Run/record the code review before merge, or record an explicit waiver in the run record.  No correctness defects in the tagged tests themselves: the tags attach to real, assertion-bearing tests, the baseline diff removes exactly the 21 newly bound entries while correctly retaining FR-01.10/AC06, and the claimed counts (106 → 85) match the removed lines.  Overall assessment: ship-with-fixes — the core work (21 AC bindings, correct baseline regeneration, honest AC06 discrepancy) is sound, but the stale AC04 text in the mini-plan, the dangling triage-card reference, and the unregistered `covers` marker in two of the three additional test roots should be fixed before merge.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "plugins/shipwright-compliance/tests/test_source_state_stamp.py",
+          "line": 105,
+          "finding": "The AC03-tagged evidence-document tests assert only the banner `run_id` (including newest/unknown-run behavior). They do not assert that rendered evidence documents name the resolved code version/base commit, nor that that field is explicitly absent/unknown when unresolvable. A renderer that dropped or fabricated the code-version portion would still satisfy these tagged tests.",
+          "suggestion": "Add assertions through the rendered document path for the resolved base/code field and for its unavailable representation, across the relevant evidence renderers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shipwright_ac_coverage_baseline.json",
+          "line": 41,
+          "finding": "FR-01.10/AC06` remains unbound even though the documented rationale identifies an existing, directly relevant Group D seam that demonstrates the implementation violates the AC. The acceptance criterion permits an unbound entry only with a reason that no existing seam can prove it; this is a spec/implementation conflict requiring a fix or an explicit supported exemption, not absence of a seam. The ADR/triage narrative does not make the AC green in CI.",
+          "suggestion": "Resolve the D5 fail-vs-advisory behavior (or formally amend the AC), then add a test at the Group D/run-audit seam and remove AC06 from `unbound`.  Ship-with-fixes: the tagging backfill is broadly targeted, but AC03 is only partially proven and AC06 remains noncompliant with the stated coverage acceptance criterion.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-12T20:39:14.851016+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: spec | Severity: medium\n  File: `.shipwright/planning/iterate/2026-09-12-t7-compliance-grade-miniplan.md` (Approach step 5, bullet AC04)\n  Finding: The mini-plan's Approach section still instructs recording AC04 as unbound (\"No seam in this unit's declared root proves the full AC04 conjunction\"), directly contradicting the ADR and the plan's own Result section, which say AC04 is bound via `integration-tests/test_adopt_evidence_stamp_e2e.py`. The plan was not updated after the External Plan Review re-derivation; a reader following the Approach section would reproduce the wrong disposition.\n  Suggestion: Rewrite Approach step 5's AC04 bullet to reflect the found integration seam (or remove it and point at the ADR's findings table), leaving only AC06 as the unbound case.\n\n- Category: spec | Severity: medium\n  File: `.shipwright/planning/adr/iterate-2026-09-12-t7-compliance-grade-ac-bindings.md` (findings #5/#6 disposition) and `shipwright_ac_coverage_baseline.json`\n  Finding: The AC \"no entry for this cluster remains in `unbound` without a recorded reason\" is only partially satisfied. The baseline's schema is a flat string list, so the reason lives in `result.json.unresolved_flags` and a triage card — but the triage card itself is not in this diff. The ADR says \"see Reflection / F3a for the card reference,\" and no Reflection section or F3a appears anywhere in the diff, so the durable follow-up artifact the disposition depends on is unreferenced/unverifiable.\n  Suggestion: Either include the triage card file (or its ID/path) in this change, or point to a concrete file:line where the card lives. As it stands, the \"recorded reason\" for FR-01.10/AC06 resolves to a dangling reference.\n\n- Category: bug | Severity: medium\n  File: `integration-tests/test_adopt_evidence_stamp_e2e.py:189` and `shared/tests/test_stamp_test_results.py:80,181`\n  Finding: The `covers` pytest marker is newly registered only in `plugins/shipwright-grade/pyproject.toml`. The di […truncated]\n\n[openai] - Category: test  \n  Severity: medium  \n  File: `plugins/shipwright-compliance/tests/test_source_state_stamp.py:105`  \n  Finding: The AC03-tagged evidence-document tests assert only the banner `run_id` (including newest/unknown-run behavior). They do not assert that rendered evidence documents name the resolved code version/base commit, nor that that field is explicitly absent/unknown when unresolvable. A renderer that dropped or fabricated the code-version portion would still satisfy these tagged tests.  \n  Suggestion: Add assertions through the rendered document path for the resolved base/code field and for its unavailable representation, across the relevant evidence renderers.\n\n- Category: spec  \n  Severity: medium  \n  File: `shipwright_ac_coverage_baseline.json:41`  \n  Finding: `FR-01.10/AC06` remains unbound even though the documented rationale identifies an existing, directly relevant Group D seam that demonstrates the implementation violates the AC. The acceptance criterion permits an unbound entry only with a reason that no existing seam can prove it; this is a spec/implementation conflict requiring a fix or an explicit supported exemption, not absence of a seam. The ADR/triage narrative does not make the AC green in CI.  \n  Suggestion: Resolve the D5 fail-vs-advisory behavior (or formally amend the AC), then add a test at the Group D/run-audit seam and remove AC06 from `unbound`.\n\nShip-with-fixes: the tagging backfill is broadly targeted, but AC03 is only partially proven and AC06 remains noncompliant with the stated coverage acceptance criterion.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T20:31:04.320237+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-12T20:31:04.699293+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet - a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

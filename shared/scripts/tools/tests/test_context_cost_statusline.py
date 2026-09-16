@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
 
 import scripts.tools.context_cost_statusline as mod
@@ -27,7 +29,14 @@ def _mark_as_project(project_root: Path) -> None:
     (project_root / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
 
 
+@pytest.mark.covers("FR-01.20/AC04")
 def test_prints_calls_and_cost_when_data_exists(tmp_path, capsys, monkeypatch):
+    """FR-01.20/AC04, first clause — "the exchanges counted and the modelled
+    cost seen so far are shown as a running total — available while the
+    session is still running, not only after it has already ended." No
+    Stop/work_completed event fires in this test; the statusLine command is
+    invoked exactly as Claude Code invokes it mid-session, against the
+    live per-session file."""
     _mark_as_project(tmp_path)
     monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "sess-1")

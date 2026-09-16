@@ -20,6 +20,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
@@ -130,12 +132,16 @@ def _pr(*, state="OPEN", branch=f"iterate/fix-main-{SHA12}", fork=False,
 NOW = "2026-07-28T10:30:00Z"
 
 
+@pytest.mark.covers("FR-01.19/AC07")
 def test_the_branch_name_is_the_claim():
+    """FR-01.19/AC07 — "the claim is made by an act the other cannot also
+    perform" — pushing the deterministically-named branch."""
     out = dx.match_repair_claim(SHA, prs=[_pr()], refs=[], repo_owner=OWNER, now=NOW)
     assert out["claim"]["number"] == 1
     assert out["claim"]["stale"] is False
 
 
+@pytest.mark.covers("FR-01.19/AC07")
 def test_a_fork_cannot_claim():
     """Write access is the trust boundary. Anyone can name a branch; only
     someone with push rights can create one in this repository."""
@@ -155,9 +161,11 @@ def test_a_short_sha_must_be_a_real_prefix_of_the_attributed_commit():
     assert out["claim"] is None
 
 
+@pytest.mark.covers("FR-01.19/AC07")
 def test_a_pushed_branch_with_no_pr_yet_is_already_a_claim():
-    """The atomic claim is pushing the branch, not opening the PR — two agents
-    that both query before either PR exists would otherwise both proceed."""
+    """FR-01.19/AC07 — the atomic claim is pushing the branch, not opening
+    the PR — two agents that both query before either PR exists would
+    otherwise both proceed."""
     out = dx.match_repair_claim(
         SHA, prs=[], refs=[f"refs/heads/iterate/fix-main-{SHA12}"],
         repo_owner=OWNER, now=NOW,
@@ -171,8 +179,11 @@ def test_a_pushed_branch_with_no_pr_yet_is_already_a_claim():
     assert "unknown" in out["claim"]["stale_reason"]
 
 
+@pytest.mark.covers("FR-01.19/AC07")
 def test_a_branch_left_over_by_a_closed_repair_is_NO_claim_at_all():
-    """Otherwise one abandoned ref wedges that commit forever. Reporting it as a
+    """FR-01.19/AC07 — "given a claim is abandoned part-way, then it stops
+    holding the place, so a worker that walked away cannot block every later
+    attempt." Otherwise one abandoned ref wedges that commit forever. Reporting it as a
     `stale` claim was not enough either: the caller's stale path begins by
     commenting on the pull request — which, for litter, does not exist (Tier-3
     review). No claim is the honest answer; the history stays in
@@ -186,6 +197,7 @@ def test_a_branch_left_over_by_a_closed_repair_is_NO_claim_at_all():
     assert out["failed_attempts"] == 1
 
 
+@pytest.mark.covers("FR-01.19/AC07")
 def test_a_claim_untouched_past_the_threshold_is_stale_and_takeable():
     old = _pr(updated="2026-07-28T06:00:00Z")
     out = dx.match_repair_claim(SHA, prs=[old], refs=[], repo_owner=OWNER,
@@ -220,7 +232,13 @@ def test_trusted_author_narrowing_is_opt_in_and_rejects_others():
 # escalation
 # --------------------------------------------------------------------------
 
+@pytest.mark.covers("FR-01.19/AC06")
 def test_a_finding_class_red_escalates_with_an_idempotent_key():
+    """FR-01.19/AC06 — a security finding is one of the breakages "not
+    something a repair should attempt": it is filed for a decision. The key
+    being a deterministic function of (kind, sha) — not a fresh id per call —
+    is what lets a caller (append_triage_item_idempotent) prevent filing the
+    same breakage twice."""
     out = dx.escalation(bad_sha=SHA, finding_reds=["Security Scan"],
                         partner_count=1, failed_attempts=0)
     assert out["required"] is True
@@ -228,19 +246,26 @@ def test_a_finding_class_red_escalates_with_an_idempotent_key():
     assert out["keys"] == [f"main-red:Security Scan:{SHA12}"]
 
 
+@pytest.mark.covers("FR-01.19/AC06")
 def test_too_many_implicated_commits_escalates():
+    """FR-01.19/AC06 — "more changes implicated than one overlap explains"."""
     out = dx.escalation(bad_sha=SHA, finding_reds=[], partner_count=99,
                         failed_attempts=0)
     assert "too_many_commits" in out["reasons"]
 
 
+@pytest.mark.covers("FR-01.19/AC06")
 def test_two_failed_attempts_escalate():
+    """FR-01.19/AC06 — "two attempts already spent"."""
     out = dx.escalation(bad_sha=SHA, finding_reds=[], partner_count=1,
                         failed_attempts=2)
     assert "repeat_attempts" in out["reasons"]
 
 
+@pytest.mark.covers("FR-01.19/AC06")
 def test_an_ordinary_overlap_does_not_escalate():
+    """FR-01.19/AC06 negative case — an ordinary overlap is exactly the kind
+    of breakage a repair SHOULD attempt; escalation must not over-fire."""
     out = dx.escalation(bad_sha=SHA, finding_reds=[], partner_count=2,
                         failed_attempts=0)
     assert out["required"] is False
