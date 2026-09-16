@@ -40,7 +40,7 @@ A tenth automated producer calling the plain append instead of
 `append_triage_item_idempotent` now fails CI loudly instead of silently
 duplicating triage entries.
 
-Ten rounds of external code/plan review (external LLM, both GLM via
+Eleven rounds of external code/plan review (external LLM, both GLM via
 openrouter and openai via codex) found and fixed a cascading sequence of
 real name-resolution bugs in the scanner: an initial two-directory scope
 that was "accidentally true, not structurally guaranteed" (widened to
@@ -56,6 +56,26 @@ an accompanying regression test, converging on a genuine lexical
 scope-chain resolver. Round 10 (GLM) approved with only low-severity,
 narrow documentation suggestions.
 
+**Round 11** (campaign orchestrator's own delegated Stage-2 review, PR
+#762): a bare stored or returned reference to the plain function (`fn =
+triage.append_triage_item; fn(...)`, `return triage.append_triage_item`)
+evaded the scan — the scanner only inspected `ast.Call` nodes. This was
+listed below as an accepted gap on the claim that "no producer has ever
+reached the function this way"; that claim was checked against the wrong
+function name — three live compliance-plugin files
+(`plugins/shipwright-compliance/scripts/audit/triage_bundle.py`,
+`.../lib/sbom_generator.py`, `.../lib/test_evidence.py`) already reach the
+SAFE sibling `append_triage_item_idempotent` via exactly this idiom, so it
+is this repo's established house pattern, just not (yet) applied to the
+dangerous plain form. Fixed: every scope-resolved LOAD of a bound
+name/attribute is now checked, not only one used as `Call.func` — verified
+scoped correctly (the SAFE sibling is never flagged) by
+`test_triage_plain_append_scan_reference_forms.py`, and the walk itself
+was moved from `Path.rglob` (which enumerated `.venv`/`.worktrees` fully
+before filtering) to `os.walk` with in-place `dirnames` pruning, with a
+single cached scan pass shared between `find_plain_append_callers` and
+`find_unparseable_files`.
+
 Remaining known, accepted gaps (each empirically checked against the live
 tree, not assumed, and either positively pinned by a test or documented in
 the module's own docstring):
@@ -64,11 +84,17 @@ the module's own docstring):
   (`from shared.scripts import triage`, `from shared.scripts.triage import
   append_triage_item`, etc.) — no real producer in this repo's history has
   ever used this form.
-- A call reached through `getattr` or a stored/indirect reference.
+- A call reached through a STRING-KEYED indirect access (`getattr(triage,
+  "append_triage_item")`, `getattr(triage, name_variable)`) — a string
+  literal never becomes an `ast.Attribute` node, so this is a structural
+  AST blind spot, not a missed case. (A bare stored/returned reference is
+  NOT this gap — see round 11 above.)
 - `global`/`nonlocal` declarations, and a `def`'s decorators/defaults/
   annotations evaluated in the wrong (function, not enclosing) scope.
 - A directory-name-based exclusion list (`EXCLUDED_PARTS`), not
-  content-verified per file.
+  content-verified per file — now positively pinned by
+  `test_a_producer_under_venv_is_excluded_from_the_scan` and its `tests/`
+  sibling.
 - Two narrow scope-engine quirks (a same-scope reassignment's execution
   order, and a walrus target inside a comprehension binding to the
   comprehension's own scope rather than its enclosing scope).

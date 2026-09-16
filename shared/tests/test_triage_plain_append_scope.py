@@ -143,6 +143,54 @@ def test_a_same_scope_reassignment_of_the_imported_name_is_not_a_false_positive(
     assert found == set()
 
 
+def test_a_match_case_capture_shadowing_triage_is_not_a_false_positive(
+    tmp_path: Path,
+) -> None:
+    """Round 11 (external code review, req3-06 e5, low): `ast.MatchAs.name`
+    binds a name the same way a parameter or an assignment target does, but
+    was never recorded as a binding -- a `case ... as triage:` capture
+    inside a function with an unrelated module-level `import triage` was
+    therefore invisible to the scope engine, the same false-positive class
+    the round-7 parameter-shadowing fix closed for ordinary parameters.
+    """
+    scripts_dir = tmp_path / "shared" / "scripts"
+    scripts_dir.mkdir(parents=True)
+    shadowed = scripts_dir / "match_capture_producer.py"
+    shadowed.write_text(
+        "import triage\n"
+        "def emit(writer):\n"
+        "    match writer:\n"
+        "        case Writer() as triage:\n"
+        "            return triage.append_triage_item('x')\n",
+        encoding="utf-8",
+    )
+    found = find_plain_append_callers(tmp_path, bases=("shared/scripts",))
+    assert found == set()
+
+
+def test_a_sibling_import_from_the_target_module_shadows_like_any_other_binding(
+    tmp_path: Path,
+) -> None:
+    """Round 11 (external code review, req3-06 e5, low): a sibling import
+    FROM the target module that is NOT the target name itself (`from
+    triage import read_all_items as triage`) is a real binding -- it must
+    shadow an outer module-level `import triage` the same way any other
+    same-name local binding does, not resolve outward to the real module.
+    """
+    scripts_dir = tmp_path / "shared" / "scripts"
+    scripts_dir.mkdir(parents=True)
+    shadowed = scripts_dir / "sibling_import_shadow_producer.py"
+    shadowed.write_text(
+        "import triage\n"
+        "def emit(root):\n"
+        "    from triage import read_all_items as triage\n"
+        "    return triage.append_triage_item(root)\n",
+        encoding="utf-8",
+    )
+    found = find_plain_append_callers(tmp_path, bases=("shared/scripts",))
+    assert found == set()
+
+
 def test_a_comprehension_target_does_not_leak_into_the_enclosing_function(
     tmp_path: Path,
 ) -> None:

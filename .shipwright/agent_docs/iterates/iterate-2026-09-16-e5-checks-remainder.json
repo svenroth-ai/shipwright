@@ -56,11 +56,26 @@
         "behavior": "the live repo has exactly one registered plain-append caller (the manual triage_add.py CLI) and zero unparseable files, and every registered entry still documents itself as manual",
         "disposition": "tested",
         "evidence": "shared/tests/test_triage_append_producer_registry.py::test_no_unregistered_module_calls_plain_append PASSED, ::test_no_unparseable_file_is_a_silent_scan_gap PASSED, ::test_every_registered_caller_is_documented_as_manual PASSED"
+      },
+      {
+        "behavior": "round 11: a producer reaching the plain append via a stored or returned bare reference (not a direct call) is found, while the same idiom applied to the SAFE idempotent sibling is never a false positive",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan_reference_forms.py::test_a_stored_reference_to_the_plain_function_is_found PASSED, ::test_a_returned_reference_to_the_plain_function_is_found PASSED, ::test_a_stored_reference_to_the_idempotent_sibling_is_not_a_false_positive PASSED"
+      },
+      {
+        "behavior": "round 11: a match-case capture and a sibling ImportFrom binding shadow a module-level triage import the same way any other local binding does",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scope.py::test_a_match_case_capture_shadowing_triage_is_not_a_false_positive PASSED, ::test_a_sibling_import_from_the_target_module_shadows_like_any_other_binding PASSED"
+      },
+      {
+        "behavior": "round 11: the EXCLUDED_PARTS directory exclusion itself (.venv, tests/) is positively pinned, not just the package-qualified-import detection gap",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan_edge_cases.py::test_a_producer_under_venv_is_excluded_from_the_scan PASSED, ::test_a_producer_under_a_tests_dir_is_excluded_from_the_scan PASSED"
       }
     ],
     "counts": {
-      "testable": 23,
-      "tested": 23,
+      "testable": 30,
+      "tested": 30,
       "untestable": 0,
       "untested_testable": 0
     },
