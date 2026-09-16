@@ -254,6 +254,19 @@ central criterion this row's mechanisable half tags stays enforced-and-tested
 either way, so the enforced-tested count itself does not move). (Status names
 outside an actual status cell must stay un-backticked — see the note above.)
 
+**Re-measured again 2026-09-16 (sub-iterate `e6-judgement-drift-tests`, same
+campaign) — the judgement lines, closed, per campaign decision D7 (full
+account in the "Re-measured 2026-09-16" paragraph below).** FR-01.02 #4b was
+found stale — already enforced and tested by a pre-existing mechanism, not a
+live judgement gap — and its status cell corrected; the other 24 live
+judgement rows each gained a citation to a real drift test. Net effect on
+this header's counts: one row moves from prompt-only/judgement to
+enforced-tested, nothing else:
+**3** prompt-only/mechanisable · **30** prompt-only/judgement ·
+**16** enforced-untested · **32** unimplemented · **95** enforced-tested.
+(Status names outside an actual status cell must stay un-backticked — see
+the note above.)
+
 **The AC's "no line left unaddressed" is met at zero, stated explicitly so a
 future auditor need not re-derive it:** the mechanical re-measurement above
 still counts 3 because two of the three are not criterion rows at all (the
