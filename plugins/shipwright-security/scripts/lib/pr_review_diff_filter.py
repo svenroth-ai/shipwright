@@ -80,8 +80,33 @@ class ReviewedDiff:
 def _clean_diff_path(rest: str) -> str:
     """Normalize a `+++ b/…` / `--- a/…` remainder to a repo-relative path.
 
-    Returns "" for `/dev/null` (add/delete side) or empty input."""
-    rest = (rest or "").strip()
+    Returns "" for `/dev/null` (add/delete side) or empty input.
+
+    Strips only a trailing `\\r` (CRLF diffs — the module splits sections on LF
+    only, so a CRLF line still carries its `\\r`), never a blanket `.strip()`
+    (iterate-2026-09-16-generated-path-no-strip). Assumes a **git-produced**
+    diff, as this whole module does (`gh pr diff` / `git diff`) — a real git
+    diff header never has leading whitespace here, the remainder starts
+    immediately at `a/`, `b/`, or `/dev/null` right after the fixed
+    `+++ `/`--- ` prefix is sliced off, and the only trailing artifact git
+    itself appends is the `\t`+metadata the `.split("\t", 1)[0]` below already
+    strips (a non-git unified-diff tool's own trailing `\t`+timestamp
+    convention is out of scope for that same reason). A **trailing** space or
+    tab, once that metadata is gone, IS part of a real, distinct filename git
+    would emit unquoted (space is not one of the characters git's default
+    pathname quoting escapes), so silently collapsing it here had no
+    legitimate purpose beyond the CRLF case. NOT an active end-to-end
+    fix on its own: `_section_paths` also collects the `diff --git a/X b/X`
+    header line's own path capture, which for a non-rename real file whose
+    name ends in whitespace already carries that padding (the header's
+    literal separator space plus the name's own trailing space collide, and
+    the regex resolves it onto the `a/`-side capture) — combined with
+    `filter_generated_paths`'s "every collected path must be generated to
+    exclude" rule, that alone already keeps such a file reviewable once
+    `is_generated_path` stopped stripping. See
+    `plugins/shipwright-security/tests/test_pr_review_generated_no_strip.py`
+    for the empirical trace."""
+    rest = (rest or "").rstrip("\r")
     if not rest or rest == "/dev/null":
         return ""
     if rest.startswith(("a/", "b/")):
