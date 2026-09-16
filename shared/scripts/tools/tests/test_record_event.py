@@ -217,6 +217,95 @@ class TestDeduplication:
         ])
         assert len(read_events(project)) == 1  # second (same split) skipped
 
+    # -- 2026-09-16 Codex Light follow-up: session-aware dedup --------------
+
+    def test_has_phase_event_no_session_kwarg_matches_prior_behavior(self, project):
+        """Omitting `session` reproduces the exact historical dedup (regression guard)."""
+        append_event(project, {"v": 1, "id": "evt-phase02", "ts": "T",
+                               "type": "phase_completed", "phase": "plan",
+                               "session": "session-a"})
+        assert has_phase_event(project, "plan") is True
+
+    def test_has_phase_event_different_session_is_not_a_duplicate(self, project):
+        """A second SESSION's completion of an already-completed phase is not
+        swallowed — this is what lets a repeat Codex run's phase_completed
+        event actually get written, so check_c1_run_scoped has something to
+        find for that run."""
+        append_event(project, {"v": 1, "id": "evt-phase03", "ts": "T",
+                               "type": "phase_completed", "phase": "plan",
+                               "session": "session-a"})
+        assert has_phase_event(project, "plan", session="session-a") is True
+        assert has_phase_event(project, "plan", session="session-b") is False
+
+    def test_has_phase_event_sessionless_caller_still_blocks_on_any_match(self, project):
+        """A caller that omits `session` keeps the exact historical, session-blind
+        dedup — a matching event with its OWN session still blocks it too."""
+        append_event(project, {"v": 1, "id": "evt-phase04", "ts": "T",
+                               "type": "phase_completed", "phase": "plan",
+                               "session": "session-a"})
+        assert has_phase_event(project, "plan") is True
+
+    def test_has_phase_event_sessioned_caller_not_blocked_by_sessionless_prior(self, project):
+        """A session-aware caller's genuinely new completion is NOT swallowed by
+        a legacy/sessionless event for the same (phase, splitId) — otherwise one
+        such event (e.g. from convert_configs_to_events.py's migration, or an
+        environment where SHIPWRIGHT_SESSION_ID was lost) would permanently
+        re-arm the original swallowing bug for that pair, defeating session-aware
+        dedup entirely (round-2 doubt-review finding)."""
+        append_event(project, {"v": 1, "id": "evt-phase05", "ts": "T",
+                               "type": "phase_completed", "phase": "plan"})
+        assert has_phase_event(project, "plan", session="session-a") is False
+
+    def test_phase_completed_dedup_same_session_via_cli(self, project, monkeypatch):
+        """CLI path: two writes under the SAME session still dedupe (unchanged)."""
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "session-a")
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        assert len(read_events(project)) == 1
+
+    def test_phase_completed_not_deduped_across_sessions_via_cli(self, project, monkeypatch):
+        """CLI path: a SECOND session's completion of the same phase is recorded
+        as its own event, not silently dropped."""
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "session-a")
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "session-b")
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        events = read_events(project)
+        assert len(events) == 2
+        assert {e.get("session") for e in events} == {"session-a", "session-b"}
+
+    def test_phase_completed_not_deduped_when_prior_event_is_sessionless_via_cli(
+        self, project, monkeypatch,
+    ):
+        """A sessionless legacy completion must not permanently block a later,
+        genuinely session-stamped completion of the same phase (round-2
+        doubt-review finding: convert_configs_to_events.py's migration output
+        and SHIPWRIGHT_SESSION_ID env-var loss both produce these in practice)."""
+        monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "session-a")
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        events = read_events(project)
+        assert len(events) == 2
+
 
 # ---------------------------------------------------------------------------
 # Event building

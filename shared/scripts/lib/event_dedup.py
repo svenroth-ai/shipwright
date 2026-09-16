@@ -104,6 +104,7 @@ def has_phase_event(
     phase: str,
     split_id: str | None = None,
     *,
+    session: str | None = None,
     reader=read_events,
 ) -> bool:
     """Check if a phase_completed event for this ``(phase, splitId)`` already exists.
@@ -118,12 +119,49 @@ def has_phase_event(
     A single-split phase carries ``splitId=None`` → dedups by ``(phase, None)``,
     identical to the historical phase-only behavior (zero back-compat drift).
     Origin: iterate-2026-07-11-phase-completed-per-split (per-split accuracy).
+
+    ``session`` (2026-09-16, Codex Light follow-up): a caller that omits it (or
+    passes a non-string/empty value) gets the exact historical, session-blind
+    dedup — any matching ``(phase, splitId)`` event is an unconditional
+    duplicate, regardless of that event's own ``session``. This is the only
+    path every pre-existing caller takes, so it is a zero-behavior-change
+    default.
+
+    A caller that DOES pass a real session id enters session-aware dedup: a
+    matching event with its OWN, equal ``session`` is a duplicate (a
+    same-session resume/retry, unchanged); one with its own, DIFFERENT
+    ``session`` is not (scan continues) — a second, later session's genuine
+    completion of an already-completed phase gets its own event instead of
+    being silently swallowed. This is the write-side half of a gap
+    `check_c1_run_scoped` (`verifiers/common.py`) exposed: without it, no
+    run-scoped oracle can ever detect a SECOND real completion of the same
+    phase in one project, because nothing gets appended for it to find.
+
+    A matching event with NO ``session`` of its own (legacy events predating
+    session-stamping, `convert_configs_to_events.py`'s migration output, or any
+    write from an environment where ``SHIPWRIGHT_SESSION_ID`` was unset or lost
+    in a child shell) does NOT block a session-aware caller either — it cannot
+    be proven to be the SAME completion, and blocking on it would let one such
+    event permanently re-arm the swallowing bug for that ``(phase, splitId)``
+    pair for every later session, defeating session-aware dedup entirely
+    (round-2 doubt-review finding, since a single scan returns on the first
+    matching event it sees). It still blocks a session-BLIND caller (the
+    zero-behavior-change default above), since that caller can't distinguish
+    sessions at all.
     """
+    caller_session = session if isinstance(session, str) and session else None
     for event in reader(project_root):
         if (event.get("type") == "phase_completed"
                 and event.get("phase") == phase
                 and event.get("splitId") == split_id):
-            return True
+            if caller_session is None:
+                return True
+            existing_session = event.get("session")
+            if isinstance(existing_session, str) and existing_session:
+                if existing_session == caller_session:
+                    return True
+            # Mismatched or absent existing session: not provably the same
+            # completion — keep scanning rather than block.
     return False
 
 

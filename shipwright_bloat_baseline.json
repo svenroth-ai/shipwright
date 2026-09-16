@@ -1007,7 +1007,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 767,
+      "current": 777,
       "state": "exception",
       "adr": "ADR-111"
     },
@@ -1056,7 +1056,7 @@
     {
       "path": "shared/scripts/tools/tests/test_record_event.py",
       "limit": 300,
-      "current": 883,
+      "current": 972,
       "state": "exception",
       "adr": "ADR-092"
     },
