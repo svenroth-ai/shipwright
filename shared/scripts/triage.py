@@ -580,14 +580,15 @@ def mark_status(
     block_matching_terminal: tuple[str, str] | None = None,
     revisit_at: str | None = None,
     require_future_revisit: bool = False,
-    return_item: bool = False,
-) -> str | None | tuple[str | None, dict]:
+    return_item: bool = False, return_route: bool = False,
+) -> str | None | tuple:
     """Append a status event for an existing item (never mutates prior lines).
 
     Returns the status this event REPLACED — ``None`` when the item carries no
     resolvable status. It returned nothing before
     iterate-2026-07-31-it1-s2-expected-status, which left a caller unable to
     tell a real transition from a re-flip of an already-decided item.
+    ``return_item`` / ``return_route`` each APPEND their value in that order, so an existing call site keeps its shape: ``return_item=True`` alone is still the ``(previous, resulting_item)`` pair it has always been, and widening THAT pair would have raised ValueError in every caller unpacking two. ``to_outbox`` mirrors :func:`amend_triage_item`'s return value.
 
     ``expected_status`` / ``expected_by`` make the flip conditional: the item's currently
     resolved status/provenance are compared inside the lock this function
@@ -717,7 +718,8 @@ def mark_status(
         _append_line(project_root, line, to_outbox=to_outbox)
         resulting_item = next((it for it in read_all_items(project_root) if it.get("id") == item_id), {}) if return_item else None
 
-    return (previous, resulting_item) if return_item else previous
+    extra = ([resulting_item] if return_item else []) + ([to_outbox] if return_route else [])
+    return (previous, *extra) if extra else previous
 
 # ---------------------------------------------------------------------------
 # Public API: amend

@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Findings\n\n- Category: regression\n  Severity: high\n  File: shared/scripts/triage.py:718\u2013721 (`return (previous, resulting_item, to_outbox)`)\n  Finding: `mark_status(return_item=True)` silently changes its return type from a 2-tuple to a 3-tuple. The diff updates `triage_cli_commands.py`, but any other caller that unpacks two values (`prev, item = mark_status(...)`) or indexes the tuple will raise `ValueError: too many values to unpack` / read the wrong element. Since `return_item=True` already existed before this change, external callers (WebUI, other tools, tests outside this diff) are plausible and are not shown here.\n  Suggestion: Audit every `return_item=True` call site before merging; if any exists outside this diff, update it in the same change (or return the third element only via a separate opt-in flag / a small result object).\n\n- Category: spec\n  Severity: medium\n  File: shared/scripts/lib/triage_cli_commands.py:241\u2013250 (`cmd_dismiss`)\n  Finding: The human (non-`--json`) path for `dismiss` delegates to `_status_flip`, which does not print the route note \u2014 so `dismiss` only gets route reporting in JSON mode, while `snooze` and `amend` get both. If the AC (\"where did my write just go?\" at write time) is meant to apply to all CLI writers, dismiss's human path is a partial implementation, and the new tests only cover the JSON path for dismiss.\n  Suggestion: Either add the note to `_status_flip`'s output for `dismiss` (and any other flips routed through it) and a matching test, or document explicitly why dismiss's human path is excluded.\n\n- Category: test\n  Severity: medium\n  File: shared/tests/test_triage_route_report.py \u2014 dismiss/snooze JSON tests only\n  Finding: The tests never assert the negative/absent case for `route_note`'s tracked-on-default-branch branch (returns `None`), nor that the git-error path returns `None`. The `route_note` \"returns None when branch == default\" line is untested, so a bug that prints the branch note on idle main (wrongly claiming \"reaches main only with this branch's PR\") would pass the suite \u2014 the outbox note test happens to run on main with `to_outbox=True`, bypassing that code.\n  Suggestion: Add a test that flips to tracked while on the default branch with origin present (however that state is produced in this codebase) and asserts stderr carries no \"recorded on branch\" note.\n\n- Category: edge-case\n  Severity: low\n  File: shared/scripts/lib/triage_route.py:48\u201352\n  Finding: `route_note`'s `try/except Exception` around branch resolution is fine as advisory, but the tracked note prints `branch != default` even when the branch *is* `origin/<default>` checked out in a worktree vs. a locally-named default mismatch \u2014 e.g. if `default_branch` returns a qualified `origin/main` while `current_branch` returns `main`, the note fires spuriously. Depends on `worktree_isolation`'s normalization, which isn't shown.\n  Suggestion: Confirm `current_branch` and `default_branch` use the same naming form (strip `origin/` prefixes) or normalize before comparing; add a test for the default-branch-checked-out case.\n\nThe `--json` additive-key design (`route` only when provided) is backwards-compatible, `route_label` is trivially correct, and the library-level tests do verify real behavior (file existence, tracked-file contents) rather than just calling the function.\n\nOverall: the core implementation is sound but the silent 2-tuple \u2192 3-tuple return-type change on a pre-existing public API is a real break risk until all call sites are confirmed, and dismiss's human path looks like a spec gap. Ship-with-fixes.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "- Category: spec  \n  Severity: medium  \n  File: shared/scripts/lib/triage_cli_commands.py:253  \n  Finding: The human-facing `dismiss` path still delegates to `_status_flip` without calling `route_note`, so it emits no outbox or branch-delivery note. The stated CLI contract requires the stderr route note for status writes, not just `snooze` and `amend`.  \n  Suggestion: Capture the route for non-JSON dismisses as well and emit `route_note`, or extend `_status_flip`/`dismiss` to return and report the route.\n\n- Category: test  \n  Severity: medium  \n  File: shared/tests/test_triage_route_report.py:129  \n  Finding: `dismiss` is tested only for `--json`; there is no human-mode test for either its outbox or tracked-branch note. Consequently, the missing required behavior above passes the new suite.  \n  Suggestion: Add non-JSON `dismiss` tests for idle-main/outbox and non-default-branch/tracked output.\n\nShip-with-fixes: JSON route reporting and the new `mark_status` value appear aligned with the stated contract, but the required human `dismiss` route visibility is absent.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "revise",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=revise"
+  }
+}
