@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-layer-coverage-rollout-trust-anchor",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:24:20.992691+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:23:36.965902+00:00",
+      "disposition": "mini-plan / plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:29:52.072210+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py:112; shared/scripts/tools/verifiers/layer_coverage_binding.py:42-51",
+          "line": null,
+          "finding": "Claim under doubt: the trust-anchor fix means check_binding_completeness's forgery gap is closed — resolve_rollout_commit's new check only fires AFTER evaluate_binding_completeness already found a HARD gap; that detection depends on _layer_coverage_regen._merge_base, a sibling function that still includes the branch's own @{u} upstream as a candidate ahead of origin/main/origin/master. If that narrows base..head to exclude the only HARD gap, rollout grace is never even consulted -- a full bypass, not merely an unearned advisory downgrade.",
+          "suggestion": "harden _merge_base's candidate resolution the same way _branch_base_commit was hardened, or show @{u} cannot resolve in the environments this gate actually runs in",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/verifiers/_layer_coverage_rollout.py:161-203; shared/scripts/tools/verifiers/git_helpers.py:132-229",
+          "line": null,
+          "finding": "Claim under doubt: an ancestor-of-corroborated-trunk-boundary check gives grace only to content a PR-branch-controlling adversary cannot forge — git_helpers._branch_base_commit never fetches; it reads whatever origin remote-tracking refs already exist locally. A local, pre-push iterate run (this framework's own F0/F11) can write refs/remotes/origin/main directly, fabricating a trunk boundary -- the identical forgery class moved one layer up.",
+          "suggestion": "document explicitly that this anchor is only meaningful in an environment whose origin refs come from a fetch the contributor does not control (CI/merge-time), not a pre-push local run",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "false-negative regression",
+          "file": "shared/scripts/tools/verifiers/git_helpers.py:156-205",
+          "line": null,
+          "finding": "Claim under doubt: no false-negative regression beyond what the ADRs already disclose — whether a real CI pull_request checkout leaves >=2 independently-resolving trunk candidate names (required by _branch_base_commit's own resolved==1 fail-closed rule) is unverified empirically in this diff's tests",
+          "suggestion": "confirm empirically in a real GitHub Actions pull_request job, or document that CI-side grace being unavailable there is expected fail-closed behavior",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "test quality",
+          "file": "shared/tests/test_layer_coverage_rollout_trust_anchor.py",
+          "line": null,
+          "finding": "Claim under doubt: the new tests exercise the corroboration logic this caller newly depends on — only the two simplest branches are exercised through this caller; multi-candidate-disagreement/rewound-trunk scenarios are covered only at _branch_base_commit's own definition site",
+          "suggestion": "not required to fix before commit -- acceptable to rebut as redundant coverage since the primitive is already hardened/tested elsewhere and reused verbatim",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:40:43.800500+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:23:37.306560+00:00",
+      "disposition": "external code review cascade default-on is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:27:32.894187+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:23:37.185332+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

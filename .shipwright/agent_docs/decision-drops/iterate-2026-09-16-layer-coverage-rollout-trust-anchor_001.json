@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-layer-coverage-rollout-trust-anchor",
+  "date": "2026-09-16",
+  "section": "Iterate — change: layer-coverage rollout trust anchor",
+  "title": "Corroborated-trunk-ancestry check for check_binding_completeness rollout grace",
+  "context": "PR #755 fixed the FR-01.02 #5/#10 rollout-grace trust anchor (trg-4380c61a): a bare committer timestamp is forgeable. Its sibling, _layer_coverage_rollout.py, was deliberately left unfixed, scoped out by the operator.",
+  "decision": "resolve_rollout_commit now also requires the candidate be an ancestor of git_helpers._branch_base_commit's corroborated trunk boundary, mirroring _project_gate_rollout.py's fix exactly.",
+  "consequences": "A forged, backdated, unmerged branch commit no longer receives grace; existing tests updated to simulate an origin/main trunk ref (on_trunk=True default). trg-4380c61a closed in full.",
+  "rationale": "Reuses the already-hardened _branch_base_commit helper rather than a new mechanism, per PR #755's own precedent and the P3.3 ADR's per-gate-family resolver pattern.",
+  "rejected": "Leaving the gap open (rejected: same disclosed vulnerability class PR #755 already fixed for its sibling); a shared cross-family resolver refactor now (rejected: out of scope, trg-fcb3ee97).",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md"
+}

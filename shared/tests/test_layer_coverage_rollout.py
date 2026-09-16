@@ -65,9 +65,16 @@ def _write(root: Path, rel: str, body: str) -> None:
     p.write_text(body, encoding="utf-8")
 
 
-def _commit_at(root: Path, msg: str, iso_date: str) -> str:
+def _commit_at(root: Path, msg: str, iso_date: str, *, on_trunk: bool = True) -> str:
     """Commit with an explicit, offset-qualified author/committer date — never
-    the ambient clock — so the test's pass/fail cannot depend on when it runs."""
+    the ambient clock — so the test's pass/fail cannot depend on when it runs.
+
+    ``on_trunk=True`` (the default) also advances a simulated ``origin/main``
+    to the new commit — standing in for "this content is already merged", the
+    trust anchor ``resolve_rollout_commit`` now requires (`trg-4380c61a`).
+    Pass ``on_trunk=False`` to build a commit that exists only on the local
+    branch, unreachable from that anchor — e.g. an open PR's own unmerged
+    commit."""
     _git(root, "add", "-A")
     proc = subprocess.run(
         ["git", "-C", str(root), "commit", "-q", "-m", msg],
@@ -80,7 +87,10 @@ def _commit_at(root: Path, msg: str, iso_date: str) -> str:
     )
     if proc.returncode != 0:
         raise RuntimeError(f"git commit failed: {proc.stderr}")
-    return _git(root, "rev-parse", "HEAD")
+    sha = _git(root, "rev-parse", "HEAD")
+    if on_trunk:
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+    return sha
 
 
 _BEFORE_ROLLOUT = "2026-09-06T00:00:00+00:00"

@@ -1,0 +1,40 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin/cross-module trust-boundary change in a security-relevant F11 gate (git ancestry corroboration, same shape as PR #755)",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "the trust-anchor fix means check_binding_completeness's forgery gap is closed",
+      "disproof_attempt": "resolve_rollout_commit's new check only fires AFTER evaluate_binding_completeness already found a HARD gap; that detection depends on _layer_coverage_regen._merge_base, a sibling function that still includes the branch's own @{u} upstream as a candidate ahead of origin/main/origin/master. If that narrows base..head to exclude the only HARD gap, rollout grace is never even consulted -- a full bypass, not merely an unearned advisory downgrade.",
+      "file": "shared/scripts/tools/verifiers/_layer_coverage_regen.py:112; shared/scripts/tools/verifiers/layer_coverage_binding.py:42-51",
+      "what_would_resolve_it": "harden _merge_base's candidate resolution the same way _branch_base_commit was hardened, or show @{u} cannot resolve in the environments this gate actually runs in"
+    },
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "an ancestor-of-corroborated-trunk-boundary check gives grace only to content a PR-branch-controlling adversary cannot forge",
+      "disproof_attempt": "git_helpers._branch_base_commit never fetches; it reads whatever origin remote-tracking refs already exist locally. A local, pre-push iterate run (this framework's own F0/F11) can write refs/remotes/origin/main directly, fabricating a trunk boundary -- the identical forgery class moved one layer up.",
+      "file": "shared/scripts/tools/verifiers/_layer_coverage_rollout.py:161-203; shared/scripts/tools/verifiers/git_helpers.py:132-229",
+      "what_would_resolve_it": "document explicitly that this anchor is only meaningful in an environment whose origin refs come from a fetch the contributor does not control (CI/merge-time), not a pre-push local run"
+    },
+    {
+      "severity": "medium",
+      "lens": "false-negative regression",
+      "claim_under_doubt": "no false-negative regression beyond what the ADRs already disclose",
+      "disproof_attempt": "whether a real CI pull_request checkout leaves >=2 independently-resolving trunk candidate names (required by _branch_base_commit's own resolved==1 fail-closed rule) is unverified empirically in this diff's tests",
+      "file": "shared/scripts/tools/verifiers/git_helpers.py:156-205",
+      "what_would_resolve_it": "confirm empirically in a real GitHub Actions pull_request job, or document that CI-side grace being unavailable there is expected fail-closed behavior"
+    },
+    {
+      "severity": "low",
+      "lens": "test quality",
+      "claim_under_doubt": "the new tests exercise the corroboration logic this caller newly depends on",
+      "disproof_attempt": "only the two simplest branches are exercised through this caller; multi-candidate-disagreement/rewound-trunk scenarios are covered only at _branch_base_commit's own definition site",
+      "file": "shared/tests/test_layer_coverage_rollout_trust_anchor.py",
+      "what_would_resolve_it": "not required to fix before commit -- acceptable to rebut as redundant coverage since the primitive is already hardened/tested elsewhere and reused verbatim"
+    }
+  ],
+  "summary": "4 doubts (2 high, 1 medium, 1 low). The mechanism this diff actually touches is internally sound and fail-closed on every branch tried -- no forgery path found inside resolve_rollout_commit itself. The two high findings sit just outside the diff's literal file scope but bear on its stated security claim, and are addressed in the ADR's Doubt-Review-Findings section: #1 disclosed as new triage card trg-945e4854 (out of scope, a different and larger function to harden), #2 accepted and documented as an explicit module-docstring invariant (shared, unchanged property of the already-shipped sibling fix)."
+}
