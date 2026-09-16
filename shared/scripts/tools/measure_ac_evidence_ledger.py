@@ -2,67 +2,36 @@
 """Re-measure the REQ-3 AC-evidence ledger's own status counts (campaign
 ``req3-06-enforcement-mono``, sub-iterate ``e0-ledger-accounting``).
 
-**Why this exists.** The ledger
-(``.shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md``)
-carries its own status distribution, hand-counted once and never re-derived
-since. This script re-derives it mechanically, from the document's own
-text, every time it is run, so "trust the header" becomes "re-run the script".
+Counts every backtick-quoted occurrence of each of the ledger's 8 canonical
+status tags, restricted to markdown table rows (a line whose first
+non-whitespace character is ``|``, outside a fenced code block) — not the
+whole document, so a status name mentioned in prose never inflates the count.
 
-**What it counts, and why it is restricted to table rows.** Each of the
-ledger's 8 canonical status tags (``enforced``, ``enforced, untested``,
-``enforced, tested``, ``enforced, partly tested``, ``prompt-only
-(mechanisable)``, ``prompt-only (judgement)``, ``unimplemented``,
-``no-oracle`` — defined in the ledger's own legend near the top) is counted
-by every backtick-quoted occurrence of that exact phrase, but **only on
-lines that are themselves markdown table rows** (a line whose first
-non-whitespace character is ``|``, outside a fenced code block). The
-ledger's tables take a different ad-hoc shape in nearly every section, so
-this script does not try to recognise "a real criterion row" by column
-position or table shape — it only asks "is this line part of a table at
-all". That restriction is enough to stop a status name mentioned in
-running prose (the ledger is prose-heavy by design) from silently
-inflating the count.
+Two table blocks are excluded even though they ARE table rows: the
+vocabulary legend and the historical distribution summary. Both share one
+trait no real per-FR criterion table has — their **first** column is itself
+headed ``Status`` — so a block is excluded when its header cell is
+structurally "status" (``_table_header_first_cell``, whitespace-tolerant,
+not a literal prefix). Every excluded block is recorded in ``measure()``'s
+``excluded_tables`` output for audit.
 
-**Two tables are explicitly excluded even though they ARE table rows: the
-vocabulary legend (near the top) and the "Distribution after the end-check"
-historical summary table.** Both name every canonical status once, so
-without this exclusion they would inflate every count by a small constant
-amount. Both share one trait no real per-FR criterion table has: their
-**first** column is itself headed ``Status`` (a real criterion table puts
-``Status`` in a later column). A table block is excluded when its header
-cell is structurally "status" (``_table_header_first_cell`` splits on
-``|`` and compares stripped, casefolded text, not a literal prefix); every
-excluded block is recorded (line + header) in ``measure()``'s
-``excluded_tables`` output for audit. The exclusion is block-scoped: a
-blank line above the legend is what keeps it a separate block from a
-preceding criterion table — gluing the two together with no separator
-would stop the legend from reading "status" and being excluded (a drop in
-``excluded_tables`` below 2 is the observable symptom).
+**What this does not fix:** a status backtick-quoted in a non-status column
+of a real row still counts — restricting to table rows stops prose *outside*
+tables, not columns *inside* a row. Column-position parsing was considered
+and rejected: a real table in the live ledger headers its status column
+``Enforcement``, not ``Status``, so column-name matching would undercount it.
 
-**What this does not fix: a status backtick-quoted in a non-status column
-of a real table row still counts.** Restricting to table rows stops prose
-*outside* tables from inflating the count; it does not restrict *inside* a
-row to only the status cell — an "Evidence / gap" column can itself narrate
-a status the row no longer holds, and that mention still counts (the same
-trade-off `test_split_row_contributes_to_both_halves` pins for the opposite
-case). Column-position parsing (count only the literal "Status"-headed
-column) was considered and rejected: at least one real, already-counted
-table in the live ledger headers its status column ``Enforcement``, not
-``Status``, which column-name matching would silently *undercount*.
+Fenced code blocks are skipped (backtick or tilde, CommonMark matching-fence
+semantics: same character, closing run length >= the opener's, no info
+string on the closing line) so a pipe-prefixed example table inside one is
+never miscounted as a real row. An unterminated fence excludes everything
+after it, reported via ``measure()``'s ``unterminated_fence`` flag.
 
-**Fenced code blocks are skipped.** A backtick (```` ``` ````) or tilde
-(``~~~``) fence toggle excludes everything between two MATCHING markers
-from the table-row sweep, so a pipe-prefixed example table inside either
-kind of code sample is never miscounted as a real row. An unterminated
-fence is treated as open through end-of-file, so everything after it is
-silently excluded too — `measure()`'s ``unterminated_fence`` flag reports
-this rather than letting a hand-edit mistake masquerade as a clean count.
-
-**Historical numbers were measured differently and are not retroactively
-rewritten** — the same rule ADR numbering already follows (never renumber
-retroactively). Full rationale, the 2026-09-12 incident this fix closes,
-and the list of documents whose numbers predate it and are not touched:
-the ``iterate-2026-09-16-ac-ledger-status-cell-counting`` spec.
+Historical numbers were measured differently and are **not** retroactively
+rewritten (never renumber retroactively, same as ADR numbering). Full
+rationale, the 2026-09-12 incident this fix closes, and the list of
+documents whose numbers predate it: the
+``iterate-2026-09-16-ac-ledger-status-cell-counting`` spec.
 
 Usage::
 
@@ -111,13 +80,27 @@ BACKLOG_STATUSES = [
 ]
 
 
-_FENCE_MARKERS = ("```", "~~~")
+_FENCE_CHARS = ("`", "~")
 
 
-def _fence_marker(line: str) -> str | None:
-    """The fence marker (backtick or tilde) this line opens/closes with, if any."""
+def _fence_run(line: str) -> tuple[str, int] | None:
+    """(char, run_length) of a leading backtick/tilde run of length >= 3, if
+    any — CommonMark's fence-marker shape, e.g. "```python" -> ("`", 3)."""
     stripped = line.lstrip()
-    return next((m for m in _FENCE_MARKERS if stripped.startswith(m)), None)
+    if not stripped or stripped[0] not in _FENCE_CHARS:
+        return None
+    char = stripped[0]
+    run = len(stripped) - len(stripped.lstrip(char))
+    return (char, run) if run >= 3 else None
+
+
+def _fence_closes(line: str, char: str, min_run: int) -> bool:
+    """True if `line` closes a fence opened with `char` at length `min_run`:
+    same character, run length >= the opener's, nothing but whitespace after
+    (an info string like "```python" opens a fence but cannot close one)."""
+    stripped = line.lstrip()
+    run = len(stripped) - len(stripped.lstrip(char))
+    return run >= min_run and stripped[run:].strip() == ""
 
 
 def _table_header_first_cell(line: str) -> str:
@@ -160,18 +143,24 @@ def _table_row_text(text: str) -> _TableRowFilter:
     kept: list[str] = []
     excluded: list[tuple[int, str]] = []
     in_fence = False
-    fence_marker: str | None = None
+    fence_char = ""
+    fence_len = 0
     i = 0
     n = len(lines)
     while i < n:
         line = lines[i]
-        marker = _fence_marker(line)
-        if marker is not None and (not in_fence or marker == fence_marker):
-            in_fence = not in_fence
-            fence_marker = marker if in_fence else None
+        if in_fence:
+            if _fence_closes(line, fence_char, fence_len):
+                in_fence = False
             i += 1
             continue
-        if in_fence or not line.lstrip().startswith("|"):
+        opened = _fence_run(line)
+        if opened is not None:
+            fence_char, fence_len = opened
+            in_fence = True
+            i += 1
+            continue
+        if not line.lstrip().startswith("|"):
             i += 1
             continue
         # Start of a table block: walk it forward while rows stay contiguous.

@@ -1,12 +1,12 @@
 """``measure_ac_evidence_ledger.py`` — the re-measurement script for the REQ-3
 AC-evidence ledger (campaign ``req3-06-enforcement-mono``, sub-iterate
-``e0-ledger-accounting``). These tests exercise the counting logic against
-small synthetic fixtures, which pins the *mechanism* independent of the
-real ledger's ever-changing content. The one test that runs against the
-REAL committed ledger and cross-checks its live output against the
-ledger's own "Re-measured" header paragraph lives in the sibling file
-``test_measure_ac_evidence_ledger_real_ledger.py`` (split out 2026-09-16 to
-keep this file under the project's 300-line guideline).
+``e0-ledger-accounting``). These tests exercise the row/legend-exclusion
+counting logic against small synthetic fixtures, which pins the *mechanism*
+independent of the real ledger's ever-changing content. Two sibling files
+(split out 2026-09-16 to keep this file under the project's 300-line
+guideline): ``test_measure_ac_evidence_ledger_real_ledger.py`` (the one test
+that runs against the REAL committed ledger) and
+``test_measure_ac_evidence_ledger_fences.py`` (fenced-code-block handling).
 """
 
 from __future__ import annotations
@@ -229,72 +229,3 @@ def test_status_header_match_is_structural_not_a_literal_prefix() -> None:
     assert measure_mod.count_statuses(no_space)["unimplemented"] == 0
     assert measure_mod.count_statuses(extra_space)["unimplemented"] == 0
     assert measure_mod.count_statuses(single_cell)["unimplemented"] == 0
-
-
-def test_fenced_code_block_table_example_is_not_counted() -> None:
-    """A pipe-prefixed example table inside a fenced code block — the shape
-    of the live ledger's own Python snippet — must not be read as a real
-    row (Internal Plan Review finding 4)."""
-    text = (
-        "Some real rows:\n"
-        "| 1 | a | `unimplemented` | note |\n\n"
-        "An example, not a real row:\n"
-        "```\n"
-        "| 2 | b | `enforced` | note |\n"
-        "```\n"
-    )
-    counts = measure_mod.count_statuses(text)
-    assert counts["unimplemented"] == 1
-    assert counts["enforced"] == 0
-
-
-def test_unterminated_fence_is_reported_and_excludes_the_rest_of_the_document() -> None:
-    """An odd number of ` ``` ` markers (a hand-edit mistake, not a real
-    fence pair) must not be silently swallowed as a clean, lower count —
-    `measure()` reports it via `unterminated_fence` (code review finding 5)."""
-    text = (
-        "| 1 | a | `unimplemented` | note |\n\n"
-        "```\n"
-        "unterminated fence — no closing marker below\n"
-        "| 2 | b | `enforced` | note |\n"
-    )
-    result = measure_mod.measure(text)
-    assert result["unterminated_fence"] is True
-    assert result["status_counts"]["unimplemented"] == 1
-    assert result["status_counts"]["enforced"] == 0  # inside the open fence — excluded
-
-
-def test_balanced_fence_reports_no_unterminated_fence() -> None:
-    result = measure_mod.measure("```\n| `enforced` |\n```\n")
-    assert result["unterminated_fence"] is False
-
-
-def test_tilde_fenced_code_block_table_example_is_not_counted() -> None:
-    """A ``~~~`` fence is as valid as a backtick fence (CI PR-review finding)."""
-    text = (
-        "Some real rows:\n"
-        "| 1 | a | `unimplemented` | note |\n\n"
-        "An example, not a real row:\n"
-        "~~~\n"
-        "| 2 | b | `enforced` | note |\n"
-        "~~~\n"
-    )
-    counts = measure_mod.count_statuses(text)
-    assert counts["unimplemented"] == 1
-    assert counts["enforced"] == 0
-
-
-def test_mismatched_fence_markers_do_not_close_each_other() -> None:
-    """A `~~~` line inside an open ``` fence is content, not a close marker —
-    CommonMark closes a fence only with a matching marker."""
-    text = (
-        "```\n"
-        "~~~\n"
-        "| `enforced` |\n"
-        "```\n"
-        "| `unimplemented` |\n"
-    )
-    result = measure_mod.measure(text)
-    assert result["unterminated_fence"] is False
-    assert result["status_counts"]["enforced"] == 0  # inside the ``` fence
-    assert result["status_counts"]["unimplemented"] == 1  # after it closed
