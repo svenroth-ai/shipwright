@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "resolve_rollout_commit in _layer_coverage_rollout.py mirrors the already-shipped _project_gate_rollout.py fix exactly (same helper git_helpers._branch_base_commit, same fail-closed direction on both new failure branches). Adversarial forged-unmerged-branch-commit test and no-corroborated-anchor test both present and correctly targeted. Common path preserved via on_trunk=True fixture default across all existing tests. No touch to _project_gate_rollout.py's own already-shipped fix, and no attempt at the cross-family shared-primitive refactor the ADR explicitly scopes out. Code-reviewer (Stage 2) may proceed. Caveat: this review was done without shell/git-diff access (tool constraint), reconstructed via full-file reads plus a Glob modification-time scope check rather than a literal diff."
+}

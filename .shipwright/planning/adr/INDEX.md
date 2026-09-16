@@ -137,3 +137,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [t9 — FR-01.15 / FR-01.17 / FR-01.19 / FR-01.20 AC-binding disposition table](iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md)
 - [ADR: AST meta-test gate for the plain `append_triage_item` producer contract](iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md)
 - [Judgement-line drift tests close the 19/25 discrepancy, no gate built](iterate-2026-09-16-e6-judgement-drift-tests-closure.md)
+- [Corroborated-trunk-ancestry check for the check_binding_completeness rollout grace (`trg-4380c61a`)](iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md)

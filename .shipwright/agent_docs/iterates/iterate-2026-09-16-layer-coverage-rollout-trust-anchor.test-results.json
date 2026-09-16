@@ -1,0 +1,72 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-16-layer-coverage-rollout-trust-anchor",
+    "date": "2026-09-16",
+    "unit": {
+      "status": "passed",
+      "passed": 11009,
+      "total": 11009
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "internal F11-verifier trust-anchor fix (git ancestry check inside a verifier function); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "resolve_rollout_commit refuses a forged, backdated, unmerged branch commit (GIT_COMMITTER_DATE alone no longer grants rollout grace)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_rollout_trust_anchor.py::test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit still grants grace to a genuine pre-rollout commit already reachable from the project's own corroborated trunk",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_rollout_trust_anchor.py::test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit withholds grace when no corroborated trunk boundary exists (no origin remote, non-trunk local branch name)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_rollout_trust_anchor.py::test_resolve_rollout_commit_none_without_a_corroborated_trunk_anchor PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-16-layer-coverage-rollout-trust-anchor",
+    "commit": "c5eda33b31e61a7ec2b555cedb7b6b1337b911b9",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
