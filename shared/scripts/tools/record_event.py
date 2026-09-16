@@ -80,8 +80,16 @@ def has_commit(project_root: Path, commit: str, section: str | None = None) -> b
     return _has_commit(project_root, commit, section, reader=read_events)
 
 
-def has_phase_event(project_root: Path, phase: str, split_id: str | None = None) -> bool:
-    return _has_phase_event(project_root, phase, split_id, reader=read_events)
+def has_phase_event(
+    project_root: Path,
+    phase: str,
+    split_id: str | None = None,
+    *,
+    session: str | None = None,
+) -> bool:
+    return _has_phase_event(
+        project_root, phase, split_id, session=session, reader=read_events
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -450,7 +458,9 @@ def append_event_idempotent(
                 return None, unchanged
         if event.get("type") == "phase_completed" and event.get("phase"):
             split_id = event.get("splitId")
-            if has_phase_event(project_root, event["phase"], split_id):
+            if has_phase_event(
+                project_root, event["phase"], split_id, session=event.get("session")
+            ):
                 skip = {"reason": "duplicate_phase", "phase": event["phase"]}
                 # Only surface splitId when present so a single-split (phase-only)
                 # skip payload stays byte-identical to the historical shape.

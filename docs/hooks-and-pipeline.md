@@ -3363,7 +3363,7 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Design review-loop.md (finalize) | `phase_completed` (phase=design) | Design finalized | Screen/flow count via `--detail` |
 | Plan SKILL.md (Step 9) | `phase_completed` (phase=plan) | Sections validated | Section count via `--detail` |
 | Orchestrator (between phases) | `phase_started` | Phase begins | `splitId` (top-level) per split |
-| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | `splitId` (top-level); **deduplicated by record_event.py on `(phase, splitId)`** — a multi-split phase records one end per split; the per-phase span derives as min(`phase_started`)..max(`phase_completed`). Single-split phases carry `splitId=null` and dedup by phase alone, as before. (iterate-2026-07-11-phase-completed-per-split) |
+| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | `splitId` (top-level); **deduplicated by record_event.py on `(phase, splitId)`, scoped to the writing session** (`SHIPWRIGHT_SESSION_ID`) since iterate-2026-09-16-codex-light-phase-dedup-session — a multi-split phase records one end per split; the per-phase span derives as min(`phase_started`)..max(`phase_completed`). Single-split phases carry `splitId=null` and dedup by phase alone, as before. A genuinely later completion of the SAME `(phase, splitId)` under a DIFFERENT session id (e.g. a second real run of an already-completed phase) now appends its own event instead of being silently swallowed, as long as the WRITER carries a session id — a matching prior event's own session, if any, is compared exactly; a matching prior event with NO session of its own (a legacy pre-session-stamping event, `convert_configs_to_events.py`'s migration output, or a write from an environment where `SHIPWRIGHT_SESSION_ID` was unset or lost) does not block a session-carrying writer either, since it can't be proven to be the same completion — one such event would otherwise permanently re-arm the swallowing bug for that pair. A writer with NO session id (e.g. `SHIPWRIGHT_SESSION_ID` unset, as on CI) keeps the exact historical, session-blind dedup — any matching prior event blocks it, regardless of that event's own session. A same-session resume still dedups exactly as before. (iterate-2026-07-11-phase-completed-per-split; iterate-2026-09-16-codex-light-phase-dedup-session) |
 | Orchestrator (split loop) | `split_completed` | All sections of a split done | — |
 | Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed | — |
 | Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed | — |
@@ -4407,8 +4407,8 @@ the wall-clock `at`, and C3 compares against `event_at`. A correct canon block
 therefore leaves the two **equal** — the marker and the completion read one clock
 moments apart. Comparing the marker against `at` instead made it unconditionally
 "older" (the block records the event, writes the marker, *then* appends), so
-every phase re-run where `record_event`'s first-wins dedup meant no fresh event
-landed was accused of skipping its own C3 step — in the same words as the true
+every same-session phase re-run — where `record_event`'s first-wins dedup meant
+no fresh event landed — was accused of skipping its own C3 step — in the same words as the true
 positive, with a remedy that could not clear it, because re-running the C3 step
 re-derives the same event time. Ties are therefore **not** "later".
 
@@ -4425,9 +4425,11 @@ does mean the two sides sit on different clocks and must not be compared.
 phase owns the note, by ordering the two phases against **each other** rather
 than against the note. A static order cannot separate "a later phase legitimately
 superseded this one" from "a stale later-phase marker plus a re-run of this phase
-that wrote nothing". Nor can the note's anchor: `record_event` dedups
-`phase_completed` on `(phase, splitId)` permanently, so a phase completing a
-second time inherits whatever anchor was newest — routinely the note owner's.
+that wrote nothing". Nor can the note's anchor: within one session, `record_event`
+still dedups `phase_completed` on `(phase, splitId)` (a same-session resume writes
+nothing new since iterate-2026-09-16-codex-light-phase-dedup-session — cross-session
+completions now each append their own event), so a same-session re-run inherits
+whatever anchor was newest — routinely the note owner's.
 Ordered by that the two read as simultaneous, and the phase that ran LATER was
 reported as superseded by the EARLIER one. Both completions come from one
 producer calling `datetime.now()`, so their wall clocks ARE mutually comparable,

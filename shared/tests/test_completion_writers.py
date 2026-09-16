@@ -191,7 +191,7 @@ def test_the_marker_and_the_completion_land_on_one_clock(tmp_path):
 @pytest.mark.covers("FR-01.01/AC08")
 def test_a_phase_rerun_that_records_no_new_event_still_passes(tmp_path):
     """THE regression. `record_event` dedups `phase_completed` first-wins on
-    (phase, splitId), so a re-run appends no event; the marker is rewritten but
+    (phase, splitId) within a session, so a same-session re-run appends no event; the marker is rewritten but
     re-derives the same anchor. Comparing it against the completion's wall clock
     reported 'a later step completed without re-writing it' — on a note rewritten
     seconds earlier, in the same words as the true positive, with a remedy that
