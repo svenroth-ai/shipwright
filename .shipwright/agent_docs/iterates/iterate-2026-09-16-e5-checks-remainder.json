@@ -1,0 +1,79 @@
+{
+  "run_id": "iterate-2026-09-16-e5-checks-remainder",
+  "date": "2026-09-16T07:29:27.677191Z",
+  "event_at": "2026-09-16T07:28:51.575294+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/e5-checks-remainder",
+  "spec": ".shipwright/planning/iterate/campaigns/req3-06-enforcement-mono/sub-iterates/e5-checks-remainder.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-16-e5-checks-remainder",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a production call site using the plain, non-deduplicating append_triage_item (module-qualified or aliased-import form) is found by the scanner",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan.py::test_attribute_form_call_is_also_found PASSED, ::test_an_aliased_import_of_the_bare_name_is_still_found PASSED"
+      },
+      {
+        "behavior": "a call to the idempotent sibling (append_triage_item_idempotent), aliased or not, is never mistaken for the plain call",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan.py::test_idempotent_calls_are_not_mistaken_for_plain_calls PASSED, ::test_an_aliased_import_of_the_idempotent_sibling_is_not_a_false_positive PASSED"
+      },
+      {
+        "behavior": "a same-named import/method/star-import from an unrelated module or object is never a false positive",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan_edge_cases.py::test_a_same_named_import_from_an_unrelated_module_is_not_a_false_positive PASSED, ::test_a_same_named_method_on_an_unrelated_object_is_not_a_false_positive PASSED, ::test_a_star_import_of_an_unrelated_module_is_not_a_false_positive PASSED, ::test_a_relative_import_of_an_unrelated_function_is_not_a_false_positive PASSED, ::test_a_relative_import_literally_named_triage_is_not_the_real_module PASSED"
+      },
+      {
+        "behavior": "a star import (from triage import *) is still found",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan_edge_cases.py::test_a_star_import_of_the_bare_name_is_still_found PASSED"
+      },
+      {
+        "behavior": "a package-qualified import of the triage module is a documented, positively-pinned accepted gap (not silently untested)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan_edge_cases.py::test_a_package_qualified_import_is_a_named_accepted_gap PASSED"
+      },
+      {
+        "behavior": "a function-local import/alias-shadowing/same-scope-reassignment/comprehension-scope name resolves the same way real Python's own lexical scoping does",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scope.py::test_a_same_named_parameter_in_an_unrelated_function_is_not_a_false_positive PASSED, ::test_a_function_local_import_is_still_found_in_the_same_function PASSED, ::test_a_parameter_shadowing_a_module_level_triage_import_is_not_a_false_positive PASSED, ::test_a_same_scope_reassignment_of_the_imported_name_is_not_a_false_positive PASSED, ::test_a_comprehension_target_does_not_leak_into_the_enclosing_function PASSED"
+      },
+      {
+        "behavior": "a broken/unparseable or non-UTF-8-declared file is surfaced as a scan gap, never silently skipped",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_plain_append_scan_edge_cases.py::test_the_reverse_guard_actually_fails_on_an_unparseable_file PASSED, ::test_a_declared_non_utf8_encoding_is_honoured_not_silently_dropped PASSED"
+      },
+      {
+        "behavior": "the registry's reverse-drift guard actually fails on an unregistered caller -- from either scan scope, and exercising the guard's own comparison, not a re-typed assertion",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_append_producer_registry.py::test_the_reverse_guard_actually_fails_on_an_unregistered_caller PASSED, ::test_the_reverse_guard_fires_from_a_different_top_level_directory_too PASSED"
+      },
+      {
+        "behavior": "the live repo has exactly one registered plain-append caller (the manual triage_add.py CLI) and zero unparseable files, and every registered entry still documents itself as manual",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_triage_append_producer_registry.py::test_no_unregistered_module_calls_plain_append PASSED, ::test_no_unparseable_file_is_a_silent_scan_gap PASSED, ::test_every_registered_caller_is_documented_as_manual PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 23,
+      "tested": 23,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "checks-only sub-iterate (AST meta-test drift guard over source call sites + a ledger doc update); no startable web/dev-server/CLI surface of its own to browser-verify -- verification is the unit test suite itself (F0), plus live-repo verification runs against the real tree (find_plain_append_callers/find_unparseable_files)."
+  },
+  "declared_removals": []
+}

@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-e5-checks-remainder",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T06:11:31.714192+00:00",
+      "disposition": "7-item checklist passed: spec-compliance, error-handling, security, test-quality, performance, naming/structure, affected-boundaries (N/A — no serialized format touched)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The AST scan is scoped to `shared/scripts` and `plugins`, but the plan never justifies that as the complete universe of producers. If any code lives elsewhere in the repo (root-level scripts, `tools/`, plugin dirs outside `plugins/`, vendored code), a future plain `append_triage_item` call there would be invisible to the drift guard, silently violating the \"anywhere\" acceptance criterion.",
+          "suggestion": "Scan the whole repo (or at minimum document why those two trees are exhaustive). A repo-wide `Path.rglob(\".py\")` scan with a small skip-list (`.venv`, generated dirs) costs nothing at test time and closes the gap. If the tree is genuinely just those two directories, state that in the test docstring so the assumption is auditable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AST-based scanning has known blind spots: `from ... import append_triage_item as write_item` (aliased import), `getattr(triage, \"append_triage_item\")`, and calls through a stored reference (`fn = triage.append_triage_item; fn(...)`) all evade a name-match scan.",
+          "suggestion": "Acceptable for a drift guard (an accidental future producer would almost certainly call it directly), but add a test or comment acknowledging the limitation so a future reader doesn't treat it as airtight. Also consider matching the `ast.alias` node on imports of `append_triage_item` to catch the un-aliased `from triage import append_triage_item` form if you don't already.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The test that pins `triage_add.py` \"still describes itself as manual\" is brittle — it presumably greps a docstring or comment. A rewording of that file's header breaks the registry test for a cosmetic reason, and worse, the pin proves nothing if someone rewords it to claim it's automated and updates the pin to match.",
+          "suggestion": "Keep the pin trivial (assert a specific phrase exists), and make its failure message explain it's a rationale guard, not a behavioral one. Alternatively assert something structural — e.g. `triage_add.py` has no `main()`-adjacent background/scheduler entry point — if that's cheap.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The reverse-drift test fails-by-name for unregistered callers will also fire during the test's own guard-can-fail proof if the implementation of that proof is done by temporarily injecting a violation rather than by fixture files. The sibling registry test presumably already solved this; just don't regress to a global-state mutation that can leak between tests.",
+          "suggestion": "Mirror whatever isolation mechanism `test_triage_precondition_registry.py` uses (e.g. scanning a fixture directory for the fail-proof).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The ledger flip claims \"enforced, tested\" and the re-measurement paragraph will report 3 remaining occurrences, but the acceptance criterion says \"no mechanisable line is left unaddressed anywhere in the ledger.\" The plan's accounting (legend definition line, superseded history table, deliberately-deferred FR-01.06 #6b) explains each, but nothing verifies the criterion text won't be read as requiring those occurrence counts to hit zero.",
+          "suggestion": "When updating the re-measurement paragraph, make the \"unaddressed = 0\" claim explicit and cross-reference each remaining occurrence's disposition so a future auditor doesn't reopen it.  Security: No concerns — this is a test-only, checks-side change with no new attack surface. The idempotent-append discipline it enforces is itself a data-integrity (duplicate-injection) guard, so the change is net-positive there.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "An AST check that only identifies `triage.append_triage_item(...)` can be bypassed by valid Python import forms such as `from triage import append_triage_item`, `import triage as t`, or an aliased import. A future producer could introduce duplicates while the registry remains green.",
+          "suggestion": "Resolve imports and aliases when scanning calls, or explicitly ban/directly detect all import paths for the plain append function. Add fixtures for direct and aliased imports.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Pinning the manual exception by checking that `triage_add.py` “describes itself as manual” risks a brittle wording-based test rather than enforcing the operational boundary.",
+          "suggestion": "Assert a structural CLI marker (for example, its `argparse` entry point or documented command registration) and keep the allowlist entry’s rationale as an explanatory comment.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan does not explicitly state that the scan excludes test fixtures and generated/vendor Python sources. Without this, the new test’s own negative-case fixtures could be reported as production callers.",
+          "suggestion": "Define the scanned production roots and exclusions in the helper test, and have fixture-based proof cases scan temporary, explicitly supplied paths.  Overall, the closure is appropriately narrow and the registry-test pattern is a good fit. It needs alias/import-aware detection before the ledger can credibly claim future producers are enforced.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T06:11:10.020245+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** The AST scan is scoped to `shared/scripts` and `plugins`, but the plan never justifies that as the complete universe of producers. If any code lives elsewhere in the repo (root-level scripts, `tools/`, plugin dirs outside `plugins/`, vendored code), a future plain `append_triage_item` call there would be invisible to the drift guard, silently violating the \"anywhere\" acceptance criterion.\n**Suggestion:** Scan the whole repo (or at minimum document why those two trees are exhaustive). A repo-wide `Path.rglob(\"*.py\")` scan with a small skip-list (`.venv`, generated dirs) costs nothing at test time and closes the gap. If the tree is genuinely just those two directories, state that in the test docstring so the assumption is auditable.\n\n**Category:** edge-case — **Severity:** low\n**Finding:** AST-based scanning has known blind spots: `from ... import append_triage_item as write_item` (aliased import), `getattr(triage, \"append_triage_item\")`, and calls through a stored reference (`fn = triage.append_triage_item; fn(...)`) all evade a name-match scan.\n**Suggestion:** Acceptable for a drift guard (an accidental future producer would almost certainly call it directly), but add a test or comment acknowledging the limitation so a future reader doesn't treat it as airtight. Also consider matching the `ast.alias` node on imports of `append_triage_item` to catch the un-aliased `from triage import append_triage_item` form if you don't already.\n\n**Category:** edge-case — **Severity:** low\n**Finding:** The test that pins `triage_add.py` \"still describes itself as manual\" is brittle — it presumably greps a docstring or comment. A rewording of that file's header breaks the registry test for a cosmetic reason, and worse, the pin proves nothing if someone rewords it to claim it's automated *and* updates the pin to match.\n**Suggestion:** Keep the pin trivial (assert a specific phrase exists), and […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** An AST check that only identifies `triage.append_triage_item(...)` can be bypassed by valid Python import forms such as `from triage import append_triage_item`, `import triage as t`, or an aliased import. A future producer could introduce duplicates while the registry remains green.  \n   **Suggestion:** Resolve imports and aliases when scanning calls, or explicitly ban/directly detect all import paths for the plain append function. Add fixtures for direct and aliased imports.\n\n2. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Pinning the manual exception by checking that `triage_add.py` “describes itself as manual” risks a brittle wording-based test rather than enforcing the operational boundary.  \n   **Suggestion:** Assert a structural CLI marker (for example, its `argparse` entry point or documented command registration) and keep the allowlist entry’s rationale as an explanatory comment.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan does not explicitly state that the scan excludes test fixtures and generated/vendor Python sources. Without this, the new test’s own negative-case fixtures could be reported as production callers.  \n   **Suggestion:** Define the scanned production roots and exclusions in the helper test, and have fixture-based proof cases scan temporary, explicitly supplied paths.\n\nOverall, the closure is appropriately narrow and the registry-test pattern is a good fit. It needs alias/import-aware detection before the ledger can credibly claim future producers are enforced.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:21:41.785861+00:00",
+      "disposition": "runner has no Agent tool; internal cascade (spec-reviewer/code-reviewer/doubt-reviewer) delegated to campaign orchestrator at 3f-bis, before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:21:41.892808+00:00",
+      "disposition": "runner has no Agent tool; internal cascade delegated to campaign orchestrator at 3f-bis, before merge",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_plain_append_scope.py` (~the `ImportFrom` non-target branch, `if alias.name != \"\": bind_other(...)`)",
+          "line": null,
+          "finding": "A star import from an unrelated module (`from other import `) is not recorded as a binding at all, so it cannot shadow/conflict with a same-scope `from triage import append_triage_item`. If both appear at the same scope and `other` also exports `append_triage_item`, real Python makes the name ambiguous but the scanner flags it as a hit (false positive). Contrived, but it is the one binding shape that is silently skipped rather than recorded.",
+          "suggestion": "Either document this in the accepted-gaps list, or record a wildcard binding marker in `other_names` for every name bound anywhere in the file so same-scope star imports become \"ambiguous, do not flag\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/lib/triage_plain_append_scope.py` (`ast.Import` branch, `alias.name.split(\".\", 1)[0]`)",
+          "line": null,
+          "finding": "import triage.sub` (a dotted import whose first component is literally `triage`) is bound into `other_names` as `triage`, which would shadow a genuine same-scope `import triage` and un-flag a real violating call. Also `import other.triage` binds `other`, never the receiver name used in `other.triage.append_triage_item(...)` — but that shape is part of documented gap #1, so only the `triage.<something>` shadow is an unrecorded limit.",
+          "suggestion": "Add it to the accepted-gaps list or check the full dotted name against `module_name` before falling back to the first component.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_triage_append_producer_registry.py` (`test_no_unparseable_file_is_a_silent_scan_gap` + `test_no_unregistered_module_calls_plain_append`)",
+          "line": null,
+          "finding": "The two live-repo tests each walk and parse the entire repository independently (and `find_plain_append_callers` re-parses files `find_unparseable_files` already parsed). On a large tree this doubles an already repo-wide AST parse per test run. Not a correctness defect, but a real CI-cost regression worth a module-level cache or a shared fixture.",
+          "suggestion": "Memoize `_parse` per path (e.g. `functools.lru_cache` keyed on resolved path string), or compute both results in one session-scoped fixture.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_plain_append_scan.py` (`EXCLUDED_PARTS`)",
+          "line": null,
+          "finding": "Any directory named `tests` anywhere is excluded wholesale. The justification (CLAUDE.md plugin convention) is reasonable, but the exclusion is structural, not verified: a producer placed under a path containing a `tests/` component (e.g. a plugin shipping code in `tests/` contrary to convention, or a file like `plugins/x/tests/helpers/prod_writer.py`) evades the scan silently, with no `find_unparseable_files`-style surfacing. This is exactly the \"silent evasion\" shape the module exists to close, just one level removed.",
+          "suggestion": "At minimum, note the directory-name exclusion as a named gap in the module docstring alongside limits 1–3, so it is auditable rather than implicit.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/triage_plain_append_scan.py` (`_calls_plain_append`, star-import branch)",
+          "line": null,
+          "finding": "from triage import ` adds only `append_triage_item` to `plain_names`; it does not make `triage` available as an attribute receiver (correct Python semantics), but if the star-exported module ever also exports a same-named helper under an alias, there is no ambiguity handling — star imports are treated as unconditionally binding the target. Safe direction for this use, so this is informational only.  I found no correctness bugs that would make the registry test pass while the guarantee is broken: the reverse-guard tests exercise `_assert_registry_matches` itself (the round-9 fix is genuinely applied), the rogue-producer and different-top-level-directory tests use the default bases, and the unparseable-file pin is live. The ledger update correctly closes FR-01.14 #1's mechanisable half and re-accounts the remaining three prompt-only/mechanisable occurrences with explicit reasons.  Overall assessment: ship-as-is — the findings above are refinements and documentation of narrow, mostly-contrived limits, none of which undermine the guarantee the spec asks for.  SHIPWRIGHT_VERDICT: approve",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": ".shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md",
+          "line": 1169,
+          "finding": "The change marks “recorded exactly once, even from simultaneous producers” fully enforced while explicitly exempting `triage_add.py`. Two concurrent invocations of that CLI can still use the non-deduplicating append path and create duplicates; redefining “producers” to exclude that caller is not supported by the criterion.",
+          "suggestion": "Route `triage_add.py` through an idempotent/deduplicating path, or retain an explicit unresolved status and follow-up for the manual-concurrency case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "shared/scripts/lib/triage_plain_append_scope.py",
+          "line": 139,
+          "finding": "The proposed gate intentionally recognizes only `from triage ...` / `import triage`. A new automated producer can use standard package-qualified or relative imports, such as `from shared.scripts.triage import append_triage_item`, and call the plain append without appearing in the registry. This is a direct bypass of the mechanisable requirement the scanner is meant to enforce.",
+          "suggestion": "Resolve the repository’s canonical qualified and relative import forms for `triage.py` (and test them as violations), rather than recording them as accepted gaps while claiming the criterion is closed.  Ship-with-fixes: the new guard catches the current convention, but it does not establish the claimed complete protection against future plain-append producers or concurrent manual calls.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-16T07:21:49.259743+00:00",
+      "disposition": "10 rounds of cascading fixes; converged round 10 (GLM approve; openai's remaining findings re-litigate documented, tested, empirically-justified accepted scope boundaries — package-qualified import gap and the triage_add.py manual-CLI concurrency scope, both already reasoned in the ledger citation)",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] I reviewed the scanner, the scope engine, and the test files against the spec (\"no prompt-only/mechanisable line left unaddressed\"). The core implementation is sound: the AST approach, scope-chain resolution, registry guard, and unparseable-file reporting all match what the ledger row's named oracle requires, and the ledger update itself is coherent. Findings:\n\n- Category: edge-case\n  Severity: low\n  File: `shared/scripts/lib/triage_plain_append_scope.py` (~the `ImportFrom` non-target branch, `if alias.name != \"*\": bind_other(...)`)\n  Finding: A star import from an unrelated module (`from other import *`) is not recorded as a binding at all, so it cannot shadow/conflict with a same-scope `from triage import append_triage_item`. If both appear at the same scope and `other` also exports `append_triage_item`, real Python makes the name ambiguous but the scanner flags it as a hit (false positive). Contrived, but it is the one binding shape that is silently skipped rather than recorded.\n  Suggestion: Either document this in the accepted-gaps list, or record a wildcard binding marker in `other_names` for every name bound anywhere in the file so same-scope star imports become \"ambiguous, do not flag\".\n\n- Category: bug\n  Severity: low\n  File: `shared/scripts/lib/triage_plain_append_scope.py` (`ast.Import` branch, `alias.name.split(\".\", 1)[0]`)\n  Finding: `import triage.sub` (a dotted import whose first component is literally `triage`) is bound into `other_names` as `triage`, which would shadow a genuine same-scope `import triage` and un-flag a real violating call. Also `import other.triage` binds `other`, never the receiver name used in `other.triage.append_triage_item(...)` — but that shape is part of documented gap #1, so only the `triage.<something>` shadow is an unrecorded limit.\n  Suggestion: Add it to the accepted-gaps list or check the full dotted name against `module_name` before falling back to the first component.\n\n- Category: test\n  Severity: low\n  F […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: .shipwright/planning/campaigns/2026-07-23-req3-ac-evidence-ledger-mono.md:1169\n- Finding: The change marks “recorded exactly once, even from simultaneous producers” fully enforced while explicitly exempting `triage_add.py`. Two concurrent invocations of that CLI can still use the non-deduplicating append path and create duplicates; redefining “producers” to exclude that caller is not supported by the criterion.\n- Suggestion: Route `triage_add.py` through an idempotent/deduplicating path, or retain an explicit unresolved status and follow-up for the manual-concurrency case.\n\n- Category: spec\n- Severity: high\n- File: shared/scripts/lib/triage_plain_append_scope.py:139\n- Finding: The proposed gate intentionally recognizes only `from triage ...` / `import triage`. A new automated producer can use standard package-qualified or relative imports, such as `from shared.scripts.triage import append_triage_item`, and call the plain append without appearing in the registry. This is a direct bypass of the mechanisable requirement the scanner is meant to enforce.\n- Suggestion: Resolve the repository’s canonical qualified and relative import forms for `triage.py` (and test them as violations), rather than recording them as accepted gaps while claiming the criterion is closed.\n\nShip-with-fixes: the new guard catches the current convention, but it does not establish the claimed complete protection against future plain-append producers or concurrent manual calls.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T07:21:42.012205+00:00",
+      "disposition": "Stage-1 spec-reviewer is orchestrator-run only; runner never performs this pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T06:11:17.890568+00:00",
+      "disposition": "plan review has no internal arm — Branch A (external) ran instead; see reference_review_payload_adapter_shapes / project_plan_review_has_no_internal_arm",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

@@ -226,6 +226,44 @@ Sonder-Check):
 (Status names outside an actual status cell must stay un-backticked — see the
 note directly above.)
 
+**Re-measured again 2026-09-16 (sub-iterate `e5-checks-remainder`, same
+campaign) — the mechanisable remainder, closed.** Investigated the whole
+document for every remaining prompt-only/mechanisable occurrence before
+building anything (per this sub-iterate's own spec instruction to verify
+rather than assume): of the 4 the prior count carried, 2 are not live
+criterion rows at all (the legend's own definition line, and the historical
+2026-07-26 end-check distribution table, both superseded prose kept for
+history — see "Zero unclassified `prompt-only` rows remain" below), leaving
+exactly 2 genuine table rows. FR-01.06 #6b (see its own row above) was
+already correctly addressed by `e3-checks-test-security` with an explicit,
+specific reason and a filed follow-up (`trg-2f7a840a` — a producer-side
+ADR-045 relocation this checks-only campaign does not own) and needed no
+further action; re-verified, not re-litigated. FR-01.14 #1's mechanisable
+half — "the producer contract has no gate, and a new producer calling the
+plain append writes duplicates freely" — is the one that closed this unit:
+built the row's own named oracle, a meta-test over the call sites
+(`shared/tests/test_triage_append_producer_registry.py`), after first
+confirming empirically that every automated producer in the live tree
+already called the idempotent path and exactly one production call site
+(`triage_add.py`, the manual operator CLI) called the plain one — the AST
+registry now makes that fact self-enforcing rather than merely accidentally
+true:
+**3** prompt-only/mechanisable · **31** prompt-only/judgement ·
+**16** enforced-untested · **32** unimplemented · **94** enforced-tested (the
+central criterion this row's mechanisable half tags stays enforced-and-tested
+either way, so the enforced-tested count itself does not move). (Status names
+outside an actual status cell must stay un-backticked — see the note above.)
+
+**The AC's "no line left unaddressed" is met at zero, stated explicitly so a
+future auditor need not re-derive it:** the mechanical re-measurement above
+still counts 3 because two of the three are not criterion rows at all (the
+legend definition and the 2026-07-26 historical end-check table, both prose,
+neither promising anything about the live product), and the third
+(FR-01.06 #6b) carries its own explicit reason and follow-up trigger
+(`trg-2f7a840a`) rather than a silent drop. Zero rows anywhere in this
+document currently read as a bare, unexplained prompt-only/mechanisable
+promise with no build, no downgrade, and no named follow-up behind it.
+
 The six genuine `judgement` rows from FR-01.02/FR-01.04, and why no gate may
 be built for them — each needs reading comprehension, so its honest ceiling
 is a drift test that the instruction is still present:
@@ -1127,7 +1165,7 @@ changed.
 | # | Criterion | Status | Mechanism / gap |
 |---|---|---|---|
 | C | **every raised finding is here, one entry each, each stating whether it is open, taken into work, deferred or dismissed — so "what is still open?" is answerable in one place** | `enforced, untested` | **central, added.** The 14 opened with a dedup rule; nothing said what the thing *is* |
-| 1 | recorded exactly once, even from simultaneous producers | `enforced, tested` (concurrency) + `prompt-only (mechanisable)` (producer opt-in) | the dedup scan and the append share ONE lock critical section — tested. But the idempotent path is **opt-in**: the producer contract has no gate, and a new producer calling the plain append writes duplicates freely. Oracle: a meta-test over the call sites |
+| 1 | recorded exactly once, even from simultaneous producers | `enforced, tested` | **Closed iterate-2026-09-16-e5-checks-remainder.** the dedup scan and the append share ONE lock critical section — tested. The idempotent path was **opt-in**, and the producer contract had no gate against a new producer calling the plain append and writing duplicates freely — the row's own named oracle, "a meta-test over the call sites", is now built: `shared/scripts/lib/triage_plain_append_scan.py::find_plain_append_callers` AST-scans every `.py` REPO-WIDE (widened from an initial two-directory scope after external review, both rounds, both providers, correctly called it "accidentally true, not structurally guaranteed") for a call to the plain, non-deduplicating `append_triage_item` — alias-aware and scoped to imports/attribute-accesses that actually resolve to the `triage` module (closing two same-name false-positive shapes external code review found) — and fails on any site not on the registry's explicit allowlist in `shared/tests/test_triage_append_producer_registry.py`. A file the scanner cannot read/parse is surfaced as its own finding (`find_unparseable_files`, PEP-263-aware) rather than silently skipped, closing a third external-review finding (a broken or wrong-encoding-declared file could otherwise hide a violation invisibly). Verified against the live tree before building: every automated producer already called `append_triage_item_idempotent` (github_triage's consumer, check_drift, phase_quality, security, test's warning_followups/performance_check/journey_coverage, adopt's two baseline seeders, external_review_degraded, check_required_checks, suite_race_triage, artifact_sync) — the discipline held everywhere it mattered, but nothing made it hold. The one genuine exception, `triage_add.py` (the manual operator CLI — a human typing one command carries none of the concurrent-producer race the idempotent path exists for), is the allowlist's only registered entry, itself pinned by a test asserting it still describes itself as manual. **Scope of "simultaneous producers", made explicit (external code review, openai, high, round 4):** the criterion's own vocabulary — "producers", matching every other row in this table (github_triage, phase_quality, security, the Command Center) — names an automated, background write path racing another instance of itself; row #3's own text already draws exactly this line ("the terminal" — operator-driven — vs "the Command Center's promote" — a cross-store transaction). `triage_add.py` sits on the terminal side of that same line: a human deciding to create ONE card is not a second producer racing the first, and requiring a `dedup_key` on every hand-typed card (the idempotent path's own precondition) would manufacture an artificial "which existing card is this a duplicate of" question a human-authored, individually-decided card does not have — a product/API change this checks-only sub-iterate does not own. Left as a named, accepted scope boundary, not silently assumed. Tested: `shared/tests/test_triage_append_producer_registry.py` (registry + reverse-drift guard, now proven from a two-directory scope, from an unrelated top-level directory (round 6, GLM, medium), and — round 9 (openai, medium) found the "proof" only re-typed a separate assertion instead of exercising the live guard's own comparison — via the exact `_assert_registry_matches` helper both the live guard and the reverse-drift proofs now call, so a weakened comparison cannot pass silently — 5 cases) and the sibling `shared/tests/test_triage_plain_append_scan.py` + `test_triage_plain_append_scan_edge_cases.py` + `test_triage_plain_append_scope.py` (the scanner's own detection behaviour, 18 cases across 9 external-review rounds: idempotent-sibling/module-qualified/aliased/star-import recognition, six same-name-shape false-positive guards, a documented-and-tested accepted gap for package-qualified imports (broadened round 9 to explicitly cover the dotted `from <pkg>.triage import append_triage_item` shape too), a relative-import-literally-named-`.triage` guard (round 9, GLM, medium — `node.level == 0` now required), an unparseable-file proof, a PEP-263 non-UTF-8 encoding case, and — after rounds 5-9 found successive defects in name resolution (nesting without scoping; scoping without a chain; a chain without real shadowing; shadowing without order-independent same-scope precedence; a comprehension-scope miss; a relative-import level miss) — a real lexical scope-chain resolver honouring Python's own shadowing and comprehension-scope rules, split into its own `triage_plain_append_scope.py` once the scanner crossed 300 lines, modelled on the live `suite_race_triage.py::_load_triage`/`_open_ids` lazy-import-vs-parameter shapes, with regression tests pinning all six directions, plus four further narrow shapes (`global`/`nonlocal`, decorator/default/annotation scope, same-scope-reassignment order, walrus-in-comprehension) named as accepted gaps rather than chased, per the campaign's own D7 abort condition) — the test files themselves also split (core call-shape detection / false-positive+edge-case pins / scope-chain+shadowing regressions) once past 300 lines, per this repo's own convention, all told apart via AST, not text matching. `_parse` also closed a round-7 hardening gap (GLM, low): a NUL byte or pathological nesting now becomes a `find_unparseable_files` finding instead of an unrelated crash. `EXCLUDED_PARTS` also gained `build`/`dist`/`.tox`/`.eggs`/`.nox` (round 9, GLM, low). |
 | 2 | **three** decisions — taken into work, dismissed, or deferred — and the entry afterwards carries the same recorded decision whichever way it was made | `enforced, tested` (the record) + `unimplemented` (defer from the terminal) → `trg-813d2305` | **rewritten; the old wording was wrong twice.** There are three decisions, not two: `snoozed` is a real status the Command Center writes and the terminal cannot |
 | 3 | **creating the work is the Command Center's; from the terminal the operator names work that already exists** | `enforced, tested` (this repo's half) | **added** — the other half of the old "same recorded result either way". The Command Center's promote is a cross-store transaction that creates and back-links the task; the terminal takes a reference to something that exists. Operator: split the promise, do not overclaim parity |
 | 4 | one entry per action, ready-to-paste instruction, visible placeholder when it is missing | `enforced, tested` | placeholder exists on **both** surfaces — the terminal's `[!]` line and the Command Center's red-toned warning branch. A suspicion that it was terminal-only did not survive the lookup |

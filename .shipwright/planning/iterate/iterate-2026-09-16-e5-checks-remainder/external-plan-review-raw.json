@@ -1,0 +1,33 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "## Review Findings\n\n**Category:** edge-case \u2014 **Severity:** medium\n**Finding:** The AST scan is scoped to `shared/scripts` and `plugins`, but the plan never justifies that as the complete universe of producers. If any code lives elsewhere in the repo (root-level scripts, `tools/`, plugin dirs outside `plugins/`, vendored code), a future plain `append_triage_item` call there would be invisible to the drift guard, silently violating the \"anywhere\" acceptance criterion.\n**Suggestion:** Scan the whole repo (or at minimum document why those two trees are exhaustive). A repo-wide `Path.rglob(\"*.py\")` scan with a small skip-list (`.venv`, generated dirs) costs nothing at test time and closes the gap. If the tree is genuinely just those two directories, state that in the test docstring so the assumption is auditable.\n\n**Category:** edge-case \u2014 **Severity:** low\n**Finding:** AST-based scanning has known blind spots: `from ... import append_triage_item as write_item` (aliased import), `getattr(triage, \"append_triage_item\")`, and calls through a stored reference (`fn = triage.append_triage_item; fn(...)`) all evade a name-match scan.\n**Suggestion:** Acceptable for a drift guard (an accidental future producer would almost certainly call it directly), but add a test or comment acknowledging the limitation so a future reader doesn't treat it as airtight. Also consider matching the `ast.alias` node on imports of `append_triage_item` to catch the un-aliased `from triage import append_triage_item` form if you don't already.\n\n**Category:** edge-case \u2014 **Severity:** low\n**Finding:** The test that pins `triage_add.py` \"still describes itself as manual\" is brittle \u2014 it presumably greps a docstring or comment. A rewording of that file's header breaks the registry test for a cosmetic reason, and worse, the pin proves nothing if someone rewords it to claim it's automated *and* updates the pin to match.\n**Suggestion:** Keep the pin trivial (assert a specific phrase exists), and make its failure message explain it's a rationale guard, not a behavioral one. Alternatively assert something structural \u2014 e.g. `triage_add.py` has no `main()`-adjacent background/scheduler entry point \u2014 if that's cheap.\n\n**Category:** risk \u2014 **Severity:** low\n**Finding:** The reverse-drift test fails-by-name for unregistered callers will also fire during the test's own guard-can-fail proof if the implementation of that proof is done by temporarily injecting a violation rather than by fixture files. The sibling registry test presumably already solved this; just don't regress to a global-state mutation that can leak between tests.\n**Suggestion:** Mirror whatever isolation mechanism `test_triage_precondition_registry.py` uses (e.g. scanning a fixture directory for the fail-proof).\n\n**Category:** dependency \u2014 **Severity:** low\n**Finding:** The ledger flip claims \"enforced, tested\" and the re-measurement paragraph will report 3 remaining occurrences, but the acceptance criterion says \"no mechanisable line is left unaddressed *anywhere* in the ledger.\" The plan's accounting (legend definition line, superseded history table, deliberately-deferred FR-01.06 #6b) explains each, but nothing verifies the criterion text won't be read as requiring those occurrence counts to hit zero.\n**Suggestion:** When updating the re-measurement paragraph, make the \"unaddressed = 0\" claim explicit and cross-reference each remaining occurrence's disposition so a future auditor doesn't reopen it.\n\n**Security:** No concerns \u2014 this is a test-only, checks-side change with no new attack surface. The idempotent-append discipline it enforces is itself a data-integrity (duplicate-injection) guard, so the change is net-positive there.\n\n## Overall Assessment\n\nThis is a well-scoped, evidence-driven closure: the investigation correctly narrowed a vague spec to one real row, and the allowlist-registry pattern matches an established precedent in the codebase. The main actionable item is widening the AST scan scope beyond `shared/scripts` and `plugins` (or documenting why it's exhaustive); the rest are refinements.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "1. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** An AST check that only identifies `triage.append_triage_item(...)` can be bypassed by valid Python import forms such as `from triage import append_triage_item`, `import triage as t`, or an aliased import. A future producer could introduce duplicates while the registry remains green.  \n   **Suggestion:** Resolve imports and aliases when scanning calls, or explicitly ban/directly detect all import paths for the plain append function. Add fixtures for direct and aliased imports.\n\n2. **Category:** approach  \n   **Severity:** low  \n   **Finding:** Pinning the manual exception by checking that `triage_add.py` \u201cdescribes itself as manual\u201d risks a brittle wording-based test rather than enforcing the operational boundary.  \n   **Suggestion:** Assert a structural CLI marker (for example, its `argparse` entry point or documented command registration) and keep the allowlist entry\u2019s rationale as an explanatory comment.\n\n3. **Category:** dependency  \n   **Severity:** low  \n   **Finding:** The plan does not explicitly state that the scan excludes test fixtures and generated/vendor Python sources. Without this, the new test\u2019s own negative-case fixtures could be reported as production callers.  \n   **Suggestion:** Define the scanned production roots and exclusions in the helper test, and have fixture-based proof cases scan temporary, explicitly supplied paths.\n\nOverall, the closure is appropriately narrow and the registry-test pattern is a good fit. It needs alias/import-aware detection before the ledger can credibly claim future producers are enforced.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "verdicts": {
+    "glm": "approve",
+    "openai": "revise"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=revise"
+  }
+}
