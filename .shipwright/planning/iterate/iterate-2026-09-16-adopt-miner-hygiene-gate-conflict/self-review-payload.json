@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All iterate-spec ACs implemented: hygiene filtering via shared detector, JS prefix-strip fallback, Python drop, filter-before-cap, per-file dedup, no gate-side changes, follow-up triage card minted."},
+    {"name": "Error Handling", "verdict": "pass", "note": "Pure string filtering over already try/except-guarded file reads; load_shared_module raises loudly (uncaught) on a missing shared/ tree by design, not swallowed."},
+    {"name": "Security Basics", "verdict": "n/a", "note": "No user input reaches SQL/HTML, no secrets, no auth routes touched — pure in-process text classification over already-local test-file contents."},
+    {"name": "Test Quality", "verdict": "pass", "note": "22 tests assert on mine_acceptance_criteria's return value (outcomes), one happy + one dirty/error path per branch (JS combined-clean, prefix-strip, bare-dirty, nested, dedup, all-dirty, Python clean/dirty, fallthrough, cap-interaction)."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "Same regex-based, single-pass-per-candidate-file complexity as before; output still capped at 10; no new loops over external calls."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "test_test_acceptance_miner.py crossed 300 lines mid-build; split into test_test_acceptance_miner.py (208) + test_test_acceptance_miner_hygiene.py (187), both under the guideline; production file is 233 lines."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No new producer/consumer pair or serialized-format change — reuses an existing pure detector function in-process; traced (Confidence Calibration) that spec_document.py writes the checked bullet verbatim, byte-identical to what the gate later re-reads."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: no findings."}
+  ]
+}

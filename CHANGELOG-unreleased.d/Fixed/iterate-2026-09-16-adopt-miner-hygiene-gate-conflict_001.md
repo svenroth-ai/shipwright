@@ -1,0 +1,1 @@
+shipwright-adopt's mined acceptance criteria are now filtered through the same hygiene gate FR-01.02 #5 enforces, so a brownfield onboarding after the gate's rollout no longer manufactures a spec.md that fails its own next verification

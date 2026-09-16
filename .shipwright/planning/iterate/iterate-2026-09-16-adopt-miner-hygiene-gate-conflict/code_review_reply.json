@@ -1,0 +1,21 @@
+{
+  "section": "adopt-miner-hygiene-gate-conflict",
+  "review": [
+    {
+      "finding": "test_test_acceptance_miner.py actually contains 12 pre-existing test functions, not the '14' the spec's Confidence Calibration/Ledger cited (12+10 hygiene tests = 22 total, matching the diff). Documentation-only discrepancy, not a dropped-test regression.",
+      "severity": "low",
+      "category": "correctness",
+      "suggestion": "Correct the '14' references in the iterate spec to '12'.",
+      "status": "fixed"
+    },
+    {
+      "finding": "The Test Completeness Ledger's 'every candidate dirty (JS and Python)' row cited only a JS test; no dedicated Python all-candidates-dirty test existed.",
+      "severity": "low",
+      "category": "test-coverage",
+      "suggestion": "Add a Python-side all-dirty test to back the ledger's claim.",
+      "status": "fixed"
+    }
+  ],
+  "verdict": "PASS",
+  "summary": "Correctness matches spec precisely: JS three-way branch, Python drop-only, filter-before-dedup-before-cap ordering, per-file dedup scope, nested-describe innermost-only attribution, shared_loader import idiom matches gitleaks_config_scaffolder.py precedent, write-path trace to generate_adoption_artifacts.py verified. No gate-side files touched. Security/performance: no findings."
+}
