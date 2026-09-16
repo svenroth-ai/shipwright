@@ -21,10 +21,10 @@ tables, not columns *inside* a row. Column-position parsing was considered
 and rejected: a real table in the live ledger headers its status column
 ``Enforcement``, not ``Status``, so column-name matching would undercount it.
 
-Fenced code blocks are skipped (backtick or tilde, CommonMark matching-fence
-semantics: same character, closing run length >= the opener's, no info
-string on the closing line) so a pipe-prefixed example table inside one is
-never miscounted as a real row. An unterminated fence excludes everything
+Fenced code blocks are skipped (backtick or tilde, CommonMark fence-matching:
+<=3-space indent, same character, closing run length >= the opener's, no
+info string on the closing line) so a pipe-prefixed example table inside one
+is never miscounted as a real row. An unterminated fence excludes everything
 after it, reported via ``measure()``'s ``unterminated_fence`` flag.
 
 Historical numbers were measured differently and are **not** retroactively
@@ -82,10 +82,19 @@ BACKLOG_STATUSES = [
 
 _FENCE_CHARS = ("`", "~")
 
+# CommonMark: a 4+-space-indented marker is indented-code, not a fence (CI PR-review).
+_FENCE_MAX_INDENT = 3
+
+
+def _fence_indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
 
 def _fence_run(line: str) -> tuple[str, int] | None:
-    """(char, run_length) of a leading backtick/tilde run of length >= 3, if
-    any — CommonMark's fence-marker shape, e.g. "```python" -> ("`", 3)."""
+    """(char, run_length) of a leading, <=3-space-indented backtick/tilde
+    run of length >= 3, if any: "```python" -> ("`", 3); 4-space indent -> None."""
+    if _fence_indent(line) > _FENCE_MAX_INDENT:
+        return None
     stripped = line.lstrip()
     if not stripped or stripped[0] not in _FENCE_CHARS:
         return None
@@ -96,8 +105,11 @@ def _fence_run(line: str) -> tuple[str, int] | None:
 
 def _fence_closes(line: str, char: str, min_run: int) -> bool:
     """True if `line` closes a fence opened with `char` at length `min_run`:
-    same character, run length >= the opener's, nothing but whitespace after
-    (an info string like "```python" opens a fence but cannot close one)."""
+    indented at most 3 spaces, same character, run length >= the opener's,
+    nothing but whitespace after (an info string like "```python" opens but
+    cannot close a fence)."""
+    if _fence_indent(line) > _FENCE_MAX_INDENT:
+        return False
     stripped = line.lstrip()
     run = len(stripped) - len(stripped.lstrip(char))
     return run >= min_run and stripped[run:].strip() == ""

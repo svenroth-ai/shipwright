@@ -104,6 +104,16 @@ def test_info_string_content_line_does_not_close_a_fence() -> None:
     assert result["status_counts"]["unimplemented"] == 1  # after it closed
 
 
+def test_four_space_indented_marker_does_not_open_a_fence() -> None:
+    """CommonMark: a fence marker indented 4+ spaces is indented-code
+    territory, not a fence — it must not toggle fence mode and hide a
+    following real table row (CI PR-review)."""
+    text = "    ```\n| `unimplemented` |\n"
+    result = measure_mod.measure(text)
+    assert result["status_counts"]["unimplemented"] == 1
+    assert result["unterminated_fence"] is False
+
+
 def test_closing_fence_must_be_at_least_as_long_as_the_opener() -> None:
     """CommonMark: a fence closes only with a run of the SAME character at
     least as long as the opener's — a shorter run is content (CI PR-review)."""
