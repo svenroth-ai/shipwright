@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "AC02 and AC05 are both structurally satisfied and test-provable. No scope creep, no contradiction found. Refusal happens before any host contact for both failing-gate states; auto-rollback is a coded, unconditional branch off the smoke result. E2E stub tests prove no HTTP request is sent on refusal and that a real dead URL triggers a real editproject call restoring the pre-deploy branch."
+}

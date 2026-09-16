@@ -526,4 +526,4 @@ for the pattern-by-pattern mapping.
 - [jelastic-api.md](references/jelastic-api.md) — Jelastic API endpoint reference
 - [deploy-flavors.md](references/deploy-flavors.md) — Flavor architecture (code-side interface)
 - [rollback-strategy.md](references/rollback-strategy.md) — Jelastic-specific DEV vs PROD rollback procedure
-- [rollback-discipline.md](references/rollback-discipline.md) — Universal rollback discipline + per-target mapping (Jelastic / Vercel / Compose-VPS)
+- [rollback-discipline.md](references/rollback-discipline.md) — Universal rollback discipline + per-target mapping (Jelastic / Vercel / Compose-VPS); see also [non-interactive-release.md](references/non-interactive-release.md) for `release.py`, the coded agent-free entry point mechanising AC02/AC05

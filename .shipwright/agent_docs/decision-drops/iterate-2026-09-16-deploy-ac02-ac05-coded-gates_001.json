@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-deploy-ac02-ac05-coded-gates",
+  "date": "2026-09-16",
+  "section": "Iterate — change: coded release entry point for FR-01.08 AC02/AC05",
+  "title": "Coded release entry point for FR-01.08 AC02/AC05",
+  "context": "AC02/AC05 existed only as SKILL.md agent prose, untestable (t5 external review, glm finding 5).",
+  "decision": "Add release.py: agent-free CLI chaining test-gate, deploy, smoke, and coded auto-rollback, with a required --target guard for PROD.",
+  "consequences": "20 in-process + 4 subprocess E2E tests now prove AC02/AC05; hosting.py/release_rollback.py/test_gate.py split out to keep one oracle each.",
+  "rationale": "Doubt review's 6 findings: PROD guard, deadline-gate, and health-recheck fixed in code; branch-granularity and no-lock recorded as known limitations, out of scope for this unit.",
+  "rejected": "Extending jelastic_client.py in place (circular import with rollback.py); fixing branch-vs-commit granularity or adding a concurrency lock now (bigger design, out of proportion to this unit).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-16-deploy-ac02-ac05-coded-gates-coded-release-gate.md"
+}

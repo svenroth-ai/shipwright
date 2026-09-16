@@ -1,0 +1,65 @@
+{
+  "stage": "deploy-ac02-ac05-coded-gates",
+  "doubts": [
+    {
+      "severity": "medium",
+      "lens": "correctness",
+      "claim_under_doubt": "Auto-rollback restores the previously-live ref, undoing a bad release.",
+      "disproof_attempt": "jelastic_client.deploy_from_git (pre-existing, unmodified by this unit) never re-pins the branch for an environment that already has a VCS project — it only sends `branch` on first-ever creation. On the routine 'push new commits to the same branch, CI redeploys' cycle, previous_ref already equals the branch being deployed, so auto-rollback has no distinct commit to name and cannot actually undo the new commits that broke the deploy.",
+      "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+      "what_would_resolve_it": "Either implement commit-level rollback (a versioning/tagging scheme) or document the branch-name-granularity limitation so operators know when auto-rollback has nothing to restore.",
+      "outcome": "skipped",
+      "resolution": "Documented as a known limitation in skills/deploy/references/non-interactive-release.md rather than fixed — commit-level rollback needs a materially bigger design than this unit's scope. The skip-reason message at the call site was reworded (see finding #6) to stop implying nothing was missed when this gap is hit."
+    },
+    {
+      "severity": "medium",
+      "lens": "correctness",
+      "claim_under_doubt": "A failed smoke check reliably indicates the release is unhealthy and should trigger an auto-rollback.",
+      "disproof_attempt": "With no polling deadline configured (neither --profile nor --smoke-max-wait), smoke_test.py makes exactly one fixed-timeout attempt — its own docstring warns 'a fifteen-second start-up gets reported as a failed release and triggers a rollback nobody needed'. A single attempt is not a reliable enough signal to justify an automatic host mutation.",
+      "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+      "what_would_resolve_it": "Skip auto-rollback (with a clear reason) unless a polling deadline was actually configured, since only then has the smoke check given the app a real chance to come up.",
+      "outcome": "fixed",
+      "resolution": "verify_and_maybe_roll_back now checks policy.max_wait is None and skips auto-rollback with rollback_skipped_reason naming the gap. New test test_smoke_failure_skips_rollback_when_no_deadline_is_configured; smoke_max_wait added to the existing rollback-triggering tests so they still exercise the rollback path."
+    },
+    {
+      "severity": "high",
+      "lens": "security",
+      "claim_under_doubt": "release.py is safe to wire into an automated CI pipeline without additional guardrails.",
+      "disproof_attempt": "Nothing in release()'s original signature distinguished dev from prod. A CI job configured with a PROD env_name would perform an auto-rollback-capable PROD deploy with zero human confirmation, violating the constitution's PROD-is-ASK-FIRST invariant, which this agent-free entry point has no built-in way to honour (it cannot show an AskUserQuestion).",
+      "file": "plugins/shipwright-deploy/scripts/lib/release.py",
+      "what_would_resolve_it": "Require an explicit target argument with no default, and refuse target=prod unless an explicit confirm_prod flag (sourced from something upstream that can actually ask a human) is set.",
+      "outcome": "fixed",
+      "resolution": "release() now requires a keyword-only target ('dev'/'prod', no default) plus confirm_prod; target='prod' without confirm_prod=True refuses before any host contact. CLI gained matching --target (required, choices=[dev,prod]) and --confirm-prod flags. New tests: test_an_unrecognised_target_is_refused_before_contacting_the_host, test_a_prod_release_is_refused_without_explicit_confirmation, test_a_prod_release_proceeds_once_confirmed."
+    },
+    {
+      "severity": "medium",
+      "lens": "concurrency",
+      "claim_under_doubt": "release.py can be safely invoked from CI for every push without additional coordination.",
+      "disproof_attempt": "There is no lock across the whole gate->deploy->smoke->rollback sequence. Two concurrent release.py invocations against the same env_name could interleave their deploy/rollback calls, each unaware of the other's in-flight mutation.",
+      "file": "plugins/shipwright-deploy/scripts/lib/release.py",
+      "what_would_resolve_it": "Add a per-env_name lock spanning the whole sequence, or explicitly document that callers must serialize releases per environment upstream.",
+      "outcome": "skipped",
+      "resolution": "Documented as a known limitation in non-interactive-release.md, matching rollback.py's own pre-existing unlocked assumption — a real cross-invocation lock needs a materially bigger design than this unit's scope. Callers are expected to serialize releases per environment via CI/campaign convention."
+    },
+    {
+      "severity": "medium",
+      "lens": "correctness",
+      "claim_under_doubt": "A rollback_triggered: true result with rollback.success: true means the environment is healthy again.",
+      "disproof_attempt": "rollback_git only confirms the ref PIN was accepted (or, at best, read back as matching) — it does not itself confirm the application is actually serving traffic on that ref. Nothing in the reported payload distinguished 'restored to a known-good ref' from 'restored to an unverified ref that still isn't answering requests'.",
+      "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+      "what_would_resolve_it": "Re-run the smoke check against the restored ref after a successful rollback and surface the result distinctly from the pin confirmation.",
+      "outcome": "fixed",
+      "resolution": "After a successful rollback_git call, release_rollback re-runs smoke_test.run_smoke_test against the restored ref and adds rollback_health_check / rollback_verified_healthy to the result. New test test_a_recovered_rollback_is_confirmed_healthy_by_the_recheck covers the healthy case; the existing auto-rollback test now asserts rollback_verified_healthy is False when the mock keeps reporting failure."
+    },
+    {
+      "severity": "low",
+      "lens": "readability",
+      "claim_under_doubt": "The rollback_skipped_reason 'no distinct previous ref to restore — nothing to roll back to' accurately communicates the situation to an operator.",
+      "disproof_attempt": "That wording reads as reassuring — as if there truly is nothing to restore — when it is actually surfacing the branch-vs-commit granularity gap (finding #1): a live regression from this deploy's own new commits could still be unrestored, because auto-rollback only sees branch names, not commits.",
+      "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+      "what_would_resolve_it": "Reword the message to name the actual gap instead of implying nothing was missed.",
+      "outcome": "fixed",
+      "resolution": "Reworded to 'no distinct previous ref at branch-name granularity ... a live regression from this deploy's new commits may still be unrestored', pointing at the 'Known limitations' section of non-interactive-release.md."
+    }
+  ]
+}

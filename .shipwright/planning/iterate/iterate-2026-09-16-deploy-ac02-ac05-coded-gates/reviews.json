@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-16-deploy-ac02-ac05-coded-gates",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:10.037425+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:17.571586+00:00",
+      "disposition": "external LLM plan review is opt-in via --review at trivial/small complexity; not requested this run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "test_release_e2e_cli.py named TOKEN like test_rollback_e2e_cli.py's token-leak guard but never asserted it. Fixed: added TOKEN-not-in-stdout/stderr assertions to the confirm-and-deploy and auto-rollback E2E tests.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "architecture",
+          "file": null,
+          "line": null,
+          "finding": "_client()/_hosting_errors() duplicated from rollback.py instead of extracted, contradicting this same diff's own 'one oracle' rationale for test_gate.py. Fixed: extracted to new hosting.py, both rollback.py and release.py import from there.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "deploy_from_git failure path was untested and multiplexed into the same exit code/reason shape as a smoke failure. Fixed: added failure_stage field (deploy/smoke/smoke_config), renamed EXIT_SMOKE_FAILED to EXIT_NOT_RELEASED, added test_a_deploy_failure_is_reported_not_raised.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "release() did five things in one function.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "redundant canonical_ref() re-application on an already-canonical previous_ref.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": null,
+          "line": null,
+          "finding": "import placement in release.py did not actually match rollback.py's own convention despite claiming to.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "run_smoke_test/smoke_policy ValueError/ProfileError for bad --smoke-* flags was uncaught, crashing with a traceback instead of a structured result.",
+          "suggestion": null,
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": null,
+          "line": null,
+          "finding": "jelastic_client.deploy_from_git never re-pins the branch for an already-existing VCS project (pre-existing, out of scope for this diff).",
+          "suggestion": null,
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T16:45:50.421484+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+          "line": null,
+          "finding": "Claim under doubt: Auto-rollback restores the previously-live ref, undoing a bad release. — jelastic_client.deploy_from_git (pre-existing, unmodified by this unit) never re-pins the branch for an environment that already has a VCS project — it only sends `branch` on first-ever creation. On the routine 'push new commits to the same branch, CI redeploys' cycle, previous_ref already equals the branch being deployed, so auto-rollback has no distinct commit to name and cannot actually undo the new commits that broke the deploy.",
+          "suggestion": "Either implement commit-level rollback (a versioning/tagging scheme) or document the branch-name-granularity limitation so operators know when auto-rollback has nothing to restore.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+          "line": null,
+          "finding": "Claim under doubt: A failed smoke check reliably indicates the release is unhealthy and should trigger an auto-rollback. — With no polling deadline configured (neither --profile nor --smoke-max-wait), smoke_test.py makes exactly one fixed-timeout attempt — its own docstring warns 'a fifteen-second start-up gets reported as a failed release and triggers a rollback nobody needed'. A single attempt is not a reliable enough signal to justify an automatic host mutation.",
+          "suggestion": "Skip auto-rollback (with a clear reason) unless a polling deadline was actually configured, since only then has the smoke check given the app a real chance to come up.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": "plugins/shipwright-deploy/scripts/lib/release.py",
+          "line": null,
+          "finding": "Claim under doubt: release.py is safe to wire into an automated CI pipeline without additional guardrails. — Nothing in release()'s original signature distinguished dev from prod. A CI job configured with a PROD env_name would perform an auto-rollback-capable PROD deploy with zero human confirmation, violating the constitution's PROD-is-ASK-FIRST invariant, which this agent-free entry point has no built-in way to honour (it cannot show an AskUserQuestion).",
+          "suggestion": "Require an explicit target argument with no default, and refuse target=prod unless an explicit confirm_prod flag (sourced from something upstream that can actually ask a human) is set.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency",
+          "file": "plugins/shipwright-deploy/scripts/lib/release.py",
+          "line": null,
+          "finding": "Claim under doubt: release.py can be safely invoked from CI for every push without additional coordination. — There is no lock across the whole gate->deploy->smoke->rollback sequence. Two concurrent release.py invocations against the same env_name could interleave their deploy/rollback calls, each unaware of the other's in-flight mutation.",
+          "suggestion": "Add a per-env_name lock spanning the whole sequence, or explicitly document that callers must serialize releases per environment upstream.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+          "line": null,
+          "finding": "Claim under doubt: A rollback_triggered: true result with rollback.success: true means the environment is healthy again. — rollback_git only confirms the ref PIN was accepted (or, at best, read back as matching) — it does not itself confirm the application is actually serving traffic on that ref. Nothing in the reported payload distinguished 'restored to a known-good ref' from 'restored to an unverified ref that still isn't answering requests'.",
+          "suggestion": "Re-run the smoke check against the restored ref after a successful rollback and surface the result distinctly from the pin confirmation.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-deploy/scripts/lib/release_rollback.py",
+          "line": null,
+          "finding": "Claim under doubt: The rollback_skipped_reason 'no distinct previous ref to restore — nothing to roll back to' accurately communicates the situation to an operator. — That wording reads as reassuring — as if there truly is nothing to restore — when it is actually surfacing the branch-vs-commit granularity gap (finding #1): a live regression from this deploy's own new commits could still be unrestored, because auto-rollback only sees branch names, not commits.",
+          "suggestion": "Reword the message to name the actual gap instead of implying nothing was missed.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-16T17:04:56.991194+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:17.693083+00:00",
+      "disposition": "external code review cascade is opt-in via --review at trivial/small complexity; not requested this run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:35:56.290772+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-16T16:31:17.454250+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

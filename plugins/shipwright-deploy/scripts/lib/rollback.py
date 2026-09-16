@@ -20,11 +20,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.error
 from pathlib import Path
 
 import data_drift
 import rollback_audit
+# Shared with release.py — see hosting.py's own docstring for why this must
+# stay one implementation, not two.
+from hosting import client as _client
+from hosting import hosting_errors as _hosting_errors
 from rollback_report import (
     EXIT_HALT,
     EXIT_OK,
@@ -55,30 +58,6 @@ __all__ = [
     "EXIT_HALT", "EXIT_OK", "EXIT_REFUSED", "HostingError",
     "main", "rollback_clone", "rollback_git",
 ]
-
-
-def _client():
-    from jelastic_client import get_client
-
-    return get_client()
-
-
-def _hosting_errors() -> tuple[type[BaseException], ...]:
-    """Exactly the failures that mean "the host said no", never a local bug.
-
-    ``URLError`` is included because a client that does not wrap transport
-    failures would otherwise escape the read-back downgrade and produce no
-    report at all. Programming errors (TypeError, KeyError, …) still propagate.
-    """
-    errors: list[type[BaseException]] = [HostingError, urllib.error.URLError]
-    try:
-        from jelastic_client import JelasticError
-    except ImportError:
-        pass
-    else:
-        if isinstance(JelasticError, type) and issubclass(JelasticError, BaseException):
-            errors.append(JelasticError)
-    return tuple(errors)
 
 
 def _verify_ref(client, env_name: str, context: str, target_ref: str,

@@ -137,6 +137,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [t8 — FR-01.01 / FR-01.05 / FR-01.12 / FR-01.13 AC-binding disposition table](iterate-2026-09-15-t8-run-build-preview-adopt-ac-bindings.md)
 - [t9 — FR-01.15 / FR-01.17 / FR-01.19 / FR-01.20 AC-binding disposition table](iterate-2026-09-15-t9-contract-cihost-repair-contextcost-ac-bindings.md)
 - [Producer-side hygiene filtering for mined acceptance criteria](iterate-2026-09-16-adopt-miner-hygiene-gate-conflict.md)
+- [Coded release entry point for FR-01.08 AC02/AC05](iterate-2026-09-16-deploy-ac02-ac05-coded-gates-coded-release-gate.md)
 - [ADR: AST meta-test gate for the plain `append_triage_item` producer contract](iterate-2026-09-16-e5-checks-remainder-triage-plain-append-scanner.md)
 - [Judgement-line drift tests close the 19/25 discrepancy, no gate built](iterate-2026-09-16-e6-judgement-drift-tests-closure.md)
 - [Corroborated-trunk-ancestry check for the check_binding_completeness rollout grace (`trg-4380c61a`)](iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md)
