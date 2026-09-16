@@ -110,10 +110,23 @@ below.
 
 | # | Severity | Finding (short) | Disposition |
 |---|---|---|---|
-| 1 | high | `check_binding_completeness`'s own base/head diff resolver (`_layer_coverage_regen._merge_base`, one call away from this module) still resolves its trunk boundary through a less-hardened path than the anchor this run just fixed, and a HARD gap must exist before this module's rollout grace is even consulted | disclosed, not fixed — genuinely distinct from `trg-4380c61a` (detection, not leniency), filed as new triage card `trg-945e4854`, full detail in `Spec/trg-doubt-merge-base-atu-bypass.md`. Out of scope: hardening `_merge_base` is a change to a shared base/head-diff primitive other layer-coverage gates depend on, materially larger than a like-for-like trust-anchor mirror of PR #755 |
+| 1 | medium (downgraded from the reviewer's original high after empirical verification) | `check_binding_completeness`'s own base/head diff resolver (`_layer_coverage_regen._merge_base`, one call away from this module) still carries a less-hardened `@{u}` candidate. **Verified before this ADR was finalized:** `_merge_base` tries `origin/HEAD` first, which resolves successfully in a normal clone/worktree (confirmed with a fresh synthetic clone and live in this worktree) and returns the correct base before `@{u}` is ever consulted — reproduced directly: an attacker's narrowed-base scenario only occurs after deliberately deleting `refs/remotes/origin/HEAD`, not in the default flow. The reviewer's original framing ("still includes `@{u}`... ahead of `origin/main`/`origin/master`") was correct about the literal string candidates but missed `origin/HEAD`'s earlier, normally-successful resolution | disclosed, not fixed, severity corrected — genuinely distinct from `trg-4380c61a` (detection, not leniency), filed as new triage card `trg-945e4854` (medium). Out of scope: hardening `_merge_base`'s fallback-only gap is a change to a shared base/head-diff primitive other layer-coverage gates depend on, materially larger than a like-for-like trust-anchor mirror of PR #755. Full corrected trace in `Spec/trg-doubt-merge-base-atu-bypass.md` |
 | 2 | high | The corroborated-trunk anchor's guarantee ("a value the PR author cannot set") holds only when `origin`'s remote-tracking refs come from a fetch the checked commit's author does not control — not necessarily true of this framework's own local, pre-push iterate run | accepted-and-documented — a shared, unchanged property of `_project_gate_rollout.py`'s identical, already-shipped anchor, not introduced or worsened by this fix; recorded as an explicit invariant in the module docstring rather than a code change, per the reviewer's own suggested resolution |
 | 3 | medium | Whether a real CI `pull_request` checkout actually leaves ≥2 independently-resolving trunk candidate names (required by `_branch_base_commit`'s own corroboration rule) is unverified empirically | disclosed, not fixed — same shared-risk framing as #2: a property of the already-shipped, already-reused `_branch_base_commit` helper, not specific to this diff; the fail-closed direction (withhold grace rather than trust one name) is the same conservative choice `_branch_base_commit`'s own design already makes everywhere else it is used |
 | 4 | low | The new tests only exercise the two simplest branches (forged commit refused, no-anchor fail-closed), not `_branch_base_commit`'s own multi-candidate-disagreement/rewound-trunk scenarios through this caller's plumbing | rebutted — those scenarios are already covered by `_branch_base_commit`'s own test suite at its definition site; re-exercising them through every caller would duplicate coverage without pinning any caller-specific behavior, since this module only ever threads `commit_hash` through unchanged and treats every non-`True` outcome identically to today's other fail-closed branches |
+
+## Post-review verification (self-caught, before finalization)
+
+The doubt review's finding #1 above was verified empirically rather than
+accepted on its narrative alone: built a synthetic origin + attacker-clone
+repro (an intermediate commit pushed to the attacker's own tracked branch,
+then a further commit) and computed `_merge_base`'s actual candidate
+resolution by hand. `origin/HEAD` — tried before `@{u}` — resolves
+successfully in a normal clone/worktree and returns the correct, full base;
+`@{u}` is reached only after deliberately deleting `refs/remotes/origin/HEAD`.
+The original "high" severity assumed `@{u}` was reachable in the common case;
+it is not. Corrected to medium, and the corrected trace is recorded in the
+triage card and the gitignored `Spec/` report before this PR was opened.
 
 ## Self-Review (references/iteration-reviews.md checklist)
 

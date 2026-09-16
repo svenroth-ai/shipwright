@@ -81,10 +81,15 @@ introduced or worsened by this fix, simply not previously written down.
 naming a residual gap rather than eliminating it at disproportionate cost):
 
 - ``check_binding_completeness``'s own base/head diff (``_layer_coverage_regen._merge_base``,
-  the caller one level up from this module) resolves its trunk boundary
-  through a less-hardened path than :func:`resolve_rollout_commit` now uses —
-  see `trg-945e4854` (Stage-3 doubt review, iterate-2026-09-16-layer-coverage-rollout-trust-anchor).
-  Out of scope here: hardening ``_merge_base`` is a change to a shared
+  the caller one level up from this module) still carries a less-hardened
+  ``@{u}`` candidate than :func:`resolve_rollout_commit` now uses — but it is
+  tried only AFTER ``origin/HEAD``, which resolves successfully (to the same
+  effective target) in a normal clone/worktree; reachable only when
+  ``origin/HEAD`` is absent or broken, not in the default flow (verified
+  empirically before disclosure, downgraded from an initial overbroad
+  claim — see `trg-945e4854`, Stage-3 doubt review,
+  iterate-2026-09-16-layer-coverage-rollout-trust-anchor). Out of scope here:
+  hardening ``_merge_base``'s fallback-only gap is a change to a shared
   base/head-diff primitive other layer-coverage gates also depend on, not a
   like-for-like trust-anchor mirror.
 - A repo whose visible history was reshaped (a shallow clone, or a brownfield
