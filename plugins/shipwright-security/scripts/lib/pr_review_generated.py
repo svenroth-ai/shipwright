@@ -141,7 +141,6 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
     r"^[^/]+/("
     r"(spec|code|doubt)_review_reply\.json"
     r"|external-[^/]*review[^/]*\.(json|md)"
-    r"|architecture-review(-raw)?\.json"
     r")$"
 )
 
@@ -185,28 +184,6 @@ _REVIEW_EVIDENCE_RE_RUN_ANCHORED = re.compile(
 # does NOT close the underlying gap PR #722 waits on; `is_generated_path`'s
 # hide-only wildcard stays exactly as wide as before this iterate started,
 # unchanged from the pre-existing regex above.
-
-# Round 6 (iterate-2026-09-16-ac-ledger-status-cell-counting's own PR #767,
-# two passes). `external_review.py --mode architecture` writes the SAME kind
-# of transcript (including the literal `SHIPWRIGHT_VERDICT: approve` marker
-# Round 5's family exists to hide) as the `--mode code`/`--mode plan` calls,
-# under an `architecture-review...` name instead of `external-...` — so it
-# was never hidden and got flagged as "suspicious instruction-like content"
-# by the reviewing model itself. First attempt mirrored the `external-`
-# wildcard shape (`architecture-[^/]*review[^/]*\.(json|md)`); the gate's
-# OWN next pass correctly rejected that as widening the exact review-evasion
-# surface Round 5's note warns about, and asked for an exact allowlist
-# instead — the fix Round 5 ruled out for the `external-` family only
-# because that family has 40+ ad-hoc caller-chosen names with no fixed
-# producer output. `architecture-review...` does NOT have that problem:
-# `git log --diff-filter=A --name-only -- '*architecture-review*'` across
-# this repo's full history finds exactly two basenames ever written,
-# `architecture-review-raw.json` and `architecture-review.json`, across
-# three iterates' architecture-review step (the `--mode architecture` call
-# in the iterate skill's Branch A). A closed two-name allowlist is
-# therefore both sufficient today and the right shape going forward: extend
-# it (like the `_reply.json` set above) if a future run invents a third
-# name, rather than widening to a wildcard.
 
 
 def is_generated_path(path: str) -> bool:

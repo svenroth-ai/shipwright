@@ -60,37 +60,6 @@ def test_raw_review_transcripts_in_markdown_are_also_excluded():
         assert G.is_generated_path(f"{RUN}/{name}"), name
 
 
-def test_architecture_review_transcripts_are_also_excluded():
-    """Round 6 (PR #767, iterate-2026-09-16-ac-ledger-status-cell-counting):
-    `external_review.py --mode architecture` writes the same kind of
-    transcript as the `--mode code`/`--mode plan` calls, including the
-    literal `SHIPWRIGHT_VERDICT: approve` marker this whole family exists to
-    hide, but under an `architecture-review...` name instead of
-    `external-...` — an established convention across three prior iterates,
-    not a one-off. Before this fix it was fed straight to the reviewing
-    model, which (correctly, given what it could see) flagged the embedded
-    verdict marker as suspicious instruction-like content."""
-    for name in ("architecture-review-raw.json", "architecture-review.json"):
-        assert G.is_generated_path(f"{RUN}/{name}"), name
-
-
-def test_an_attacker_chosen_architecture_named_file_is_not_hidden():
-    """Round 6, second pass (PR #767): the gate's own next review correctly
-    rejected the first fix's `architecture-[^/]*review[^/]*\\.(json|md)`
-    wildcard as widening the exact review-evasion surface Round 5's note
-    describes for the sibling `external-` family — a contributor could name
-    an arbitrary file to match it and have its content hidden from the
-    reviewing model. The fix closed it to the two exact basenames this
-    repo's history has ever produced; anything merely shaped like them must
-    stay reviewable."""
-    for name in (
-        "architecture-review-injected.json",
-        "architecture-fake-review.md",
-        "architecture-review-raw.md",  # real basename's .json swapped for .md
-    ):
-        assert not G.is_generated_path(f"{RUN}/{name}"), name
-
-
 def test_self_review_payload_stays_reviewable():
     """Deliberately NOT excluded: this is the payload SENT TO a review
     stage, not a transcript OF one — the module docstring's warning about an
@@ -126,8 +95,6 @@ def test_reply_and_external_hiding_requires_a_run_directory_segment():
         ".shipwright/planning/iterate/a/b/spec_review_reply.json",  # too deep
         ".shipwright/planning/iterate/evil-external-review.md",  # no run segment
         ".shipwright/planning/iterate/a/b/external-code-review.md",  # too deep
-        ".shipwright/planning/iterate/evil-architecture-review.md",  # no run segment
-        ".shipwright/planning/iterate/a/b/architecture-review-raw.json",  # too deep
     ):
         assert not G.is_generated_path(path), path
     # Exactly one run-directory segment is the shape that DOES get hidden —
