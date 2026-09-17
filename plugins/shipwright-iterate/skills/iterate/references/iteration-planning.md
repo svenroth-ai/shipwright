@@ -336,8 +336,22 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --plan-file "{miniplan_path}" \
      --plugin-root "{plan_plugin_root}" \
      --project-root "{project_root}" --run-id "{run_id}" \
+     --driver "{driver}" \
      > "{project_root}/.shipwright/planning/iterate/{run_id}/external-plan-review-raw.json"
    ```
+   (`--driver` is **required, no default** — `claude` when this session runs
+   under Claude Code, `codex` when it runs under Codex CLI. It picks the
+   independent-review identity: `claude` keeps `{glm, openai}`; `codex` swaps
+   to `{glm, opus}`, because a Codex-authored diff (`gpt-5.6-terra`) reviewed
+   by another OpenAI-family model would not be independent. Never hardcode
+   this — resolve it from which harness is actually driving the session.
+   **Resolution rule:** this is self-evident to the program executing these
+   instructions, not detected or inferred — a Claude Code session is always
+   `claude`; a session invoked through Codex CLI's own agent loop is always
+   `codex`. No env var, config file, or heuristic is consulted — Sven
+   explicitly rejected env-sniffing and a default value alike (Escape Hatch /
+   Rejected Alternatives history), so the executing agent states its own
+   identity plainly.)
    (The `mkdir -p` is not always redundant: step 0's `record` call is what
    normally creates this directory as a side effect, but it is skipped
    entirely under degraded handling above — a bare redirect would then fail
@@ -389,8 +403,11 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --spec-file "{iterate_spec_path}" \
      --brief-file "{project_root}/.shipwright/planning/iterate/{run_id}/architecture_brief.md" \
      --plugin-root "{plan_plugin_root}" \
-     --project-root "{project_root}" --run-id "{run_id}"
+     --project-root "{project_root}" --run-id "{run_id}" \
+     --driver "{driver}"
    ```
+   (Same `{driver}` as step 2's call above — the same two reviewer identities
+   answer both calls in this step.)
 
    The CLI **refuses `--plan-file` here** (usage error, exit 2) — a silently
    accepted plan would restore the anchoring while the envelope stayed identical.
@@ -407,10 +424,12 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
    **On a `reject` from either reviewer — STOP and ask the operator.** Do not
    build first and report after; the whole value is a human seeing it while the
-   code does not yet exist:
+   code does not yet exist. `{second_reviewer}` below is `openai` under
+   `--driver claude`, `opus` under `--driver codex` — read the actual key from
+   the JSON output, never hardcoded:
 
    > The architecture review says this should not be built this way.
-   > {glm} says **{verdict}**, {openai} says **{verdict}**. They recommend:
+   > {glm} says **{verdict}**, {second_reviewer} says **{verdict}**. They recommend:
    > **{the alternative, in one line}**. The mini-plan had considered that and
    > rejected it because: **{the reason, from mini-plan item 6}**.
    >
@@ -430,7 +449,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    ```markdown
    ## Architecture Review
    - **Brief:** `.shipwright/planning/iterate/{run_id}/architecture_brief.md`
-   - **Verdicts:** glm={approve|revise|reject} · openai={…}
+   - **Verdicts:** glm={approve|revise|reject} · {second_reviewer}={…} ({second_reviewer} is `openai` under `--driver claude`, `opus` under `--driver codex`)
    - **Smallest thing that would do (per reviewers):** {one line, or `as proposed`}
    - **Findings:** {each, with accepted-and-fixed | rejected-with-reason}
    - **Reconciliation:** {what the plan had rejected, why, and the decision}
@@ -478,7 +497,9 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    "Recording each review pass" in [iteration-reviews.md](iteration-reviews.md).
 
 ### Handling results (Branch A)
-- Parse JSON output: `reviews.glm.feedback` + `reviews.openai.feedback`
+- Parse JSON output: `reviews.glm.feedback` + `reviews.openai.feedback` (or
+  `reviews.opus.feedback` under `--driver codex`; required, no default, never
+  hardcoded)
 - Print findings summary to user
 - For high-severity findings: discuss with user before proceeding to build
 - For low/medium: note in ADR, proceed

@@ -31,6 +31,7 @@ import re
 from typing import Any
 
 __all__ = [
+    "CURRENT_REVIEWER_ROSTERS",
     "GATEWAY_REVIEWERS",
     "HISTORICAL_REVIEWER_PAIRS",
     "REVIEWERS",
@@ -48,9 +49,10 @@ __all__ = [
 
 SENTINEL = "SHIPWRIGHT_VERDICT"
 
-#: The pair new writers emit. Historical Gemini/OpenAI and DeepSeek/OpenAI
-#: markers remain a supported read shape, but neither is ever aliased into a
-#: new GLM row.
+#: The pair new writers emit under --driver claude (external_review.py's
+#: default identity for the second leg). Historical Gemini/OpenAI and
+#: DeepSeek/OpenAI markers remain a supported read shape, but neither is
+#: ever aliased into a new GLM row.
 REVIEWERS: tuple[str, ...] = ("glm", "openai")
 HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (
     ("gemini", "openai"),
@@ -61,9 +63,21 @@ HISTORICAL_REVIEWER_PAIRS: tuple[tuple[str, ...], ...] = (
 #: two legs are named by role — never aliased onto "glm"/"openai",
 #: which would misrepresent which route actually answered.
 GATEWAY_REVIEWERS: tuple[str, ...] = ("model-1", "model-2")
+#: Every roster a CURRENT (non-historical) run may produce, keyed by
+#: --driver: "claude" -> REVIEWERS, "codex" -> {glm, opus} (a Codex-authored
+#: diff reviewed by another OpenAI-family model is not independent). Kept as
+#: its own tuple rather than importing external_review_routing.DRIVER_ROSTERS
+#: — that module owns "which identity answers which leg", this one owns
+#: "which rosters are current", and importing across that boundary would
+#: pull external_review_routing's OpenRouter/ZDR machinery into every
+#: caller of this pure-verdict module.
+CURRENT_REVIEWER_ROSTERS: tuple[frozenset[str], ...] = (
+    frozenset(REVIEWERS),
+    frozenset({"glm", "opus"}),
+)
 _SUPPORTED_REVIEWER_SETS = frozenset(
     {
-        frozenset(REVIEWERS),
+        *CURRENT_REVIEWER_ROSTERS,
         frozenset(GATEWAY_REVIEWERS),
         *(frozenset(pair) for pair in HISTORICAL_REVIEWER_PAIRS),
     }
@@ -212,9 +226,9 @@ def contradiction_block(verdicts: dict[str, str]) -> dict[str, Any]:
         return {
             "detected": False, "comparable": False, "requires_resolution": True,
             "reason": (
-                "unexpected reviewer set; expected current glm/openai, "
-                "gateway model-1/model-2, or historical gemini/openai or "
-                f"deepseek/openai, got {len(names)}: {pairs or 'none'}"
+                "unexpected reviewer set; expected current glm/openai or "
+                "glm/opus, gateway model-1/model-2, or historical gemini/openai "
+                f"or deepseek/openai, got {len(names)}: {pairs or 'none'}"
             ),
         }
 

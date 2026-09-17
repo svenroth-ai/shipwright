@@ -20,16 +20,16 @@ from typing import Any
 
 try:
     from .review_verdict import (
+        CURRENT_REVIEWER_ROSTERS,
         HISTORICAL_REVIEWER_PAIRS,
-        REVIEWERS,
         UNAVAILABLE,
         UNKNOWN,
         VERDICTS,
     )
 except ImportError:
     from review_verdict import (  # type: ignore[no-redef]
+        CURRENT_REVIEWER_ROSTERS,
         HISTORICAL_REVIEWER_PAIRS,
-        REVIEWERS,
         UNAVAILABLE,
         UNKNOWN,
         VERDICTS,
@@ -222,7 +222,7 @@ def validate_entry(review_type: str, entry: Any, *, where: str | None = None) ->
         verdicts = entry["verdicts"]
         if not isinstance(verdicts, dict):
             return f"{where}.verdicts must be an object"
-        supported = {frozenset(REVIEWERS), *map(frozenset, HISTORICAL_REVIEWER_PAIRS)}
+        supported = {*CURRENT_REVIEWER_ROSTERS, *map(frozenset, HISTORICAL_REVIEWER_PAIRS)}
         if frozenset(verdicts) not in supported:
             return f"{where}.verdicts has an unsupported reviewer set"
         allowed = {*VERDICTS, UNKNOWN, UNAVAILABLE}

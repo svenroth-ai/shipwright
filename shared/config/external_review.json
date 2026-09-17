@@ -5,16 +5,22 @@
     "gpt_leg": {
       "provider": "api"
     },
+    "opus_leg": {
+      "provider": "claude_cli"
+    },
     "_comment_alert": "alert_if_missing: reserved (review is now interactive — never silently skipped)",
     "_comment_iterations": "feedback_iterations: default 1 = external review is the default path. 0 = explicit opt-out; the consuming skill then runs a mandatory self-review ('2x denken') fallback instead. If > 0 and no API key is set, the skill interactively prompts the user.",
-    "_comment_gpt_leg": "gpt_leg.provider: which route answers the 'openai' reviewer identity. 'api' (default) = OpenRouter/direct OpenAI, metered per token — unchanged existing behavior. 'codex' = route it through the Codex CLI instead (flat-cost under a ChatGPT/Codex subscription); requires `codex` installed and authenticated (`codex login status`), falls back to 'api' when unavailable, and skips the leg entirely if neither route is usable. Per-project override: external_review.gpt_leg.provider in shipwright_iterate_config.json."
+    "_comment_gpt_leg": "gpt_leg.provider: which route answers the 'openai' reviewer identity. 'api' (default) = OpenRouter/direct OpenAI, metered per token — unchanged existing behavior. 'codex' = route it through the Codex CLI instead (flat-cost under a ChatGPT/Codex subscription); requires `codex` installed and authenticated (`codex login status`), falls back to 'api' when unavailable, and skips the leg entirely if neither route is usable. Per-project override: external_review.gpt_leg.provider in shipwright_iterate_config.json.",
+    "_comment_opus_leg": "opus_leg.provider: which route answers the 'opus' reviewer identity (used when --driver codex selects the {glm, opus} roster). 'claude_cli' (default) = the local `claude` CLI, flat-cost under a Claude subscription; requires `claude` installed (`claude --version`) and never resolves to a `.cmd`/`.bat` shim on Windows (BatBadBut argv-injection guard — falls back instead). Falls back to 'openrouter' when the CLI is unavailable or refused, and skips the leg entirely if neither route is usable. No ZDR allowlist needed for this leg (Sven: single-provider, not GLM/DeepSeek's multi-endpoint aggregation)."
   },
   "models": {
     "chatgpt": "gpt-5.6-terra",
     "openrouter_glm": "z-ai/glm-5.3",
     "openrouter_chatgpt": "openai/gpt-5.6-terra",
     "codex": "gpt-5.6-terra",
-    "_comment": "Identity-locked review models: GLM always uses its OpenRouter model; GPT uses its OpenRouter, direct, or Codex-CLI model — same 'openai' reviewer identity across all three, same model string, different transport. Runtime rejects config or environment overrides that differ from these exact identifiers."
+    "claude_cli": "claude-opus-5",
+    "openrouter_opus": "anthropic/claude-opus-5",
+    "_comment": "Identity-locked review models: GLM always uses its OpenRouter model; GPT uses its OpenRouter, direct, or Codex-CLI model — same 'openai' reviewer identity across all three, same model string, different transport. Opus uses its Claude-CLI or OpenRouter model — same 'opus' reviewer identity across both, same pinned full model id (not the floating 'opus' alias) so both legs identity-lock to the exact same string. Runtime rejects config or environment overrides that differ from these exact identifiers."
   },
   "glm_routing": {
     "provider_allowlist": [
@@ -61,5 +67,10 @@
     "timeout_seconds": 600,
     "max_retries": 1,
     "_comment": "Subprocess budget for the Codex CLI review leg (external_review.gpt_leg.provider == 'codex'). Codex is an agentic CLI invocation, not a metered HTTP completion, so it gets its own timeout/retry budget rather than sharing llm_client's — 600s because a `codex exec` turn can run materially longer than a single completion call."
+  },
+  "claude_cli": {
+    "timeout_seconds": 600,
+    "max_retries": 1,
+    "_comment": "Subprocess budget for the Claude CLI review leg (external_review.opus_leg.provider == 'claude_cli'). Mirrors the 'codex' section: an agentic CLI invocation, not a metered HTTP completion, so it gets its own timeout/retry budget rather than sharing llm_client's."
   }
 }

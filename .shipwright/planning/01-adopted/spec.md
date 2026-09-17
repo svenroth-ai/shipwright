@@ -20,7 +20,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.08 | Adopted | /shipwright-deploy | Should | Release the project to a configured hosting target and prove it is actually alive before calling it done — asking repeatedly until a deadline the target itself sets, so a slow start is not mistaken for a failed release, and treating no answer by then as a failed one. The way back to a previous version puts back the version that was asked for, refuses when stored data has already moved past it, and — if it fails part-way — says plainly that nothing is confirmed running and stops. Every supported target carries a written record of its way back and of what that does about stored data that has already moved on. Jelastic (Infomaniak) is shipped; Vercel and a container-on-a-server target are documented as stubs. | code | unit (inferred) |
 | FR-01.09 | Adopted | /shipwright-changelog | Must | Turn the commit history into a release note a human can read, tag the release, open the release pull request, and publish a readable summary to the code host's release page (best-effort, forward-only). | code | unit (inferred) |
 | FR-01.10 | Adopted | /shipwright-compliance | Must | Produce audit-ready evidence — which requirement is covered by which test, what changed when, and what the project depends on — and run an on-demand cross-check that reports where that evidence disagrees with reality. | code | unit (inferred) |
-| FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. | code | unit (inferred) |
+| FR-01.11 | Adopted | /shipwright-iterate | Must | Handle an ongoing change at the depth it deserves: detect what kind of change it is and how big, then scale from a quick fix to a fully specified feature with plans, reviews and tests. Every feature or change records whether it adds, modifies, removes or leaves the requirements untouched, and that record is enforced before the change can be finished. When an outside second opinion is asked for, the pair of reviewers stays independent of whichever tool drove the change, never the same vendor family reviewing its own output. | code | unit (inferred) |
 | FR-01.12 | Adopted | /shipwright-preview | May | Start the project locally and hand back the address to open in a browser. | code | e2e (inferred) |
 | FR-01.13 | Adopted | /shipwright-adopt | Must | Bring an existing codebase under Shipwright: read what is already there, write the starting guidance, derive an initial requirements catalog and compliance evidence, and lay down a baseline end-to-end test. | code | unit (inferred) |
 | FR-01.14 | Adopted | Triage Inbox | Must | Collect findings from local checks and from the code host's automated scans into one per-project Triage Inbox the operator works through — each finding recorded once, and each one taken into work, deferred or dismissed — so the actual task list stays curated instead of flooded. | code | unit (inferred) |
@@ -883,6 +883,11 @@ _Where the work detail lives_ at the end of this document.
   it is picked back up, then what is reported names every review pass still
   open, read from the same record each pass writes to — not only whether an
   outside second opinion ran. (iterate-2026-08-09-compaction-state-audit)
+- (E) [AC30] Given an outside second opinion is asked for, when the tool that drove
+  the change is Claude or Codex, then the pair of reviewers it consults stays
+  independent of that tool — never the same vendor family reviewing its own
+  output — instead of being fixed to one hard-coded pair regardless of which
+  tool produced the change. (iterate-2026-09-16-opus-review-leg-codex-driver)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

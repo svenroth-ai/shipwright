@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
-"""External LLM review CLI — GLM + OpenAI in parallel.
+"""External LLM review CLI — GLM plus a second, driver-dependent identity, in
+parallel.
 
 GLM's leg: OpenRouter (OPENROUTER_API_KEY) or skip — it has no direct route
-and never falls back to Gemini. The "openai" leg's route is resolved by
-:func:`external_review_default_legs.resolve_openai_route`: OpenRouter → direct OpenAI → skip (same chain as :func:`detect_provider` below, kept as
-public surface but no longer called from ``main``) — or, when configured
-``external_review.gpt_leg.provider: "codex"``, the Codex CLI instead, falling back to that chain (reason recorded on the leg as ``fallback_reason``) when codex is unavailable.
+and never falls back to Gemini. The second identity depends on ``--driver``
+(required, no default — see :data:`lib.external_review_routing.DRIVER_ROSTERS`):
+``--driver claude`` keeps the "openai" identity, whose route is resolved by
+:func:`external_review_default_legs.resolve_openai_route`: OpenRouter → direct
+OpenAI → skip (same chain as :func:`detect_provider` below, kept as public
+surface but no longer called from ``main``) — or, when configured
+``external_review.gpt_leg.provider: "codex"``, the Codex CLI instead, falling
+back to that chain (reason recorded on the leg as ``fallback_reason``) when
+codex is unavailable. ``--driver codex`` swaps that identity for "opus"
+(cross-vendor, since a Codex-authored diff reviewed by another OpenAI-family
+model is not independent), resolved by
+:func:`external_review_opus_leg.resolve_opus_route`: the local Claude CLI →
+OpenRouter → skip.
 
-Usage — every mode takes ``--spec-file``, ``--plugin-root``, exactly ONE input
-flag below, and uv's own ``--project <plan plugin root>`` (else ``openai``
-silently fails to import outside a project whose own pyproject.toml declares it)::
+Usage — every mode takes ``--spec-file``, ``--plugin-root``, ``--driver``,
+exactly ONE input flag below, and uv's own ``--project <plan plugin root>``
+(else ``openai`` silently fails to import outside a project whose own
+pyproject.toml declares it)::
 
     uv run --project <shipwright-plan plugin root> \\
         shared/scripts/tools/external_review.py --mode <mode> \\
-        <input-flag> <path> --spec-file <path> --plugin-root <path>
+        <input-flag> <path> --spec-file <path> --plugin-root <path> \\
+        --driver <claude|codex>
 
 Mode → primary-input mapping (the table itself is
 :data:`lib.external_review_modes.MODE_INPUT`, which also enforces it — a flag
@@ -32,10 +44,12 @@ Output (JSON):
     {
         "review_schema": 2,  // v1 was implicit and used gemini/openai
         "success": true/false,
-        "provider": "openrouter" | "direct" | "codex" | "none",
+        "provider": "openrouter" | "direct" | "codex" | "claude_cli" | "none",
+        "driver": "claude" | "codex",
         "skipped": "empty_diff",  // optional, code-mode only
         "reviews": {
             "glm": { "status": "success|error|skipped", "feedback": "..." },
+            // "openai" under --driver claude, "opus" under --driver codex.
             "openai": { "status": "success|error|skipped", "feedback": "..." }
         },
         // Both reviewers' verdicts, read from the SHIPWRIGHT_VERDICT sentinel,
@@ -98,7 +112,13 @@ from external_review_default_legs import (  # noqa: E402
     resolve_openai_route,
     review_codex,
 )
+from external_review_opus_leg import (  # noqa: E402
+    resolve_opus_route,
+    review_claude_cli,
+)
 from external_review_routing import (  # noqa: E402
+    DRIVER_CHOICES,
+    DRIVER_ROSTERS,
     openrouter_extra_body,
     resolve_reviewer_model,
 )
@@ -251,6 +271,19 @@ def main() -> int:
         "--run-id", default=None,
         help="Iterate run_id — records this call as an 'external_review' timing span; omit to skip.",
     )
+    parser.add_argument(
+        "--driver",
+        required=True,
+        choices=DRIVER_CHOICES,
+        help=(
+            "Which harness authored the diff/plan under review: 'claude' (Claude "
+            "Code) keeps today's {glm, openai} roster; 'codex' (Codex CLI) swaps "
+            "the OpenAI-family 'openai' leg for the cross-vendor 'opus' leg — an "
+            "OpenAI-authored diff reviewed by another OpenAI-family model is not "
+            "an independent review. No default: every call site must state which "
+            "harness produced the diff."
+        ),
+    )
     args = parser.parse_args()
 
     # Mode-specific validation lives in lib/external_review_modes (a foreign
@@ -315,17 +348,20 @@ def main() -> int:
         return 1
 
     # Code-mode short-circuit: empty diff → no provider call. The LLM cannot
-    # review what isn't there, and many providers reject empty inputs.
+    # review what isn't there, and many providers reject empty inputs. Built
+    # from the selected roster (not hardcoded glm/openai) so a --driver codex
+    # run correctly skips {glm, opus}, not a nonexistent "openai" leg.
     if args.mode == "code" and not primary_text.strip():
         empty_reviews = {
-            "glm": {"status": "skipped", "reason": "empty diff"},
-            "openai": {"status": "skipped", "reason": "empty diff"},
+            name: {"status": "skipped", "reason": "empty diff"}
+            for name in DRIVER_ROSTERS[args.driver]
         }
         print(json.dumps({
             "review_schema": REVIEW_ENVELOPE_SCHEMA,
             "success": True,
             "skipped": "empty_diff",
             "provider": "none",
+            "driver": args.driver,
             "degraded": False,
             "reviews": empty_reviews,
             # Same shape on every exit path so a consumer never has to guard
@@ -352,10 +388,21 @@ def main() -> int:
 
     has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
-    openai_route, openai_route_note = resolve_openai_route(
-        config, has_openrouter_key=has_openrouter, has_openai_key=has_openai,
-    )
-    provider = openai_route  # the GPT leg's route only; GLM's truth is its own review's "via"
+    _glm_id, second_id = DRIVER_ROSTERS[args.driver]
+
+    # Branches entirely on --driver, with NO fallthrough to the other
+    # identity's route resolver — this is what keeps
+    # external_review.gpt_leg.provider (an unrelated cost-routing knob for
+    # the 'openai' identity) from ever leaking an 'openai' leg into a
+    # driver=codex roster: resolve_openai_route is simply never called on
+    # that path.
+    if args.driver == "codex":
+        second_route, second_route_note = resolve_opus_route(config, has_openrouter_key=has_openrouter)
+    else:
+        second_route, second_route_note = resolve_openai_route(
+            config, has_openrouter_key=has_openrouter, has_openai_key=has_openai,
+        )
+    provider = second_route  # the second leg's route only; GLM's truth is its own review's "via"
     reviews: dict[str, dict] = {}
 
     # external_review is a real producer boundary (this whole block IS the
@@ -375,27 +422,36 @@ def main() -> int:
                 futures[executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "glm")] = "glm"
             else:
                 reviews["glm"] = {"status": "skipped", "reason": "No OPENROUTER_API_KEY set" if not has_openai else "GLM requires an approved OpenRouter ZDR endpoint"}
-            if openai_route == "codex":
-                futures[executor.submit(review_codex, _render_user_prompt(user_prompt, primary_text, spec), system_prompt, config)] = "openai"
-            elif openai_route == "openrouter":
-                futures[executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai")] = "openai"
-            elif openai_route == "direct":
-                futures[executor.submit(review_with_openai, primary_text, spec, system_prompt, user_prompt, config)] = "openai"
+            if args.driver == "codex":
+                if second_route == "claude_cli":
+                    futures[executor.submit(review_claude_cli, primary_text, spec, system_prompt, user_prompt, config)] = second_id
+                elif second_route == "openrouter":
+                    futures[executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "opus")] = second_id
+                else:
+                    reviews[second_id] = {"status": "skipped", "reason": second_route_note or "No claude CLI or OPENROUTER_API_KEY available"}
             else:
-                reviews["openai"] = {"status": "skipped", "reason": openai_route_note or "No OPENAI_API_KEY or OPENROUTER_API_KEY set"}
+                if second_route == "codex":
+                    futures[executor.submit(review_codex, _render_user_prompt(user_prompt, primary_text, spec), system_prompt, config)] = second_id
+                elif second_route == "openrouter":
+                    futures[executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai")] = second_id
+                elif second_route == "direct":
+                    futures[executor.submit(review_with_openai, primary_text, spec, system_prompt, user_prompt, config)] = second_id
+                else:
+                    reviews[second_id] = {"status": "skipped", "reason": second_route_note or "No OPENAI_API_KEY or OPENROUTER_API_KEY set"}
             for future in as_completed(futures):
                 name = futures[future]
                 try:
                     reviews[name] = future.result()
                 except Exception as e:
                     reviews[name] = {"status": "error", "reason": str(e)}
-            if openai_route_note and "openai" in reviews and openai_route != "none":
-                reviews["openai"]["fallback_reason"] = openai_route_note  # WHY even on success, not only on skip
+            if second_route_note and second_id in reviews and second_route != "none":
+                reviews[second_id]["fallback_reason"] = second_route_note  # WHY even on success, not only on skip
         if timing_extra is not None:
             timing_extra["provider"] = provider
 
     # Degraded-gate: keys present but 0 reviews succeeded → fail loud (never a silent no-op).
     output, exit_code = finalize_review_output(provider, reviews)
+    output["driver"] = args.driver
     # Two reviewers exist so disagreement gets noticed; carry both verdicts and
     # the derived contradiction alongside the full texts rather than letting a
     # downstream finding count average them away.

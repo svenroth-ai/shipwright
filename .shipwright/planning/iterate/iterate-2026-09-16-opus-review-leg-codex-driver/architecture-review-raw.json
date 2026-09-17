@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **The question, answered in one sentence.** Yes\u2014independent external review for Codex-authored diffs warrants a swapped Claude reviewer leg.\n\n2. **The smallest thing that would do** \u2014 a closed `--driver {claude,codex}` selector choosing `{glm,openai}` or `{glm,opus}`; no generic driver framework.\n\n3. **What it costs to keep** \u2014 maintaining the two roster identities, identity locks, and explicit flag wiring at each invocation site.\n\n4. **What it forecloses** \u2014 none identified.\n\n5. **Findings**\n\nNo findings.\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "1. **Should this mechanism exist?** Yes \u2014 a third reviewer identity plus a driver flag is the right and proportionate fix for a real, recurring silent self-review problem; Option C would only change transport while leaving the same vendor reviewing its own output, which is the actual defect.\n\n2. **The smallest thing that would do** \u2014 Option A exactly as scoped: a closed two-value `--driver` enum, one new reviewer identity with two transports (local CLI, OpenRouter fallback), no generic framework. That is already the small version; D was correctly avoided. The one genuinely smaller variant would be dropping the local `claude` CLI transport and using OpenRouter only \u2014 one transport instead of two, no `.cmd`/BatBadBut shim analysis, no `is_claude_cli_available()`, no empty-MCP-config hardening, and no platform-dependent \"effectively never selected on Windows\" asymmetry. That would remove roughly half the standing surface for a cost of one API key and per-call spend.\n\n3. **What it costs to keep** \u2014 a permanently maintained third reviewer identity: its identity-lock, its route resolution, its transport hardening parity with the Codex leg, a second marker schema (5) with a `schema_for_roster()` helper, a roster-aware `_SUPPORTED_REVIEWER_SETS`, and eight prose call sites kept correct by a contract test. Every future roster or verdict change now reasons about two schemas and three identities.\n\n4. **What it forecloses** \u2014 none identified beyond mild ones: the closed `(\"claude\",\"codex\")` enum slightly raises the cost of a hypothetical third driver (acceptable), and the dual marker-schema split breaks the documented 1:1 schema\u2194roster invariant permanently.\n\n5. **Findings**\n\n- Category: ownership\n- Severity: high\n- Finding: Per the brief's own escalation log, the wiring into real Codex-CLI-driven runs is deferred to follow-up card `trg-a27ab4d9` \u2014 so this iterate incurs the full standing cost (third identity, second marker schema, flag, contract test) while the self-review bug it exists to fix remains live after merge.\n- Suggestion: Either fold the one wiring decision into this change (even a minimal explicit instruction in the shared iterate skill for Codex-driven sessions) or hold the whole change until that card lands; do not ship the mechanism dormant.\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: The local `claude` CLI transport buys cost savings but adds the largest share of the permanent surface: binary resolution, `.cmd`/`.bat` refusal, auth-availability heuristics, isolation-flag parity with `review_codex()`, and a Windows known limitation that makes OpenRouter load-bearing there anyway.\n- Suggestion: Ship the OpenRouter-only \"opus\" leg now; add the local CLI transport later as an additive route if the API spend ever justifies it. If Sven wants the local transport anyway, this finding is withdrawn \u2014 it is a cost judgment, not a correctness one.\n\n- Category: proportionality\n- Severity: low\n- Finding: The grep-based prose contract test over eight markdown call sites is a standing mechanism whose subject (prose) is already rot-prone; it will need updating every time any call-site doc moves.\n- Suggestion: Acceptable as proposed, but keep the test's matching loose (flag presence, not block shape) so doc reformatting doesn't red it.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=approve"
+  }
+}

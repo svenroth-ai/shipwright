@@ -85,11 +85,18 @@ except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sy
 
 
 # Identity-locked model bindings. The shipping config must match exactly.
+# claude_cli/openrouter_opus are never looked up by this module's own
+# {glm, openai} roster loop (run_review()) — kept here only so
+# test_default_models_match_shipping_config's drift-guard invariant (this
+# dict vs. the shipping config's `models` block, in full) keeps holding after
+# external_review.py grew the --driver-selected 'opus' identity.
 DEFAULT_MODELS = {
     "openrouter_glm": "z-ai/glm-5.3",
     "openrouter_chatgpt": "openai/gpt-5.6-terra",
     "chatgpt": "gpt-5.6-terra",
     "codex": "gpt-5.6-terra",
+    "claude_cli": "claude-opus-5",
+    "openrouter_opus": "anthropic/claude-opus-5",
 }
 
 

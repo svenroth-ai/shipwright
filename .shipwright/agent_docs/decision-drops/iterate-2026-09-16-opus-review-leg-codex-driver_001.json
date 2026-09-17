@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-16-opus-review-leg-codex-driver",
+  "date": "2026-09-17",
+  "section": "Iterate — feature: opus review leg + required --driver flag",
+  "title": "A third, cross-vendor external-reviewer identity (opus), gated by a required --driver flag",
+  "context": "external_review.py's roster was hard-coded to {glm, openai}. A Codex-driven diff was reviewed by the openai leg — same vendor as the author, a vendor-mode self-review.",
+  "decision": "Add a third Anthropic-backed reviewer leg (opus: local claude CLI, OpenRouter fallback) and a required, no-default --driver {claude,codex} flag; codex swaps the roster to {glm, opus}.",
+  "consequences": "External review is provider-independent from whichever CLI drove the diff. Every call site needed a one-line --driver addition. Ships dormant until trg-a27ab4d9 wires a real Codex-CLI caller.",
+  "rationale": "Reuses review_codex()'s stdin/argv isolation posture and resolve_reviewer_model's identity-lock, keeping the new leg consistent with the two existing ones rather than inventing a fourth pattern.",
+  "rejected": "A default --driver value; env-var auto-detection; a review_opus_openrouter() wrapper; a generic pluggable multi-driver architecture; a literal --model opus alias.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-16-opus-review-leg-codex-driver-third-reviewer-identity.md"
+}

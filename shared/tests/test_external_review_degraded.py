@@ -85,7 +85,8 @@ def _run_main_direct(monkeypatch, fake_plan_plugin, openai_result):
          "--mode", "iterate",
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
     return external_review.main()
 
@@ -152,7 +153,8 @@ def test_no_keys_is_not_degraded(monkeypatch, clean_env, capsys, fake_plan_plugi
          "--mode", "iterate",
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
     rc = external_review.main()
     payload = json.loads(capsys.readouterr().out)
@@ -188,7 +190,8 @@ def test_empty_diff_short_circuit_is_not_degraded(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
     rc = external_review.main()
     payload = json.loads(capsys.readouterr().out)
@@ -226,7 +229,8 @@ def test_gpt_leg_routes_through_codex_when_project_configures_it(
     monkeypatch.setattr(
         "sys.argv",
         ["external_review.py", "--mode", "iterate", "--spec-file", str(spec),
-         "--plan-file", str(plan), "--plugin-root", str(plugin_root)],
+         "--plan-file", str(plan), "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
     rc = external_review.main()
     payload = json.loads(capsys.readouterr().out)

@@ -150,7 +150,7 @@ below; the **Pre-5b Checkpoint** decides whether the Self-Review Fallback
 runs. Then read `external_review_status` from the session report (First
 Actions > F) and branch on its value:
 
-- **Branch A — `available`:** run `external_review.py --mode plan ...`
+- **Branch A — `available`:** run `external_review.py --mode plan --driver claude ...`
   (GLM + OpenAI in parallel), integrate findings, log each to
   `decision_log.md`. Read `contradiction.requires_resolution` first — put any
   disagreement to the user, never proceed on the approving review alone. Then

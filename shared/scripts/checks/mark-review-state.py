@@ -43,7 +43,7 @@ Usage:
         --planning-dir <path> \\
         --status {completed|skipped_user_opt_out|skipped_config_disabled} \\
         [--review-type plan|iterate|code] \\
-        [--provider openrouter|openai|codex] \\
+        [--provider openrouter|openai|codex|claude_cli] \\
         [--reason "user opted out: offline demo"] \\
         [--findings-count 5] \\
         [--self-review-fallback-ran]
@@ -66,14 +66,20 @@ from lib.review_marker import (  # noqa: E402
     CODE_REVIEW_STATE_FILE,
     REVIEW_STATE_FILE,
     build_marker,
+    schema_for_roster,
     write_marker,
 )
 from lib.review_verdict import (  # noqa: E402
-    REVIEWERS,
+    CURRENT_REVIEWER_ROSTERS,
     UNKNOWN,
     VERDICTS,
     contradiction_block,
 )
+
+#: Every reviewer NAME a --verdict flag may use — the union of every current
+#: roster (not historical ones: this CLI writes NEW markers, so a historical
+#: name like "deepseek" or "gemini" is never a valid --verdict argument here).
+_KNOWN_REVIEWERS = frozenset().union(*CURRENT_REVIEWER_ROSTERS)
 
 __all__ = [
     "ALLOWED_REVIEW_TYPES",
@@ -99,8 +105,8 @@ def parse_verdict_args(pairs: list[str] | None) -> tuple[dict[str, str], str | N
         name, value = name.strip().lower(), value.strip().lower()
         if not sep or not name or not value:
             return {}, f"--verdict expects reviewer=value, got {pair!r}"
-        if name not in REVIEWERS:
-            return {}, f"--verdict: unknown reviewer {name!r}, expected one of {sorted(REVIEWERS)}"
+        if name not in _KNOWN_REVIEWERS:
+            return {}, f"--verdict: unknown reviewer {name!r}, expected one of {sorted(_KNOWN_REVIEWERS)}"
         if name in verdicts:
             # Overwriting would silently discard one of the two verdicts —
             # exactly the loss this whole field exists to prevent.
@@ -187,6 +193,16 @@ def main() -> int:
         }))
         return 2
 
+    marker_schema_kwargs: dict = {}
+    if verdicts:
+        try:
+            marker_schema_kwargs["marker_schema"] = schema_for_roster(verdicts)
+        except ValueError as exc:
+            print(json.dumps({
+                "success": False, "error": "invalid_verdict", "message": str(exc),
+            }))
+            return 2
+
     marker = build_marker(
         status=args.status,
         review_type=args.review_type,
@@ -197,6 +213,7 @@ def main() -> int:
         verdicts=verdicts or None,
         contradiction=_derive_contradiction(verdicts),
         contradiction_resolution=args.contradiction_resolution,
+        **marker_schema_kwargs,
     )
     out_path = write_marker(planning_dir, marker, args.review_type)
 

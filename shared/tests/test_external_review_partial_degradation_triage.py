@@ -101,6 +101,7 @@ def _run_main_openrouter(monkeypatch, project, run_id=None):
         "external_review.py", "--mode", "iterate",
         "--spec-file", str(spec), "--plan-file", str(plan),
         "--plugin-root", str(plugin_root), "--project-root", str(spec.parent),
+        "--driver", "claude",
     ]
     if run_id:
         argv += ["--run-id", run_id]
@@ -155,7 +156,8 @@ def test_no_triage_card_when_both_legs_succeed(monkeypatch, clean_env, capsys, f
         "sys.argv",
         ["external_review.py", "--mode", "iterate",
          "--spec-file", str(spec), "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root), "--project-root", str(spec.parent)],
+         "--plugin-root", str(plugin_root), "--project-root", str(spec.parent),
+         "--driver", "claude"],
     )
     external_review.main()
     capsys.readouterr()

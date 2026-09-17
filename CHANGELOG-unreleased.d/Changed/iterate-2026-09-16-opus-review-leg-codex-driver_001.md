@@ -1,0 +1,1 @@
+`external_review.py` now requires `--driver claude|codex` (no default) to select the reviewer roster — GLM+OpenAI for `claude`, GLM+Opus for `codex`; every plugin call site and prose example was updated to pass it.
