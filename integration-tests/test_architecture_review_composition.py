@@ -132,7 +132,7 @@ def test_the_brief_is_what_reaches_the_model(project, stub_provider, capsys, mon
     proj, spec, brief = project
     _run_cli(monkeypatch, ["--mode", "architecture", "--spec-file", str(spec),
                            "--brief-file", str(brief), "--plugin-root", str(proj),
-                           "--project-root", str(proj)], capsys)
+                           "--project-root", str(proj), "--driver", "claude"], capsys)
 
     assert len(stub_provider) == 2, "both reviewer arms must be asked"
     for call in stub_provider:
@@ -163,7 +163,7 @@ def test_the_envelope_is_itemizable_into_findings(project, stub_provider, capsys
     proj, spec, brief = project
     envelope = _run_cli(monkeypatch, ["--mode", "architecture", "--spec-file", str(spec),
                                       "--brief-file", str(brief), "--plugin-root", str(proj),
-                                      "--project-root", str(proj)], capsys)
+                                      "--project-root", str(proj), "--driver", "claude"], capsys)
 
     assert envelope["verdicts"] == {"glm": "reject", "openai": "reject"}
     assert envelope["contradiction"]["detected"] is False
@@ -202,7 +202,7 @@ def test_the_plan_row_is_not_this_passs_destination(
     # A REAL envelope, standing in for Step 3.5's first call.
     envelope = _run_cli(monkeypatch, ["--mode", "architecture", "--spec-file", str(spec),
                                       "--brief-file", str(brief), "--plugin-root", str(proj),
-                                      "--project-root", str(proj)], capsys)
+                                      "--project-root", str(proj), "--driver", "claude"], capsys)
     payload = proj / CANONICAL_PAYLOAD_BASENAMES["plan"]
     payload.write_text(json.dumps(envelope), encoding="utf-8")
 
@@ -252,6 +252,6 @@ def test_plan_file_is_refused_in_architecture_mode(project, capsys, monkeypatch)
     with pytest.raises(SystemExit) as exc:
         _invoke(monkeypatch, ["--mode", "architecture", "--spec-file", str(spec),
                               "--brief-file", str(brief), "--plan-file", str(brief),
-                              "--plugin-root", str(proj)])
+                              "--plugin-root", str(proj), "--driver", "claude"])
     assert exc.value.code == 2
     assert "--plan-file belongs to --mode plan" in capsys.readouterr().err

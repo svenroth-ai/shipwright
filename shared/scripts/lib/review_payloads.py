@@ -26,7 +26,7 @@ from .review_findings import (
     from_self_review,
     from_spec_reviewer,
 )
-from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS, summarize_reviews
+from .review_verdict import CURRENT_REVIEWER_ROSTERS, HISTORICAL_REVIEWER_PAIRS, summarize_reviews
 
 __all__ = [
     "ADAPTERS", "CANONICAL_PAYLOAD_BASENAMES", "MAX_RAW_EXCERPT",
@@ -212,10 +212,11 @@ def _verdicts_from_text(adapter: str, text: str) -> dict[str, str] | None:
         raise ReviewFindingsError("external review output has no 'reviews' object")
     review_schema = payload.get("review_schema")
     # Schema 2's envelope SHAPE never bumped across the DeepSeek->GLM reviewer
-    # swap, so it covers both the current roster and DeepSeek's now-historical
-    # one — a schema-2 payload written before this swap must stay readable.
+    # swap, nor across the --driver codex {glm, opus} addition — it covers
+    # every current roster plus DeepSeek's now-historical one, so a schema-2
+    # payload written before either change must stay readable.
     expected_candidates = (
-        (frozenset(REVIEWERS), frozenset(HISTORICAL_REVIEWER_PAIRS[1]))
+        (*CURRENT_REVIEWER_ROSTERS, frozenset(HISTORICAL_REVIEWER_PAIRS[1]))
         if review_schema == 2
         else (frozenset(HISTORICAL_REVIEWER_PAIRS[0]),)
         if review_schema in (None, 1)

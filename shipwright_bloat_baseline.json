@@ -972,7 +972,7 @@
     {
       "path": "shared/scripts/tools/external_review.py",
       "limit": 300,
-      "current": 413,
+      "current": 469,
       "state": "grandfathered",
       "adr": null
     },
@@ -1301,7 +1301,7 @@
     {
       "path": "shared/tests/test_external_review_cli.py",
       "limit": 300,
-      "current": 881,
+      "current": 896,
       "state": "grandfathered",
       "adr": null
     },

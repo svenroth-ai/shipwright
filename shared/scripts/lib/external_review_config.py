@@ -20,7 +20,7 @@ loader) get the unchanged shared default.
 Env-var override pattern: ``SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER>`` overrides
 ``config['models'][key]``. Empty/whitespace-only values fall back to the config
 default. The set of valid keys matches the keys in the shipped config:
-``chatgpt, openrouter_glm, openrouter_chatgpt, codex``.
+``chatgpt, openrouter_glm, openrouter_chatgpt, codex, claude_cli, openrouter_opus``.
 Active review producers pass this result through
 ``external_review_routing.resolve_reviewer_model``, which rejects any value
 that would change the operator-approved reviewer identity.
@@ -53,11 +53,17 @@ _VALID_MODEL_KEYS: set[str] = {
     "openrouter_glm",
     "openrouter_chatgpt",
     "codex",
+    "claude_cli",
+    "openrouter_opus",
 }
 
 #: Valid values for external_review.gpt_leg.provider — which transport
 #: answers the "openai" reviewer identity.
 _GPT_LEG_PROVIDERS: set[str] = {"api", "codex"}
+
+#: Valid values for external_review.opus_leg.provider — which transport
+#: answers the "opus" reviewer identity.
+_OPUS_LEG_PROVIDERS: set[str] = {"claude_cli", "openrouter"}
 
 # Env-var prefix for SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER> overrides.
 _ENV_OVERRIDE_PREFIX = "SHIPWRIGHT_REVIEW_MODEL_"
@@ -255,3 +261,17 @@ def gpt_leg_provider(config: dict[str, Any]) -> str:
     # override, e.g. "provider": []) is unhashable and `value in _GPT_LEG_PROVIDERS` raises
     # TypeError rather than degrading — this leg selector must never crash the caller.
     return value if isinstance(value, str) and value in _GPT_LEG_PROVIDERS else "api"
+
+
+def opus_leg_provider(config: dict[str, Any]) -> str:
+    """Which transport answers the 'opus' reviewer leg: 'claude_cli' (default —
+    the local `claude` CLI, flat-cost under a Claude subscription) or
+    'openrouter' (metered, used when the CLI is unavailable or a project
+    opts out of it).
+
+    Mirrors ``gpt_leg_provider`` exactly, including the degrade-not-crash
+    contract for a malformed override.
+    """
+    opus_leg = config.get("external_review", {}).get("opus_leg")
+    value = opus_leg.get("provider", "claude_cli") if isinstance(opus_leg, dict) else "claude_cli"
+    return value if isinstance(value, str) and value in _OPUS_LEG_PROVIDERS else "claude_cli"

@@ -125,7 +125,8 @@ def test_architecture_mode_requires_a_brief_not_the_plan(tmp_path):
 
     missing_brief = subprocess.run(
         [sys.executable, str(_EXTERNAL_REVIEW_CLI), "--mode", "architecture",
-         "--spec-file", str(spec), "--plugin-root", str(fake_plugin)],
+         "--spec-file", str(spec), "--plugin-root", str(fake_plugin),
+         "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert missing_brief.returncode == 2
@@ -134,7 +135,7 @@ def test_architecture_mode_requires_a_brief_not_the_plan(tmp_path):
     plan_instead_of_brief = subprocess.run(
         [sys.executable, str(_EXTERNAL_REVIEW_CLI), "--mode", "architecture",
          "--spec-file", str(spec), "--plan-file", str(plan),
-         "--plugin-root", str(fake_plugin)],
+         "--plugin-root", str(fake_plugin), "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert plan_instead_of_brief.returncode == 2
@@ -200,6 +201,7 @@ def test_architecture_cli_end_to_end_threads_the_brief_into_the_outgoing_prompt(
             "external_review.py", "--mode", "architecture",
             "--spec-file", str(spec_file), "--brief-file", str(brief_file),
             "--plugin-root", str(fake_plugin), "--project-root", str(tmp_path),
+            "--driver", "claude",
         ],
     )
 

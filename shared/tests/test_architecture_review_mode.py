@@ -67,7 +67,8 @@ def test_architecture_mode_requires_brief_file(brief_and_spec, fake_plugin, tmp_
     spec, _ = brief_and_spec
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "architecture",
-         "--spec-file", str(spec), "--plugin-root", str(fake_plugin)],
+         "--spec-file", str(spec), "--plugin-root", str(fake_plugin),
+         "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 2
@@ -93,7 +94,7 @@ def test_architecture_mode_rejects_plan_file_as_a_foreign_flag(
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "architecture",
          "--spec-file", str(spec), "--plan-file", str(brief),
-         "--plugin-root", str(fake_plugin)],
+         "--plugin-root", str(fake_plugin), "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 2
@@ -117,7 +118,7 @@ def test_empty_brief_is_an_error_not_a_skip(fake_plugin, tmp_path):
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "architecture",
          "--spec-file", str(spec), "--brief-file", str(brief),
-         "--plugin-root", str(fake_plugin)],
+         "--plugin-root", str(fake_plugin), "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 1
@@ -131,7 +132,7 @@ def test_empty_brief_is_an_error_not_a_skip(fake_plugin, tmp_path):
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "architecture",
          "--spec-file", str(spec), "--brief-file", str(brief),
-         "--plugin-root", str(fake_plugin)],
+         "--plugin-root", str(fake_plugin), "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 1
@@ -180,7 +181,8 @@ def test_foreign_flag_is_rejected_in_a_pre_existing_mode_too(brief_and_spec, fak
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "code",
          "--spec-file", str(spec), "--diff-file", str(brief),
-         "--brief-file", str(brief), "--plugin-root", str(fake_plugin)],
+         "--brief-file", str(brief), "--plugin-root", str(fake_plugin),
+         "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 2
@@ -193,7 +195,7 @@ def test_architecture_mode_missing_brief_path_reports_it(fake_plugin, tmp_path):
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "architecture",
          "--spec-file", str(spec), "--brief-file", str(tmp_path / "nope.md"),
-         "--plugin-root", str(fake_plugin)],
+         "--plugin-root", str(fake_plugin), "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 1
@@ -242,7 +244,7 @@ def test_architecture_mode_emits_the_standard_envelope(
     result = subprocess.run(
         [sys.executable, str(_CLI), "--mode", "architecture",
          "--spec-file", str(spec), "--brief-file", str(brief),
-         "--plugin-root", str(fake_plugin)],
+         "--plugin-root", str(fake_plugin), "--driver", "claude"],
         capture_output=True, text=True, env=_keyless_env(), cwd=tmp_path,
     )
     assert result.returncode == 0, result.stderr

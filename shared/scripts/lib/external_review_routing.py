@@ -8,6 +8,8 @@ from typing import Any
 __all__ = [
     "APPROVED_DEEPSEEK_ENDPOINTS",
     "APPROVED_GLM_ENDPOINTS",
+    "DRIVER_CHOICES",
+    "DRIVER_ROSTERS",
     "DeepSeekRoutingPolicyError",
     "GlmRoutingPolicyError",
     "ReviewModelPolicyError",
@@ -16,6 +18,19 @@ __all__ = [
     "openrouter_extra_body",
     "resolve_reviewer_model",
 ]
+
+# Which harness authored the diff under review — a different axis from ADR-127
+# Claude Agent-tiers (opus/sonnet/haiku/inherit), which govern which Claude
+# model a spawned subagent gets. "driver" governs which external reviewer
+# identities are independent of the diff's own author: a Codex-authored diff
+# (gpt-5.6-terra) reviewed by another OpenAI-family model is not independent,
+# so `codex` swaps the OpenAI-family "openai" leg for the cross-vendor "opus"
+# leg. `claude` keeps today's roster unchanged.
+DRIVER_CHOICES: tuple[str, ...] = ("claude", "codex")
+DRIVER_ROSTERS: dict[str, tuple[str, str]] = {
+    "claude": ("glm", "openai"),
+    "codex": ("glm", "opus"),
+}
 
 # Authorization is code-owned. Configuration declares the active ordered
 # allowlist and its verification metadata, but cannot bless an arbitrary slug by
@@ -53,6 +68,11 @@ _REVIEW_MODEL_BINDINGS = {
     # CLI instead of the OpenRouter/direct API (external_review_default_legs
     # .review_codex — flat-cost under a ChatGPT/Codex subscription).
     ("openai", "codex"): ("codex", "gpt-5.6-terra"),
+    # "opus" reviewer identity (--driver codex roster): local Claude CLI or
+    # OpenRouter, same pinned full model id on both legs (not the floating
+    # "opus" alias) so the identity-lock is symmetric across transports.
+    ("opus", "claude_cli"): ("claude_cli", "claude-opus-5"),
+    ("opus", "openrouter"): ("openrouter_opus", "anthropic/claude-opus-5"),
 }
 
 
@@ -207,6 +227,6 @@ def openrouter_extra_body(model_key: str, config: dict[str, Any]) -> dict[str, A
     """
     if model_key == "glm":
         return {**glm_openrouter_extra_body(config), "reasoning": {"effort": "low"}}
-    if model_key == "openai":
+    if model_key in ("openai", "opus"):
         return {}
     raise ValueError(f"unknown external reviewer identity: {model_key!r}")

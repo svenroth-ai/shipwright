@@ -146,7 +146,8 @@ def test_cli_no_keys_returns_skipped_schema(tmp_path, fake_plan_plugin, monkeypa
          "--mode", "iterate",
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
         capture_output=True,
         text=True,
         env=env,
@@ -200,7 +201,8 @@ def test_main_iterate_mode_loads_iterate_prompts(
          "--mode", "iterate",
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -238,7 +240,8 @@ def test_main_plan_mode_loads_plan_prompts(
          "--mode", "plan",
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -270,7 +273,8 @@ def test_main_output_schema_has_expected_keys(
          "--mode", "iterate",
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     external_review.main()
@@ -305,7 +309,8 @@ def test_main_missing_plan_file_exits_with_error(monkeypatch, clean_env, fake_pl
          "--mode", "iterate",
          "--spec-file", str(spec),
          "--plan-file", str(nonexistent),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -324,7 +329,8 @@ def test_main_missing_spec_file_exits_with_error(monkeypatch, clean_env, fake_pl
          "--mode", "iterate",
          "--spec-file", str(nonexistent),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -369,7 +375,7 @@ def _patch_review_funcs(monkeypatch, external_review):
     return calls
 
 
-def _run_main(monkeypatch, fake_plan_plugin, mode="iterate"):
+def _run_main(monkeypatch, fake_plan_plugin, mode="iterate", driver="claude"):
     """Invoke external_review.main() with the fake plugin fixture and return parsed JSON."""
     plugin_root, spec, plan = fake_plan_plugin
     import external_review
@@ -390,7 +396,8 @@ def _run_main(monkeypatch, fake_plan_plugin, mode="iterate"):
          "--mode", mode,
          "--spec-file", str(spec),
          "--plan-file", str(plan),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", driver],
     )
     rc = external_review.main()
     return rc, external_review
@@ -569,7 +576,8 @@ def test_main_code_mode_loads_code_review_prompts(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -594,7 +602,8 @@ def test_main_code_mode_requires_diff_file(
         ["external_review.py",
          "--mode", "code",
          "--spec-file", str(spec),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     # parser.error raises SystemExit with code 2 (argparse convention).
@@ -619,7 +628,8 @@ def test_main_code_mode_missing_diff_file_exits_with_error(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(nonexistent),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -649,7 +659,8 @@ def test_main_code_mode_empty_diff_short_circuits(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -693,7 +704,8 @@ def test_main_code_mode_with_openrouter_dispatches_via_openrouter(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -743,7 +755,8 @@ def test_main_code_mode_substitutes_diff_and_spec_placeholders(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -783,7 +796,8 @@ def test_main_code_mode_falls_back_to_inline_default_prompts(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()
@@ -815,7 +829,8 @@ def test_main_code_mode_no_keys_returns_skipped_schema(
          "--mode", "code",
          "--spec-file", str(spec),
          "--diff-file", str(diff),
-         "--plugin-root", str(plugin_root)],
+         "--plugin-root", str(plugin_root),
+         "--driver", "claude"],
     )
 
     rc = external_review.main()

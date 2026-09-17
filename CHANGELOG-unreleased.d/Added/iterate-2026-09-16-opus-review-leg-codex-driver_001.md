@@ -1,0 +1,1 @@
+A new "opus" external-reviewer identity (local Claude CLI, OpenRouter fallback) that pairs with GLM under `--driver codex`, so a Codex-driven run doesn't get a same-vendor rubber stamp from a second OpenAI call.

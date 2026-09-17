@@ -336,8 +336,15 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   --spec-file "{iterate_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
   --project-root "{project_root}" --run-id "$RUN_ID" \
+  --driver "{driver}" \
   > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
 ```
+
+(`--driver` is **required, no default** — same `{driver}` value as this run's
+plan/architecture calls in [iteration-planning.md](iteration-planning.md): the
+harness actually driving this session, `claude` or `codex`. A Codex-authored
+diff must never be reviewed by another OpenAI-family model, so this cascade's
+identity swap has to track the same session's driver, not a hardcoded value.)
 
 (The redirect writes the ONE canonical basename "Recording each review pass"
 below names for `external_code` — `record_review_pass.py record` REJECTS a
@@ -379,7 +386,8 @@ Internal Plan Review degraded handling — the pass did NOT run; record it
 parent `review` — see [iterate-timings](iterate-timings.md).)
 
 Read the redirected file back and parse `reviews.glm.feedback` +
-`reviews.openai.feedback`. Merge any
+`reviews.openai.feedback` (or `reviews.opus.feedback` under `--driver codex`;
+required, no default, never hardcoded — see iteration-planning.md). Merge any
 high/medium-severity findings into the iterate ADR's
 `External-Code-Review-Findings` table. Address before commit (apply fix,
 rerun tests) — same disposition pattern as the mini-plan-review block:
@@ -581,8 +589,9 @@ both findings and each reviewer verdict from that in-memory snapshot. It stores
 the validated pair on the authoritative review row and writes the companion
 marker from that same pair. An operator's `--contradiction-resolution` is stored
 beside the verdicts, so `repair-markers` cannot lose the decision. A current envelope
-must be `glm`/`openai` or the now-historical `deepseek`/`openai`; an implicit
-historical envelope remains readable as `gemini`/`openai`. A completed current
+must be `glm`/`openai`, `glm`/`opus` (under `--driver codex`), or the
+now-historical `deepseek`/`openai`; an implicit historical envelope remains
+readable as `gemini`/`openai`. A completed current
 marker without both verdicts blocks.
 Record and marker status are bound: a completed record can only write or repair
 a completed marker, while a skipped marker cannot carry reviewer evidence.

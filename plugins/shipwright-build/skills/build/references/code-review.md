@@ -224,8 +224,12 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   --mode code \
   --diff-file "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)" \
   --spec-file "{section_spec_path}" \
-  --plugin-root "{plan_plugin_root}"
+  --plugin-root "{plan_plugin_root}" \
+  --driver claude
 ```
+
+(`--driver` is **required, no default** — `/shipwright-build` is a Claude Code
+plugin, so always `claude` here.)
 
 (`uv run --project` points uv at the plugin that declares the `openai`
 dependency `external_review.py` imports — without it, `uv run` resolves

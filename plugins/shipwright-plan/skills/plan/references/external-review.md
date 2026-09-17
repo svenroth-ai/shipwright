@@ -30,8 +30,12 @@ uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py 
   --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
-  --plugin-root "{plugin_root}"
+  --plugin-root "{plugin_root}" \
+  --driver claude
 ```
+
+(`--driver` is **required, no default** — `/shipwright-plan` is a Claude Code
+plugin, so always `claude` here.)
 
 `{shared_root}` is the monorepo's `shared/` directory (typically
 `{plugin_root}/../../shared`). The CLI moved into `shared/` in v0.5.x to

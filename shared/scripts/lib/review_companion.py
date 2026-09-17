@@ -18,10 +18,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from .review_marker import MARKER_SCHEMA, build_marker, write_marker
+from .review_marker import MARKER_SCHEMA as DEFAULT_MARKER_SCHEMA
+from .review_marker import build_marker, schema_for_roster, write_marker
 from .review_record_core import ReviewRecordError
 from .review_record_ops import repair_companion
-from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS, contradiction_block
+from .review_verdict import contradiction_block
 
 __all__ = ["MARKER_TYPES", "repair_markers", "write_markers"]
 
@@ -53,21 +54,18 @@ def write_markers(
         raise ReviewRecordError("a skipped marker cannot carry reviewer verdicts")
     if marker_status == "completed" and not verdicts:
         raise ReviewRecordError("a completed marker requires reviewer verdicts")
-    if verdicts and frozenset(verdicts) == frozenset(HISTORICAL_REVIEWER_PAIRS[0]):
-        marker_schema = 2
-    elif verdicts and frozenset(verdicts) == frozenset(HISTORICAL_REVIEWER_PAIRS[1]):
-        marker_schema = 3
-    elif not verdicts or frozenset(verdicts) == frozenset(REVIEWERS):
-        marker_schema = MARKER_SCHEMA
+    if not verdicts:
+        # A skipped_* marker carries no verdicts — unchanged historical default.
+        marker_schema = DEFAULT_MARKER_SCHEMA
     else:
-        # A gateway-route pair (GATEWAY_REVIEWERS) or any other unrecognized
-        # roster must never fall through to MARKER_SCHEMA silently — that is
-        # the exact bug class just fixed above for the historical DeepSeek
-        # roster, one call away from repair_markers, which re-derives this
-        # from an already-persisted record with no re-validation of its own.
-        raise ReviewRecordError(
-            f"cannot select a marker schema for unrecognized reviewer set {sorted(verdicts)!r}"
-        )
+        try:
+            marker_schema = schema_for_roster(verdicts)
+        except ValueError as exc:
+            # A gateway-route pair (GATEWAY_REVIEWERS) or any other unrecognized
+            # roster must never fall through to a schema silently — one call
+            # away from repair_markers, which re-derives this from an
+            # already-persisted record with no re-validation of its own.
+            raise ReviewRecordError(str(exc)) from exc
     marker = build_marker(
         status=marker_status,
         review_type=marker_mode,

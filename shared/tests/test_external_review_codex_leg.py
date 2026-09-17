@@ -246,7 +246,7 @@ def test_cli_codex_route_actually_sends_the_spec_and_plan_not_the_raw_template(m
         "sys.argv",
         ["external_review.py", "--mode", "plan", "--spec-file", str(spec),
          "--plan-file", str(plan), "--plugin-root", str(plugin_root),
-         "--project-root", str(tmp_path)],
+         "--project-root", str(tmp_path), "--driver", "claude"],
     )
     rc = external_review.main()
 

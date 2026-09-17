@@ -113,8 +113,12 @@ uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py 
   --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
-  --plugin-root "{plugin_root}"
+  --plugin-root "{plugin_root}" \
+  --driver claude
 ```
+
+(`--driver` is **required, no default** — always `claude` here; see
+`external-review.md` for why.)
 
 (`{shared_root}` is typically `{plugin_root}/../../shared`; plan-mode prompts
 load from `{plugin_root}/prompts/plan_reviewer/`.)
@@ -213,7 +217,8 @@ uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py 
   --mode architecture \
   --brief-file "{planning_dir}/architecture_brief.md" \
   --spec-file "{spec_file}" \
-  --plugin-root "{plugin_root}"
+  --plugin-root "{plugin_root}" \
+  --driver claude
 ```
 
 The CLI **refuses `--plan-file` in this mode** (usage error, exit 2): silently

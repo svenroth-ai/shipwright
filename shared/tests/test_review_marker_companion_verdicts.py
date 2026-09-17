@@ -25,7 +25,7 @@ from tools import record_review_pass
 
 
 def _external_payload(
-    tmp_path: Path, *, schema: int | None = 2, first: str = "glm",
+    tmp_path: Path, *, schema: int | None = 2, first: str = "glm", second: str = "openai",
     second_verdict: str = "revise", name: str | None = None,
 ) -> Path:
     payload = {
@@ -35,7 +35,7 @@ def _external_payload(
                 "status": "success",
                 "feedback": "No findings.\n\nSHIPWRIGHT_VERDICT: approve",
             },
-            "openai": {
+            second: {
                 "status": "success",
                 "feedback": f"One refinement.\n\nSHIPWRIGHT_VERDICT: {second_verdict}",
             },
@@ -252,3 +252,60 @@ def test_record_and_repair_cli_reject_skip_marker_for_completed_review(tmp_path,
         "--review-type", "plan", "--marker-status", "skipped_config_disabled",
         "--disposition", "config disabled by operator",
     ]) == 1
+
+
+# --- {glm, opus} roster (--driver codex) — round-trip, mirroring the
+# {glm, openai} tests above without disturbing any of them. --------------
+
+def test_opus_roster_payload_derives_its_verdict_pair(tmp_path):
+    current = build_reviewer_verdicts(
+        "external-review-json", str(_external_payload(tmp_path, second="opus"))
+    )
+    assert current == {"glm": "approve", "opus": "revise"}
+
+
+def test_companion_writes_glm_opus_roster_at_schema_5(tmp_path):
+    current = {"glm": "approve", "opus": "revise"}
+    paths = write_markers(
+        tmp_path, "run-1", "plan", marker_status="completed",
+        record_status="completed", findings_count=0, verdicts=current,
+    )
+    marker = json.loads(Path(paths[0]).read_text(encoding="utf-8"))
+    assert marker["marker_schema"] == 5
+    assert marker["verdicts"] == current
+
+    record = upsert_review(
+        new_record("run-1"),
+        make_entry("plan", STATUS_COMPLETED, verdicts=current),
+    )
+    write_record(tmp_path, "run-1", record)
+    Path(paths[0]).unlink()
+    repaired = repair_markers(tmp_path, "run-1", "plan", marker_status="completed")
+    repaired_marker = json.loads(Path(repaired[0]).read_text(encoding="utf-8"))
+    assert repaired_marker["verdicts"] == current
+    assert repaired_marker["marker_schema"] == 5
+
+
+def test_record_cli_main_dual_writes_opus_roster_verdicts_in_process(tmp_path, capsys):
+    payload = _external_payload(
+        tmp_path, second="opus", second_verdict="reject",
+        name=review_payloads.CANONICAL_PAYLOAD_BASENAMES["plan"])
+    resolution = "Operator accepted Opus rejection and corrected the implementation."
+    assert record_review_pass.main([
+        "init", "--project-root", str(tmp_path), "--run-id", "run-1",
+    ]) == 0
+    capsys.readouterr()
+    assert record_review_pass.main([
+        "record", "--project-root", str(tmp_path), "--run-id", "run-1",
+        "--review-type", "plan", "--status", "completed",
+        "--marker-status", "completed", "--from", "external-review-json",
+        "--payload-file", str(payload), "--provider", "claude_cli",
+        "--contradiction-resolution", resolution,
+    ]) == 0
+    marker = json.loads(
+        (tmp_path / ".shipwright" / "planning" / "iterate" / "run-1"
+         / "external_review_state.json").read_text(encoding="utf-8")
+    )
+    assert marker["verdicts"] == {"glm": "approve", "opus": "reject"}
+    assert marker["marker_schema"] == 5
+    assert marker["contradiction_resolution"] == resolution

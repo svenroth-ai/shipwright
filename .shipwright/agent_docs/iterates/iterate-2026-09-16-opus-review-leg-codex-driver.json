@@ -1,0 +1,94 @@
+{
+  "run_id": "iterate-2026-09-16-opus-review-leg-codex-driver",
+  "date": "2026-09-17T04:32:45.715548Z",
+  "event_at": "2026-09-17T04:31:54.415073+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/opus-review-leg-codex-driver",
+  "spec": ".shipwright/planning/iterate/2026-09-16-opus-review-leg-codex-driver.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-16-opus-review-leg-codex-driver",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "external_review.py --driver codex runs the {glm, opus} roster, not {glm, openai}",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_driver.py::test_gpt_leg_provider_codex_config_has_no_effect_under_driver_codex PASSED"
+      },
+      {
+        "behavior": "external_review.py --driver claude keeps the unchanged {glm, openai} roster",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_cli.py PASSED (all --driver claude call sites)"
+      },
+      {
+        "behavior": "--driver is required with no default; omitting it is an argparse usage error",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_driver.py PASSED"
+      },
+      {
+        "behavior": "the opus leg's model binding is identity-locked (a mismatched configured/env model raises before any subprocess is constructed)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_opus_leg.py::test_review_claude_cli_errors_when_unavailable_at_toctou_recheck PASSED"
+      },
+      {
+        "behavior": "review_claude_cli() never sends diff/spec content via argv, only via stdin, and passes every acceptance-critical flag",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_opus_leg.py::test_review_claude_cli_sends_content_via_stdin_not_argv PASSED"
+      },
+      {
+        "behavior": "_resolve_claude_binary refuses a resolved .cmd/.bat shim outright",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_opus_leg.py PASSED (binary-resolution refusal tests)"
+      },
+      {
+        "behavior": "the OpenRouter opus fallback calls review_openrouter(..., model_key=\"opus\") directly, no wrapper function",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_opus_leg.py PASSED (openrouter fallback tests)"
+      },
+      {
+        "behavior": "resolve_opus_route prefers local claude CLI when available, falls back to OpenRouter otherwise",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_opus_leg.py::test_resolve_opus_route PASSED (family)"
+      },
+      {
+        "behavior": "marker schema 5 ({glm, opus}) is recognized by every marker reader in the repo, alongside the existing schema 4",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_marker_companion_verdicts.py::test_record_cli_main_dual_writes_opus_roster_verdicts_in_process PASSED; cross-plugin readers verified via repo-wide grep in the Stage-3 doubt review"
+      },
+      {
+        "behavior": "every plugin prose call site (fenced block AND inline prose) passes the correct --driver value",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_external_review_driver_prose_contract.py PASSED (4/4)"
+      },
+      {
+        "behavior": "gpt_leg.provider == \"codex\" has zero effect on a driver=codex run's roster (no fallthrough to resolve_openai_route)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_driver.py::test_gpt_leg_provider_codex_config_has_no_effect_under_driver_codex PASSED"
+      },
+      {
+        "behavior": "the campaign sub-iterate runner passes a concrete --driver \"claude\" (never an unresolved {driver} placeholder) at both of its external_review.py call sites",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_external_review_driver_prose_contract.py::test_sub_iterate_runner_hardcodes_a_concrete_driver_not_a_placeholder PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 9,
+      "covered_acs": 9
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_external_review_opus_leg.py shared/tests/test_external_review_driver.py -v",
+    "exit_code": 0,
+    "tests_run": 33,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-16-opus-review-leg-codex-driver/surface_verification.json"
+  },
+  "declared_removals": []
+}

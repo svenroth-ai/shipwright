@@ -27,6 +27,7 @@ from typing import Any
 
 try:  # imported as ``lib.review_marker`` (shared/scripts on sys.path)
     from .atomic_write import durable_atomic_write
+    from .review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS
 except ImportError:  # imported as top-level ``review_marker``
     # Plugin call sites put ``shared/scripts/lib`` itself on sys.path — they
     # cannot use the ``lib.`` spelling because their own ``scripts/lib``
@@ -34,16 +35,19 @@ except ImportError:  # imported as top-level ``review_marker``
     # the single authority on review state, and a second copy of that rule is
     # exactly what the gate exists to prevent.
     from atomic_write import durable_atomic_write  # type: ignore[no-redef]
+    from review_verdict import HISTORICAL_REVIEWER_PAIRS, REVIEWERS  # type: ignore[no-redef]
 
 __all__ = [
     "ALLOWED_REVIEW_TYPES",
     "ALLOWED_STATUSES",
     "CODE_REVIEW_STATE_FILE",
     "MARKER_SCHEMA",
+    "OPUS_MARKER_SCHEMA",
     "REVIEW_STATE_FILE",
     "build_marker",
     "evaluate_review_state",
     "marker_filename",
+    "schema_for_roster",
     "write_marker",
 ]
 
@@ -57,6 +61,42 @@ CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
 #: exact roster; older markers without this field remain readable only through
 #: the historical Gemini/OpenAI contract (see :func:`evaluate_review_state`).
 MARKER_SCHEMA = 4
+
+#: A sibling of MARKER_SCHEMA, not a replacement: MARKER_SCHEMA stays 4,
+#: meaning exactly {glm, openai} — bumping it would break the module's
+#: documented 1:1 schema<->roster invariant and every existing test asserting
+#: `marker_schema == 4` on a fresh write. Schema 5 means exactly {glm, opus}
+#: (the --driver codex roster from external_review.py). See
+#: :func:`schema_for_roster`.
+OPUS_MARKER_SCHEMA = 5
+
+#: The {glm, opus} roster --driver codex selects (external_review_routing
+#: .DRIVER_ROSTERS["codex"]). Not imported from there: that module owns
+#: "which identity answers which leg", not marker-schema numbering, and the
+#: two axes should stay free to diverge without editing each other.
+_OPUS_ROSTER = frozenset({"glm", "opus"})
+
+
+def schema_for_roster(verdicts: dict[str, Any]) -> int:
+    """The marker schema for exactly this reviewer set, or raise.
+
+    The one place that maps a roster to its schema number — used by both
+    :func:`write_markers <lib.review_companion.write_markers>` (already had
+    this exact elif chain; now delegates here) and
+    ``mark-review-state.py``'s CLI (which never passed ``marker_schema`` at
+    all before this existed, so every CLI-written marker silently claimed
+    schema 4 regardless of its actual roster).
+    """
+    roster = frozenset(verdicts)
+    if roster == frozenset(HISTORICAL_REVIEWER_PAIRS[0]):
+        return 2
+    if roster == frozenset(HISTORICAL_REVIEWER_PAIRS[1]):
+        return 3
+    if roster == frozenset(REVIEWERS):
+        return MARKER_SCHEMA
+    if roster == _OPUS_ROSTER:
+        return OPUS_MARKER_SCHEMA
+    raise ValueError(f"cannot select a marker schema for unrecognized reviewer set {sorted(roster)!r}")
 
 ALLOWED_STATUSES = frozenset({
     "completed",
@@ -158,7 +198,8 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
     has_schema = "marker_schema" in marker
     marker_schema = marker.get("marker_schema")
     if has_schema and (
-        type(marker_schema) is not int or marker_schema not in {2, 3, MARKER_SCHEMA}
+        type(marker_schema) is not int
+        or marker_schema not in {2, 3, MARKER_SCHEMA, OPUS_MARKER_SCHEMA}
     ):
         return STATE_BLOCK, f"unknown review marker schema {marker_schema!r}"
 
@@ -186,7 +227,10 @@ def evaluate_review_state(marker: dict[str, Any] | None) -> tuple[str, str]:
             "disagreement between the two could not have been noticed"
         )
 
-    if marker_schema == MARKER_SCHEMA:
+    if marker_schema == OPUS_MARKER_SCHEMA:
+        expected_reviewers = frozenset({"glm", "opus"})
+        contract = f"schema {OPUS_MARKER_SCHEMA} glm/opus"
+    elif marker_schema == MARKER_SCHEMA:
         expected_reviewers = frozenset({"glm", "openai"})
         contract = f"schema {MARKER_SCHEMA} glm/openai"
     elif marker_schema == 3:

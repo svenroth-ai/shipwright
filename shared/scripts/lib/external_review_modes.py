@@ -30,6 +30,7 @@ __all__ = [
     "ModeInputError",
     "is_blank",
     "render_user_prompt",
+    "render_user_prompt_as_stdin_refs",
     "select_mode_input",
 ]
 
@@ -117,6 +118,34 @@ def render_user_prompt(user_prompt: str, primary: str, spec: str) -> str:
         kind = _SUBSTITUTIONS_FOR.get(token)
         if kind is not None:
             return primary if kind == "primary" else spec
+        print(
+            "warning: external_review prompt template contains unknown "
+            f"placeholder {token}",
+            file=sys.stderr,
+        )
+        return token
+
+    return _PLACEHOLDER_RE.sub(_substitute, user_prompt)
+
+
+def render_user_prompt_as_stdin_refs(user_prompt: str) -> str:
+    """Like :func:`render_user_prompt`, but every recognized placeholder
+    becomes a fixed reference to a stdin block instead of the real
+    primary/spec text — for a transport (the Claude CLI leg) that must keep
+    untrusted content out of argv entirely. Reuses the same placeholder set
+    and unknown-placeholder warning, so a template using ``{DIFF}``/
+    ``{PLAN}``/``{BRIEF}``/``{SPEC}`` renders correctly regardless of mode —
+    unlike a transport-local, ad-hoc placeholder name that no shipped
+    template actually uses.
+    """
+    def _substitute(match: re.Match) -> str:
+        token = match.group(0)
+        kind = _SUBSTITUTIONS_FOR.get(token)
+        if kind is not None:
+            return (
+                "(see the <content> block on stdin)" if kind == "primary"
+                else "(see the <context> block on stdin)"
+            )
         print(
             "warning: external_review prompt template contains unknown "
             f"placeholder {token}",
