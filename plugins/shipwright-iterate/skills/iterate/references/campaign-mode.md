@@ -189,6 +189,17 @@ If campaign directory doesn't exist yet:
        orchestrator HAS the `Agent` tool the runner lacks, and this is the last
        step before 3g merges, so a REJECT here can still stop delivery.
 
+       **Dispatch rule, checked before spawning a) below:** see
+       `shared/prompts/codex_review_dispatch.md` for the full Codex-driver
+       procedure (add `--force` to every `record_review_pass.py record` call
+       it describes, matching the promotions below). The ORCHESTRATOR here has
+       no ordinary Agent-tool fallback of its own if Codex CLI is driving the
+       campaign — a transport failure always lands on the doc's `not_run`
+       branch. This rule belongs HERE, never inside the runner subagent's own
+       instructions — the runner has no `Agent` tool either way and always
+       defers to this step regardless of which harness drives the
+       orchestrator.
+
        State crosses to 3g in a FILE, never a shell variable: these are separate
        steps and a fresh Bash call starts with an empty environment, so a `$sha`
        set here would silently expand to "" there — unpinning the merge in the

@@ -133,6 +133,8 @@ def make_entry(
     verdicts: dict[str, str] | None = None,
     contradiction_resolution: str | None = None,
     model_tier: str | None = None,
+    transport: str | None = None,
+    transport_note: str | None = None,
 ) -> dict[str, Any]:
     """Build one review entry.
 
@@ -180,6 +182,10 @@ def make_entry(
         entry["contradiction_resolution"] = contradiction_resolution
     if model_tier is not None:
         entry["model_tier"] = model_tier
+    if transport is not None:
+        entry["transport"] = transport
+    if transport_note is not None:
+        entry["transport_note"] = transport_note
     return entry
 
 

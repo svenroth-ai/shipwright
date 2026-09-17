@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/codex_doubt_review_schema.json",
+  "title": "Codex doubt-reviewer output",
+  "description": "Pinned to plugins/shipwright-build/agents/doubt-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stage", "gating", "trigger", "doubts", "summary"],
+  "properties": {
+    "stage": { "const": "doubt" },
+    "gating": { "const": "advisory-must-address" },
+    "trigger": { "type": "string" },
+    "doubts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity", "lens", "claim_under_doubt", "disproof_attempt",
+          "file", "what_would_resolve_it"
+        ],
+        "properties": {
+          "severity": { "enum": ["high", "medium", "low"] },
+          "lens": { "type": "string" },
+          "claim_under_doubt": { "type": "string" },
+          "disproof_attempt": { "type": "string" },
+          "file": { "type": ["string", "null"] },
+          "what_would_resolve_it": { "type": "string" }
+        }
+      }
+    },
+    "summary": { "type": "string" }
+  }
+}

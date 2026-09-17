@@ -33,7 +33,7 @@ only the project's `shipwright_model_config.json`):
 ```bash
 uv run "{shared_root}/scripts/tools/resolve_model_tier.py" --project-root "{project_root}"
 ```
-
+**Dispatch rule:** see `shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure (`role="plan_review"`); on an unrecovered failure record `Ran: no` in `plan.md` naming the reason instead of the `not_run` row the doc describes for the standalone cascade.
 Parse `.plan_review.agent_param`. Spawn `shipwright-plan:opus-plan-reviewer`
 (Read/Grep/Glob only) over `{planning_dir}/plan.md` + `{spec_file}`, passing the
 Agent tool's `model=` parameter when `agent_param` is non-null (a configured

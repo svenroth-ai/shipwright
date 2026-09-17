@@ -74,6 +74,12 @@ def model_tier_note(record: dict, project_root: Path) -> str:
             entry = entry_for(record, review_type)
             if str(entry.get("status", "")) != "completed":
                 continue
+            if entry.get("transport") == "codex":
+                # No legal Claude model_tier value exists for a Codex-answered
+                # row (Internal Plan Review, iterate-2026-09-13, finding #7) —
+                # treating an absent tier here as "operator forgot the flag"
+                # would be a false advisory, not a real gap.
+                continue
             tier = entry.get("model_tier")
             if tier is None:
                 flagged.append(f"{review_type} has no recorded tier (floor {floor} not confirmed)")

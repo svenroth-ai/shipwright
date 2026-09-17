@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/codex_code_review_schema.json",
+  "title": "Codex code-reviewer output",
+  "description": "Pinned to plugins/shipwright-build/agents/code-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns. Every genuinely optional field (line/suggestion/source) is still listed in `required` with a nullable type, per OpenAI strict-schema mode.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["section", "review"],
+  "properties": {
+    "section": { "type": "string" },
+    "review": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "category", "file", "line", "finding", "suggestion", "source"],
+        "properties": {
+          "severity": { "enum": ["high", "medium", "low"] },
+          "category": {
+            "enum": ["correctness", "readability", "architecture", "security", "performance"]
+          },
+          "file": { "type": ["string", "null"] },
+          "line": { "type": ["integer", "null"] },
+          "finding": { "type": "string" },
+          "suggestion": { "type": ["string", "null"] },
+          "source": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

@@ -76,6 +76,7 @@ from .review_record_schema import (
     STATUS_NOT_RUN,
     STATUS_PENDING,
     TERMINAL_STATUSES,
+    TRANSPORTS,
     is_safe_run_id,
     validate_record,
 )
@@ -91,6 +92,7 @@ __all__ = [
     "STATUS_NOT_RUN",
     "STATUS_PENDING",
     "TERMINAL_STATUSES",
+    "TRANSPORTS",
     "ImmutableReviewError",
     "ReviewRecordError",
     "close_pending",

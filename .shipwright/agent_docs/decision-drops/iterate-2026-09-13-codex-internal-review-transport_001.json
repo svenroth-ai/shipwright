@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-13-codex-internal-review-transport",
+  "date": "2026-09-17",
+  "section": "Iterate — feature: Codex CLI internal review transport",
+  "title": "Codex CLI as a fallback transport for the internal review cascade",
+  "context": "The internal review cascade assumes Claude Code driving on an Anthropic model. A Codex-CLI-driven session or a non-Anthropic-redirected session has no genuine independent Agent-tool spawn.",
+  "decision": "Run a codex exec subprocess as a per-role reviewer, dispatched from a single stated rule at four orchestrator spawn sites, under a scrubbed env allowlist with dual schema validation.",
+  "consequences": "Every role degrades gracefully on failure instead of silently proceeding or hard-crashing; record_review_pass.py gains --transport to keep Codex-answered rows distinguishable.",
+  "rationale": "Reuses the existing external-review leg's subprocess isolation posture and record_review_pass.py's existing --from values rather than inventing new patterns.",
+  "rejected": "A ModelConfig schema bump forking review-invocation prose at every model-tier note; a new --from codex-transport adapter; inheriting the ambient env; sending the agent .md verbatim; parallel role dispatch.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-13-codex-internal-review-transport-design.md"
+}

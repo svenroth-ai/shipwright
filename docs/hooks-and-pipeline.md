@@ -4010,6 +4010,18 @@ Trivial iterates emit an auto `n/a` line and skip the hard gate.
 - **A missing F5c entry fails, it does not skip.** The complexity comes from
   that entry, so without it the gate cannot know what to enforce, and "I could
   not tell" must not be reported as "not applicable".
+- **A row optionally names which harness answered it.** `transport` (`agent` |
+  `codex`) plus a free-text `transport_note` record whether a driving harness
+  with no independent Agent tool (Codex CLI itself, or Claude Code redirected
+  to a non-Anthropic backend) ran the pass via `review_via_codex.py` instead
+  of an Agent-tool spawn — see `shared/prompts/codex_review_dispatch.md` for
+  the dispatch procedure and its four call sites. `record_review_pass.py
+  record --transport` writes it; the model-tier floor verifier
+  (`review_record_model_tier.py`) exempts a `codex` row, which carries no
+  legal Claude `model_tier`. A codex-attempted-then-agent-fallback pass is
+  recorded `--transport agent --transport-note "codex transport failed:
+  ..."`, never `--transport codex`, so it stays distinguishable from a clean
+  codex-answered pass.
 
 **Spec-impact gate (iterate).** Every FEATURE/CHANGE `/shipwright-iterate`
 run classifies its spec impact at Step 2 as ADD / MODIFY / REMOVE / NONE.

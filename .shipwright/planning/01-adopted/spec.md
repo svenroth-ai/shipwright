@@ -888,6 +888,13 @@ _Where the work detail lives_ at the end of this document.
   independent of that tool — never the same vendor family reviewing its own
   output — instead of being fixed to one hard-coded pair regardless of which
   tool produced the change. (iterate-2026-09-16-opus-review-leg-codex-driver)
+- (E) [AC31] Given a reviewer would normally be asked for by spawning a second, genuinely
+  independent AI subagent, when the session driving the work cannot actually do that —
+  because it is Codex itself, or its own model has been swapped for a non-Anthropic one —
+  then that review still happens, run through Codex directly instead of silently being
+  skipped or recorded as never having happened. Where even that fails, it is recorded as
+  not done and exactly why, never guessed at or hidden.
+  (iterate-2026-09-13-codex-internal-review-transport)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

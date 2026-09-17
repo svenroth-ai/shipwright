@@ -48,6 +48,7 @@ __all__ = [
     "STATUS_NOT_RUN",
     "STATUS_PENDING",
     "TERMINAL_STATUSES",
+    "TRANSPORTS",
     "disposition_ok",
     "is_safe_run_id",
     "validate_entry",
@@ -131,9 +132,10 @@ _MIN_DISPOSITION_CHARS = 12
 
 _OPTIONAL_STRINGS = (
     "provider", "completed_at", "disposition", "recorded_by",
-    "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier",
+    "parse_status", "raw_excerpt", "contradiction_resolution", "model_tier", "transport", "transport_note",
 )
 
+TRANSPORTS = frozenset({"agent", "codex"})  # which harness answered; absent = ordinary spawn
 
 #: A run id becomes a DIRECTORY NAME under .shipwright/planning/iterate/, so it
 #: must be exactly one safe path component. Without this, ``record_dir`` would
@@ -218,6 +220,8 @@ def validate_entry(review_type: str, entry: Any, *, where: str | None = None) ->
         value = entry.get(key)
         if value is not None and not isinstance(value, str):
             return f"{where}.{key} must be a string or null"
+    if entry.get("transport") not in (None, *TRANSPORTS):
+        return f"{where}.transport {entry.get('transport')!r} not in {sorted(TRANSPORTS)}"
     if "verdicts" in entry:
         verdicts = entry["verdicts"]
         if not isinstance(verdicts, dict):

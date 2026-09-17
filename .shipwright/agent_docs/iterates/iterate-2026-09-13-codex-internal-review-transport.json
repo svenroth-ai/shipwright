@@ -1,0 +1,70 @@
+{
+  "run_id": "iterate-2026-09-13-codex-internal-review-transport",
+  "date": "2026-09-17T20:48:16.869285Z",
+  "event_at": "2026-09-17T20:47:32.538563+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/codex-internal-review-transport",
+  "spec": ".shipwright/planning/iterate/iterate-2026-09-13-codex-internal-review-transport.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-13-codex-internal-review-transport",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the four real orchestrator spawn sites (build Step 6, iterate Step 8, plan Step 5, iterate campaign 3f-bis) each state the Codex-driver dispatch rule once, and the ADR-029 delegate subagents never do",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "integration-tests/test_codex_review_dispatch_sites_present.py PASSED (12 cases)"
+      },
+      {
+        "behavior": "review_via_codex.py runs a real, separate codex subprocess under a scrubbed env allowlist (including the Windows .cmd-shim COMSPEC/PATHEXT additions) and copies its validated output to the canonical review-reply basename",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_via_codex_e2e.py::test_real_subprocess_launch_under_scrubbed_env PASSED (real subprocess, no mocking)"
+      },
+      {
+        "behavior": "the child process environment never carries a *_API_KEY/*_TOKEN-shaped variable from the ambient process environment",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_transport.py::test_scrubbed_env_is_a_subset_of_the_allowlist_regardless_of_shape PASSED"
+      },
+      {
+        "behavior": "a retry never reuses a stale output file from a prior failed attempt",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_transport.py::test_retry_does_not_reuse_a_stale_output_file PASSED"
+      },
+      {
+        "behavior": "an empty diff/spec/agent-prompt section is reported as an error, never silently reviewed as if the section were populated",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_via_codex_cli.py::test_empty_diff_file_is_reported_not_silently_reviewed PASSED"
+      },
+      {
+        "behavior": "record_review_pass.py rejects --transport codex combined with --model-tier, since a Codex-answered row carries no legal Claude model tier",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_record_review_pass_transport.py::test_transport_codex_with_model_tier_rejected PASSED"
+      },
+      {
+        "behavior": "each of the four schema files (spec/code/doubt/plan review) round-trips through the transport's client-side re-validation and matches the calling role's exact existing output contract",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_transport.py PASSED (schema round-trip suite)"
+      }
+    ],
+    "counts": {
+      "testable": 7,
+      "tested": 7,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 8,
+      "covered_acs": 8
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_review_via_codex_e2e.py -v",
+    "tests_run": 1,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-13-codex-internal-review-transport/surface_verification.log"
+  },
+  "declared_removals": []
+}

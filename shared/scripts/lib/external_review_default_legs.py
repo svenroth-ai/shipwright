@@ -128,12 +128,16 @@ def _resolve_codex_binary() -> str | None:
     return found
 
 
-def is_codex_available() -> tuple[bool, str]:
+def is_codex_available(*, env: dict[str, str] | None = None) -> tuple[bool, str]:
     """Whether the Codex CLI is installed and authenticated for this operator. Never raises —
     every failure mode returns a stated reason so the caller degrades to a graceful fallback/skip
     instead of crashing. Bounded by its own short timeout: an unauthenticated ``codex`` can
     otherwise block on an interactive login prompt rather than exiting with a distinguishable code,
-    which would hang the whole review pass."""
+    which would hang the whole review pass.
+
+    ``env=None`` (every existing caller) inherits the ambient environment unchanged. A caller
+    running the real ``codex exec`` under a scrubbed env should pass that SAME env here, or this
+    preflight cannot detect a failure the scrub itself causes."""
     codex_bin = _resolve_codex_binary()
     if not codex_bin:
         return False, "codex CLI not found on PATH"
@@ -143,7 +147,7 @@ def is_codex_available() -> tuple[bool, str]:
         result = subprocess.run(
             [codex_bin, "login", "status"],
             capture_output=True, encoding="utf-8", errors="replace",
-            timeout=_CODEX_LOGIN_STATUS_TIMEOUT_SECONDS,
+            timeout=_CODEX_LOGIN_STATUS_TIMEOUT_SECONDS, env=env,
         )
     except subprocess.TimeoutExpired:
         return False, "codex login status check timed out (may be waiting on interactive input)"
