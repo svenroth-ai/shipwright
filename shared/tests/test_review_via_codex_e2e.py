@@ -61,6 +61,7 @@ def _install_fake_codex(bin_dir: Path) -> None:
         shim.chmod(0o755)
 
 
+@pytest.mark.covers("FR-01.11/AC31")
 def test_real_subprocess_launch_under_scrubbed_env(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
