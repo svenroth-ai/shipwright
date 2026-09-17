@@ -66,15 +66,20 @@ external-review leg.
    genuinely checked against the account's real model list rather than
    silently substituted — the positive result in (1) is trustworthy.
 3. **Real-repo access + structured output.** Built a fake two-file "repo"
-   (`spec.md` with two ACs, `diff.txt` implementing only one) and a strict
-   JSON schema. First call failed with a real, informative 400 naming the
-   exact missing `additionalProperties: false` at a nested level — fixed the
-   schema. Re-ran: Codex's own tool-call log showed it running
+   (`spec.md` with two ACs, `diff.txt` implementing only one) and a **throwaway
+   ad-hoc test schema** (distinct from — and written before — the shipped
+   `shared/schemas/codex_spec_review_schema.json`, which pins the real
+   `spec-reviewer.md` contract's `"stage": "spec-compliance"`). First call
+   failed with a real, informative 400 naming the exact missing
+   `additionalProperties: false` at a nested level — fixed the schema. Re-ran:
+   Codex's own tool-call log showed it running
    `Get-Content -Raw spec.md; Get-Content -Raw diff.txt` inside the target
    directory (genuine live file access, not just the piped prompt) and
    returned `{"stage":"spec-compliance-review","verdict":"REJECT",
-   "spec_citations":[{"spec_ref":"AC-2","divergence":"..."}]}` — correct,
-   schema-conformant, and semantically right (the diff genuinely does not
+   "spec_citations":[{"spec_ref":"AC-2","divergence":"..."}]}` against that
+   spike-only schema — correct, schema-conformant (for the spike's own throwaway
+   schema, which permitted any string here — the shipped schema pins the exact
+   value below), and semantically right (the diff genuinely does not
    implement AC-2).
 
 This closes the two biggest open risks from the prior conversation: whether
