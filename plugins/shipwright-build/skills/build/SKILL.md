@@ -49,7 +49,7 @@ SHIPWRIGHT-BUILD: TDD Implementation
 ================================================================================
 Implements code from /shipwright-plan section files.
 
-Usage: /shipwright-build @path/to/sections/01-auth.md [--review-model opus|sonnet|haiku|inherit] [--finalization-model ...] [--execution-model ...]
+Usage: /shipwright-build @path/to/sections/01-auth.md [--review-model opus|sonnet|haiku|inherit|fable] [--finalization-model ...] [--execution-model ...]
    or: Invoked by /shipwright-run (orchestrator)
 
 Workflow per section:

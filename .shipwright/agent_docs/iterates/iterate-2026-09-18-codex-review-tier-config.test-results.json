@@ -1,0 +1,166 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-18-codex-review-tier-config",
+    "date": "2026-09-18",
+    "unit": {
+      "status": "passed",
+      "passed": 11151,
+      "total": 11151
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 550,
+      "total": 550
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests was red only under parallel xdist fan-out and green on the authoritative serial retry (run_test_suite.py's own retry path) on both F0 runs this iterate; flagged as trg-f64d1c27 for follow-up, does not affect this run's GREEN status"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "tests_run": 68,
+      "exit_code": 0,
+      "runner": "uv run pytest shared/tests/test_model_tier_config_codex_and_fable.py shared/tests/test_tier_literal_drift.py shared/tests/test_codex_review_transport.py shared/tests/test_codex_review_transport_model_override.py shared/tests/test_review_via_codex_cli.py shared/tests/test_review_via_codex_model_resolution.py shared/tests/test_review_via_codex_e2e.py -v",
+      "evidence_path": ".shipwright/runs/iterate-2026-09-18-codex-review-tier-config/surface_verification.json"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "`fable` is a valid Claude tier, unranked like `inherit`",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_fable_is_a_valid_flag_tier, ::test_fable_is_unranked_like_inherit PASSED"
+        },
+        {
+          "behavior": "`fable` resolves from project config, wins over the hardcoded default",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_fable_wins_from_project_config PASSED"
+        },
+        {
+          "behavior": "six hand-written tier-enumeration sites stay in sync with `TIERS` (drift guard)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_tier_literal_drift.py::test_every_tier_enumeration_site_names_fable, ::test_guide_md_has_the_literal_at_every_flag_occurrence PASSED"
+        },
+        {
+          "behavior": "`codex_review`/`codex_plan_review` config keys round-trip with no spurious warning",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_codex_review_key_round_trips_with_no_spurious_warning, ::test_codex_plan_review_key_round_trips_with_no_spurious_warning PASSED"
+        },
+        {
+          "behavior": "a non-string config value is dropped, not raised",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_codex_review_key_non_string_dropped_not_raised PASSED"
+        },
+        {
+          "behavior": "an empty/whitespace-only config value is dropped with a warning",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_codex_review_key_empty_string_dropped_with_warning PASSED"
+        },
+        {
+          "behavior": "a padded config value is trimmed before storage",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_codex_review_key_surrounding_whitespace_is_trimmed PASSED"
+        },
+        {
+          "behavior": "a genuinely unknown top-level config key still warns (additive-key safety)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_genuinely_unknown_top_level_key_still_warns PASSED"
+        },
+        {
+          "behavior": "JSON schema accepts `fable` as a tier, rejects it as a floor",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_schema_accepts_fable_tier, ::test_schema_rejects_fable_as_a_floor PASSED"
+        },
+        {
+          "behavior": "JSON schema accepts the two Codex keys, rejects a non-string value",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_model_tier_config_codex_and_fable.py::test_schema_accepts_codex_keys, ::test_schema_rejects_non_string_codex_key PASSED"
+        },
+        {
+          "behavior": "`--codex-model` flag beats config, beats the hardcoded default (precedence chain)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_unconfigured_uses_the_hardcoded_default, ::test_configured_model_is_used, ::test_codex_model_flag_beats_config PASSED"
+        },
+        {
+          "behavior": "`plan_review` reads its own `codex_plan_review` key, independent of `codex_review`",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_plan_review_role_reads_its_own_config_key PASSED"
+        },
+        {
+          "behavior": "a hostile `--codex-model` flag hard-errors before `codex exec` launches",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_hostile_codex_model_flag_hard_errors PASSED"
+        },
+        {
+          "behavior": "a hostile config value hard-errors before launch AND is never echoed into the error message",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_hostile_config_value_hard_errors_and_does_not_echo_it PASSED"
+        },
+        {
+          "behavior": "a role added to `ROLE_SCHEMAS` without a matching `_ROLE_TO_CODEX_CONFIG_KEY` entry raises `RuntimeError`, not `KeyError`",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_role_to_config_key_drift_guard_raises_before_keyerror PASSED"
+        },
+        {
+          "behavior": "the allowlist regex rejects a trailing newline (`\\A...\\Z`, not `^...$`)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_model_override.py hostile-slug parametrize (incl. \"gpt-5.6-sol\\n\", \"gpt-5\\r\\n\") PASSED"
+        },
+        {
+          "behavior": "a non-string `model` raises `CodexReviewTransportError`, not `TypeError`",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_model_override.py::test_non_string_model_raises_transport_error_not_typeerror PASSED"
+        },
+        {
+          "behavior": "the hardcoded default model itself satisfies its own allowlist",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_model_override.py::test_real_codex_model_slugs_pass_the_allowlist (parametrized with transport.CODEX_REVIEW_MODEL) PASSED"
+        },
+        {
+          "behavior": "every `run_codex_review` result (completed or error) carries the effective model",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_model_override.py::test_model_override_is_used_and_returned, ::test_error_result_also_carries_the_effective_model PASSED"
+        },
+        {
+          "behavior": "real-subprocess E2E: `codex_review`/`codex_plan_review` config-key split resolves end-to-end under a scrubbed env",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_review_via_codex_e2e.py::test_real_subprocess_launch_under_scrubbed_env, ::test_real_subprocess_launch_plan_review_role_with_configured_model PASSED (skips on a machine with no `codex` CLI via is_codex_available(), never silently reported green)"
+        }
+      ],
+      "counts": {
+        "testable": 20,
+        "tested": 20,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 36,
+        "covered_acs": 36
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-18-codex-review-tier-config",
+    "commit": "93f1ee513ad5b930079e6070781ead5caf039a66",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

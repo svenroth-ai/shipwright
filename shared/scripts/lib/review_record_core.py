@@ -141,7 +141,7 @@ def make_entry(
     ``findings_count`` is DERIVED from ``findings``, never supplied — a count
     that can disagree with the list it counts is a count nobody can trust.
 
-    ``model_tier`` is the tier (``opus``/``sonnet``/``haiku``/``inherit``)
+    ``model_tier`` is the tier (``opus/sonnet/haiku/inherit/fable``)
     the session resolved for this role via
     ``lib.model_tier_config.resolve_model_tier`` and self-reports at
     recording time — a claim about the spawn, not independently verified

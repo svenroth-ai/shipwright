@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 # Which harness authored the diff under review — a different axis from ADR-127
-# Claude Agent-tiers (opus/sonnet/haiku/inherit), which govern which Claude
+# Claude Agent-tiers (opus/sonnet/haiku/inherit/fable), which govern which Claude
 # model a spawned subagent gets. "driver" governs which external reviewer
 # identities are independent of the diff's own author: a Codex-authored diff
 # (gpt-5.6-terra) reviewed by another OpenAI-family model is not independent,

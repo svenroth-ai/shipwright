@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shipwright.local/schemas/model_config.schema.json",
   "title": "Shipwright Model Tier Config",
-  "description": "Optional project-root file (shipwright_model_config.json) mapping the four agent-spawn roles (review, finalization, execution, plan_review) to a Claude model tier. Absent file, absent key, or the explicit literal 'inherit' all mean the same thing: no override — the Agent tool's model parameter is omitted and the subagent runs on whatever the spawning session runs on. Read by shared/scripts/lib/model_tier_config.py from the MAIN repo root (worktree-aware), never from a linked worktree's own copy.",
+  "description": "Optional project-root file (shipwright_model_config.json) mapping the four agent-spawn roles (review, finalization, execution, plan_review) to a Claude model tier, plus two optional Codex-reviewer-identity overrides (codex_review, codex_plan_review). Absent file, absent role key, or the explicit literal 'inherit' all mean the same thing: no override — the Agent tool's model parameter is omitted and the subagent runs on whatever the spawning session runs on. Read by shared/scripts/lib/model_tier_config.py from the MAIN repo root (worktree-aware), never from a linked worktree's own copy.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -10,6 +10,16 @@
     "finalization": { "$ref": "#/$defs/Tier" },
     "execution": { "$ref": "#/$defs/Tier" },
     "plan_review": { "$ref": "#/$defs/Tier" },
+    "codex_review": {
+      "type": "string",
+      "description": "Optional override for the model the Codex-CLI internal-review transport uses for the spec/code/doubt-reviewer roles when Codex is the driving harness. A Codex model slug (e.g. 'gpt-5.6-sol'), not one of the Claude Tier values. Not schema-validated against a closed enum — Codex's own launch is the semantic check; an unconditional syntactic allowlist (shared/scripts/lib/codex_review_transport.py) is the only shipwright-side validation. Unset ⇒ the hardcoded default.",
+      "minLength": 1
+    },
+    "codex_plan_review": {
+      "type": "string",
+      "description": "Same as codex_review, for the plan_review role.",
+      "minLength": 1
+    },
     "floors": {
       "type": "object",
       "description": "Optional per-role floor. When set, F11's review-record check appends an ADVISORY note (never a blocking failure) to a passing result if a completed review-role pass recorded a model_tier below the floor, or recorded 'inherit' (meaning the tier that actually ran is unknown). The 'review' and 'plan_review' roles have a consuming check today (record_review_pass.py's --model-tier is threaded through the review cascade and the internal plan-review pass); finalization/execution floors are accepted for forward-compatibility but currently unconsumed.",
@@ -24,8 +34,8 @@
   },
   "$defs": {
     "Tier": {
-      "enum": ["opus", "sonnet", "haiku", "inherit"],
-      "description": "'inherit' is an explicit way to say the same thing as leaving the key unset."
+      "enum": ["opus", "sonnet", "haiku", "fable", "inherit"],
+      "description": "'inherit' is an explicit way to say the same thing as leaving the key unset. 'fable' is a valid, unranked tier — it cannot be used as a 'floors' value (see RankedTier)."
     },
     "RankedTier": {
       "enum": ["opus", "sonnet", "haiku"],

@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-18-codex-review-tier-config",
+  "date": "2026-09-18",
+  "section": "Iterate — feature: Codex reviewer-identity config axis + fable tier",
+  "title": "Configurable Codex reviewer identity axis; fable added to Claude TIERS",
+  "context": "Codex-side reviewer model was hardcoded (gpt-5.6-sol) with no config story; Claude's TIERS enum had gone stale (missing fable, a real Agent-tool alias).",
+  "decision": "Two new shipwright_model_config.json keys (codex_review/codex_plan_review) + a --codex-model flag, guarded by an unconditional syntactic allowlist raising before launch (no live catalog check). fable added to TIERS, unranked like inherit.",
+  "consequences": "Byte-identical default behavior when unconfigured. A configured project gets a used, allowlisted, evidenced override -- supersedes AC2's dormant lock (iterate-2026-09-13). fable is usable across every existing model-tier flag/key without further wiring.",
+  "rationale": "Architecture review (glm=revise-high, openai=reject) converged that live codex-catalog validation traded a small earliness gain for a standing dependency on an undocumented, already-shifting CLI subcommand -- the allowlist plus Codex's own launch error is the smallest thing that would do.",
+  "rejected": "Live codex debug models catalog validation (fail-closed, cache) -- dropped, see rationale. Folding Codex slugs into TIERS as new literals -- rejected, TIERS is a closed enum mirroring the Agent tool's own closed model parameter; Codex's space is open-ended.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-18-codex-review-tier-config.md"
+}

@@ -88,6 +88,12 @@ def model_tier_note(record: dict, project_root: Path) -> str:
                 continue  # malformed (pre-fix/hand-edited record) — never trusted into a comparison
             if tier == "inherit":
                 flagged.append(f"{review_type} ran under session-inherit (tier not confirmed)")
+            elif tier == "fable":
+                # `fable` is a legal TIERS member with no established capability
+                # ordering against opus/sonnet/haiku (see model_tier_config.py) —
+                # distinct from a truly unrecognized value, so it gets its own
+                # inherit-style wording rather than being lumped in below.
+                flagged.append(f"{review_type} ran on fable, an unranked tier (floor {floor} not confirmed)")
             elif tier not in RANK:
                 flagged.append(f"{review_type} ran on an unrecognized tier (floor {floor} not confirmed)")
             elif RANK[tier] < floor_rank:

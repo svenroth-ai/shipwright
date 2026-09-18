@@ -10,7 +10,7 @@ reads only the roles it has a live spawn site for.
 Usage::
 
     uv run resolve_model_tier.py --project-root . \
-        [--review-model opus|sonnet|haiku|inherit] \
+        [--review-model opus/sonnet/haiku/inherit/fable] \
         [--finalization-model ...] [--execution-model ...] \
         [--plan-review-model ...]
 

@@ -49,9 +49,12 @@ CHANGELOG-unreleased.d/     # Pending changelog drop files (aggregated at releas
 ### Codex operating policy
 
 - Use `gpt-5.6-terra` with `high` reasoning for ordinary implementation and finalization.
-- Use `gpt-5.6-sol` with `high` reasoning for required review subagents.
+- Use `gpt-5.6-sol` with `high` reasoning for required review subagents — unless
+  `shipwright_model_config.json`'s `codex_review`/`codex_plan_review` key or a
+  `--codex-model` flag names a different model, which then takes precedence
+  (`shared/scripts/lib/codex_review_transport.py`; iterate-2026-09-18-codex-review-tier-config).
 - Do not use `xhigh` or `max` unless concrete risk, complexity, or a failed review justifies it.
-- `shipwright_model_config.json` contains Claude model tiers. Do not reinterpret or edit those values as Codex model names.
+- `shipwright_model_config.json`'s `review`/`finalization`/`execution`/`plan_review` keys are Claude model tiers — do not reinterpret or edit those values as Codex model names. Its separate `codex_review`/`codex_plan_review` keys ARE Codex model slugs (e.g. `gpt-5.6-terra`) — a different axis entirely, validated only by a syntactic allowlist, never a Claude tier.
 - For triage-item implementation, follow the locally installed Shipwright iterate skill. In this monorepo its source is `plugins/shipwright-iterate/skills/iterate/SKILL.md`; the active Claude Code runtime resolves Shipwright from `~/.claude/plugins/cache/shipwright/`.
 - A webui-driven Codex launch path is documented in `Spec/codex-light-webui.md`.
 - Use one isolated worktree and branch per iterate; never push `main` directly.
@@ -214,9 +217,10 @@ terminology and `shared/scripts/lib/anti_ratchet.py` for the rule.
 
 ## Review subagents: standing request. Workflows: ask every time.
 
-**The review cascade is requested by default — spawn it with `gpt-5.6-sol` and
-`high` reasoning, never pause to ask, and never record a review `not_run` citing
-a session policy.** That is `spec-reviewer` → `code-reviewer` →
+**The review cascade is requested by default — spawn it with `gpt-5.6-sol` (or
+the project's configured `codex_review`/`codex_plan_review` override, if any)
+and `high` reasoning, never pause to ask, and never record a review `not_run`
+citing a session policy.** That is `spec-reviewer` → `code-reviewer` →
 `doubt-reviewer` plus the review subagents other phase skills prescribe (build
 Step 6, campaign review). Codex withholds subagent spawning until the user asks;
 **this file is that request, and it stands for every session.** **The grant

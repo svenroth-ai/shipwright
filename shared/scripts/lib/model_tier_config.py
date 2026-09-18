@@ -58,7 +58,19 @@ ROLES: frozenset[str] = frozenset({"review", "finalization", "execution", "plan_
 
 #: Valid tier literals for a role value (``review``/``finalization``/``execution``/
 #: ``plan_review`` keys, and the per-run flag value). ``inherit`` is explicit-deferral.
-TIERS: frozenset[str] = frozenset({"opus", "sonnet", "haiku", "inherit"})
+#: ``fable`` is unranked (see :data:`RANKED_TIERS`) -- no capability ordering
+#: relative to opus/sonnet/haiku has been established for it, so none is
+#: guessed; it is otherwise a fully valid tier.
+TIERS: frozenset[str] = frozenset({"opus", "sonnet", "haiku", "fable", "inherit"})
+
+#: The two optional Codex-reviewer-identity keys -- NOT part of the Claude
+#: ``TIERS``/role axis. A free-form Codex model slug (validated by an
+#: unconditional syntactic allowlist where it is actually used,
+#: ``lib.codex_review_transport``), never checked against ``TIERS`` here.
+#: Read through this module (not a second reader) so they share this
+#: module's worktree-aware config-path resolution and fail-soft posture --
+#: see iterate-2026-09-18-codex-review-tier-config.
+CODEX_KEYS: frozenset[str] = frozenset({"codex_review", "codex_plan_review"})
 
 #: Valid tier literals for a ``floors`` entry. ``inherit`` is not orderable,
 #: so it cannot be a floor.
@@ -132,7 +144,7 @@ def load_model_config(project_root: Path | str) -> dict[str, Any]:
         _warn(f"{_CONFIG_FILENAME} at {path} is not a JSON object; ignoring")
         return {}
 
-    unknown_top = sorted(set(raw) - ROLES - {"floors"})
+    unknown_top = sorted(set(raw) - ROLES - CODEX_KEYS - {"floors"})
     if unknown_top:
         _warn(f"{_CONFIG_FILENAME}: unrecognized key(s) {unknown_top}; ignoring")
 
@@ -150,6 +162,29 @@ def load_model_config(project_root: Path | str) -> dict[str, Any]:
         else:
             _warn(f"{_CONFIG_FILENAME}: {role!r} has an invalid tier "
                   f"{_repr_truncated(value)}; ignoring key")
+
+    for codex_key in CODEX_KEYS:
+        value = raw.get(codex_key)
+        if value is None:
+            continue
+        # Not checked against TIERS -- a Codex model slug, not a Claude
+        # tier. Syntax validation happens where it is actually used
+        # (lib.codex_review_transport); here only the JSON shape (a
+        # non-empty string) is enforced, same fail-soft posture as every
+        # other key. An empty/whitespace-only string must warn and be
+        # dropped here rather than pass through: `review_via_codex.py`
+        # treats a falsy `configured_model` as "unset" and silently falls
+        # back to the hardcoded default, which would otherwise happen with
+        # no warning at all (code-reviewer MEDIUM, 2026-09-18).
+        if isinstance(value, str) and value.strip():
+            # Trimmed, not stored verbatim: a padded slug (" gpt-5.6-terra")
+            # would otherwise pass this check but hard-fail the allowlist
+            # downstream, over a whitespace typo (external code review, LOW,
+            # 2026-09-18).
+            cleaned[codex_key] = value.strip()
+        else:
+            _warn(f"{_CONFIG_FILENAME}: {codex_key!r} has an invalid value "
+                  f"{_repr_truncated(value)} (must be a non-empty string); ignoring key")
 
     floors_raw = raw.get("floors")
     if isinstance(floors_raw, dict):

@@ -37,8 +37,15 @@ args = sys.argv[1:]
 if args[:2] == ["login", "status"]:
     sys.exit(0)
 if args and args[0] == "exec":
+    schema_path = args[args.index("--output-schema") + 1]
     out_path = Path(args[args.index("-o") + 1])
-    out_path.write_text(json.dumps({"section": "e2e-fixture", "review": []}), encoding="utf-8")
+    if "plan_review" in schema_path:
+        payload = {
+            "reviewer": "opus-plan-reviewer", "severity": "low", "findings": [], "summary": "ok",
+        }
+    else:
+        payload = {"section": "e2e-fixture", "review": []}
+    out_path.write_text(json.dumps(payload), encoding="utf-8")
     sys.exit(0)
 sys.exit(1)
 '''
@@ -96,3 +103,46 @@ def test_real_subprocess_launch_under_scrubbed_env(
     canonical = out_dir / "code_review_reply.json"
     assert canonical.exists()
     assert json.loads(canonical.read_text(encoding="utf-8")) == {"section": "e2e-fixture", "review": []}
+
+
+@pytest.mark.covers("FR-01.11/AC33")
+def test_real_subprocess_launch_plan_review_role_with_configured_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Codex-model config axis end-to-end for the OTHER role mapping
+    (`plan_review` -> `codex_plan_review`), through a real, separately
+    launched `codex` process — not just `review_via_codex.main()` in-process
+    (mini-plan Step 6: a second, forgotten call site or role mapping must not
+    bypass the new config precedence)."""
+    _install_fake_codex(tmp_path)
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"codex_review": "gpt-5.6-terra", "codex_plan_review": "gpt-6-astra"}),
+        encoding="utf-8",
+    )
+
+    agent_md = tmp_path / "opus-plan-reviewer.md"
+    agent_md.write_text("Review the plan for footguns.", encoding="utf-8")
+    spec_file = tmp_path / "spec.md"
+    spec_file.write_text("the spec contract for this fixture", encoding="utf-8")
+    plan_file = tmp_path / "plan.md"
+    plan_file.write_text("the plan body for this fixture", encoding="utf-8")
+    out_dir = tmp_path / "evidence"
+    out_dir.mkdir()
+
+    result = subprocess.run(
+        [sys.executable, str(_REVIEW_VIA_CODEX),
+         "--role", "plan_review", "--worktree-root", str(tmp_path),
+         "--agent-md", str(agent_md), "--out-dir", str(out_dir),
+         "--spec-file", str(spec_file), "--plan-file", str(plan_file)],
+        capture_output=True, encoding="utf-8", errors="replace", timeout=30,
+    )
+
+    assert result.returncode == 0, f"stdout={result.stdout!r} stderr={result.stderr!r}"
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "completed"
+    # Must read `codex_plan_review` ("gpt-6-astra"), never `codex_review`
+    # ("gpt-5.6-terra") — the two config keys are independent axes.
+    assert payload["model"] == "gpt-6-astra"
+    canonical = out_dir / "plan_review_reply.json"
+    assert canonical.exists()

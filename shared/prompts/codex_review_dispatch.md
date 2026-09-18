@@ -23,7 +23,10 @@ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
   --spec-file "{the spec/section-plan file — all four roles take this}" \
   --diff-file "{the diff file — required for role spec|code|doubt, omit for plan_review}" \
   --plan-file "{the plan file — required for role plan_review only}" \
-  --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/"
+  --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
+  [--codex-model "{a per-run override for the Codex reviewer model, e.g.
+    gpt-5.6-terra — optional; unset defers to shipwright_model_config.json's
+    codex_review/codex_plan_review key, then the hardcoded default}"]
 ```
 
 `--spec-file` is always required. `--diff-file` is required for `spec`/`code`/
@@ -41,13 +44,17 @@ short-lived foreground timeout.
 Parse the printed JSON line:
 
 - **`status: "completed"`** — `canonical_path` is the already
-  schema-validated payload file.
+  schema-validated payload file. `model` is the EFFECTIVE Codex model that
+  actually ran (config/override resolved, or the hardcoded default).
   - **`role` is `spec`/`code`/`doubt`:** record it with
     `record_review_pass.py record --run-id "{run_id}" --review-type
     {spec|code|doubt} --status completed --from {spec|code|doubt}-reviewer
-    --payload-file "{canonical_path}" --transport codex` (no `--model-tier`
-    — the row carries no legal Claude tier; the floor verifier already
-    exempts a `codex`-transport row rather than reading one).
+    --payload-file "{canonical_path}" --transport codex --transport-note
+    "{model}"` (no `--model-tier` — the row carries no legal Claude tier; the
+    floor verifier already exempts a `codex`-transport row rather than
+    reading one). `--transport-note` names WHICH Codex model answered, so a
+    project pinning `codex_review` away from the hardcoded default leaves
+    that choice visible in the evidence, not just in config.
   - **`role` is `plan_review`:** there is no `record_review_pass.py --from`
     adapter for it (`plan_internal` is a metadata-only row with no payload
     file, see `review_payloads.py`) — read `canonical_path` directly and
