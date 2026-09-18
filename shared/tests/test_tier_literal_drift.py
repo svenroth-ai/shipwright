@@ -35,6 +35,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS_ROOT = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS_ROOT) not in sys.path:
@@ -61,6 +63,7 @@ _SITES: list[tuple[str, str]] = [
 _GUIDE_MD_SEPARATOR = r"\|"  # markdown-table-escaped pipe, as it appears in docs/guide.md
 
 
+@pytest.mark.covers("FR-01.11/AC34")
 def test_every_tier_enumeration_site_names_fable() -> None:
     missing = []
     for rel_path, sep in _SITES:

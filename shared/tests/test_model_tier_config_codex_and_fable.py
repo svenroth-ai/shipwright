@@ -40,6 +40,7 @@ def repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.mark.covers("FR-01.11/AC32")
 def test_fable_is_a_valid_flag_tier(repo: Path) -> None:
     resolved, source = resolve_model_tier("review", repo, flag_value="fable")
     assert resolved == "fable"
