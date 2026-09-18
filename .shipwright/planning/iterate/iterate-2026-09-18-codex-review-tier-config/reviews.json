@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-18-codex-review-tier-config",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-18T10:15:52.890247+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 10,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Keep the fail-soft fallback only for the unconfigured/default path. When the value came from an explicit override or config key, an unreachable catalog should be at minimum a loud warning recorded in `--transport-note`/stderr, or fail closed. The \"advisory never hard-fails\" posture is about ambient checks, not operator intent.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Add a `_reset_catalog_cache()` (or cache keyed with TTL) for tests and document the cache lifetime.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Where feasible, have `review_via_codex.py` / `record_review_pass.py` default `--transport-note` to the resolved model when `--transport codex` and no note is given, so the invariant is enforced in code rather than prose. (If `--transport-note` already carries other content at existing call sites, check for collision before overloading it further.)",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "One sentence in the ADR / module docstring acknowledging this residual gap.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Wherever possible, generate the enumeration text from `TIERS` at build/test time or have the test check a canonical joined string (e.g., `\"/\".join(sorted(TIERS))` appearing literally in each file), and pin the exact expected rendering in the test so a formatting change is a deliberate test update, not a silent skip.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan claims unconfigured projects retain “zero behavior change,” but step 6 validates `CODEX_REVIEW_MODEL` through the live catalog whenever `model is None`. That introduces a new subprocess dependency and can reject the historical default if the catalog is unavailable, changes visibility, or lacks that slug for the current account.",
+          "suggestion": "Treat the hardcoded default as trusted for the no-config/no-override path. Perform live catalog validation only for operator-supplied config and `--codex-model` values; on catalog failure for either, explicitly select the trusted default.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "AC35 requires recording the actual model used, but the plan has prompt-level `record_review_pass.py --transport-note \"<resolved model>\"` call sites while fallback may occur later inside `run_codex_review`. In a catalog-failure fallback, the note can record the configured/overridden value even though `gpt-5.6-sol` actually ran.",
+          "suggestion": "Have the transport return or expose the effective model after validation/fallback, and make the code that records the row use that value. Do not rely on a static prompt placeholder for audit-critical transport metadata.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new `--codex-model` flag is added to `review_via_codex.py`, but the plan does not explicitly trace every cascade launcher/dispatch path that invokes it or `run_codex_review`. A path that calls the transport directly could bypass config precedence or per-run override behavior.",
+          "suggestion": "Inventory all `run_codex_review` and `review_via_codex.py` invocations, update each relevant Codex-driving path, and add an integration-level test covering both `review` and `plan_review` role mappings.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The catalog parser is specified only as “parses the JSON,” without an explicit contract for top-level shape, entry types, missing/non-string `slug`, duplicate slugs, or unexpected `visibility` values. A malformed but JSON-valid CLI response could raise unexpectedly or produce misleading catalog errors.",
+          "suggestion": "Parse defensively: require the expected collection shape, accept only object entries with string slugs and `visibility == \"list\"`, deduplicate/sort output for deterministic errors, and treat all other shapes as catalog-unavailable fallback conditions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "A drift test asserting prose documents “enumerate exactly `sorted(TIERS)`” is likely brittle unless each target has a deliberately machine-readable tier-list marker. Ordinary prose, punctuation, and explanatory mentions of individual tiers make exact extraction ambiguous.",
+          "suggestion": "Add a stable marked token/list format in each checked source, or centralize generated usage text where feasible, and test those markers rather than attempting to parse arbitrary prose.  The two-axis design and the syntax-first validation boundary are sound. Resolve the default-path regression and ensure the recorded model is the effective transport model before implementation proceeds.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-18T09:29:41.269279+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review: iterate-2026-09-18-codex-review-tier-config\n\n**Findings**\n\n- **Category: edge-case — Severity: medium**\n  AC33c's \"catalog unreachable → fall back to hardcoded default\" is applied uniformly, but it conflates two very different situations: an *unconfigured* project (fallback is correct, zero behavior change) and an *explicitly overridden/configured* value via `--codex-model` or `shipwright_model_config.json`. If the operator explicitly asks for `gpt-6-astra` and the catalog probe fails, silently reviewing with `gpt-5.6-sol` can produce evidence (`--transport-note` names a model the operator didn't request) that misrepresents intent — arguably worse than a hard error for an explicit override.\n  **Suggestion:** Keep the fail-soft fallback only for the unconfigured/default path. When the value came from an explicit override or config key, an unreachable catalog should be at minimum a loud warning recorded in `--transport-note`/stderr, or fail closed. The \"advisory never hard-fails\" posture is about *ambient* checks, not operator intent.\n\n- **Category: edge-case — Severity: low**\n  Per-process memoization of the catalog (finding #10 fix) plus tests that monkeypatch the subprocess wrapper: memoization will leak state between unit tests unless the cache is exposed for reset. Also, a long-running process that resolves multiple roles will cache a snapshot — fine for a CLI run, but say so in the module docstring so a future long-lived consumer (e.g., webui server, which is the stated follow-up) doesn't serve a stale catalog indefinitely.\n  **Suggestion:** Add a `_reset_catalog_cache()` (or cache keyed with TTL) for tests and document the cache lifetime.\n\n- **Category: risk — Severity: low**\n  Step 8 relies on `codex_review_dispatch.md` (a prompt for an agent) to actually pass `--transport-note \"<resolved model>\"`. Prompt-driven invariants drift exactly like the hand-duplicated tier lists this iterate is fixing. If the flag is omitted, AC35's audit trai […truncated]\n\n[openai] 1. **Category:** risk  \n   **Severity:** high  \n   **Finding:** The plan claims unconfigured projects retain “zero behavior change,” but step 6 validates `CODEX_REVIEW_MODEL` through the live catalog whenever `model is None`. That introduces a new subprocess dependency and can reject the historical default if the catalog is unavailable, changes visibility, or lacks that slug for the current account.  \n   **Suggestion:** Treat the hardcoded default as trusted for the no-config/no-override path. Perform live catalog validation only for operator-supplied config and `--codex-model` values; on catalog failure for either, explicitly select the trusted default.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** AC35 requires recording the actual model used, but the plan has prompt-level `record_review_pass.py --transport-note \"<resolved model>\"` call sites while fallback may occur later inside `run_codex_review`. In a catalog-failure fallback, the note can record the configured/overridden value even though `gpt-5.6-sol` actually ran.  \n   **Suggestion:** Have the transport return or expose the effective model after validation/fallback, and make the code that records the row use that value. Do not rely on a static prompt placeholder for audit-critical transport metadata.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The new `--codex-model` flag is added to `review_via_codex.py`, but the plan does not explicitly trace every cascade launcher/dispatch path that invokes it or `run_codex_review`. A path that calls the transport directly could bypass config precedence or per-run override behavior.  \n   **Suggestion:** Inventory all `run_codex_review` and `review_via_codex.py` invocations, update each relevant Codex-driving path, and add an integration-level test covering both `review` and `plan_review` role mappings.\n\n4. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** The catalog parser is specified onl […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-18T10:38:28.109642+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/codex_review_transport.py:190 (with model_tier_config.py:166-183, review_via_codex.py:154-167, codex_review_dispatch.md:64-75)",
+          "line": null,
+          "finding": "Claim under doubt: a malicious or malformed shipwright_model_config.json can't do anything worse than get its bad value rejected — The value IS rejected -- and then re-emitted verbatim, unescaped and uncapped, into a string the dispatch doc instructs the driving LLM to paste into a shell command line via --transport-note/--disposition double-quoted arguments.",
+          "suggestion": "Stop echoing the raw value in the error message, and/or route it through the syntactic allowlist earlier.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/lib/codex_review_transport.py:129 and shared/tests/test_codex_review_transport_model_override.py:85",
+          "line": null,
+          "finding": "Claim under doubt: the allowlist regex is airtight — Safety depends on every caller using .fullmatch(), not on the pattern itself (^...$ lets a trailing newline through under .match()). The test characterising the pattern itself used the unsafe .match() form.",
+          "suggestion": "Change the pattern to \\A...\\Z so .match() and .fullmatch() are equivalent.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/tests/test_review_via_codex_model_resolution.py (missing case) and model_tier_config.py:166-183",
+          "line": null,
+          "finding": "Claim under doubt: the precedence chain can't be confused or bypassed -- every layer's bad value is rejected — The config layer (attacker-reachable via a PR, not just an operator's own flag) had no test proving a hostile value there hard-errors without launching codex exec.",
+          "suggestion": "One test mirroring test_hostile_codex_model_flag_hard_errors but via shipwright_model_config.json.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/codex_review_transport.py:114 and shared/tests/test_codex_review_transport_model_override.py:83-85",
+          "line": null,
+          "finding": "Claim under doubt: the hardcoded default is trusted, so it needs no check — CODEX_REVIEW_MODEL is validated unconditionally now, but no test asserts the constant itself satisfies its own allowlist -- editing the constant could silently produce an invalid default.",
+          "suggestion": "Add transport.CODEX_REVIEW_MODEL to the allowlist-pass parametrize list.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/tests/test_tier_literal_drift.py:56-75",
+          "line": null,
+          "finding": "Claim under doubt: the drift test makes a forgotten tier-enumeration site fail loudly — Substring containment catches a MISSING new literal but not a SURVIVING stale one at a multi-occurrence site. Confirmed no such site exists today outside docs/guide.md, which already has its own == 6 count check.",
+          "suggestion": "Assert absence of the previous-generation literal, or apply the count check uniformly.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/model_tier_config.py:147-149",
+          "line": null,
+          "finding": "Claim under doubt: this change is cleanly revertible — The code is revertible; a project's shipwright_model_config.json that adopted codex_review/codex_plan_review is not -- reverting produces spurious 'unrecognized key' warnings on every subsequent config read until the key is removed by hand.",
+          "suggestion": "Acknowledge in the ADR's Consequences section.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/tools/review_via_codex.py:72-76,153,160",
+          "line": null,
+          "finding": "Claim under doubt: review_via_codex.py prints a structured error for every failure mode, never a traceback — (1) The role-map drift guard was a module-level assert, stripped under python -O, letting a missing role reach a KeyError instead of the promised structured error. (2) review_via_codex.py's local effective_model (pre-fallback, may be None) collided in name with codex_review_transport.py's effective_model (post-fallback, the AC35-required value) -- a trap for the next editor.",
+          "suggestion": "Replace the assert with an explicit raise; rename the pre-fallback local.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-18T10:49:34.446379+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/prompts/codex_review_dispatch.md:50-56` (and absence of any `record_review_pass.py` change)",
+          "line": null,
+          "finding": "AC35's audit trail is enforced only by prompt prose. GLM's external-plan-review finding #3 (\"prompt-driven invariants drift exactly like the hand-duplicated tier lists this iterate is fixing; if the flag is omitted, AC35's audit trail is silently absent\") was never integrated into the reconciliation list (the spec claims \"9 fixed, 1 disclosed\" but discloses a different item — the stale-default gap). The code change is real (`run_codex_review` returns the effective model), but nothing in `record_review_pass.py` defaults `--transport-note` to the model when `--transport codex` and no note is given, so a dispatching agent that skips the new prose line loses the evidence silently — the exact drift class this iterate exists to close.",
+          "suggestion": "Either default `--transport-note` to the effective model in `record_review_pass.py` when `--transport codex` and no note is supplied, or explicitly record this as a declined/disclosed finding in the spec's reconciliation.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/model_tier_config.py:166-183` (`codex_key` cleaning loop)",
+          "line": null,
+          "finding": "A configured value like `\" gpt-5.6-terra\"` (valid slug with surrounding whitespace) passes the `value.strip()` check but is stored untrimmed; `review_via_codex.py` then hands it to `run_codex_review`, where the allowlist rejects it with a hard `CodexReviewTransportError` — the whole review pass fails for a trivially recoverable config typo. Contrast with the Claude-role keys, which validate/normalize their whole value domain at load time.",
+          "suggestion": "Store `value.strip()` (after confirming it's non-empty) so a padded config value behaves as the trimmed slug.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/tests/test_tier_literal_drift.py:41` (`_TIER_ORDER`)",
+          "line": null,
+          "finding": "AC34 and mini-plan step 4 state the drift test asserts each site \"enumerates exactly `sorted(TIERS)`\" in \"that exact `sorted(TIERS)` join order\"; the implemented marker is `opus/sonnet/haiku/inherit/fable`, which is not `sorted(TIERS)` order (that would be `fable, haiku, inherit, opus, sonnet`). The import-time `set(_TIER_ORDER) == TIERS` assert preserves the anti-drift property, so this is a spec/impl wording mismatch, not a loss of protection — but a reader following AC34 literally would write a different test.",
+          "suggestion": "Reword AC34 (or the test docstring) to say the marker is a fixed presentation order whose membership is cross-checked against `TIERS` at import time.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "regression",
+          "file": "shared/scripts/lib/codex_review_transport.py` (all `_error(...)` / success returns)",
+          "line": null,
+          "finding": "Every result dict from `run_codex_review` now unconditionally carries a `\"model\"` key. Any caller outside this diff that does strict dict-equality on the error shape (the pattern `record_review_pass.py` rows and other dispatch tooling use) would now mismatch; the one in-diff test that did this was updated, but the mini-plan's step 6 call-site inventory result is not visible here, so I can't confirm no external caller compares the whole dict.",
+          "suggestion": "Confirm the step-6 inventory found no strict-equality consumers of the result dict (additive keys are otherwise safe).  Test quality is good: the mocked tests assert on the actual `argv` `-m` value and returned `model`, the hostile-slug cases include the trailing-newline `.match()` regression and assert no subprocess launch, the E2E test proves the `codex_plan_review` vs `codex_review` key split through a real subprocess, and the drift test's import-time assert means a `TIERS` addition can't silently pass it.  Overall: ship-with-fixes — the implementation matches the spec's core, but the AC35 prose-only enforcement gap should be either coded or explicitly disclosed, and the whitespace-trim edge is a cheap fix.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 186,
+          "finding": "AC33 requires the syntactic allowlist to be unconditional, including the hardcoded fallback. The implementation only validates when `model is not None`, so the default bypasses the required validation boundary.",
+          "suggestion": "Assign `effective_model` first, then always apply `isinstance(effective_model, str)` and `_CODEX_MODEL_SLUG_PATTERN.fullmatch(effective_model)` before any other launch-related work.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 186,
+          "finding": "A direct caller can pass a non-string `model` despite the type annotation; `Pattern.fullmatch()` then raises `TypeError` rather than the documented `CodexReviewTransportError`. This violates the explicit validated-keyword-argument contract and bypasses the structured-error handling in `review_via_codex.py`.",
+          "suggestion": "Check `isinstance(model, str)` before matching and raise `CodexReviewTransportError` for all non-string values. Add parameterized tests for `int`, `bytes`, and container values.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec",
+          "file": "shared/tests/test_tier_literal_drift.py",
+          "line": 37,
+          "finding": "AC34 requires enumerations and the drift test to use exactly `sorted(TIERS)`, but this test hardcodes a capability-style order (`opus/sonnet/haiku/inherit/fable`) and only asserts membership equality with `TIERS`. The documented sites use that non-sorted order as well.",
+          "suggestion": "Either change the displayed marker/order to `\"/\".join(sorted(TIERS))` as specified, or amend the specification if presentation order is intentionally part of the contract.  Overall assessment: ship-with-fixes. The core config precedence, transport wiring, and injection boundary are sound, but the validation contract needs to be made truly unconditional and robust for direct callers.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-18T10:44:00.669509+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Reviewing this diff against the spec (AC32–AC36), I find the core implementation sound: the config axis, `--codex-model` precedence, `fullmatch` allowlist with raise-before-launch, effective-model-in-result, `fable` unranked tier with all six enumeration sites updated, the drift test, and the AC2-supersession ADR are all present and match the architecture-review-simplified design. A few real gaps remain:\n\n- **Category: spec** — **Severity: medium**\n  **File:** `shared/prompts/codex_review_dispatch.md:50-56` (and absence of any `record_review_pass.py` change)\n  **Finding:** AC35's audit trail is enforced only by prompt prose. GLM's external-plan-review finding #3 (\"prompt-driven invariants drift exactly like the hand-duplicated tier lists this iterate is fixing; if the flag is omitted, AC35's audit trail is silently absent\") was never integrated into the reconciliation list (the spec claims \"9 fixed, 1 disclosed\" but discloses a *different* item — the stale-default gap). The code change is real (`run_codex_review` returns the effective model), but nothing in `record_review_pass.py` defaults `--transport-note` to the model when `--transport codex` and no note is given, so a dispatching agent that skips the new prose line loses the evidence silently — the exact drift class this iterate exists to close.\n  **Suggestion:** Either default `--transport-note` to the effective model in `record_review_pass.py` when `--transport codex` and no note is supplied, or explicitly record this as a declined/disclosed finding in the spec's reconciliation.\n\n- **Category: edge-case** — **Severity: low**\n  **File:** `shared/scripts/lib/model_tier_config.py:166-183` (`codex_key` cleaning loop)\n  **Finding:** A configured value like `\" gpt-5.6-terra\"` (valid slug with surrounding whitespace) passes the `value.strip()` check but is stored **untrimmed**; `review_via_codex.py` then hands it to `run_codex_review`, where the allowlist rejects it with a hard `CodexReviewTransportError […truncated]\n\n[openai] - Category: spec\n- Severity: low\n- File: shared/scripts/lib/codex_review_transport.py:186\n- Finding: AC33 requires the syntactic allowlist to be unconditional, including the hardcoded fallback. The implementation only validates when `model is not None`, so the default bypasses the required validation boundary.\n- Suggestion: Assign `effective_model` first, then always apply `isinstance(effective_model, str)` and `_CODEX_MODEL_SLUG_PATTERN.fullmatch(effective_model)` before any other launch-related work.\n\n- Category: bug\n- Severity: medium\n- File: shared/scripts/lib/codex_review_transport.py:186\n- Finding: A direct caller can pass a non-string `model` despite the type annotation; `Pattern.fullmatch()` then raises `TypeError` rather than the documented `CodexReviewTransportError`. This violates the explicit validated-keyword-argument contract and bypasses the structured-error handling in `review_via_codex.py`.\n- Suggestion: Check `isinstance(model, str)` before matching and raise `CodexReviewTransportError` for all non-string values. Add parameterized tests for `int`, `bytes`, and container values.\n\n- Category: spec\n- Severity: low\n- File: shared/tests/test_tier_literal_drift.py:37\n- Finding: AC34 requires enumerations and the drift test to use exactly `sorted(TIERS)`, but this test hardcodes a capability-style order (`opus/sonnet/haiku/inherit/fable`) and only asserts membership equality with `TIERS`. The documented sites use that non-sorted order as well.\n- Suggestion: Either change the displayed marker/order to `\"/\".join(sorted(TIERS))` as specified, or amend the specification if presentation order is intentionally part of the contract.\n\nOverall assessment: ship-with-fixes. The core config precedence, transport wiring, and injection boundary are sound, but the validation contract needs to be made truly unconditional and robust for direct callers.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-18T10:27:54.242864+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-18T09:27:34.602155+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

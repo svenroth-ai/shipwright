@@ -1,0 +1,73 @@
+{
+  "reviewer": "opus-plan-reviewer",
+  "severity": "high",
+  "findings": [
+    {
+      "category": "security",
+      "severity": "high",
+      "finding": "Making the Codex model identity an operator-config/CLI-flag string opens a Windows argv-injection surface that the hardcoded literal closed. The resolved slug lands in `codex exec -m <slug>` (codex_review_transport.py:296, and the same shape in external_review_default_legs.py:244). On Windows the resolved `codex` binary is typically an npm `.cmd` shim — the transport says so itself (codex_review_transport.py:105-110, COMSPEC/PATHEXT in the env allowlist) — and Python's subprocess does not escape cmd.exe metacharacters (`&`, `|`, `^`, `\"`) for a batch target (the BatBadBut class the repo already defends against in `_resolve_codex_binary`). The mini-plan's only gate is the live catalog, which it deliberately fails OPEN on fetch failure (`(True, None)`); `codex debug models` can fail (timeout, renamed/removed debug subcommand, shape change in a newer CLI) while `codex exec` still runs fine, so an arbitrary config string reaches the shim unvalidated. Windows is this feature's stated primary trigger platform.",
+      "suggestion": "Apply an unconditional syntactic allowlist BEFORE and INDEPENDENT of the catalog check — e.g. `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`, reject otherwise with a hard error. The live catalog stays a semantic check on top; it must never be the only thing standing between a config file and an argv."
+    },
+    {
+      "category": "architecture",
+      "severity": "high",
+      "finding": "The plan silently reverses a control a prior review cycle explicitly demanded, without recording the supersession. codex_review_transport.py:79-89 documents that `run_codex_review` has NO `model=` parameter because it was REMOVED (external-review MEDIUM, 2026-09-17): 'a public override kept the binding a soft convention rather than the raise-before-launch lock AC2 requires'. AC2 of iterate-2026-09-13 is 'a locked model-identity binding, gpt-5.6-sol'. This iterate reintroduces exactly that override and neither the spec nor the mini-plan names AC2, states it is superseded, or gives an ADR. Secondarily, the mechanism is unspecified: the mini-plan puts resolution in `review_via_codex.py` (step 4), but the constant and the argv construction both live in `codex_review_transport.py` — so the removed `model=` parameter (or an equivalent seam) has to come back, and the plan never says how the value crosses that boundary.",
+      "suggestion": "Add an explicit 'supersedes FR-01.11/AC2 lock' paragraph to the spec plus an ADR stating why a configurable identity now beats an anti-drift lock, and name the exact seam in step 4 (reinstated `model=` kwarg on `run_codex_review`, validated at entry — not a module-global mutation, which would be worse than the parameter that was removed)."
+    },
+    {
+      "category": "completeness",
+      "severity": "high",
+      "finding": "AC33 and the mini-plan specify contradictory behavior for catalog-fetch failure. AC33: 'catalog-lookup failure ... falls back to the hardcoded default without hard-failing the run'. Mini-plan `validate_codex_reviewer_model`: `(True, None)` on fetch failure means 'the configured/overridden value is trusted and passed through'. Falling back to `gpt-5.6-sol` and passing the operator's unvalidated value through are different observable outcomes. Tests written from the AC and code written from the plan will disagree, and F5's AC->evidence mapping will record a pass for behavior the AC does not describe.",
+      "suggestion": "Reconcile before any code. The AC's reading (fall back to the hardcoded default when the catalog is unreachable) is also the safer one -- it closes most of finding 1's reachable path. If the plan's reading wins instead, rewrite AC33 to say so plainly."
+    },
+    {
+      "category": "architecture",
+      "severity": "high",
+      "finding": "Two differently-validated readers of the same config file, plus a guaranteed spurious warning. `load_model_config` computes `unknown_top = sorted(set(raw) - ROLES - {'floors'})` (model_tier_config.py:135) and warns on anything else -- so every project that opts into `codex_review`/`codex_plan_review` gets `unrecognized key(s) ['codex_plan_review','codex_review']; ignoring` on every load, from the resolver the rest of the pipeline uses. The mini-plan step 4 then adds 'a new small config-read helper' as a SECOND reader of `shipwright_model_config.json`, with none of the existing reader's hardening (worktree->MAIN-root resolution via `_config_path`, non-dict fail-soft, unhashable-value TypeError guard, `_repr_truncated` echo cap). A linked worktree's own copy would be read verbatim by the new helper -- the exact bug model_tier_config.py's docstring (lines 18-23) exists to prevent.",
+      "suggestion": "Extend `load_model_config` itself (widen the unknown-key set, add the two string keys to `cleaned`) and have review_via_codex.py read through it. One reader, one set of trust-boundary rules."
+    },
+    {
+      "category": "completeness",
+      "severity": "medium",
+      "finding": "The `fable` fix repeats the exact duplication that caused the staleness it is fixing. The tier literal list is hand-written in at least six places outside `TIERS`, and mini-plan steps 1-2 touch only `model_tier_config.py` and the schema: plugins/shipwright-iterate/skills/iterate/SKILL.md:44, plugins/shipwright-build/skills/build/SKILL.md:52, shared/scripts/tools/resolve_model_tier.py:13, shared/scripts/lib/review_record_core.py:144, shared/scripts/lib/external_review_routing.py:23, docs/guide.md:2695+2699. After this iterate, five or six of them are stale again on day one.",
+      "suggestion": "Update all six in this diff AND add a drift test asserting the user-facing usage strings enumerate exactly `sorted(TIERS)` -- otherwise the next alias repeats this iterate."
+    },
+    {
+      "category": "completeness",
+      "severity": "medium",
+      "finding": "`fable` in TIERS but not RANK produces a misleading F11 advisory on a now-legal value. `record_review_pass.py:370` derives `--model-tier` choices from `sorted(TIERS)`, so `fable` becomes recordable the moment step 1 lands; `review_record_model_tier.py:91-92` then hits `elif tier not in RANK:` and flags 'ran on an unrecognized tier (floor X not confirmed)'. `inherit` -- the other deliberately unranked value -- gets its own honest wording at line 89-90. The mini-plan does not touch this file.",
+      "suggestion": "Give `fable` `inherit`-style handling and wording ('ran on an unrankable tier -- floor not confirmed'), and add a floor test for it. Cheap now; a confusing advisory in every floored project otherwise."
+    },
+    {
+      "category": "security",
+      "severity": "medium",
+      "finding": "The new `codex debug models` subprocess is specified as 'shells out to' with no env, binary resolution, timeout value, or shell=False stated. The neighbouring code treats all four as load-bearing: env is an explicit allowlist, never inherited (codex_review_transport.py module docstring, finding #2 HIGH -- a network-capable agentic child must not see OPENROUTER_API_KEY/GITHUB_TOKEN/ANTHROPIC_API_KEY); `_resolve_codex_binary()` exists specifically to reject a cwd-planted `codex.cmd` in the repo under review; `is_codex_available` is bounded at 15s because an unauthenticated codex can block on an interactive prompt -- `codex debug models` plausibly can too, and an unbounded call here hangs the whole review pass.",
+      "suggestion": "State in the plan: argv list with `shell=False`, binary from `_resolve_codex_binary()` (not `\"codex\"`/bare `shutil.which`), `env=scrubbed_env()`, explicit short timeout reusing/mirroring `_CODEX_LOGIN_STATUS_TIMEOUT_SECONDS`, and `TimeoutExpired`/`OSError`/`JSONDecodeError` all folded into the `None` return."
+    },
+    {
+      "category": "architecture",
+      "severity": "medium",
+      "finding": "Flag-name collision across two different value domains, defended only by prose. Step 4 reuses `--review-model`/`--plan-review-model`, 'the exact flag names the Claude path already uses' -- but on the Claude path those take a tier literal (`opus`/`sonnet`) and here they take a Codex slug. The stated safety argument ('this script only ever receives the Codex-relevant one') is a convention, not a check: a dispatcher that already resolved a Claude tier and mis-routes it turns `--review-model sonnet` into `codex exec -m sonnet`, which fails late and confusingly rather than at parse time. Related gap: `review_via_codex.py` has FOUR roles (spec/code/doubt/plan_review) but the plan defines only TWO config keys, and the role->key mapping is written down nowhere.",
+      "suggestion": "Use one distinctly-named flag (`--codex-model`) so a mis-wire is an argparse error, and write the role->key mapping explicitly in the spec ({spec,code,doubt} -> `codex_review`, plan_review -> `codex_plan_review`)."
+    },
+    {
+      "category": "completeness",
+      "severity": "medium",
+      "finding": "The review record loses the reviewer's identity entirely once it becomes configurable. `record_review_pass.py:162-169` rejects `--model-tier` together with `--transport codex`, and `review_record_model_tier.py:77-82` skips codex rows outright -- both justified when the model was one auditable constant. After this iterate, which model actually reviewed is project-configurable AND per-run overridable, and nothing in the committed evidence names it. A floors-configured project gets no signal at all for codex-answered rows.",
+      "suggestion": "Have the dispatch path pass the resolved slug in the existing `--transport-note` field (already supported, `--transport-note requires --transport`), and make `shared/prompts/codex_review_dispatch.md` require it. Add an AC for it -- it is the honesty complement to making the value configurable."
+    },
+    {
+      "category": "performance",
+      "severity": "low",
+      "finding": "Testing/CI shape of the live probe is underspecified in two ways this repo has been burned by. (a) Spec 'Verification' and mini-plan step 3 both call for a REAL `codex debug models` probe in the suite; CI has neither the codex CLI nor auth, so unguarded it is a red gate, and 'proven reachable this session' is not CI evidence. (b) The four mocked cases are described as mocking `subprocess.run` -- subprocess-shaped tests are invisible to the repo's diff-coverage gate (<80% blocks merge), so the validator's own lines need monkeypatching by module object, not a spawned child. Minor runtime cost: one extra CLI spawn per review-role process (up to ~4 per cascade, each bounded by its own timeout).",
+      "suggestion": "Skip-guard the live probe on `is_codex_available()` and keep it out of the gating root; state the mocking seam as module-object monkeypatch; memoize the catalog per process."
+    },
+    {
+      "category": "completeness",
+      "severity": "low",
+      "finding": "No documentation step in the plan, while three doc surfaces assert the old behavior as policy. AGENTS.md:52 ('Use `gpt-5.6-sol` with `high` reasoning for required review subagents') and AGENTS.md:217 both state the fixed identity as operating policy; `shared/prompts/codex_review_dispatch.md` is the runnable procedure that invokes review_via_codex.py and will not mention the new flag; docs/hooks-and-pipeline.md's config data-flow matrix and docs/guide.md Appendix B are covered by CLAUDE.md's explicit rule (new config keys / changed CLI flags => update in the same diff).",
+      "suggestion": "Add step 6: AGENTS.md, codex_review_dispatch.md, hooks-and-pipeline.md config-data-flow, guide.md Appendix B -- plus the schema description text, which today says the file maps roles 'to a Claude model tier' and will no longer be true."
+    }
+  ],
+  "summary": "The two-axis decomposition and the Option B rejection are well-reasoned, but the plan turns a deliberately locked argv value into an operator-supplied string without saying that out loud: it reverses the AC2 anti-drift lock with no recorded supersession, leaves the only validation fail-open, and thereby exposes a Windows `.cmd`-shim argv surface the hardcoded literal closed. Fix the AC33-vs-plan contradiction, add an unconditional syntactic allowlist, and route the new keys through the existing `load_model_config` before writing code."
+}
