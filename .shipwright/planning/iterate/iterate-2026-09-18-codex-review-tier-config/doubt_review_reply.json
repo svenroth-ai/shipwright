@@ -1,0 +1,78 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "argv construction for an external `codex exec` subprocess + config-file parsing that feeds it (security-sensitive surface; prior round had HIGH/MEDIUM argv-injection + Windows .cmd-shim findings)",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "a malicious or malformed shipwright_model_config.json can't do anything worse than get its bad value rejected",
+      "disproof_attempt": "The value IS rejected -- and then re-emitted verbatim, unescaped and uncapped, into a string the dispatch doc instructs the driving LLM to paste into a shell command line via --transport-note/--disposition double-quoted arguments.",
+      "file": "shared/scripts/lib/codex_review_transport.py:190 (with model_tier_config.py:166-183, review_via_codex.py:154-167, codex_review_dispatch.md:64-75)",
+      "what_would_resolve_it": "Stop echoing the raw value in the error message, and/or route it through the syntactic allowlist earlier.",
+      "disposition": "fixed: CodexReviewTransportError no longer echoes the raw value at all -- reports the pattern and value length only. New test_hostile_config_value_hard_errors_and_does_not_echo_it asserts the hostile string and any '\"' are absent from result[\"reason\"]."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "the allowlist regex is airtight",
+      "disproof_attempt": "Safety depends on every caller using .fullmatch(), not on the pattern itself (^...$ lets a trailing newline through under .match()). The test characterising the pattern itself used the unsafe .match() form.",
+      "file": "shared/scripts/lib/codex_review_transport.py:129 and shared/tests/test_codex_review_transport_model_override.py:85",
+      "what_would_resolve_it": "Change the pattern to \\A...\\Z so .match() and .fullmatch() are equivalent.",
+      "disposition": "fixed: pattern changed to \\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\\Z. test_real_codex_model_slugs_pass_the_allowlist switched to .fullmatch()."
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the precedence chain can't be confused or bypassed -- every layer's bad value is rejected",
+      "disproof_attempt": "The config layer (attacker-reachable via a PR, not just an operator's own flag) had no test proving a hostile value there hard-errors without launching codex exec.",
+      "file": "shared/tests/test_review_via_codex_model_resolution.py (missing case) and model_tier_config.py:166-183",
+      "what_would_resolve_it": "One test mirroring test_hostile_codex_model_flag_hard_errors but via shipwright_model_config.json.",
+      "disposition": "fixed: added test_hostile_config_value_hard_errors_and_does_not_echo_it, asserting exit 1, status error, argv[0] != 'codex', and the hostile value absent from the reason."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the hardcoded default is trusted, so it needs no check",
+      "disproof_attempt": "CODEX_REVIEW_MODEL is validated unconditionally now, but no test asserts the constant itself satisfies its own allowlist -- editing the constant could silently produce an invalid default.",
+      "file": "shared/scripts/lib/codex_review_transport.py:114 and shared/tests/test_codex_review_transport_model_override.py:83-85",
+      "what_would_resolve_it": "Add transport.CODEX_REVIEW_MODEL to the allowlist-pass parametrize list.",
+      "disposition": "fixed: added to test_real_codex_model_slugs_pass_the_allowlist's parametrize list."
+    },
+    {
+      "severity": "low",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "the drift test makes a forgotten tier-enumeration site fail loudly",
+      "disproof_attempt": "Substring containment catches a MISSING new literal but not a SURVIVING stale one at a multi-occurrence site. Confirmed no such site exists today outside docs/guide.md, which already has its own == 6 count check.",
+      "file": "shared/tests/test_tier_literal_drift.py:56-75",
+      "what_would_resolve_it": "Assert absence of the previous-generation literal, or apply the count check uniformly.",
+      "disposition": "disclosed, no code change: documented as a known residual gap in the test module's own docstring -- latent-only risk, disproportionate to close given no live instance."
+    },
+    {
+      "severity": "low",
+      "lens": "reversibility",
+      "claim_under_doubt": "this change is cleanly revertible",
+      "disproof_attempt": "The code is revertible; a project's shipwright_model_config.json that adopted codex_review/codex_plan_review is not -- reverting produces spurious 'unrecognized key' warnings on every subsequent config read until the key is removed by hand.",
+      "file": "shared/scripts/lib/model_tier_config.py:147-149",
+      "what_would_resolve_it": "Acknowledge in the ADR's Consequences section.",
+      "disposition": "disclosed, no code change: added a 'Revert is noisy, not silent' paragraph to the ADR's Consequences section."
+    },
+    {
+      "severity": "low",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "review_via_codex.py prints a structured error for every failure mode, never a traceback",
+      "disproof_attempt": "(1) The role-map drift guard was a module-level assert, stripped under python -O, letting a missing role reach a KeyError instead of the promised structured error. (2) review_via_codex.py's local effective_model (pre-fallback, may be None) collided in name with codex_review_transport.py's effective_model (post-fallback, the AC35-required value) -- a trap for the next editor.",
+      "file": "shared/scripts/tools/review_via_codex.py:72-76,153,160",
+      "what_would_resolve_it": "Replace the assert with an explicit raise; rename the pre-fallback local.",
+      "disposition": "fixed: assert replaced with `if ...: raise RuntimeError(...)`; local renamed to requested_model."
+    }
+  ],
+  "summary": "7 doubts (1 high, 2 medium, 4 low) across all four lenses. All 7 answered in writing before commit: 5 fixed in code, 2 acknowledged and documented (both confirmed latent-only, no live instance). Verified: ruff clean, 110 affected tests pass, all touched files at or under the 300-line cap.",
+  "empty_lenses": [
+    "RANK/RANKED_TIERS floor interaction with the new fable tier -- no KeyError path exists",
+    "argv-injection/BatBadBut class for the model value itself -- allowlist forbids shell metacharacters and a leading '-'; fullmatch closes the trailing-newline gap",
+    "the precedence chain (--codex-model uses `is not None`, not `or`; plan_review reads its own key) -- no path lets a config value skip validation",
+    "the untouched security posture (scrubbed_env, _resolve_codex_binary, symlink write guard, fresh TemporaryDirectory-per-attempt) -- byte-unchanged by this diff",
+    "tier-enumeration drift -- grepped the whole tree, no surviving stale enumeration outside intentional prose"
+  ]
+}

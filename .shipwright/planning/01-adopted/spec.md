@@ -895,6 +895,21 @@ _Where the work detail lives_ at the end of this document.
   skipped or recorded as never having happened. Where even that fails, it is recorded as
   not done and exactly why, never guessed at or hidden.
   (iterate-2026-09-13-codex-internal-review-transport)
+- (E) [AC32] Given a step names which Claude model should review or finalize the
+  work, when `fable` is the one chosen, then it is accepted the same way
+  `opus`/`sonnet`/`haiku` already are, instead of being rejected as an
+  unrecognised choice. (iterate-2026-09-18-codex-review-tier-config)
+- (E) [AC33] Given the outside second opinion runs through Codex directly, when a
+  project or a single run names which Codex model should do that review, then
+  that choice is used — checked first against a safe pattern so a value that
+  could break out of its context is refused before anything is launched —
+  falling back to a sensible default when nothing is named.
+  (iterate-2026-09-18-codex-review-tier-config)
+- (E) [AC34] Given a model choice is added to the recognised set, when it is
+  checked against every place that set is written out for a person to read,
+  then each of those places is confirmed to already include it, so a
+  forgotten spot cannot silently keep describing a stale list.
+  (iterate-2026-09-18-codex-review-tier-config)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

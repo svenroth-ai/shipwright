@@ -41,7 +41,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 ================================================================================
 SHIPWRIGHT-ITERATE: Adaptive Change Lifecycle
 ================================================================================
-Usage: /shipwright-iterate --type feature|change|bug [--review-model opus|sonnet|haiku|inherit] [--finalization-model ...] [--plan-review-model ...] "description"
+Usage: /shipwright-iterate --type feature|change|bug [--review-model opus|sonnet|haiku|inherit|fable] [--finalization-model ...] [--plan-review-model ...] "description"
    or: Auto-detected from your prompt (via hook context)
 Paths: FEATURE / CHANGE → [interview]→[spec]→[plan]→[approval]→[review]→[design]→build→test→commit
        BUG              → [spec]→reproduce→[plan]→fix→test→commit

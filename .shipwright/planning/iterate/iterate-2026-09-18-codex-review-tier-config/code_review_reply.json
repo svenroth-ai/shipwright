@@ -1,0 +1,5 @@
+{
+  "section": "iterate-2026-09-18-codex-review-tier-config",
+  "review": [],
+  "note": "Stage 2 REVISE-then-PASS. Round 1 found 2 MEDIUM (regex .match() vs .fullmatch() trailing-newline bypass; empty-string codex_review/codex_plan_review config value silently swallowed to the hardcoded default) plus 4 LOW findings (docstring overclaim, docstring typo, missing role-key drift guard, stale bloat-baseline exception entries, needless model_kwargs accumulator). All 7 fixed and independently re-verified in source by the same reviewer on round 2. Full findings text is in this agent's hand-back messages (not persisted verbatim here; see run transcript)."
+}

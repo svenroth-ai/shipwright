@@ -1,0 +1,1 @@
+the internal review cascade's Codex-CLI reviewer identity is now configurable per project (`codex_review`/`codex_plan_review` keys in `shipwright_model_config.json`) and per run (`--codex-model`), validated by a syntactic allowlist before launch

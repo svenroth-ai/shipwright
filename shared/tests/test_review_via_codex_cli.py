@@ -44,7 +44,9 @@ def test_success_prints_json_and_exits_zero(
     diff_file.write_text("+ added line", encoding="utf-8")
     captured_prompt = {}
 
-    def _run(argv, input, capture_output, encoding, errors, timeout, env):  # noqa: A002
+    def _run(argv, input=None, **kwargs):  # noqa: A002
+        if argv[0] != "codex":
+            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="not a git repo")
         captured_prompt["prompt"] = input
         out_path = Path(argv[argv.index("-o") + 1])
         out_path.write_text(json.dumps(VALID_CODE_REVIEW), encoding="utf-8")
@@ -86,7 +88,9 @@ def test_plan_review_uses_plan_file_not_diff_file(
     }
     captured_prompt = {}
 
-    def _run(argv, input, capture_output, encoding, errors, timeout, env):  # noqa: A002
+    def _run(argv, input=None, **kwargs):  # noqa: A002
+        if argv[0] != "codex":
+            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="not a git repo")
         captured_prompt["prompt"] = input
         out_path = Path(argv[argv.index("-o") + 1])
         out_path.write_text(json.dumps(valid_plan_review), encoding="utf-8")

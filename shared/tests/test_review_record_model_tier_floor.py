@@ -104,6 +104,22 @@ def test_inherit_tier_is_flagged_as_unconfirmed_when_floor_configured(tmp_path: 
     assert "session-inherit" in result.detail or "not confirmed" in result.detail
 
 
+def test_fable_tier_is_flagged_as_unranked_not_unrecognized(tmp_path: Path) -> None:
+    """`fable` is a legal TIERS member (no capability ordering established)
+    — it must get its own inherit-style wording, distinct from a genuinely
+    unrecognized value, and must never block (same as every other note)."""
+    _entry(tmp_path)
+    _configure_floor(tmp_path, "opus")
+    _record(tmp_path, code_model_tier="fable")
+
+    result = check_review_record(tmp_path, RUN)
+
+    assert result.ok is True
+    assert "fable" in result.detail
+    assert "unranked" in result.detail
+    assert "unrecognized" not in result.detail
+
+
 def test_unrecorded_tier_is_flagged_not_silent(tmp_path: Path) -> None:
     """`check_review_record` only ever reads the CURRENT run's own record —
     never a historical one — so an absent `model_tier` on a completed row

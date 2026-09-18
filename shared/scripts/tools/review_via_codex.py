@@ -12,6 +12,16 @@ boundary appended), runs `codex exec`, and prints the result as one JSON
 line on stdout. Every failure mode, including an unreadable input file,
 prints `{"status": "error", ...}` rather than a traceback.
 
+The Codex reviewer model is resolved per role: `--codex-model` (this run
+only) beats `shipwright_model_config.json`'s `codex_review` (spec/code/
+doubt) or `codex_plan_review` (plan_review) key at `--worktree-root`'s MAIN
+repo root, which beats `codex_review_transport.CODEX_REVIEW_MODEL`. Every
+result returned by `run_codex_review` itself — `completed` or `error` —
+carries the effective model under `"model"`; a usage error caught by THIS
+module (an unreadable input file, an invalid `--codex-model` slug) is
+reported by `_emit_error` below instead, which carries no `"model"` key
+since no attempt was made.
+
 On `status: "completed"`, `canonical_path` is the already schema-validated
 payload file. For `--role spec|code|doubt`, pass it straight to
 `record_review_pass.py record --from <role>-reviewer --payload-file
@@ -39,7 +49,36 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.codex_review_transport import ROLE_SCHEMAS, build_prompt, run_codex_review  # noqa: E402
+from lib.codex_review_transport import (  # noqa: E402
+    ROLE_SCHEMAS,
+    CodexReviewTransportError,
+    build_prompt,
+    run_codex_review,
+)
+from lib.model_tier_config import load_model_config  # noqa: E402
+
+#: role -> the `shipwright_model_config.json` key that configures its Codex
+#: reviewer identity. `plan_review` gets its own key, same reasoning as the
+#: Claude-side `plan_review` role staying independent of `review` (a project
+#: pinning the spec/code/doubt cascade to a cheaper Codex model must not
+#: silently drag the plan reviewer down with it).
+_ROLE_TO_CODEX_CONFIG_KEY: dict[str, str] = {
+    "spec": "codex_review",
+    "code": "codex_review",
+    "doubt": "codex_review",
+    "plan_review": "codex_plan_review",
+}
+
+if _ROLE_TO_CODEX_CONFIG_KEY.keys() != ROLE_SCHEMAS.keys():
+    # `raise`, not `assert` -- stripped under `python -O`, an `assert` here
+    # would let a role missing from this table reach `[args.role]` below as
+    # an uncaught `KeyError`, exactly the traceback this module promises
+    # never to raise (doubt-reviewer LOW, 2026-09-18).
+    raise RuntimeError(
+        "_ROLE_TO_CODEX_CONFIG_KEY must name every role in ROLE_SCHEMAS — a role "
+        "missing here would raise KeyError instead of the structured error this "
+        "module promises for every failure mode (code-reviewer LOW, 2026-09-18)"
+    )
 
 
 def _emit_error(reason: str) -> int:
@@ -68,6 +107,16 @@ def main(argv: list[str] | None = None) -> int:
                         help="required for --role plan_review: the plan being reviewed")
     parser.add_argument("--timeout", type=float, default=None)
     parser.add_argument("--max-retries", type=int, default=None)
+    # Distinctly named — never reuses `--review-model`/`--plan-review-model`
+    # (the Claude-tier-literal flags `resolve_model_tier.py` exposes), since
+    # a Codex model slug is a different axis entirely (see
+    # `lib.model_tier_config.CODEX_KEYS`). Precedence: this flag > the
+    # `codex_review`/`codex_plan_review` key in `shipwright_model_config.json`
+    # (read from `--worktree-root`'s MAIN repo root) > the hardcoded default
+    # `run_codex_review` falls back to when neither is given.
+    parser.add_argument("--codex-model", default=None,
+                        help="per-run override for the Codex reviewer model "
+                             "(a Codex model slug, e.g. gpt-5.6-terra)")
     args = parser.parse_args(argv)
 
     if args.role == "plan_review":
@@ -106,8 +155,37 @@ def main(argv: list[str] | None = None) -> int:
     if args.max_retries is not None:
         kwargs["max_retries"] = max(0, args.max_retries)
 
-    result = run_codex_review(
-        args.role, Path(args.worktree_root), prompt, Path(args.out_dir), **kwargs)
+    config_key = _ROLE_TO_CODEX_CONFIG_KEY[args.role]
+    configured_model = load_model_config(args.worktree_root).get(config_key)
+    # `is not None`, not `or`: an explicit `--codex-model ""` must reach
+    # run_codex_review's own allowlist and hard-error there, never be read
+    # as "unset" and silently fall back to config/default (code-reviewer
+    # MEDIUM, 2026-09-18 — `load_model_config` already drops an empty
+    # config value with a warning, so `configured_model` itself is never "").
+    # Named `requested_model`, not `effective_model` -- this is the
+    # PRE-fallback value (may be `None`); `run_codex_review`'s OWN
+    # `effective_model` (the POST-fallback value AC35 requires recording) is
+    # a same-named local in a different module, and reusing the name here
+    # was a trap for the next editor (doubt-reviewer LOW, 2026-09-18).
+    requested_model = args.codex_model if args.codex_model is not None else configured_model
+    if args.codex_model is not None:
+        source = "--codex-model"
+    elif configured_model is not None:
+        source = f"shipwright_model_config.json's {config_key!r} key"
+    else:
+        source = "the hardcoded default"
+
+    try:
+        result = run_codex_review(
+            args.role, Path(args.worktree_root), prompt, Path(args.out_dir),
+            model=requested_model, **kwargs)
+    except CodexReviewTransportError as exc:
+        # `str(exc)` never carries input bytes (see codex_review_transport.py's
+        # own error-message contract) -- naming the SOURCE here, from
+        # module-literal text only, restores the provenance an operator needs
+        # without reopening the injection vector that removing the raw value
+        # closed (doubt-reviewer LOW residual, 2026-09-18).
+        return _emit_error(f"{source}: {exc}")
     print(json.dumps(result))
     return 0 if result.get("status") == "completed" else 1
 

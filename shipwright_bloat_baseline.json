@@ -830,13 +830,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/lib/codex_review_transport.py",
-      "limit": 300,
-      "current": 354,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-13-codex-internal-review-transport-bloat-exception.md"
-    },
-    {
       "path": "shared/scripts/lib/drift_parsers.py",
       "limit": 300,
       "current": 383,
@@ -1248,13 +1241,6 @@
       "current": 330,
       "state": "grandfathered",
       "adr": null
-    },
-    {
-      "path": "shared/tests/test_codex_review_transport.py",
-      "limit": 300,
-      "current": 349,
-      "state": "exception",
-      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-13-codex-internal-review-transport-bloat-exception.md"
     },
     {
       "path": "shared/tests/test_completion_writers.py",

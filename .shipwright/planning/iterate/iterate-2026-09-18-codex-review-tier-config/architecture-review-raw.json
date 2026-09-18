@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "1. **The question, answered in one sentence.** No: the live-catalog validation mechanism should not exist for an optional reviewer-model override.\n\n2. **The smallest thing that would do** \u2014 add the two optional config keys and `--codex-model`, apply the syntactic allowlist, and pass the explicit value to the existing Codex invocation; retain the current default otherwise.\n\n3. **What it costs to keep** \u2014 a permanent dependency on an undocumented CLI introspection format, subprocess availability, cache behavior, and failure semantics that can block reviews solely because validation is unavailable.\n\n4. **What it forecloses** \u2014 reliable use of an explicitly configured model during CLI catalog outages or catalog-format/version transitions.\n\n5. **Findings**\n\nCategory: proportionality\nSeverity: medium\nFinding: Live discovery buys earlier rejection of an invalid optional override, but adds a standing runtime dependency and a new failure gate to the review path; Codex itself already authoritatively rejects an invalid model at launch.\nSuggestion: Drop the catalog validator and its cache. Keep the independent config/override axis, unconditional slug allowlist, and direct Codex invocation; surface Codex\u2019s launch error for invalid explicit models.\n\nSHIPWRIGHT_VERDICT: reject",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "**1. The question, answered in one sentence.** The config axis and the `fable` fix should exist (option A's config half, riding entirely on existing machinery), but the live-catalog validation mechanism should not \u2014 the smallest thing that would do is a syntactically validated config value with no catalog subprocess at all.\n\n**2. The smallest thing that would do.** Two optional keys in `shipwright_model_config.json`, read by the existing `load_model_config`/resolver, passed through the `^[A-Za-z0-9._-]{\u2026}$` allowlist before argv construction, recorded via `--transport-note`. If the operator typos a model name, `codex exec` itself fails with the provider's own error and the run stops \u2014 no validator needed. Plus the `fable` literal and the drift test (both pure corrections to existing lists).\n\n**3. What it costs to keep.** As specified: a standing subprocess dependency on an undocumented `codex debug models` surface that has already changed shape between two CLI versions this session; a fail-closed path (AC33c/d) that turns catalog flake into \"the operator's explicitly configured review run is impossible\"; cache-lifetime semantics nobody is obliged to notice expiring; and a whole test topology (mocked subprocess + skip-guarded live probe) to keep honest. Without it: two config keys and one regex.\n\n**4. What it forecloses.** The live validator pins the project to `codex debug models` as a stable interface. If Codex drops or reshapes that subcommand, every configured run fails closed \u2014 the mechanism makes cheap future changes (Codex CLI upgrades) harder, which is exactly the drift class it was built to defend against.\n\n**Findings**\n\n- Category: proportionality\n- Severity: high\n- Finding: Live catalog validation buys detection of a typo the Codex CLI already reports itself at launch, at the price of a new standing subprocess dependency with fail-closed behavior on its own failure modes. The spec's own escalation narrative \u2014 the catalog visibly changed between 0.147.0 and 0.155.0 mid-session \u2014 is evidence the validation surface is less stable than the thing being validated.\n- Suggestion: Drop the catalog call entirely. Syntactic allowlist (already specified, and it alone closes the injection finding) + fail on `codex exec`'s own error. Delete AC33(b)\u2013(d), the validator module, its cache, and its test topology.\n\n- Category: simpler-alternative\n- Severity: medium\n- Finding: AC33d's fail-closed-on-unreachable means a network or CLI hiccup makes explicitly-configured runs impossible while unconfigured runs sail through \u2014 an incentive to never configure the axis, defeating its purpose.\n- Suggestion: If any validation is kept beyond the allowlist, treat catalog-unreachable as \"pass through and let codex exec adjudicate,\" not a hard stop.\n\n- Category: existence\n- Severity: low\n- Finding: The config-axis half of option A adds no new standing mechanism \u2014 it extends an existing, maintained axis \u2014 and option C (folding Codex slugs into the Claude tier enum) would have polluted a closed enum with an open value domain. The choice of A over C is correct and should stand.\n- Suggestion: None; keep the two-axis shape.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "openai": "reject",
+    "glm": "revise"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=revise, openai=reject"
+  }
+}

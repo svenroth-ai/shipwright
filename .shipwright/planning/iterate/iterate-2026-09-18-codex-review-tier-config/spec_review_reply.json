@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All three findings across two rounds are closed. AC36 (spec L98) now reads \"with AC33's syntactic allowlist applied at that exact entry point\", which matches both AC33's rewritten allowlist-only text and the single validation stage the code implements. No live-catalog claim remains in any forward-declaring section. Diff otherwise byte-stable: same 35 files, all verified anchors at identical line numbers. Stage 2 (code-reviewer) may run."
+}
