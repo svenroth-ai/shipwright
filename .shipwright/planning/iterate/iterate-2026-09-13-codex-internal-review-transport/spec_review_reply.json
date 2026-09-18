@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Third pass, after two REJECT rounds. Round 1 REJECT: AC8 docs missing, review_via_codex.py did not exist, 900s timeout unjustified, fallback-recording pattern unspecified, spec self-contradiction (Finding #5). Round 2 REJECT: plan_review role's canonical_path collapsed onto the temp path and was deleted by the finally-unlink, dispatch doc's plan_internal record line was not runnable, a codex-transport row was told to carry an invalid Anthropic --model-tier, docs/guide.md untouched. All items fixed and verified in round 3; no new spec divergence introduced by the fixes. Code-reviewer (Stage 2) may run."
+}

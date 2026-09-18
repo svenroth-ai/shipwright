@@ -201,8 +201,7 @@ Remove duplication, improve naming, extract utilities if warranted. Run tests af
 
 ## Step 6: Reviewer Cascade — Spec → Code → Doubt (+ Optional External)
 
-See [code-review](references/code-review.md) for the full cascade: the
-`spec-reviewer` HARD-GATE re-review loop and the `doubt-reviewer` trigger heuristic.
+See [code-review](references/code-review.md) for the full cascade (incl. its "Dispatch rule" for a Codex-driving session), the `spec-reviewer` HARD-GATE re-review loop, and the `doubt-reviewer` trigger heuristic.
 
 - **6a Self-Review (always):** 5-point checklist per [self-review-checklist](references/self-review-checklist.md). Fix all failures.
 - **Stage 1 — `spec-reviewer` (HARD-GATE):** spec-compliance gate; runs **whenever 6b runs** (same trigger, so Stage 1 always precedes Stage 2). On REJECT, fix and re-review; **6b does NOT run until PASS**.

@@ -139,8 +139,10 @@ underlying protocol: [external-review.md](references/external-review.md).
 `{planning_dir}/external_review_state.json` must be written. Step 6 is
 gated on both.
 
-**Step 5-int (always, first):** spawn `shipwright-plan:opus-plan-reviewer`
-over `plan.md` + `spec.md`; triage every finding fix/disclose/decline
+**Step 5-int (always, first, incl. its Codex-driver "Dispatch rule" —** see
+[step-5-external-review.md](references/step-5-external-review.md)**):** spawn
+`shipwright-plan:opus-plan-reviewer` over `plan.md` + `spec.md`; triage every
+finding fix/disclose/decline
 (reason required; scope-ratchet guard) — a declined/disclosed
 `severity: high` finding STOPs and asks the user before Step 6, per
 `gate_catalog.json`. Write `## Internal Plan Review` to `plan.md`

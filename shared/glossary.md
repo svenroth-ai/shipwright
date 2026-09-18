@@ -315,8 +315,7 @@
   `iterate/{slug}`); never committing straight to the default branch. One section
   = one branch = one commit.
 - **Migration (`up.sql` / `down.sql`)** — A stored-data schema change: `up.sql`
-  applies it, `down.sql` reverses it. Build requires the reverse alongside the
-  forward.
+  applies it, `down.sql` reverses it; Build requires both.
 - **Destructive migration** — A schema change that can lose data (DROP
   TABLE/COLUMN, TRUNCATE, DELETE without WHERE, lossy ALTER TYPE). A PostToolUse
   hook soft-blocks it and requires explicit confirmation.
@@ -327,6 +326,7 @@
   hard-gate — does the code match the spec; REJECT blocks the rest),
   **code-reviewer** (Stage 2, quality), **doubt-reviewer** (Stage 3, advisory —
   an adversarial disprove pass for risky touches).
+- **Transport (review record)** — which harness answered a review pass: `agent` (default) or `codex` (`review_via_codex.py`); see `codex_review_dispatch.md`.
 - **Drop file** — One pending release-note entry written as its own file under
   `CHANGELOG-unreleased.d/`, aggregated into a **release-note section** (see
   **Section**, the overloaded term) when the release is assembled. Per-file

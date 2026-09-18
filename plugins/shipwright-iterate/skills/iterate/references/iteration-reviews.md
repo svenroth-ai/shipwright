@@ -582,7 +582,7 @@ uv run "{shared_root}/scripts/tools/record_review_pass.py" record \
   [--model-tier {resolved review tier}] [--provider openrouter] [--marker-status completed]
 ```
 
-`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`, the `review` tier) and for `plan_internal` (the `plan_review` tier) — the value resolved in §F, same one passed at the spawn (see "Model tier" above; `plan_internal`'s own invocation shape is the table row below, not this template). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns.
+`--model-tier` is **required** for the three review-role passes (`spec`/`code`/`doubt`, the `review` tier) and for `plan_internal` (the `plan_review` tier) — the value resolved in §F, same one passed at the spawn (see "Model tier" above; `plan_internal`'s own invocation shape is the table row below, not this template). Omit it for `self`/`plan`/`external_code`, which are not Agent-tool spawns — and for a row recorded with **`--transport codex`** (the driving harness could not spawn an independent Agent-tool subagent; see `shared/prompts/codex_review_dispatch.md`), which also omits `--model-tier`: the row carries no legal Claude tier, and the floor verifier already exempts a `codex`-transport row rather than reading one.
 
 For `external-review-json`, the recorder reads the payload once, then derives
 both findings and each reviewer verdict from that in-memory snapshot. It stores

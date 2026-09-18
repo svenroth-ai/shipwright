@@ -19,7 +19,16 @@ Agent tool at every spawn in this cascade — all three stages, whether invoked
 by a standalone build or reused by `/shipwright-iterate` Step 8 (which
 resolves its own `review` tier the same way). Omit the parameter when the
 resolved value is `inherit`. Every `record_review_pass.py record` call for
-`spec`/`code`/`doubt` carries `--model-tier "{resolved_review_tier}"`.
+`spec`/`code`/`doubt` carries `--model-tier "{resolved_review_tier}"` —
+**except** a row recorded with `--transport codex` (see the Dispatch rule
+below), which carries no `--model-tier` at all: the row was answered by
+`codex exec`, not an Agent-tool spawn under this Claude tier, so asserting a
+Claude tier on it would misrepresent which model actually answered.
+
+**Dispatch rule, checked once before spawning any reviewer below:** see
+`shared/prompts/codex_review_dispatch.md` for the full Codex-driver procedure
+(when it applies, the `review_via_codex.py` invocation, and how to record the
+result — including a transport failure that falls back to an ordinary spawn).
 
 ### Stage 1 — `spec-reviewer` (HARD-GATE)
 

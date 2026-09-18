@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/codex_plan_review_schema.json",
+  "title": "Codex opus-plan-reviewer output",
+  "description": "Pinned to plugins/shipwright-plan/agents/opus-plan-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reviewer", "severity", "findings", "summary"],
+  "properties": {
+    "reviewer": { "const": "opus-plan-reviewer" },
+    "severity": { "enum": ["high", "medium", "low", "none"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "severity", "finding", "suggestion"],
+        "properties": {
+          "category": { "type": "string" },
+          "severity": { "enum": ["high", "medium", "low"] },
+          "finding": { "type": "string" },
+          "suggestion": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "summary": { "type": "string" }
+  }
+}

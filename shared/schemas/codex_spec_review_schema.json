@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/codex_spec_review_schema.json",
+  "title": "Codex spec-reviewer output",
+  "description": "Pinned to plugins/shipwright-build/agents/spec-reviewer.md's output contract. Passed to `codex exec --output-schema` for the Codex-driver internal-review transport (review_via_codex.py) and re-validated client-side after the process returns.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stage", "verdict", "spec_citations", "summary"],
+  "properties": {
+    "stage": { "const": "spec-compliance" },
+    "verdict": { "enum": ["REJECT", "PASS"] },
+    "spec_citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["spec_ref", "divergence", "diff_location", "kind"],
+        "properties": {
+          "spec_ref": { "type": "string" },
+          "divergence": { "type": "string" },
+          "diff_location": { "type": "string" },
+          "kind": { "enum": ["missing", "unfaithful", "out-of-scope", "contradiction"] }
+        }
+      }
+    },
+    "summary": { "type": "string" }
+  }
+}

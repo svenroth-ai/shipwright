@@ -1,0 +1,72 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "subprocess dispatch + ambient-secret handling + untrusted-content-in-prompt + cross-module import surface (irreversible-ish: output lands in a git-tracked, PR-pushed evidence dir)",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "boundary-and-contract",
+      "claim_under_doubt": "no failure mode silently produces a PASS-shaped result instead of erroring loudly",
+      "disproof_attempt": "review_via_codex.py read --spec-file/--diff-file with read_text() catching only OSError. A zero-byte or whitespace-only diff file is not an error and would reach codex as a review of nothing, which could come back schema-valid PASS and be promoted as a real review. FIXED 2026-09-17: main() now rejects an empty/whitespace-only context section before building the prompt, with a regression test proving it.",
+      "file": "shared/scripts/tools/review_via_codex.py",
+      "what_would_resolve_it": "reject whitespace-only context sections in main() via _emit_error — DONE"
+    },
+    {
+      "severity": "high",
+      "lens": "concurrency-and-ordering",
+      "claim_under_doubt": "an unvalidated or failed attempt's output can never be promoted to a completed review",
+      "disproof_attempt": "The TemporaryDirectory was created OUTSIDE the retry loop and never cleared between attempts, so a failed attempt that still wrote valid output could have that stale file read back by a later attempt that produced nothing. FIXED 2026-09-17: the TemporaryDirectory now opens fresh inside the for-attempt loop, matching external_review_default_legs.review_codex's proven pattern, with a regression test (max_retries=1, attempt 1 writes+exits 1, attempt 2 exits 0 writing nothing) asserting status == error.",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "what_would_resolve_it": "move the TemporaryDirectory inside the for-attempt loop — DONE"
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "claim_under_doubt": "the env allowlist is sufficient to actually launch codex on this feature's primary target platform (Windows)",
+      "disproof_attempt": "No test exercises a real (non-mocked) codex launch under scrubbed_env(); COMSPEC/PATHEXT (needed to resolve the .cmd shim codex typically is on Windows) and TMPDIR (POSIX/macOS temp) were absent from the allowlist. PARTIALLY ADDRESSED 2026-09-17: added COMSPEC, PATHEXT, TMPDIR to the allowlist (all non-secret). A real, non-mocked smoke run on Windows remains unverified in this session and is called out here as a residual gap for the operator.",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "what_would_resolve_it": "one real (non-mocked) smoke run of review_via_codex.py against an installed codex on Windows — NOT done this session; allowlist widened defensively instead"
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden-coupling-and-blast-radius",
+      "claim_under_doubt": "scrubbing the env protects the operator's secrets from the child process",
+      "disproof_attempt": "Env scrubbing is sound and closes the narrow half of the vector, but --sandbox read-only still lets the model read anything under the real worktree (unlike the shipped review_codex leg, which --cds an empty scratch dir), and the module docstring's framing read as if the exposure were closed rather than narrowed. FIXED 2026-09-17: docstring now states the residual read-plus-tracked-output exfil path plainly as an accepted, undocumented-until-now trade-off.",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "what_would_resolve_it": "state the residual risk in the module docstring — DONE; running the payload through a secret scan before write was NOT done this session"
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary-and-contract",
+      "claim_under_doubt": "the injection boundary protects the prompt from untrusted repository content",
+      "disproof_attempt": "Ordering (addendum strictly after untrusted content) is correct and could not be broken, but it is the only defence — no nonce delimiter exists, so a forged '---\\nTransport note...' block inside injected content could impersonate the real boundary. NOT fixed this session — nonce-based fencing is a larger change (build_prompt signature, all dispatch sites, existing test updates) deferred as a follow-up rather than folded into this iterate's already-large diff.",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "what_would_resolve_it": "fence each context section in a per-invocation random nonce — DEFERRED, tracked as a follow-up, not fixed in this iterate"
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden-coupling-and-blast-radius",
+      "claim_under_doubt": "transport/transport_note make a codex-answered pass and a failed-then-agent-answered pass distinguishable in reviews.json",
+      "disproof_attempt": "The fields were self-declared, not enforced: --transport codex suppresses the model-tier-floor check, but nothing rejected a codex row that also carried --model-tier, and code-review.md's 'every record carries --model-tier' sentence was unqualified, so a driver following it verbatim on a codex-answered row would misrepresent which model answered. PARTIALLY FIXED 2026-09-17: record_review_pass.py now rejects --transport codex together with --model-tier, and code-review.md's sentence is qualified with the codex exception. Cross-checking the transport flag against the actual codex payload (stamping it in and verifying) was NOT done this session — the flag remains caller-asserted, just no longer capable of this specific documented-instruction-conflict misfire.",
+      "file": "shared/scripts/tools/record_review_pass.py",
+      "what_would_resolve_it": "stamp transport into the payload and cross-check — NOT done; reject --model-tier with --transport codex and qualify the doc — DONE"
+    },
+    {
+      "severity": "low",
+      "lens": "reversibility",
+      "claim_under_doubt": "writing the canonical payload is a safe, local operation",
+      "disproof_attempt": "canonical_path.write_text follows symlinks unconditionally, so a committed symlink at that path would write through it, escaping out_dir. FIXED 2026-09-17: run_codex_review now refuses to write when canonical_path.is_symlink(). Silently clobbering a pre-existing non-symlink payload (e.g. an earlier Agent-tool spawn's evidence) was left unchanged — a re-run overwriting the prior evidence for the same role is the existing, accepted behavior.",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "what_would_resolve_it": "refuse when canonical_path.is_symlink() — DONE; refuse-or-log on overwriting a pre-existing payload — NOT done"
+    },
+    {
+      "severity": "low",
+      "lens": "hidden-coupling-and-blast-radius",
+      "claim_under_doubt": "the ROLE_SCHEMAS/ROLE_CANONICAL_BASENAMES parity assert covers the basename invariant",
+      "disproof_attempt": "It only covers parity between the two dicts in the same file — the basenames are a second, hand-maintained copy of review_payloads.py's CANONICAL_PAYLOAD_BASENAMES with no test tying them together, so a drift there would surface only as a CLI usage error at record time, after a paid-for codex call. FIXED 2026-09-17: added a cross-module parity test for the three shared keys (spec/code/doubt).",
+      "file": "shared/scripts/lib/codex_review_transport.py",
+      "what_would_resolve_it": "add a test asserting the three shared keys match — DONE"
+    }
+  ],
+  "summary": "8 doubts (2 high, 4 medium, 2 low). Both HIGH findings (empty-subject false PASS, stale-output reuse across retries) were real bugs, fixed with regression tests proving the fix catches the original bug. Of the 4 MEDIUM findings: env-allowlist widening and the docstring risk disclosure were fixed; the model-tier/transport cross-check was partially fixed (CLI-level rejection + doc qualification, not full payload-embedded verification); nonce-based injection fencing was deliberately deferred as a follow-up rather than folded into an already-large diff. Both LOW findings were fixed except the optional overwrite-guard half of the reversibility finding, left as existing accepted behavior."
+}

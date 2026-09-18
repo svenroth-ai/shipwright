@@ -45,7 +45,7 @@ from lib.review_payloads import ADAPTERS, build_review_evidence, canonical_basen
 from lib.review_record import (  # noqa: E402
     RECORDABLE_TYPES,
     STATUS_COMPLETED,
-    TERMINAL_STATUSES,
+    TERMINAL_STATUSES, TRANSPORTS,
     ImmutableReviewError,
     ReviewRecordError,
     close_pending, entry_for,
@@ -157,6 +157,16 @@ def _validate_record_args(args: argparse.Namespace) -> str | None:
             and args.review_from != "external-review-json"):
         return (f"completed {args.review_type} markers require --from "
                 "external-review-json so reviewer verdicts are provable")
+    if args.transport_note and not args.transport:
+        return "--transport-note requires --transport"
+    if args.transport == "codex" and args.model_tier:
+        # A codex-answered row carries no legal Claude tier (code-review.md's
+        # dispatch rule) — accepting --model-tier here would let a driver
+        # that follows the unqualified "every record carries --model-tier"
+        # instruction silently misrepresent which model answered, which the
+        # tier verifier then skips checking for `transport: codex` rows
+        # (doubt-reviewer, MEDIUM, 2026-09-17).
+        return "--transport codex carries no legal Claude --model-tier; omit --model-tier"
     if args.force and args.review_type in MARKER_TYPES and not args.marker_status:
         # Forced corrections must not leave the old companion marker behind.
         return (f"--force on {args.review_type} also requires --marker-status, so the "
@@ -186,12 +196,11 @@ def _cmd_record(args: argparse.Namespace) -> int:
     try:
         entry = make_entry(
             args.review_type, args.status,
-            findings=findings, provider=args.provider,
-            disposition=args.disposition, completed_at=_now(),
-            recorded_by=args.recorded_by or args.review_from,
-            parse_status=parse_status, raw_excerpt=raw,
-            verdicts=verdicts,
+            findings=findings, provider=args.provider, disposition=args.disposition,
+            completed_at=_now(), recorded_by=args.recorded_by or args.review_from,
+            parse_status=parse_status, raw_excerpt=raw, verdicts=verdicts,
             contradiction_resolution=args.contradiction_resolution, model_tier=args.model_tier,
+            transport=args.transport, transport_note=args.transport_note,
         )
     except ReviewRecordError as exc:
         return _fail("invalid_entry", str(exc), EXIT_USAGE)
@@ -359,6 +368,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     rec.add_argument("--marker-status", default=None, help="also write the legacy external_*review_state.json marker")
     rec.add_argument("--contradiction-resolution", default=None)
     rec.add_argument("--model-tier", default=None, choices=sorted(TIERS), help="resolved model tier this spawn used")
+    rec.add_argument("--transport", default=None, choices=sorted(TRANSPORTS),
+                     help="which harness answered this pass; omit for the default same-session agent spawn")
+    rec.add_argument("--transport-note", default=None,
+                     help="required when --transport codex fell back or failed; explains why")
 
     close = sub.add_parser("close-missing", help="close every still-pending type")
     common(close)

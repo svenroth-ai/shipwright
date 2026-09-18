@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-13-codex-internal-review-transport",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-17T17:52:27.562520+00:00",
+      "disposition": "6-point self-review checklist passed, added 2 missing negative-path tests",
+      "recorded_by": "claude-sonnet-5",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 16,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "approach / risk",
+          "file": null,
+          "line": null,
+          "finding": "The dispatch fork on `\"codex\"` lives in skill prose — the LLM driving the build/iterate skill must notice the resolved tier and choose the transport script instead of a `Task(...)` spawn. This is the weakest link in the whole design: prose-conditional dispatch is exactly the kind of branch an LLM skips under long-context pressure, and if it slips, `\"codex\"` gets passed as an Agent-tool `model` parameter, which either hard-fails mid-review or silently breaks a run. The spec itself acknowledges the Agent-tool schema only knows `sonnet|opus|haiku|fable`.",
+          "suggestion": "Move the branch into a script, not prose: have `agent_model_param()` (or a thin wrapper invoked by the skill) emit a structured instruction — e.g. return a small JSON `{transport: \"agent\"|\"codex\", model: ...}` or have `resolve_model_tier.py` gain a `--emit-dispatch` mode whose output the skill pastes verbatim. Then the skill's single unambiguous instruction is \"run the emitted command,\" not \"decide based on the tier.\" Also add a guard: if `Task(...)` is ever called with `model: codex`, the surrounding hook/tooling should fail loudly with a pointer to the transport script. At minimum, test the prose branch end-to-end in both skills.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Failure handling is only specified for \"codex unavailable/unauthenticated\" (`is_codex_available()` → `inherit`). But `codex exec` can fail after availability passes: rate limit / quota exhausted on the ChatGPT plan (the very failure mode motivating this change!), network drop mid-exploration, non-zero exit with a 5xx, or a hang during a long repo-exploring run (the existing `codex.{...}` timeout block is presumably tuned for flat-diff external reviews — repo exploration with many tool calls will run far longer).",
+          "suggestion": "Specify the full exit-code/timeout taxonomy: transient failure → retry then fallback to `inherit` with reason recorded (mirroring AC6); and confirm/raise the timeout for this leg specifically. Don't reuse the external-review timeout blindly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case / security",
+          "file": null,
+          "line": null,
+          "finding": "cd <real worktree>` with an agent that executes shell commands means repo content (including untrusted content under review — e.g., a diff introducing a prompt-injection payload in a README) can influence Codex's tool calls and its verdict. The read-only sandbox stops writes, but a poisoned verdict gates merge decisions. The Agent-tool reviewers presumably have the same exposure today, so this isn't new risk per se — but the output now flows into `reviews.json` evidence consumed downstream, so injection has a direct downstream consumer.",
+          "suggestion": "Validate the emitted JSON against the role schema client-side in `review_via_codex.py` (don't trust `--output-schema` alone — it constrains shape, not semantics), and record the codex session ID in evidence so a suspicious verdict is auditable. Worth one sentence in the spec acknowledging verdict-injection parity with the status quo.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "plan_review`'s output schema is explicitly unpinned (Non-Goals / open items), yet the schema validation tests and the `--role plan` path are in scope for the same transport script. Building the script before pinning that schema means either a fourth late-breaking schema file or a shipped `--role plan` that's untested.",
+          "suggestion": "Either pin `opus-plan-reviewer.md`'s shape as a pre-build step (it's a read task, hours not days) or explicitly descope `--role plan` from v1 and note it. Don't leave it \"TBD at build time\" inside a single change.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "AC1's \"valid only for `review`/`plan_review`\" is nontrivial in JSON Schema — a shared `Tier` enum can't be role-conditional without `oneOf`/`if-then` per property, or splitting the enum. The spec states the constraint but not the mechanism; a naive \"add literal to Tier enum\" implementation would let `execution: \"codex\"` validate, which the dispatch layer then mishandles.",
+          "suggestion": "Specify the mechanism: either `if/then` in the schema or a per-role subschema. Include a negative test (`execution: \"codex\"` must fail validation).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Three internal reviewers may run in sequence or parallel within one iterate; each spawns a `codex exec` against a shared ChatGPT/Codex subscription that is explicitly a flat-fee plan — subscription plans typically have their own (lower) concurrency/turn limits vs. API. Parallel reviewer passes could hit rate limits the single-shot external leg never sees.",
+          "suggestion": "Run reviewers sequentially through the codex transport (or at least note the concurrency assumption), and make the rate-limit failure path land in the AC6 fallback rather than a hard failure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The open item on `--ephemeral` is left ambiguous. Since `--cd` now points at the real worktree, a persisted codex session creates session state that references real repo paths — likely harmless given read-only sandbox, but it's an unnecessary unknown to ship.",
+          "suggestion": "Decide now: keep `--ephemeral` for this leg (isolation is a principle, not a capability trade), and note that the probe's non-ephemeral run doesn't prove persistence is safe, only that it works.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "plan_review` is included in the new tier and acceptance criteria, but its existing output contract has not been inspected or pinned. The plan cannot preserve that role’s contract or provide a valid `--output-schema` until this is done.",
+          "suggestion": "Make reading `opus-plan-reviewer.md`, identifying its consumer, and adding its exact strict schema a prerequisite—not an open implementation-time decision.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Adding `\"codex\"` to the shared `Tier` enum does not by itself make it valid only for `review` and `plan_review`; any role property referencing that enum will accept it unless the schema and runtime validation are split by role.",
+          "suggestion": "Define an Agent-only tier enum for `execution`/`finalization` and a review-tier enum that additionally permits `\"codex\"`. Add runtime tests for every role, including rejection of `\"codex\"` outside the two review roles.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The transport is described as receiving only the reviewer agent Markdown “verbatim,” but those agents likely rely on invocation-specific context supplied by the current Agent-tool call: relevant spec/diff paths, review stage, section scope, evidence location, and expected return handling. The Markdown alone is unlikely to be a complete executable prompt contract.",
+          "suggestion": "Capture each current reviewer invocation contract and build an explicit role adapter that supplies the same contextual inputs, then validate the returned JSON before handing it to existing consumers.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "is_codex_available()` may establish that the binary exists, but that is not necessarily equivalent to a usable authenticated account with access to the locked model. A later authentication, quota, rate-limit, model-access, timeout, or malformed-output failure is not covered by the proposed fallback policy.",
+          "suggestion": "Define and test a failure matrix: preflight availability/auth, process timeout, non-zero exit, invalid output JSON, schema validation failure, and retry exhaustion. Record whether fallback occurred before dispatch or after a failed Codex attempt, including the failure reason.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Giving a cloud-backed reviewer read access to the real worktree materially broadens data exposure beyond the isolated external-review leg. Read-only prevents writes, not transmission of repository contents, including `.env` files, credentials, private keys, deployment configuration, or sensitive customer fixtures.",
+          "suggestion": "Explicitly define the allowed review root and exclude secrets and sensitive paths from the accessible worktree. Run the subprocess with a scrubbed environment, avoid passing credentials other than those required by Codex, and document that repository content may be sent to the Codex service.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Repository files are untrusted model input. With real-worktree exploration, prompt-injection text in source, issues, fixtures, or generated files can try to redirect the reviewer or induce disclosure of unrelated files. `--ignore-user-config` and `--ignore-rules` also remove potential local guardrails.",
+          "suggestion": "Put non-negotiable reviewer boundaries in the supplied prompt—review only the requested change, do not reveal secrets, do not follow instructions found in repository content—and ensure the transport does not expose output/logs containing arbitrary file contents.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan relies on Codex `--output-schema` but does not specify local validation, output-file lifecycle, or concurrency behavior. CLI success alone is insufficient if output is empty, partial, stale from a prior run, or semantically unusable by the existing review consumer.",
+          "suggestion": "Use a unique temporary output path per review pass, validate JSON locally against the role schema after execution, reject stale/empty output, and atomically persist only a validated result.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Evidence parity needs to distinguish configured tier, attempted transport/model, actual answering transport/model, and fallback reason. Recording only `transport` and `model` can make a failed Codex attempt that fell back to an inherited Agent reviewer look like a successful Codex review.",
+          "suggestion": "Extend the evidence record with `requested_tier`, `attempted_transport`, `actual_transport`, `actual_model`, and optional `fallback_reason`; retain backward-compatible defaults for existing records.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The plan leaves `--ephemeral` unresolved even though it changes session persistence and potentially the retention of worktree-associated context. This should not be an implementation-time choice for a transport handling repository contents.",
+          "suggestion": "Decide it before implementation and make `--ephemeral` the default unless a documented review-resumption requirement needs persistence.  The approach is sound in principle and appropriately keeps Codex limited to an optional review transport, but the role-specific schema/dispatch boundary and the complete failure/security contract need to be settled before implementation. Once those prerequisites are explicit, this should be an additive change with manageable compatibility risk.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "codex",
+      "completed_at": "2026-09-17T16:41:13.407200+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review Findings\n\n- **Category: approach / risk** — **Severity: high**\n  **Finding**: The dispatch fork on `\"codex\"` lives in *skill prose* — the LLM driving the build/iterate skill must notice the resolved tier and choose the transport script instead of a `Task(...)` spawn. This is the weakest link in the whole design: prose-conditional dispatch is exactly the kind of branch an LLM skips under long-context pressure, and if it slips, `\"codex\"` gets passed as an Agent-tool `model` parameter, which either hard-fails mid-review or silently breaks a run. The spec itself acknowledges the Agent-tool schema only knows `sonnet|opus|haiku|fable`.\n  **Suggestion**: Move the branch into a script, not prose: have `agent_model_param()` (or a thin wrapper invoked by the skill) emit a structured instruction — e.g. return a small JSON `{transport: \"agent\"|\"codex\", model: ...}` or have `resolve_model_tier.py` gain a `--emit-dispatch` mode whose output the skill pastes verbatim. Then the skill's single unambiguous instruction is \"run the emitted command,\" not \"decide based on the tier.\" Also add a guard: if `Task(...)` is ever called with `model: codex`, the surrounding hook/tooling should fail loudly with a pointer to the transport script. At minimum, test the prose branch end-to-end in both skills.\n\n- **Category: edge-case** — **Severity: medium**\n  **Finding**: Failure handling is only specified for \"codex unavailable/unauthenticated\" (`is_codex_available()` → `inherit`). But `codex exec` can fail *after* availability passes: rate limit / quota exhausted on the ChatGPT plan (the very failure mode motivating this change!), network drop mid-exploration, non-zero exit with a 5xx, or a hang during a long repo-exploring run (the existing `codex.{...}` timeout block is presumably tuned for flat-diff external reviews — repo exploration with many tool calls will run far longer).\n  **Suggestion**: Specify the full exit-code/timeout taxonomy: transient failure → retry then fa […truncated]\n\n[openai] 1. Category: dependency  \n   Severity: high  \n   Finding: `plan_review` is included in the new tier and acceptance criteria, but its existing output contract has not been inspected or pinned. The plan cannot preserve that role’s contract or provide a valid `--output-schema` until this is done.  \n   Suggestion: Make reading `opus-plan-reviewer.md`, identifying its consumer, and adding its exact strict schema a prerequisite—not an open implementation-time decision.\n\n2. Category: approach  \n   Severity: high  \n   Finding: Adding `\"codex\"` to the shared `Tier` enum does not by itself make it valid only for `review` and `plan_review`; any role property referencing that enum will accept it unless the schema and runtime validation are split by role.  \n   Suggestion: Define an Agent-only tier enum for `execution`/`finalization` and a review-tier enum that additionally permits `\"codex\"`. Add runtime tests for every role, including rejection of `\"codex\"` outside the two review roles.\n\n3. Category: dependency  \n   Severity: medium  \n   Finding: The transport is described as receiving only the reviewer agent Markdown “verbatim,” but those agents likely rely on invocation-specific context supplied by the current Agent-tool call: relevant spec/diff paths, review stage, section scope, evidence location, and expected return handling. The Markdown alone is unlikely to be a complete executable prompt contract.  \n   Suggestion: Capture each current reviewer invocation contract and build an explicit role adapter that supplies the same contextual inputs, then validate the returned JSON before handing it to existing consumers.\n\n4. Category: risk  \n   Severity: high  \n   Finding: `is_codex_available()` may establish that the binary exists, but that is not necessarily equivalent to a usable authenticated account with access to the locked model. A later authentication, quota, rate-limit, model-access, timeout, or malformed-output failure is not covered by the proposed fallback  […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-17T19:30:31.609763+00:00",
+      "disposition": "Stage-2 second pass PASS: 11/12 round-1 findings verified resolved; HIGH-3 (H3/H4 bloat-baseline citation) verified as mis-cited and withdrawn by the reviewer, residual bloat-current-bump policy question resolved via bloat-exception ADR (state:exception, ADR-pending).",
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/tools/review_via_codex.py",
+          "line": null,
+          "finding": "Claim under doubt: no failure mode silently produces a PASS-shaped result instead of erroring loudly — review_via_codex.py read --spec-file/--diff-file with read_text() catching only OSError. A zero-byte or whitespace-only diff file is not an error and would reach codex as a review of nothing, which could come back schema-valid PASS and be promoted as a real review. FIXED 2026-09-17: main() now rejects an empty/whitespace-only context section before building the prompt, with a regression test proving it.",
+          "suggestion": "reject whitespace-only context sections in main() via _emit_error — DONE",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "concurrency-and-ordering",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": null,
+          "finding": "Claim under doubt: an unvalidated or failed attempt's output can never be promoted to a completed review — The TemporaryDirectory was created OUTSIDE the retry loop and never cleared between attempts, so a failed attempt that still wrote valid output could have that stale file read back by a later attempt that produced nothing. FIXED 2026-09-17: the TemporaryDirectory now opens fresh inside the for-attempt loop, matching external_review_default_legs.review_codex's proven pattern, with a regression test (max_retries=1, attempt 1 writes+exits 1, attempt 2 exits 0 writing nothing) asserting status == error.",
+          "suggestion": "move the TemporaryDirectory inside the for-attempt loop — DONE",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": null,
+          "finding": "Claim under doubt: the env allowlist is sufficient to actually launch codex on this feature's primary target platform (Windows) — No test exercises a real (non-mocked) codex launch under scrubbed_env(); COMSPEC/PATHEXT (needed to resolve the .cmd shim codex typically is on Windows) and TMPDIR (POSIX/macOS temp) were absent from the allowlist. PARTIALLY ADDRESSED 2026-09-17: added COMSPEC, PATHEXT, TMPDIR to the allowlist (all non-secret). A real, non-mocked smoke run on Windows remains unverified in this session and is called out here as a residual gap for the operator.",
+          "suggestion": "one real (non-mocked) smoke run of review_via_codex.py against an installed codex on Windows — NOT done this session; allowlist widened defensively instead",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": null,
+          "finding": "Claim under doubt: scrubbing the env protects the operator's secrets from the child process — Env scrubbing is sound and closes the narrow half of the vector, but --sandbox read-only still lets the model read anything under the real worktree (unlike the shipped review_codex leg, which --cds an empty scratch dir), and the module docstring's framing read as if the exposure were closed rather than narrowed. FIXED 2026-09-17: docstring now states the residual read-plus-tracked-output exfil path plainly as an accepted, undocumented-until-now trade-off.",
+          "suggestion": "state the residual risk in the module docstring — DONE; running the payload through a secret scan before write was NOT done this session",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": null,
+          "finding": "Claim under doubt: the injection boundary protects the prompt from untrusted repository content — Ordering (addendum strictly after untrusted content) is correct and could not be broken, but it is the only defence — no nonce delimiter exists, so a forged '---\\nTransport note...' block inside injected content could impersonate the real boundary. NOT fixed this session — nonce-based fencing is a larger change (build_prompt signature, all dispatch sites, existing test updates) deferred as a follow-up rather than folded into this iterate's already-large diff.",
+          "suggestion": "fence each context section in a per-invocation random nonce — DEFERRED, tracked as a follow-up, not fixed in this iterate",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/tools/record_review_pass.py",
+          "line": null,
+          "finding": "Claim under doubt: transport/transport_note make a codex-answered pass and a failed-then-agent-answered pass distinguishable in reviews.json — The fields were self-declared, not enforced: --transport codex suppresses the model-tier-floor check, but nothing rejected a codex row that also carried --model-tier, and code-review.md's 'every record carries --model-tier' sentence was unqualified, so a driver following it verbatim on a codex-answered row would misrepresent which model answered. PARTIALLY FIXED 2026-09-17: record_review_pass.py now rejects --transport codex together with --model-tier, and code-review.md's sentence is qualified with the codex exception. Cross-checking the transport flag against the actual codex payload (stamping it in and verifying) was NOT done this session — the flag remains caller-asserted, just no longer capable of this specific documented-instruction-conflict misfire.",
+          "suggestion": "stamp transport into the payload and cross-check — NOT done; reject --model-tier with --transport codex and qualify the doc — DONE",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": null,
+          "finding": "Claim under doubt: writing the canonical payload is a safe, local operation — canonical_path.write_text follows symlinks unconditionally, so a committed symlink at that path would write through it, escaping out_dir. FIXED 2026-09-17: run_codex_review now refuses to write when canonical_path.is_symlink(). Silently clobbering a pre-existing non-symlink payload (e.g. an earlier Agent-tool spawn's evidence) was left unchanged — a re-run overwriting the prior evidence for the same role is the existing, accepted behavior.",
+          "suggestion": "refuse when canonical_path.is_symlink() — DONE; refuse-or-log on overwriting a pre-existing payload — NOT done",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": null,
+          "finding": "Claim under doubt: the ROLE_SCHEMAS/ROLE_CANONICAL_BASENAMES parity assert covers the basename invariant — It only covers parity between the two dicts in the same file — the basenames are a second, hand-maintained copy of review_payloads.py's CANONICAL_PAYLOAD_BASENAMES with no test tying them together, so a drift there would surface only as a CLI usage error at record time, after a paid-for codex call. FIXED 2026-09-17: added a cross-module parity test for the three shared keys (spec/code/doubt).",
+          "suggestion": "add a test asserting the three shared keys match — DONE",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-17T19:44:21.423194+00:00",
+      "disposition": "8 doubts (2 high, 4 medium, 2 low); both HIGH findings were real bugs (empty-subject false PASS, stale-output reuse across retries), fixed with regression tests. Medium/low: env allowlist widened, docstring risk disclosure added, symlink guard added, model-tier/transport CLI conflict rejected + doc qualified, basename parity test added; nonce-based injection fencing and full payload-embedded transport verification deliberately deferred as follow-ups.",
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec |",
+          "file": "shared/tests/test_codex_review_transport.py (test_scrubbed_env_excludes_api_keys_and_tokens, test_env_passed_to_subprocess_is_scrubbed)",
+          "line": null,
+          "finding": "AC3 explicitly requires \"A unit test asserts no `_API_KEY`/`_TOKEN`-shaped variable reaches the child's environment\" — a shape/pattern check. The shipped tests only assert four hardcoded names (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `GITHUB_TOKEN`). A future addition to the ambient env (e.g. `FIREBASE_API_KEY`, `AZURE_TOKEN`) would leak into the codex child and every test would still pass, because the allowlist is a fixed tuple and no test proves the invariant (nothing key/token-shaped gets through), only that today's known-bad names don't.",
+          "suggestion": "Add one test that seeds `os.environ` with several `_API_KEY`/`_TOKEN`-shaped names (including ones not in the four) and asserts none appear in `scrubbed_env()` / the captured child env — or better, assert the child env's key set is a subset of the allowlist.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "shared/scripts/tools/record_review_pass.py:371-373 (`--transport` default `None`)",
+          "line": null,
+          "finding": "AC6 states `--transport {agent,codex}` with \"default `agent`, the existing implicit behavior\". The implementation defaults to `None`/absent (ledger row 17 even asserts \"omitted --transport leaves no stray key\"). The recorded evidence therefore cannot distinguish \"agent transport, explicitly recorded\" from \"old caller that never passed the flag\" — the exact ambiguity AC6/openai #8 was written to close for fallback rows is reintroduced for agent rows.",
+          "suggestion": "Either normalize `None` → `agent` at write time, or amend the spec/AC6 to record the intentional deviation (absent = agent) — currently the two contradict.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "spec |",
+          "file": "shared/scripts/lib/codex_review_transport.py:run_codex_review signature (`model: str = CODEX_REVIEW_MODEL`)",
+          "line": null,
+          "finding": "AC2 requires the `gpt-5.6-sol` binding to be \"locked… a config or env value that doesn't match the code-owned binding must raise before any process is launched.\" The implementation has no config/env surface (fine, by the redesign), but it does expose a public `model=` keyword that silently overrides the binding for any caller — the only \"lock\" is convention. The CLI never passes it, so this is latent, but a test-injection-only parameter on the public API is a soft lock, not the raise-on-mismatch the AC describes.",
+          "suggestion": "Either document + enforce that `model=` is test-only (e.g. assert against an allowlist containing only `CODEX_REVIEW_MODEL` outside tests), or amend AC2 to state the lock is \"no override surface at all\" and remove the parameter.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug |",
+          "file": "shared/scripts/lib/codex_review_transport.py:run_codex_review — `for _attempt in range(max_retries + 1)` with the `\"no attempt made\"` placeholder",
+          "line": null,
+          "finding": "A library caller passing `max_retries=-1` (the CLI clamps, but the public function doesn't) gets `range(0)` and a misleading `reason: \"no attempt made\"` success-shaped error instead of a caller-mistake `CodexReviewTransportError`. The code comment acknowledges this only for the CLI path.",
+          "suggestion": "Clamp or raise at the top of `run_codex_review` for `max_retries < 0` and `timeout <= 0`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_review_record_transport.py::test_codex_transport_row_exempt_from_missing_tier_floor_note",
+          "line": null,
+          "finding": "The assertion `assert \"code\" not in result.detail or \"no recorded tier\" not in result.detail` is a tautology-adjacent disjunction: it passes even if the verifier flags `code` for a different missing-tier phrasing, and the first disjunct can be trivially true. The direct-exemption test below (`model_tier_note` returning `\"\"`) is the real coverage; this one adds little.",
+          "suggestion": "Assert `\"no recorded tier\" not in result.detail` unconditionally (dropping the `\"code\" not in ...` disjunct).  Non-findings I checked and consider sound: the fresh-temp-dir-per-attempt fix, symlink guard, empty-subject rejection, `--transport codex` + `--model-tier` rejection, the four dispatch-site meta-test (including the negative sub-iterate-runner case), the `is_codex_available` keyword-only `env` change (backwards-compatible), and the plan_review canonical-basename fix — all match their stated ACs and the tests genuinely exercise the buggy paths (the stale-retry regression test would fail against the old shared-tempdir code).  Overall: the transport, schemas, dispatch prose, and evidence plumbing substantially implement the spec, with two acceptance-criteria tests (the shape-based token-leak assertion in AC3, and AC6's stated `agent` default) not matching their written requirements. Ship-with-fixes — the fixes are small and local.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[codex_review_transport.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-gjm4dh40/shared/scripts/lib/codex_review_transport.py:249)",
+          "line": null,
+          "finding": "Several local operational failures escape as exceptions: loading/parsing a role schema, creating `out_dir`, and writing the canonical payload are outside the runtime-error handling contract. A missing/corrupt schema, unwritable evidence directory, or I/O error will crash the calling iterate instead of returning `status: \"error\"` for the required fallback/not-run path.",
+          "suggestion": "Catch `OSError`, `JSONDecodeError`, and schema-validation setup errors around schema loading and canonical output creation, returning a concrete error reason.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[codex_review_transport.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-gjm4dh40/shared/scripts/lib/codex_review_transport.py:228)",
+          "line": null,
+          "finding": "The supposedly locked `gpt-5.6-sol` identity can be bypassed by any caller of the exported `run_codex_review(..., model=...)`; the value is passed directly to `codex exec` without comparison to `CODEX_REVIEW_MODEL`. This does not meet the required anti-drift binding that rejects a mismatched model before launch.",
+          "suggestion": "Remove the public override, or reject any `model` value other than `CODEX_REVIEW_MODEL` before availability checks/process launch; add a negative test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "[test_codex_review_dispatch_sites_present.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-gjm4dh40/integration-tests/test_codex_review_dispatch_sites_present.py:55)",
+          "line": null,
+          "finding": "The AC1 “meta-test” verifies only that each entire file contains the filename `codex_review_dispatch.md`. It would still pass if the link were unrelated to the review spawn, or if the required dispatch rule and fallback instructions were removed from the invocation step.",
+          "suggestion": "Assert stable dispatch-rule markers in the specific Step 6/8/5/3f-bis sections, including the Codex-driver branch and its required fallback recording behavior.  Overall assessment: ship-with-fixes. The transport’s core path is well covered, but failure handling and model identity enforcement need correction before relying on it as a mandatory review fallback.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-17T19:54:01.097139+00:00",
+      "disposition": "GLM+OpenAI both revise; 6 of 7 findings fixed (exception-hardening, model= lock removed, AC3 shape test, dispatch-site window test, tautology fix), 1 rejected with documented reason (transport-default omission matches model_tier's existing omit-when-implicit convention). See iterate doc External Code Review section.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Findings:\n\n- Category: spec | Severity: medium\n  File: shared/tests/test_codex_review_transport.py (test_scrubbed_env_excludes_api_keys_and_tokens, test_env_passed_to_subprocess_is_scrubbed)\n  Finding: AC3 explicitly requires \"A unit test asserts no `*_API_KEY`/`*_TOKEN`-shaped variable reaches the child's environment\" — a shape/pattern check. The shipped tests only assert four hardcoded names (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `GITHUB_TOKEN`). A future addition to the ambient env (e.g. `FIREBASE_API_KEY`, `AZURE_TOKEN`) would leak into the codex child and every test would still pass, because the allowlist is a fixed tuple and no test proves the *invariant* (nothing key/token-shaped gets through), only that today's known-bad names don't.\n  Suggestion: Add one test that seeds `os.environ` with several `*_API_KEY`/`*_TOKEN`-shaped names (including ones not in the four) and asserts none appear in `scrubbed_env()` / the captured child env — or better, assert the child env's key set is a subset of the allowlist.\n\n- Category: spec | Severity: low\n  File: shared/scripts/tools/record_review_pass.py:371-373 (`--transport` default `None`)\n  Finding: AC6 states `--transport {agent,codex}` with \"default `agent`, the existing implicit behavior\". The implementation defaults to `None`/absent (ledger row 17 even asserts \"omitted --transport leaves no stray key\"). The recorded evidence therefore cannot distinguish \"agent transport, explicitly recorded\" from \"old caller that never passed the flag\" — the exact ambiguity AC6/openai #8 was written to close for fallback rows is reintroduced for agent rows.\n  Suggestion: Either normalize `None` → `agent` at write time, or amend the spec/AC6 to record the intentional deviation (absent = agent) — currently the two contradict.\n\n- Category: spec | Severity: low\n  File: shared/scripts/lib/codex_review_transport.py:run_codex_review signature (`model: str = CODEX_REVIEW_MODEL`)\n  Finding: AC2 requires the  […truncated]\n\n[openai] - Category: bug  \n  Severity: medium  \n  File: [codex_review_transport.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-gjm4dh40/shared/scripts/lib/codex_review_transport.py:249)  \n  Finding: Several local operational failures escape as exceptions: loading/parsing a role schema, creating `out_dir`, and writing the canonical payload are outside the runtime-error handling contract. A missing/corrupt schema, unwritable evidence directory, or I/O error will crash the calling iterate instead of returning `status: \"error\"` for the required fallback/not-run path.  \n  Suggestion: Catch `OSError`, `JSONDecodeError`, and schema-validation setup errors around schema loading and canonical output creation, returning a concrete error reason.\n\n- Category: spec  \n  Severity: medium  \n  File: [codex_review_transport.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-gjm4dh40/shared/scripts/lib/codex_review_transport.py:228)  \n  Finding: The supposedly locked `gpt-5.6-sol` identity can be bypassed by any caller of the exported `run_codex_review(..., model=...)`; the value is passed directly to `codex exec` without comparison to `CODEX_REVIEW_MODEL`. This does not meet the required anti-drift binding that rejects a mismatched model before launch.  \n  Suggestion: Remove the public override, or reject any `model` value other than `CODEX_REVIEW_MODEL` before availability checks/process launch; add a negative test.\n\n- Category: test  \n  Severity: low  \n  File: [test_codex_review_dispatch_sites_present.py](/C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-gjm4dh40/integration-tests/test_codex_review_dispatch_sites_present.py:55)  \n  Finding: The AC1 “meta-test” verifies only that each entire file contains the filename `codex_review_dispatch.md`. It would still pass if the link were unrelated to the review spawn, or if the required dispatch rule and fallback instructions were removed from the invocation step.  \n  Suggestion: Assert st […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-17T22:10:54.794163+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-17T17:32:56.811765+00:00",
+      "disposition": "high-severity finding on internal reviewer vendor choice escalated to user, resolved: keep gpt-5.6-sol",
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}
