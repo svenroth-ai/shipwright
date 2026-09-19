@@ -1,0 +1,77 @@
+{
+  "run_id": "iterate-2026-09-19-codex-reviewer-session-override",
+  "date": "2026-09-19T13:50:05.888694Z",
+  "event_at": "2026-09-19T13:49:26.708425+00:00",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/codex-reviewer-session-override",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-19-codex-reviewer-session-override",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC35: a session-scoped Codex model override reaches codex exec's argv, ranked ahead of the persisted project-config value",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_session_env_var_beats_config PASSED"
+      },
+      {
+        "behavior": "the session env var beats project config at the resolver level",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_model_resolution.py::test_env_var_wins_over_project_config PASSED"
+      },
+      {
+        "behavior": "an explicit --codex-model flag still beats the session env var",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_via_codex_model_resolution.py::test_codex_model_flag_beats_config PASSED"
+      },
+      {
+        "behavior": "plan_review reads its own env var (SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL) and never the spec/code/doubt var, and vice versa",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_model_resolution.py::test_plan_review_role_reads_its_own_env_var PASSED"
+      },
+      {
+        "behavior": "project config still wins over the hardcoded default when no env var is set",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_model_resolution.py::test_project_config_wins_over_hardcoded_default PASSED"
+      },
+      {
+        "behavior": "a blank or whitespace-only env var is treated as unset and falls through to config",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_model_resolution.py::test_blank_env_var_is_treated_as_unset PASSED"
+      },
+      {
+        "behavior": "a hostile model slug -- from any source, including the new env-var axis -- hard-errors before codex exec launches, and the reported reason never echoes the raw value",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_transport_model_override.py::test_hostile_model_slug_raises_before_any_launch PASSED; shared/tests/test_review_via_codex_model_resolution.py::test_hostile_config_value_hard_errors_and_does_not_echo_it PASSED"
+      },
+      {
+        "behavior": "the role-to-env-var / role-to-config-key tables are checked for completeness against ROLE_SCHEMAS at import time, failing loudly rather than reaching a KeyError deep in resolution",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_review_model_resolution.py::test_role_missing_from_either_table_raises PASSED; ::test_matching_tables_do_not_raise PASSED"
+      },
+      {
+        "behavior": "the two new env vars do not leak between tests (ambient-env regression): with both exported at the OS level, the full affected test set still passes",
+        "disposition": "tested",
+        "evidence": "manual regression run: SHIPWRIGHT_CODEX_REVIEW_MODEL=hostile-value SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL=hostile-value2 uv run pytest shared/tests/test_review_via_codex_model_resolution.py shared/tests/test_codex_review_model_resolution.py shared/tests/test_codex_review_transport.py shared/tests/test_codex_review_transport_model_override.py -q -- 55 passed"
+      }
+    ],
+    "counts": {
+      "testable": 9,
+      "tested": 9,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 1,
+      "covered_acs": 1
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "Backend-only Python change to shared/scripts/lib CLI-invoked review tooling (Codex-CLI internal-review model resolution). No API routes, UI, store mutations, SSE/WS handlers, or message contracts touched -- consumed only by review_via_codex.py's own CLI invocation, exercised by unit/integration tests (77 targeted + 11169 full shared/tests suite green)."
+  }
+}

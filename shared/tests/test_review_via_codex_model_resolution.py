@@ -2,9 +2,15 @@
 from `test_review_via_codex_cli.py` to stay under the 300-line source cap
 (iterate-2026-09-18-codex-review-tier-config).
 
-Precedence: `--codex-model` > `shipwright_model_config.json`'s
-`codex_review`/`codex_plan_review` key (read from `--worktree-root`'s MAIN
-repo root) > the hardcoded default in `lib.codex_review_transport`.
+Precedence (resolved inside `run_codex_review` itself, see
+`lib.codex_review_model_resolution`): `--codex-model` > this role's session
+env var > `shipwright_model_config.json`'s `codex_review`/`codex_plan_review`
+key (read from `--worktree-root`'s MAIN repo root) > the hardcoded default in
+`lib.codex_review_transport`. The env-var stage's isolated resolution logic
+has its own dedicated tests in `test_codex_review_model_resolution.py`;
+`test_session_env_var_beats_config` below is this file's one end-to-end case
+proving the env var actually reaches `codex exec`'s argv, not just the
+resolver's return value.
 """
 
 from __future__ import annotations
@@ -33,8 +39,9 @@ def _patch_available(monkeypatch: pytest.MonkeyPatch) -> None:
 def _fake_run_writing(payload: dict, *, returncode: int = 0):
     """A `subprocess.run` stand-in for the `codex exec` call.
 
-    `main()` also calls `lib.model_tier_config.load_model_config`, which
-    resolves the MAIN repo root via its OWN `subprocess.run(["git", ...])`
+    `run_codex_review`, reached from `main()`, also calls
+    `lib.model_tier_config.load_model_config`, which resolves the MAIN repo
+    root via its OWN `subprocess.run(["git", ...])`
     call — since `codex_review_transport.subprocess` IS the shared stdlib
     `subprocess` module object (not a copy), patching
     `transport.subprocess.run` intercepts that git call too. `tmp_path` is
@@ -99,6 +106,24 @@ def test_configured_model_is_used(
     assert exit_code == 0
     assert info["launched_model"] == "gpt-5.6-terra"
     assert result["model"] == "gpt-5.6-terra"
+
+
+def test_session_env_var_beats_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AC35 end-to-end: the session env var must actually reach `codex exec`'s
+    `-m` argv, ranked ahead of the persisted config key and behind an explicit
+    `--codex-model` flag (see `test_codex_model_flag_beats_config` below)."""
+    (tmp_path / "shipwright_model_config.json").write_text(
+        json.dumps({"codex_review": "gpt-5.6-terra"}), encoding="utf-8",
+    )
+    monkeypatch.setenv("SHIPWRIGHT_CODEX_REVIEW_MODEL", "gpt-5.6-luna")
+    exit_code, info = _run_code_role(tmp_path)
+    result = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert info["launched_model"] == "gpt-5.6-luna"
+    assert result["model"] == "gpt-5.6-luna"
 
 
 def test_codex_model_flag_beats_config(
@@ -219,19 +244,3 @@ def test_hostile_config_value_hard_errors_and_does_not_echo_it(
     assert result["status"] == "error"
     assert hostile not in result["reason"]
     assert '"' not in result["reason"]
-
-
-def test_role_to_config_key_drift_guard_raises_before_keyerror() -> None:
-    """A role added to `ROLE_SCHEMAS` without a matching
-    `_ROLE_TO_CODEX_CONFIG_KEY` entry must fail loudly at import time — an
-    explicit `raise`, not the `assert` stripped under `python -O` before this
-    fix (doubt-reviewer LOW, 2026-09-18)."""
-    import importlib
-
-    transport.ROLE_SCHEMAS["new_role"] = Path("unused")
-    try:
-        with pytest.raises(RuntimeError, match="_ROLE_TO_CODEX_CONFIG_KEY"):
-            importlib.reload(review_via_codex)
-    finally:
-        del transport.ROLE_SCHEMAS["new_role"]
-        importlib.reload(review_via_codex)

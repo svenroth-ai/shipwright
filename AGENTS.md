@@ -50,9 +50,12 @@ CHANGELOG-unreleased.d/     # Pending changelog drop files (aggregated at releas
 
 - Use `gpt-5.6-terra` with `high` reasoning for ordinary implementation and finalization.
 - Use `gpt-5.6-sol` with `high` reasoning for required review subagents — unless
-  `shipwright_model_config.json`'s `codex_review`/`codex_plan_review` key or a
-  `--codex-model` flag names a different model, which then takes precedence
-  (`shared/scripts/lib/codex_review_transport.py`; iterate-2026-09-18-codex-review-tier-config).
+  a `--codex-model` flag, the session-scoped `SHIPWRIGHT_CODEX_REVIEW_MODEL` /
+  `SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL` env var, or `shipwright_model_config.json`'s
+  `codex_review`/`codex_plan_review` key names a different model, in that order
+  of precedence (`shared/scripts/lib/codex_review_transport.py`,
+  `codex_review_model_resolution.py`; iterate-2026-09-18-codex-review-tier-config,
+  iterate-2026-09-19-codex-reviewer-session-override).
 - Do not use `xhigh` or `max` unless concrete risk, complexity, or a failed review justifies it.
 - `shipwright_model_config.json`'s `review`/`finalization`/`execution`/`plan_review` keys are Claude model tiers — do not reinterpret or edit those values as Codex model names. Its separate `codex_review`/`codex_plan_review` keys ARE Codex model slugs (e.g. `gpt-5.6-terra`) — a different axis entirely, validated only by a syntactic allowlist, never a Claude tier.
 - For triage-item implementation, follow the locally installed Shipwright iterate skill. In this monorepo its source is `plugins/shipwright-iterate/skills/iterate/SKILL.md`; the active Claude Code runtime resolves Shipwright from `~/.claude/plugins/cache/shipwright/`.

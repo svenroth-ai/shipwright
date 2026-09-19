@@ -25,9 +25,24 @@ uv run "{shared_root}/scripts/tools/review_via_codex.py" \
   --plan-file "{the plan file — required for role plan_review only}" \
   --out-dir "{project_root}/.shipwright/planning/iterate/{run_id}/" \
   [--codex-model "{a per-run override for the Codex reviewer model, e.g.
-    gpt-5.6-terra — optional; unset defers to shipwright_model_config.json's
-    codex_review/codex_plan_review key, then the hardcoded default}"]
+    gpt-5.6-terra — optional; unset defers to this role's session env var,
+    then shipwright_model_config.json's codex_review/codex_plan_review key,
+    then the hardcoded default}"]
 ```
+
+A session-scoped override with no `--codex-model` flag to thread through
+this fixed command: export `SHIPWRIGHT_CODEX_REVIEW_MODEL` (spec/code/doubt)
+or `SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL` (plan_review) before dispatching.
+Ambient env reaches this call for free — Codex CLI's own
+`shell_environment_policy.inherit=all` already carries it through — so no
+change to this doc's fixed per-role commands is needed to use it.
+
+Unlike the project-config key, an env-var override leaves no durable trace
+anywhere (no git history, no `reviews.json` entry) — only the resolved model
+in this call's own stdout. Set it per-invocation
+(`SHIPWRIGHT_CODEX_REVIEW_MODEL=... uv run ...`), not `export`ed into a
+standing shell, so a forgotten value cannot silently steer every later
+review in that shell.
 
 `--spec-file` is always required. `--diff-file` is required for `spec`/`code`/
 `doubt` (omit `--plan-file`); `--plan-file` is required for `plan_review`

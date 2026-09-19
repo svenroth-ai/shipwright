@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-19-codex-reviewer-session-override",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-19T13:14:42.389842+00:00",
+      "disposition": null,
+      "recorded_by": "claude",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-19T13:14:48.218846+00:00",
+      "disposition": "small complexity CHANGE, no dedicated iterate plan/mini-plan phase required",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-19T13:14:22.860279+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 3,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/record_review_pass.py:162-169; shared/scripts/lib/codex_review_transport.py:294-296; shared/scripts/tools/review_via_codex.py:151",
+          "line": null,
+          "finding": "Claim under doubt: the session-scoped env-var override is a safe, low-risk convenience layered on the existing precedence chain — The resolved Codex model slug is never persisted durably (not in reviews.json, not in git history) -- only a single stdout JSON line from review_via_codex.py carries it, unlike the git-tracked project-config axis. An operator who exports the var into a standing shell and forgets to unset it silently steers every later Codex review with no visible symptom beyond a JSON field nobody is required to inspect.",
+          "suggestion": "Document in codex_review_dispatch.md that operators should scope the export per-invocation rather than leaving it set in a standing shell -- ADDRESSED this way rather than by adding a new durable audit field, since a reviews.json schema change to carry the Codex model slug is a bigger surface change than this task's explicit scope (making the session override consumable; the webui follow-up and any audit-trail parity work are separate, out-of-scope changes per the governing task description).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/codex_review_model_resolution.py:44-49",
+          "line": null,
+          "finding": "Claim under doubt: codex_review_model_resolution.py's docstring honestly describes a dual-mode (bare/package-qualified) import contract for its codex_review_roles dependency — Since the unconditional model_tier_config import runs after the try/except regardless of which arm it takes, the module can only ever finish loading with shared/scripts already on sys.path -- so the bare-try for codex_review_roles was dead code, the identical defect class already fixed one import upstream (codex_review_transport.py's own import of this module).",
+          "suggestion": "FIXED: made the codex_review_roles import unconditionally package-qualified, matching the already-applied fix pattern, with a comment explaining why the bare-try was dead.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "shared/tests/codex_review_env_isolation.py:19-24",
+          "line": null,
+          "finding": "Claim under doubt: codex_review_env_isolation.py's autouse fixture fully protects against env-var leakage across the pytest-xdist-parallelized suite, matching its sibling source_state_capture_isolation.py's guarantee — The sibling fixture does setenv-sentinel-then-delenv to catch direct (non-monkeypatch) writes; the new fixture omits this. Traced and confirmed functionally safe (nothing under test writes these two names directly), but structurally inconsistent with the documented sibling pattern with no comment explaining the omission.",
+          "suggestion": "FIXED: added a comment explaining the omission is safe because nothing under test writes these two env vars directly, only reads them.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-19T13:24:05.450144+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-19T13:14:48.427115+00:00",
+      "disposition": "small complexity CHANGE — external code review required from medium complexity upward only",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-19T12:58:06.657421+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-19T13:14:48.323302+00:00",
+      "disposition": "no plan_review role invoked — no internal plan-review pass for a small CHANGE with no mini-plan",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
