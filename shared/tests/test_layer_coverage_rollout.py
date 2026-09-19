@@ -14,6 +14,7 @@ commits (opus internal plan review, low-severity finding).
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -80,7 +81,7 @@ def _commit_at(root: Path, msg: str, iso_date: str, *, on_trunk: bool = True) ->
         ["git", "-C", str(root), "commit", "-q", "-m", msg],
         capture_output=True, text=True,
         env={
-            **__import__("os").environ,
+            **os.environ,
             "GIT_AUTHOR_DATE": iso_date,
             "GIT_COMMITTER_DATE": iso_date,
         },
