@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-19-codex-reviewer-session-override",
+  "date": "2026-09-19",
+  "section": "Iterate — change: Codex reviewer session-model override",
+  "title": "Session-scoped Codex reviewer model override",
+  "context": "Codex-reviewer identity keys (codex_review, codex_plan_review) had no session-scoped override, unlike Claude's four spawn roles via resolve_model_tier's flag_value.",
+  "decision": "Add SHIPWRIGHT_CODEX_REVIEW_MODEL / SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL env vars, resolved inside run_codex_review ahead of the project-config fallback, gated by the existing syntactic allowlist.",
+  "consequences": "Codex reviewer model is now overridable per-session without editing project config; unblocks a future webui field. No durable audit record of which env-sourced model a review used -- mitigated by documenting scoped per-invocation export.",
+  "rationale": "codex exec has no first-party flag the shared Python scripts can read at review time; a plain env var reaches every dispatch site for free via Codex CLI's own shell_environment_policy.inherit=all.",
+  "rejected": "A reviews.json audit-trail schema change to record the resolved Codex model slug durably -- exceeds this task's explicit scope of making the override consumable.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ""
+}

@@ -53,6 +53,7 @@ def test_unknown_role_raises(tmp_path: Path) -> None:
 
 def test_codex_unavailable_returns_error_not_raise(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(transport, "is_codex_available", lambda **kw: (False, "not authenticated"))
+    monkeypatch.setattr(transport, "resolve_codex_review_model", _stub_resolve)
     result = transport.run_codex_review("code", tmp_path, "prompt", tmp_path)
     assert result == {"status": "error", "transport": "codex", "model": transport.CODEX_REVIEW_MODEL,
                        "reason": "not authenticated"}
@@ -61,6 +62,7 @@ def test_codex_unavailable_returns_error_not_raise(tmp_path: Path, monkeypatch: 
 def test_binary_missing_returns_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(transport, "is_codex_available", lambda **kw: (True, ""))
     monkeypatch.setattr(transport, "_resolve_codex_binary", lambda: None)
+    monkeypatch.setattr(transport, "resolve_codex_review_model", _stub_resolve)
     result = transport.run_codex_review("code", tmp_path, "prompt", tmp_path)
     assert result["status"] == "error"
     assert "not found on PATH" in result["reason"]
@@ -75,9 +77,21 @@ def _fake_run_writing(payload: dict, *, returncode: int = 0) -> Mock:
     return Mock(side_effect=_run)
 
 
+def _stub_resolve(role: str, worktree_root: Path, model: str | None, default: str) -> tuple[str, str]:
+    """A `resolve_codex_review_model` stand-in with no env var / project
+    config lookup of its own — env-var/config precedence has its own
+    dedicated tests in `test_codex_review_model_resolution.py`; this keeps
+    every OTHER test here from needing a real `shipwright_model_config.json`
+    (and the git subprocess call `load_model_config` makes to find one)."""
+    if model is not None:
+        return model, "the explicit model= argument"
+    return default, "the hardcoded default"
+
+
 def _patch_available(monkeypatch: pytest.MonkeyPatch, codex_bin: str = "codex") -> None:
     monkeypatch.setattr(transport, "is_codex_available", lambda **kw: (True, ""))
     monkeypatch.setattr(transport, "_resolve_codex_binary", lambda: codex_bin)
+    monkeypatch.setattr(transport, "resolve_codex_review_model", _stub_resolve)
 
 
 def test_success_copies_validated_output_to_canonical_basename(

@@ -910,6 +910,13 @@ _Where the work detail lives_ at the end of this document.
   then each of those places is confirmed to already include it, so a
   forgotten spot cannot silently keep describing a stale list.
   (iterate-2026-09-18-codex-review-tier-config)
+- (E) [AC35] Given the outside second opinion runs through Codex directly, when a
+  choice of model is set once for the whole working session rather than
+  repeated on each call, then it is used ahead of the project's own saved
+  choice but behind anything given for that one specific call — so a session
+  can steer its Codex reviewer everywhere at once without editing project
+  settings or repeating the same choice on every review.
+  (iterate-2026-09-19-codex-reviewer-session-override)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

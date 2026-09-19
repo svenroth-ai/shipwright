@@ -50,34 +50,27 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-try:  # bare: this directory is on sys.path
-    from codex_review_prompt import (
-        INJECTION_BOUNDARY,
-        build_prompt,
-        scrubbed_env,
-        strip_frontmatter,
-        validate_against_schema,
-    )
-    from codex_review_roles import ROLE_CANONICAL_BASENAMES, ROLE_SCHEMAS
-    from external_review_default_legs import _resolve_codex_binary, is_codex_available
-except ModuleNotFoundError as exc:  # package-qualified: shared/scripts is on sys.path
-    if exc.name not in ("codex_review_prompt", "codex_review_roles", "external_review_default_legs"):
-        raise
-    from lib.codex_review_prompt import (  # type: ignore[no-redef]
-        INJECTION_BOUNDARY,
-        build_prompt,
-        scrubbed_env,
-        strip_frontmatter,
-        validate_against_schema,
-    )
-    from lib.codex_review_roles import (  # type: ignore[no-redef]
-        ROLE_CANONICAL_BASENAMES,
-        ROLE_SCHEMAS,
-    )
-    from lib.external_review_default_legs import (  # type: ignore[no-redef]
-        _resolve_codex_binary,
-        is_codex_available,
-    )
+# ALWAYS package-qualified -- no bare-try-first fallback for ANY import in this
+# module. codex_review_model_resolution.py unconditionally depends on
+# model_tier_config.py, which only supports package-qualified loading (see
+# that module's own comment); since this module in turn unconditionally
+# imports codex_review_model_resolution, it can only ever finish loading with
+# `shared/scripts` already on sys.path -- so a bare-try for the three imports
+# below would be dead code, not a real fallback, the same constraint already
+# collapsed one layer in (local PR-review preflight BLOCK,
+# iterate-2026-09-19-codex-reviewer-session-override). Every real importer
+# already puts `shared/scripts` on sys.path (grepped: review_via_codex.py,
+# every test file importing `from lib import codex_review_transport`).
+from lib.codex_review_model_resolution import resolve_codex_review_model
+from lib.codex_review_prompt import (
+    INJECTION_BOUNDARY,
+    build_prompt,
+    scrubbed_env,
+    strip_frontmatter,
+    validate_against_schema,
+)
+from lib.codex_review_roles import ROLE_CANONICAL_BASENAMES, ROLE_SCHEMAS
+from lib.external_review_default_legs import _resolve_codex_binary, is_codex_available
 
 __all__ = [
     "CODEX_REVIEW_MAX_RETRIES",
@@ -96,21 +89,14 @@ __all__ = [
 #: Matches AGENTS.md's own operating policy (Internal Plan Review, resolved
 #: 2026-09-17: kept same-vendor-by-design, mirroring Claude's own
 #: opus-reviews-sonnet internal-cascade split) — distinct from `models.codex`
-#: (`gpt-5.6-terra`, execution/finalization). The hardcoded default when
-#: neither `shipwright_model_config.json`'s `codex_review`/`codex_plan_review`
-#: keys nor a `--codex-model` override name a value (see `run_codex_review`'s
-#: `model` parameter below).
-#:
-#: **Supersedes AC2** (iterate-2026-09-13-codex-internal-review-transport):
-#: AC2 removed a public `model=` override here (external-review MEDIUM,
-#: 2026-09-17) on the reasoning that an override nothing called was a soft
-#: convention, not the raise-before-launch lock it required. This run
-#: (iterate-2026-09-18-codex-review-tier-config) reinstates the parameter
-#: with that lock actually enforced: `_CODEX_MODEL_SLUG_PATTERN` rejects a
-#: syntactically-hostile value before it ever reaches `codex exec`'s argv,
-#: so the override is used (config-axis parity with Claude's model-tier
-#: config, per this run's spec) without reopening the argv-injection gap
-#: AC2 was closing. See this run's ADR for the full reasoning.
+#: (`gpt-5.6-terra`, execution/finalization). The last-resort fallback when
+#: nothing else names a value — see `codex_review_model_resolution.py` for
+#: the full precedence chain (`model` argument > session env var > project
+#: config > this constant) and the `_CODEX_MODEL_SLUG_PATTERN` allowlist
+#: below for why an override can never reach `codex exec`'s argv unvalidated
+#: (raise-before-launch lock, reinstated iterate-2026-09-18-codex-review-tier-config
+#: after AC2 removed and this run's own predecessor found it insufficiently
+#: enforced; see each run's own ADR).
 CODEX_REVIEW_MODEL = "gpt-5.6-sol"
 
 #: Syntactic allowlist for a Codex model slug — the ONLY shipwright-side
@@ -162,15 +148,15 @@ def run_codex_review(
     raises ``CodexReviewTransportError`` instead — those are bugs in the
     caller, not something a review pass can meaningfully report `not_run`
     about. The returned dict's ``"model"`` key is always the EFFECTIVE
-    model actually passed to ``codex exec`` — ``model`` given, or
-    :data:`CODEX_REVIEW_MODEL` when ``model`` is ``None`` — never ambiguous,
-    since there is no fallback substitution partway through a call.
+    model actually passed to ``codex exec`` — ``model`` given, or resolved
+    per :func:`codex_review_model_resolution.resolve_codex_review_model`
+    when it is ``None`` — never ambiguous, since there is no fallback
+    substitution partway through a call.
 
-    ``model`` is validated against :data:`_CODEX_MODEL_SLUG_PATTERN` and
-    rejected BEFORE anything is launched — Codex's own model catalog is not
-    consulted (see module docstring, "Supersedes AC2"); a syntactically
-    valid but nonexistent slug surfaces instead as this call's own
-    ``codex exec`` launch failure.
+    The resolved value is validated against :data:`_CODEX_MODEL_SLUG_PATTERN`
+    and rejected BEFORE anything is launched — Codex's own model catalog is
+    not consulted; a syntactically valid but nonexistent slug surfaces
+    instead as this call's own ``codex exec`` launch failure.
 
     ``out_dir`` must be the run's own evidence directory
     (``.shipwright/planning/iterate/<run_id>/``) — the unique temp output
@@ -190,16 +176,15 @@ def run_codex_review(
     # path (external code review, MEDIUM + LOW, 2026-09-18).
     if model is not None and not isinstance(model, str):
         raise CodexReviewTransportError(f"model must be a string or None, got {model!r}")
-    effective_model = model if model is not None else CODEX_REVIEW_MODEL
+    # Precedence (arg > session env var > project config > default) lives in
+    # codex_review_model_resolution.py.
+    effective_model, model_source = resolve_codex_review_model(role, worktree_root, model, CODEX_REVIEW_MODEL)
     if not _CODEX_MODEL_SLUG_PATTERN.fullmatch(effective_model):
-        # Never echo the raw value: `_emit_error`'s `reason` (which wraps
-        # this message) is interpolated by the dispatch doc into a
-        # double-quoted shell argument, so an embedded `"` in an
-        # operator-authored config value would break out of that quote
-        # (doubt-reviewer HIGH, 2026-09-18).
+        # Never echo the raw value (doubt-reviewer HIGH, 2026-09-18) --
+        # `model_source` is always a fixed literal, safe to include.
         raise CodexReviewTransportError(
-            f"invalid Codex model slug: does not match {_CODEX_MODEL_SLUG_PATTERN.pattern!r} "
-            f"({len(effective_model)} characters)"
+            f"invalid Codex model slug from {model_source}: does not match "
+            f"{_CODEX_MODEL_SLUG_PATTERN.pattern!r} ({len(effective_model)} characters)"
         )
 
     def _error(reason: str) -> dict[str, Any]:

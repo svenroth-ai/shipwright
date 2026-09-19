@@ -1,0 +1,1 @@
+Session-scoped SHIPWRIGHT_CODEX_REVIEW_MODEL / SHIPWRIGHT_CODEX_PLAN_REVIEW_MODEL env vars override the Codex-CLI internal-review model for one working session, ranked ahead of shipwright_model_config.json's codex_review/codex_plan_review keys and behind an explicit --codex-model flag.
