@@ -108,6 +108,7 @@ def test_configured_model_is_used(
     assert result["model"] == "gpt-5.6-terra"
 
 
+@pytest.mark.covers("FR-01.11/AC35")
 def test_session_env_var_beats_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
