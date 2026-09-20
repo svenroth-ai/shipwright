@@ -1,0 +1,1 @@
+Deduplicated the rollout-transition-grace commit resolver: FR-01.02's gate and the layer-coverage binding gate now share one git-plumbing primitive (_rollout_resolution.py), each still keyed by its own rollout epoch.

@@ -1,0 +1,142 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-20-shared-rollout-commit-resolver",
+    "date": "2026-09-20",
+    "unit": {
+      "status": "passed",
+      "passed": 11190,
+      "total": 11234,
+      "skipped": 44
+    },
+    "integration": {
+      "status": "not_run",
+      "reason": "no cross_component / cross-plugin surface in this diff"
+    },
+    "pgtap": {
+      "status": "not_run",
+      "reason": "no database"
+    },
+    "e2e": {
+      "status": "not_run",
+      "reason": "library/plugin monorepo internal refactor - no web surface in this diff"
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "reason": "no UI in this diff"
+    },
+    "smoke": {
+      "status": "not_run",
+      "reason": "no server surface"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Internal library refactor (git-plumbing extraction) inside shared/scripts/tools/verifiers with no route, UI, or API surface; behavior-identity is proven instead via real-git unit tests (77 passing) and behavior_snapshot.py snapshot/verify."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "resolve_head_sha resolves a ref (e.g. HEAD) to a concrete SHA",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_head_sha_resolves_head_to_a_concrete_sha PASSED"
+        },
+        {
+          "behavior": "resolve_head_sha returns None on an unresolvable ref",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_head_sha_none_on_an_unresolvable_ref PASSED"
+        },
+        {
+          "behavior": "is_shallow returns False for a normal full clone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_is_shallow_false_for_a_normal_full_clone PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit finds a commit strictly before the caller-supplied epoch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_finds_a_commit_strictly_before_the_given_epoch PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit accepts a commit exactly at the boundary instant",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_accepts_a_commit_exactly_at_the_boundary_instant PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None when the repo was born entirely after the epoch",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_none_when_repo_born_entirely_after_the_epoch PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None for a shallow clone",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_none_for_a_shallow_clone PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None for an empty commit hash",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_none_for_empty_commit_hash PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit refuses to trust a lying/malformed git --before answer that postdates the cutoff (committer-epoch re-verification, defense-in-depth)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_none_when_gits_before_answer_postdates_cutoff PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit refuses a forged, backdated, unmerged branch commit (trust anchor trg-4380c61a)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_refuses_a_forged_unmerged_branch_commit PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit returns None without a corroborated trunk anchor",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_none_without_a_corroborated_trunk_anchor PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit's result is a function of the caller-supplied epoch, never a hardcoded module constant",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_is_epoch_parameterised_not_hardcoded PASSED"
+        },
+        {
+          "behavior": "resolve_rollout_commit refuses a non-int epoch (malformed-input guard added in code review)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_rollout_resolution.py::test_resolve_rollout_commit_none_for_a_non_int_epoch PASSED"
+        },
+        {
+          "behavior": "_project_gate_rollout's wrapper binds ITS OWN GATE_ROLLOUT_AT_EPOCH (FR-01.02 #5/#10 family unaffected by the extraction)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_project_gate_rollout.py (11 tests) PASSED"
+        },
+        {
+          "behavior": "_layer_coverage_rollout's wrapper binds ITS OWN GATE_ROLLOUT_AT_EPOCH and rollout_manifest still builds a snapshot (check_binding_completeness family unaffected)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_layer_coverage_rollout.py (10 tests) + test_layer_coverage_rollout_trust_anchor.py (2 tests) PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 15,
+        "tested": 15,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-20-shared-rollout-commit-resolver",
+    "commit": "88b63f1be25df34fb772fffc8cc1346840bba49a",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
