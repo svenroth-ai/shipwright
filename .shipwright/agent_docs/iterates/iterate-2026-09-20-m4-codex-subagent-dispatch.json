@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-09-20-m4-codex-subagent-dispatch",
+  "date": "2026-09-20T21:40:44.555445Z",
+  "event_at": "2026-09-20T21:40:38.587295+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/m4-codex-subagent-dispatch",
+  "spec": ".shipwright/planning/iterate/2026-09-20-m4-codex-subagent-dispatch.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-20-m4-codex-subagent-dispatch"
+}

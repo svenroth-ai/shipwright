@@ -1,0 +1,115 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-20-m4-codex-subagent-dispatch",
+    "date": "2026-09-20",
+    "unit": {
+      "status": "passed",
+      "passed": 19063,
+      "total": 19133
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 550,
+      "total": 550
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path) during this run's F0 pass; flagged as trg-f64d1c27 for follow-up, does not affect this run's GREEN status."
+    ],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "shared/scripts/lib module change (Codex review dispatch argv + evidence recording); no dev_url/web or CLI-entrypoint surface of its own to browser-verify -- verification is the unit/integration test suite itself (F0) plus the 3 live codex exec probes documented in the doubt-review section of the iterate spec."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a review-cascade role's argv carries -c model_reasoning_effort=high",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_reasoning_effort.py::test_review_cascade_role_gets_reasoning_effort_flag PASSED"
+        },
+        {
+          "behavior": "plan_review's argv is byte-identical to before (no flag added)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_reasoning_effort.py::test_plan_review_role_has_no_reasoning_effort_flag PASSED"
+        },
+        {
+          "behavior": "all three review-cascade roles (spec/code/doubt) carry the flag",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_reasoning_effort.py::test_all_three_review_cascade_roles_get_the_flag PASSED"
+        },
+        {
+          "behavior": "model_reasoning_effort injection is still added under an explicit non-default model= override (the two axes are independent)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_reasoning_effort.py::test_reasoning_effort_flag_still_added_under_an_explicit_model_override PASSED"
+        },
+        {
+          "behavior": "run_codex_review's returned transport_note names model+effort+sandbox for a REASONING_EFFORT_ROLES role, and is the bare model for plan_review",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_cascade_distinctness_fixture.py (expected_note, spec/code/doubt) + shared/tests/test_codex_review_transport_reasoning_effort.py::test_plan_review_transport_note_is_the_bare_model PASSED"
+        },
+        {
+          "behavior": "three sequential Codex-dispatched review passes land in reviews.json as three genuinely distinct rows, keyed by review_type, each carrying its own distinct payload content (AC2)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_cascade_distinctness_fixture.py::test_three_codex_dispatched_passes_are_genuinely_distinct_in_reviews_json PASSED"
+        },
+        {
+          "behavior": "transport_note names the RESOLVED (overridden) model, never the hardcoded default",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_reasoning_effort.py::test_reasoning_effort_flag_still_added_under_an_explicit_model_override transport_note assertion PASSED"
+        },
+        {
+          "behavior": "REASONING_EFFORT_ROLES stays a subset of ROLE_SCHEMAS; CODEX_REVIEW_REASONING_EFFORT stays a documented Codex value",
+          "disposition": "tested",
+          "evidence": "import-time raise/assert guards in shared/scripts/lib/codex_review_roles.py, exercised by every test in shared/tests/test_codex_review_transport_reasoning_effort.py"
+        },
+        {
+          "behavior": "Claude-driven Agent-tool dispatch (iterate Step 8 / build Step 6) is unaffected",
+          "disposition": "tested",
+          "evidence": "no SKILL.md/agent-spawn code changed; full pre-existing shared/tests suite passes unchanged (19,133 tests, 0 failed)"
+        },
+        {
+          "behavior": "the argv reasoning-effort flag and the recorded transport_note's effort= clause never disagree, for any role",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_codex_review_transport_reasoning_effort.py::test_argv_reasoning_effort_flag_and_transport_note_effort_agree_for_every_role PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 10,
+        "tested": 10,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 4,
+        "covered_acs": 4
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-20-m4-codex-subagent-dispatch",
+    "commit": "910e2bd1b4285d749ea461b86c4fc34e2fe14036",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}
