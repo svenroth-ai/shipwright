@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-20-shared-rollout-commit-resolver",
+  "date": "2026-09-20",
+  "section": "shared/scripts/tools/verifiers",
+  "title": "Shared commit-resolution primitive for rollout-transition gates",
+  "context": "Two gate families (_project_gate_rollout.py for FR-01.02 #5/#10, _layer_coverage_rollout.py for check_binding_completeness) each carried a ~20-line, byte-identical git rollout-grace resolver (shallow guard, rev-list --before, committer-epoch re-verify, trunk-ancestry trust anchor). External plan review (glm, low) on iterate-2026-09-12-project-gate-rollout-transition flagged this as a third near-identical copy and asked for a shared primitive.",
+  "decision": "Extracted the algorithm into a new module, _rollout_resolution.py, exposing is_shallow / resolve_head_sha / resolve_rollout_commit(project_root, commit_hash, *, epoch). epoch is a required keyword with no default and no module-level constant of its own, so a family cannot accidentally inherit another family's rollout instant. Both family modules became thin wrappers calling it with their own GATE_ROLLOUT_AT_EPOCH, keeping their own caches and public APIs unchanged.",
+  "consequences": "A third gate family needing this pattern now calls resolve_rollout_commit with its own epoch instead of copy-pasting a fourth block. Code review (low) also flagged the new test file's real-git harness as duplicating 2+ other shared/tests files -- a pre-existing repo-wide convention, disclosed, not fixed (out of scope: touches 6-8 unrelated files).",
+  "rationale": "The P3.3 ADR's own precedent (each gate family owns its own rollout instant and resolver) is preserved above the extraction line; only the mechanical git plumbing was shared, never the instant or the caching strategy. Verified behavior-identical via behavior_snapshot.py snapshot/verify (green before and after) and a Stage-1/Stage-2/external-code review cascade, all PASS.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

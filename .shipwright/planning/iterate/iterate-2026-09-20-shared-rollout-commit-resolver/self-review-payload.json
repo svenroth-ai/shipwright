@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Extracts resolve_head_sha/resolve_rollout_commit/shallow-clone guard/epoch re-verification into a new shared _rollout_resolution.py module, callable with a per-family epoch keyword; neither family's own GATE_ROLLOUT_AT_EPOCH, cache, or module identity changed. No shared rollout instant forced, as required by the follow-up card."},
+    {"name": "Error Handling", "verdict": "n/a", "note": "Pure git-plumbing relocation; _run_git's never-raise, fail-closed-to-None contract is unchanged and reused verbatim."},
+    {"name": "Security Basics", "verdict": "pass", "note": "The trust-anchor ancestry check (trg-4380c61a) that defends against a forged backdated commit was moved without modification; the two dedicated forged-commit tests (one per family, plus a third in the new shared-primitive suite) still pass unchanged."},
+    {"name": "Test Quality", "verdict": "pass", "note": "All 64 pre-existing real-git behavioural tests pass unchanged (asserting resolved SHAs / None, never internals); added 12 new tests for the shared primitive using a THIRD, unrelated epoch to prove the epoch is caller-supplied, not hardcoded. One existing test's monkeypatch target was updated to the new call site (_rollout_resolution._run_git) per the Test-Update-Klausel, same assertion."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "No change in subprocess/git-call count or shape; same sequence of git invocations, now in one shared function."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "Follows the existing leading-underscore internal-module convention (_rollout_resolution.py alongside _project_gate_rollout.py / _layer_coverage_rollout.py). All three touched files are well under the 300-LOC guideline (127 / 162 / 266 lines)."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized format changed; this is a same-process code-structure refactor with no producer/consumer pair."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reported no findings."}
+  ]
+}

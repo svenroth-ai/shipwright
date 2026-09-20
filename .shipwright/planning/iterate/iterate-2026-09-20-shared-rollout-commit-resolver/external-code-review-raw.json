@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "glm": {
+      "feedback": "I reviewed the extraction line-by-line against both original implementations.\n\n**Correctness check:** The algorithm in `_rollout_resolution.resolve_rollout_commit` is a byte-faithful copy of both originals \u2014 shallow guard, `rev-list -1 --before`, Python-side committer-epoch re-verification with `>` (not `>=`, so the boundary-inclusive behavior is preserved), `_branch_base_commit` trust anchor, and `rev-list --count` ancestry check all match. The `epoch` is threaded correctly via keyword in both wrappers, each passing its own constant. `resolve_head_sha` is likewise identical.\n\n**Regression risk:** Both public APIs (`resolve_rollout_commit`, `resolve_head_sha`) keep their signatures and return types. The removed `_is_shallow` and `_GIT_TIMEOUT_SECONDS` were module-private, and the diff notes snapshot verification of 64 pre-existing tests before and after, which would catch any other test monkeypatching the old call sites (only one needed updating, consistent with it being the only test that patched at the git-call level).\n\n**Tests:** The new suite uses real git, an epoch belonging to neither family, and covers the important error paths: shallow clone (with an assertion that the clone is *actually* shallow \u2014 good, this guards the test's own validity), empty hash, repo-born-after-epoch, forged unmerged branch commit, missing trunk anchor, and boundary-inclusive acceptance. The `test_..._is_epoch_parameterised_not_hardcoded` test directly validates the property the refactor exists to prove \u2014 a hardcoded epoch would fail it. The monkeypatch-target update in `test_project_gate_rollout.py` correctly retargets to the new call site and asserts the lying-`rev-list` defense still fires through the wrapper.\n\n**Security:** No new input handling; untrusted ref strings flow into `_run_git` as before (list-args, no shell). No secrets.\n\nI found no defects. This is a clean, behavior-preserving extraction with the spec's constraints (family-owned epochs, family-owned caches) explicitly preserved and tested.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    },
+    "openai": {
+      "feedback": "No defects found. The shared resolver preserves the prior shallow-clone, epoch, and trust-anchor checks; both families retain their own epochs, wrappers, caches, and call contracts. The new real-git tests exercise parameterization and key success/failure paths.\n\nOverall: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "glm": "approve",
+    "openai": "approve"
+  },
+  "statuses": {
+    "glm": "success",
+    "openai": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}

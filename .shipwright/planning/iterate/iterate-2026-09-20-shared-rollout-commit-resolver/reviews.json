@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-20-shared-rollout-commit-resolver",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T19:24:19.787292+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T19:29:22.297233+00:00",
+      "disposition": "trivial/small complexity: external plan review is opt-in only (--review flag), not requested for this run",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/tools/verifiers/_rollout_resolution.py",
+          "line": 50,
+          "finding": "Local _GIT_TIMEOUT_SECONDS re-declaration duplicated git_helpers's own constant.",
+          "suggestion": "Import _GIT_TIMEOUT_SECONDS from git_helpers instead of re-declaring it.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/tests/test_project_gate_rollout.py",
+          "line": 190,
+          "finding": "The shared primitive's only committer-epoch-postdates-cutoff test lived in a family test file, white-box-patching another module's private import.",
+          "suggestion": "Move the test into shared/tests/test_rollout_resolution.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": "shared/scripts/tools/verifiers/_rollout_resolution.py",
+          "line": 79,
+          "finding": "epoch widened from a module-private int constant to an unvalidated parameter; a malformed value could reopen the approxidate misparse hazard or raise TypeError out of a never-raising function.",
+          "suggestion": "Add an isinstance(epoch, int) guard at function entry, returning None on a malformed epoch.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_rollout_resolution.py",
+          "line": 35,
+          "finding": "New test file's real-git harness duplicates the identical harness already present in 2+ other shared/tests files; a pre-existing repo-wide convention, not a regression introduced by this diff.",
+          "suggestion": "Lift the shared harness into shared/tests/conftest.py in a separate follow-up commit.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_rollout_resolution.py",
+          "line": 158,
+          "finding": "test_resolve_rollout_commit_none_for_a_shallow_clone's discriminating assertion is is_shallow(...) is True, not the trailing resolve_rollout_commit(...) is None.",
+          "suggestion": "Add a docstring making the discriminating assertion explicit.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-20T19:35:00.189480+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T19:35:12.103288+00:00",
+      "disposition": "Stage 3 is conditional on migrations/async-concurrency/cross-plugin-imports/irreversible-ops; this diff is a same-package internal git-plumbing extraction with none of those, so it does not meet the trigger rule in iteration-reviews.md",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": "openrouter",
+      "completed_at": "2026-09-20T19:29:14.972827+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "unstructured",
+      "raw_excerpt": "[glm] I reviewed the extraction line-by-line against both original implementations.\n\n**Correctness check:** The algorithm in `_rollout_resolution.resolve_rollout_commit` is a byte-faithful copy of both originals — shallow guard, `rev-list -1 --before`, Python-side committer-epoch re-verification with `>` (not `>=`, so the boundary-inclusive behavior is preserved), `_branch_base_commit` trust anchor, and `rev-list --count` ancestry check all match. The `epoch` is threaded correctly via keyword in both wrappers, each passing its own constant. `resolve_head_sha` is likewise identical.\n\n**Regression risk:** Both public APIs (`resolve_rollout_commit`, `resolve_head_sha`) keep their signatures and return types. The removed `_is_shallow` and `_GIT_TIMEOUT_SECONDS` were module-private, and the diff notes snapshot verification of 64 pre-existing tests before and after, which would catch any other test monkeypatching the old call sites (only one needed updating, consistent with it being the only test that patched at the git-call level).\n\n**Tests:** The new suite uses real git, an epoch belonging to neither family, and covers the important error paths: shallow clone (with an assertion that the clone is *actually* shallow — good, this guards the test's own validity), empty hash, repo-born-after-epoch, forged unmerged branch commit, missing trunk anchor, and boundary-inclusive acceptance. The `test_..._is_epoch_parameterised_not_hardcoded` test directly validates the property the refactor exists to prove — a hardcoded epoch would fail it. The monkeypatch-target update in `test_project_gate_rollout.py` correctly retargets to the new call site and asserts the lying-`rev-list` defense still fires through the wrapper.\n\n**Security:** No new input handling; untrusted ref strings flow into `_run_git` as before (list-args, no shell). No secrets.\n\nI found no defects. This is a clean, behavior-preserving extraction with the spec's constraints (family-owned epochs, family-owned cach […truncated]\n\n[openai] No defects found. The shared resolver preserves the prior shallow-clone, epoch, and trust-anchor checks; both families retain their own epochs, wrappers, caches, and call contracts. The new real-git tests exercise parameterization and key success/failure paths.\n\nOverall: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "approve"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T19:26:53.373088+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T19:29:22.444433+00:00",
+      "disposition": "internal plan review is medium+ only, this run is small",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

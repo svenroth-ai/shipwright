@@ -26,6 +26,17 @@ because the constant being correct today does not guarantee every future
 caller (a different git version, a locale quirk, a copy-paste of the raw
 string instead of the epoch) preserves that correctness.
 
+**The commit-resolution algorithm itself now lives in**
+:mod:`_rollout_resolution` **, called with THIS family's own**
+:data:`GATE_ROLLOUT_AT_EPOCH` (`iterate-2026-09-20-shared-rollout-commit-resolver`,
+closing a THIRD-near-identical-copy finding external plan review (glm) raised
+on the sibling ``_project_gate_rollout.py``). Only the mechanical git plumbing
+(shallow-clone guard, ``rev-list --before``, committer-epoch re-verification,
+the trust-anchor ancestry check) moved — this module still owns its OWN
+rollout instant, its OWN cache (:data:`_ROLLOUT_CACHE`, keyed for a built
+manifest rather than a bare SHA), and the manifest-building half below
+(:func:`rollout_manifest`) unchanged.
+
 **Why ``with_evidence=False``.** ``required_layers``/``required_layers_source``
 are parsed straight from ``spec.md`` (``_requirement_parse.py``), never
 evidence-derived — the same collector call ``_layer_coverage_regen`` already
@@ -141,13 +152,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+from . import _rollout_resolution
 from ._layer_coverage_regen import _archive_tree, _build, _load_collector
-from .git_helpers import _branch_base_commit, _run_git
-
-#: Same bound `git_helpers._GIT_TIMEOUT_SECONDS` uses on the F11 hot path: a wedged
-#: `index.lock` or a stalled filesystem must degrade this OPTIONAL leniency lookup to
-#: "no grace", never hang the whole F11 run (internal plan review, opus, low).
-_GIT_TIMEOUT_SECONDS = 30.0
 
 #: ISO-8601 UTC form for humans: 2026-09-07T16:09:19Z. Derived from
 #: ``git show -s --format=%cI 263c9197e6428134ad4e97c55384bf5dad89cbc1`` in
@@ -165,63 +171,24 @@ GATE_ROLLOUT_AT_EPOCH = 1788797359
 GATE_ROLLOUT_AT_ISO = "2026-09-07T16:09:19Z"
 
 
-def _is_shallow(project_root: Path) -> bool:
-    """Best-effort: True unless git affirmatively says this is a full clone.
-
-    Fails toward "shallow" (no grace) on any ambiguity — a shallow clone's
-    ``rev-list --before`` result is untrustworthy (it can return a real,
-    present commit that is simply the oldest one the clone happens to have,
-    not "the state at that instant"), and granting grace on a false negative
-    here is the wrong direction for an optional leniency (see module
-    docstring)."""
-    rc, out, _ = _run_git(project_root, "rev-parse", "--is-shallow-repository",
-                          timeout=_GIT_TIMEOUT_SECONDS)
-    return not (rc == 0 and out.strip() == "false")
-
-
 def resolve_rollout_commit(project_root: Path, commit_hash: str) -> str | None:
     """The calling project's own commit at-or-before :data:`GATE_ROLLOUT_AT_EPOCH`,
     reachable from ``commit_hash`` AND an ancestor of the project's own
     corroborated trunk boundary, or ``None`` when no such commit exists —
     a repo born entirely after the gate's rollout (the documented
     no-legacy-valve-for-greenfield case, now extended to this valve too), a
-    shallow clone (see :func:`_is_shallow`), an uncorroborated/absent trunk
-    anchor, or any git failure. Verifies the resolved commit's OWN committer
-    time in Python rather than trusting git's ``--before`` parse alone
-    (module docstring: a malformed cutoff silently resolves to "now", which
-    this catches), and — see the module docstring's "Trust anchor" note,
-    `trg-4380c61a` — that the commit is not merely a self-authored, unmerged
-    commit on ``commit_hash``'s own branch carrying a forged early committer
-    date."""
-    if not commit_hash or _is_shallow(project_root):
-        return None
-    rc, sha, _ = _run_git(
-        project_root, "rev-list", "-1", f"--before={GATE_ROLLOUT_AT_EPOCH}", commit_hash,
-        timeout=_GIT_TIMEOUT_SECONDS,
+    shallow clone, an uncorroborated/absent trunk anchor, or any git failure.
+    Verifies the resolved commit's OWN committer time in Python rather than
+    trusting git's ``--before`` parse alone (module docstring: a malformed
+    cutoff silently resolves to "now", which this catches), and — see the
+    module docstring's "Trust anchor" note, `trg-4380c61a` — that the commit
+    is not merely a self-authored, unmerged commit on ``commit_hash``'s own
+    branch carrying a forged early committer date. The algorithm itself
+    lives in :mod:`_rollout_resolution`; this wrapper supplies only THIS
+    family's own epoch."""
+    return _rollout_resolution.resolve_rollout_commit(
+        project_root, commit_hash, epoch=GATE_ROLLOUT_AT_EPOCH,
     )
-    if rc != 0 or not sha.strip():
-        return None
-    sha = sha.strip()
-    rc2, ts, _ = _run_git(project_root, "show", "-s", "--format=%ct", sha,
-                          timeout=_GIT_TIMEOUT_SECONDS)
-    if rc2 != 0 or not ts.strip():
-        return None
-    try:
-        committer_epoch = int(ts.strip())
-    except ValueError:
-        return None
-    if committer_epoch > GATE_ROLLOUT_AT_EPOCH:
-        return None  # git's answer postdates our cutoff — refuse rather than trust it
-
-    base = _branch_base_commit(project_root, commit_hash)
-    if base is None:
-        return None  # no corroborated trunk boundary — an unverifiable ancestry claim is not grace
-    rc3, count_out, _ = _run_git(
-        project_root, "rev-list", "--count", f"{base}..{sha}", timeout=_GIT_TIMEOUT_SECONDS,
-    )
-    if not (rc3 == 0 and count_out.strip() == "0"):
-        return None  # sha is not reachable from the trusted trunk boundary — refuse
-    return sha
 
 
 # Process-level cache, same shape/precedent as `_layer_coverage_regen._BASE_CACHE`:
