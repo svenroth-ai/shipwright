@@ -187,26 +187,12 @@ def test_resolve_rollout_commit_none_for_empty_commit_hash(tmp_path):
     assert resolve_rollout_commit(root, "") is None
 
 
-def test_resolve_rollout_commit_none_when_gits_before_answer_postdates_cutoff(tmp_path, monkeypatch):
-    """Defense-in-depth: even if git's own ``--before`` parse somehow resolved
-    to a commit whose real committer time postdates the cutoff (a hostile or
-    buggy git build), the committer-time re-verification in Python must
-    refuse to trust it rather than grant grace off an unverified answer."""
-    root = tmp_path / "repo"
-    _init(root)
-    _write(root, ".shipwright/planning/app/spec.md", "post")
-    head_sha = _commit_at(root, "post-rollout", _AFTER_ROLLOUT)
-
-    import tools.verifiers._project_gate_rollout as rollout_mod
-    real_run_git = rollout_mod._run_git
-
-    def _lying_rev_list(project_root, *args, **kwargs):
-        if args[:1] == ("rev-list",):
-            return 0, head_sha, ""  # lies: claims head_sha is "before" the cutoff
-        return real_run_git(project_root, *args, **kwargs)
-
-    monkeypatch.setattr(rollout_mod, "_run_git", _lying_rev_list)
-    assert resolve_rollout_commit(root, head_sha) is None
+# The committer-epoch-postdates-cutoff defense-in-depth test lives in
+# test_rollout_resolution.py (the shared primitive's own contract test file)
+# since iterate-2026-09-20-shared-rollout-commit-resolver moved the algorithm
+# there — code review, low: this file should assert only what it uniquely
+# owns (that the wrapper binds ITS OWN GATE_ROLLOUT_AT_EPOCH), not re-pin a
+# defense that lives one level down and applies identically to every family.
 
 
 # --------------------------------------------------------------------------- #
