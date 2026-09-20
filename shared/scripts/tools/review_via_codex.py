@@ -25,9 +25,11 @@ input file) is reported by `_emit_error` below instead, which carries no
 `"model"` key since no attempt was made.
 
 On `status: "completed"`, `canonical_path` is the already schema-validated
-payload file. For `--role spec|code|doubt`, pass it straight to
-`record_review_pass.py record --from <role>-reviewer --payload-file
-<canonical_path> --transport codex` (no `--model-tier` — the row carries no
+payload file and `transport_note` is ready for `--transport-note` verbatim
+(names effort/sandbox too, for `spec`/`code`/`doubt`). For `--role
+spec|code|doubt`, pass `canonical_path` to `record_review_pass.py record
+--from <role>-reviewer --payload-file <canonical_path> --transport codex
+--transport-note "<transport_note>"` (no `--model-tier` — the row carries no
 legal Claude tier). For `--role plan_review`, there is no `--from` adapter
 (`plan_internal` is a metadata-only row) — read `canonical_path` directly and
 write its `findings`/`summary` into `plan.md`'s own `## Internal Plan

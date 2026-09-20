@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All four Acceptance Criteria in .shipwright/planning/iterate/2026-09-20-m4-codex-subagent-dispatch.md (L35-L58) are present, faithful, and in-scope; the .codex/agents TOML-generator cut landed cleanly with no residue. Stage 2 (code-reviewer) may run."
+}

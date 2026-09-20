@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-20-m4-codex-subagent-dispatch",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T20:45:34.616787+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "The AC2 fixture's distinctness proof is partially tautological. It monkeypatches `subprocess.run` to return three distinct canned payloads, then asserts the recorded rows are distinct. This proves the recording pipeline (`run_codex_review` → `record_review_pass` → `reviews.json`) doesn't collapse or overwrite rows, which is worth proving — but it cannot prove the parent spec's actual AC2 concern (\"not one session's self-report reformatted three times\"). That concern is about what the real Codex session does upstream of the mock point. A single mocked session returning the same content three times would still pass if the fixture's canned payloads happened to be similar — the assertion only guards against accidental payload reuse in the fixture itself.",
+          "suggestion": "Fine as shipped, but consider having the fixture also assert the argv of each of the three mocked calls differs meaningfully (it already will via the role prompt) and explicitly note in the spec/ADR that the \"genuinely distinct invocations\" property is only partially verifiable offline — the fixture proves the evidence-recording half, not the upstream-session half. Currently the spec slightly oversells what the fixture demonstrates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk |",
+          "file": null,
+          "line": null,
+          "finding": "transport_note` is a new/changed consumer-facing string recorded into `reviews.json`. Any downstream consumer that parses or string-matches `transport_note` (e.g., review-verification hooks, dashboards, later iterates reading the evidence record) could break on the new format (\"model plus reasoning effort and sandbox\").",
+          "suggestion": "Confirm with a grep that nothing greps/parses `transport_note` besides the tests; if something does, update it in the same change. Also decide whether the note format is now load-bearing — if so, one format-stability test asserting the exact string would prevent silent drift in later iterates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency |",
+          "file": null,
+          "line": null,
+          "finding": "The spec's Confidence Calibration mentions reproducing and fixing a real Windows-console cp1252/UTF-8 encoding failure in the AC2 fixture (`record_review_pass.py show` echoing an em-dash), but the Mini-Plan's file list and work breakdown don't mention any encoding fix — either to the fixture or to `record_review_pass.py`. It's unclear whether the fix landed in the fixture only (e.g., `PYTHONIOENCODING=utf-8` in the subprocess env) or in shared code, and whether it's covered by a test.",
+          "suggestion": "Add the encoding fix explicitly to the Mini-Plan's files/work breakdown (even one line: \"fixture sets `PYTHONIOENCODING=utf-8` on the child process\") so it isn't lost as an untracked incidental change. If the fix touched `record_review_pass.py` itself, that file should appear in the file list.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": null,
+          "line": null,
+          "finding": "REASONING_EFFORT_ROLES` is validated at import time only as a subset of `ROLE_SCHEMAS`. If a new review role is added later without deciding its effort membership, the code silently falls into the no-flag path — no failure, just an unrecorded policy gap (exactly the class of gap this iterate exists to close).",
+          "suggestion": "Low priority, but consider a test asserting the exact expected membership (`{\"spec\", \"code\", \"doubt\"}`) rather than only the subset invariant, so adding a role forces a conscious decision on effort membership.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach |",
+          "file": null,
+          "line": null,
+          "finding": "The `plan_review` reasoning-effort gap is real and deferred with a tracked follow-up (`trg-0a3c4edb`) — reasonable. Just flag that AGENTS.md's stated policy (\"high reasoning for required review subagents\") remains partially unimplemented after this iterate, so the spec's framing of \"closing the gap\" should be read as \"closing it for the review cascade.\"",
+          "suggestion": "No action needed; the follow-up tracking is adequate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan changes `run_codex_review` to return a richer `transport_note`, but does not name or test the production call site that forwards that value into `record_review_pass.py`. The proposed fixture can manually supply the note while recording, which would pass even if the real Codex review path drops it.",
+          "suggestion": "Trace the real `run_codex_review` caller (likely the Codex review adapter) through its `record_review_pass` invocation. Include that wiring in the changed files if needed, and make the fixture exercise that production path rather than assembling the record command independently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Monkeypatching `subprocess.run` for `codex exec` conflicts with the fixture’s intent to invoke `record_review_pass.py` as a real subprocess: `subprocess` is a shared module object, so a broad monkeypatch can intercept both calls. The test may either never execute the recorder or become coupled to fragile selective-mock behavior.",
+          "suggestion": "Preserve the original runner and use a selective fake that only intercepts argv whose executable is `codex`, forwarding recorder invocations unchanged. Alternatively, invoke the recorder’s CLI entrypoint directly while retaining a narrowly scoped transport-process mock.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“`plan_review` argv stays byte-identical” is stronger than the listed test (“has no reasoning-effort flag”). Refactoring the sandbox value into a constant or changing argv construction can accidentally reorder, omit, or alter another argument while still satisfying the absence assertion.",
+          "suggestion": "Add an explicit full argv expectation for `plan_review`, including ordering and values, based on its current known-good command.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The documentation calls `codex_review_roles.py` the single canonical model/effort/sandbox contract, while also placing `CODEX_REVIEW_MODEL` in `codex_review_transport.py`. This is an ambiguous ownership boundary and leaves the contract vulnerable to future drift.",
+          "suggestion": "Either move the default model alongside the role/effort/sandbox constants, or narrow the claim and document that only role policy is owned by `codex_review_roles.py`.  Overall, the reduced prompt-driven transport approach is sound and appropriately avoids the unused TOML subsystem. It needs a production-path evidence test and a more robust subprocess fixture before it can reliably demonstrate the stated recording contract.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-20T20:44:52.590396+00:00",
+      "disposition": "iterate-mode re-run against the final (post-cut) mini-plan/spec: glm=approve (5 low), openai=revise (1 high, 2 medium, 1 low). Two findings fixed (exact REASONING_EFFORT_ROLES-set test, full plan_review argv snapshot test); two rejected as stale (production call-site parity and subprocess-scoping were already correct in shipped code, --mode iterate cannot see the diff); rest documented, no action needed -- see iterate spec External Review section.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category:** edge-case | **Severity:** low\n**Finding:** The AC2 fixture's distinctness proof is partially tautological. It monkeypatches `subprocess.run` to return three *distinct* canned payloads, then asserts the recorded rows are distinct. This proves the recording pipeline (`run_codex_review` → `record_review_pass` → `reviews.json`) doesn't collapse or overwrite rows, which is worth proving — but it cannot prove the parent spec's actual AC2 concern (\"not one session's self-report reformatted three times\"). That concern is about what the *real* Codex session does upstream of the mock point. A single mocked session returning the same content three times would still pass if the fixture's canned payloads happened to be similar — the assertion only guards against accidental payload reuse in the fixture itself.\n**Suggestion:** Fine as shipped, but consider having the fixture also assert the *argv* of each of the three mocked calls differs meaningfully (it already will via the role prompt) and explicitly note in the spec/ADR that the \"genuinely distinct invocations\" property is only partially verifiable offline — the fixture proves the evidence-recording half, not the upstream-session half. Currently the spec slightly oversells what the fixture demonstrates.\n\n**Category:** risk | **Severity:** low\n**Finding:** `transport_note` is a new/changed consumer-facing string recorded into `reviews.json`. Any downstream consumer that parses or string-matches `transport_note` (e.g., review-verification hooks, dashboards, later iterates reading the evidence record) could break on the new format (\"model plus reasoning effort and sandbox\").\n**Suggestion:** Confirm with a grep that nothing greps/parses `transport_note` besides the tests; if something does, update it in the same change. Also decide whether the note format is now load-bearing — if so, one format-stability test asserting the exact string would prevent silent drift in later iterates.\n\n**Categor […truncated]\n\n[openai] 1. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** The plan changes `run_codex_review` to return a richer `transport_note`, but does not name or test the production call site that forwards that value into `record_review_pass.py`. The proposed fixture can manually supply the note while recording, which would pass even if the real Codex review path drops it.  \n   **Suggestion:** Trace the real `run_codex_review` caller (likely the Codex review adapter) through its `record_review_pass` invocation. Include that wiring in the changed files if needed, and make the fixture exercise that production path rather than assembling the record command independently.\n\n2. **Category:** edge-case  \n   **Severity:** medium  \n   **Finding:** Monkeypatching `subprocess.run` for `codex exec` conflicts with the fixture’s intent to invoke `record_review_pass.py` as a real subprocess: `subprocess` is a shared module object, so a broad monkeypatch can intercept both calls. The test may either never execute the recorder or become coupled to fragile selective-mock behavior.  \n   **Suggestion:** Preserve the original runner and use a selective fake that only intercepts argv whose executable is `codex`, forwarding recorder invocations unchanged. Alternatively, invoke the recorder’s CLI entrypoint directly while retaining a narrowly scoped transport-process mock.\n\n3. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** “`plan_review` argv stays byte-identical” is stronger than the listed test (“has no reasoning-effort flag”). Refactoring the sandbox value into a constant or changing argv construction can accidentally reorder, omit, or alter another argument while still satisfying the absence assertion.  \n   **Suggestion:** Add an explicit full argv expectation for `plan_review`, including ordering and values, based on its current known-good command.\n\n4. **Category:** approach  \n   **Severity:** low  \n   **Finding:** The documentation calls `codex_review_r […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 250,
+          "finding": "No live smoke test that real codex exec accepts -c model_reasoning_effort in this argv position; only mocked subprocess.run tests existed.",
+          "suggestion": "Run a live codex exec probe and record the outcome.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+          "line": 52,
+          "finding": "CODEX_REVIEW_REASONING_EFFORT value itself was unpinned in tests -- flipping the constant to any valid value would leave the suite green.",
+          "suggestion": "Pin the literal with an explicit assert.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+          "line": 79,
+          "finding": "plan_review full-argv snapshot test asserted the sandbox value against the same constant the implementation reads (self-referential), not the literal read-only value.",
+          "suggestion": "Assert the literal in the expected argv.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "readability",
+          "file": "shared/scripts/lib/codex_review_prompt.py",
+          "line": 50,
+          "finding": "SANDBOX_CAPABILITY_NOTE constant had exactly one consumer and existed only to serve the now-cut .codex/agents/*.toml generator.",
+          "suggestion": "Inline it back into _TRANSPORT_ADDENDUM.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 201,
+          "finding": "transport_note construction was a line-wrapped conditional at the file's 300-line cap with zero headroom.",
+          "suggestion": "Extract to a helper in codex_review_roles.py.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 146,
+          "finding": "A pre-existing docstring parenthetical was dropped under cap pressure (content survived elsewhere in the docstring).",
+          "suggestion": "Resolves itself once headroom returns from the extraction.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_codex_review_cascade_distinctness_fixture.py",
+          "line": 167,
+          "finding": "The whole-row JSON-set-of-3 distinctness assertion was near-tautological since completed_at varies across sequential records regardless of payload content.",
+          "suggestion": "Drop it as redundant with the content assertions that follow.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_codex_review_cascade_distinctness_fixture.py",
+          "line": 180,
+          "finding": "Stale comment claimed the spec row's distinctness was proven by raw_excerpt and status alone.",
+          "suggestion": "Correct the comment.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/codex_review_transport.py",
+          "line": 81,
+          "finding": "__all__ omitted three re-exported names both new test modules read off this module.",
+          "suggestion": "Add them to __all__.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/codex_review_roles.py",
+          "line": 69,
+          "finding": "_VALID_REASONING_EFFORTS enum was attributed to unreachable documentation and included/omitted values without verification.",
+          "suggestion": "Drop the enum in favor of a pinned literal.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/prompts/codex_review_dispatch.md",
+          "line": 71,
+          "finding": "Dispatch doc hardcoded an example transport_note value not bound to the live constants.",
+          "suggestion": "De-specify the example.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-20T21:06:12.220511+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/codex_review_transport.py:249-251",
+          "line": null,
+          "finding": "Claim under doubt: adding -c model_reasoning_effort=high is safe for every spec/code/doubt dispatch, because a model or CLI that rejects it makes that codex exec invocation fail at launch, surfacing as status: error, not a silent skip — The claim was asserted three times but verified nowhere; the test carrying it mocks subprocess.run so it can never launch codex. The flag is added unconditionally with no capability guard or degrade path. An operator override to an incompatible model would (per the claim) turn all three required reviews not_run.",
+          "suggestion": "Empirically establish the claimed failure mode with a live codex exec call, or add a degrade path, or accept in writing as a deliberate fail-loud trade-off.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": "shared/scripts/lib/codex_review_transport.py:202 vs 250-251",
+          "line": null,
+          "finding": "Claim under doubt: transport_note satisfies the parent spec's bar that evidence records the ACTUAL role, model, effort, sandbox — transport_note is computed before subprocess.run runs -- it is a record of intent, never of observation. The argv decision (codex_review_transport.py) and the evidence decision (transport_note_for in codex_review_roles.py) are two independent evaluations of the same role-in-REASONING_EFFORT_ROLES check; deleting the argv branch alone would leave the note unchanged and no test would catch it.",
+          "suggestion": "Add a test tying argv presence of the flag to transport_note's effort= presence for every role.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/codex_review_roles.py:81-93",
+          "line": null,
+          "finding": "Claim under doubt: moving transport_note construction into codex_review_roles.py is behaviour-neutral and safely documented — Ordering (slug validation before note construction) verified still correct. But transport_note_for's docstring says nothing about the precondition that effective_model must already be validated before reaching it, even though its return value is interpolated into a shell-quoted argument downstream.",
+          "suggestion": "One sentence in the docstring stating the precondition.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/prompts/codex_review_dispatch.md:65-72 vs shared/tests/test_codex_review_cascade_distinctness_fixture.py:131-135",
+          "line": null,
+          "finding": "Claim under doubt: the AC2 fixture's record call is byte-for-byte the same shape codex_review_dispatch.md instructs a production Codex-driven pass to run — Same arguments, not the same path: transport_note is now a 3-word string (spaces), so the doc's --transport-note \"{transport_note}\" quoting became load-bearing in this same diff. The fixture passes it as a Python list element, which can never exercise shell word-splitting, so it cannot catch a quoting regression.",
+          "suggestion": "Make the doc's example unmistakable about the multi-word value and required quoting.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "hidden-coupling-and-blast-radius",
+          "file": ".shipwright/planning/iterate/2026-09-20-m4-codex-subagent-dispatch.md:361 (ledger row 5)",
+          "line": null,
+          "finding": "Claim under doubt: Test Completeness Ledger row 5: transport_note is the bare model for plan_review, covered by row 6's fixture — Row 6's fixture only loops over spec/code/doubt; plan_review has no --from adapter and is never called by it. No test anywhere asserts run_codex_review('plan_review', ...)['transport_note'].",
+          "suggestion": "Add a test asserting plan_review's transport_note is the bare model.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary-and-contract",
+          "file": "shared/scripts/lib/codex_review_roles.py:65-69",
+          "line": null,
+          "finding": "Claim under doubt: the live smoke probe printed reasoning effort: high in its own banner and completed -- the flag is real, in this exact argv position, not merely accepted syntax — The probe as reported placed -c immediately after the subcommand; the shipped code appends -c as the last pair after -o. The probe may also have omitted --ignore-user-config, which would let ambient user config explain the banner instead of the -c override.",
+          "suggestion": "Re-run with the exact production argv and paste it into the comment.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency-and-ordering",
+          "file": "shared/scripts/lib/codex_review_roles.py:50-53, 71",
+          "line": null,
+          "finding": "Claim under doubt: the import-time guards in codex_review_roles.py make the role gate airtight — The gate itself could not be broken. But the subset guard uses assert (stripped under python -O), which the sibling module codex_review_model_resolution.py explicitly documents rejecting for this exact class of guard. The pinning assert on CODEX_REVIEW_REASONING_EFFORT is also tautological.",
+          "suggestion": "Convert the subset check to raise RuntimeError matching the sibling module's pattern.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-20T21:06:35.393789+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py:93-98 (`test_all_three_review_cascade_roles_get_the_flag`)",
+          "line": null,
+          "finding": "For roles `spec` and `doubt`, the fake `_run` writes `VALID_CODE_REVIEW` (a code-review-shaped payload) to the `-o` file. If `run_codex_review` validates the output against `ROLE_SCHEMAS[role]` (as its docstring claims — \"already schema-validated\"), those two calls likely return `status: \"error\"` and never exercise the success path. The test still passes because it only inspects the captured argv, not `result[\"status\"]` — so a regression that broke spec/doubt dispatch entirely would go unnoticed by this test.",
+          "suggestion": "Either assert `result[\"status\"] == \"completed\"` (with per-role-shaped payloads, as the cascade fixture already does) or use the cascade fixture's payload map here; at minimum assert status for the `code` role call.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test |",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py:100-121 (`test_reasoning_effort_flag_still_added_under_an_explicit_model_override`)",
+          "line": null,
+          "finding": "The test never asserts `result[\"status\"] == \"completed\"` before reading `result[\"transport_note\"]` — on the error path the dict has no `transport_note` key and the test would raise `KeyError` (a confusing failure rather than a clear one), or, if `_error()` ever gains a `transport_note`, silently assert against an error-row note.",
+          "suggestion": "Add `assert result[\"status\"] == \"completed\", result` before the `transport_note` assertions.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/scripts/lib/codex_review_transport.py:200-201",
+          "line": null,
+          "finding": "transport_note` is only present on the `completed` result; the `_error` dict omits it. That's defensible (spec only requires it for successful cascade passes), but `review_via_codex.py`'s updated docstring now instructs passing `transport_note` verbatim into `record --transport-note` without noting it's absent on error rows — an agent following the prompt on a failed pass would interpolate a missing key.",
+          "suggestion": "One clause in the docstring/prompt noting the note exists only on `status: completed` (error rows carry `reason` instead).",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case |",
+          "file": "shared/tests/test_codex_review_transport_reasoning_effort.py",
+          "line": 113,
+          "finding": "model=\"gpt-9.9-nonexistent\"` must survive the syntactic `_CODEX_MODEL_SLUG_PATTERN` allowlist or `run_codex_review` raises `CodexReviewTransportError` before any argv is captured. If the pattern excludes digits/hyphens in this shape, the test fails for the wrong reason; nothing in the diff pins this. (Likely fine, but unverified by the diff itself.)",
+          "suggestion": "Pick an override string already known to pass the pattern (e.g. reuse a value from the existing `_model_override` test file).  No security issues found: the effort/sandbox constants are same-module literals validated at import time, and no untrusted input flows into argv or shell.  Overall: the shipped scope faithfully implements all four ACs, the argv change is correctly gated, and the fixture is a genuine (if offline-bounded, as the spec itself acknowledges) distinctness proof. The findings above are test-hardening refinements, not blockers.  SHIPWRIGHT_VERDICT: approve",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/tests/test_codex_review_cascade_distinctness_fixture.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-_g2mrue3\\shared\\tests\\test_codex_review_cascade_distinctness_fixture.py:166)",
+          "line": null,
+          "finding": "The “three distinct rows” assertion serializes whole rows, which necessarily differ by `review_type`; it does not prove the spec pass retained its distinct payload. The spec payload’s unique `summary` is never asserted, while its findings are expected to be empty and `raw_excerpt` is asserted as `None`. A regression that discards or replaces the spec payload can still pass.",
+          "suggestion": "Assert a persisted spec-specific value from `_SPEC_PAYLOAD` in `reviews.json`, or use a spec fixture payload whose role adapter produces an assertable recorded field. Compare payload-derived fields rather than complete row objects.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "[shared/tests/test_codex_review_transport_reasoning_effort.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-_g2mrue3\\shared\\tests\\test_codex_review_transport_reasoning_effort.py:121)",
+          "line": null,
+          "finding": "The model-override test only checks that `transport_note` starts with the override model. It would pass if an override path omitted `effort=high` or `sandbox=read-only`, despite the acceptance criterion requiring all three to be recorded.",
+          "suggestion": "Assert the complete expected note for the override, including the configured effort and sandbox values.  Overall assessment: ship-with-fixes. The transport implementation appears to meet the core dispatch requirements, but the AC2/evidence tests leave concrete regressions undetected.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-20T20:50:45.483710+00:00",
+      "disposition": "diff review: glm=approve (4 low, all test-hardening), openai=revise (1 medium: spec row's own distinctive content untested; 1 low: override transport_note only prefix-checked). All fixed -- role-correct schema payloads + status assertions added to test_all_three_review_cascade_roles_get_the_flag and the override test; spec fixture payload changed to carry a real citation with an exact-note assertion for the override. See iterate spec External Review section.",
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] Reviewing this diff against the spec:\n\n**AC compliance check:**\n- AC1 (reasoning-effort flag for spec/code/doubt, `plan_review` untouched): implemented in `codex_review_transport.py` — the `-c model_reasoning_effort=...` append is gated on `REASONING_EFFORT_ROLES` membership, and the `--sandbox` literal→constant swap preserves the exact argv value, so `plan_review`'s argv is genuinely byte-identical. ✓\n- AC2 (distinctness fixture): `test_codex_review_cascade_distinctness_fixture.py` drives all three roles with three distinct payloads through the real `record_review_pass.py` CLI and asserts three content-distinct rows keyed by `review_type`. ✓\n- AC3 (`transport_note` naming model+effort+sandbox, reflecting overrides): computed from `effective_model` (post-resolution), tested under an explicit override. ✓\n- AC4 (Claude spawn path untouched): no SKILL.md / Task-spawn changes in the diff. ✓\n\nFindings:\n\n- Category: test | Severity: low\n  File: shared/tests/test_codex_review_transport_reasoning_effort.py:93-98 (`test_all_three_review_cascade_roles_get_the_flag`)\n  Finding: For roles `spec` and `doubt`, the fake `_run` writes `VALID_CODE_REVIEW` (a code-review-shaped payload) to the `-o` file. If `run_codex_review` validates the output against `ROLE_SCHEMAS[role]` (as its docstring claims — \"already schema-validated\"), those two calls likely return `status: \"error\"` and never exercise the success path. The test still passes because it only inspects the captured argv, not `result[\"status\"]` — so a regression that broke spec/doubt *dispatch entirely* would go unnoticed by this test.\n  Suggestion: Either assert `result[\"status\"] == \"completed\"` (with per-role-shaped payloads, as the cascade fixture already does) or use the cascade fixture's payload map here; at minimum assert status for the `code` role call.\n\n- Category: test | Severity: low\n  File: shared/tests/test_codex_review_transport_reasoning_effort.py:100-121 (`test_reasoning_effort_flag_still_added_under […truncated]\n\n[openai] - Category: test\n- Severity: medium\n- File: [shared/tests/test_codex_review_cascade_distinctness_fixture.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-_g2mrue3\\shared\\tests\\test_codex_review_cascade_distinctness_fixture.py:166)\n- Finding: The “three distinct rows” assertion serializes whole rows, which necessarily differ by `review_type`; it does not prove the spec pass retained its distinct payload. The spec payload’s unique `summary` is never asserted, while its findings are expected to be empty and `raw_excerpt` is asserted as `None`. A regression that discards or replaces the spec payload can still pass.\n- Suggestion: Assert a persisted spec-specific value from `_SPEC_PAYLOAD` in `reviews.json`, or use a spec fixture payload whose role adapter produces an assertable recorded field. Compare payload-derived fields rather than complete row objects.\n\n- Category: test\n- Severity: low\n- File: [shared/tests/test_codex_review_transport_reasoning_effort.py](C:\\Users\\SvenRoth\\AppData\\Local\\Temp\\shipwright-codex-review-_g2mrue3\\shared\\tests\\test_codex_review_transport_reasoning_effort.py:121)\n- Finding: The model-override test only checks that `transport_note` starts with the override model. It would pass if an override path omitted `effort=high` or `sandbox=read-only`, despite the acceptance criterion requiring all three to be recorded.\n- Suggestion: Assert the complete expected note for the override, including the configured effort and sandbox values.\n\nOverall assessment: ship-with-fixes. The transport implementation appears to meet the core dispatch requirements, but the AC2/evidence tests leave concrete regressions undetected.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T20:50:54.815718+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T19:46:29.330577+00:00",
+      "disposition": "Corrected re-run: first pass mistakenly inherited the session's Sonnet tier instead of the configured opus tier (shipwright_model_config.json plan_review=opus); this second pass ran with model=opus per the config. 10 findings (1 high, 4 medium, 5 low), all fixed -- see iterate spec Internal Plan Review section.",
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

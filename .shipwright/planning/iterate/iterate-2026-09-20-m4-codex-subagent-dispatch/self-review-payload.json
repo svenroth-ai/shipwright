@@ -1,0 +1,10 @@
+{"items":[
+{"name":"Spec Compliance","verdict":"pass","note":"All 4 ACs implemented (reasoning-effort argv, distinctness fixture, transport_note evidence incl. override reflection, Claude dispatch untouched); TOML generator explicitly out of scope per Architecture Review + user decision, not shipped."},
+{"name":"Error Handling","verdict":"pass","note":"No new system boundaries; existing subprocess OSError/TimeoutExpired handling in codex_review_transport.py is unchanged by this diff."},
+{"name":"Security Basics","verdict":"pass","note":"No user input reaches SQL/HTML; no new secrets; env allowlist/scrub unchanged; model slug still validated before launch."},
+{"name":"Test Quality","verdict":"pass","note":"Tests assert on outcomes (argv content, reviews.json row content) not implementation; happy-path, plan_review-absence, and explicit-override paths all covered; exact-set and full-argv-snapshot tests added post external review."},
+{"name":"Performance Basics","verdict":"n/a","note":"Pure CLI/dispatch code -- no DB, loops, or pagination surface."},
+{"name":"Naming & Structure","verdict":"pass","note":"Follows existing lib/tools/tests layout; codex_review_transport.py holds exactly at its 300-line cap after careful trimming."},
+{"name":"Affected Boundaries","verdict":"pass","note":"transport_note is new evidence written into reviews.json (producer: run_codex_review + record_review_pass.py; consumer: record_review_pass.py show / webui). Round-trip covered end-to-end by the AC2 distinctness fixture (produce -> record -> show)."},
+{"name":"Test Hygiene Probe","verdict":"pass","note":"scan_test_hygiene.py --diff: no findings."}
+]}

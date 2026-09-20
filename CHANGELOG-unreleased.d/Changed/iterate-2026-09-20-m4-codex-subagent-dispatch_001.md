@@ -1,0 +1,1 @@
+Codex review dispatch (spec/code/doubt roles) now sends -c model_reasoning_effort=high to codex exec, matching AGENTS.md's pinned reasoning policy; codex_review_roles.py stays the sole canonical source of Codex model/effort/sandbox settings (the M4-planned .codex/agents/*.toml generator was cut -- no automated consumer).
