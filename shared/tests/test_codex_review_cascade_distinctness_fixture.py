@@ -82,6 +82,7 @@ def project(tmp_path):
     return make_project(tmp_path)
 
 
+@pytest.mark.covers("FR-01.11/AC37")
 def test_three_codex_dispatched_passes_are_genuinely_distinct_in_reviews_json(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
