@@ -1,0 +1,1 @@
+Decide the Codex activation-envelope delivery design (campaign codex-plugin-execution-reliability R0): prompt-borne envelope minted reactively by UserPromptSubmit, consumed by PreToolUse; R2 scoped to the terminal producer only. ADR only, no code shipped.

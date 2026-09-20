@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-20-r0-resolve-1a-envelope-delivery",
+  "date": "2026-09-20",
+  "section": "Iterate -- change: campaign codex-plugin-execution-reliability, sub-iterate R0",
+  "title": "Codex activation-envelope delivery: prompt-borne, minted reactively by UserPromptSubmit",
+  "context": "Parent spec M3/M7 needs a pre-worktree activation signal so a Codex CLI session cannot proceed past tool calls until worktree setup has actually run. R0 resolves which envelope-delivery variant mints that signal and answers two falsification questions, per a 2026-09-20 amendment requiring live proof against Codex CLI 0.155.0. Full context: see --spec-ref.",
+  "decision": "Envelope is prompt-borne, minted reactively by UserPromptSubmit once a real session exists; PreToolUse consumes it atomically, one-time. R2 scope trimmed to terminal producer only (webui/Desktop deferred); Claude-side registration deferred as a separate decision; envelope authenticity takes document-the-risk, not a nonce. Full mechanism, gaps, and Contract for R2: see --spec-ref.",
+  "consequences": "R2 inherits two hard blocking preconditions before AC1a can be met: ordinary trusted-hook denial never proven (only bypass-mode denies observed), and mint-to-consume never chained end-to-end live. R2's scope shrinks to terminal-only. Claude sessions remain unenforced. No production code ships from this run.",
+  "rationale": "First draft proposed a pre-session file keyed by cwd+session identity - impossible, session identity doesn't exist at mint time. Two independent reviews rejected this convergently; corrected design live-proven for UserPromptSubmit. Architecture Review split glm=approve/openai=reject; openai's alternative is the same spoofable cwd-only signal an earlier parent-spec review already rejected. Operator chose to keep the design, trim R2 scope. Full: see spec-ref.",
+  "rejected": "Pre-session file-binding (session-identity-impossible at mint time). Claude hooks.json registration now (self-contradicts cross-runtime defense). Per-launch secret/nonce (disproportionate new credential mechanism). All three producers as R2 scope (disproportionate surface). Gating on cwd/worktree-shape with no minted record (already-rejected spoofable signal). Full list: see spec-ref.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md"
+}

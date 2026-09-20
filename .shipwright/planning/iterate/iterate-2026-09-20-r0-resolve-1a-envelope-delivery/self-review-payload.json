@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "The decision-drop + spec-ref record which Resolution B variant was chosen and why, answer both Resolution A falsification questions, and close the live-feasibility-gate amendment with 7 live probes; no extra scope added beyond the sub-iterate's 6 ACs (one AC deliberately left unchecked with its own blocking-finding text, per the sub-iterate's own AC6)."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "n/a",
+      "note": "No code, no API routes, no external service calls ship from this run. write_decision_drop.py's own field-length guard (500-char cap) was hit and handled correctly (moved long-form prose to a --spec-ref file) rather than worked around."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No user input, secrets, or credentials in any artifact this run touches. The run's own subject matter is a security question (envelope authenticity / prompt-content forgery) -- resolved explicitly in the ADR (document-the-risk over a nonce, per Architecture Review) rather than left implicit."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "n/a",
+      "note": "No production code, no tests. The iterate spec's Confidence Calibration ledger (12 rows, each disposed as tested/untestable-this-run/reasoned) is this run's equivalent instrument for its own empirical claims."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "No code paths, no queries, no endpoints."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "The decision-drop JSON and its --spec-ref file follow write_decision_drop.py's own documented naming convention and F3's no-ADR-number-in-heading rule. A first draft appended a hand-numbered ADR directly to decision_log.md instead -- a violation of F3's single-serialization-point rule, caught by code-reviewer, reverted, and fixed to the correct decision-drop-only shape."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "The activation-envelope/record format is a new serialized producer/consumer boundary this decision creates (terminal helper -> UserPromptSubmit -> PreToolUse). Producer/consumer pairs and the full schema/scoping/consumption contract are named in the iterate spec's Affected Boundaries and Contract for R2 sections. No round-trip test exists yet because R0 ships no code implementing either side -- explicitly named as R2's job (blocking precondition 2) in the ADR, not silently skipped."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff -> 'test_hygiene: no findings', exit 0. No test files touched by this run."
+    }
+  ]
+}

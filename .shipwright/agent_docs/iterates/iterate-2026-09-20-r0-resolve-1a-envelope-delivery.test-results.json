@@ -1,0 +1,103 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-20-r0-resolve-1a-envelope-delivery",
+    "date": "2026-09-20",
+    "unit": {
+      "status": "passed",
+      "passed": 18,
+      "total": 18
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests: red in parallel (rc 1), GREEN alone (rc 0) -- pre-existing xdist fan-out flake, unrelated to this run's diff (ADR-only, no production code touched). Filed as trg-f64d1c27 in .shipwright/triage.jsonl; does not affect this run's GREEN status."
+    ],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-09-20T17:20:29.668Z",
+      "attempts": 0,
+      "justification": "This run ships no production code or UI/API surface -- only an Architecture Decision Record (decision-drop + long-form spec-ref) resolving a design question. No startable surface exists to drive end-to-end."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "an untrusted PreToolUse hook is silently skipped (no denial, no signal)",
+          "disposition": "tested",
+          "evidence": "probe 1 (run1.jsonl / .codex/hook_invocations.log absent) -- Live Feasibility Probes #1"
+        },
+        {
+          "behavior": "PreToolUse permissionDecision:deny blocks tool execution, Bash class",
+          "disposition": "tested",
+          "evidence": "probe 2 (run2.jsonl): 'The command was not run. It was blocked before execution' -- Live Feasibility Probes #2"
+        },
+        {
+          "behavior": "hook-visible tool_name for a shell command",
+          "disposition": "tested",
+          "evidence": "probe 2 (hook_invocations.log): \"tool_name\":\"Bash\" -- Live Feasibility Probes #2"
+        },
+        {
+          "behavior": "hook-visible tool_name for a subagent spawn",
+          "disposition": "tested",
+          "evidence": "probe 4 (hook_invocations_all.log): \"tool_name\":\"collaborationspawn_agent\" / \"collaborationwait_agent\" -- Live Feasibility Probes #4"
+        },
+        {
+          "behavior": "the \"Agent\" matcher string catches a spawn_agent call",
+          "disposition": "tested",
+          "evidence": "probe 4 correction -- official Codex CLI \"Tool coverage\" table confirms spawn_agent also matches Agent (docs-confirmed, not an independently live-run matcher:\"Agent\" hook in this run; carried to R2 as a cheap live check) -- Live Feasibility Probes #4 correction"
+        },
+        {
+          "behavior": "named .codex/agents/*.toml profile actually steers a spawned subagent",
+          "disposition": "tested",
+          "evidence": "probe 6 / run6.jsonl: response begins \"R0PROBEMARKER 72\" (correct product + marker) -- Live Feasibility Probes #6"
+        },
+        {
+          "behavior": "codex doctor reports hook-trust state via a non-interactive query path",
+          "disposition": "tested",
+          "evidence": "doctor_full.txt -- no hook section present (tested, negative result) -- Live Feasibility Probes #8"
+        },
+        {
+          "behavior": "UserPromptSubmit payload carries real session_id/turn_id/cwd/prompt, and its additionalContext reaches the model",
+          "disposition": "tested",
+          "evidence": "probe 7 / run7 (ups_invocations.log + run7_ups.jsonl): model quoted R0_PROBE_MINTED_TOKEN=R0PROBE-TOKEN-01a0bf99 verbatim, with a caveat (Branch A external review, glm) recorded in the iterate spec's Confidence Calibration row 9 -- self-reported by the model, not a structured event-stream field; sufficient for this run's feasibility-gate purpose, R2's first live check should confirm via a structured field -- Live Feasibility Probes #7"
+        }
+      ],
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-20-r0-resolve-1a-envelope-delivery",
+    "commit": "c91f16a2d2e00023b3c6fadccf86431880b5e7ea",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

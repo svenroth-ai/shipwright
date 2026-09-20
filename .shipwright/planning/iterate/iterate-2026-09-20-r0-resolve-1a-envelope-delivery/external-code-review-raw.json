@@ -1,0 +1,34 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "codex",
+  "degraded": false,
+  "reviews_succeeded": 2,
+  "reviews": {
+    "openai": {
+      "feedback": "No concrete defects found. The diff delivers the required ADR, records the chosen mechanism and both falsification answers, and explicitly preserves the unmet live-trust and end-to-end-chain proofs as blocking R2 preconditions rather than overstating them.\n\nOverall assessment: ship-as-is.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "codex",
+      "status": "success"
+    },
+    "glm": {
+      "feedback": "This is a documentation-only diff (a decision-drop JSON, an ADR, and an INDEX line) against a spec whose stated output is exactly that \u2014 an ADR, no production code. There are no correctness, security, or test-code surfaces to audit. Findings below are limited to real, substantive issues in the record itself.\n\n## Findings\n\n- Category: bug\n  Severity: medium\n  File: `.shipwright/agent_docs/decision-drops/iterate-2026-09-20-r0-resolve-1a-envelope-delivery_001.json:6-11` and `.shipwright/planning/adr/iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md:241-249`\n  Finding: The durable, committed evidence trail points at a gitignored file. Both the decision-drop (\"Full context: see --spec-ref\") and the ADR's Review-history section (\"Full detail for all of the above: the iterate spec itself... (gitignored, main-checkout-only after merge)\") route the load-bearing detail \u2014 the 7 live-probe evidence, the full Test Completeness Ledger, the raw review payloads, and `gpt56sol-review-findings.md`/`opus-plan-reviewer-findings.md` (which the spec says are preserved \"in this directory\" but which do not appear in this diff) \u2014 to material that will not exist on any other checkout/branch. On a merged branch, the committed ADR cites probe results (\"live-proven (7 probes)\") whose only evidence is unversioned.\n  Suggestion: Commit the probe run logs and the two review-findings files (redacted of scratch paths if needed) alongside the ADR, or copy the probe/ledger summary into the ADR body itself.\n\n- Category: spec\n  Severity: low\n  File:`.shipwright/planning/adr/iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md:27-70`\n  Finding: The spec's \"Affected Boundaries\" section explicitly corrected the first draft's `n/a` framing and mandates naming the producer/consumer boundary table \u2014 the ADR compresses this to one sentence in Consequences (\"terminal helper \u2192 UserPromptSubmit \u2192 PreToolUse\") and drops the format column and the third producer row. The ADR is the *committed* record; the full table lives only in the gitignored spec. Mild AC4/affected-boundaries compliance loss in the shipped artifact.\n  Suggestion: Copy the two-row producer/consumer table from the spec's Affected Boundaries section into the ADR.\n\n- Category: edge-case\n  Severity: low\n  File:`.shipwright/planning/adr/iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md:6-8`\n  Finding: The ADR states the sequential ADR number \"is assigned by `aggregate_decisions.py` at release time, not here,\" but `INDEX.md` lists this entry alphabetically/sequentially among dated entries with no number. If `decision_log.md` and INDEX.md are supposed to stay consistent (the spec's pass-2 glm finding explicitly worried about \"local-status/ADR merge-drift risk\"), the no-number rule for the ADR body vs. INDEX insertion needs the regen script to reconcile \u2014 verify `rebuild_adr_index.py` actually produces this same line, or the index will drift on next regeneration.\n  Suggestion: Run the documented `rebuild_adr_index.py` once and confirm the diff's INDEX line matches its output byte-for-byte.\n\nOn the spec's own acceptance criteria: the decision, both falsification answers, the R2 contract, the honest unchecked trust-confirmation AC with its blocking finding, and the six named gaps are all present in the diff and match the spec text. The two blocking preconditions for R2 are carried into the committed record, which was the key thing the amendment required.\n\nOverall assessment: ship-with-fixes at most \u2014 the content is sound and self-consistent; the only real defect is that the committed record's evidence chain resolves to gitignored files, which should be fixed by committing the probe logs and findings files. Functionally this can ship as-is for the terminal-only decision it records.\n\nSHIPWRIGHT_VERDICT: approve",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "driver": "claude",
+  "verdicts": {
+    "openai": "approve",
+    "glm": "approve"
+  },
+  "statuses": {
+    "openai": "success",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": true,
+    "requires_resolution": false,
+    "reason": "verdicts agree within one step: glm=approve, openai=approve"
+  }
+}
