@@ -382,7 +382,7 @@ Regression test (`test_check_no_empty_split_fails_loud_on_a_split_dir_symlinked_
 follows this repo's own `test_path_canon_windows.py` precedent —
 `os.symlink()` inside `try/except (OSError, NotImplementedError):
 pytest.skip(...)` — since unprivileged symlink creation needs admin rights
-or Developer Mode on Windows; it skips here and is exercised by POSIX CI.
+or Windows' Developer Mode setting; it skips here and is exercised by POSIX CI.
 
 ## Tier-3 review history — stray review-transcript scratch files in the diff (PR #729)
 

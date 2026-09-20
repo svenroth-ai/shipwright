@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import posixpath
+import re
 import stat
 from pathlib import Path, PurePosixPath
 
@@ -18,7 +19,7 @@ __all__ = ["CONFIG_NAME", "load_declared_manifests", "resolve_contained_path"]
 
 CONFIG_NAME = "shipwright_changelog_config.json"
 
-_DRIVE_LETTER_RE = __import__("re").compile(r"^[A-Za-z]:")
+_DRIVE_LETTER_RE = re.compile(r"^[A-Za-z]:")
 
 
 def _canonicalize(raw_path: str) -> str:

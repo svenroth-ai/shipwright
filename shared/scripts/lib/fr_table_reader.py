@@ -38,6 +38,7 @@ Pure: no I/O, no globals mutated, no exit-code semantics. Callers read files.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import re
 import sys
 from pathlib import Path
@@ -52,7 +53,7 @@ from pathlib import Path
 # same way `_sibling`'s own `importlib.import_module(f".{name}", package)`
 # leg does.
 if __package__:
-    _loader_mod = __import__(f"{__package__}._fr_table_reader_loader", fromlist=["sibling"])
+    _loader_mod = importlib.import_module(f"{__package__}._fr_table_reader_loader")
 else:
     _lib_dir = str(Path(__file__).resolve().parent)
     if _lib_dir not in sys.path:
