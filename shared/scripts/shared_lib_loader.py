@@ -83,14 +83,22 @@ def _import(dotted: str):
     return importlib.import_module(dotted)
 
 
-def load_shared_lib(module_name: str):
-    """Return ``shared/scripts/lib/<module_name>``, shadowing-proof."""
+def load_shared_lib(module_name: str, *, prefer_private: bool = False):
+    """Return ``shared/scripts/lib/<module_name>``, shadowing-proof.
+
+    ``prefer_private`` is for a compatibility shim occupying the same module
+    name in a plugin's own ``scripts/lib``. Normal package lookup would find
+    that shim first and recurse; the private shared package avoids it. A
+    private and a normal ``lib`` import may coexist, so shared modules loaded
+    this way must not rely on module-instance identity or mutable globals.
+    """
     if str(_SCRIPTS_DIR) not in sys.path:
         sys.path.insert(0, str(_SCRIPTS_DIR))
-    try:
-        return _import(f"lib.{module_name}")
-    except ImportError:
-        pass
+    if not prefer_private:
+        try:
+            return _import(f"lib.{module_name}")
+        except ImportError:
+            pass
 
     _private_package()
     private_name = f"{_PRIVATE_PKG}.{module_name}"

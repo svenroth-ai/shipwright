@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-19-e2e-journey-coverage-gate",
+  "date": "2026-09-20",
+  "section": "Iterate — fix: per-journey E2E coverage gate",
+  "title": "Shared per-journey E2E coverage oracle",
+  "context": "FR-01.06 #6b was deferred because the shared verifier could not import the test plugin matcher without violating ADR-045.",
+  "decision": "Move reusable journey parsing and matching to shared/scripts/lib and call it from the shared test gate; retain plugin shims for compatibility.",
+  "consequences": "Every planned journey needs a matching local spec; greenfield blocks and brownfield creates durable non-blocking follow-up work.",
+  "rationale": "A shared oracle makes the existing criterion-14 behavior authoritative at the gate.",
+  "rejected": "A plugin-private import violates ADR-045; retaining the existence-only floor preserves the known false-positive.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md"
+}

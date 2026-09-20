@@ -4,13 +4,13 @@ sub-iterate ``e3-checks-test-security``).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
 from tools.verifiers._test_gate_specs import (
     check_e2e_specs_exist_when_journeys_planned,
-    _plan_declares_a_flow,
 )
 
 _PLAN_WITH_FLOW = """# E2E Test Plan
@@ -63,10 +63,53 @@ def test_skips_when_plan_declares_no_flows(tmp_path):
     _write_plan(tmp_path, _PLAN_WITHOUT_FLOW)
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
     assert r.is_skipped
-    assert "none declare a flow" in r.detail
+    assert "no user journeys" in r.detail
 
 
-def test_invalid_utf8_plan_file_is_skipped_not_crashed(tmp_path):
+def test_fails_closed_when_canonical_flow_heading_omits_its_title(tmp_path):
+    _write_plan(tmp_path, "## User Flows\n\n### Flow 1:\n")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert r.is_skipped is False
+    assert "omit a journey title" in r.detail
+
+
+def test_fails_closed_when_canonical_flow_title_normalizes_to_no_slug(tmp_path):
+    _write_plan(tmp_path, "## User Flows\n\n### Flow 1: !!!\n")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert r.is_skipped is False
+    assert "omit a journey title" in r.detail
+
+
+def test_fails_closed_when_plain_h3_journey_title_normalizes_to_no_slug(tmp_path):
+    _write_plan(tmp_path, "## User Flows\n\n### !!!\n")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert r.is_skipped is False
+    assert "omit a journey title" in r.detail
+
+
+def test_fails_closed_when_empty_h3_is_followed_by_prose_and_a_matching_spec(tmp_path):
+    _write_plan(tmp_path, "## User Flows\n\n###\nSome prose\n")
+    flows = tmp_path / "e2e" / "flows"
+    flows.mkdir(parents=True)
+    (flows / "some-prose.spec.ts").write_text("x", encoding="utf-8")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert r.is_skipped is False
+    assert "omit a journey title" in r.detail
+
+
+def test_invalid_utf8_plan_file_fails_closed_not_crashed(tmp_path):
     """Tier-3 CI review (PR #748, round 6): UnicodeDecodeError is a
     ValueError, not an OSError, so a plan file with invalid UTF-8 bytes used
     to crash the whole gate instead of being treated like any other
@@ -74,8 +117,35 @@ def test_invalid_utf8_plan_file_is_skipped_not_crashed(tmp_path):
     path = _write_plan(tmp_path, _PLAN_WITH_FLOW)
     path.write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
-    assert r.is_skipped
-    assert "none declare a flow" in r.detail
+    assert r.ok is False
+    assert "could not be read" in r.detail
+
+
+def test_an_unreadable_plan_does_not_hide_a_later_readable_plan_with_journeys(tmp_path):
+    bad = _write_plan(tmp_path, _PLAN_WITHOUT_FLOW, split="01-bad")
+    bad.write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    _write_plan(tmp_path, _PLAN_WITH_FLOW, split="02-good")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert r.is_skipped is False
+    assert "cannot verify every planned journey" in r.detail
+    assert "could not be read" in r.detail
+
+
+def test_an_unreadable_plan_prevents_a_clean_coverage_result(tmp_path):
+    bad = _write_plan(tmp_path, _PLAN_WITHOUT_FLOW, split="01-bad")
+    bad.write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    _write_plan(tmp_path, _PLAN_WITH_FLOW, split="02-good")
+    flows = tmp_path / "e2e" / "flows"
+    flows.mkdir(parents=True)
+    (flows / "01-sign-up.spec.ts").write_text("test('sign up', () => {});")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert "cannot verify every planned journey" in r.detail
 
 
 def test_skips_when_plan_has_no_user_flows_section_at_all(tmp_path):
@@ -84,11 +154,23 @@ def test_skips_when_plan_has_no_user_flows_section_at_all(tmp_path):
     assert r.is_skipped
 
 
+def test_skips_h3s_outside_the_exact_user_flows_section(tmp_path):
+    _write_plan(tmp_path, "## Page Object Model\n\n### LoginPage\n")
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+    assert r.is_skipped
+
+
+def test_skips_case_variant_user_flows_heading(tmp_path):
+    _write_plan(tmp_path, "## User flows\n\n### Sign Up\n")
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+    assert r.is_skipped
+
+
 def test_fails_when_flow_declared_but_no_e2e_dir(tmp_path):
     _write_plan(tmp_path, _PLAN_WITH_FLOW)
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
     assert r.ok is False
-    assert "no *.spec.ts" in r.detail
+    assert "no spec files" in r.detail
 
 
 def test_fails_when_flow_declared_but_e2e_dir_empty(tmp_path):
@@ -98,25 +180,48 @@ def test_fails_when_flow_declared_but_e2e_dir_empty(tmp_path):
     assert r.ok is False
 
 
-def test_passes_when_specs_exist_alongside_flow(tmp_path):
+def test_passes_when_every_journey_has_a_matching_spec(tmp_path):
     _write_plan(tmp_path, _PLAN_WITH_FLOW)
     flows = tmp_path / "e2e" / "flows"
     flows.mkdir(parents=True)
-    (flows / "01-signup.spec.ts").write_text("test('signup', () => {});")
+    (flows / "01-sign-up.spec.ts").write_text("test('sign up', () => {});")
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
     assert r.ok is True
+
+
+def test_spec_with_utf8_bom_can_match_a_title_in_its_first_line(tmp_path):
+    _write_plan(tmp_path, _PLAN_WITH_FLOW)
+    flows = tmp_path / "e2e" / "flows"
+    flows.mkdir(parents=True)
+    (flows / "unrelated.spec.ts").write_bytes(
+        b"\xef\xbb\xbf" + b"test('Sign up', () => {});"
+    )
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+    assert r.ok is True
+
+
+def test_unreadable_spec_prevents_a_clean_coverage_result(tmp_path):
+    _write_plan(tmp_path, _PLAN_WITH_FLOW)
+    flows = tmp_path / "e2e" / "flows"
+    flows.mkdir(parents=True)
+    (flows / "unrelated.spec.ts").write_bytes(b"\xff\xfe not valid utf-8")
+
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
+
+    assert r.ok is False
+    assert "E2E spec(s) could not be read" in r.detail
 
 
 def test_nested_spec_files_are_found(tmp_path):
     _write_plan(tmp_path, _PLAN_WITH_FLOW)
     nested = tmp_path / "e2e" / "flows" / "deep"
     nested.mkdir(parents=True)
-    (nested / "01-signup.spec.ts").write_text("test('signup', () => {});")
+    (nested / "01-sign-up.spec.ts").write_text("test('sign up', () => {});")
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
     assert r.ok is True
 
 
-def test_unreadable_plan_file_is_skipped_not_crashed(tmp_path):
+def test_unreadable_plan_file_fails_closed_not_crashed(tmp_path):
     """A plan directory named ``claude-plan-e2e.md`` (a directory, not a
     file) must not crash the check — OSError on read is swallowed and
     treated as no-flow-declared for that entry."""
@@ -124,7 +229,8 @@ def test_unreadable_plan_file_is_skipped_not_crashed(tmp_path):
     split_dir.mkdir(parents=True)
     (split_dir / "claude-plan-e2e.md").mkdir()
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
-    assert r.is_skipped
+    assert r.ok is False
+    assert "could not be read" in r.detail
 
 
 def test_symlinked_plan_escaping_root_is_treated_as_absent(tmp_path):
@@ -160,7 +266,7 @@ def test_plan_with_utf8_bom_is_still_read_correctly(tmp_path):
     )
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
     assert r.ok is False  # flow declared, no spec.ts yet -- NOT a false skip
-    assert "declare user flows" in r.detail
+    assert "no spec files" in r.detail
 
 
 def test_symlinked_spec_file_escaping_root_does_not_satisfy_the_gate(tmp_path):
@@ -180,7 +286,7 @@ def test_symlinked_spec_file_escaping_root_does_not_satisfy_the_gate(tmp_path):
     try:
         r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
         assert r.ok is False
-        assert "no *.spec.ts" in r.detail
+        assert "no spec files" in r.detail
     finally:
         outside.unlink(missing_ok=True)
 
@@ -190,66 +296,45 @@ def test_multiple_plans_only_one_with_flows(tmp_path):
     _write_plan(tmp_path, _PLAN_WITH_FLOW, split="02-billing")
     r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
     assert r.ok is False
-    assert "1 E2E plan(s)" in r.detail
+    assert "1 planned journey" in r.detail
 
 
-# --- _plan_declares_a_flow direct coverage -----------------------------------
+def test_an_unrelated_spec_no_longer_satisfies_the_gate(tmp_path):
+    _write_plan(tmp_path, _PLAN_WITH_FLOW)
+    flows = tmp_path / "e2e" / "flows"
+    flows.mkdir(parents=True)
+    (flows / "unrelated.spec.ts").write_text("test('another journey', () => {});")
 
-def test_plan_declares_a_flow_true():
-    assert _plan_declares_a_flow(_PLAN_WITH_FLOW) is True
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
 
-
-def test_plan_declares_a_flow_false_no_h3():
-    assert _plan_declares_a_flow(_PLAN_WITHOUT_FLOW) is False
-
-
-def test_plan_declares_a_flow_false_no_section():
-    assert _plan_declares_a_flow(_PLAN_NO_SECTION) is False
+    assert r.ok is False
+    assert "01-sign-up" in r.detail
 
 
-def test_plan_declares_a_flow_ignores_h3_outside_section():
-    text = """## Page Object Model
+def test_an_inherited_gap_is_reported_without_blocking(tmp_path):
+    _write_plan(tmp_path, _PLAN_WITH_FLOW)
+    flows = tmp_path / "e2e" / "flows"
+    flows.mkdir(parents=True)
+    (flows / "unrelated.spec.ts").write_text("test('another journey', () => {});")
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"adoption": {"adopted_at": "2026-01-01"}}), encoding="utf-8"
+    )
 
-### home.page.ts
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
 
-## User Flows
-
-(no flows listed here)
-"""
-    assert _plan_declares_a_flow(text) is False
-
-
-def test_plan_declares_a_flow_is_case_sensitive_matching_journey_plan_py():
-    """External review round 2 (GLM): the heading match must stay
-    case-sensitive, mirroring `journey_plan.py`'s own `_USER_FLOWS_SECTION`
-    exactly — a case-insensitive floor could count a heading the real
-    generator does not, disagreeing with the tool it floor-checks."""
-    text = """# E2E Test Plan
-
-## User flows
-
-### Flow 1: Sign up
-
-Steps...
-"""
-    assert _plan_declares_a_flow(text) is False
+    assert r.ok is False
+    assert r.severity == "warning"
+    assert r.strict_exempt is True
 
 
-def test_plan_declares_a_flow_duplicate_heading_terminates_section():
-    """External review (low): the old ``_NEXT_H2_RE`` never matched a
-    second ``## User Flows`` heading, so H3s living under it (or later,
-    unrelated H2 sections) could be miscounted as flows of the FIRST
-    section. Any subsequent H2 — including a duplicate — must terminate."""
-    text = """# E2E Test Plan
+def test_an_inherited_plan_with_no_specs_is_reported_without_blocking(tmp_path):
+    _write_plan(tmp_path, _PLAN_WITH_FLOW)
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"adoption": {"adopted_at": "2026-01-01"}}), encoding="utf-8"
+    )
 
-## User Flows
+    r = check_e2e_specs_exist_when_journeys_planned(tmp_path)
 
-(no flows in the first section)
-
-## User Flows
-
-### Flow 1: Sign up
-
-Steps...
-"""
-    assert _plan_declares_a_flow(text) is False
+    assert r.ok is False
+    assert r.severity == "warning"
+    assert r.strict_exempt is True

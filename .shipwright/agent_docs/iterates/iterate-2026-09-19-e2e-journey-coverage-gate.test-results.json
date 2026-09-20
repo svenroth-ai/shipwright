@@ -1,0 +1,78 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-19-e2e-journey-coverage-gate",
+    "date": "2026-09-20",
+    "unit": {
+      "status": "passed",
+      "passed": 19115,
+      "total": 19115
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 550,
+      "total": 550
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "Framework-internal verifier and parser change; no startable visual surface. The canonical F0 suite is the relevant verification."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "the shared test gate rejects an arbitrary spec that does not match a declared journey",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_test_gate_e2e_specs_generated.py::test_an_unrelated_spec_no_longer_satisfies_the_gate PASSED"
+        },
+        {
+          "behavior": "the gate honors strict User Flows grammar and fails closed on unreadable plans and specs",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_test_gate_e2e_specs_generated.py and plugins/shipwright-test/tests/test_journey_plan.py PASSED"
+        },
+        {
+          "behavior": "the relocated shared matcher preserves plugin compatibility and the ADR-045 separation",
+          "disposition": "tested",
+          "evidence": "plugins/shipwright-test/tests/test_journey_coverage.py PASSED"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 3,
+        "covered_acs": 3
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-19-e2e-journey-coverage-gate",
+    "commit": "e9e001ced6eb4bed1fccd4452079f71574372443",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

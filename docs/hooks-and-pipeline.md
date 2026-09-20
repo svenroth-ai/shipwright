@@ -3131,6 +3131,8 @@ test-runner subagent
   → Step 3.5: checks e2e/ for .spec.ts files
     → if missing: reads .shipwright/planning/*/claude-plan-e2e.md
     → generates e2e/flows/*.spec.ts + e2e/pages/*.page.ts
+  → verifier checks every planned journey against spec names/body text; a
+    greenfield gap blocks, while an inherited brownfield gap remains a tracked follow-up
   → runs Playwright E2E (against dev server)
   → writes shipwright_test_results.json to project root
   → returns JSON result to orchestrator

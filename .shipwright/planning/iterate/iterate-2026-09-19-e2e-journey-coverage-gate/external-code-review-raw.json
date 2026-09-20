@@ -1,0 +1,38 @@
+{
+  "review_schema": 2,
+  "success": true,
+  "provider": "claude_cli",
+  "degraded": false,
+  "reviews_succeeded": 1,
+  "reviews": {
+    "opus": {
+      "status": "error",
+      "via": "claude_cli",
+      "reason": "claude CLI exited 1: "
+    },
+    "glm": {
+      "feedback": "**Findings**\n\n- **Category: edge-case \u2014 Severity: medium**\n  Greenfield plans created before this change (or imported plans) may declare journeys whose naming doesn't match any spec under the new, stricter matcher, flipping previously-passing verifications into hard failures. The plan mentions tests for matching behavior but no migration/readiness check.\n  *Suggestion:* Run the shared matcher in non-blocking \"report\" mode across existing plans/spec fixtures before enabling the blocking path, and document any expected-fail set.\n\n- **Category: risk \u2014 Severity: medium**\n  The shared verifier becomes per-journey-blocking only for greenfield, but the spec doesn't state how \"greenfield vs. brownfield\" is determined at verification time. If that classification is implicit (e.g., phase or directory heuristics), an existing project could be misclassified and hard-blocked.\n  *Suggestion:* State the classification source explicitly and pin it in a test.\n\n- **Category: dependency \u2014 Severity: medium**\n  Moving modules to `shared/scripts/lib/` with plugin shims requires the plugin's own tests and any other consumers (producer path, follow-up creation) to keep resolving. No mention of updating import maps/paths or verifying no plugin-external code already imports the old locations.\n  *Suggestion:* Grep for existing imports of the moved modules and add a deprecation note to the shims.\n\n- **Category: edge-case \u2014 Severity: low**\n  Sanitizer/matcher behavior on malformed plan input is claimed as tested, but the blocking behavior on a *malformed* journey declaration in a greenfield project (fail-closed vs. skip) is unspecified.\n  *Suggestion:* Define explicitly: malformed journey declarations should block in greenfield (fail-closed), with a clear error message.\n\n- **Category: approach \u2014 Severity: low**\n  Path-containment checks for journey-to-spec mapping are mentioned only via tests. Confirm the matcher constrains matched specs to the local E2E directory, otherwise a stray spec elsewhere could re-open the false-positive path.\n  *Suggestion:* Assert containment in the matcher itself, not just tests.\n\n**Overall assessment:** The approach is sound \u2014 moving shared logic out of the plugin and replacing the existence floor with per-journey matching addresses the root cause correctly and respects ADR-045. The main gaps are migration risk for existing plans and an unspecified greenfield/brownfield classification.\n\nSHIPWRIGHT_VERDICT: revise",
+      "via": "openrouter",
+      "status": "success"
+    }
+  },
+  "partially_degraded": true,
+  "partially_degraded_legs": [
+    "opus"
+  ],
+  "driver": "codex",
+  "verdicts": {
+    "opus": "unavailable",
+    "glm": "revise"
+  },
+  "statuses": {
+    "opus": "error",
+    "glm": "success"
+  },
+  "contradiction": {
+    "detected": false,
+    "comparable": false,
+    "requires_resolution": true,
+    "reason": "only one reviewer answered \u2014 opus did not (glm=revise, opus=unavailable)"
+  }
+}

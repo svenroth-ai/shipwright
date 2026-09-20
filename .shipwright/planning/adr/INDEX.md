@@ -145,3 +145,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Corroborated-trunk-ancestry check for the check_binding_completeness rollout grace (`trg-4380c61a`)](iterate-2026-09-16-layer-coverage-rollout-trust-anchor.md)
 - [A third, cross-vendor external-reviewer identity ("opus"), gated by a required `--driver` flag](iterate-2026-09-16-opus-review-leg-codex-driver-third-reviewer-identity.md)
 - [A configurable Codex reviewer-identity axis, superseding AC2's static lock; `fable` added to the Claude tier set](iterate-2026-09-18-codex-review-tier-config.md)
+- [Shared per-journey E2E coverage oracle](iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md)

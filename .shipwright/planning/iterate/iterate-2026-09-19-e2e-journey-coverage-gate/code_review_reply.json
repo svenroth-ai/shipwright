@@ -1,0 +1,5 @@
+{
+  "verdict": "APPROVE",
+  "review": [],
+  "summary": "The relocation preserves plugin compatibility shims and ADR-045; the final brownfield zero-spec path now emits one idempotent durable follow-up per journey while the shared verifier stays read-only."
+}
