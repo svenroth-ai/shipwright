@@ -146,3 +146,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [A third, cross-vendor external-reviewer identity ("opus"), gated by a required `--driver` flag](iterate-2026-09-16-opus-review-leg-codex-driver-third-reviewer-identity.md)
 - [A configurable Codex reviewer-identity axis, superseding AC2's static lock; `fable` added to the Claude tier set](iterate-2026-09-18-codex-review-tier-config.md)
 - [Shared per-journey E2E coverage oracle](iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md)
+- [Codex activation-envelope delivery: prompt-borne, minted reactively by UserPromptSubmit](iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md)

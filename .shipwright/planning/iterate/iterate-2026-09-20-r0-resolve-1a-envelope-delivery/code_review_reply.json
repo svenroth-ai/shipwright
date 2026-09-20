@@ -1,0 +1,13 @@
+{
+  "section": "iterate-2026-09-20-r0-resolve-1a-envelope-delivery",
+  "review": [
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": ".shipwright/planning/adr/iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md",
+      "line": 1,
+      "finding": "Spec-ref filename duplicates 'envelope-delivery' (run_id already ends in it, and the --slug argument repeats it), unlike other spec-ref files in the same folder where slug != trailing run_id fragment. Purely cosmetic -- INDEX.md renders from the # heading, not the filename, so nothing is broken.",
+      "suggestion": "Optional: pick a slug that doesn't restate the run_id's own trailing words, e.g. '...envelope-delivery-mechanism.md' or '...envelope-delivery-r0.md', if this file is touched again."
+    }
+  ]
+}

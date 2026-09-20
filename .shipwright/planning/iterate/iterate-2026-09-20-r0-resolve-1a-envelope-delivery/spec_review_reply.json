@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Re-reviewed the corrected artifact set (decision_log.md direct-append reverted; decision-drop + long-form spec-ref used instead, per F3) against the iterate spec and the sub-iterate's 6 ACs. decision_log.md confirmed clean of this run's content. Decision-drop fields all under the 500-char cap with no hardcoded ADR number. Long-form spec-ref's heading carries no ADR-NNN token (F3 rule). INDEX.md row reads correctly. All 6 sub-iterate ACs verified present and accurately carried, including AC5 correctly recorded as NOT met and AC6's blocking finding present."
+}
