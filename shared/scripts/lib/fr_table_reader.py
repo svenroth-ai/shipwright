@@ -53,6 +53,9 @@ from pathlib import Path
 # same way `_sibling`'s own `importlib.import_module(f".{name}", package)`
 # leg does.
 if __package__:
+    # Module name is `__package__` (this module's own, trusted package) plus a
+    # hardcoded literal suffix — never untrusted input.
+    # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
     _loader_mod = importlib.import_module(f"{__package__}._fr_table_reader_loader")
 else:
     _lib_dir = str(Path(__file__).resolve().parent)
