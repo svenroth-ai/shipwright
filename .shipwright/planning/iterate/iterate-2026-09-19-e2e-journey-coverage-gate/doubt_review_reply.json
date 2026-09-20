@@ -1,0 +1,5 @@
+{
+  "verdict": "APPROVE",
+  "doubts": [],
+  "summary": "The malformed-plan bypass was addressed: unreadable plans are diagnosed without suppressing coverage checks for later readable plans."
+}

@@ -407,6 +407,15 @@ rule now drops structurally — so the corrected count for that same claim is
 exactly 1, confirming that paragraph's own by-hand reasoning rather than
 contradicting it.
 
+**Re-measured 2026-09-19 (iterate `e2e-journey-coverage-gate`) — FR-01.06
+#6b closed.** The per-journey matcher moved to `shared/scripts/lib/` and now
+drives the shared test gate, so an arbitrary spec no longer satisfies a planned
+journey. The corrected table-row count is now **0** prompt-only/mechanisable ·
+**25** prompt-only/judgement · **13** enforced-untested · **25** unimplemented ·
+**92** enforced-tested. The unchanged last number reflects removal of #6's
+outdated backtick-quoted status from its evidence cell: this counter measures
+all status tokens in live table rows, not only status cells.
+
 ---
 
 ## FR-01.03 — /shipwright-plan  ✅ walked 2026-07-23
@@ -636,8 +645,8 @@ the `.11` walk.
 | 3 | could-not-run is recorded as not-run, never as passed | `enforced, partly tested` | timeout → `success: False` (`test_runner:116`, untested); `lighthouse_unavailable` → skip-with-reason (tested). Mirror of FR-01.07's identical criterion |
 | 4 | results from outside the pipeline are refused | `enforced, untested` | `_validate_test:281` — unique provenance guard, **nothing pins it** (the orchestrator suite mocks `validate_phase` out entirely) |
 | 5 | recorded browser-test numbers are the tool's own | `enforced, tested` | **shipped, sub-iterate e3-checks-test-security.** `check_e2e_counts_reconciled` (`_test_gate_extras.py`) reconciles `shipwright_test_results.json`'s `e2e` counts against Playwright's own `e2e-results.json` `stats` block, wired into `run_test_checks` |
-| 6 | a project with no browser tests gets **something** written from the plan's journeys — the existence floor | `enforced, tested` | **shipped, sub-iterate e3-checks-test-security.** `check_e2e_specs_exist_when_journeys_planned` closes the generation-existence half this row named open (coarse existence check: at least one `*.spec.ts` exists when a plan declares a flow). Split from #6b, 2026-09-12, external code review round 2 (GLM, low) — the campaign's own split precedent (#8/#8b, #10/#10b, #15/#15b) applies here too: a bare `enforced, tested` tag over-claimed against the check's own documented weak-oracle caveat |
-| 6b | the generated spec(s) actually name the RIGHT journey, not an arbitrary one | `prompt-only (mechanisable)` | **Split from #6, 2026-09-12 — a real oracle already exists** (criterion 14's `journey_coverage.py`, **shipped and enforced+tested separately**) but is not yet wired into `.06`'s own gate: `check_e2e_specs_exist_when_journeys_planned` is deliberately coarse (any spec file satisfies it) and does not call it. Wiring it in needs relocating `journey_coverage.py`/`journey_plan.py`'s shared logic to `shared/scripts/lib/` first (ADR-045: a shared verifier never reaches into a single plugin's own `scripts/lib`) — a producer-side design change outside this checks-only sub-iterate's scope. Follow-up filed: `trg-2f7a840a` |
+| 6 | a project with no browser tests gets **something** written from the plan's journeys — the existence floor | `enforced, tested` | **shipped, sub-iterate e3-checks-test-security; strengthened by iterate-2026-09-19-e2e-journey-coverage-gate.** The gate now calls the shared per-journey oracle described in #6b, so the old existence floor is subsumed: every declared journey must match a project-local spec rather than merely finding any `*.spec.ts`. |
+| 6b | the generated spec(s) actually name the RIGHT journey, not an arbitrary one | `enforced, tested` | **shipped, iterate-2026-09-19-e2e-journey-coverage-gate.** `journey_coverage.py`/`journey_plan.py` now live under `shared/scripts/lib/` (ADR-045-compatible); `check_e2e_specs_exist_when_journeys_planned` calls that shared oracle, so every declared journey must match a project-local spec name or body. The former coarse floor is thereby superseded; regression tests cover an unrelated spec, malformed-plan ordering, and symlink containment. Closes `trg-2f7a840a`. |
 | 7 | screens compared back to mockups; regression ≠ never-checked | `enforced, tested` | structural compare tested; **triage half shipped, sub-iterate e3-checks-test-security** — `check_design_fidelity_triage_matches_recomputation` recomputes the Resolved/Regression/Persistent/Unchecked table from `design-fidelity-report.json` + `shipwright_test_results.json` as a pure function of two already-recorded values, no longer agent judgement |
 | 8 | cross-page outliers reported, grouped by cause | `enforced` | majority-wins, 6 categories, tested |
 | 9 | declared performance budgets measured, overage quantified, warn-or-stop is the project's choice | `enforced` | `evaluate_gate` + budgets LH 85 / LCP 2500 ms / 250 KB gz; tested |

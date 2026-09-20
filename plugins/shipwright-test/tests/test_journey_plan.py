@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
-from journey_plan import parse_journeys, slugify  # noqa: E402
+from journey_plan import malformed_flow_headings, parse_journeys, slugify  # noqa: E402
 from text_safety import sanitize  # noqa: E402
 
 PLAN = """# E2E Test Plan
@@ -73,6 +73,52 @@ def test_a_plan_with_no_flows_yields_nothing():
 
 
 @pytest.mark.covers("FR-01.06")
+def test_a_canonical_flow_heading_without_a_title_is_reported_as_malformed():
+    plan = "## User Flows\n\n### Flow 1:\n"
+    assert malformed_flow_headings(plan, require_user_flows_section=True) == 1
+    assert parse_journeys(plan, require_user_flows_section=True) == []
+
+
+@pytest.mark.covers("FR-01.06")
+def test_a_canonical_flow_heading_with_an_unusable_title_is_malformed():
+    plan = "## User Flows\n\n### Flow 1: !!!\n"
+    assert malformed_flow_headings(plan, require_user_flows_section=True) == 1
+    assert parse_journeys(plan, require_user_flows_section=True) == []
+
+
+@pytest.mark.covers("FR-01.06")
+def test_a_plain_h3_journey_with_an_unusable_title_is_malformed():
+    plan = "## User Flows\n\n### !!!\n"
+    assert malformed_flow_headings(plan, require_user_flows_section=True) == 1
+    assert parse_journeys(plan, require_user_flows_section=True) == []
+
+
+@pytest.mark.covers("FR-01.06")
+def test_an_empty_h3_cannot_borrow_title_text_from_its_next_line():
+    plan = "## User Flows\n\n###\nSome prose\n"
+    assert malformed_flow_headings(plan, require_user_flows_section=True) == 1
+    assert parse_journeys(plan, require_user_flows_section=True) == []
+
+
+@pytest.mark.covers("FR-01.06")
+def test_h3s_outside_an_exact_user_flows_section_are_not_journeys():
+    plan = "## Page Object Model\n\n### LoginPage\n"
+    assert parse_journeys(plan, require_user_flows_section=True) == []
+
+
+@pytest.mark.covers("FR-01.06")
+def test_case_variant_user_flows_heading_is_not_a_journey_section():
+    plan = "## User flows\n\n### Sign Up\n"
+    assert parse_journeys(plan, require_user_flows_section=True) == []
+
+
+@pytest.mark.covers("FR-01.06")
+def test_default_parser_preserves_the_producer_fallback_for_legacy_plans():
+    plan = "# Legacy E2E notes\n\n### Sign Up\n"
+    assert [journey.title for journey in parse_journeys(plan)] == ["Sign Up"]
+
+
+@pytest.mark.covers("FR-01.06")
 def test_a_plainly_headed_journey_is_read_too():
     """External code review C2 — the `Flow N:` prefix is canonical, not required.
 
@@ -97,6 +143,12 @@ def test_numbered_steps_are_not_mistaken_for_journeys():
     # Reading them as journeys would manufacture phantom gaps.
     plan = "## User Flows\n\n### Checkout\n1. Add to cart\n2. Pay\n- Confirm\n"
     assert [j.title for j in parse_journeys(plan)] == ["Checkout"]
+
+
+@pytest.mark.covers("FR-01.06")
+def test_a_repeated_user_flows_heading_preserves_the_existing_parser_behavior():
+    plan = "## User Flows\n\n## User Flows\n\n### Sign Up\n"
+    assert [j.title for j in parse_journeys(plan)] == ["Sign Up"]
 
 
 @pytest.mark.covers("FR-01.06")

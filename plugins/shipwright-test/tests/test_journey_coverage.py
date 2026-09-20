@@ -154,6 +154,23 @@ def test_no_e2e_directory_leaves_generation_to_the_existing_step(tmp_path):
     assert report["blocking"] is False
 
 
+@pytest.mark.covers("FR-01.06/AC08")
+def test_brownfield_with_no_specs_files_one_follow_up_per_journey(tmp_path):
+    """A non-blocking inherited gap must still become durable work."""
+    project = _project(tmp_path, adopted=True)
+
+    report = check_journey_coverage(project)
+
+    assert report["status"] == "no_specs"
+    assert report["blocking"] is False
+    assert report["triage_appended"] == 3
+    assert {item["dedupKey"] for item in _read_triage(project) if item.get("event") == "append"} == {
+        "journey-coverage:01-user-registration",
+        "journey-coverage:02-course-enrollment",
+        "journey-coverage:03-checkout",
+    }
+
+
 # ---------------------------------------------------------------------------
 # AC2 — greenfield blocks, brownfield files a follow-up
 # ---------------------------------------------------------------------------

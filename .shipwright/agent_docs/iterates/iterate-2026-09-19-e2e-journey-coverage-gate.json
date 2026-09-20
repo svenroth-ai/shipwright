@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-09-19-e2e-journey-coverage-gate",
+  "date": "2026-09-20T05:50:40.849093Z",
+  "event_at": "2026-09-19T13:49:26.708425+00:00",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/e2e-journey-coverage-gate",
+  "spec": ".shipwright/planning/adr/iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-19-e2e-journey-coverage-gate"
+}
