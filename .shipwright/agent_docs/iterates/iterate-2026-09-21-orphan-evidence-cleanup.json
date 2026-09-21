@@ -1,0 +1,50 @@
+{
+  "run_id": "iterate-2026-09-21-orphan-evidence-cleanup",
+  "date": "2026-09-21T06:18:58.758193Z",
+  "event_at": "2026-09-20T21:40:38.587295+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "history",
+  "branch": "iterate/orphan-evidence-cleanup",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-21-orphan-evidence-cleanup",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "every *.test-results.json with no corresponding <run_id>.json entry AND a run-id date older than the 2026-09-01 cutoff is deleted",
+        "disposition": "tested",
+        "evidence": "before/after directory scan: 129 orphans found matching both criteria pre-change, 0 orphans remain post-change (scratchpad scan script, this run's transcript)"
+      },
+      {
+        "behavior": "an evidence file that is deliberately retained without its own entry (a documented `confirmed_self_delivered` / `recovered` / pinned run, not an accidental pre-fix orphan) is NOT deleted",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_p1_10_already_self_delivered_its_own_immutable_snapshot PASSED (caught the one false-positive -- iterate-2026-08-02-ensure-shared-cache-fanout -- via full F0 run; restored, then re-verified green)"
+      },
+      {
+        "behavior": "no source code is touched and the full repository test suite stays green after the deletion",
+        "disposition": "tested",
+        "evidence": "uv run shared/scripts/tools/run_test_suite.py: F0 suite: 18 units -> GREEN, 11198 passed / 0 failed (authoritative, post serial-retry)"
+      }
+    ],
+    "counts": {
+      "testable": 3,
+      "tested": 3,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "one-time repo-maintenance data cleanup (deletes orphaned evidence JSON files under .shipwright/agent_docs/iterates/); no code changed and no startable web/dev-server/CLI surface -- verification is the unit test suite itself (F0)."
+  },
+  "declared_removals": [
+    {
+      "path": ".shipwright/agent_docs/iterates/*.test-results.json (128 orphaned pre-2026-09-01 files, no matching entry file)",
+      "reason": "retention deleted these entries before PR #752 (sibling-sweep fix) landed on 2026-09-12, leaving the immutable evidence siblings behind with nothing left to prune them; safe to delete now that the fix already prevents new orphans (nothing functionally reads a deleted runs evidence -- verified against shared/tests/test_worktree_evidence_recovery.py, which is the one place that does, and which flagged + excluded the single deliberately-retained exception)"
+    }
+  ]
+}

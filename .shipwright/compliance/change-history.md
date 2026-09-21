@@ -1,32 +1,55 @@
 # Commit Change Log
 
-Generated: 2026-09-11T02:05:49.768047+00:00
-Source-State: run=iterate-2026-09-11-e1-checks-plan-design base=1af9ce7f4b30
-Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
-Total commits: 1499
+Generated: 2026-09-21T06:19:37.672243+00:00
+Source-State: run=iterate-2026-09-21-orphan-evidence-cleanup
+Consistency-audit: last run 2026-07-28 (55 days earlier) — FAIL
+Total commits: 1559
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "fix" : 512
-    "feat" : 403
-    "chore" : 268
-    "docs" : 158
-    "refactor" : 90
-    "test" : 39
+    "fix" : 535
+    "feat" : 414
+    "chore" : 273
+    "docs" : 164
+    "refactor" : 93
+    "test" : 50
     "ci" : 18
-    "other" : 9
+    "other" : 10
     "perf" : 1
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Fixes (fix) — 512 commits
+### Fixes (fix) — 535 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-20 | security | suppress CodeQL non-literal-import false positive in fr_table_reader (#777) | 25504bef7578 |
+| 2026-09-20 | test | require per-journey E2E coverage (#775) | 374522776110 |
+| 2026-09-19 | security | clear 4 prompt-scan false positives from CI run 35192496967 (#774) | 53d577996f5f |
+| 2026-09-19 | deps | bump anyio to 4.15.1 across uv.lock files (#773) | 02df53f3530b |
+| 2026-09-16 | compliance | restrict AC-evidence ledger status counting to table rows (#767) | 8daa50b22c2f |
+| 2026-09-16 | shared | corroborated-trunk-ancestry check for check_binding_completeness rollout grace (#765) | d1915724ca13 |
+| 2026-09-16 | shipwright-adopt | filter mined acceptance criteria through FR-01.02's hygiene gate (#766) | 4c7142fbffe5 |
+| 2026-09-16 | security | stop normalizing whitespace in is_generated_path (#764) | 355ba97ea8ef |
+| 2026-09-16 | triage | report mark_status's write-target route (outbox vs tracked) (#754) | 5b241e50a348 |
+| 2026-09-16 | shared | session-scope phase_completed dedup to unblock cross-session detection (#761) | b749be455f1b |
+| 2026-09-13 | shipwright-project | rollout-transition grace for FR-01.02 gates #5/#10 (#755) | 39ae269c0372 |
+| 2026-09-12 | iterate | sweep retention's evidence-file sibling, not just the entry (#752) | de46f3c71cfe |
+| 2026-09-12 | security | anchor or remove is_safe_to_skip_review's _GENERATED_PREFIXES skip-safety per prefix (#746) | e27a63a0c0f5 |
+| 2026-09-12 | iterate | address 5 non-blocking review follow-ups on the glossary CLI (#722) | 48584514c96e |
+| 2026-09-12 | security | canonical review-evidence basenames per artifact kind (#742) | 8a96649b2b70 |
+| 2026-09-12 | security | name keystone-carrying layer-coverage helpers in SENSITIVE_PATH_RE (#739) | c20db8c2b384 |
+| 2026-09-12 | iterate | agent-doc-budget entry_anchor() incidental bold false-match (#740) | 5b72c3e603fe |
+| 2026-09-12 | security | close PR-review evidence filter gap for reply/external transcripts (#727) | e9fa734bba0b |
+| 2026-09-11 | main | split campaign-mode.md's Step 3.4 section under the 400-LOC reference budget (#733) | db85167271b3 |
+| 2026-09-11 | iterate | mechanically gate CI supply-chain ack authorship (#732) | 0b13b7ef7f00 |
+| 2026-09-11 | triage | local status always outranks a foreign status in read_all_items (#724) | 8492d65b5946 |
+| 2026-09-11 | compliance | widen P3.7 feeder (a) AC ratchet gate to run on push (#723) | 7c53a46b20ec |
+| 2026-09-11 | compliance | one-time rollout transition rule for check_binding_completeness (#721) | c6bf0805c7dc |
 | 2026-09-11 | security | post success, not fail-closed, on all-generated PR-review gate (#712) | 58393a4e768c |
 | 2026-09-10 | iterate | warn on individually-unread spec paths in keystone AC gate (#713) | 67c6436b1d81 |
 | 2026-09-10 | security | close keystone gate verifier sensitive-path parity gap (#715) | c9db09c192a9 |
@@ -540,11 +563,22 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Features (feat) — 403 commits
+### Features (feat) — 414 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-11 | plan,design | mechanise 18 flagged FR-01.03/FR-01.04 checks with tests | c980816c21de |
+| 2026-09-19 | shared | session-scoped Codex reviewer model override (#772) | 8de60d898b62 |
+| 2026-09-18 | shared | configurable Codex reviewer-identity axis; add fable to Claude TIERS (#771) | 3d5ac26651cd |
+| 2026-09-18 | shared | Codex CLI as a fallback transport for the internal review cascade (#770) | 7f85b19bb7fc |
+| 2026-09-17 | external-review | add opus reviewer identity and required --driver flag (#769) | b845591bed80 |
+| 2026-09-16 | shipwright-deploy | coded release entry point mechanises FR-01.08 AC02/AC05 (#768) | 2c0bffdf9952 |
+| 2026-09-16 | deploy,changelog | mechanise FR-01.08/FR-01.09 checks, downgrade 1 no-oracle line (req3-06 e4) (#758) | 3c88b32079b2 |
+| 2026-09-12 | test,security | mechanise FR-01.06/FR-01.07 checks, downgrade 4 no-oracle lines (req3-06 e3) (#748) | 0e55f9d32d76 |
+| 2026-09-12 | iterate | wire promote_required_layers.py into worktree setup (#725) | af64b8981032 |
+| 2026-09-12 | security | add local PR-review preflight (--base/--diff-file) (#749) | 655c32c06ed5 |
+| 2026-09-12 | project | mechanise 9 FR-01.02/FR-01.16 project + elicitation checks (#729) | c411c36ad7af |
+| 2026-09-11 | compliance | M7 rewritability advisory check + bundled P3.7 test-body-suspects check (p3.8) (#718) | 59b95261d48a |
+| 2026-09-11 | plan,design | mechanise 18 flagged FR-01.03/FR-01.04 checks with tests (#726) | b6af39e2811d |
 | 2026-09-10 | compliance | keystone AC gate's post-merge detective arm (ruling Q5) (#716) | ef8e0357ddd2 |
 | 2026-09-10 | compliance | P3.7 feeder AC-binding gates (ratchet + orphan-binding hard check) (#711) | 3da41105c489 |
 | 2026-09-10 | compliance | keystone AC gate — a changed criterion must have re-run its tests green (P3.6) (#702) | 7d57df67c184 |
@@ -948,11 +982,16 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Chores (chore) — 268 commits
+### Chores (chore) — 273 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-09-11 | review | record the Stage-1 REJECT for e1-checks-plan-design | 1af9ce7f4b30 |
+| 2026-09-21 | triage | sweep 1 outbox append(s) into branch | f048b00f1ee9 |
+| 2026-09-12 | triage | close trg-5ae23b62, resolved by the PR-review filter fix (#737) | ccdfa14c3d3a |
+| 2026-09-12 | iterate | prune the iterate entry backlog on main from 53 to 32 (#736) | 89c4a39a9f66 |
+| 2026-09-11 | triage | resolve trg-33d30377 (CI supply-chain ack authorship guard) (#734) | 864e17dfdf07 |
+| 2026-09-11 | triage | sweep 15 outbox append(s) into branch (#728) | b97d4c0efa16 |
+| 2026-09-11 | triage | resolve trg-aedcfe7b (binding-completeness rollout transition) | 3a162d3e3364 |
 | 2026-09-11 | iterate | re-measure the REQ-3 AC-evidence ledger and make 7 lines explicit (#719) | 4a977c53f5fd |
 | 2026-09-10 | compliance | refresh evidence documents as of 4a37d59474dc (#707) | ac0b998c722f |
 | 2026-09-03 | external-review | route the GPT review leg through Codex CLI (#673) | d0c468363740 |
@@ -1221,10 +1260,16 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 158 commits
+### Documentation (docs) — 164 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-20 | iterate | resolve Codex activation-envelope delivery design (R0, codex-plugin-execution-reliability) (#776) | 0e519f715610 |
+| 2026-09-12 | shipwright-project | fix Step 8 agent_docs file count (5 -> 3) (#751) | 67239669466d |
+| 2026-09-12 | iterate | record deferred test-results-orphan triage card (#745) | 5c2f778e3c2a |
+| 2026-09-12 | iterate | record operator's t4/t5/t8/t9 root-count waiver (#743) | 2e6189164db5 |
+| 2026-09-11 | triage | clarify pending-delivery notice cannot flip a local decision (#731) | 93674fcefa03 |
+| 2026-09-11 | iterate | survey FR-01.NN test seams for the req3-05 backfill campaign (t0) (#720) | 8aa946525121 |
 | 2026-09-10 | — | document npx bootstrapper as the recommended plugins+WebUI install path (#714) | 35b9a643d822 |
 | 2026-09-10 | triage | file three deferred follow-up cards from PR #702 (P3.6) (#708) | 8f78b93be251 |
 | 2026-08-10 | — | remove expired refactoring-churn warning from README (#626) | 005f7bfe5843 |
@@ -1384,10 +1429,13 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 90 commits
+### Refactoring (refactor) — 93 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-21 | shared | pin Codex review dispatch reasoning effort, cut TOML generator (M4) (#779) | 25020f59df64 |
+| 2026-09-20 | verifiers | extract shared rollout-transition commit resolver (#778) | ae515b6d09ee |
+| 2026-09-12 | iterate | raise ITERATE_RETENTION from 50 to 200 for branch-concurrency headroom (#738) | 90f43f3ce22a |
 | 2026-09-10 | iterate | anchor Layers-promotion to the newest verified ancestor (P3.4c) (#717) | b77f42a62efe |
 | 2026-09-09 | compliance | strip minted [ACnn] marker at lib.fr_criteria's own seam (#695) | 57373430ad09 |
 | 2026-08-31 | security | swap Tier-3 PR-review gate to DeepSeek with reused ZDR routing (#666) | c50bdd7fecd5 |
@@ -1479,10 +1527,21 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 39 commits
+### Tests (test) — 50 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-16 | iterate | backfill AC-proving tests for FR-01.15/17/19/20 (req3-05 t9, final unit) (#760) | 49a7bd998f8b |
+| 2026-09-16 | compliance | drift tests for the 19 judgement-line AC-evidence rows (req3-06 e6) (#763) | 0e2a57ee7cd3 |
+| 2026-09-16 | triage | AST meta-test gate closes FR-01.14 row #1's producer contract gap (req3-06 e5) (#762) | b8f4a18c9d3b |
+| 2026-09-15 | iterate | backfill AC-proving tests for FR-01.01/FR-01.05/FR-01.12/FR-01.13 (req3-05 t8) (#757) | 7a32a7b36a98 |
+| 2026-09-13 | compliance | bind acceptance-criteria-proving tests for FR-01.10 and FR-01.18 (21/22 ACs) (#756) | 6eacd1db99c3 |
+| 2026-09-12 | iterate | backfill AC-proving tests for FR-01.02/FR-01.16 (req3-05 t6) (#753) | 7732b75fb285 |
+| 2026-09-12 | iterate | backfill AC-proving tests for FR-01.08/FR-01.09 (req3-05 t5) (#747) | c82c370fbf20 |
+| 2026-09-12 | iterate | backfill AC-proving tests for FR-01.06/FR-01.07 (req3-05 t4) (#744) | 60f950bdb62f |
+| 2026-09-12 | iterate | backfill AC-proving tests for FR-01.03/FR-01.04 (req3-05 t3) (#741) | 5ff3c7b3a074 |
+| 2026-09-12 | iterate | backfill AC-proving tests for FR-01.14's 29 unbound ACs (#735) | 0cea788134a5 |
+| 2026-09-11 | iterate | backfill AC-proving tests for FR-01.11's 27 unbound ACs (#730) | 76ca8abd3d88 |
 | 2026-09-10 | requirement-elicitation | drift-pin Sec.0/Sec.4/Sec.5 rules (P4.4) (#710) | 15929f80801b |
 | 2026-09-10 | elicitation | discover requirement-elicitation citing docs dynamically (P4.3) (#709) | 439ab768fbbc |
 | 2026-08-26 | compliance | pin fr_criteria.py parsing widenings, fix table description exemption (#650) | ec777034800c |
@@ -1546,10 +1605,11 @@ pie title Commit Types
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
 | 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
 
-### Other (other) — 9 commits
+### Other (other) — 10 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-09-16 | — | iterate/codex light shipwright (#759) | 168a40c79606 |
 | 2026-07-15 | — | fix(phases)!: detect invocation mode from the dispatch token, not the never-advanced v1 current_step (#372) | d76970e82cf4 |
 | 2026-07-14 | — | refactor(run)!: single_session is the sole pipeline mode; remove the external per-phase-session engine (#369) | aef19f2c1668 |
 | 2026-04-24 | — | feat!: extract WebUI into own repo (shipwright-webui) — v0.4.0 | 47cacebb2a24 |
@@ -1576,7 +1636,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 1499 |
+| Total commits | 1559 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 1499 |
+| Human-authored commits | 1559 |
 

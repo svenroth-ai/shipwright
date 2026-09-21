@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-21-orphan-evidence-cleanup",
+  "date": "2026-09-21",
+  "section": "iterate-cleanup",
+  "title": "Sweep pre-fix orphaned iterate test-results evidence",
+  "context": "PR #752 (2026-09-12) made retention delete an evidence file's entry AND its .test-results.json sibling together, but that fix only stops NEW orphans; retention runs before it had already deleted 129 entry files while leaving their immutable evidence siblings behind under .shipwright/agent_docs/iterates/.",
+  "decision": "Delete the 129 orphaned *.test-results.json files (no corresponding <run_id>.json entry) whose run_id date is older than the 2026-09-01 cutoff, via git rm, with no code change (the producing fix already ships on main).",
+  "consequences": "0 orphaned evidence files remain in .shipwright/agent_docs/iterates/ as of this run; nothing referenced these files functionally (only historical docs/ADRs/test docstrings cite the run_ids, unaffected by the file's removal).",
+  "rationale": "Cleanup is safe because nothing reads a deleted run's evidence; sequencing it after the sibling-sweep fix landed keeps the rule and the cleanup in a consistent order.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}
