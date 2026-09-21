@@ -192,6 +192,25 @@ def test_a_symlink_inside_an_excluded_dir_does_not_false_block(tmp_path):
     build_bundle(project_root=tmp_path, out_dir=tmp_path / "dist")  # must not raise
 
 
+def test_refuses_a_symlinked_agents_dir_ancestor_of_the_marketplace_path(tmp_path):
+    """A symlink at an ANCESTOR of marketplace.json (.agents or
+    .agents/plugins) is just as unsafe as a symlinked marketplace.json
+    itself: mkdir(parents=True) and write_text() both transparently follow a
+    symlinked ancestor directory, letting the write land somewhere the
+    operator never asked for — checking only the exact marketplace.json
+    path missed this (local PR-review preflight, 2026-09-21)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    out_dir = tmp_path / "dist" / "codex-plugin"
+    elsewhere = tmp_path / "elsewhere-entirely"
+    elsewhere.mkdir()
+    _symlink(elsewhere, out_dir.parent / ".agents", dir_target=True)
+
+    with pytest.raises(UnsafeOutputPathError, match="symlink"):
+        build_bundle(project_root=tmp_path, out_dir=out_dir)
+
+
 def test_refuses_a_symlinked_marketplace_json_even_with_valid_looking_content(tmp_path):
     """refuse_foreign_marketplace's content check alone is not enough: a
     symlink at the marketplace.json path whose TARGET happens to contain a

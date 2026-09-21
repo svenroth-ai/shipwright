@@ -64,7 +64,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 import sys
@@ -75,9 +74,10 @@ from codex_bundle_safety import (
     BUNDLE_NAME,
     UnsafeOutputPathError,
     UnsafeSourceSymlinkError,
+    _copy_tree,
+    _hash_tree,
     refuse_foreign_marketplace,
-    refuse_symlinked_output_path,
-    refuse_symlinks_in_tree,
+    refuse_symlinked_ancestors,
     refuse_unsafe_output_path,
 )
 from codex_hook_inventory import BundleCollisionError, build_hook_inventory
@@ -121,46 +121,10 @@ def discover_plugins(project_root: Path) -> list[Path]:
     )
 
 
-def _copy_tree(src: Path, dst: Path, *, exclude_dirnames: set[str] | None = None) -> None:
-    exclude_dirnames = exclude_dirnames or set()
-    # A symlink in the source tree would otherwise have its TARGET silently
-    # bundled by shutil.copytree's default symlinks=False (local PR-review
-    # preflight, 2026-09-21) — refuse before copying anything.
-    refuse_symlinks_in_tree(src, exclude_dirnames=exclude_dirnames)
-
-    def _ignore(dirpath: str, names: list[str]) -> set[str]:
-        return {n for n in names if n in exclude_dirnames}
-
-    if dst.exists():
-        shutil.rmtree(dst)
-    shutil.copytree(src, dst, ignore=_ignore)
-
-
-def _sha256_of_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _hash_tree(root: Path) -> dict[str, str]:
-    # Also guards the LIVE bundle side of verify_codex_plugin_bundle.py's
-    # comparison, not only the fresh rebuild _copy_tree already protects: a
-    # symlink planted directly inside an already-built bundle would otherwise
-    # have its target's content hashed as if it were real bundle content
-    # (local PR-review preflight comment, 2026-09-21).
-    hashes: dict[str, str] = {}
-    for path in sorted(root.rglob("*")):
-        if path.is_symlink():
-            raise UnsafeSourceSymlinkError(
-                f"{path} is a symlink — refusing to hash a bundle tree containing one."
-            )
-        if path.is_file():
-            hashes[str(path.relative_to(root)).replace("\\", "/")] = _sha256_of_file(path)
-    return hashes
-
-
 def build_bundle(*, project_root: Path, out_dir: Path) -> BuildResult:
     project_root = Path(project_root).resolve()
     out_dir = Path(out_dir)
-    refuse_symlinked_output_path(out_dir)
+    refuse_symlinked_ancestors(out_dir, label="--out")
     out_dir = out_dir.resolve()
     refuse_unsafe_output_path(project_root=project_root, out_dir=out_dir)
     refuse_foreign_marketplace(out_dir.parent / ".agents" / "plugins" / "marketplace.json")
@@ -244,8 +208,14 @@ def build_bundle(*, project_root: Path, out_dir: Path) -> BuildResult:
     )
 
     marketplace_dir = out_dir.parent / ".agents" / "plugins"
+    marketplace_path = marketplace_dir / "marketplace.json"
+    # Re-checked immediately before mkdir/write, not only at the top of this
+    # function: mkdir(parents=True) itself would silently create/traverse a
+    # symlinked .agents or .agents/plugins ancestor if one appeared between
+    # the two checks (local PR-review preflight, 2026-09-21).
+    refuse_symlinked_ancestors(marketplace_path, label="the marketplace path")
     marketplace_dir.mkdir(parents=True, exist_ok=True)
-    (marketplace_dir / "marketplace.json").write_text(
+    marketplace_path.write_text(
         json.dumps(
             {
                 "name": BUNDLE_NAME,

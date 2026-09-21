@@ -9,8 +9,10 @@ guards exist because neither had a check against a colliding/foreign target
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 
 BUNDLE_NAME = "shipwright"
@@ -36,23 +38,23 @@ def is_prior_bundle(out_dir: Path) -> bool:
     return isinstance(manifest, dict) and manifest.get("name") == BUNDLE_NAME
 
 
-def refuse_symlinked_output_path(out_dir: Path) -> None:
-    """Refuse when ``--out`` itself, or any existing ancestor component on
-    the way to it, is a symlink. ``build_bundle`` immediately calls
-    ``.resolve()`` on ``out_dir``, which transparently follows a symlink to
-    whatever it points at — every later check (including
-    ``is_prior_bundle``) then operates on that RESOLVED target, so a
-    symlinked ``--out`` pointing at some other directory that merely looks
-    like a prior bundle would pass every check while the actual rmtree and
-    rebuild land somewhere the operator never typed. Must run BEFORE
-    ``out_dir`` is resolved (local PR-review preflight, 2026-09-21).
-    ``Path.is_symlink()`` returns ``False`` for a component that does not
-    exist yet, so walking every parent up to the filesystem root is safe
-    without a separate existence check."""
-    for candidate in (out_dir, *out_dir.parents):
+def refuse_symlinked_ancestors(path: Path, *, label: str) -> None:
+    """Refuse when ``path`` itself, or any existing ancestor component on the
+    way to it, is a symlink — a plain ``.resolve()`` (``--out``) or an
+    ``mkdir(parents=True)``/``write_text()`` pair (the marketplace manifest)
+    both transparently follow a symlinked ANCESTOR to wherever it points,
+    so checking only the final component (as an earlier version of this
+    guard did for the marketplace path) misses a symlinked ``.agents`` or
+    ``.agents/plugins`` directory redirecting the whole write elsewhere
+    (local PR-review preflight, 2026-09-21). Must run before ``path`` is
+    resolved or its directories are created. ``Path.is_symlink()`` returns
+    ``False`` for a component that does not exist yet, so walking every
+    parent up to the filesystem root is safe without a separate existence
+    check."""
+    for candidate in (path, *path.parents):
         if candidate.is_symlink():
             raise UnsafeOutputPathError(
-                f"{candidate} is a symlink — refusing to resolve --out through it; "
+                f"{candidate} is a symlink — refusing to resolve {label} through it; "
                 "pass the real target path directly."
             )
 
@@ -100,18 +102,52 @@ def refuse_symlinks_in_tree(root: Path, *, exclude_dirnames: set[str] | None = N
                 )
 
 
+def _copy_tree(src: Path, dst: Path, *, exclude_dirnames: set[str] | None = None) -> None:
+    exclude_dirnames = exclude_dirnames or set()
+    # A symlink in the source tree would otherwise have its TARGET silently
+    # bundled by shutil.copytree's default symlinks=False (local PR-review
+    # preflight, 2026-09-21) — refuse before copying anything.
+    refuse_symlinks_in_tree(src, exclude_dirnames=exclude_dirnames)
+
+    def _ignore(dirpath: str, names: list[str]) -> set[str]:
+        return {n for n in names if n in exclude_dirnames}
+
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst, ignore=_ignore)
+
+
+def _sha256_of_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _hash_tree(root: Path) -> dict[str, str]:
+    # Also guards the LIVE bundle side of verify_codex_plugin_bundle.py's
+    # comparison, not only the fresh rebuild _copy_tree already protects: a
+    # symlink planted directly inside an already-built bundle would otherwise
+    # have its target's content hashed as if it were real bundle content
+    # (local PR-review preflight comment, 2026-09-21).
+    hashes: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise UnsafeSourceSymlinkError(
+                f"{path} is a symlink — refusing to hash a bundle tree containing one."
+            )
+        if path.is_file():
+            hashes[str(path.relative_to(root)).replace("\\", "/")] = _sha256_of_file(path)
+    return hashes
+
+
 def refuse_foreign_marketplace(marketplace_path: Path) -> None:
-    # Checked BEFORE is_file()/read_text(), which both follow a symlink: this
-    # builder only ever creates marketplace.json as a plain file via
-    # write_text, so a symlink at this exact path is never one it made,
-    # regardless of what its target contains — accepting one on content alone
-    # would let write_text's own symlink-following overwrite an arbitrary
-    # target outside marketplace_dir (local PR-review preflight, 2026-09-21).
-    if marketplace_path.is_symlink():
-        raise UnsafeOutputPathError(
-            f"{marketplace_path} is a symlink — refusing to write through it to "
-            "whatever it points at."
-        )
+    # Checked BEFORE is_file()/read_text(), which both follow a symlink —
+    # not only the exact marketplace.json path but every existing ancestor
+    # (.agents, .agents/plugins): this builder only ever creates that path
+    # as a plain file via mkdir(parents=True) + write_text, so a symlink
+    # anywhere along it is never one it made, regardless of what its target
+    # contains — accepting one on content alone would let mkdir/write_text's
+    # own symlink-following create or overwrite content outside the intended
+    # output tree (local PR-review preflight, 2026-09-21).
+    refuse_symlinked_ancestors(marketplace_path, label="the marketplace path")
     if not marketplace_path.exists():
         return
     # A directory (or other special file) at this exact path is not
