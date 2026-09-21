@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-20-campaign-dag-scheduler",
+  "date": "2026-09-20",
+  "section": "campaign-mode",
+  "title": "Campaign scheduling: interleaved-serial rationale is stale; scheduler design deferred",
+  "context": "Campaigns run all sub-iterates serially even when independent. PR #246's stated collision rationale predates PR #480 excluding derived snapshots from iterate branches.",
+  "decision": "Verified the old rationale no longer applies; documented findings and a depends_on/scheduler design sketch (DAG vs. pre-computed waves) for a future implementation iterate. No scheduler code changed this run.",
+  "consequences": "Unblocks a follow-up medium+ iterate to add structured depends_on and parallel scheduling once DAG-vs-waves is chosen; no behavior change today.",
+  "rationale": "Verified against current code: derived_snapshots.py excludes 12 paths from commits; events.jsonl/triage.jsonl already reconcile via merge=union + resolve_churn_conflicts.py; concurrent campaigns already run today (feedback_one_loop_per_repo_is_false).",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/iterate/2026-09-20-campaign-dag-scheduler.md"
+}
