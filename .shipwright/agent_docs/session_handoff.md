@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-21-orphan-evidence-cleanup"
+run_id: "iterate-2026-09-12-generated-prefixes-provenance-anchor"
 phase: "iterate"
-reason: "orphan-evidence-cleanup: routine finalize"
-timestamp: "2026-09-21T06:19:45.529900+00:00"
+reason: "iterate: anchor or remove is_safe_to_skip_review's _GENERATED_PREFIXES skip-safety per prefix"
+timestamp: "2026-09-12T06:25:32.512191+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-21 06:19:45 UTC
+> Auto-generated 2026-09-12 06:25:32 UTC
 
 ## Session Info
 
-- **Session ID**: 09a7ed09-95e8-44a6-98ab-fee057cd3273
-- **Timestamp**: 2026-09-21 06:19:45 UTC
-- **Reason**: orphan-evidence-cleanup: routine finalize
+- **Session ID**: 8d134d7c-6358-4d69-9360-d4b362d068d8
+- **Timestamp**: 2026-09-12 06:25:32 UTC
+- **Reason**: iterate completion: iterate-2026-09-12-generated-prefixes-provenance-anchor
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-21-orphan-evidence-cleanup
-- **Date**: 2026-09-21T06:18:58.758193Z
-- **Type**: change
+- **Run ID**: iterate-2026-09-12-generated-prefixes-provenance-anchor
+- **Date**: 2026-09-12T06:25:32.304815Z
+- **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/orphan-evidence-cleanup
-- **ADR**: iterate-2026-09-21-orphan-evidence-cleanup
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **ADR**: iterate-2026-09-12-generated-prefixes-provenance-anchor
 - **Tests passed**: True
+- **Spec**: Anchor or remove PR-review skip-safety per _GENERATED_PREFIXES entry, closing the gap a confirmed deploy-gate consumer (ci-security.json) exposed.
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/orphan-evidence-cleanup
+- **Branch**: iterate/generated-prefixes-provenance-anchor
 - **External Review Marker**: missing
 - **Review Cascade**: no run_id resolved
 
@@ -65,8 +66,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/orphan-evidence-cleanup
-- **Last Commit**: f048b00f1 chore(triage): sweep 1 outbox append(s) into branch
+- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **Last Commit**: bf193f6a6 chore(churn): regenerate derived snapshots after main merge
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -82,17 +83,17 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d5dab7c1 | grade_snapshot | — | 2026-09-21 |
-| evt-dcccbd6e | work_completed | iterate (Delete 128 orphaned .test-results.json evidence files under .shipwright/agent_docs/iterates/ (no entry file, pre-2026-09-01) left behind by retention before the sibling-sweep fix (PR #752) landed.) | 2026-09-21 |
-| evt-351e8871 | grade_snapshot | — | 2026-09-20 |
-| evt-16cf5948 | work_completed | iterate (Extract shared _rollout_resolution.py commit-resolution primitive (resolve_head_sha/resolve_rollout_commit/is_shallow/epoch re-verification) so both rollout-transition gate families call it with their own epoch instead of duplicating the ~20-line algorithm a third time.) | 2026-09-20 |
-| evt-3cddb64b | grade_snapshot | — | 2026-09-20 |
+| evt-6c5ebe28 | work_completed | iterate (Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser.) | 2026-09-11 |
+| evt-b5e5c018 | work_completed | iterate (Record the deferred test-results-orphan retention defect (promised by trg-b28a039c, never filed) as its own triage card, with measured counts and root cause; no code fix.) | 2026-09-12 |
+| evt-636423bf | work_completed | iterate (Bind FR-01.06's and FR-01.07's unbound acceptance criteria to existing/new tests via @pytest.mark.covers and regenerate the AC coverage baseline) | 2026-09-12 |
+| evt-354973ae | work_completed | iterate (Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py, with all prose/code mirrors of the cap updated and a regression test guarding them.) | 2026-09-11 |
+| evt-ca92f53b | work_completed | iterate (Fix agent_doc_budget.entry_anchor() false-anchor-match hole: an incidental bold quote elsewhere in an entry's prose could be mistaken for its cross-diff identity, letting a new over-budget entry escape the budget gate by colliding with an unrelated base entry's anchor.) | 2026-09-12 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 655
-- **Last iterate**: change — Delete 128 orphaned .test-results.json evidence files under .shipwright/agent_docs/iterates/ (no entry file, pre-2026-09-01) left behind by retention before the sibling-sweep fix (PR #752) landed. (2026-09-21)
+- **Total work events**: 624
+- **Last iterate**: bug — Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser. (2026-09-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

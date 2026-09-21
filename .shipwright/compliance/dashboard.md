@@ -1,36 +1,36 @@
 # Compliance Dashboard
 
-Generated: 2026-09-21T06:19:37.672243+00:00
-Source-State: run=iterate-2026-09-21-orphan-evidence-cleanup
-Consistency-audit: last run 2026-07-28 (55 days earlier) — FAIL
+Generated: 2026-09-11T02:05:49.768047+00:00
+Source-State: run=iterate-2026-09-11-e1-checks-plan-design base=1af9ce7f4b30
+Consistency-audit: last run 2026-07-28 (45 days earlier) — FAIL
 Profile: python-plugin-monorepo
 Scope: library
 
 ## ✅ Control Verdict
 
-> **Under full control.**
+> **Under full control. Primarily capped by requirement traceability.**
 
-### Control Grade: **A** (100/100) — Under full control.
+### Control Grade: **A** (99/100) — Under full control.
 
 | | Dimension | Signal | Anchor |
 |---|-----------|--------|--------|
-| ✅ | Requirement traceability | 20/20 FRs covered; 655/655 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
-| ✅ | Test health | latest full suite 11198/11198 (2026-09-21) | automated tests pass (OpenSSF Scorecard) |
-| ✅ | Change traceability | 655/655 changes linked to a commit, ADR or test run | change provenance (SLSA) |
+| ✅ | Requirement traceability | 19/20 FRs covered; 604/604 changes traced (FR-linked or classified no-FR) | requirement-to-work traceability (ISO/IEC/IEEE 29148) |
+| ✅ | Test health | latest full suite 18613/18671 (2026-09-11) | automated tests pass (OpenSSF Scorecard) |
+| ✅ | Change traceability | 604/604 changes linked to a commit, ADR or test run | change provenance (SLSA) |
 | ✅ | Change reconciliation | 0/20 behavior-touched FRs not re-verified | re-verify changed requirements (ISO/IEC/IEEE 12207) |
 | ✅ | Security | 0 open high/critical | no open high/critical vulns (NIST SSDF) |
-| ✅ | Size / maintainability discipline | ratchet delta -199 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
+| ✅ | Size / maintainability discipline | ratchet delta -147 lines (net growth) | no unchecked code-size growth (ISO/IEC 25010) |
 | ✅ | Dependency hygiene | 0 unresolved / 12 licenses; 0 copyleft | dependency license & risk (OWASP) |
 
 > 📊 **Test-Health · diff-coverage (Control-Grade input · target ≥80%):** not measured this session — per-PR signal; see the CI "Diff coverage" artifact.
 
-Verified from: `shipwright_events.jsonl (655 events, 2026-05-02 → 2026-09-21)`
+Verified from: `shipwright_events.jsonl (604 events, 2026-05-02 → 2026-09-11)`
 
 _Grade = importance-weighted average over the measurable dimensions (n/a excluded from the denominator), modeled on OpenSSF Scorecard. Age is neutral; only unreconciled change and net growth are control failures. Each Anchor names the open standard the dimension follows — see the guide's Control-Grade dimensions table._
 
 ## 🛡️ CI Security (fail-closed gate)
 
-Latest scan: **2026-09-20** · source `security.yml#35541231616` · critical-gate **✅ PASS**
+Latest scan: **2026-09-11** · source `security.yml#34549273172` · critical-gate **✅ PASS**
 
 | Severity | Count |
 |----------|-------|
@@ -39,7 +39,7 @@ Latest scan: **2026-09-20** · source `security.yml#35541231616` · critical-gat
 | Medium | 0 |
 | Low | 0 |
 
-Prompt-injection findings: **0**
+Prompt-injection findings: **3**
 
 **Accepted risks** (`shipwright_accepted_risks.yaml` register):
 
@@ -57,7 +57,7 @@ Prompt-injection findings: **0**
 | `python.lang.compatibility.python36.python36-compatibility-Popen1` | 2 | 2 | iterate-2026-08-05-inline-suppression-ratchet |
 | `python.lang.compatibility.python36.python36-compatibility-Popen2` | 2 | 2 | iterate-2026-08-05-inline-suppression-ratchet |
 | `python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected` | 6 | 6 | iterate-2026-08-05-inline-suppression-ratchet |
-| `python.lang.security.audit.non-literal-import.non-literal-import` | 10 | 10 | iterate-2026-08-05-inline-suppression-ratchet |
+| `python.lang.security.audit.non-literal-import.non-literal-import` | 9 | 9 | iterate-2026-08-05-inline-suppression-ratchet |
 | `python.lang.security.audit.subprocess-shell-true.subprocess-shell-true` | 1 | 1 | iterate-2026-08-05-inline-suppression-ratchet |
 
 _Inline suppressions are deliberately **not** tracked in the accepted-risk register: an offline reconciler would have to mirror the scanner's own suppression semantics and would drift, and a re-review date does not fit a permanent false positive at a fixed source site. The control is the anti-ratchet above — the count cannot grow without a recorded decision. This is visibility, **not** per-site review: unlike a register entry, no site here carries an owner or a re-review date._
@@ -69,22 +69,22 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 655 changes | INFO |  |
-| Recent changes traced to an FR | 17/30 (57%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
-| All unit tests passing | 11198/11198 | PASS |  |
+| Work events (iterate) | 604 changes | INFO |  |
+| Recent changes traced to an FR | 12/30 (40%) | INFO | feature vs. maintenance mix — informational, does not affect the Control Grade |
+| All unit tests passing | 18613/18671 | WARN | 58/18671 not green in last full suite — see test-evidence.md |
 | Architecture decisions | 397 ADRs | INFO |  |
-| Iterate tests passing | 114/167 testable changes tested | WARN | 53 testable change(s) without tests — see test-evidence.md |
+| Iterate tests passing | 92/145 testable changes tested | WARN | 53 testable change(s) without tests — see test-evidence.md |
 | Dependencies | 12 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 11 open | WARN | 11 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit (grandfathered) | 170 | INFO |  |
-| Bloat in allowlist | 236 entries | INFO |  |
-| Bloat ratchet delta | -199 lines | PASS |  |
+| Triage open | 19 open | WARN | 19 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Bloat over-limit (grandfathered) | 172 | INFO |  |
+| Bloat in allowlist | 232 entries | INFO |  |
+| Bloat ratchet delta | -147 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 655 changes (2026-05-02 → 2026-09-21)
-- Last activity: 2026-09-21
+- Iterate: 604 changes (2026-05-02 → 2026-09-11)
+- Last activity: 2026-09-11
 
 ## External LLM Review Evidence
 
@@ -96,7 +96,7 @@ _Ingested from CI `findings.json` (public-safe: severity counts + gate verdict o
 
 ## 🔎 Consistency Audit
 
-**Last run 2026-07-28 (55 days earlier): FAIL** · 59 checks — 47 pass, 2 fail, 10 skip.
+**Last run 2026-07-28 (45 days earlier): FAIL** · 59 checks — 47 pass, 2 fail, 10 skip.
 
 _On demand by design: the audit has no schedule and no CI trigger, so it never runs on its own, so this date is how far back the last cross-check reaches — anything that drifted after it is unmeasured._
 

@@ -1,19 +1,19 @@
 # Triage Inbox
 
-> Auto-generated 2026-09-20T21:40:38.587295Z. Items waiting for triage decision.
+> Auto-generated 2026-09-10T19:27:01.283318Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 965
-- Triage: 11 | Promoted: 8 | Dismissed: 942 | Snoozed: 4
+- Total: 912
+- Triage: 13 | Promoted: 4 | Dismissed: 892 | Snoozed: 3
 
-## Top 11 items (severity-sorted)
+## Top 13 items (severity-sorted)
 
 ### Source: board-split (1 item)
 
 <a id="trg-14392ba5"></a>
-- **11 \[auto\] P2.17a: run architecture review inside campaign sub-iterates \(after 10\)** `id=trg-14392ba5 | severity=medium | kind=improvement → P2/engineering`
+- **P2.17a \[GUIDED after P2.17\] Campaign sub-iterates do not run the architecture review pass** `id=trg-14392ba5 | severity=medium | kind=improvement → P2/engineering`
   - PR #582 added external\_review.py --mode architecture as a second call in the external review step, wired into /shipwri…
   - Launch payload (copy into a new Claude session):
     ```text
@@ -25,78 +25,75 @@
 
 ### Source: cli (1 item)
 
-<a id="trg-9edb20d8"></a>
-- **07 \[auto\] Sweep the 129 orphaned .test-results.json evidence files** `id=trg-9edb20d8 | severity=low | kind=maintenance → P3/engineering`
-  - The sibling-sweep fix \(this run\) stops NEW orphans; it does not touch the ones retention already left behind before t…
+<a id="trg-b536636e"></a>
+- **Cross-tree foreign status events from ABANDONED worktrees resurrect dismissed triage cards** `id=trg-b536636e | severity=high | kind=bug → P1/engineering`
+  - MEASURED 2026-09-10 on the main tree. \`triage.read\_all\_items\` resolves \`trg-74ef24ce\` \("Compliance: 7 open findi…
+  - Promote: `triage_promote.py --id trg-b536636e --task-ref EXT:<ref>`
+
+### Source: doubt-review (1 item)
+
+<a id="trg-aedcfe7b"></a>
+- **Binding-completeness F11 gate: transition rule for bindings that predate the gate's own rollout \(9 WebUI FRs already e…** `id=trg-aedcfe7b | severity=high | kind=compliance → P1/engineering`
+  - The new check\_binding\_completeness HARD gate \(P3.3, iterate-2026-09-07-p3-3-producers-emit-and-require-binding\) was…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate <id>
     ```
-  - Promote: `triage_promote.py --id trg-9edb20d8 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-aedcfe7b --task-ref EXT:<ref>`
 
-### Source: external\_review\_degradation (1 item)
+### Source: external-code-review (1 item)
 
-<a id="trg-3a35d342"></a>
-- **20 \[auto\] Find out why the opus reviewer arm returns no usable reply** `id=trg-3a35d342 | severity=medium | kind=maintenance → P2/engineering`
-  - The opus reviewer arm did not return a usable reply during an external code review \(provider=claude\_cli\), while at l…
-  - Promote: `triage_promote.py --id trg-3a35d342 --task-ref EXT:<ref>`
-
-### Source: github (1 item)
-
-<a id="trg-575a6f7f"></a>
-- **15 \[auto\] Resolve the 3 open code-scanning alerts, 1 of them high** `id=trg-575a6f7f | severity=high | kind=bug → P1/engineering`
-  - Repo svenroth-ai/shipwright \| code-scanning: 1 high, 2 low \| dependabot: 0 \| see https://github.com/svenroth-ai/ship…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-security
-    
-    Context: GitHub reports 3 open code-scanning finding(s) and 0 open Dependabot alert(s) for svenroth-ai/shipwright.
-    Severity breakdown — code-scanning: 1 high, 2 low; dependabot: 0.
-    Live state: https://github.com/svenroth-ai/shipwright/security
-    Source: triage item gh-security:svenroth-ai/shipwright
-    ```
-  - Promote: `triage_promote.py --id trg-575a6f7f --task-ref EXT:<ref>`
-
-### Source: internal-plan-review (1 item)
-
-<a id="trg-0a3c4edb"></a>
-- **Extend Codex reasoning-effort contract to plan\_review** `id=trg-0a3c4edb | severity=low | kind=improvement → P3/engineering`
-  - AGENTS.md's stated "high reasoning for required review subagents" policy now reaches codex exec for spec/code/doubt \(i…
-  - Promote: `triage_promote.py --id trg-0a3c4edb --task-ref EXT:<ref>`
-
-### Source: iterate-2026-09-12-t7-compliance-grade (1 item)
-
-<a id="trg-6bda0dbb"></a>
-- **09 \[guided\] Stop D5 hard-failing a no-FR behavior change that FR-01.10/AC06 exempts** `id=trg-6bda0dbb | severity=medium | kind=compliance → P2/engineering`
-  - AC06 requires: a completed change that says it affects behaviour, names no requirement, and gives no exemption reason i…
-  - Promote: `triage_promote.py --id trg-6bda0dbb --task-ref EXT:<ref>`
-
-### Source: iterate-2026-09-16-opus-review-leg-codex-driver (1 item)
-
-<a id="trg-475c572f"></a>
-- **18 \[auto\] Generalize the Adopt Layer-3 reviewer roster the way the external roster already was** `id=trg-475c572f | severity=medium | kind=improvement → P2/engineering`
-  - iterate-2026-09-16-opus-review-leg-codex-driver generalized the external-review roster to {glm,opus} under --driver cod…
+<a id="trg-00b11bd7"></a>
+- **ITERATE B \[AFTER Iterate A / trg-e69bf1ba\] P3.7 orphan-AC-binding check does not see a retired FR's surviving @covers…** `id=trg-00b11bd7 | severity=high | kind=compliance → P1/engineering`
+  - External code review \(openai, HIGH\) on P3.7 feeder \(b\), check\_orphan\_ac\_binding.py \(campaign req3-04c-ac-identi…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate <id>
     ```
-  - Promote: `triage_promote.py --id trg-475c572f --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-00b11bd7 --task-ref EXT:<ref>`
 
-### Source: manual (1 item)
+### Source: iterate-2026-09-07-p3-3-producers-emit-and-require-binding (1 item)
 
-<a id="trg-c196ba32"></a>
-- **19 \[guided\] Schedule campaign sub-iterates from a dependency graph instead of one campaign-wide strategy** `id=trg-c196ba32 | severity=low | kind=improvement → P3/engineering`
-  - Today a campaign's sub-iterates only carry a single campaign-wide branch\_strategy \(serial/stacked/independent/single-…
+<a id="trg-875104ac"></a>
+- **P3.3 emit-half: wire the EXISTING layer promotion into the iterate flow \(scope settled - no second writer\)** `id=trg-875104ac | severity=medium | kind=compliance → P2/engineering`
+  - P3.3 \(campaign req3-04c-ac-identity-wave2\) delivered only the require half \(F11 check\_binding\_completeness\). The…
   - Launch payload (copy into a new Claude session):
     ```text
     /shipwright-iterate <id>
     ```
-  - Promote: `triage_promote.py --id trg-c196ba32 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-875104ac --task-ref EXT:<ref>`
+
+### Source: iterate-2026-09-09-p4-1-glossary-generator-review (1 item)
+
+<a id="trg-6c3629d2"></a>
+- **P4.1 follow-up: 5 low-severity polish items on write\_context\_term.py / interview-protocol.md** `id=trg-6c3629d2 | severity=low | kind=maintenance → P3/engineering`
+  - From PR #699 review \(campaign req3-09-p4-grill-glossary, sub-iterate P4.1, run\_id iterate-2026-09-09-p4-1-glossary-ge…
+  - Promote: `triage_promote.py --id trg-6c3629d2 --task-ref EXT:<ref>`
+
+### Source: iterate-2026-09-10-p3-7-feeder-checks-anti-ratcheted (2 items)
+
+<a id="trg-e69bf1ba"></a>
+- **ITERATE A: P3.7 feeder \(a\) baseline lifecycle - no post-merge observation AND no cross-run provenance** `id=trg-e69bf1ba | severity=medium | kind=improvement → P2/engineering`
+  - The feeder \(a\) coverage-ratchet baseline \(shipwright\_ac\_coverage\_baseline.json\) is only ever read and compared i…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate <id>
+    ```
+  - Promote: `triage_promote.py --id trg-e69bf1ba --task-ref EXT:<ref>`
+
+<a id="trg-33a474e2"></a>
+- **ITERATE C: two ADVISORY checks - changed test body suspects its AC, and requirement links to its rationale \(p3.8\)** `id=trg-33a474e2 | severity=low | kind=improvement → P3/engineering`
+  - P3.7 sub-iterate spec \(campaign req3-04c-ac-identity-wave2\) names a third, lower-priority item alongside the two hard…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate <id>
+    ```
+  - Promote: `triage_promote.py --id trg-33a474e2 --task-ref EXT:<ref>`
 
 ### Source: operator-request (1 item)
 
 <a id="trg-a0d8c2cb"></a>
-- **10 \[guided\] P2.50: add an internal architecture review to the plan\_review tier** `id=trg-a0d8c2cb | severity=high | kind=improvement → P1/engineering`
+- **P2.50 \[GUIDED after plan-reviewer-configurable\] Internal architecture review for plan and iterate, on the plan\_revie…** `id=trg-a0d8c2cb | severity=high | kind=improvement → P1/engineering`
   - REQUIREMENT \(operator, 2026-08-08\). The architecture review exists only as an EXTERNAL call. Give it an internal arm…
   - Launch payload (copy into a new Claude session):
     ```text
@@ -106,17 +103,10 @@
     ```
   - Promote: `triage_promote.py --id trg-a0d8c2cb --task-ref EXT:<ref>`
 
-### Source: pr-770-review (1 item)
-
-<a id="trg-affcd29f"></a>
-- **17 \[auto\] Extend the worktree-read safeguard to the whole review cascade, not just the Codex leg** `id=trg-affcd29f | severity=medium | kind=improvement → P2/engineering`
-  - PR #770 \(Codex internal-review transport\) merged with an accepted, disclosed read-access risk on the real worktree du…
-  - Promote: `triage_promote.py --id trg-affcd29f --task-ref EXT:<ref>`
-
-### Source: req3-campaign (1 item)
+### Source: req3-campaign (2 items)
 
 <a id="trg-a2a45d38"></a>
-- **12 \[guided\] REQ3.10: make the grader's change\_reconciliation real \(run last\)** `id=trg-a2a45d38 | severity=medium | kind=improvement → P2/engineering`
+- **REQ3.10 \[ITERATE\]\[STRICTLY LAST after REQ3.05/3.06\] Grader Lead-Magnet: change\_reconciliation real machen** `id=trg-a2a45d38 | severity=medium | kind=improvement → P2/engineering`
   - Phase 4, interaktiv. Der Grader reserviert change\_reconciliation bereits als 'Shipwright-only'-Dimension \(kappt kalte…
   - Launch payload (copy into a new Claude session):
     ```text
@@ -126,13 +116,44 @@
     ```
   - Promote: `triage_promote.py --id trg-a2a45d38 --task-ref EXT:<ref>`
 
-## Deferred — decided, revisit later (4)
+<a id="trg-c4f877ab"></a>
+- **REQ3.05 \[CAMPAIGN AUTONOM - scaffold ready\] Test-Backfill: fehlende AC-Tests - Monorepo** `id=trg-c4f877ab | severity=medium | kind=improvement → P2/engineering`
+  - Der Coverage-Motor, eigener Anker damit er nicht nachgeschleift wird. Schreibt Tests fuer ACs, die heute keinen beweise…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate
+    
+    Work item: REQ3.05: Test-Backfill: fehlende AC-Tests - Monorepo
+    ```
+  - Promote: `triage_promote.py --id trg-c4f877ab --task-ref EXT:<ref>`
+
+### Source: req3-phase2-walk (1 item)
+
+<a id="trg-0845a2f5"></a>
+- **REQ3.06 \[CAMPAIGN AUTONOM\] Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only \(mechanisable\) - Monorepo** `id=trg-0845a2f5 | severity=high | kind=improvement → P1/engineering`
+  - AUTONOME Kampagne. Der Anker, der die Enforcement-Liste des AC-Nachweis-Registers abarbeitet - das Register IST die Arb…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate
+    
+    Work item: REQ3.06: Enforcement-Liste abarbeiten: Checks bauen fuer prompt-only (mechanisable) - Monorepo
+    ```
+  - Promote: `triage_promote.py --id trg-0845a2f5 --task-ref EXT:<ref>`
+
+### Source: stage3-doubt-review (1 item)
+
+<a id="trg-a719e3b7"></a>
+- **Keystone gate's SHARED helper modules \(imported by its \_keystone\_\*.py verifiers\) stay outside SENSITIVE\_PATH\_RE** `id=trg-a719e3b7 | severity=low | kind=improvement → P3/engineering`
+  - iterate-2026-09-10-keystone-verifier-sensitive-path added the 8 \_keystone\_\*.py verifier modules and their ci.yml ent…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    /shipwright-iterate <id>
+    ```
+  - Promote: `triage_promote.py --id trg-a719e3b7 --task-ref EXT:<ref>`
+
+## Deferred — decided, revisit later (3)
 
 _Not gone: each of these was decided, with a date it comes back on._
-
-- **release.py: rollback + smoke-input scope gaps deferred until first real Jelastic use** `id=trg-45213a11 | severity=medium | revisit=2026-11-16`
-  - Reason: Revisit once release.py has a real caller/usage to design the smoke-url allowlist and commit-pinned rollback against.
-  - Un-park: `triage_cli.py unpark trg-45213a11 --reason <why>`
 
 - **P4.03 \[GUIDED\] IT-10 Plugin-Scope-Split: entry plugins global, 11 pipeline plugins project-scoped** `id=trg-84a84f4e | severity=medium | revisit=2026-12-01`
   - Reason: Parked 2026-09-06 by the operator, WITH a date: a snooze without revisitAt never returns. Every repo he works in IS a S…
