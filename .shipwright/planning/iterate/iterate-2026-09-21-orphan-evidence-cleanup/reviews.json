@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-21-orphan-evidence-cleanup",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T06:20:27.091416+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T05:31:46.337185+00:00",
+      "disposition": "mini-plan / internal plan review are medium+ only, this run is small (Phase Matrix)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T05:31:46.642610+00:00",
+      "disposition": "Full Code Review cascade triggers only with risk flags at small complexity; this diff (evidence-file deletion under .shipwright/agent_docs/iterates/) carries none (Phase Matrix: Full Code Review row)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T05:31:46.805547+00:00",
+      "disposition": "Full Code Review cascade triggers only with risk flags at small complexity; this diff (evidence-file deletion under .shipwright/agent_docs/iterates/) carries none (Phase Matrix: Full Code Review row)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T05:31:47.105888+00:00",
+      "disposition": "Full Code Review cascade triggers only with risk flags at small complexity; this diff (evidence-file deletion under .shipwright/agent_docs/iterates/) carries none (Phase Matrix: Full Code Review row)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T05:31:46.958947+00:00",
+      "disposition": "Full Code Review cascade triggers only with risk flags at small complexity; this diff (evidence-file deletion under .shipwright/agent_docs/iterates/) carries none (Phase Matrix: Full Code Review row)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T05:31:46.485957+00:00",
+      "disposition": "mini-plan / internal plan review are medium+ only, this run is small (Phase Matrix)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
