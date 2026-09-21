@@ -170,14 +170,25 @@ def resolve_shared_root() -> Optional[Path]:
     direct siblings under ONE bundle root (`<bundle_root>/shared`) — trying
     only the cache shape silently no-ops this hook forever under a live
     Codex bundle install, since `<bundle_root>/../../shared` points outside
-    the bundle entirely (external code review, 2026-09-20)."""
+    the bundle entirely (external code review, 2026-09-20).
+
+    The FIRST non-empty variable wins outright, matching
+    ``shared/scripts/lib/plugin_root.py``'s value-level contract: if that
+    root has neither directory shape, this returns ``None`` rather than
+    falling through to a lower-priority variable — an operator who set
+    ``SHIPWRIGHT_PLUGIN_ROOT`` to override the root gets a loud no-op, not a
+    silent switch to a different root they did not choose (local PR-review
+    preflight, 2026-09-21)."""
+    plugin_root = ""
     for var in ("SHIPWRIGHT_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT"):
         plugin_root = os.environ.get(var, "").strip()
-        if not plugin_root:
-            continue
-        for candidate in (Path(plugin_root) / "shared", Path(plugin_root) / ".." / ".." / "shared"):
-            if candidate.exists():
-                return candidate
+        if plugin_root:
+            break
+    if not plugin_root:
+        return None
+    for candidate in (Path(plugin_root) / "shared", Path(plugin_root) / ".." / ".." / "shared"):
+        if candidate.exists():
+            return candidate
     return None
 
 

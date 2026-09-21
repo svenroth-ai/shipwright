@@ -9,15 +9,33 @@ build_codex_plugin.py's own AC4 byte-identical-rebuild guarantee promises.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # shared/scripts/tools
 
-from build_codex_plugin import build_bundle  # noqa: E402
+import pytest
+
+from build_codex_plugin import UnsafeSourceSymlinkError, build_bundle  # noqa: E402
 from verify_codex_plugin_bundle import verify_bundle  # noqa: E402
 
 from _bundle_fixtures import write_plugin, write_shared  # noqa: E402
+
+
+def _symlink(src: Path, dst: Path) -> None:
+    """Create a symlink, or skip. Windows needs Developer Mode/admin; no CI job
+    runs on Windows (same constraint as test_security_gate_symlinks.py), so CI
+    must never take the skip silently."""
+    try:
+        os.symlink(src, dst)
+    except (OSError, NotImplementedError) as exc:
+        if os.environ.get("CI", "").lower() in ("true", "1"):
+            pytest.fail(
+                f"symlink creation failed in CI ({exc!r}); this suite must "
+                "exercise the live-bundle symlink-refusal branch of _hash_tree. "
+                "Run on a filesystem/user that permits symlinks.")
+        pytest.skip(f"symlinks not permitted on this host ({exc!r})")
 
 
 def test_clean_bundle_passes(tmp_path):
@@ -69,6 +87,26 @@ def test_undeclared_file_in_bundle_fails(tmp_path):
 
     assert result.ok is False
     assert any("rogue.txt" in f for f in result.undeclared_files)
+
+
+def test_a_symlink_planted_in_the_live_bundle_is_refused(tmp_path):
+    """A symlink added directly to an already-built bundle (never produced by
+    build_bundle, which refuses symlinks in its own source trees) would
+    otherwise have its target's content hashed as bundle content by
+    _hash_tree — refuse rather than compare a tampered tree (local PR-review
+    preflight comment, 2026-09-21)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    bundle_dir = tmp_path / "dist"
+    build_bundle(project_root=tmp_path, out_dir=bundle_dir)
+
+    outside_target = tmp_path / "outside-the-repo.txt"
+    outside_target.write_text("not part of any declared source", encoding="utf-8")
+    _symlink(outside_target, bundle_dir / "skills" / "alpha" / "escape.txt")
+
+    with pytest.raises(UnsafeSourceSymlinkError, match="escape.txt"):
+        verify_bundle(project_root=tmp_path, bundle_dir=bundle_dir)
 
 
 def test_missing_file_source_added_bundle_not_rebuilt_fails(tmp_path):

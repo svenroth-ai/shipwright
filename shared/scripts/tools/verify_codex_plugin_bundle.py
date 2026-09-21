@@ -31,7 +31,13 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from build_codex_plugin import BundleCollisionError, UnsafeOutputPathError, _hash_tree, build_bundle
+from build_codex_plugin import (
+    BundleCollisionError,
+    UnsafeOutputPathError,
+    UnsafeSourceSymlinkError,
+    _hash_tree,
+    build_bundle,
+)
 
 
 @dataclass
@@ -78,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         result = verify_bundle(
             project_root=Path(args.project_root), bundle_dir=Path(args.bundle_dir)
         )
-    except (BundleCollisionError, UnsafeOutputPathError) as exc:
+    except (BundleCollisionError, UnsafeOutputPathError, UnsafeSourceSymlinkError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

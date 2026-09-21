@@ -247,6 +247,24 @@ def test_resolve_shared_root_prefers_the_codex_bundle_shape(tmp_path, monkeypatc
     assert resolved.resolve() == (bundle_root / "shared").resolve()
 
 
+def test_resolve_shared_root_does_not_fall_through_to_a_lower_priority_var(tmp_path, monkeypatch):
+    """The first non-empty variable must win outright, matching
+    shared/scripts/lib/plugin_root.py's value-level contract — an operator
+    who sets SHIPWRIGHT_PLUGIN_ROOT to a root with neither directory shape
+    must get a loud None, not a silent switch to CLAUDE_PLUGIN_ROOT (local
+    PR-review preflight, 2026-09-21)."""
+    invalid_root = tmp_path / "no-shared-here"
+    invalid_root.mkdir()
+    valid_root = tmp_path / "codex-bundle"
+    (valid_root / "shared").mkdir(parents=True)
+
+    monkeypatch.setenv("SHIPWRIGHT_PLUGIN_ROOT", str(invalid_root))
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(valid_root))
+    monkeypatch.delenv("PLUGIN_ROOT", raising=False)
+
+    assert hook.resolve_shared_root() is None
+
+
 def test_bad_stdin_never_blocks(monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO("not json"))
     err = io.StringIO()

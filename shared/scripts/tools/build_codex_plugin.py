@@ -140,8 +140,17 @@ def _sha256_of_file(path: Path) -> str:
 
 
 def _hash_tree(root: Path) -> dict[str, str]:
+    # Also guards the LIVE bundle side of verify_codex_plugin_bundle.py's
+    # comparison, not only the fresh rebuild _copy_tree already protects: a
+    # symlink planted directly inside an already-built bundle would otherwise
+    # have its target's content hashed as if it were real bundle content
+    # (local PR-review preflight comment, 2026-09-21).
     hashes: dict[str, str] = {}
     for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise UnsafeSourceSymlinkError(
+                f"{path} is a symlink — refusing to hash a bundle tree containing one."
+            )
         if path.is_file():
             hashes[str(path.relative_to(root)).replace("\\", "/")] = _sha256_of_file(path)
     return hashes
