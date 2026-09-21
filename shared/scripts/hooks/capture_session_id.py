@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Canonical SessionStart hook for all Shipwright plugins.
 
-Injects Shipwright environment variables into Claude's session context:
+Injects Shipwright environment variables into the session context:
 - SHIPWRIGHT_SESSION_ID: current session id (from hook payload)
-- SHIPWRIGHT_PLUGIN_ROOT: active plugin directory (from CLAUDE_PLUGIN_ROOT)
+- SHIPWRIGHT_PLUGIN_ROOT: active plugin directory, resolved via
+  lib.plugin_root.resolve_plugin_root() (SHIPWRIGHT_PLUGIN_ROOT >
+  CLAUDE_PLUGIN_ROOT [Claude's variable, and Codex's compat alias] >
+  PLUGIN_ROOT [Codex native, checked last] — M2, one plugin-root contract)
 - SHIPWRIGHT_PROJECT_ROOT: resolved via resolve_project_root() for
   subdirectory-safe monorepo support. Falls back to cwd on failure.
 - SHIPWRIGHT_ROOT_SESSION_ID / SHIPWRIGHT_LOOP_ID / SHIPWRIGHT_LOOP_UNIT_ID:
@@ -55,6 +58,8 @@ from session_start_phase_quality import (  # noqa: E402
     phase_quality_inject_enabled,
 )
 
+from lib.plugin_root import PluginRootUnresolvedError, resolve_plugin_root_str  # noqa: E402
+
 
 def _resolve_root() -> str:
     """Find the Shipwright project root, tolerating subdirectory layouts."""
@@ -72,7 +77,10 @@ def main() -> int:
         return 0  # Hooks should never fail
 
     session_id = payload.get("session_id")
-    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
+    try:
+        plugin_root = resolve_plugin_root_str()
+    except PluginRootUnresolvedError:
+        plugin_root = ""
 
     if not session_id:
         return 0

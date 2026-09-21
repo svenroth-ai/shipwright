@@ -2267,4 +2267,5 @@
 {"event":"amend","id":"trg-c196ba32","ts":"2026-09-20T19:02:08.132236Z","by":"claude-session","title":"19 [guided] Schedule campaign sub-iterates from a dependency graph instead of one campaign-wide strategy"}
 {"event":"amend","id":"trg-3a35d342","ts":"2026-09-20T19:02:08.248923Z","by":"claude-session","title":"20 [auto] Find out why the opus reviewer arm returns no usable reply"}
 {"event":"amend","id":"trg-14392ba5","ts":"2026-09-20T19:08:58.285304Z","by":"claude-session","title":"11 [auto] P2.17a: run architecture review inside campaign sub-iterates (after 10)"}
+{"event":"status","id":"trg-575a6f7f","ts":"2026-09-21T08:24:39.522102Z","newStatus":"dismissed","by":"githubImporter","reason":"githubResolved","promotedTaskId":null}
 {"event":"status","id":"trg-fcb3ee97","ts":"2026-09-21T05:18:52.564769Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #778","promotedTaskId":null}

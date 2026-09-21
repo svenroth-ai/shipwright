@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-20-codex-plugin-bundle-root-contract",
+  "date": "2026-09-21",
+  "section": "Iterate — feature: codex plugin bundle + root contract",
+  "title": "Canonical plugin-root resolver + deterministic Codex bundle builder",
+  "context": "No shared plugin-root resolver existed; Codex has no CLAUDE_PLUGIN_ROOT and Shipwright had no real Codex install path.",
+  "decision": "New lib.plugin_root resolver (SHIPWRIGHT_PLUGIN_ROOT > CLAUDE_PLUGIN_ROOT > PLUGIN_ROOT) plus build_codex_plugin.py bundle builder + verifier; migrate 3 hook call sites.",
+  "consequences": "A script resolves its own plugin root identically under Claude or Codex; Shipwright installs into a real Codex session with every skill discoverable (proven live).",
+  "rationale": "SHIPWRIGHT_PLUGIN_ROOT is framework-owned and checked first; value-level contract only, does not parse cache topology (phase-aware hook matching under Codex's umbrella install remains unsolved, out of scope).",
+  "rejected": "Committing the built bundle instead of gitignoring it: rejected as a drift-prone generated artifact multiplying diff size with no added verification benefit; publication-readiness is out of campaign scope.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-20-codex-plugin-bundle-root-contract-resolver-and-bundle-builder.md"
+}

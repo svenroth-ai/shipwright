@@ -1,0 +1,281 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-20-codex-plugin-bundle-root-contract",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T22:03:41.578427+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "approach / consistency",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan and spec disagree on AC3's migration scope. Mini-plan §1/step 2 says only `capture_session_id.py` needed migrating to the resolver, and explicitly lists the two audit hooks as \"not migrated\"; AC3 and the Confidence Ledger (item 8) say all three (`capture_session_id.py`, `audit_phase_quality_on_stop.py`, `audit_compliance_on_stop.py`) import the shared resolver. The spec's later sections appear correct, but the mini-plan was apparently never updated after scope grew.",
+          "suggestion": "Reconcile the mini-plan text (§1 Modify list and step 2) with the final state, or add a note that step 2 was superseded. A future reader following the mini-plan would re-introduce the un-migrated audit hooks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The `${CLAUDE_PLUGIN_ROOT}` rewrite target in bundled hook commands is a statically-reasoned guess about Codex's runtime env, not an observed fact (the spec itself concedes the live hook-invocation shape \"is not empirically confirmed\"). If Codex does not actually export `CLAUDE_PLUGIN_ROOT` (only `PLUGIN_ROOT`, or neither) for command hooks — and note the Repo Scout found zero real-world command-hook precedent — every bundled hook is still broken, just in a way the trust gate hides until R2.",
+          "suggestion": "This is already disclosed and deferred to R2, which is reasonable — but consider making R2's first action a minimal trust-gated probe that dumps `env` from one fired hook, before R2 builds anything else on top of the bundle's hook manifest. Also consider having bundled hook commands include a `PLUGIN_ROOT`-fallback rewrite (or have the resolver-bridge in the command line) so a wrong guess doesn't mean a hard failure; the cost is one line in `_rewrite_command`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The hook-merge/ordering machinery (`codex_hook_merge.py` + `codex_hook_inventory.py`, 15+ tests) implements cross-plugin ordering semantics for a runtime whose command-hook support is entirely unproven and unobserved. This is over-production relative to the stated infra-only goal — the merge logic's correctness is only validated against its own fixtures, never against Codex behavior.",
+          "suggestion": "Already disclosed by internal review; agree with the disclose disposition given the real cross-plugin Stop-order requirement it encodes is genuine. Just ensure R2 treats the ordering algorithm as potentially redesignable, not as settled infrastructure.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "10 of 14 bundled `SKILL.md` files contain `{plugin_root}`/`{root}` template tokens whose resolution under the flattened umbrella bundle layout is deferred. That's a large known-broken surface being shipped inside a bundle that AC1 proves is installable and discoverable — an agent could invoke a skill and follow prose paths that resolve wrong, with no guard or warning at the boundary.",
+          "suggestion": "Consider a cheap mitigation inside this iterate's existing machinery: have `verify_codex_plugin_bundle.py` (or the builder) emit a warning/count of unresolved `{plugin_root}` tokens in the built bundle, so the deferred defect is at least visible at build time rather than silent. The grep already exists; wiring it into the verifier is a few lines.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The phase-recognition no-op under the Codex bundle (umbrella install path has no `shipwright-<phase>` component) means `audit_phase_quality_on_stop.py` and `audit_compliance_on_stop.py` resolve a root but silently do nothing. If hooks do fire under Codex in R2, this is a silent behavior gap rather than an error.",
+          "suggestion": "Fine to defer per Out of Scope, but the later milestone should include an explicit signal (log line or refusal) when `phase_from_plugin_root()` fails under a successfully-resolved root, so the no-op is observable rather than silent.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "build_bundle()` copies from the raw working tree filtered by directory name, not from git-tracked content — a latent secret-exfiltration vector if/when the bundle is ever published. Already disclosed with a named publish-milestone precondition.",
+          "suggestion": "Agree with the disclose disposition for a local-only, gitignored `dist/`. Consider a one-line TODO referencing the precondition from the builder's docstring so the constraint travels with the code, not just the spec.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The cleanup hook's inlined precedence copy can drift from `plugin_root.py`'s canonical order, and the spec declined a test because a robust check requires source-text comparison. A simple mitigation was skipped.",
+          "suggestion": "A minimal source-text test (assert the literal 3-tuple of env names appears in order in the script) is brittle but cheap; alternatively add a comment in both files cross-referencing each other so a reorder in one greps up the other. Low priority either way.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The mini-plan is internally stale in ways that would miss acceptance criteria if implemented literally: it describes one `Path`-returning resolver, says only `capture_session_id.py` needs migration, and treats the cleanup hook as excluded. The final spec instead requires a verbatim string resolver and corrected precedence at all four call sites, including the cleanup hook’s inline fallback.",
+          "suggestion": "Rewrite the mini-plan’s resolver and migration steps to match the final contract exactly, and make the four-call-site inventory an explicit test/assertion rather than relying on narrative corrections elsewhere in the spec.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The bundle installs translated command hooks whose execution is not validated in Codex. Skill discovery proves installation, but it does not prove that Codex supplies `CLAUDE_PLUGIN_ROOT`, honors the inline hook schema, preserves merged ordering, or invokes command hooks at all after trust approval. This can leave an apparently installable plugin with silently ineffective operational hooks.",
+          "suggestion": "Before distributing the bundle beyond the local proof, make the R2 interactive trust-approved hook probe a release prerequisite. Until then, clearly mark/generated-manifest hooks as experimental, or omit them from the installable bundle if users could reasonably expect enforcement.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The builder copies raw filesystem content with directory-name exclusions only. It does not appear to reject symlinks or enforce resolved source paths, so a symlink under a copied tree could pull content outside the repository or package an unintended secret; hash traceability alone does not prevent that escape.",
+          "suggestion": "Reject symlinks (or resolve and require targets to remain under their declared source root), use a strict file allowlist for copied trees, and explicitly exclude secret-bearing patterns such as `.env`, credentials, and local configuration files. Keep the future tracked-snapshot requirement, but close the symlink/path-escape case now because AC5 explicitly promises it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "Version synchronization between the generated marketplace entry and generated plugin manifest is only observed manually. A mismatch can produce an install that resolves to an unexpected cache version and undermine the cache-shape assumptions used by the live proof.",
+          "suggestion": "Have the builder derive both versions from one canonical source and add a verifier assertion that marketplace, plugin manifest, and declared bundle version are identical.  Overall, the core bundling and root-resolution approach is sound, and the evidence for skill discovery is strong. Resolve the stale execution plan and harden source-copy safety before treating the bundle as ready for wider installation.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-20T22:08:57.010238+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: approach / consistency — Severity: medium**\n**Finding:** The mini-plan and spec disagree on AC3's migration scope. Mini-plan §1/step 2 says *only* `capture_session_id.py` needed migrating to the resolver, and explicitly lists the two audit hooks as \"not migrated\"; AC3 and the Confidence Ledger (item 8) say all three (`capture_session_id.py`, `audit_phase_quality_on_stop.py`, `audit_compliance_on_stop.py`) import the shared resolver. The spec's later sections appear correct, but the mini-plan was apparently never updated after scope grew.\n**Suggestion:** Reconcile the mini-plan text (§1 Modify list and step 2) with the final state, or add a note that step 2 was superseded. A future reader following the mini-plan would re-introduce the un-migrated audit hooks.\n\n**Category: risk — Severity: medium**\n**Finding:** The `${CLAUDE_PLUGIN_ROOT}` rewrite target in bundled hook commands is a statically-reasoned guess about Codex's runtime env, not an observed fact (the spec itself concedes the live hook-invocation shape \"is not empirically confirmed\"). If Codex does *not* actually export `CLAUDE_PLUGIN_ROOT` (only `PLUGIN_ROOT`, or neither) for command hooks — and note the Repo Scout found zero real-world command-hook precedent — every bundled hook is still broken, just in a way the trust gate hides until R2.\n**Suggestion:** This is already disclosed and deferred to R2, which is reasonable — but consider making R2's first action a minimal trust-gated probe that dumps `env` from one fired hook, *before* R2 builds anything else on top of the bundle's hook manifest. Also consider having bundled hook commands include a `PLUGIN_ROOT`-fallback rewrite (or have the resolver-bridge in the command line) so a wrong guess doesn't mean a hard failure; the cost is one line in `_rewrite_command`.\n\n**Category: risk — Severity: low**\n**Finding:** The hook-merge/ordering machinery (`codex_hook_merge.py` + `codex_hook_inventory.py`, 15+ tests) implements cr […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The mini-plan is internally stale in ways that would miss acceptance criteria if implemented literally: it describes one `Path`-returning resolver, says only `capture_session_id.py` needs migration, and treats the cleanup hook as excluded. The final spec instead requires a verbatim string resolver and corrected precedence at all four call sites, including the cleanup hook’s inline fallback.  \n   **Suggestion:** Rewrite the mini-plan’s resolver and migration steps to match the final contract exactly, and make the four-call-site inventory an explicit test/assertion rather than relying on narrative corrections elsewhere in the spec.\n\n2. **Category:** risk  \n   **Severity:** medium  \n   **Finding:** The bundle installs translated command hooks whose execution is not validated in Codex. Skill discovery proves installation, but it does not prove that Codex supplies `CLAUDE_PLUGIN_ROOT`, honors the inline hook schema, preserves merged ordering, or invokes command hooks at all after trust approval. This can leave an apparently installable plugin with silently ineffective operational hooks.  \n   **Suggestion:** Before distributing the bundle beyond the local proof, make the R2 interactive trust-approved hook probe a release prerequisite. Until then, clearly mark/generated-manifest hooks as experimental, or omit them from the installable bundle if users could reasonably expect enforcement.\n\n3. **Category:** security  \n   **Severity:** medium  \n   **Finding:** The builder copies raw filesystem content with directory-name exclusions only. It does not appear to reject symlinks or enforce resolved source paths, so a symlink under a copied tree could pull content outside the repository or package an unintended secret; hash traceability alone does not prevent that escape.  \n   **Suggestion:** Reject symlinks (or resolve and require targets to remain under their declared source root), use a strict file  […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T21:55:28.889025+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T21:55:37.590325+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": "plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py` (`resolve_shared_root`, ~line 160)",
+          "line": null,
+          "finding": "The inline fallback now accepts `CLAUDE_PLUGIN_ROOT`/`PLUGIN_ROOT` and computes `Path(plugin_root)/\"..\"/\"..\"/\"shared\"`. Under the Codex umbrella bundle the plugin root IS the bundle root, where `shared/` lives at `<root>/shared`, not `<root>/../../shared`. So under Codex this hook still resolves no shared root and silently no-ops — exactly the \"permanently dark in production\" defect AC3 claims this iterate fixes, recurring on the Codex side. The spec's Out of Scope names phase-recognition only; this gap is not disclosed anywhere. (It may also fail under a real Claude cache install, where `../../shared` from the version dir points at the marketplace dir — the new test only proves it against a monorepo-shaped fixture.)",
+          "suggestion": "Either add a `<root>/shared` candidate to the loop (cheap, matches the bundle layout the builder emits), or explicitly disclose this hook as dark under the Codex bundle in the spec/docs, the way phase recognition is.  2. Category: spec — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/build_codex_plugin.py` (`BUILD_MANIFEST.json` write, ~line 230)",
+          "line": null,
+          "finding": "The spec's Affected Boundaries and mini-plan both promise a build manifest that is a \"source→bundled-file map\"; the emitted manifest is only `bundled-relative-path -> sha256` with no source provenance. The verifier compensates by rebuilding fresh, so AC5 still holds functionally, but the declared producer/consumer contract (verifier consumes a source→bundled map) is not what shipped.",
+          "suggestion": "Either add the source path per entry to the manifest or correct the spec/boundary description to match the hash-tree + fresh-rebuild design.  3. Category: bug — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/scripts/tools/verify_codex_plugin_bundle.py` (`main`, ~line 80)",
+          "line": null,
+          "finding": "main()` catches only `BundleCollisionError`, while `build_bundle` (invoked inside `verify_bundle`) can also raise `UnsafeOutputPathError` (e.g. if the live `--bundle-dir` parent contains a foreign marketplace.json, the fresh build writes one into the temp parent — that path is safe, but a collision raised in `build_hook_inventory` from the source tree surfaces as `UnsafeOutputPathError` paths too). The builder's own `main()` was fixed to catch both (documented in the spec, item 11); the verifier was not given the same treatment, so a refusal surfaces as a raw traceback instead of `error: ...`.",
+          "suggestion": "Add `UnsafeOutputPathError` to the verifier's `except` clause.  4. Category: test — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": "shared/tests/test_capture_session_id.py` (`test_outputs_plugin_root_from_codex_native_var`), `shared/tests/test_audit_compliance_on_stop.py`, `shared/tests/test_audit_phase_quality_stop_hook_direct.py` (the new \"codex native\" tests)",
+          "line": null,
+          "finding": "The new Codex-native tests delenv `CLAUDE_PLUGIN_ROOT` but do not delenv `SHIPWRIGHT_PLUGIN_ROOT`. Since the resolver checks `SHIPWRIGHT_PLUGIN_ROOT` first, an ambient value in the test environment would be resolved instead of the intended `PLUGIN_ROOT`, and the assertions on the injected/recognized value would fail (or, for the compliance test, silently exercise the wrong branch). `test_plugin_root.py` gets this right with an autouse `_clean_env` fixture; these three do not.",
+          "suggestion": "Add `monkeypatch.delenv(\"SHIPWRIGHT_PLUGIN_ROOT\", raising=False)` to each of the three new tests (or replicate the autouse fixture).  5. Category: spec — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": ".shipwright/planning/iterate/2026-09-20-codex-plugin-bundle-root-contract-miniplan.md` (§1, §2 step 2)",
+          "line": null,
+          "finding": "The mini-plan remains internally stale: §1/step 2 say only `capture_session_id.py` \"needed migrating\" and treat the two audit hooks as unchanged, while AC3/the final code migrate all three to the shared resolver. This exact inconsistency was flagged by both external reviewers (glm medium, openai high) and the spec's triage section records it as addressed in the spec text — but the mini-plan file committed in this diff still carries the stale wording.",
+          "suggestion": "Add a one-line \"superseded — see AC3\" note to mini-plan §1/step 2, per the reviewers' own suggestion.  Already-disclosed items (raw-filesystem copy, symlink/determinism hardening, unvalidated `${CLAUDE_PLUGIN_ROOT}` hook execution under Codex, `_merge_preserving_order` spurious-refusal shape) are recorded in the spec with dispositions; I do not re-raise them as new defects.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "[build_codex_plugin.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/shared/scripts/tools/build_codex_plugin.py:109)",
+          "line": null,
+          "finding": "_copy_tree()` follows symlinks by default and neither it nor `_hash_tree()` rejects or records symlinks. A symlink inside `shared/`, a skill, or plugin scripts can therefore package content outside the declared source tree; a symlinked directory in the built bundle may also evade the hash-based verifier entirely. This violates AC5’s path-escape/traceability guarantee.",
+          "suggestion": "Reject symlinks in all copied trees, or resolve each target and require it to remain within its declared source root; make the verifier explicitly flag symlinks.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "[cleanup-review-scratch-on-code-reviewer-failure.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py:169)",
+          "line": null,
+          "finding": "The cleanup hook still derives shared code only as `<plugin-root>/../../shared`. In the bundled Codex layout, `PLUGIN_ROOT`/`CLAUDE_PLUGIN_ROOT` is the umbrella bundle root and shared code is at `<plugin-root>/shared`; the current calculation points outside the bundle and the hook silently no-ops.",
+          "suggestion": "Resolve `<plugin-root>/shared` first for the umbrella bundle, then retain the legacy `../../shared` fallback for Claude-cache installs. Add a Codex-bundle-layout test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "regression",
+          "file": "[codex_hook_inventory.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/shared/scripts/tools/codex_hook_inventory.py:132)",
+          "line": null,
+          "finding": "Command hooks are merged solely by their plugin-relative invoked-script path and invocation tokens; the implementation never compares the contents of same-path scripts from different plugin origins. If two plugins contain different `scripts/hooks/foo.py` implementations but register the same command, the bundle emits only the first origin’s command and silently drops the other behavior, whereas Claude would run both.",
+          "suggestion": "Hash equivalent same-relative-path source scripts before merging and raise `BundleCollisionError` when they differ, unless the command is intentionally namespaced per origin. Add a fixture with divergent script contents.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[build_codex_plugin.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/shared/scripts/tools/build_codex_plugin.py:207)",
+          "line": null,
+          "finding": "BUILD_MANIFEST.json` contains only bundled-path-to-hash entries, not the specified source-to-bundled-file map. The verifier compensates by rebuilding, but the declared producer/consumer format and required traceability artifact are not implemented.",
+          "suggestion": "Record each bundled file’s declared source path(s), destination path, and hash in the manifest, and test that mapping for skills, origin scripts, and shared files.  Ship with fixes: core bundle construction is substantial, but source-tree escape handling and the Codex-layout cleanup regression need correction before approval.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-20T22:20:41.674363+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: edge-case — Severity: medium**\nFile: `plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py` (`resolve_shared_root`, ~line 160)\nFinding: The inline fallback now accepts `CLAUDE_PLUGIN_ROOT`/`PLUGIN_ROOT` and computes `Path(plugin_root)/\"..\"/\"..\"/\"shared\"`. Under the Codex umbrella bundle the plugin root IS the bundle root, where `shared/` lives at `<root>/shared`, not `<root>/../../shared`. So under Codex this hook still resolves no shared root and silently no-ops — exactly the \"permanently dark in production\" defect AC3 claims this iterate fixes, recurring on the Codex side. The spec's Out of Scope names phase-recognition only; this gap is not disclosed anywhere. (It may also fail under a real Claude cache install, where `../../shared` from the version dir points at the marketplace dir — the new test only proves it against a monorepo-shaped fixture.)\nSuggestion: Either add a `<root>/shared` candidate to the loop (cheap, matches the bundle layout the builder emits), or explicitly disclose this hook as dark under the Codex bundle in the spec/docs, the way phase recognition is.\n\n**2. Category: spec — Severity: low**\nFile: `shared/scripts/tools/build_codex_plugin.py` (`BUILD_MANIFEST.json` write, ~line 230)\nFinding: The spec's Affected Boundaries and mini-plan both promise a build manifest that is a \"source→bundled-file map\"; the emitted manifest is only `bundled-relative-path -> sha256` with no source provenance. The verifier compensates by rebuilding fresh, so AC5 still holds functionally, but the declared producer/consumer contract (verifier consumes a source→bundled map) is not what shipped.\nSuggestion: Either add the source path per entry to the manifest or correct the spec/boundary description to match the hash-tree + fresh-rebuild design.\n\n**3. Category: bug — Severity: low**\nFile: `shared/scripts/tools/verify_codex_plugin_bundle.py` (`main`, ~line 80)\nFinding: `main()` catches only `Bu […truncated]\n\n[openai] - Category: security  \n  Severity: medium  \n  File: [build_codex_plugin.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/shared/scripts/tools/build_codex_plugin.py:109)  \n  Finding: `_copy_tree()` follows symlinks by default and neither it nor `_hash_tree()` rejects or records symlinks. A symlink inside `shared/`, a skill, or plugin scripts can therefore package content outside the declared source tree; a symlinked directory in the built bundle may also evade the hash-based verifier entirely. This violates AC5’s path-escape/traceability guarantee.  \n  Suggestion: Reject symlinks in all copied trees, or resolve each target and require it to remain within its declared source root; make the verifier explicitly flag symlinks.\n\n- Category: bug  \n  Severity: medium  \n  File: [cleanup-review-scratch-on-code-reviewer-failure.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py:169)  \n  Finding: The cleanup hook still derives shared code only as `<plugin-root>/../../shared`. In the bundled Codex layout, `PLUGIN_ROOT`/`CLAUDE_PLUGIN_ROOT` is the umbrella bundle root and shared code is at `<plugin-root>/shared`; the current calculation points outside the bundle and the hook silently no-ops.  \n  Suggestion: Resolve `<plugin-root>/shared` first for the umbrella bundle, then retain the legacy `../../shared` fallback for Claude-cache installs. Add a Codex-bundle-layout test.\n\n- Category: regression  \n  Severity: medium  \n  File: [codex_hook_inventory.py](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-a75ri851/shared/scripts/tools/codex_hook_inventory.py:132)  \n  Finding: Command hooks are merged solely by their plugin-relative invoked-script path and invocation tokens; the implementation never compares the contents of same-path scripts from different plugin origins. If two plugins contain different `scripts/hooks/foo.py` […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T21:55:09.454254+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-20T22:02:57.545634+00:00",
+      "disposition": null,
+      "recorded_by": "opus-plan-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    }
+  }
+}

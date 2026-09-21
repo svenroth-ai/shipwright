@@ -16,6 +16,8 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 HOOK_PATH = PLUGIN_ROOT / "scripts" / "hooks" / "cleanup-review-scratch-on-code-reviewer-failure.py"
 
@@ -52,6 +54,8 @@ def _run_hook(monkeypatch, payload, *, session_id=SESSION_ID, plugin_root=str(PL
         monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", session_id)
     else:
         monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+    monkeypatch.delenv("PLUGIN_ROOT", raising=False)
     monkeypatch.setenv("SHIPWRIGHT_PLUGIN_ROOT", plugin_root)
     rc = hook.main([])
     return rc, err.getvalue()
@@ -209,6 +213,59 @@ def test_noop_when_plugin_root_unresolvable(tmp_path, monkeypatch):
     assert rc == 0
     called.assert_not_called()
     assert "could not resolve shared_root" in err
+
+
+@pytest.mark.covers("FR-01.21/AC04")
+def test_resolve_shared_root_falls_back_to_claude_plugin_root(monkeypatch):
+    """SHIPWRIGHT_PLUGIN_ROOT is never actually exported into a hook
+    subprocess's OS environment today (a SessionStart hook's
+    ``additionalContext`` is visible to the model, not to child processes'
+    environments) — CLAUDE_PLUGIN_ROOT is what Claude actually sets for
+    every hook invocation, so this hook was permanently dark in production
+    without this fallback (doubt-review, 2026-09-20 — corrects a false
+    justification the same finding removed from docs/hooks-and-pipeline.md)."""
+    monkeypatch.delenv("SHIPWRIGHT_PLUGIN_ROOT", raising=False)
+    monkeypatch.delenv("PLUGIN_ROOT", raising=False)
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(PLUGIN_ROOT))
+    resolved = hook.resolve_shared_root()
+    assert resolved is not None
+    assert resolved.resolve() == (PLUGIN_ROOT / ".." / ".." / "shared").resolve()
+
+
+def test_resolve_shared_root_prefers_the_codex_bundle_shape(tmp_path, monkeypatch):
+    """The Codex umbrella bundle (build_codex_plugin.py) puts every plugin's
+    scripts and `shared/` as direct siblings under ONE bundle root
+    (`<bundle_root>/shared`) — unlike the Claude plugin cache, which puts a
+    plugin's root two levels under a shared sibling
+    (`<plugin>/../../shared`). Trying only the cache shape silently no-ops
+    this hook forever under a live Codex bundle install (external code
+    review, 2026-09-20)."""
+    bundle_root = tmp_path / "codex-bundle"
+    (bundle_root / "shared").mkdir(parents=True)
+    monkeypatch.delenv("SHIPWRIGHT_PLUGIN_ROOT", raising=False)
+    monkeypatch.delenv("PLUGIN_ROOT", raising=False)
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(bundle_root))
+    resolved = hook.resolve_shared_root()
+    assert resolved is not None
+    assert resolved.resolve() == (bundle_root / "shared").resolve()
+
+
+def test_resolve_shared_root_does_not_fall_through_to_a_lower_priority_var(tmp_path, monkeypatch):
+    """The first non-empty variable must win outright, matching
+    shared/scripts/lib/plugin_root.py's value-level contract — an operator
+    who sets SHIPWRIGHT_PLUGIN_ROOT to a root with neither directory shape
+    must get a loud None, not a silent switch to CLAUDE_PLUGIN_ROOT (local
+    PR-review preflight, 2026-09-21)."""
+    invalid_root = tmp_path / "no-shared-here"
+    invalid_root.mkdir()
+    valid_root = tmp_path / "codex-bundle"
+    (valid_root / "shared").mkdir(parents=True)
+
+    monkeypatch.setenv("SHIPWRIGHT_PLUGIN_ROOT", str(invalid_root))
+    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(valid_root))
+    monkeypatch.delenv("PLUGIN_ROOT", raising=False)
+
+    assert hook.resolve_shared_root() is None
 
 
 def test_bad_stdin_never_blocks(monkeypatch):

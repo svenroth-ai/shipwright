@@ -1,0 +1,102 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-20-codex-plugin-bundle-root-contract",
+    "date": "2026-09-20",
+    "unit": {
+      "status": "passed",
+      "passed": 19098,
+      "total": 19168
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 551,
+      "total": 551
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests was red only under parallel xdist fan-out and green on serial retry (run_test_suite.py's own retry path), same as prior runs; flagged as trg-f64d1c27 for follow-up, does not affect this run's GREEN status"
+    ],
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest shared/scripts/tools/tests -q",
+      "tests_run": 1075,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-09-20-codex-plugin-bundle-root-contract/surface_verification.log"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "a clean Codex installation, with the Shipwright bundle added from a local file-based marketplace and installed, discovers every intended Shipwright skill by name in a live Codex session (AC1)",
+          "disposition": "tested",
+          "evidence": ".shipwright/planning/iterate/iterate-2026-09-20-codex-plugin-bundle-root-contract/ac1-live-skill-discovery-probe.jsonl (live Codex CLI transcript, captured this iterate)"
+        },
+        {
+          "behavior": "the shared resolver returns the identical SHIPWRIGHT_PLUGIN_ROOT value under the monorepo, Claude plugin-cache, and Codex plugin-cache directory shapes, with SHIPWRIGHT_PLUGIN_ROOT > CLAUDE_PLUGIN_ROOT > PLUGIN_ROOT precedence (AC2)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_plugin_root.py::test_resolves_identically_under_claude_and_codex_cache_shapes PASSED (+ 8 sibling precedence/error-path tests in the same file)"
+        },
+        {
+          "behavior": "every real CLAUDE_PLUGIN_ROOT-reading call site (capture_session_id.py, audit_phase_quality_on_stop.py, audit_compliance_on_stop.py, cleanup-review-scratch-on-code-reviewer-failure.py) is migrated to the new precedence and its own existing tests still pass unchanged (AC3)",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_capture_session_id.py, test_audit_compliance_on_stop.py, test_audit_phase_quality_stop_hook_direct.py, plugins/shipwright-build/tests/test_cleanup_review_scratch_on_code_reviewer_failure.py -- all green this run (F0), incl. new Codex-native PLUGIN_ROOT-path tests added per site"
+        },
+        {
+          "behavior": "the builder deterministically produces the Codex plugin bundle from the 14 Claude plugin manifests + shared/, and a second no-source-change rebuild is byte-for-byte identical (AC4)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_build_codex_plugin.py::test_clean_rebuild_is_byte_identical PASSED"
+        },
+        {
+          "behavior": "the drift/verifier script fails when the bundle is stale relative to source, and fails when the bundle contains a file not traceable to a declared source (AC5)",
+          "disposition": "tested",
+          "evidence": "shared/scripts/tools/tests/test_verify_codex_plugin_bundle.py::test_stale_bundle_source_changed_not_rebuilt_fails, ::test_undeclared_file_in_bundle_fails, ::test_missing_file_source_added_bundle_not_rebuilt_fails -- all PASSED"
+        },
+        {
+          "behavior": ".claude-plugin/marketplace.json and all 14 Claude per-plugin manifests are unchanged by this iterate (AC6)",
+          "disposition": "tested",
+          "evidence": "git diff --stat origin/main..HEAD -- .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json -- zero lines changed (F1 drift check)"
+        },
+        {
+          "behavior": "the real Codex bundle build (build_codex_plugin.build_bundle) and the migrated cleanup hook's resolve_shared_root() agree on where shared/ lives inside a real built bundle, not just in each side's own isolated unit tests",
+          "disposition": "tested",
+          "category": "integration",
+          "evidence": "integration-tests/test_codex_bundle_hook_root_composition.py::test_the_migrated_hook_finds_shared_inside_a_real_built_bundle PASSED (builds the REAL 14-plugin bundle, drives the REAL hook module against it)"
+        }
+      ],
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-20-codex-plugin-bundle-root-contract",
+    "commit": "0e519f7156106090b2ae18d610a0f31faa674da4",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

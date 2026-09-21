@@ -107,6 +107,25 @@ def test_main_unrecognized_plugin_root_noop_in_process(tmp_path: Path, monkeypat
     assert not (project / pq.FINDING_DIR).exists()
 
 
+def test_main_recognizes_codex_native_plugin_root_in_process(tmp_path: Path, monkeypatch):
+    """M2: the foreign-plugin recognition gate must resolve Codex's native
+    ``PLUGIN_ROOT`` too, not just ``CLAUDE_PLUGIN_ROOT`` — otherwise this
+    hook silently no-ops forever under Codex, which has no
+    ``CLAUDE_PLUGIN_ROOT`` at all."""
+    project = _shipwright_project(tmp_path)
+    monkeypatch.chdir(project)
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    monkeypatch.delenv("SHIPWRIGHT_PLUGIN_ROOT", raising=False)
+    monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+    monkeypatch.setenv("PLUGIN_ROOT", "/fake/plugins/shipwright-build")
+    monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "sess-codex")
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
+    rc = hook_mod.main()
+    assert rc == 0
+    assert (project / pq.FINDING_DIR).is_dir()
+
+
 def test_main_renders_both_roots_when_pointer_redirects(tmp_path: Path, monkeypatch):
     """The render-both-roots fix (code-review finding #6): when a verified
     pointer redirects `audit_root` away from `plain_root`, BOTH trees'

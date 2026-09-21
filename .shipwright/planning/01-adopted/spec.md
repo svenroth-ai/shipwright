@@ -30,6 +30,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.18 | Adopted | /shipwright-grade | Should | Give any git repository a control grade from A to F without changing anything in it: derive what can honestly be derived from its history, its tests and its configuration, and score it on the same rubric the framework's own dashboard uses. A dimension that cannot be determined is marked as exactly that and left out of the calculation rather than filled in, and the report says for each judgement whether it was read from the project's own records or estimated from the outside. Nothing about a repository that is not public leaves the machine without two separate consents. | interview | unit (inferred) |
 | FR-01.19 | Adopted | Recovery of a broken shared branch | Should | When the shared branch breaks after a change is merged, say so and name the single change that broke it, instead of leaving whoever comes next to discover it. That naming is only trustworthy because every merged change is checked on its own rather than only the newest one, and what a repair needs travels with it: what failed, and which other changes the broken one had never been tested alongside. A repair corrects the mismatch and is never allowed to make a test ask for less — that is refused outright, and refused again independently on the code host. Where repairing would be a guess rather than a correction — a security finding, too many changes implicated, or two attempts already spent — the matter is filed for a decision instead, with the way back included. Only one repair is ever under way for the same breakage, and one that is abandoned releases its place rather than blocking every later attempt. | interview | unit (inferred) |
 | FR-01.20 | Adopted | Context-Cost Meter | Should | Measure what a session actually costs, from the assistant's own record of what it sent and received, counted once per exchange no matter how many lines that exchange left behind — and break the total down by which pipeline phase spent it, shown as the session runs rather than only after it ends. Adds this real, priced figure as an alternative to a rough stand-in that only counted tool calls, usable at the same points that stand-in already warns at — the stand-in itself keeps running until a later change compares the two and switches over. Also checks, the way the existing pre-push checks do, whether the session's own auto-compaction setting and effort level are set sanely for its context window. | code | unit (inferred) |
+| FR-01.21 | Adopted | Codex Plugin Distribution | Should | Shipwright can be installed for Codex as a single, verifiably reproducible plugin bundle carrying every one of its skills, instead of the tool depending on a machine-specific cache directory that was only ever built for a different assistant. The environment variable a script reads to find its own plugin's files resolves the same way no matter which of the two assistants installed it. | other: campaign spec | unit, e2e (inferred) |
 
 ## Quality Requirements
 
@@ -1371,6 +1372,31 @@ _Where the work detail lives_ at the end of this document.
   is worth flagging, when a readiness check is run, then each is reported as a
   finding, in the same reported shape as the project's existing pre-push
   checks — never silently accepted.
+
+<a id="fr-0121"></a>
+### FR-01.21 — Codex Plugin Distribution
+
+- (E) [AC01] Given a clean Codex installation with no prior Shipwright plugin, when
+  the Shipwright Codex plugin bundle is added from a local marketplace and
+  installed, then every intended Shipwright skill is discoverable by name in
+  that Codex session, without Codex reading anything under Claude's own
+  plugin cache directory.
+- (E) [AC02] Given a script that needs to find files belonging to its own plugin,
+  when it is run as a hook or a skill-launched script under Claude, then it
+  resolves the same plugin-root path it would resolve if the identical
+  script were run under an installed Codex plugin instead — proven by a test
+  fixture reproducing the real directory shape of both a Claude plugin-cache
+  install and a Codex plugin-cache install.
+- (E) [AC03] Given the generated plugin bundle, when it is rebuilt from the same
+  source tree without any source change, then the rebuild is byte-for-byte
+  identical to the previous build, and rebuilding after a real source change
+  is detected as drift rather than silently accepted.
+- (E) [AC04] Given this capability ships, when any existing Claude-driven flow that
+  already reads `SHIPWRIGHT_PLUGIN_ROOT` or `CLAUDE_PLUGIN_ROOT` is exercised
+  again, then it behaves exactly as before — this is packaging and a shared
+  resolver only, not a behavior change for Claude.
+
+## Provenance
 
 This catalog states **what the product does**. It deliberately does not carry
 the record of how each capability got there.
