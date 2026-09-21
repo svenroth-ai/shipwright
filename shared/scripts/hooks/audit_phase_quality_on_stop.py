@@ -33,6 +33,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib import phase_quality as pq  # noqa: E402
+from lib.plugin_root import PluginRootUnresolvedError, resolve_plugin_root_str  # noqa: E402
 
 # _resolve_roots moved to lib.phase_quality._resolution.resolve_project_roots
 # (pq.resolve_project_roots) — see its docstring for the audit_root/plain_root
@@ -70,7 +71,10 @@ def main() -> int:
     # foreign first invocation can never win the claim and block a later
     # recognized one (external-review gpt#2). The plugin-root phase is used ONLY
     # as this recognition gate now; the audited phases come from session state.
-    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
+    try:
+        plugin_root = resolve_plugin_root_str()
+    except PluginRootUnresolvedError:
+        plugin_root = ""
     if pq.phase_from_plugin_root(plugin_root) is None:
         return 0
 

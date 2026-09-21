@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-20-m4-codex-subagent-dispatch",
+  "date": "2026-09-20",
+  "section": "Iterate — change: map skill-prose Task()/Agent-tool calls to real Codex subagent profiles (M4)",
+  "title": "Codex review dispatch: codex_review_roles.py stays the sole config source",
+  "context": "M4 originally planned to generate .codex/agents/<role>.toml custom-agent profiles per review role, mirroring codex_review_roles.py's model/effort/sandbox, so Codex subagent dispatch would parallel Claude's named subagents. Architecture Review (both external legs unanimous) found no automated consumer: codex exec cannot invoke a named custom agent from a non-interactive session.",
+  "decision": "Cut the .codex/agents/*.toml generator entirely (user decision, 2026-09-20). codex_review_roles.py stays the sole canonical source of Codex model/effort/sandbox -- it was always the source the TOML files would have mirrored, never superseded by them. Added -c model_reasoning_effort=high (spec/code/doubt roles) and transport_note_for() so recorded evidence matches the actual codex exec argv.",
+  "consequences": "No .codex/agents/*.toml files ship; Codex CLI dispatch stays argv-driven via codex exec. Any future named-subagent support must re-derive from codex_review_roles.py rather than reintroduce a second, parallel config surface. transport_note now reflects the exact effort/sandbox actually passed, not a separately-maintained file.",
+  "rationale": "User confirmed the cut directly: 'fuer mich brauche ich es nicht... wir haben doch aktuell schon einen mechanismus' -- codex_review_roles.py predates this iterate as the canonical source; the generator was net-new, disproportionate work building an unused second copy of settings already centralized.",
+  "rejected": "Keep the generator for hypothetical future named-agent support -- rejected, no consumer today and an unmaintained second source of truth risks drifting from codex_review_roles.py. Make the TOML files canonical instead of the Python module -- rejected, Architecture Review found no execution path reads them at all.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ""
+}

@@ -33,6 +33,15 @@ produced a hostile value, without ever echoing the value itself into a
 string another tool (`codex_review_dispatch.md`) interpolates into a
 double-quoted shell argument — the same "never echo" contract
 `codex_review_transport.py` already enforces for its own error messages.
+
+**Independent of the reasoning-effort axis.** For a `REASONING_EFFORT_ROLES`
+role (`spec`/`code`/`doubt`), `run_codex_review` always adds `-c
+model_reasoning_effort=<CODEX_REVIEW_REASONING_EFFORT>` to `codex exec`'s
+argv, keyed on ROLE, never on which model this function resolves — an
+override (any of the four stages above) to a model that does not accept
+`model_reasoning_effort` makes that `codex exec` invocation fail at launch;
+the failure surfaces as an ordinary `status: error` result, not a silent
+skip of the flag (Internal Plan Review, medium, 2026-09-20).
 """
 
 from __future__ import annotations

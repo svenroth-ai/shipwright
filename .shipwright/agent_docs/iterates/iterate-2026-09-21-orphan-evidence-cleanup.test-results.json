@@ -1,0 +1,74 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-21-orphan-evidence-cleanup",
+    "date": "2026-09-21",
+    "unit": {
+      "status": "passed",
+      "passed": 11198,
+      "total": 11198
+    },
+    "integration": {
+      "status": "not_run"
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "shared/tests was red only under parallel xdist fan-out (5 tests) and green on the authoritative serial retry (run_test_suite.py's own retry path); pre-existing flake, unrelated to this change (a data-only file deletion); tracked as trg-f64d1c27, does not affect this run's GREEN status"
+    ],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "one-time repo-maintenance data cleanup (deletes orphaned evidence JSON files under .shipwright/agent_docs/iterates/); no code changed and no startable web/dev-server/CLI surface -- verification is the unit test suite itself (F0)."
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "every *.test-results.json with no corresponding <run_id>.json entry AND a run-id date older than the 2026-09-01 cutoff is deleted",
+          "disposition": "tested",
+          "evidence": "before/after directory scan: 129 orphans found matching both criteria pre-change, 0 orphans remain post-change (scratchpad scan script, this run's transcript)"
+        },
+        {
+          "behavior": "an evidence file that is deliberately retained without its own entry (a documented `confirmed_self_delivered` / `recovered` / pinned run, not an accidental pre-fix orphan) is NOT deleted",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_worktree_evidence_recovery.py::test_p1_10_already_self_delivered_its_own_immutable_snapshot PASSED (caught the one false-positive -- iterate-2026-08-02-ensure-shared-cache-fanout -- via full F0 run; restored, then re-verified green)"
+        },
+        {
+          "behavior": "no source code is touched and the full repository test suite stays green after the deletion",
+          "disposition": "tested",
+          "evidence": "uv run shared/scripts/tools/run_test_suite.py: F0 suite: 18 units -> GREEN, 11198 passed / 0 failed (authoritative, post serial-retry)"
+        }
+      ],
+      "counts": {
+        "testable": 3,
+        "tested": 3,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-21-orphan-evidence-cleanup",
+    "commit": "f048b00f1ee9ae1f95bd1f794764b68b5fed41de",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

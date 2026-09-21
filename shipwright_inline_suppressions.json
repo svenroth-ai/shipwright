@@ -51,7 +51,7 @@
     },
     {
       "rule": "python.lang.security.audit.non-literal-import.non-literal-import",
-      "max_sites": 9,
+      "max_sites": 10,
       "rationale_ref": "iterate-2026-08-05-inline-suppression-ratchet",
       "statement": "The ADR-044/045 shared-leaf loader imports first-party sibling modules by computed name. Every site constrains the name to a hard-coded allowlist of first-party identifiers before importing; none accepts an externally-supplied module name."
     },

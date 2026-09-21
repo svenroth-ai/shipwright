@@ -1,0 +1,6 @@
+{
+  "section": "R1 codex-plugin-bundle-root-contract",
+  "verdict": "PASS",
+  "doubts": [],
+  "summary": "Final verdict after 4 rounds: PASS. Round 1 found the HIGH rewrite-target bug (now fixed and hand-traced against the emitted artifact) plus the precedence-order, destructive-write, and AC2-honesty findings (all fixed). Round 2 found the missing cross-plugin hook-entry ordering (fixed via bucket_order + _merge_preserving_order at a second level). Round 3 found the same-origin multi-group ordering gap and a misleading conflict-error label (both fixed). Round 4 found the passthrough-only-bucket KeyError regression introduced by the round-3 fix (fixed via bucket_order.setdefault seeded alongside buckets.setdefault). Independent hand-trace of the real 12-plugin Stop/PostToolUse chains matches the rebuilt manifest exactly. Remaining gaps (hook execution under Codex's runtime, phase-recognition under the umbrella bundle) are documented as unproven, not hidden as defects. Advisory gating satisfied: every doubt fixed or rebutted in writing. Proceed to commit."
+}

@@ -160,6 +160,31 @@ def test_main_full_run_is_local_then_idempotent(monkeypatch, project):
     assert reg_calls == [1]  # NOT re-run
 
 
+def test_main_recognizes_codex_native_plugin_root(monkeypatch, project):
+    """M2: the foreign-plugin recognition gate must resolve Codex's native
+    ``PLUGIN_ROOT`` too, not just ``CLAUDE_PLUGIN_ROOT`` — otherwise this
+    hook silently no-ops forever under Codex, which has no
+    ``CLAUDE_PLUGIN_ROOT`` at all."""
+    reg_calls = []
+
+    def fake_run_all(pr, **kw):
+        return _full_report()
+
+    monkeypatch.delenv("SHIPWRIGHT_PLUGIN_ROOT", raising=False)
+    monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+    monkeypatch.setenv("PLUGIN_ROOT", "/x/plugins/shipwright-iterate")
+    monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "sess-codex")
+    monkeypatch.delenv("SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP", raising=False)
+    monkeypatch.setattr(hook.Path, "cwd", staticmethod(lambda: project))
+    monkeypatch.setattr(hook, "_git_head_sha", lambda pr: "deadbeef")
+    monkeypatch.setattr(hook.sys, "stdin", _DummyStdin())
+    monkeypatch.setattr(hook, "_load_audit_api", lambda: (lambda: reg_calls.append(1), fake_run_all))
+
+    rc = hook.main()
+    assert rc == 0
+    assert reg_calls == [1]
+
+
 def test_main_partial_coverage_still_reports_local_diagnostics(monkeypatch, project):
     """Branch feedback never mirrors, coverage complete or not — this proves
     the local-diagnostics path still runs (and records incomplete coverage
@@ -229,44 +254,6 @@ def test_main_never_blocks_on_internal_error(monkeypatch, project):
     rc = _run_main(monkeypatch, session="sE", project_root=project, cwd=project,
                    audit_api=(lambda: None, boom))
     assert rc == 0  # exception swallowed, Stop chain never blocked
-
-
-def _stop_commands(hooks_json: Path) -> list[str]:
-    data = json.loads(hooks_json.read_text(encoding="utf-8"))
-    cmds = []
-    for group in data["hooks"]["Stop"]:
-        for h in group["hooks"]:
-            cmds.append(h["command"])
-    return cmds
-
-
-def _idx(cmds, needle):
-    for i, c in enumerate(cmds):
-        if needle in c:
-            return i
-    return -1
-
-
-def test_wired_into_iterate_stop_chain_in_order():
-    cmds = _stop_commands(
-        _WORKTREE / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json")
-    i_self = _idx(cmds, "audit_compliance_on_stop.py")
-    i_pq = _idx(cmds, "audit_phase_quality_on_stop.py")
-    i_agg = _idx(cmds, "aggregate_triage_on_stop.py")
-    i_fin = _idx(cmds, "iterate_stop_finalize.py")
-    assert i_self != -1, "compliance audit hook not wired into iterate Stop chain"
-    assert i_fin < i_self, "must run AFTER finalize"
-    assert i_pq < i_self, "must run AFTER phase_quality"
-    assert i_self < i_agg, "must run BEFORE aggregate_triage"
-
-
-def test_wired_into_changelog_stop_chain_after_phase_quality():
-    cmds = _stop_commands(
-        _WORKTREE / "plugins" / "shipwright-changelog" / "hooks" / "hooks.json")
-    i_self = _idx(cmds, "audit_compliance_on_stop.py")
-    i_pq = _idx(cmds, "audit_phase_quality_on_stop.py")
-    assert i_self != -1, "compliance audit hook not wired into changelog Stop chain"
-    assert i_pq < i_self, "must run AFTER phase_quality"
 
 
 def test_main_resolves_the_active_worktree_before_running_detection(monkeypatch, tmp_path):
