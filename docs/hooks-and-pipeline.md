@@ -1749,6 +1749,44 @@ different sessions contending for one cache-global writer lease, and an
 SessionStart hook used by **every** plugin via
 `${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py`.
 
+**Plugin-root resolution is now framework-owned (M2, `shared/scripts/lib/plugin_root.py`).**
+This hook, `audit_phase_quality_on_stop.py`, and `audit_compliance_on_stop.py`
+all resolve the active plugin's root through `resolve_plugin_root_str()`
+instead of reading `CLAUDE_PLUGIN_ROOT` directly. Precedence:
+`SHIPWRIGHT_PLUGIN_ROOT` > `CLAUDE_PLUGIN_ROOT` (Claude's variable, and
+Codex's compatibility alias for it) > `PLUGIN_ROOT` (Codex's native
+variable, checked LAST — a generic enough name that an unrelated ambient
+tool could set it in a plain Claude session, so it must not outrank the
+variable Claude itself sets for every hook invocation; under Codex this
+costs nothing, since Codex sets both to the same value for a plugin-bundled
+hook) > `PluginRootUnresolvedError` when none are set — every one of these
+three call sites catches that error and falls back to `""`, preserving each
+hook's existing greenfield/foreign-plugin no-op behavior exactly. This is
+what lets the same hook body run unmodified whether it fires from Claude's
+plugin cache or the Codex plugin bundle (see "Codex Plugin Bundle" below).
+
+One call site —
+`plugins/shipwright-build/scripts/hooks/cleanup-review-scratch-on-code-reviewer-failure.py`
+— inlines the same three-variable precedence instead of importing the
+shared resolver, to keep its documented ADR-044 self-containment constraint
+(no cross-plugin `shared/` imports). Doubt-review (2026-09-20) corrected an
+earlier version of this note, which claimed this hook could safely read
+`SHIPWRIGHT_PLUGIN_ROOT` alone because it "runs downstream of
+capture_session_id.py's own injection" — false: `additionalContext` is
+model-visible text, not an OS environment export, and capture_session_id.py's
+`CLAUDE_ENV_FILE` write carries only the session/loop ids, never
+`SHIPWRIGHT_PLUGIN_ROOT`. Reading it alone left this hook permanently dark
+in production; it now falls back to `CLAUDE_PLUGIN_ROOT`, which Claude does
+export per hook invocation. This hook's `resolve_shared_root()` also tries
+TWO directory shapes per resolved root, bundle-shape first: `<root>/shared`
+(the Codex umbrella bundle's shape — every plugin's scripts and `shared/`
+are direct siblings under one bundle root) before falling back to
+`<root>/../../shared` (the Claude plugin cache's shape, one plugin per
+directory two levels under a shared sibling) — trying only the cache shape
+silently no-ops this hook forever under a live Codex bundle install, since
+`<bundle_root>/../../shared` points outside the bundle entirely (external
+code review, 2026-09-20).
+
 Injects into Claude's session context:
 - `SHIPWRIGHT_SESSION_ID` — current session id
 - `SHIPWRIGHT_PLUGIN_ROOT` — active plugin directory
@@ -3018,6 +3056,71 @@ contain `shipwright_run_config.json`.
 4. **Any other status** → silent.
 
 **Pattern registry** (`PHASE_PATTERNS`): multilingual regex per phase (en/de today, extensible for fr/it). Keys: `test`, `deploy`, `compliance`, `changelog`, `design`, `plan`. Maintenance rule: when adding a new phase or a new language, update both `PHASE_PATTERNS` and `shared/tests/test_suggest_iterate.py`.
+
+---
+
+## Codex Plugin Bundle
+
+M1/M2 of `Spec/codex-runtime-integration-spec.md` §7 (scoped for the first
+slice by `Spec/codex-plugin-execution-reliability.md`): a real, installable
+Codex plugin bundle built from the same 14 `plugins/*` + `shared/` source
+Claude's own marketplace reads — never a hand-edited second copy.
+
+- **Builder:** `shared/scripts/tools/build_codex_plugin.py`
+  (`--project-root . --out dist/codex-plugin`, gitignored output). Reads
+  every plugin's `.claude-plugin/plugin.json` + `hooks/hooks.json` +
+  `skills/` + `scripts/`, plus `shared/`, and emits one
+  `.codex-plugin/plugin.json` with an inline, deduplicated hook inventory,
+  a flattened `skills/`, per-origin-namespaced `origin/<plugin-name>/scripts/`,
+  a single copy of `shared/`, a `BUILD_MANIFEST.json` (source→bundled-file
+  sha256 map), and a local `.agents/plugins/marketplace.json` for
+  `codex plugin marketplace add`/`codex plugin add` during development.
+  Excludes `__pycache__`/`.venv`/`tests`/etc. from every copied tree (not
+  only `shared/`) — a developer's local bytecode cache must never make the
+  rebuild non-deterministic.
+- **Hook-merge semantics:** `shared/scripts/tools/codex_hook_inventory.py`
+  (dedup/ordering policy) + `codex_hook_merge.py` (rewrite/order-merge
+  primitives). Groups by `(event, matcher)`, then by the invoked script's plugin-relative
+  path (so a byte-identical own-plugin script registered in every plugin,
+  e.g. `run_if_cache_ready.py`, keys the same across origins even though its
+  *bundled* path differs per origin). Within a key: the invocation prefix
+  (interpreter + flags before the script) must match exactly across
+  contributors or it is a genuine collision (`BundleCollisionError`); when it
+  matches, trailing arguments are **unioned** (deduped, stable order) rather
+  than treated as a conflict — because today, each plugin's own copy of a
+  shared dispatcher hook (e.g. `run_if_cache_ready.py`'s trailing
+  shared-script arguments) already fires independently per session, so a
+  session already receives the union across every installed plugin; merging
+  to one Codex hook must preserve that, not silently keep one plugin's
+  shorter argument list.
+- **Drift/verifier:** `shared/scripts/tools/verify_codex_plugin_bundle.py`
+  (`--project-root . --bundle-dir dist/codex-plugin`). Rebuilds fresh into a
+  throwaway directory and diffs its file-hash tree against the live bundle —
+  never trusts the live bundle's own `BUILD_MANIFEST.json`, since that could
+  itself be stale or hand-edited. Reports **stale** (hash differs — source
+  changed, bundle not rebuilt), **missing** (fresh rebuild has a file the
+  live bundle lacks), and **undeclared** (live bundle has a file a fresh
+  rebuild would not produce — hand-edited content or a path escape).
+- **Plugin-root resolution:** see "Shared Hook: capture_session_id.py" above
+  — `shared/scripts/lib/plugin_root.py` is what lets a hook body run
+  unmodified whether invoked from Claude's cache or this bundle.
+- **Merge-time ordering (proven statically):** `build_hook_inventory`
+  order-preserves BOTH one dispatcher's trailing arguments and, separately,
+  the sequence of distinct hook entries within one `(event, matcher)`
+  bucket across plugins (`_merge_preserving_order`, applied twice — doubt-
+  review round 2, 2026-09-20, found the second level was missing and it was
+  fixed). Verified against the real 14-plugin bundle: the merged Stop chain
+  matches `shared/tests/test_audit_compliance_on_stop_wiring.py`'s own
+  declared invariant (`iterate_stop_finalize.py` < `audit_phase_quality_on_stop.py`
+  < `audit_compliance_on_stop.py` < ... < `aggregate_triage_on_stop.py`).
+- **Not yet proven:** hook *execution* under Codex — whether Codex actually
+  runs same-group command hooks sequentially, in array order, at all (trust
+  review, dispatcher semantics). This bundle's merge-time ordering is
+  correct by construction; whether Codex's runtime honors that order is a
+  separate, genuinely unobserved question. Real Codex plugins observed
+  during Repo Scout exclusively use `"type": "mcp_tool"` hooks; no real
+  precedent for `"type": "command"` hooks was found. That proof is R2's job
+  (`codex-plugin-execution-reliability` campaign), not this bundle's.
 
 ---
 

@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "All 6 ACs implemented and tested; spec-reviewer independently confirmed no scope creep beyond M1/M2 (27 files, none extra)."},
+    {"name": "Error Handling", "verdict": "pass", "note": "build_bundle raises BundleCollisionError/UnsafeOutputPathError on real conflicts rather than guessing or crashing uncaught; main() catches both. No DB/external-service calls to guard."},
+    {"name": "Security Basics", "verdict": "pass", "note": "No user input reaches SQL/HTML (build-time tooling, no web surface); no hardcoded secrets introduced. Internal Plan Review flagged that build_bundle copies from the raw filesystem rather than a git-tracked snapshot (a latent secret-leak vector once a publish milestone exists) - disclosed as a known limitation in the spec, not a defect in what shipped (dist/ is gitignored, local-only today)."},
+    {"name": "Test Quality", "verdict": "pass", "note": "Tests assert on outcomes (raised exceptions, manifest contents, hook order) not internal state; happy-path and error-path (collision, safety-guard) tests exist for every new code path."},
+    {"name": "Performance Basics", "verdict": "pass", "note": "In-memory dict/list operations over 14 plugins, no N+1 pattern, no unbounded loops or blocking calls introduced."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "File locations match shared/scripts/tools/ convention. No file exceeds 300 lines (codex_hook_merge.py=136, codex_hook_inventory.py=181, build_codex_plugin.py=277, codex_bundle_safety.py=69) - split into two modules mid-iterate specifically to hold this line."},
+    {"name": "Affected Boundaries", "verdict": "pass", "note": "Producer/consumer pairs listed in the spec's Affected Boundaries table. Real round-trip probe exists and passes: verify_codex_plugin_bundle.py diffs the bundle against a fresh rebuild from the same sources (AC5, 4 tests)."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reported no findings."}
+  ]
+}

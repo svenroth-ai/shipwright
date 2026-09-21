@@ -41,6 +41,21 @@ The Stop reminder hook surfaces this once per session. It files no triage item â
 the plugin-cache re-sync is routine current-run maintenance, not a deferred
 backlog item; act on the reminder, don't defer it.
 
+**A second, separate sync target exists: the Codex plugin bundle.** If your
+change touches `plugins/*/hooks/hooks.json`, any plugin's `scripts/`, or
+`shared/` (the same paths this whole guide covers), also rebuild the Codex
+bundle and re-verify it â€” it is a *generated* artifact with its own drift
+gate, not something `update-marketplace.sh` (which only syncs Claude's
+cache) touches:
+
+```bash
+uv run shared/scripts/tools/build_codex_plugin.py --project-root . --out dist/codex-plugin
+uv run shared/scripts/tools/verify_codex_plugin_bundle.py --project-root . --bundle-dir dist/codex-plugin
+```
+
+See "Codex Plugin Bundle" in `docs/hooks-and-pipeline.md` for the full
+build/merge/verify design.
+
 ## Conventions to honor
 
 - **Hooks** resolve paths via `${CLAUDE_PLUGIN_ROOT}` and reach shared scripts

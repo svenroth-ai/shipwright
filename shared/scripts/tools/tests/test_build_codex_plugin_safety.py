@@ -1,0 +1,128 @@
+"""Destructive-write safety tests for build_codex_plugin.py (M1).
+
+Split out of test_build_codex_plugin.py to keep concerns separated (see that
+file's own docstring). ``build_bundle`` deletes its output directory and
+overwrites a marketplace manifest in the output directory's PARENT — found
+under doubt-review (2026-09-20) to have no guard against an out-dir that
+collides with the project root, an out-dir that isn't ours to begin with, or
+a pre-existing marketplace.json belonging to something else.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # shared/scripts/tools
+
+import pytest
+
+from build_codex_plugin import BundleCollisionError, UnsafeOutputPathError, build_bundle  # noqa: E402
+
+from _bundle_fixtures import write_plugin, write_shared  # noqa: E402
+
+
+def test_refuses_when_out_dir_is_the_project_root(tmp_path):
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    # match= proves the project-root guard fired specifically, not the
+    # separate non-bundle-directory guard — tmp_path is also non-empty and
+    # marker-less, so both would independently raise here without it
+    # (code-review round, 2026-09-20).
+    with pytest.raises(UnsafeOutputPathError, match="project root"):
+        build_bundle(project_root=tmp_path, out_dir=tmp_path)
+
+
+def test_refuses_when_out_dir_is_an_ancestor_of_the_project_root(tmp_path):
+    project_root = tmp_path / "repo"
+    project_root.mkdir()
+    write_shared(project_root)
+    write_plugin(project_root, "shipwright-alpha")
+
+    with pytest.raises(UnsafeOutputPathError, match="project root"):
+        build_bundle(project_root=project_root, out_dir=tmp_path)
+
+
+def test_refuses_to_clobber_a_directory_that_is_not_a_prior_bundle(tmp_path):
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    out_dir = tmp_path / "not-a-bundle"
+    out_dir.mkdir()
+    (out_dir / "important.txt").write_text("someone else's file", encoding="utf-8")
+
+    with pytest.raises(UnsafeOutputPathError):
+        build_bundle(project_root=tmp_path, out_dir=out_dir)
+
+
+def test_rebuilding_into_a_prior_bundle_directory_is_allowed(tmp_path):
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    out_dir = tmp_path / "dist"
+    build_bundle(project_root=tmp_path, out_dir=out_dir)
+    build_bundle(project_root=tmp_path, out_dir=out_dir)  # must not raise
+
+    assert (out_dir / ".codex-plugin" / "plugin.json").exists()
+
+
+def test_refuses_a_same_named_skill_declared_by_two_plugins(tmp_path):
+    """Skill folders flatten into one shared namespace (build_codex_plugin's
+    own docstring: "no name collisions across the 14 source plugins") —
+    without a guard, _copy_tree's rmtree would silently discard one plugin's
+    skill in favor of the other's (Internal Plan Review, 2026-09-20)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha", skill_name="shared-name")
+    write_plugin(tmp_path, "shipwright-beta", skill_name="shared-name")
+
+    with pytest.raises(BundleCollisionError, match="shared-name"):
+        build_bundle(project_root=tmp_path, out_dir=tmp_path / "dist")
+
+
+def test_recovers_from_an_interrupted_build(tmp_path, monkeypatch):
+    """A build interrupted after out_dir.mkdir() but before copying finishes
+    (Ctrl-C, disk full, a file an editor/AV holds open) must not leave a
+    directory the NEXT build refuses to touch — the marker is written before
+    any copying starts specifically so a retry recognizes its own partial
+    work (code-review round, 2026-09-20; this bug was introduced by the
+    output-path safety guards themselves)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    import build_codex_plugin
+
+    original_copy_tree = build_codex_plugin._copy_tree
+    calls = {"n": 0}
+
+    def _fail_first_copy(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise OSError("simulated interruption")
+        return original_copy_tree(*args, **kwargs)
+
+    monkeypatch.setattr(build_codex_plugin, "_copy_tree", _fail_first_copy)
+    out_dir = tmp_path / "dist"
+    with pytest.raises(OSError, match="simulated interruption"):
+        build_bundle(project_root=tmp_path, out_dir=out_dir)
+
+    assert (out_dir / ".codex-plugin" / "plugin.json").exists()
+
+    monkeypatch.setattr(build_codex_plugin, "_copy_tree", original_copy_tree)
+    build_bundle(project_root=tmp_path, out_dir=out_dir)  # must not raise
+
+
+def test_refuses_to_overwrite_a_foreign_marketplace_json(tmp_path):
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    out_dir = tmp_path / "dist" / "codex-plugin"
+    marketplace_dir = out_dir.parent / ".agents" / "plugins"
+    marketplace_dir.mkdir(parents=True)
+    (marketplace_dir / "marketplace.json").write_text(
+        json.dumps({"name": "someone-elses-marketplace", "plugins": []}), encoding="utf-8"
+    )
+
+    with pytest.raises(UnsafeOutputPathError):
+        build_bundle(project_root=tmp_path, out_dir=out_dir)

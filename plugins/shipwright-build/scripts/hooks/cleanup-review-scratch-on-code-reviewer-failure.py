@@ -154,11 +154,31 @@ def resolve_project_root() -> Path:
 
 
 def resolve_shared_root() -> Optional[Path]:
-    plugin_root = os.environ.get("SHIPWRIGHT_PLUGIN_ROOT", "").strip()
-    if not plugin_root:
-        return None
-    candidate = Path(plugin_root) / ".." / ".." / "shared"
-    return candidate if candidate.exists() else None
+    """Inlines the same SHIPWRIGHT_PLUGIN_ROOT > CLAUDE_PLUGIN_ROOT >
+    PLUGIN_ROOT precedence as shared/scripts/lib/plugin_root.py, without
+    importing it (deliberately self-contained — see this module's own
+    docstring, ADR-044). SHIPWRIGHT_PLUGIN_ROOT alone is not enough: nothing
+    exports it into a hook subprocess's OS environment today (a
+    SessionStart hook's `additionalContext` is model-visible text, not an
+    env export), so relying on it exclusively left this hook permanently
+    dark in production; CLAUDE_PLUGIN_ROOT is what Claude actually sets for
+    every hook invocation (doubt-review, 2026-09-20). Two directory shapes
+    are tried per resolved root, bundle-shape FIRST: the Claude plugin cache
+    puts a plugin's root two levels under a shared sibling
+    (``<plugin>/../../shared``), while the Codex umbrella bundle
+    (`build_codex_plugin.py`) puts every plugin's scripts and `shared/` as
+    direct siblings under ONE bundle root (`<bundle_root>/shared`) — trying
+    only the cache shape silently no-ops this hook forever under a live
+    Codex bundle install, since `<bundle_root>/../../shared` points outside
+    the bundle entirely (external code review, 2026-09-20)."""
+    for var in ("SHIPWRIGHT_PLUGIN_ROOT", "CLAUDE_PLUGIN_ROOT", "PLUGIN_ROOT"):
+        plugin_root = os.environ.get(var, "").strip()
+        if not plugin_root:
+            continue
+        for candidate in (Path(plugin_root) / "shared", Path(plugin_root) / ".." / ".." / "shared"):
+            if candidate.exists():
+                return candidate
+    return None
 
 
 def main(argv: Optional[list[str]] = None) -> int:  # noqa: ARG001 — no CLI args needed
@@ -186,7 +206,8 @@ def main(argv: Optional[list[str]] = None) -> int:  # noqa: ARG001 — no CLI ar
 
     shared_root = resolve_shared_root()
     if shared_root is None:
-        _diag("could not resolve shared_root from SHIPWRIGHT_PLUGIN_ROOT — cannot clean up")
+        _diag("could not resolve shared_root from SHIPWRIGHT_PLUGIN_ROOT/CLAUDE_PLUGIN_ROOT/"
+              "PLUGIN_ROOT — cannot clean up")
         return 0
 
     script = shared_root / "scripts" / "tools" / "review_scratch.py"

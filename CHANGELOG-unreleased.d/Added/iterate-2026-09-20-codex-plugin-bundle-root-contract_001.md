@@ -1,0 +1,1 @@
+Shipwright can be installed for Codex as a single, deterministic, verifiable plugin bundle carrying every skill, built and drift-checked by new build_codex_plugin.py / verify_codex_plugin_bundle.py tools.

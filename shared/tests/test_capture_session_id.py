@@ -46,6 +46,22 @@ def test_outputs_session_id_and_plugin_root(monkeypatch):
     assert "DEEP_" not in context
 
 
+def test_outputs_plugin_root_from_codex_native_var(monkeypatch):
+    """M2: PLUGIN_ROOT (Codex's own native variable) must resolve too, not
+    just CLAUDE_PLUGIN_ROOT — this is the SessionStart hook that actually
+    derives SHIPWRIGHT_PLUGIN_ROOT for everything downstream."""
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_PLUGIN_ROOT", raising=False)
+    monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+    monkeypatch.setenv("PLUGIN_ROOT", "/codex/plugin/root")
+
+    result = _run(json.dumps({"session_id": "test-session-abc"}))
+    output = json.loads(result.stdout)
+    context = output["hookSpecificOutput"]["additionalContext"]
+
+    assert "SHIPWRIGHT_PLUGIN_ROOT=/codex/plugin/root" in context
+
+
 def test_outputs_project_root(monkeypatch):
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
     monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", "/fake/plugin/root")

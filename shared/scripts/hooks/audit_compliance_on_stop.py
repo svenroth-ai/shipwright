@@ -43,6 +43,7 @@ from lib import phase_quality as pq  # noqa: E402
 from lib.artifact_paths import runtime_dir  # noqa: E402
 from lib.atomic_write import durable_atomic_write  # noqa: E402
 from lib.compliance_lifecycle import coverage_for  # noqa: E402
+from lib.plugin_root import PluginRootUnresolvedError, resolve_plugin_root_str  # noqa: E402
 
 _DISABLE_ENV = "SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP"
 _MARKER_SUBDIR = "compliance_audit"
@@ -143,7 +144,11 @@ def main() -> int:
 
     if not audit_on_stop_enabled():
         return 0
-    if pq.phase_from_plugin_root(os.environ.get("CLAUDE_PLUGIN_ROOT", "")) is None:
+    try:
+        plugin_root = resolve_plugin_root_str()
+    except PluginRootUnresolvedError:
+        plugin_root = ""
+    if pq.phase_from_plugin_root(plugin_root) is None:
         return 0  # non-Shipwright plugin — silent no-op
 
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "").strip() or "unknown"

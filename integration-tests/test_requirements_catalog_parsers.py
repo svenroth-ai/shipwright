@@ -28,9 +28,11 @@ CATALOG = REPO_ROOT / ".shipwright" / "planning" / "01-adopted" / "spec.md"
 #: may append the next free number (FR-01.16 was minted 2026-07-23, REQ-3 Ph1;
 #: FR-01.19 "Recovery of a broken shared branch" 2026-07-28,
 #: iterate-2026-07-28-main-self-heal; FR-01.20 "Context-Cost Meter" 2026-08-07,
-#: iterate-2026-08-07-context-cost-meter). The bound moves only by APPENDING — a
-#: shorter tuple, or a changed id, is the loss this constant exists to catch.
-EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 21))
+#: iterate-2026-08-07-context-cost-meter; FR-01.21 "Codex Plugin Distribution"
+#: 2026-09-20, iterate-2026-09-20-codex-plugin-bundle-root-contract). The bound
+#: moves only by APPENDING — a shorter tuple, or a changed id, is the loss this
+#: constant exists to catch.
+EXPECTED_IDS = tuple(f"FR-01.{n:02d}" for n in range(1, 22))
 
 #: ONE sys.path root for the whole module, so every shared module here is
 #: reachable under exactly one identity (`lib.<name>`). Inserting both
@@ -69,14 +71,15 @@ def test_the_fr_table_reader_still_sees_every_requirement():
     assert [r.priority for r in rows] == [
         "Must", "Must", "Must", "Should", "Must", "Must", "Must", "Should",
         "Must", "Must", "Must", "May", "Must", "Must", "Must", "Must",
-        "Must", "Should", "Should", "Should",
+        "Must", "Should", "Should", "Should", "Should",
     ], (
         "priorities must survive the merge unchanged (FR-01.16/.17 = Must; "
         "FR-01.18 = Should — the pipeline is complete without the grader; "
         "FR-01.19 = Should — a change still ships when the shared branch is "
         "healthy, so recovering it is resilience rather than the core promise; "
         "FR-01.20 = Should — the meter adds a diagnostic figure, the pipeline "
-        "already ran without it)"
+        "already ran without it; FR-01.21 = Should — the bundle build is "
+        "infrastructure, not a change to the pipeline it packages)"
     )
 
 
@@ -147,8 +150,10 @@ def test_the_fr_heading_coherence_report_is_no_longer_wrong_here():
     # siblings — a detail section with criteria and no `**Description:**` label.
     # R0 (2026-08-25) taught the parser that shape, so the count below is the
     # number of requirements, not a count of false reports.
+    # 20 -> 21 on 2026-09-20 (iterate-2026-09-20-codex-plugin-bundle-root-
+    # contract): FR-01.21 appended in the same shape.
     headings = parse_fr_headings(CATALOG.read_text(encoding="utf-8"))
-    assert len(headings) == 20
+    assert len(headings) == 21
     missing_acceptance = [h.id for h in headings if not h.has_acceptance()]
     assert missing_acceptance == [], (
         "every heading in the catalog should now read a criterion via the "
@@ -166,7 +171,7 @@ def test_the_fr_heading_coherence_report_is_no_longer_wrong_here():
     # this catalog's own coherence via `compute_fr_coherence` for the full
     # picture including the table-row exemption.
     missing_description = [h.id for h in headings if not h.has_description()]
-    assert len(missing_description) == 20, (
+    assert len(missing_description) == 21, (
         "the FR-coherence reading of THIS catalog changed again. If the "
         "catalog or the check was fixed, that is good — update this test, the "
         "note in docs/migrations/requirements-catalog-merge.md, and the "
