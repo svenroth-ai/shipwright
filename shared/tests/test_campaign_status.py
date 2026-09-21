@@ -29,7 +29,10 @@ class TestParseSkeleton:
     def test_basic_order_and_fields(self):
         sk = parse_campaign_skeleton(CAMPAIGN_MD)
         assert [s["id"] for s in sk] == ["S1", "S2", "S3"]
-        assert sk[0] == {"id": "S1", "slug": "alpha", "title": "First"}
+        # R1 (campaign-dag-scheduler): every row also carries `depends_on`
+        # ([] when the campaign.md has no "Depends On" column — CAMPAIGN_MD
+        # doesn't, which is exactly the no-column regression case).
+        assert sk[0] == {"id": "S1", "slug": "alpha", "title": "First", "depends_on": []}
         assert sk[2]["slug"] == "charlie"
 
     def test_ignores_status_column(self):

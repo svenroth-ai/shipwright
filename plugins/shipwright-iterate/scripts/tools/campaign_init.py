@@ -86,6 +86,103 @@ def _seed_intent(item: dict) -> str:
     return title or detail or "(seeded from triage item)"
 
 
+def _validate_depends_on_for_write(
+    sub_iterates: list[dict], branch_strategy: str, campaign_slug: str
+) -> list[str]:
+    """Hard-reject (raise ``ValueError``) any structural OR charset violation
+    in the NEW rows' ``depends_on`` graph — this is where "canonical" is
+    actually enforced (the read side, ``lib.campaign_graph.
+    safe_project_campaign_status``, only WARNS on charset). Returns
+    non-blocking warnings (currently: the ``stacked`` deprecation notice).
+    """
+    shared_scripts = str(_find_shared_scripts())
+    if shared_scripts not in sys.path:
+        sys.path.insert(0, shared_scripts)
+    from lib.campaign_graph import id_charset_ok, validate_dependency_graph
+
+    # Doubt review (medium, campaign-dag-scheduler R1): `slug` (below) was
+    # the fix Stage-2 asked for, but `campaign_slug` sits on the same line
+    # of attack and is MORE powerful — it is interpolated straight into
+    # `campaign_dir` before the first `mkdir(parents=True)`, so an
+    # unvalidated `../../../../tmp/pwn` picks the campaign's ROOT directory,
+    # not just a file inside it. Same charset bar, checked first.
+    if not id_charset_ok(campaign_slug):
+        raise ValueError(
+            f"campaign_slug {campaign_slug!r} fails the safe-path charset check "
+            f"(letters/digits/._- only, no leading/trailing separator, no '..' or '--')"
+        )
+
+    # Stage-2 code review, campaign-dag-scheduler R1 (medium, security): `id`
+    # gets charset validation below via `validate_dependency_graph`, but
+    # `slug` flows unvalidated into `filename = f"{id}-{slug}.md"` and into
+    # `spec_path` — a `slug` like `"../../../../evil"` would write outside
+    # the campaign directory. Same charset (no `/`, no `..`) is the correct
+    # bar: reuse `id_charset_ok` rather than inventing a second regex.
+    #
+    # Doubt review (medium, campaign-dag-scheduler R1): a non-dict element
+    # (e.g. `--sub-iterates '["x"]'`) would raise an uncaught AttributeError
+    # on `.get` below, past this function's ValueError-only contract.
+    for si in sub_iterates:
+        if not isinstance(si, dict):
+            raise ValueError(f"each sub-iterate must be a JSON object, got {si!r}")
+        slug = si.get("slug")
+        if not id_charset_ok(slug):
+            raise ValueError(
+                f"sub-iterate {si.get('id')!r}: slug {slug!r} fails the safe-path "
+                f"charset check (letters/digits/._- only, no leading/trailing "
+                f"separator, no '..' or '--')"
+            )
+
+    # Doubt review (medium, campaign-dag-scheduler R1): `id` and `slug` are
+    # each individually charset-safe, but the generated spec filename joins
+    # them with a single `-` — an interior character BOTH operands are
+    # allowed to contain — so two distinct, individually-valid pairs (e.g.
+    # id="A"/slug="b-c" and id="A-b"/slug="c") collide on ONE filename
+    # (`A-b-c.md`) and the second write silently clobbers the first, with
+    # both status.json rows then sharing that same spec_path. Detect the
+    # collision on the actual join, not on id/slug separately.
+    filenames = [f"{si.get('id')}-{si.get('slug')}.md" for si in sub_iterates]
+    if len(set(filenames)) != len(filenames):
+        dupes = sorted({f for f in filenames if filenames.count(f) > 1})
+        raise ValueError(
+            f"sub-iterate id+slug pairs collide on the same spec filename: {dupes} "
+            f"— rename one sub-iterate's id or slug so `{{id}}-{{slug}}.md` is unique"
+        )
+
+    # `list(...)` on a bare string silently re-splits it into characters
+    # (`list("AB") == ["A", "B"]`) instead of raising — a caller who passes
+    # `"depends_on": "AB"` (forgetting the JSON array) would get a corrupted,
+    # NOT an obviously-wrong, graph; a non-list/non-string value (e.g. `5`)
+    # would raise an uncaught `TypeError` past this function's `ValueError`
+    # contract (external code review finding, medium). Reject both up front.
+    for si in sub_iterates:
+        raw_deps = si.get("depends_on")
+        if raw_deps is not None and (
+            not isinstance(raw_deps, list) or not all(isinstance(d, str) for d in raw_deps)
+        ):
+            raise ValueError(
+                f"sub-iterate {si.get('id')!r}: depends_on must be a JSON list of string ids, "
+                f"got {raw_deps!r}"
+            )
+
+    rows = [{"id": si.get("id"), "depends_on": list(si.get("depends_on") or [])} for si in sub_iterates]
+    findings = validate_dependency_graph(rows)
+    if findings:
+        raise ValueError(
+            "depends_on graph rejected at write time (charset and structural "
+            f"violations are both hard errors here): {'; '.join(findings)}"
+        )
+
+    warnings: list[str] = []
+    if branch_strategy == "stacked":
+        warnings.append(
+            "branch_strategy 'stacked' is deprecated — superseded by explicit "
+            "depends_on edges; consider --branch-strategy serial with a "
+            "per-sub-iterate depends_on instead."
+        )
+    return warnings
+
+
 def init_campaign(
     project_root: Path,
     campaign_slug: str,
@@ -97,6 +194,9 @@ def init_campaign(
     # Defensive validation — `init_campaign` is imported directly (tests,
     # campaign mode), not only reached through `main`'s CLI guard.
     expands_triage = _validate_triage_id(expands_triage, "expands_triage")
+    depends_on_warnings = _validate_depends_on_for_write(sub_iterates, branch_strategy, campaign_slug)
+    for w in depends_on_warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
 
     campaign_dir = project_root / ".shipwright" / "planning" / "iterate" / "campaigns" / campaign_slug
     sub_dir = campaign_dir / "sub-iterates"
@@ -120,11 +220,19 @@ created: {datetime.now(timezone.utc).isoformat()}
 
 ## Sub-Iterates
 
-| ID | Slug | Title | Status |
-|---|---|---|---|
+| ID | Slug | Title | Status | Depends On |
+|---|---|---|---|---|
 """
     for si in sub_iterates:
-        campaign_md += f"| {si['id']} | {si['slug']} | {si.get('title', '')} | pending |\n"
+        deps_cell = ", ".join(si.get("depends_on") or [])
+        title_cell = (
+            str(si.get("title", ""))
+            .replace("\\", "\\\\")
+            .replace("|", "\\|")
+            .replace("\n", " ")
+            .strip()
+        )
+        campaign_md += f"| {si['id']} | {si['slug']} | {title_cell} | pending | {deps_cell} |\n"
 
     (campaign_dir / "campaign.md").write_text(campaign_md, encoding="utf-8")
 
@@ -165,6 +273,8 @@ created: {datetime.now(timezone.utc).isoformat()}
                 "branch": None,
                 "tests_passed": None,
                 "tests_total": None,
+                "depends_on": list(si.get("depends_on") or []),
+                "merged_commit": None,
             }
             for si in sub_iterates
         ],
@@ -284,14 +394,20 @@ def main(argv: list[str] | None = None) -> int:
         for w in warnings:
             print(f"WARNING: {w}", file=sys.stderr)
 
-    result = init_campaign(
-        project_root,
-        args.campaign_slug,
-        intent,
-        sub_iterates,
-        args.branch_strategy,
-        expands_triage=expands_triage,
-    )
+    try:
+        result = init_campaign(
+            project_root,
+            args.campaign_slug,
+            intent,
+            sub_iterates,
+            args.branch_strategy,
+            expands_triage=expands_triage,
+        )
+    except ValueError as e:
+        # depends_on graph rejected at write time (charset/structural — both
+        # hard here); a clean operator error, never a traceback.
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
     print(json.dumps(result, indent=2))
     return 0
 

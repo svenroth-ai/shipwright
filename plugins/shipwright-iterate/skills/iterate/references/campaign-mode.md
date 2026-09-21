@@ -53,9 +53,17 @@ PR via `single-branch`, so their sequential model has nothing to drain.)
 | `branch_strategy` | base for each unit | merge timing | used by |
 |---|---|---|---|
 | **`serial`** (campaign default) | fresh `origin/<default>` | each PR merged before the next builds | `/shipwright-iterate --campaign` |
-| `stacked` | previous unit's branch | n/a (one stack) | shipwright-build sections; legacy campaigns |
+| `stacked` | previous unit's branch | n/a (one stack) | **deprecated** — shipwright-build sections; legacy campaigns |
 | `independent` | local `main` | n/a | legacy campaigns |
 | `single-branch` | current branch | one PR | shipwright-build |
+
+**`depends_on` reconciliation with `branch_strategy`** (campaign-dag-scheduler
+R1, detail: `references/campaign-dependency-graphs.md`): R1 gates only
+*readiness* — `cmd_next` skips a unit until every `depends_on` edge is a
+verified-merged commit; `resolve_base_branch` is untouched, so every unit
+still bases off fresh `origin/<default>` under `serial`. A dependent basing
+off its dependency's `merged_commit` directly is **not yet implemented** —
+R4's job. `stacked` is deprecated in favor of explicit `depends_on`.
 
 ## Campaign Setup (interactive, once)
 
@@ -63,7 +71,13 @@ If campaign directory doesn't exist yet:
 
 1. User describes the overarching goal.
 2. Together, decompose into sub-iterates (each should be
-   trivial-medium complexity).
+   trivial-medium complexity). **Campaign-design conversation
+   (campaign-dag-scheduler R1):** for each pair, ask "does X need Y first?"
+   — a genuine ordering need becomes a `depends_on` edge on X; independent
+   work stays edge-free so it can build in parallel once R5a lands. State
+   the cost out loud: X cannot START until Y has *merged*, not just built —
+   so an edge must reflect a genuine need. Full schema: "Dependency Graphs"
+   below.
 3. Initialize campaign structure (`--branch-strategy` defaults to `serial`):
    ```bash
    uv run "{plugin_root}/scripts/tools/campaign_init.py" \
@@ -73,8 +87,28 @@ If campaign directory doesn't exist yet:
      --sub-iterates '{json_array}' \
      --expands-triage "{trg-id}"   # optional — anchor to a triage item
    ```
+   Each sub-iterate object in `{json_array}` may carry `"depends_on":
+   ["<id>", ...]` (bare sub-iterate ids from step 2's conversation, default
+   `[]`) — validated at write time (see "Dependency Graphs" below).
 4. Review generated
    `.shipwright/planning/iterate/campaigns/{slug}/campaign.md` with user.
+
+## Dependency Graphs (`depends_on`)
+
+See `references/campaign-dependency-graphs.md` for the full schema
+(campaign-dag-scheduler R1): cell grammar + id charset, case-insensitive
+collision, write vs. read severity, frozen-on-claim, the degraded
+side-channel, ancestry-verified readiness, the squash-merge SHA-mismatch
+limitation, and `cmd_next`'s narrow readiness guard — including the
+**accepted interim-window gap** (a dependent finalizes UNBUILT within one
+continuous single-session run, not merely delayed, until R4/R5b's
+`cmd_mark_merged` lands — accepted through R4/R5b rather than pulled forward
+into an R1.5) and the fact that `safe_project_campaign_status` /
+`check_frozen_contracts` are R1's read-side primitives but have no caller on
+the actual read path yet — R4's `cmd_next_batch` is the first wiring point.
+
+**Exit-code loop-action table** (step 3a semantics, incl. future R4/R5b exit
+codes and today's exit `2` while gating isn't live): `references/campaign-dependency-graphs.md`.
 
 > **Promoting a triage item to a campaign.** When the campaign exists to
 > work off a specific triage card, anchor it with `--expands-triage
@@ -159,7 +193,9 @@ If campaign directory doesn't exist yet:
 
    ```
    3a. Renew the session lock first (`uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"`, references/campaign-worktree.md; non-zero = **LOCK-LOST — distinct from STRICT-STOP: do NOT proceed to step 4**, because Finalize writes `loop_state.json` and a lock-loss means a second session may already be driving it; stop immediately, write nothing, and report to the operator that this session lost the campaign lock (see references/campaign-worktree.md)), then uv run ... next --state .shipwright/loop_state.json
-       → exit 2 = all sub-iterates built + merged → go to step 4 (Finalize)
+       → exit 2 → check `blocked_pending_ids` FIRST — non-empty means STALLED,
+         not done: STOP, report `blockers`, do not finalize (campaign-dependency-graphs.md
+         § "Exit 2 is not always done"); empty/absent → step 4 (Finalize)
        → Parse JSON: id, spec_path, base_branch (= fresh origin/<default>), attempt
 
    3b. export SHIPWRIGHT_LOOP_UNIT_ID="{id}"
@@ -334,15 +370,13 @@ If campaign directory doesn't exist yet:
    ```
    Release FIRST, always, on every path that reaches step 4 (never on the LOCK-LOST path above, which never reaches step 4 at all) — a no-op if this session doesn't hold the lock, so a completed or abandoned-and-repaired campaign never blocks a later, brand-new `SHIPWRIGHT_SESSION_ID` for up to `stale_after_seconds` (references/campaign-worktree.md, "the release step").
    The campaign's top-level lifecycle status reaches `complete`
-   **automatically** once every sub-iterate is `complete` — the
-   never-downgrade projection (`campaign_status.all_subs_complete`) sets it in
-   the per-tree `status.json` the LAST sub-iterate's F5b commits (the durable
-   path, S3), and the local 3h `update-status` mirrors it for the live
-   orchestrator view. A `complete` campaign is hidden from the board. If the loop
-   strict-stopped on a failure / escalation / non-delivered PR (3f/3g), some
-   sub-iterates are not `complete`, so the status stays `active` and the campaign
-   remains visible (matching step 5's "campaign incomplete" branch). No explicit
-   set-complete call is needed.
+   **automatically** once every sub-iterate is `complete` — the never-downgrade projection
+   (`campaign_status.all_subs_complete`) sets it in the per-tree `status.json` the LAST
+   sub-iterate's F5b commits (the durable path, S3), and the local 3h `update-status`
+   mirrors it for the live orchestrator view. A `complete` campaign is hidden from the
+   board. If the loop strict-stopped on a failure / escalation / non-delivered PR (3f/3g),
+   some sub-iterates are not `complete`, so the status stays `active` and the campaign
+   remains visible. No explicit set-complete call is needed.
 
 5. **Release prompt (F12, once):** Only if ALL sub-iterates are
    `complete` AND worktree is clean: count unreleased entries in

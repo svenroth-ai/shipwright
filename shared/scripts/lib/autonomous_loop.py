@@ -26,8 +26,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from branch_base import resolve_base_branch
 from file_lock import file_lock
 
+# shared/scripts (the `lib.` package root) — needed ALONGSIDE the sibling
+# insert above so `lib.loop_state` resolves per this campaign's import
+# convention (never a bare `loop_state`, which would be the ADR-045
+# lib-collision class the new modules exist to avoid). `branch_base`/
+# `file_lock` stay bare-imported above, unchanged — loop_state.py imports
+# `branch_base` the same bare way, so it is never loaded under two names.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.loop_state import _load_units_from, describe_blocker, is_unit_ready  # noqa: E402
 
-VALID_STATUSES = {"pending", "in_progress", "complete", "failed", "escalated"}
+
+VALID_STATUSES = {"pending", "in_progress", "complete", "failed", "escalated", "merged"}
 VALID_KINDS = {"section", "sub_iterate"}
 # "serial" (interleaved-campaign default) joins the legacy strategies; base-ref
 # resolution per strategy lives in branch_base.resolve_base_branch.
@@ -50,56 +59,6 @@ def _save_state(state_path: Path, state: dict) -> None:
     tmp = state_path.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
     tmp.replace(state_path)
-
-
-def _load_units_from(units_path: Path | None, kind: str, *, text: str | None = None) -> list[dict]:
-    """Load units from a plugin-specific source file, or `text` (stdin) directly."""
-    data = json.loads(text) if text is not None else json.loads(units_path.read_text(encoding="utf-8"))
-
-    if kind == "section":
-        raw = data.get("sections", [])
-        return [
-            {
-                "id": s.get("name", s.get("id", f"unit-{i}")),
-                "spec_path": s.get("spec_path", ""),
-                "status": "pending",
-                "attempt": 0,
-                "started_at": None,
-                "finished_at": None,
-                "commit": None,
-                "head_sha": None,
-                "branch": None,
-                "result_path": None,
-                "handoff_path": None,
-                "failure_reason": None,
-            }
-            for i, s in enumerate(raw)
-            if s.get("status") not in ("complete", "done")
-        ]
-    elif kind == "sub_iterate":
-        raw = data.get("sub_iterates", [])
-        return [
-            {
-                "id": s.get("id", s.get("slug", f"unit-{i}")),
-                "spec_path": s.get("spec_path", ""),
-                "status": "pending",
-                "attempt": 0,
-                "started_at": None,
-                "finished_at": None,
-                "commit": None,
-                "head_sha": None,
-                "branch": s.get("branch"),
-                "result_path": None,
-                "handoff_path": None,
-                "failure_reason": None,
-            }
-            for i, s in enumerate(raw)
-            if s.get("status") not in ("complete", "done")
-        ]
-    else:
-        print(f"ERROR: Unknown kind: {kind}", file=sys.stderr)
-        sys.exit(1)
-        return []  # unreachable: satisfies py/mixed-returns, sys.exit(1) always raises
 
 
 def _reconcile_in_progress(state: dict) -> list[str]:
@@ -215,9 +174,19 @@ def cmd_next(args: argparse.Namespace) -> int:
     with file_lock(lock_path, timeout_seconds=30):
         state = _load_state(state_path)
         units = state.get("units", [])
+        kind = state.get("kind")
 
         for unit in units:
             if unit["status"] == "pending":
+                # kind == "sub_iterate"-gated guard (campaign-dag-scheduler R1):
+                # a pending unit blocked on an unmerged `depends_on` edge is
+                # skipped in favor of the next candidate, exactly as if it
+                # weren't there — no new flag, no new exit code; `kind ==
+                # "section"`'s contract (shipwright-build, no depends_on
+                # concept) is untouched. R4's `cmd_next_batch` (loop_claim.py)
+                # is the only place `--campaign-dir` and exit code 4 land.
+                if kind == "sub_iterate" and not is_unit_ready(unit, units):
+                    continue
                 unit["status"] = "in_progress"
                 unit["started_at"] = _now_iso()
                 head_sha = None
@@ -248,7 +217,37 @@ def cmd_next(args: argparse.Namespace) -> int:
                 print(json.dumps(output))
                 return 0
 
-        print(json.dumps({"done": True, "reason": "All units processed"}))
+        # External plan review (campaign-dag-scheduler R1, GLM finding 1):
+        # a `pending` unit that is only BLOCKED (not actually finished) must
+        # not read identically to genuine completion in the printed JSON —
+        # exit code stays 2 unchanged (R1 adds no new exit code on `cmd_next`;
+        # that is R4's `cmd_next_batch` job), but a blocked-pending unit is
+        # now OBSERVABLE via additive fields, so a log reader — or a future
+        # orchestrator step — is not blind to "campaign silently stalled".
+        #
+        # Every remaining `pending` unit here IS blocked, by construction —
+        # not just "incidentally correct" (external code review, low): we
+        # only reach this line after the FIFO loop above has already
+        # returned for the first `pending` unit where `is_unit_ready` was
+        # true, so any `pending` unit still in `units` failed that check.
+        # If a future change adds an early-exit/cap to that loop, THIS
+        # invariant is exactly what breaks — recompute from the guard's own
+        # skip set at that point rather than re-deriving it here.
+        blocked_pending = [u for u in units if u["status"] == "pending"] if kind == "sub_iterate" else []
+        if blocked_pending:
+            # Stage-2 code review, campaign-dag-scheduler R1 (high): the loop
+            # is NOT actually finished here — one or more units are still
+            # `pending`, blocked on an unmerged `depends_on` edge. Printing
+            # "All units processed" was a factual lie the orchestrator's own
+            # exit-2 -> Finalize branch (campaign-mode.md step 3) would act
+            # on, finalizing a campaign that never built the blocked units.
+            print(json.dumps({
+                "done": True, "reason": "Campaign stalled: pending units blocked on unmerged dependencies",
+                "blocked_pending_ids": [u["id"] for u in blocked_pending],
+                "blockers": [describe_blocker(u, units) for u in blocked_pending],
+            }))
+        else:
+            print(json.dumps({"done": True, "reason": "All units processed"}))
         return 2
 
 

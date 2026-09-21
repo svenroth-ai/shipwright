@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-21-r1-depends-on-schema",
+  "date": "2026-09-22",
+  "section": "Bloat exception — campaign_graph.py",
+  "title": "campaign_graph.py raised to 322-LOC",
+  "context": "campaign_graph.py was written new in R1 at 265 lines. External code review found a real case-fold-consistency deadlock bug and a schema-validation gap; fixing both, entirely inside the same four existing functions, grew the file to 322.",
+  "decision": "Grant an exception raising campaign_graph.py's allowed current to 322; retire if a future change adds a fourth cross-cutting concern, by splitting cycle detection into its own graph-utilities module.",
+  "consequences": "No caller-visible signature changed at all — every added line is internal hardening of validate_dependency_graph/check_frozen_contracts/_read_loop_state_units's existing bodies.",
+  "rationale": "The module's public interface is unchanged; callers see nothing new, only improved internal correctness — exactly what a deep module should absorb without a caller-visible split.",
+  "rejected": "Extract a shared _casefold_lookup helper module — rejected for R1, two one-line call sites are not yet a coherent shared abstraction; premature abstraction for a third caller that doesn't exist yet.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-graph-bloat.md"
+}
