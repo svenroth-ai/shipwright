@@ -114,3 +114,20 @@ this run, after the gap was discovered mid-session; each was still run to
 completion and its findings addressed before finalization, and the timing
 violation is recorded honestly in the iterate spec rather than silently
 back-filled.
+
+The local (pre-push) PR-review preflight blocked twice on real defects in
+this area — a symlink-following gap in `_copy_tree` (source trees) and in
+`_hash_tree` (an already-built bundle's own tree), plus a precedence
+fall-through bug in the migrated cleanup hook's `resolve_shared_root()` —
+each fixed in its own commit with a regression test. A third preflight round
+then blocked on (1) `refuse_foreign_marketplace()` accepting a symlinked
+`marketplace.json` on content alone, letting `write_text` follow it and
+overwrite an arbitrary target — fixed by rejecting any symlink at that path
+outright, before reading it; and (2) a request that a maintainer manually
+sign off on the `cleanup-review-scratch-on-code-reviewer-failure.py` hook
+change before merge, since this iterate has no live-Codex-hook-invocation
+proof for the phase-recognition gap already named above under Out of Scope.
+The maintainer (Sven Roth) reviewed and signed off on shipping with that
+already-documented, already-deferred limitation rather than pulling M3
+forward into this iterate — recorded here rather than silently proceeding
+past an explicit human-sign-off request the automated preflight raised.

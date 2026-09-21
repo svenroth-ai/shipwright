@@ -80,6 +80,17 @@ def refuse_symlinks_in_tree(root: Path, *, exclude_dirnames: set[str] | None = N
 
 
 def refuse_foreign_marketplace(marketplace_path: Path) -> None:
+    # Checked BEFORE is_file()/read_text(), which both follow a symlink: this
+    # builder only ever creates marketplace.json as a plain file via
+    # write_text, so a symlink at this exact path is never one it made,
+    # regardless of what its target contains — accepting one on content alone
+    # would let write_text's own symlink-following overwrite an arbitrary
+    # target outside marketplace_dir (local PR-review preflight, 2026-09-21).
+    if marketplace_path.is_symlink():
+        raise UnsafeOutputPathError(
+            f"{marketplace_path} is a symlink — refusing to write through it to "
+            "whatever it points at."
+        )
     if not marketplace_path.is_file():
         return
     try:

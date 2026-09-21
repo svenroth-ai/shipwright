@@ -169,6 +169,28 @@ def test_a_symlink_inside_an_excluded_dir_does_not_false_block(tmp_path):
     build_bundle(project_root=tmp_path, out_dir=tmp_path / "dist")  # must not raise
 
 
+def test_refuses_a_symlinked_marketplace_json_even_with_valid_looking_content(tmp_path):
+    """refuse_foreign_marketplace's content check alone is not enough: a
+    symlink at the marketplace.json path whose TARGET happens to contain a
+    valid {"name": "shipwright"} manifest would pass the content check, and
+    write_text's own symlink-following would then overwrite whatever that
+    target actually is — reject the symlink outright, before reading its
+    content (local PR-review preflight, 2026-09-21)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    out_dir = tmp_path / "dist" / "codex-plugin"
+    marketplace_dir = out_dir.parent / ".agents" / "plugins"
+    marketplace_dir.mkdir(parents=True)
+
+    real_target = tmp_path / "somewhere-else-entirely.json"
+    real_target.write_text(json.dumps({"name": "shipwright", "plugins": []}), encoding="utf-8")
+    _symlink(real_target, marketplace_dir / "marketplace.json")
+
+    with pytest.raises(UnsafeOutputPathError, match="symlink"):
+        build_bundle(project_root=tmp_path, out_dir=out_dir)
+
+
 def test_refuses_to_overwrite_a_foreign_marketplace_json(tmp_path):
     write_shared(tmp_path)
     write_plugin(tmp_path, "shipwright-alpha")
