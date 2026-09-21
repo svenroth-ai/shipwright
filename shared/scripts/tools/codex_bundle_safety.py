@@ -36,6 +36,27 @@ def is_prior_bundle(out_dir: Path) -> bool:
     return isinstance(manifest, dict) and manifest.get("name") == BUNDLE_NAME
 
 
+def refuse_symlinked_output_path(out_dir: Path) -> None:
+    """Refuse when ``--out`` itself, or any existing ancestor component on
+    the way to it, is a symlink. ``build_bundle`` immediately calls
+    ``.resolve()`` on ``out_dir``, which transparently follows a symlink to
+    whatever it points at — every later check (including
+    ``is_prior_bundle``) then operates on that RESOLVED target, so a
+    symlinked ``--out`` pointing at some other directory that merely looks
+    like a prior bundle would pass every check while the actual rmtree and
+    rebuild land somewhere the operator never typed. Must run BEFORE
+    ``out_dir`` is resolved (local PR-review preflight, 2026-09-21).
+    ``Path.is_symlink()`` returns ``False`` for a component that does not
+    exist yet, so walking every parent up to the filesystem root is safe
+    without a separate existence check."""
+    for candidate in (out_dir, *out_dir.parents):
+        if candidate.is_symlink():
+            raise UnsafeOutputPathError(
+                f"{candidate} is a symlink — refusing to resolve --out through it; "
+                "pass the real target path directly."
+            )
+
+
 def refuse_unsafe_output_path(*, project_root: Path, out_dir: Path) -> None:
     if out_dir == project_root or project_root.is_relative_to(out_dir):
         raise UnsafeOutputPathError(

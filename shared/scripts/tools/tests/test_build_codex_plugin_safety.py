@@ -44,6 +44,29 @@ def _symlink(src: Path, dst: Path, *, dir_target: bool = False) -> None:
         pytest.skip(f"symlinks not permitted on this host ({exc!r})")
 
 
+def test_refuses_an_out_dir_that_is_itself_a_symlink(tmp_path):
+    """build_bundle immediately .resolve()s out_dir, which transparently
+    follows a symlink to whatever it points at — every later check (incl.
+    is_prior_bundle) would then operate on that RESOLVED target, so a
+    symlinked --out pointing at some other directory that merely looks like
+    a prior bundle could pass every check while the actual rmtree/rebuild
+    lands somewhere the operator never typed (local PR-review preflight,
+    2026-09-21)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    real_target = tmp_path / "elsewhere"
+    (real_target / ".codex-plugin").mkdir(parents=True)
+    (real_target / ".codex-plugin" / "plugin.json").write_text(
+        json.dumps({"name": "shipwright", "version": "1.0.0"}), encoding="utf-8"
+    )
+    out_link = tmp_path / "dist-link"
+    _symlink(real_target, out_link, dir_target=True)
+
+    with pytest.raises(UnsafeOutputPathError, match="symlink"):
+        build_bundle(project_root=tmp_path, out_dir=out_link)
+
+
 def test_refuses_when_out_dir_is_the_project_root(tmp_path):
     write_shared(tmp_path)
     write_plugin(tmp_path, "shipwright-alpha")

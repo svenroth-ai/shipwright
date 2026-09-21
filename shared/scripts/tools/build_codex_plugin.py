@@ -76,6 +76,7 @@ from codex_bundle_safety import (
     UnsafeOutputPathError,
     UnsafeSourceSymlinkError,
     refuse_foreign_marketplace,
+    refuse_symlinked_output_path,
     refuse_symlinks_in_tree,
     refuse_unsafe_output_path,
 )
@@ -158,7 +159,9 @@ def _hash_tree(root: Path) -> dict[str, str]:
 
 def build_bundle(*, project_root: Path, out_dir: Path) -> BuildResult:
     project_root = Path(project_root).resolve()
-    out_dir = Path(out_dir).resolve()
+    out_dir = Path(out_dir)
+    refuse_symlinked_output_path(out_dir)
+    out_dir = out_dir.resolve()
     refuse_unsafe_output_path(project_root=project_root, out_dir=out_dir)
     refuse_foreign_marketplace(out_dir.parent / ".agents" / "plugins" / "marketplace.json")
     marketplace_meta = json.loads(
