@@ -204,3 +204,19 @@ def test_refuses_to_overwrite_a_foreign_marketplace_json(tmp_path):
 
     with pytest.raises(UnsafeOutputPathError):
         build_bundle(project_root=tmp_path, out_dir=out_dir)
+
+
+def test_refuses_a_directory_at_the_marketplace_json_path(tmp_path):
+    """A pre-existing directory at the marketplace.json path is not something
+    this builder ever created — without a check, write_text() raises an
+    uncaught IsADirectoryError instead of a clean refusal (local PR-review
+    preflight, 2026-09-21)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    out_dir = tmp_path / "dist" / "codex-plugin"
+    marketplace_dir = out_dir.parent / ".agents" / "plugins"
+    (marketplace_dir / "marketplace.json").mkdir(parents=True)
+
+    with pytest.raises(UnsafeOutputPathError, match="not a regular file"):
+        build_bundle(project_root=tmp_path, out_dir=out_dir)

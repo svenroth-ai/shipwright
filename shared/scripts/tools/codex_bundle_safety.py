@@ -91,8 +91,18 @@ def refuse_foreign_marketplace(marketplace_path: Path) -> None:
             f"{marketplace_path} is a symlink — refusing to write through it to "
             "whatever it points at."
         )
-    if not marketplace_path.is_file():
+    if not marketplace_path.exists():
         return
+    # A directory (or other special file) at this exact path is not
+    # something this builder ever created — the sole write site is a plain
+    # write_text call, which raises an uncaught IsADirectoryError on a
+    # directory target instead of failing cleanly (local PR-review
+    # preflight, 2026-09-21).
+    if not marketplace_path.is_file():
+        raise UnsafeOutputPathError(
+            f"{marketplace_path} already exists and is not a regular file — refusing "
+            "to write a marketplace manifest there."
+        )
     try:
         existing = json.loads(marketplace_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
