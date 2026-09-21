@@ -2270,3 +2270,5 @@
 {"event":"amend","id":"trg-14392ba5","ts":"2026-09-20T19:08:58.285304Z","by":"claude-session","title":"11 [auto] P2.17a: run architecture review inside campaign sub-iterates (after 10)"}
 {"event":"status","id":"trg-575a6f7f","ts":"2026-09-21T08:24:39.522102Z","newStatus":"dismissed","by":"githubImporter","reason":"githubResolved","promotedTaskId":null}
 {"event":"status","id":"trg-fcb3ee97","ts":"2026-09-21T05:18:52.564769Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #778","promotedTaskId":null}
+{"event":"status","id":"trg-575a6f7f","ts":"2026-09-21T06:25:04.803925Z","newStatus":"dismissed","by":"claude-session","reason":"githubResolved: all 3 code-scanning alerts closed (1 fixed via PR #777, merged; 2 dismissed on GitHub), 0 Dependabot open.","promotedTaskId":null}
+{"event":"status","id":"trg-9edb20d8","ts":"2026-09-21T06:54:39.544745Z","newStatus":"dismissed","by":"cli","reason":"Implemented PR #780","promotedTaskId":null}
