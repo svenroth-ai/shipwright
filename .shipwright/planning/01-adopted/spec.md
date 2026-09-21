@@ -1396,6 +1396,8 @@ _Where the work detail lives_ at the end of this document.
   again, then it behaves exactly as before — this is packaging and a shared
   resolver only, not a behavior change for Claude.
 
+## Provenance
+
 This catalog states **what the product does**. It deliberately does not carry
 the record of how each capability got there.
 
