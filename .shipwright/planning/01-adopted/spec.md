@@ -918,6 +918,10 @@ _Where the work detail lives_ at the end of this document.
   can steer its Codex reviewer everywhere at once without editing project
   settings or repeating the same choice on every review.
   (iterate-2026-09-19-codex-reviewer-session-override)
+- (E) [AC37] Given the outside second opinion runs through Codex directly, when
+  all three review stages have answered, then what is recorded shows three
+  separate answers, not the same one written down three times.
+  (iterate-2026-09-20-m4-codex-subagent-dispatch)
 
 <a id="fr-0112"></a>
 ### FR-01.12 — /shipwright-preview

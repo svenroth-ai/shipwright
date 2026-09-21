@@ -65,11 +65,24 @@ Parse the printed JSON line:
     `record_review_pass.py record --run-id "{run_id}" --review-type
     {spec|code|doubt} --status completed --from {spec|code|doubt}-reviewer
     --payload-file "{canonical_path}" --transport codex --transport-note
-    "{model}"` (no `--model-tier` — the row carries no legal Claude tier; the
-    floor verifier already exempts a `codex`-transport row rather than
-    reading one). `--transport-note` names WHICH Codex model answered, so a
-    project pinning `codex_review` away from the hardcoded default leaves
-    that choice visible in the evidence, not just in config.
+    "{transport_note}"` (no `--model-tier` — the row carries no legal Claude
+    tier; the floor verifier already exempts a `codex`-transport row rather
+    than reading one). `{transport_note}` is the JSON result's own
+    `transport_note` field verbatim (e.g. `<model> effort=<effort>
+    sandbox=<mode>` for these three roles) — never hand-assemble it, and
+    never hardcode the example values themselves (`CODEX_REVIEW_MODEL`/
+    `CODEX_REVIEW_REASONING_EFFORT`/`CODEX_REVIEW_SANDBOX_MODE` can change
+    independently of this doc — code-reviewer, low, 2026-09-20) — so a
+    project pinning `codex_review` away from the hardcoded default, or
+    a future change to the reasoning-effort/sandbox contract, leaves that
+    choice visible in the evidence, not just in config. **For `spec`/`code`/
+    `doubt`, `{transport_note}` now contains embedded spaces** (`<model>
+    effort=<effort> sandbox=<mode>`) — the double quotes around
+    `"{transport_note}"` above are REQUIRED, not decorative: dropping them
+    hands `record_review_pass.py` three positional words instead of one
+    argument and the record call errors out, silently losing the very
+    evidence row this step exists to write (doubt-reviewer, medium,
+    2026-09-20).
   - **`role` is `plan_review`:** there is no `record_review_pass.py --from`
     adapter for it (`plan_internal` is a metadata-only row with no payload
     file, see `review_payloads.py`) — read `canonical_path` directly and

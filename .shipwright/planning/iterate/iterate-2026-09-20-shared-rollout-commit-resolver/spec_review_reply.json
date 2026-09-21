@@ -1,0 +1,6 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "All four card requirements are present, faithful, and in-scope; the diff is confined to the git-plumbing extraction across exactly the 5 named files. resolve_head_sha/resolve_rollout_commit/is_shallow/epoch re-verification all present in the new _rollout_resolution.py; resolve_rollout_commit is epoch keyword-only, no shared instant forced; both family modules keep their own GATE_ROLLOUT_AT_EPOCH/cache/wrapper unchanged; no dangling references to removed private names."
+}

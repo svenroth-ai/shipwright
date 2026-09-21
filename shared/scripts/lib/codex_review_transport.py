@@ -69,13 +69,24 @@ from lib.codex_review_prompt import (
     strip_frontmatter,
     validate_against_schema,
 )
-from lib.codex_review_roles import ROLE_CANONICAL_BASENAMES, ROLE_SCHEMAS
+from lib.codex_review_roles import (
+    CODEX_REVIEW_REASONING_EFFORT,
+    CODEX_REVIEW_SANDBOX_MODE,
+    REASONING_EFFORT_ROLES,
+    ROLE_CANONICAL_BASENAMES,
+    ROLE_SCHEMAS,
+    transport_note_for,
+)
 from lib.external_review_default_legs import _resolve_codex_binary, is_codex_available
 
+# The three REASONING_EFFORT_ROLES re-exports are listed below too -- both test modules read them off `transport.*` (code-reviewer, low, 2026-09-20).
 __all__ = [
     "CODEX_REVIEW_MAX_RETRIES",
     "CODEX_REVIEW_MODEL",
+    "CODEX_REVIEW_REASONING_EFFORT",
+    "CODEX_REVIEW_SANDBOX_MODE",
     "CODEX_REVIEW_TIMEOUT_SECONDS",
+    "REASONING_EFFORT_ROLES",
     "ROLE_CANONICAL_BASENAMES",
     "ROLE_SCHEMAS",
     "CodexReviewTransportError",
@@ -137,18 +148,15 @@ def run_codex_review(
 ) -> dict[str, Any]:
     """Answer one review role via ``codex exec``.
 
-    Returns ``{"status": "completed", "transport": "codex", "model": <str>,
-    "canonical_path": <str>}`` on success (the canonical-basename file is
-    already written and schema-validated), or ``{"status": "error",
-    "transport": "codex", "model": <str>, "reason": <str>}`` — never raises
-    for a *runtime* failure, so the caller can record the review pass
-    ``not_run`` with a concrete reason (finding #12) rather than crashing the
-    whole run. A caller mistake (unknown role, invalid ``timeout``/
-    ``max_retries``, or a ``model`` that fails the syntactic allowlist)
-    raises ``CodexReviewTransportError`` instead — those are bugs in the
-    caller, not something a review pass can meaningfully report `not_run`
-    about. The returned dict's ``"model"`` key is always the EFFECTIVE
-    model actually passed to ``codex exec`` — ``model`` given, or resolved
+    Returns ``{"status": "completed", "transport": "codex", "model": <str>, "transport_note": <str>,
+    "canonical_path": <str>}`` on success (``transport_note`` via :func:`codex_review_roles.transport_note_for`
+    -- also names effort/sandbox for a ``REASONING_EFFORT_ROLES`` role), or ``{"status": "error", "transport":
+    "codex", "model": <str>, "reason": <str>}`` (no ``transport_note`` key) — never raises for a *runtime*
+    failure, so the caller can record the review pass ``not_run`` with a concrete reason (finding #12) rather
+    than crashing the whole run. A caller mistake (unknown role, invalid ``timeout``/``max_retries``, or a
+    ``model`` that fails the syntactic allowlist) raises ``CodexReviewTransportError`` instead -- those are bugs
+    in the caller, not something a review pass can meaningfully report `not_run` about. The returned dict's
+    ``"model"`` key is always the EFFECTIVE model actually passed to ``codex exec`` — ``model`` given, or resolved
     per :func:`codex_review_model_resolution.resolve_codex_review_model`
     when it is ``None`` — never ambiguous, since there is no fallback
     substitution partway through a call.
@@ -190,6 +198,9 @@ def run_codex_review(
     def _error(reason: str) -> dict[str, Any]:
         return {"status": "error", "transport": "codex", "model": effective_model, "reason": reason}
 
+    # For `record_review_pass.py record --transport-note`.
+    transport_note = transport_note_for(role, effective_model)
+
     try:
         schema = json.loads(ROLE_SCHEMAS[role].read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -230,10 +241,14 @@ def run_codex_review(
         with tempfile.TemporaryDirectory(prefix=f"{role}-review-", ignore_cleanup_errors=True) as tmp_dir:
             tmp_path = Path(tmp_dir) / "review.json"
             argv = [
-                codex_bin, "exec", "-m", effective_model, "--skip-git-repo-check", "--sandbox", "read-only",
-                "--ignore-user-config", "--ignore-rules", "--ephemeral", "--cd", str(worktree_root),
+                codex_bin, "exec", "-m", effective_model, "--skip-git-repo-check",
+                "--sandbox", CODEX_REVIEW_SANDBOX_MODE, "--ignore-user-config", "--ignore-rules",
+                "--ephemeral", "--cd", str(worktree_root),
                 "--output-schema", str(ROLE_SCHEMAS[role]), "-o", str(tmp_path),
             ]
+            # `plan_review` (not in REASONING_EFFORT_ROLES) keeps its prior argv.
+            if role in REASONING_EFFORT_ROLES:
+                argv += ["-c", f"model_reasoning_effort={CODEX_REVIEW_REASONING_EFFORT}"]
             try:
                 proc = subprocess.run(
                     argv, input=prompt, capture_output=True, encoding="utf-8",
@@ -280,6 +295,6 @@ def run_codex_review(
             except OSError as exc:
                 return _error(f"could not write canonical output: {exc}")
             result = {"status": "completed", "transport": "codex", "model": effective_model,
-                      "canonical_path": str(canonical_path)}
+                      "transport_note": transport_note, "canonical_path": str(canonical_path)}
             break
     return result

@@ -30,14 +30,15 @@ manifest actually say".
 already establishes the precedent that each gate family gets its own rollout
 instant and its own resolver, since each gate ships on its own date; the two
 FR-01.02 gates here happen to share ONE instant only because they landed in
-the same PR (#729), otherwise unrelated to the layer-coverage family. ~20
-lines of git shallow-check + ``rev-list --before`` + committer-epoch-verify
-logic are duplicated here rather than factored into a shared primitive —
-external plan review (glm) noted this makes a THIRD near-identical copy of
-the same idea and that a future gate family will face a stronger temptation
-to finally share it; accepted as a real, disclosed cost, not a decision
-reversed here (a cross-cutting refactor of an already-shipped, heavily
-reviewed sibling module is a larger, separately-scoped change).
+the same PR (#729), otherwise unrelated to the layer-coverage family. The
+~20 lines of git shallow-check + ``rev-list --before`` + committer-epoch-verify
+logic this module needs were duplicated here at first — external plan review
+(glm) noted this made a THIRD near-identical copy of the same idea. The
+mechanical git plumbing (never the rollout INSTANT, never the caching
+strategy) now lives once in :mod:`_rollout_resolution`, called with THIS
+family's own ``GATE_ROLLOUT_AT_EPOCH``
+(`iterate-2026-09-20-shared-rollout-commit-resolver`) — this module still owns
+resolving WHICH historical commit for its own two gates, exactly as before.
 
 **Always resolved against ``"HEAD"``.** Both gates run against the live
 working tree (Step 8, F11's project-phase checks), not a specific base/head
@@ -79,12 +80,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .git_helpers import _branch_base_commit, _run_git
-
-# Same bound `git_helpers`'s own callers use on a git-subprocess hot path: a
-# wedged `index.lock` or a stalled filesystem must degrade this OPTIONAL
-# leniency lookup to "no grace", never hang the calling check.
-_GIT_TIMEOUT_SECONDS = 30.0
+from . import _rollout_resolution
 
 #: ISO-8601 UTC form for humans: 2026-09-12T06:23:06Z. Derived from
 #: `git show -s --format=%cI c411c36ad7af7d446047c552e032579d45b588fe` in
@@ -110,24 +106,13 @@ GATE_ROLLOUT_AT_EPOCH = 1789194186
 GATE_ROLLOUT_COMMIT = "c411c36ad7af7d446047c552e032579d45b588fe"
 
 
-def _is_shallow(project_root: Path) -> bool:
-    """Best-effort: True unless git affirmatively says this is a full clone.
-    Fails toward "shallow" (no grace) on any ambiguity — see module docstring."""
-    rc, out, _ = _run_git(project_root, "rev-parse", "--is-shallow-repository",
-                          timeout=_GIT_TIMEOUT_SECONDS)
-    return not (rc == 0 and out.strip() == "false")
-
-
 def resolve_head_sha(project_root: Path, commit_hash: str) -> str | None:
     """``commit_hash`` reaches every public function in this module family as
     a caller-supplied ref (usually the literal string ``"HEAD"``); resolved
     to a concrete SHA immediately so every cache is keyed by an immutable
     value, never a symbolic name that can silently point somewhere else on
     the next call within the same process."""
-    rc, out, _ = _run_git(project_root, "rev-parse", commit_hash, timeout=_GIT_TIMEOUT_SECONDS)
-    if rc != 0 or not out.strip():
-        return None
-    return out.strip()
+    return _rollout_resolution.resolve_head_sha(project_root, commit_hash)
 
 
 def resolve_rollout_commit(project_root: Path, resolved_commit_sha: str) -> str | None:
@@ -141,36 +126,12 @@ def resolve_rollout_commit(project_root: Path, resolved_commit_sha: str) -> str 
     git's ``--before`` parse alone, and — see the module docstring's "Trust
     anchor" note, `trg-4380c61a` — that the commit is not merely a
     self-authored, unmerged commit on ``resolved_commit_sha``'s own branch
-    carrying a forged early committer date."""
-    if not resolved_commit_sha or _is_shallow(project_root):
-        return None
-    rc, sha, _ = _run_git(
-        project_root, "rev-list", "-1", f"--before={GATE_ROLLOUT_AT_EPOCH}", resolved_commit_sha,
-        timeout=_GIT_TIMEOUT_SECONDS,
+    carrying a forged early committer date. The algorithm itself lives in
+    :mod:`_rollout_resolution`; this wrapper supplies only THIS family's own
+    epoch."""
+    return _rollout_resolution.resolve_rollout_commit(
+        project_root, resolved_commit_sha, epoch=GATE_ROLLOUT_AT_EPOCH,
     )
-    if rc != 0 or not sha.strip():
-        return None
-    sha = sha.strip()
-    rc2, ts, _ = _run_git(project_root, "show", "-s", "--format=%ct", sha,
-                          timeout=_GIT_TIMEOUT_SECONDS)
-    if rc2 != 0 or not ts.strip():
-        return None
-    try:
-        committer_epoch = int(ts.strip())
-    except ValueError:
-        return None
-    if committer_epoch > GATE_ROLLOUT_AT_EPOCH:
-        return None  # git's answer postdates our cutoff — refuse rather than trust it
-
-    base = _branch_base_commit(project_root, resolved_commit_sha)
-    if base is None:
-        return None  # no corroborated trunk boundary — an unverifiable ancestry claim is not grace
-    rc3, count_out, _ = _run_git(
-        project_root, "rev-list", "--count", f"{base}..{sha}", timeout=_GIT_TIMEOUT_SECONDS,
-    )
-    if not (rc3 == 0 and count_out.strip() == "0"):
-        return None  # sha is not reachable from the trusted trunk boundary — refuse
-    return sha
 
 
 # Process-level cache, keyed by a CONCRETE (root, sha) pair — never the
