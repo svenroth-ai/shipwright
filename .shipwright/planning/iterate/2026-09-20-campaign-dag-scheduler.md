@@ -254,7 +254,7 @@ external review, since it touches `cross_component`-flagged files
 (`autonomous_loop.py`, `campaign_status.py`, `campaign-mode.md`,
 `campaign-worktree.md`) and changes a safety mechanism, not just a schema.
 
-## Operator decision on the second review round (binding — do not re-litigate)
+## Decision on the second review round
 
 The second architecture-review round (below) returned `approve` (openai) and
 `revise` (glm). GLM's revise argued for measuring the manual multi-session
@@ -262,16 +262,18 @@ path (Option C) on the next real campaign before committing to Increment 2's
 worktree/lock redesign, reasoning the two-day campaign shows "nobody *tried*
 the free option, not that it fails."
 
-**Sven's explicit ruling: this is rejected, not deferred.** The manual path
-requires the operator himself to open each session, decide timing, and watch
-for merges — it proves parallel execution is *possible*, but it cannot
-satisfy the actual goal, which is maximizing automation (removing the
-operator from the loop), not merely proving parallelism works or shaving
+The operator (Sven) reviewed both verdicts and rejected GLM's revise
+recommendation, for the following reason: the manual path requires the
+operator himself to open each session, decide timing, and watch for merges —
+it proves parallel execution is *possible*, but it does not reduce how much
+the operator has to personally drive, which is the actual goal here
+(maximizing automation), not merely proving parallelism works or shaving
 cycle time by handing him a second manual task. GLM's suggestion answers "is
 parallel execution technically viable" — already established — not "does this
-reduce how much the operator has to personally drive." **Proceed directly to
-full deep planning for Increment 1 and 2 as one combined design; the
-manual-path experiment is not on the table.**
+reduce how much the operator has to personally drive." Based on that
+reasoning, this iterate proceeded directly to full deep planning for
+Increment 1 and 2 as one combined design, without running the manual-path
+experiment.
 
 ## External validation
 
