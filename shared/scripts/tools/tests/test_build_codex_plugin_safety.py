@@ -203,6 +203,7 @@ def test_refuses_a_symlinked_agents_dir_ancestor_of_the_marketplace_path(tmp_pat
     write_plugin(tmp_path, "shipwright-alpha")
 
     out_dir = tmp_path / "dist" / "codex-plugin"
+    out_dir.parent.mkdir()
     elsewhere = tmp_path / "elsewhere-entirely"
     elsewhere.mkdir()
     _symlink(elsewhere, out_dir.parent / ".agents", dir_target=True)
