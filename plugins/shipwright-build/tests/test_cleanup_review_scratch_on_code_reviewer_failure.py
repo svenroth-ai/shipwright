@@ -16,6 +16,8 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 HOOK_PATH = PLUGIN_ROOT / "scripts" / "hooks" / "cleanup-review-scratch-on-code-reviewer-failure.py"
 
@@ -213,6 +215,7 @@ def test_noop_when_plugin_root_unresolvable(tmp_path, monkeypatch):
     assert "could not resolve shared_root" in err
 
 
+@pytest.mark.covers("FR-01.21/AC04")
 def test_resolve_shared_root_falls_back_to_claude_plugin_root(monkeypatch):
     """SHIPWRIGHT_PLUGIN_ROOT is never actually exported into a hook
     subprocess's OS environment today (a SessionStart hook's

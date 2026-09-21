@@ -53,6 +53,7 @@ def test_clean_bundle_passes(tmp_path):
     assert result.missing_files == []
 
 
+@pytest.mark.covers("FR-01.21/AC03")
 def test_stale_bundle_source_changed_not_rebuilt_fails(tmp_path):
     write_shared(tmp_path)
     write_plugin(tmp_path, "shipwright-alpha")

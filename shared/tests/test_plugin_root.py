@@ -67,6 +67,7 @@ def test_none_set_raises_clear_error(monkeypatch):
         resolve_plugin_root()
 
 
+@pytest.mark.covers("FR-01.21/AC02")
 @pytest.mark.parametrize(
     "env_var,layout_factory",
     [

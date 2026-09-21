@@ -25,6 +25,7 @@ from build_codex_plugin import build_bundle  # noqa: E402
 from _bundle_fixtures import write_plugin, write_shared  # noqa: E402
 
 
+@pytest.mark.covers("FR-01.21/AC01")
 def test_skills_from_every_plugin_are_discoverable(tmp_path):
     write_shared(tmp_path)
     write_plugin(tmp_path, "shipwright-alpha")
@@ -143,6 +144,7 @@ def test_pycache_is_excluded_from_every_copied_tree(tmp_path, pycache_src, pycac
     assert not (out_dir / pycache_dst).exists()
 
 
+@pytest.mark.covers("FR-01.21/AC03")
 def test_clean_rebuild_is_byte_identical(tmp_path):
     write_shared(tmp_path)
     write_plugin(tmp_path, "shipwright-alpha")
