@@ -10,6 +10,7 @@ guards exist because neither had a check against a colliding/foreign target
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 BUNDLE_NAME = "shipwright"
@@ -52,6 +53,30 @@ def refuse_unsafe_output_path(*, project_root: Path, out_dir: Path) -> None:
             f"\"name\": {BUNDLE_NAME!r}) — refusing to delete a directory this tool "
             "did not create."
         )
+
+
+class UnsafeSourceSymlinkError(RuntimeError):
+    """Raised when a source tree ``_copy_tree`` is about to copy contains a
+    symlink. ``shutil.copytree`` defaults to ``symlinks=False``, which
+    FOLLOWS a symlink and copies its target's content — so a symlink planted
+    inside a plugin's source tree, pointing anywhere on disk, would have that
+    target silently bundled with no provenance record, undermining the
+    builder's own drift/manifest guarantees (local PR-review preflight,
+    2026-09-21)."""
+
+
+def refuse_symlinks_in_tree(root: Path, *, exclude_dirnames: set[str] | None = None) -> None:
+    exclude_dirnames = exclude_dirnames or set()
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in exclude_dirnames]
+        for name in (*dirnames, *filenames):
+            candidate = Path(dirpath) / name
+            if candidate.is_symlink():
+                raise UnsafeSourceSymlinkError(
+                    f"{candidate} is a symlink — refusing to bundle a source tree "
+                    "containing one, since it could point outside the declared source "
+                    "with no record of what was actually copied."
+                )
 
 
 def refuse_foreign_marketplace(marketplace_path: Path) -> None:

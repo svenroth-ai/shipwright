@@ -18,8 +18,10 @@ non-runtime dirs), and emits:
   namespaced by origin so a plugin-own hook command still resolves once
   there is only one umbrella plugin;
 - ``<out>/shared/`` — the shared runtime, copied once;
-- ``<out>/BUILD_MANIFEST.json`` — source-path -> bundled-path + sha256 map,
-  consumed by ``verify_codex_plugin_bundle.py``'s drift checks;
+- ``<out>/BUILD_MANIFEST.json`` — bundled-relative-path -> sha256 map (no
+  source path is recorded, since a bundled path can be a namespaced or
+  flattened rewrite of its source), consumed by
+  ``verify_codex_plugin_bundle.py``'s drift checks;
 - ``<out-parent>/.agents/plugins/marketplace.json`` — a local, file-based
   Codex marketplace entry, so the bundle is installable via
   ``codex plugin marketplace add <out-parent>`` + ``codex plugin add
@@ -72,7 +74,9 @@ from pathlib import Path
 from codex_bundle_safety import (
     BUNDLE_NAME,
     UnsafeOutputPathError,
+    UnsafeSourceSymlinkError,
     refuse_foreign_marketplace,
+    refuse_symlinks_in_tree,
     refuse_unsafe_output_path,
 )
 from codex_hook_inventory import BundleCollisionError, build_hook_inventory
@@ -88,6 +92,7 @@ SOURCE_EXCLUDE_DIRS = {"tests", "__pycache__", ".venv", ".git", ".ruff_cache", "
 __all__ = [
     "BundleCollisionError",
     "UnsafeOutputPathError",
+    "UnsafeSourceSymlinkError",
     "build_hook_inventory",
     "BuildResult",
     "discover_plugins",
@@ -117,6 +122,10 @@ def discover_plugins(project_root: Path) -> list[Path]:
 
 def _copy_tree(src: Path, dst: Path, *, exclude_dirnames: set[str] | None = None) -> None:
     exclude_dirnames = exclude_dirnames or set()
+    # A symlink in the source tree would otherwise have its TARGET silently
+    # bundled by shutil.copytree's default symlinks=False (local PR-review
+    # preflight, 2026-09-21) — refuse before copying anything.
+    refuse_symlinks_in_tree(src, exclude_dirnames=exclude_dirnames)
 
     def _ignore(dirpath: str, names: list[str]) -> set[str]:
         return {n for n in names if n in exclude_dirnames}
@@ -262,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         result = build_bundle(project_root=Path(args.project_root), out_dir=Path(args.out))
-    except (BundleCollisionError, UnsafeOutputPathError) as exc:
+    except (BundleCollisionError, UnsafeOutputPathError, UnsafeSourceSymlinkError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

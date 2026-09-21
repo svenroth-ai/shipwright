@@ -11,6 +11,7 @@ a pre-existing marketplace.json belonging to something else.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -18,9 +19,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # shared/scripts/t
 
 import pytest
 
-from build_codex_plugin import BundleCollisionError, UnsafeOutputPathError, build_bundle  # noqa: E402
+from build_codex_plugin import (  # noqa: E402
+    BundleCollisionError,
+    UnsafeOutputPathError,
+    UnsafeSourceSymlinkError,
+    build_bundle,
+)
 
 from _bundle_fixtures import write_plugin, write_shared  # noqa: E402
+
+
+def _symlink(src: Path, dst: Path, *, dir_target: bool = False) -> None:
+    """Create a symlink, or skip. Windows needs Developer Mode/admin; no CI job
+    runs on Windows (same constraint as test_security_gate_symlinks.py), so CI
+    must never take the skip silently."""
+    try:
+        os.symlink(src, dst, target_is_directory=dir_target)
+    except (OSError, NotImplementedError) as exc:
+        if os.environ.get("CI", "").lower() in ("true", "1"):
+            pytest.fail(
+                f"symlink creation failed in CI ({exc!r}); this suite must "
+                "exercise the symlink-refusal branch of _copy_tree. Run on a "
+                "filesystem/user that permits symlinks.")
+        pytest.skip(f"symlinks not permitted on this host ({exc!r})")
 
 
 def test_refuses_when_out_dir_is_the_project_root(tmp_path):
@@ -111,6 +132,41 @@ def test_recovers_from_an_interrupted_build(tmp_path, monkeypatch):
 
     monkeypatch.setattr(build_codex_plugin, "_copy_tree", original_copy_tree)
     build_bundle(project_root=tmp_path, out_dir=out_dir)  # must not raise
+
+
+def test_refuses_a_symlink_inside_a_plugin_source_tree(tmp_path):
+    """shutil.copytree defaults to symlinks=False, which FOLLOWS a symlink and
+    copies its target's content — a symlink inside a plugin's source tree
+    could point anywhere on disk and have that content silently bundled with
+    no provenance record (local PR-review preflight, 2026-09-21)."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    outside_target = tmp_path / "outside-the-repo.txt"
+    outside_target.write_text("not part of any declared source", encoding="utf-8")
+    _symlink(
+        outside_target,
+        tmp_path / "plugins" / "shipwright-alpha" / "skills" / "alpha" / "escape.txt",
+    )
+
+    with pytest.raises(UnsafeSourceSymlinkError, match="escape.txt"):
+        build_bundle(project_root=tmp_path, out_dir=tmp_path / "dist")
+
+
+def test_a_symlink_inside_an_excluded_dir_does_not_false_block(tmp_path):
+    """A symlink under an excluded dirname (e.g. tests/) is never copied, so
+    it must not be flagged either — only symlinks that would actually reach
+    the bundle are the builder's problem."""
+    write_shared(tmp_path)
+    write_plugin(tmp_path, "shipwright-alpha")
+
+    outside_target = tmp_path / "outside-the-repo.txt"
+    outside_target.write_text("irrelevant", encoding="utf-8")
+    tests_dir = tmp_path / "plugins" / "shipwright-alpha" / "scripts" / "tests"
+    tests_dir.mkdir(parents=True)
+    _symlink(outside_target, tests_dir / "escape.txt")
+
+    build_bundle(project_root=tmp_path, out_dir=tmp_path / "dist")  # must not raise
 
 
 def test_refuses_to_overwrite_a_foreign_marketplace_json(tmp_path):

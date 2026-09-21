@@ -3072,8 +3072,8 @@ Claude's own marketplace reads — never a hand-edited second copy.
   `skills/` + `scripts/`, plus `shared/`, and emits one
   `.codex-plugin/plugin.json` with an inline, deduplicated hook inventory,
   a flattened `skills/`, per-origin-namespaced `origin/<plugin-name>/scripts/`,
-  a single copy of `shared/`, a `BUILD_MANIFEST.json` (source→bundled-file
-  sha256 map), and a local `.agents/plugins/marketplace.json` for
+  a single copy of `shared/`, a `BUILD_MANIFEST.json` (bundled-relative-path
+  → sha256 map), and a local `.agents/plugins/marketplace.json` for
   `codex plugin marketplace add`/`codex plugin add` during development.
   Excludes `__pycache__`/`.venv`/`tests`/etc. from every copied tree (not
   only `shared/`) — a developer's local bytecode cache must never make the
