@@ -255,21 +255,25 @@ def resolve_unit_identity(state: dict, unit_id: str, *, campaign_worktree: str) 
         # through to `_run_git`, which stringifies it into `git -C
         # <worktree> ...` — git then fails with an opaque exit-code error
         # naming the wrong thing (a bad path, not a malformed loop_state
-        # row), instead of this documented, specific `ReviewAttributionError`
-        # — validate the TYPE here, before any git call, not just its
-        # truthiness, so the failure names the real cause (code-review
-        # round 3 verify, medium: an earlier version of this comment
-        # claimed an uncaught `TypeError` from `subprocess.run`, which
-        # `_run_git`'s `str(cwd)` argv-building actually prevents — the
-        # value here is a clearer failure message, not a crash fix).
+        # row). Validate the TYPE here, before any git call, so the
+        # failure names the real cause instead (provenance:
+        # `iterate-2026-09-22-r3-review-diff-fix-adr.md`).
         raise ReviewAttributionError(
             f"unit {unit_id!r} has a non-string worktree ({worktree!r}) recorded in loop_state")
     branch = unit.get("branch")
+    # Absence checked BEFORE type (code-review round 3b verify, medium): a
+    # missing `branch` key is the single most likely malformed shape (a
+    # pre-R2 row) and must keep reporting the accurate "has no branch
+    # recorded", not fall into the type check below and report "non-string
+    # branch (None)" — which names nothing as having been recorded at all,
+    # let alone the wrong type. Only `None`/`""` short-circuit here; a
+    # falsy-but-typed value (`0`, `[]`, `False`) still reaches the type
+    # check, which is the case it exists to name.
+    if branch is None or branch == "":
+        raise ReviewAttributionError(f"unit {unit_id!r} has no branch recorded in loop_state")
     if not isinstance(branch, str):
         raise ReviewAttributionError(
             f"unit {unit_id!r} has a non-string branch ({branch!r}) recorded in loop_state")
-    if not branch:
-        raise ReviewAttributionError(f"unit {unit_id!r} has no branch recorded in loop_state")
     attempt = unit.get("attempt")
     if not isinstance(attempt, int) or isinstance(attempt, bool):
         attempt = 0

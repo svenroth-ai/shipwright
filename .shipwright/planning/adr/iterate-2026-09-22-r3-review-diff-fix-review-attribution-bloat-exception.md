@@ -130,6 +130,27 @@ loop_state row). The fix is still worthwhile — an earlier, more specific
 failure — corrected here rather than left standing as an inaccurate
 record, per this file's own "no hindsight-inaccurate record" standard.
 
+### Round 3c growth (509 -> 518 -> 522)
+
+Two catch-up items land together here since neither got its own entry when
+it landed:
+
+- The "Correction" paragraph above (code-review round 3 verify) itself
+  edited this file's rationale text, growing it 509 -> 518 with no matching
+  growth entry — a fresh code-reviewer pass on round 3's diff flagged this
+  file's own inconsistency (the sibling test ADR got its "Round 3b" entry,
+  this one didn't).
+- A second fresh code-reviewer pass (round 3b verify) found the branch
+  message split introduced by round 3's fix (`_check pinned worktree`'s
+  sibling change in `resolve_unit_identity`) had itself regressed: checking
+  `isinstance(branch, str)` before checking for an absent/empty branch made
+  a genuinely missing `branch` key report the wrong diagnostic
+  ("non-string branch (None)" instead of "has no branch recorded").
+  Reordered to check `branch is None or branch == ""` first, `isinstance`
+  second — 518 -> 522. Confirmed red-before (temporarily reverting to the
+  pre-fix ordering, `test_resolve_unit_identity_reports_a_missing_branch_key_as_absent_not_non_string`
+  failed with exactly the predicted wrong message) / green-after.
+
 ## Consequences
 
 `review_attribution.py` remains the single source of truth for pin/ship/

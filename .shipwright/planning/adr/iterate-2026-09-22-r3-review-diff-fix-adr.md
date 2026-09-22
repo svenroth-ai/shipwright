@@ -672,6 +672,17 @@ the wrong type) — split into its own "non-string branch" message
 mirroring `worktree`'s, with the corresponding test's `match=` updated to
 pin the new, specific diagnostic rather than the old generic one.
 
+**Further correction (round-3b-verify code-review):** the branch-message
+split above itself introduced a regression — checking `isinstance(branch,
+str)` before checking for absence meant a genuinely *missing* `branch` key
+(`unit.get("branch")` returning `None`) now hit the type check first and
+reported "non-string branch (None)" instead of the accurate "has no
+branch recorded". Fixed by checking `branch is None or branch == ""`
+first, `isinstance` second, so a falsy-but-typed value (`0`, `[]`, `False`)
+still reaches the type check while a genuinely absent/empty branch keeps
+its original, accurate message. Confirmed red-before/green-after with two
+new tests (see the sibling test-file bloat ADR's "Round 3c" entry).
+
 ## Rejected alternatives
 
 Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch

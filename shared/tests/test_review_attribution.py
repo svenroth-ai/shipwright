@@ -591,6 +591,24 @@ def test_resolve_unit_identity_refuses_a_non_string_branch():
         resolve_unit_identity(state, "Q", campaign_worktree="/fallback")
 
 
+def test_resolve_unit_identity_reports_a_missing_branch_key_as_absent_not_non_string():
+    """Code-review round 3b verify, medium: the non-string-branch check
+    (added above) must not shadow the pre-existing, accurate "has no
+    branch recorded" message for the single most likely malformed shape —
+    a row with NO `branch` key at all (a pre-R2 row). `unit.get("branch")`
+    returns `None` there, and `isinstance(None, str)` is `False`, so
+    absence must be checked BEFORE type, not after."""
+    state = {"units": [{"id": "R2", "attempt": 0}]}
+    with pytest.raises(ReviewAttributionError, match="has no branch recorded"):
+        resolve_unit_identity(state, "R2", campaign_worktree="/fallback")
+
+
+def test_resolve_unit_identity_reports_an_empty_string_branch_as_absent():
+    state = {"units": [{"id": "R3", "branch": "", "attempt": 0}]}
+    with pytest.raises(ReviewAttributionError, match="has no branch recorded"):
+        resolve_unit_identity(state, "R3", campaign_worktree="/fallback")
+
+
 def test_pin_refuses_a_malformed_worktree_type_before_any_git_call(git_origin_repo):
     """Integration-level proof (not just the unit-level `resolve_unit_identity`
     tests above): confirm the whole `pin()` call chain fails closed with a

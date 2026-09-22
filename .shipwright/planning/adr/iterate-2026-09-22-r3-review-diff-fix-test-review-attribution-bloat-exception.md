@@ -109,6 +109,22 @@ test's `match=` to `"non-string branch"` and dropped the unused
 `resolve_unit_identity` tests (no assertion touches git; the fixture cost
 ~6 git subprocesses per test for nothing).
 
+### Round 3c growth (622 -> 640)
+
+Added two regression tests for the branch-message-ordering regression
+(sibling implementation ADR's "Round 3c" entry):
+`test_resolve_unit_identity_reports_a_missing_branch_key_as_absent_not_non_string`
+(a row with no `branch` key at all — the single most likely malformed
+shape, a pre-R2 row) and
+`test_resolve_unit_identity_reports_an_empty_string_branch_as_absent`.
+Confirmed red-before/green-after: against the pre-fix ordering, the
+missing-key test failed with `"unit 'R2' has a non-string branch (None)
+recorded in loop_state"` instead of the expected "has no branch recorded"
+message; the empty-string test passed even pre-fix (both orderings treat
+`""` as falsy-and-a-string, so it falls through to the same message either
+way) — included anyway as a permanent regression guard for the boundary,
+not as a fresh red-before case.
+
 ## Consequences
 
 `test_review_attribution.py` remains the authoritative regression suite
