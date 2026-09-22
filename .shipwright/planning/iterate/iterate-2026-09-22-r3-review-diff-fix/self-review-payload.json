@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "Implements every item in R3's spec: lib.review_attribution (pin/verify), check_review_attribution.py CLI, campaign-mode.md 3f-bis/3g rewiring with explicit `git -C`; the two reviewer-driven additions (PR-identity flags, unit_id cross-check in verify) fix real gaps in already-in-scope work, not scope creep."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "ReviewAttributionError raised (never swallowed) on git failure, unknown unit, branch mismatch, missing pin file, and mismatched pin unit_id; the CLI wraps every call and exits 1 with a parseable message rather than a traceback."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No SQL/HTML surfaces; no hardcoded secrets; every git call uses `subprocess.run([...], ...)` with a list argv (no shell=True), so no new shell-injection surface; `{placeholder}` interpolation in campaign-mode.md's bash matches the doc's existing convention elsewhere, not a new attack path (external plan review, openai finding 8 — rejected-with-reason, disposition below)."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "20 tests (14 lib unit, 3 CLI, 2 new integration, 1 new unit-id cross-check) assert on outcomes (SHAs, exit codes, decision strings), not internals; each guard behavior has a happy-path and a failure-path test (branch mismatch, moved branch, rebase, missing pin, mismatched unit_id)."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "A per-invocation CLI guard around a handful of git subprocess calls, not a hot path, DB query, or list endpoint — no N+1/pagination/blocking-async concerns apply."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "Mirrors lib.unit_lease / check_unit_lease.py's established lib+CLI split; all source files are under 300 lines; campaign-mode.md's 400->447 crossing is the recorded bloat exception (iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md)."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "New serialized format: review_pin.json. Producer: pin() in lib/review_attribution.py. Consumers: verify() (same module) and campaign-mode.md 3g's `[ -f reviewed_head ]` shell read of the dual-written legacy file. Round-trip (producer -> file on disk -> consumer, not the in-memory return value) proven by test_pin_writes_legacy_reviewed_head_file_alongside_the_new_pin_file and test_verify_refuses_a_pin_file_belonging_to_a_different_unit_id (constructs the on-disk file independently and drives it through the real reader). Not a user-edited format, so the full 8-probe boundary-probes.md checklist does not gate it."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff: exit 0, no findings."
+    }
+  ]
+}

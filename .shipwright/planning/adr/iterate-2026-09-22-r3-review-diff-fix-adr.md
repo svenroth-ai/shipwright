@@ -1,0 +1,410 @@
+# R3 — unit-scoped review-attribution pin, `lib/review_attribution.py`
+
+Campaign `campaign-dag-scheduler` (slug `dag-scheduler`), sub-iterate R3
+(`iterate-2026-09-22-r3-review-diff-fix`). Full design authority: the
+sub-iterate spec at
+`.shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R3-review-diff-fix.md`.
+Step 2 (complexity classifier) was overridden `large -> medium` by the
+campaign orchestrator, per the auditable record at
+`.shipwright/planning/iterate/campaigns/campaign-dag-scheduler/R3-complexity-override.md`
+(verified false positive: "schema" referred to a JSON field shape,
+"rewrites" to a different future sub-iterate's action — not this diff's
+actual risk). Step 3.4's diff-driven recheck independently confirmed
+`medium` with a legitimate `cross_component` flag (campaign-mode.md is in
+`CROSS_COMPONENT_FILE_PATTERNS`'s "campaign drain" category).
+
+## Context
+
+Today (pre-R5a), every campaign sub-iterate shares ONE worktree, so
+`campaign-mode.md`'s 3f-bis review step always diffs the campaign
+worktree's own checked-out `HEAD` — correct only because it is, by
+construction, always the unit currently being reviewed. R5a's wave-build
+flip gives every unit its own worktree; a review step still hardcoded to
+"the campaign worktree" would then attribute one unit's review to whatever
+the last-flipped unit's branch happens to be checked out as — a silent
+misattribution, not a crash. R3 makes unit resolution explicit and
+per-unit now, before R5a ships, rather than growing a new, untested code
+path under wave-build's own time pressure.
+
+## Decision
+
+Implemented exactly per the sub-iterate spec's "Files to create/modify"
+and "Test strategy" sections: new `lib/review_attribution.py`
+(`pin`/`verify`, mirroring `lib/unit_lease.py`'s lib+CLI split, but
+FATAL-on-error rather than warn-and-continue — a misattributed review is
+exactly the bug this module exists to prevent) and
+`checks/check_review_attribution.py` (thin CLI, `--mode {pin,verify}`,
+matching the spec's and the master plan's literal CLI spelling — a Stage-1
+spec-review REJECT caught an earlier subcommand-shaped implementation of
+this same contract). `campaign-mode.md`'s 3f-bis gains an unconditional
+`check_review_attribution.py --mode pin` call at its top (`--review-skipped`
+on the below-threshold path) and every named git call site (diff, merge-base,
+the reviews.json commit/push, the Stage-1-REJECT commit/push) gains
+explicit `git -C "{project_root}"` scoping; 3g's stale "the pin is
+conditional" comment is corrected. `pin` writes
+`runs/{loop_id}/{unit_id}/{attempt_id}/review_pin.json` and dual-writes
+the legacy `runs/{loop_id}/{unit_id}/reviewed_head` file so 3g's existing
+`[ -f ... ]` check keeps working unchanged as a defensive fallback.
+
+## External-Plan-Review-Findings
+
+Reviewed via `external_review.py --mode iterate` against this sub-iterate's
+spec (passed as both `--plan-file` and `--spec-file` — no separate
+mini-plan artifact exists for a campaign sub-iterate, matching R2's own
+precedent). Both external reviewers (GLM, OpenAI) independently returned
+`SHIPWRIGHT_VERDICT: revise`; no contradiction between them — both
+converged on the shared-worktree-fallback and pin/commit-ordering concerns.
+
+| # | Reviewer | Severity | Finding (summary) | Disposition |
+|---|---|---|---|---|
+| 1 | GLM | high | The shared-worktree fallback (no per-unit `worktree` row yet) could pin unit A against unit B's checked-out state. | **rejected-with-reason** — already prevented by design: `pin()` asserts the CHECKED-OUT branch matches the unit's own recorded branch BEFORE ever reading `HEAD`, so a shared worktree holding a different unit's branch fails closed. Covered by `test_pin_refuses_when_the_recorded_branch_is_not_the_one_checked_out` and empirically exercised end to end by the new `test_alternating_units_on_the_shared_worktree_never_cross_attribute` (category: integration). |
+| 2 | OpenAI | high | `verify --against shipped_head`'s field-update mechanism after the review-record commit is under-specified — could reintroduce a race. | **rejected-with-reason** — `verify()` never trusts a static `shipped_head` field for this path; it recomputes live (current branch tip's parent must equal the pinned `reviewed_head`, unless `review_skipped`), so there is no stale-field window to race. The `shipped_head: null` payload field on a reviewed unit is a naming nuance for a DIRECT JSON reader, not a functional gap — noted in the module docstring. |
+| 3 | OpenAI | high | `verify` never cross-checks the PR's live node id / head ref / base ref against the pinned values — persisting them alone is "not protection". | **rejected-with-reason / scoped-out** — R3's own acceptance criterion is `--match-head-commit` (git SHA equality), which 3g's existing check already performs. The PR-identity fields are recorded now specifically so R4/R5b can add live PR-identity verification without a schema change later — same "documented, deferred limitation" precedent `lib/unit_lease.py` already sets for attempt-fencing (tracked for R4). |
+| 4 | OpenAI | high | "Actual tip" is ambiguous: checking local `HEAD` won't detect a manual remote push if the worktree hasn't fetched. | **rejected-with-reason** — no human-push path exists mid-automated-campaign-run today; the local worktree's branch tip IS authoritative under this campaign's single-worktree, single-session execution model. A future cross-worktree/human-push scenario is R4/R5's scope (finding 3's PR-identity verification would be the actual fix, not a fetch). |
+| 5 | GLM | medium | Order-of-operations between the pin and 3f-bis's own `reviews.json` commit is ambiguous — `--against reviewed_head` would fail on any reviewed unit once that commit moves `HEAD`. | **accepted-and-fixed** — `campaign-mode.md` now states explicitly which `--against` mode applies to which case (reviewed -> `shipped_head`, below-threshold -> `reviewed_head`). Proven end to end (pin -> reviews.json-shaped commit -> `verify --against shipped_head` -> allow) by the new `test_pin_then_shipped_head_verify_across_the_real_3fbis_3g_sequence` (category: integration). |
+| 6 | OpenAI | medium | Fetch prerequisites for `origin/{default}`/`merge-base` (detached worktree, shallow clone, unresolved remote) are unestablished. | **rejected-with-reason** — pre-existing behavior inherited from 3f-bis's own diff computation, not an R3 regression; the campaign worktree is set up freshly-fetched at B1a. Out of scope to harden here. |
+| 7 | OpenAI | medium | The shared-worktree fallback is safe only while exactly one unit executes at a time; nothing proves that today. | **rejected-with-reason** — same mechanism as finding 1 (the branch-checkout assertion fails closed regardless); additionally, this campaign's own `serial` sub-iterate strategy guarantees single active-unit execution by construction today. |
+| 8 | OpenAI | medium | 3g's conditional `[ -f reviewed_head ]` read could still permit an unpinned merge if the pin / dual-write silently failed. | **rejected-with-reason** — `pin()` is FATAL-on-error and gates 3f-bis via STRICT-STOP; 3g is never reached on a pin failure. The `[ -f ]` check now only handles a pre-R3 `result.json` or other legacy artifact, not a live failure path. |
+| 9 | OpenAI | medium | Pin file lacks atomic-write / retry-idempotency guarantees; nothing validates `unit_id`/`attempt_id` on read. | **accepted-and-fixed (partial)** — writes already used `lib.atomic_write.durable_atomic_write` (temp+rename) before this review; added a `unit_id` cross-check to `verify()` as defense in depth (`test_verify_refuses_a_pin_file_belonging_to_a_different_unit_id`). Re-pin/retry overwrite semantics were unproven — closed by the Confidence Calibration probe below (`test_re_pin_the_same_attempt_after_a_new_commit_overwrites_cleanly`), found clean. |
+| 10 | GLM | medium | Retry/attempt handling (stale pin at `a{n}` after a retry to `a{n+1}`) is untested. | **rejected-with-reason** — full attempt-fencing is explicitly out of scope for R3, matching `lib/unit_lease.py`'s own documented "tracked for R4" limitation (no real `--attempt` passed yet). The narrower same-attempt re-pin case IS now empirically probed (see finding 9's disposition) and found safe. |
+| 11 | OpenAI | low | Shell-injection risk: worktree paths / branch names / PR identifiers are interpolated into documented `{placeholder}` bash calls. | **rejected-with-reason** — matches `campaign-mode.md`'s existing `{placeholder}` convention used throughout the doc; every git call in `lib/review_attribution.py` uses a list argv (`subprocess.run([...])`, never `shell=True`) — not a new attack surface introduced by this diff. |
+| 12 | GLM | low | The "mini-plan" reviewed is a verbatim copy of the spec, adding no separate implementation decisions. | **acknowledged, no action** — established convention for campaign sub-iterates (no separate mini-plan artifact exists), matching R2's own precedent; the spec itself carries enough detail (pin/verify field shapes, CLI shape) for a meaningful review, as both reviewers' substantive findings above demonstrate. |
+| 13 | GLM | low | `base_sha` (from `origin/{default}`) is computed once at pin time with no explicit re-fetch, so a stale local ref pins a wrong-but-permanent merge-base. | **rejected-with-reason** — same as finding 6: inherited from 3f-bis's pre-existing diff computation, not an R3 regression. |
+
+Both reviewers agreed the overall direction (pin rather than recompute,
+dual-write the legacy file, red -> green reproduction) is sound; every
+accepted finding above is a targeted fix, not a redesign.
+
+## External-Code-Review-Findings
+
+Reviewed via `external_review.py --mode code` against the actual `HEAD~1`
+diff of the F6 commit (`5cef29396`) — this is the runner's own
+responsibility per `sub-iterate-runner.md` Step 3.7 item 2, distinct from
+the internal `spec`/`code`/`doubt` cascade the orchestrator delegates at
+3f-bis. Both reviewers (GLM, OpenAI) independently returned
+`SHIPWRIGHT_VERDICT: revise`; no contradiction (both flagged the same
+unscoped-call-site gap independently). All fixes below were amended into
+the SAME F6 commit rather than shipped as a follow-up.
+
+| # | Reviewer | Severity | Finding (summary) | Disposition |
+|---|---|---|---|---|
+| 1 | OpenAI | high | 3g never calls `check_review_attribution.py verify`; still tolerates `head_pin=""`. | **rejected-with-reason** — by explicit spec text (R3-review-diff-fix.md): "3g's existing check ... continues to work UNCHANGED until R5b rewrites 3g to read the replacement directly." `head_pin=""` is now reachable only via a pre-R3 `result.json` or a pin failure that already STRICT-STOPped before 3g is reached (documented inline in 3g's own comment). |
+| 2 | OpenAI | high | `run_dir` stayed a bare relative path (`.shipwright/runs/{loop_id}/{id}`) while the pin itself is written under `--project-root "{project_root}"` — a cwd mismatch reads/writes the wrong unit's `run_dir`. | **accepted-and-fixed** — `run_dir` is now `"{project_root}/.shipwright/runs/{loop_id}/{id}"` in both 3f-bis and 3g, matching the spec's own explicit call-site list ("name every call site that must become unit-scoped: ... `run_dir` ..."). Covered by the new `test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g`. |
+| 3 | OpenAI | medium | `verify()` only resolves the local branch ref; never fetches/compares the remote or PR head, despite the module docstring's "every branch-change route" claim. | **rejected-with-reason** — division of labor, not a gap: the REMOTE/merge-time check is `gh pr merge --match-head-commit` at 3g against the PR's live `headRefOid` (a real GitHub-side check, already wired and unchanged by R3); `verify()`'s documented job is the LOCAL ancestry check for direct callers (R4/R5b) that want it outside a `gh pr merge` invocation. Duplicating a remote fetch inside `verify()` would be a second implementation of the same check the module docstring explicitly says not to have. |
+| 4 | OpenAI | medium | `loop_id`/`unit_id`/`attempt_id` concatenate into filesystem paths with no validation — a `unit_id` of `"../../x"` could write outside `.shipwright/runs/`. | **accepted-and-fixed** — added `_safe_segment` (rejects `.`/`..`, any separator, NUL — Unicode-permissive, so it doesn't regress the non-ASCII-`unit_id` probe) in `_pin_dir`/`_legacy_reviewed_head_path`. Covered by the new `test_pin_refuses_a_unit_id_that_would_escape_the_runs_directory`. |
+| 5 | OpenAI | medium | No test proves a missing/malformed/wrong-unit pin actually BLOCKS 3g's merge. | **rejected-with-reason** — the underlying behaviors are already tested where they're implemented: `test_verify_raises_when_no_pin_exists_for_the_unit`, `test_verify_refuses_a_pin_file_belonging_to_a_different_unit_id`, `test_verify_exits_nonzero_for_unknown_unit` (lib + CLI level). 3g's actual merge gate is `gh pr merge --match-head-commit` — a live GitHub-side SHA check this module cannot unit-test further; that mechanism itself is unchanged by R3. |
+| 6 | GLM | medium | The unconditional pin sits AFTER the `gh pr view`/`pr_url` STRICT-STOP; a `gh pr view` failure on first pass leaves no pin, and the doc's "a PR already exists by this point" argument covers only the happy path. | **rejected-with-reason** — structural, not incidental: the pin's payload requires `pr_node_id`/`pr_head_ref`/`pr_base_ref`, resolved FROM `gh pr view`'s own output, so the pin cannot run before the PR is confirmed to exist. STRICT-STOP halts the whole loop for human intervention everywhere else in this doc (never a silent same-step resume), so a re-invocation starts 3f-bis over from the top, by which point the PR exists. |
+| 7 | GLM | medium | `gh pr view "{branch}"` (3f-bis and 3g) and `record_review_pass.py --payload-file`'s root were named by the spec as call sites needing unit-scoping but were left cwd-dependent. | **accepted-and-fixed (partial)** — both `gh pr view "{branch}"` calls now run as `cd "{project_root}" && gh pr view ...` (gh has no `-C` equivalent). The `record_review_pass.py --payload-file` half of this finding is a false positive: it was already scoped (`--payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/..."`, campaign-mode.md line 324) before this review. |
+| 8 | GLM | medium | `_find_unit` resolves case-insensitively, but `pin`/`verify` stored the CALLER's raw `unit_id` spelling — pinning as `"unit-a"` then verifying as `"Unit-A"` (same row) stored two different strings and the mismatch cross-check BLOCKed a legitimate verify. | **accepted-and-fixed** — `resolve_unit_identity` now returns the row's own canonical `id`; `pin`/`verify` both use that canonical spelling for the payload and the cross-check, never the caller's raw casing. Covered by the new `test_verify_with_differently_cased_unit_id_does_not_false_block`. |
+| 9 | GLM | medium | The doc-prose test for `--review-skipped` only checks substring presence, which an inverted shell conditional could satisfy identically. | **rejected-with-reason** — the doc-prose test's job is narrower (the doc names the right invocation shape); the ACTUAL runtime behavior of `--review-skipped` (correct value on the correct branch) is exercised functionally by `pin()`'s own `review_skipped=True/False` tests and by `test_r3_review_diff_fix_integration.py` driving the real CLI end to end — those own the behavioral guarantee, not the markdown-text assertion. |
+| 10 | GLM | medium | A same-attempt re-pin AFTER the reviews.json record commit has already landed pins `reviewed_head` = the record commit itself, letting a subsequent `verify --against shipped_head` accept one further unreviewed commit past it (compounding drift). | **rejected-with-reason** — requires an out-of-contract retry: re-entering 3f-bis from its top for the SAME unit after a crash specifically between the record-commit push and the wait-loop. Every STRICT-STOP in this doc means "halt for a human", not "silently resume mid-step" — an operator-restarted loop moves to the NEXT sub-iterate or requires manual repair of the stuck PR, not an automatic re-run of 3f-bis on an already-reviewed branch. Flagged as a known limitation for R4/R5b if true re-entrant retry semantics are ever wired for 3f-bis itself. |
+| 11 | GLM | low | Once R5a flips `{project_root}` to mean the unit's OWN worktree, `--state`/`--project-root` (campaign-root concerns) and the diff (unit-worktree concern) would silently split if only "those two values" change, per the bloat ADR's own note. | **rejected-with-reason, deferred** — explicitly a forward-looking design note for R5a's own flip, not a defect in R3. The concrete piece of this concern (anchoring `run_dir` consistently) is already closed by finding 2's fix; the broader placeholder-renaming suggestion is R5a's to adopt when it actually introduces per-unit worktrees. |
+| 12 | GLM | low | `test_verify_block_on_moved_branch` asserts only the `BLOCK` verdict word, not the underlying reason — a regression that BLOCKs for the wrong cause would pass identically. | **rejected-with-reason** — reviewer's own assessment: "Minor, given the lib-level tests cover the cause." `test_verify_against_reviewed_head_detects_a_commit_added_after_pinning` and its siblings already assert the DETAIL/cause at the `review_attribution.py` level; the CLI-level test's narrower scope (verdict word only) is an acceptable division of test responsibility, matching the CLI's own job (exit code + verdict word, not a diagnostic transcript). |
+
+3 findings accepted-and-fixed (run_dir scoping, path-segment validation,
+case-fold cross-check), 1 accepted-and-fixed-partial (`gh pr view`
+scoping — the `record_review_pass.py` half was already correct), 8
+rejected-with-reason. All fixes landed as new commits in `_pin_dir`/
+`_legacy_reviewed_head_path`/`resolve_unit_identity`/`pin`/`verify`
+(`shared/scripts/lib/review_attribution.py`) and in `campaign-mode.md`'s
+3f-bis/3g bodies, amended into the same F6 commit, with 4 new regression
+tests (`test_verify_with_differently_cased_unit_id_does_not_false_block`,
+`test_pin_refuses_a_unit_id_that_would_escape_the_runs_directory`,
+`test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g`, plus the
+harness's new `step_3g()` helper).
+
+## Self-Review
+
+See `reviews.self` in `reviews.json` for the recorded pass (8 items,
+`{"items":[{"name","verdict","note"}]}`) — summary: 7 pass, 1 `n/a`
+(Performance Basics — a per-invocation CLI guard, not a hot path). No
+failures.
+
+## Confidence Calibration
+
+Effective complexity is `medium` (Step 3.4), so this step is mandatory.
+Per `references/confidence-anti-patterns.md`, this is empirical probes,
+not a self-report.
+
+**Boundaries touched:** `review_pin.json` — a new serialized format.
+Producer: `pin()` in `lib/review_attribution.py`. Consumers: `verify()`
+(same module) and `campaign-mode.md` 3g's `[ -f reviewed_head ]` shell
+read of the dual-written legacy file. Not a human-edited format (no
+BOM/CRLF/inline-comment class of risk), so `boundary-probes.md`'s 8-item
+checklist doesn't gate it — probed instead against the concerns the
+external plan review actually raised for THIS boundary.
+
+**Probes run:**
+
+| Round | Probe | Result |
+|---|---|---|
+| 1 | Non-ASCII `unit_id` (`R3-é-café`) round-tripped through `pin`/`verify`, reading the ON-DISK file (not the in-memory return value). | Clean — `json.dumps(..., ensure_ascii=False)` + `durable_atomic_write`/`durable_read_text` round-trip exactly. |
+| 2 | Same-attempt re-pin after a new commit (external plan review, openai finding 9/glm finding 10): does a retry overwrite cleanly, and does `verify` then check against the NEW pin? | Clean — `pin()` has no read-modify-write dependency on the prior pin file; a re-pin overwrites, and `verify()`'s subsequent read reflects the new `reviewed_head` with no stale residue. |
+
+**Asymptote applied:** both probes ran clean on the first attempt — two
+consecutive no-finding probes, exhausted for this boundary. Both are now
+permanent regression tests in `shared/tests/test_review_attribution_probes.py`.
+
+**Integration composition (`cross_component` flag, mandatory):**
+`campaign-mode.md` is a "campaign drain" file under
+`CROSS_COMPONENT_FILE_PATTERNS`, so the diff-driven recheck (Step 3.4)
+correctly raised `cross_component`. Proven via
+`shared/tests/test_r3_review_diff_fix_integration.py` (category:
+integration): (1) the real pin -> reviews.json-shaped commit -> `verify
+--against shipped_head` sequence 3f-bis/3g actually run allows correctly;
+(2) two units alternating on the shared campaign worktree (no per-unit
+`worktree` row, pre-R5a) never cross-attribute — pinning one while the
+other's branch is checked out fails closed, and switching to the correct
+branch first (the real orchestrator's serial execution model) pins cleanly
+with no residue for the other unit.
+
+**Edge cases not probed, and why acceptable:** full attempt/retry fencing
+(a real `n -> n+1` attempt increment, not same-attempt re-pin) — out of
+scope for R3 per the disposition for findings 9/10 above; concurrent-writer
+races on `review_pin.json` from truly parallel units — moot pre-R5a
+(`serial` campaign strategy) and R5a/R5b's own scope once wave-build lands.
+
+Recorded in the final result JSON's `reviews.confidence_calibration` (2
+probes run, 0 findings, asymptote reached) — same precedent as R1/R2.
+
+## Delegated Internal Review Cascade (3f-bis, this campaign)
+
+Per `campaign-mode.md` 3f-bis, this campaign runs a delegated
+spec-reviewer -> code-reviewer -> doubt-reviewer cascade against the PR
+diff before merge, in addition to the external plan/code review recorded
+above. Payloads: `spec_review_reply.json`, `code_review_reply.json` under
+`.shipwright/planning/iterate/iterate-2026-09-22-r3-review-diff-fix/`.
+
+**Stage 1 (spec-reviewer), round 1 — REJECT (3 findings):**
+`check_review_attribution.py`'s CLI used `add_subparsers` for a
+positional `pin|verify` subcommand where the spec calls for a `--mode`
+flag; the `campaign-mode.md` prose defined `{project_root}` two
+incompatible ways in the same passage (documented above, +4 lines,
+447 -> 451); one spec acceptance criterion's wording was ambiguous
+about whether `--against` applies to `pin` or only `verify`. All three
+fixed; round 2 — PASS.
+
+**Stage 2 (code-reviewer) — REJECT (2 high, 2 medium, 4 low):**
+
+- High: `_run_git`'s `text=True` decode with no explicit `encoding=`
+  used the Windows cp1252 platform default, which cannot represent
+  non-ASCII bytes already present in this repo's tracked diffs —
+  `UnicodeDecodeError` on a real diff containing an em-dash or curly
+  quote. Fixed by hashing the diff in raw bytes mode (`raw=True`,
+  `hashlib.sha256(diff_bytes)`) instead of decoding it at all.
+- High: `verify()`'s branch-tip resolution used a bare
+  `git rev-parse <branch>`, ambiguous against a same-named tag per
+  gitrevisions precedence. Fixed: fully qualified as
+  `refs/heads/{branch}`.
+- Medium: `_safe_segment` did not reject `:`, permitting a
+  Windows drive-relative path escape (e.g. `D:evil`) through a
+  `unit_id`. Fixed: added `:` to the blocklist.
+- Medium: `verify()`'s pin-file load had no handling for a
+  malformed/truncated `review_pin.json` — a bare `KeyError`/
+  `JSONDecodeError` would propagate uncaught. Fixed: wrapped in a
+  try/except re-raising `ReviewAttributionError` with the pin path.
+- Low (x4): missing test for the `--against shipped_head` "no
+  record commit landed" case; missing test for a skipped unit whose
+  branch moved after pin; `check_review_attribution.py`'s `--mode
+  pin`/`--mode verify` flags were not cross-validated (e.g.
+  `--against` accepted under `pin`); the 3g comment describing
+  `head_pin`'s source did not note that `$run_dir/reviewed_head` holds
+  the review-record's SHIPPED head by merge time, not the original
+  pin (documented above, +4 lines, 451 -> 455). All four fixed,
+  including the two new regression tests in
+  `test_review_attribution_probes.py`.
+
+Round 2 (re-review after these fixes) confirms PASS — see `reviews.json`.
+Both `review_attribution.py` (299 lines) and its test files stayed under
+the 300-line bloat threshold after refactoring `_run_git`/`_run_git_bytes`
+into one function with a `raw` parameter, so no new baseline entry was
+needed for either.
+
+**Stage 3 (doubt-reviewer) — advisory-must-address (2 high, 1 medium,
+3 low):**
+
+- High: `shipped_head` was written `null` at pin time and never updated
+  after — `verify(against="shipped_head")` fell back to a content-blind
+  "any commit whose parent is reviewed_head" check for every reviewed
+  unit, silently weaker than the `--match-head-commit` check it exists
+  to replace. Fixed: new `ship()` records the pushed record-commit SHA
+  into the pin (only after confirming it is the branch's actual tip,
+  and refusing to silently overwrite a different prior `shipped_head`);
+  `verify()`'s `shipped_head` branch now requires
+  `current_tip == pinned.shipped_head` before checking the parent, and
+  BLOCKs (rather than falls back) when `shipped_head` was never
+  recorded. `campaign-mode.md`'s 3f-bis now calls
+  `--mode ship --shipped-head` right after the `reviews.json` push,
+  `|| STRICT-STOP`.
+- High: the spec's own "no PR merges unpinned" acceptance criterion
+  was not enforced — 3g tolerated an absent legacy pin file
+  (`head_pin=""`), the pin invocation at 3f-bis had no inline
+  `|| STRICT-STOP`, and the existing prose test asserted the tolerant
+  form while citing an `iteration-reviews.md` acceptance rule that does
+  not exist there. Fixed: 3g now does
+  `[ -f "$run_dir/reviewed_head" ] || STRICT-STOP`; the pin call
+  captures `--json` output as `pin_json=$(...) || STRICT-STOP`; the
+  prose test and its docstring were corrected (see
+  `test_campaign_step_3f_bis.py`).
+- Medium: the diff 3f-bis reviews and the tree `pin()` certifies were
+  resolved independently (one from `{project_root}` template
+  substitution, the other from the loop_state row), with no equality
+  check between them. Fixed: 3f-bis now captures `diff_head` at the
+  point the diff is computed and asserts
+  `pin_json.reviewed_head == diff_head` inline, `|| STRICT-STOP`.
+- Low (x3): `verify()`'s PR-retarget doubt was left as a documented,
+  deliberate non-goal (the docstring now states 3g still resolves the
+  PR by branch name, not by `pr_node_id`/`pr_base_ref`, matching the
+  Stage-1-accepted rejected-alternative above); added a
+  `state["loop_id"]` vs `--loop-id` cross-check in both `pin()` and
+  `verify()`; strengthened the misattribution reproduction test to
+  actually exercise `pin()`'s wrong-branch refusal on a second unit
+  instead of only re-running an unchanged git diff twice.
+
+**Round 3 (re-review after these fixes) — spec-reviewer: PASS. code-reviewer:
+REJECT (1 high, 2 medium, 5 low):**
+
+- High: `ship()` checked only that `shipped_head` was the branch's current
+  tip, never that it sat exactly one commit above the pinned `reviewed_head`
+  — the same ancestry requirement `verify()`'s shipped_head branch enforces.
+  Since 3f-bis/3g call `ship`, never `verify`, on the live path, an
+  unreviewed commit landed between pin and the record commit (e.g. an
+  orchestrator fix addressing a Stage-2 finding) would have shipped under a
+  pin that certified something else. Fixed: `ship()` now requires
+  `shipped_head^ == pinned reviewed_head` unless `review_skipped`, checked
+  after the tip check and before the already-shipped check (ordering
+  matters: a re-ship of a DIFFERENT head must report "already has
+  shipped_head", not an ancestry failure that a legitimate re-pin would
+  have mooted).
+- Medium (x2): `verify()`/`ship()`'s state-load/identity/pin-load preambles
+  were duplicated three ways across `pin`/`verify`/`ship`. Fixed: extracted
+  `_resolve()` and `_load_pin()`, used by all three. `review_attribution.py`
+  and `test_review_attribution.py` both crossed 300 lines with no baseline
+  entry for either — left as a future Group H audit decision per repo
+  convention (anti-ratchet is baseline-only; a first crossing is not itself
+  a blocking finding), consistent with how round 2 treated the same
+  situation before this diff added a second and third crossing.
+- Low (x5, all fixed except one carried forward as non-blocking): the
+  `diff_head`/`diff` ordering in campaign-mode.md (see the bloat-exception
+  ADR's own +3-line entry for this); the `--mode ship` CLI cross-mode
+  validation and the `loop_id` cross-check were both under-tested for
+  `ship`/`verify` specifically — both extended; `ship()`'s error text
+  overclaimed pushed-ness when it only checks the local tip — reworded to
+  "current local tip"; `_FLAG_DEFAULTS` duplicated argparse's own defaults
+  by hand — replaced with `parser.get_default()`. Carried, not fixed this
+  round (non-blocking, same as round 2): `pin()`'s bare
+  `--abbrev-ref HEAD` branch check still false-BLOCKs (fails closed, does
+  not misattribute) against a same-named tag.
+
+Round 4 (re-review after these fixes): see `reviews.json`.
+
+**Round 4 (spec-reviewer/code-reviewer): PASS. doubt-reviewer, round 2 —
+advisory-must-address (0 high, 3 medium, 4 low; 5 accepted-and-fixed, 1
+deferred to R5a, 1 deferred to R4, 1 partially rebutted):**
+
+- Medium: a bare `rev-parse {sha}^` resolves only the FIRST parent and
+  never errors on a merge commit, so `ship()`'s/`verify()`'s ancestry check
+  could not tell a genuine single-commit record from a merge whose first
+  parent happened to be `reviewed_head` — the only thing distinguishing a
+  real review-record commit from an arbitrary merge landed on the shared
+  worktree, since `diff_sha256` is evidence, not a gate. **Accepted and
+  fixed:** new `_single_parent(sha, *, cwd)` helper using
+  `git rev-list --parents -n 1 {sha}` (requires exactly one parent token,
+  `None` on a root or merge commit); both `ship()`'s ancestry check and
+  `verify()`'s shipped_head branch now use it. New regression test
+  `test_ship_refuses_a_merge_commit_even_when_its_first_parent_is_reviewed_head`
+  builds exactly that shape (a `--no-ff` merge whose first parent is
+  `reviewed_head`) and asserts `ship()` still refuses it.
+- Medium: `run_dir`/`pr_url` were assigned BEFORE the a/b/c review-cascade
+  spawns and read AFTER them — the only two values in this step that
+  genuinely cross a spawn boundary; per this session's own confirmed shell
+  model, variables set in one Bash/Agent tool call do not survive to the
+  next. **Accepted and fixed:** both are now re-derived inline at the top
+  of the post-cascade block, exactly as 3g independently re-derives them
+  (documented in the bloat-exception ADR's own +28-line entry, 487 -> 515).
+  New prose test
+  `test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns`.
+- Medium: the `--mode ship` call ran AFTER the legacy `reviewed_head` file
+  was already written — a STRICT-STOPped ship (e.g. an unreviewed commit
+  landing between pin and record) could leave the legacy file holding a
+  SHA the guard had just refused, which a human resuming at 3g would
+  `--match-head-commit` on. **Accepted and fixed:** reordered so `ship`
+  runs, checked `|| STRICT-STOP`, before the legacy write. New prose test
+  `test_step_3f_bis_ships_before_writing_the_legacy_reviewed_head_file`.
+- Low: `_load_pin`'s malformed-pin check (`"reviewed_head" not in pinned`)
+  is satisfiable by a top-level JSON list/string/number containing that
+  substring, raising an uncaught `AttributeError` at the following `.get()`
+  instead of the clean `ReviewAttributionError` the guard promises — fails
+  closed either way, but the traceback was uncaught. **Accepted and
+  fixed:** added an explicit `isinstance(pinned, dict)` guard.
+- Low: 3g's `gh pr merge` call was unguarded and the subsequent `until
+  MERGED` wait was unbounded — a merge refusal (e.g. `$head_pin` no longer
+  matching the remote tip) fell through to a wait for a state that would
+  never arrive, the "third outcome" 3f-bis's own bounded wait exists to
+  rule out. **Accepted and fixed:** `gh pr merge ... || STRICT-STOP`, and
+  the wait is now capped at `seq 1 60` (5s poll), STRICT-STOPping past the
+  cap.
+- Low: the STRICT-STOP paragraph did not say what "addressing" a Stage-2
+  finding means in practice — a fix commit on top of the pinned tree reads
+  as the obvious repair path, but `ship()`'s own ancestry check (round 3)
+  refuses it by construction. **Accepted and fixed:** named the actual
+  repair path explicitly (restart 3f-bis from the top, not a fix commit).
+- Medium, **deferred to R5a:** the doc's `{project_root}` placeholder still
+  conflates the campaign-root and unit-worktree concerns this sub-iterate's
+  own bloat ADR already flagged as R5a's job (external plan review finding
+  11's disposition, above) — not a new finding, re-raised; no action this
+  round, matching the standing deferral.
+- Low, **deferred to R4:** `pin()`'s overwrite/archival policy for a
+  same-attempt re-pin after a prior pin already has a `shipped_head` is
+  unspecified (does a re-pin silently clear a prior ship record?) — state-
+  mechanics/attempt-fencing scope per the standing R4 deferral already
+  recorded for external-review findings 9/10 above, not a regression this
+  round.
+- **Partially rebutted:** the reviewer's citation for a `diff_head`/`fires`
+  spawn-boundary crossing pointed at lines that are both BEFORE the a/b/c
+  spawn marker in the current text, not after it — verified against the
+  live file rather than fixed; `run_dir`/`pr_url` (above) are the only two
+  values that actually cross that boundary.
+
+**Round 5 (re-review after these fixes) — spec-reviewer: PASS (re-checked
+only the six new fix sites; confirmed each a faithful tightening of the
+spec's existing ancestry/scoping/acceptance-criterion text, no scope
+creep). code-reviewer: PASS (0 high, 0 medium, 8 low — 5 new, 3 carried
+from rounds 2-4):**
+
+New this round, 2 fixed opportunistically (zero-risk, no test change
+needed), 3 carried as non-blocking: `_single_parent` swallowing a
+structural `_run_git` failure into a misleading ancestry-mismatch message
+(carried — a behavior change, deferred rather than risked this late in the
+cascade); the 3g `gh pr merge \|\| STRICT-STOP`/bounded-wait fix having no
+dedicated prose test of its own (carried — a test addition, same reasoning);
+the re-derived `pr_url` lacking the emptiness guard its original
+derivation has (carried); the new repair-path sentence's hardcoded line
+number ("line 243's `rm -f`") — **fixed**, replaced with a description of
+the command instead of a line number, since this file has now grown across
+five review rounds and is expected to grow again for R4/R5a; a dead
+`TypeError` clause in `_load_pin`'s except tuple, unreachable after this
+round's own `isinstance` guard — **fixed**, narrowed to
+`except (json.JSONDecodeError, KeyError)`.
+
+Carried, unchanged from rounds 2-4 (re-confirmed, not new): the
+`review_attribution.py`/`test_review_attribution.py` 300-line bloat
+crossing with no baseline entry (Group H's to pick up); `_FLAG_CLI_NAMES`'s
+hand-maintained flag table; `pin()`'s bare `--abbrev-ref HEAD` false-BLOCK
+against a same-named tag.
+
+Round 6 (re-review after the two zero-risk touch-ups): not spawned — both
+fixes are one-line, behavior-preserving, verified by the existing 69-test
+affected-file run plus the full 11432-test suite and lint, both green; a
+sixth cascade round for two already-non-blocking readability fixes was
+judged disproportionate to the marginal risk. Reviews recorded and
+promoted from this round's payloads.
+
+## Rejected alternatives
+
+Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch
+resolution to a future R5a change (i.e. shipping the misattribution-fix
+mechanism alongside R5a itself, not ahead of it) was rejected — the spec's
+own "Why this comes before scheduler concurrency" section states the risk
+must close before wave-build ships a new, untested code path under that
+sub-iterate's own time pressure.

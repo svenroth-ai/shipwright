@@ -1,0 +1,98 @@
+{
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix",
+  "date": "2026-09-22T11:55:52.348614Z",
+  "event_at": "2026-09-22T11:55:06.516492+00:00",
+  "type": "bug",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-r3-review-diff-fix",
+  "spec": ".shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R3-review-diff-fix.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-22-r3-review-diff-fix",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "pin() resolves each unit's OWN worktree/branch from loop_state.json, never a caller-supplied fallback, when the row carries a worktree field",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_pin_resolves_each_units_own_worktree_not_the_caller_supplied_fallback PASSED"
+      },
+      {
+        "behavior": "pin() falls back to the shared campaign worktree when the row carries no worktree field yet (every row, pre-R5a)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_fallback_to_shared_campaign_worktree_when_row_has_no_worktree_field PASSED"
+      },
+      {
+        "behavior": "pin() refuses to pin when the recorded branch is not the one actually checked out at the resolved worktree",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_pin_refuses_when_the_recorded_branch_is_not_the_one_checked_out PASSED"
+      },
+      {
+        "behavior": "pin() dual-writes the legacy reviewed_head file alongside the new review_pin.json, same SHA",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_pin_writes_legacy_reviewed_head_file_alongside_the_new_pin_file PASSED"
+      },
+      {
+        "behavior": "verify(against=reviewed_head) passes on an untouched branch and detects both an added commit and a rebase (SHA-keyed, not content-keyed)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_verify_against_reviewed_head_passes_on_an_untouched_branch PASSED, ::test_verify_against_reviewed_head_detects_a_commit_added_after_pinning PASSED, ::test_verify_against_reviewed_head_detects_a_rebase PASSED"
+      },
+      {
+        "behavior": "verify(against=shipped_head) passes when review_skipped and nothing moved, passes after exactly one review-record commit, and fails with more than one extra commit",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_verify_against_shipped_head_passes_when_review_skipped_and_nothing_moved PASSED, ::test_verify_against_shipped_head_passes_after_exactly_one_review_record_commit PASSED, ::test_verify_against_shipped_head_fails_with_more_than_one_extra_commit PASSED"
+      },
+      {
+        "behavior": "verify() raises for an unknown unit, a missing pin file, or a pin file whose own unit_id does not match the caller's --unit-id",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution.py::test_verify_raises_when_no_pin_exists_for_the_unit PASSED, ::test_pin_raises_for_an_unknown_unit_id PASSED, test_review_attribution_probes.py::test_verify_refuses_a_pin_file_belonging_to_a_different_unit_id PASSED"
+      },
+      {
+        "behavior": "check_review_attribution.py CLI: pin then verify(reviewed_head) allows; verify blocks on a moved branch; verify exits nonzero for an unknown unit",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_check_review_attribution.py::test_pin_then_verify_reviewed_head_allow PASSED, ::test_verify_block_on_moved_branch PASSED, ::test_verify_exits_nonzero_for_unknown_unit PASSED"
+      },
+      {
+        "behavior": "the real 3f-bis/3g sequence (pin -> reviews.json-shaped commit -> verify --against shipped_head) composes and allows, driven through the actual CLI",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r3_review_diff_fix_integration.py::test_pin_then_shipped_head_verify_across_the_real_3fbis_3g_sequence PASSED"
+      },
+      {
+        "behavior": "two units alternating on the shared campaign worktree (pre-R5a fallback) never cross-attribute: pinning one while the other's branch is checked out fails closed, and switching branches first pins cleanly with no residue for the other unit",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r3_review_diff_fix_integration.py::test_alternating_units_on_the_shared_worktree_never_cross_attribute PASSED"
+      },
+      {
+        "behavior": "Confidence Calibration probe: a non-ASCII unit_id round-trips through the on-disk pin file, not just the in-memory return value",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution_probes.py::test_pin_with_a_non_ascii_unit_id_round_trips_through_the_on_disk_file PASSED"
+      },
+      {
+        "behavior": "Confidence Calibration probe: a same-attempt re-pin after a new commit overwrites cleanly and verify() checks against the NEW pinned value, no stale residue",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_review_attribution_probes.py::test_re_pin_the_same_attempt_after_a_new_commit_overwrites_cleanly PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 12,
+      "tested": 12,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 4,
+      "covered_acs": 4
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "runner": "uv run pytest shared/tests/test_check_review_attribution.py shared/tests/test_r3_review_diff_fix_integration.py -q",
+    "exit_code": 0,
+    "tests_run": 5,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-22-r3-review-diff-fix/surface_verification.log",
+    "timestamp": "2026-09-22T11:53:50.847Z"
+  },
+  "declared_removals": []
+}

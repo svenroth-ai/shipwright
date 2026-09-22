@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix",
+  "date": "2026-09-22",
+  "section": "Iterate — campaign: campaign-dag-scheduler R3 (review-diff-fix)",
+  "title": "Unit-scoped review-attribution pin",
+  "context": "Pre-R5a, campaign-mode.md's 3f-bis review step always diffs the shared worktree's own HEAD, correct only because one unit is checked out at a time; R5a's per-unit worktrees would silently misattribute reviews.",
+  "decision": "New lib/review_attribution.py (pin/verify, FATAL-on-error) resolves each unit's own worktree/branch before diffing; 3f-bis pins unconditionally, every named git call gains explicit -C scoping.",
+  "consequences": "New review_pin.json write-surface + legacy reviewed_head dual-write; 3g's merge check now verifies a genuinely unit-scoped pin, closing the misattribution risk before R5a ships.",
+  "rationale": "Ousterhout deep-module precedent (R2's sub-iterate-runner.md exception): the pin's existence and exact trigger belong inline in campaign-mode.md, the mechanism is delegated to the lib module's own docstring.",
+  "rejected": "Deferring the fix to land alongside R5a itself was rejected per the spec's own note: the risk must close before wave-build ships a new, untested code path under that sub-iterate's time pressure.",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-adr.md"
+}

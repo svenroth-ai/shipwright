@@ -1,0 +1,71 @@
+{
+  "section": "R3-review-diff-fix",
+  "verdict": "PASS",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 170,
+      "finding": "`_single_parent` swallows `ReviewAttributionError` from `_run_git` and returns `None`. Both call sites pass a SHA that was just resolved by `rev-parse --verify refs/heads/...` (verify:342/376) or asserted equal to it (ship:425/442), so `rev-list` can only fail STRUCTURALLY here (git missing, timeout, corrupt object). The except turns that structural failure into an ancestry verdict: verify() returns `ok=False` with detail 'parent None vs pinned reviewed_head ...' instead of raising, and ship() reports \"shipped_head X's parent None does not equal pinned reviewed_head\" - an operator reads that as a merge/ancestry problem, not a git failure. Fail-closed either way, so non-blocking.",
+      "suggestion": "Drop the try/except in `_single_parent` and let `_run_git`'s ReviewAttributionError propagate (the CLI already maps it to exit 1 / BLOCK with the real git stderr)."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/tests/test_campaign_step_3f_bis.py",
+      "line": 149,
+      "finding": "This round's 3g merge fix (`gh pr merge ... || STRICT-STOP` and the bounded `seq 1 60` wait at campaign-mode.md:452/456-459) is the only change this round with no prose guard: `test_step_3f_bis_bounds_its_wait` covers `_step_3f_bis()` only; `test_step_3g_never_merges_without_a_pin_file` checks `$head_pin` near `gh pr merge` but not the trailing `|| strict-stop`.",
+      "suggestion": "Parametrise `test_step_3f_bis_bounds_its_wait` over `(_step_3f_bis(), _step_3g())`, and add to `test_step_3g_never_merges_without_a_pin_file`: assert `'|| strict-stop'` appears within ~120 chars of the `gh pr merge` call."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 363,
+      "finding": "The re-derived `pr_url` has no emptiness guard, unlike the original derivation earlier in the step (`[ -n \"$pr_url\" ] && [ \"$pr_url\" != \"null\" ] || STRICT-STOP`). If `gh pr view` fails here, `pr_url` is empty and the bounded wait polls `gh pr view \"\"` for the full cap before STRICT-STOPping on a misleading outcome. Same pre-existing shape at 3g. Fail-closed, so non-blocking.",
+      "suggestion": "Repeat the earlier guard after the re-derivation (and at 3g's own copy)."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 409,
+      "finding": "The new repair-path sentence hardcodes a line number ('line 243's `rm -f`'). Accurate today, but this file has grown 400 -> 515 across five review rounds and is expected to grow again for R4/R5a; the number will silently drift.",
+      "suggestion": "Replace 'line 243's `rm -f`' with 'the `rm -f \"$run_dir/reviewed_head\"` at the top of this step'."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 146,
+      "finding": "With the new `isinstance(pinned, dict)` guard, `TypeError` in the `except (json.JSONDecodeError, KeyError, TypeError)` tuple is unreachable: `json.loads` never raises it, and the `in` test now only runs on a dict.",
+      "suggestion": "Narrow to `except (json.JSONDecodeError, KeyError) as exc:`."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 1,
+      "finding": "Carried from rounds 3 and 4, still not addressed: `review_attribution.py` (453 lines) and `test_review_attribution.py` (470 lines) are both over the 300-line limit with no baseline entry for either (the bloat-exception drop covers campaign-mode.md only).",
+      "suggestion": "Either add both files to shipwright_bloat_baseline.json with state: exception under the existing R3 drop, or apply the round-4-proposed shared `pinned_unit` fixture to cut duplicated test preamble."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/checks/check_review_attribution.py",
+      "line": 62,
+      "finding": "Carried from round 4, unchanged: `_FLAG_CLI_NAMES` is a hand-maintained table defining the set of flags the cross-mode check iterates; a mode-specific `add_argument` not mirrored there escapes the check silently.",
+      "suggestion": "Derive from `parser._actions` or add a test that every non-common parser dest is covered by some `_MODE_ONLY_FLAGS` set."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 267,
+      "finding": "Carried from rounds 2-4, unchanged: pin() identifies the checked-out branch via bare `rev-parse --abbrev-ref HEAD`, which prints `heads/<branch>` when a same-named tag exists (false BLOCK, fail-closed), while verify()/ship() use the fully-qualified `refs/heads/` form.",
+      "suggestion": "Use `git symbolic-ref --quiet HEAD` and compare to `refs/heads/{branch}`."
+    }
+  ],
+  "recorded_from": "e17c24a88"
+}

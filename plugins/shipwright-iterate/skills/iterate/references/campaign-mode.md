@@ -240,20 +240,83 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        steps and a fresh Bash call starts with an empty environment, so a `$sha`
        set here would silently expand to "" there — unpinning the merge in the
        exact window this step calls dangerous.
-         run_dir=".shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
-         pr_url=$(gh pr view "{branch}" --json url -q .url)
-         [ -n "$pr_url" ] || STRICT-STOP   # no PR = nothing to review or merge
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
+         pr_json=$(cd "{project_root}" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
+         pr_url=$(jq -r .url <<<"$pr_json")
+         [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # no PR = nothing to review or merge
 
        FIRES on a trigger computed HERE, from the diff — not inherited from the
        runner. The runner classifies from its spec text alone and has no Stage-2
        Repo Scout, so diff-driven flags (`cross_component`, `touches_*`) are
        structurally never set for it; inheriting that verdict would make this
-       gate NARROWEST on exactly the framework surface it exists to protect:
-         diff=$(git diff "$(git merge-base origin/{default} HEAD)"...HEAD)
+       gate NARROWEST on exactly the framework surface it exists to protect.
+       Every git command here (and every one below) is `git -C "{project_root}"`,
+       never a bare `git` relying on cwd. **R3 scopes every named 3f-bis/3g call
+       site to `{project_root}` as-is — today that resolves to the shared
+       campaign worktree** (R3's own design: it falls back to the shared
+       worktree until the live per-unit checkout flip, which is explicitly
+       R5a's job, not this sub-iterate's). Making `{project_root}` itself
+       resolve to a genuine per-unit path is R5a's responsibility; R3 does not
+       pre-empt it:
+         diff_head=$(git -C "{project_root}" rev-parse HEAD)
+         diff=$(git -C "{project_root}" diff "$(git -C "{project_root}" merge-base origin/{default} "$diff_head")"..."$diff_head")
        Fire when the runner said medium+, OR the diff sets any risk flag, OR it
-       exceeds 100 lines. Otherwise SKIP the rest of 3f-bis, leave the runner's
-       `not_run` rows standing (they are honest), write no `reviewed_head`, and
-       go to 3g — a below-threshold sub-iterate must still DELIVER.
+       exceeds 100 lines — set `fires=1` in that case, else `fires=0`. `diff_head`
+       is resolved BEFORE the diff and the diff is computed explicitly against
+       IT (not a second, later `HEAD`, which a concurrent commit could make a
+       different SHA — code-review round 3, low). It is the tree the reviewers
+       are about to read — the pin below must certify THIS SHA, not whatever
+       its own independent worktree/branch resolution happens to land on (R3
+       doubt-round, medium: the two resolved the tree independently with no
+       equality check, so a divergence would let the pin certify a diff nobody
+       reviewed — the exact bug R3 exists to prevent).
+
+       **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
+       unit's own `worktree`/`branch`/`attempt_id` from `loop_state.json`
+       (`shared/scripts/lib/review_attribution.py`), falling back to the
+       campaign worktree when the row carries no `worktree` field yet
+       (pre-R5a: every row); asserts the checked-out branch matches; records
+       `HEAD` as `reviewed_head`, `base_sha` at pin time only, and (v5)
+       `shipped_head`. Dual-writes the legacy `$run_dir/reviewed_head` file
+       (the SAME reviewed_head SHA, immediately — closes the previously
+       unpinned window between diff computation and the later commit/push
+       below) so a crash before that later write still leaves a pin behind.
+       Runs regardless of the trigger above (a PR already exists by this
+       point, per the STRICT-STOP above, so `pr_json`'s identity fields are
+       always resolvable here — never null), so a below-threshold unit still
+       has a pin `built -> merging` (R4) can verify at merge time — pass
+       `--review-skipped` exactly when the trigger above did NOT fire.
+       **Which field a later verify uses is fixed, not left ambiguous:** a
+       reviewed unit (`fires=1`) is verified via `shipped_head`, recorded
+       explicitly by a `--mode ship` call once the reviews.json commit lands
+       below (R3 doubt-round, high: a reviewed pin's `shipped_head` stays
+       `null` until `ship` records it — `verify --against shipped_head`
+       refuses to ALLOW on a `null` value rather than silently falling back to
+       a content-blind parent check; today's 3g `--match-head-commit` is a
+       git-native equivalent of the SAME check, not a substitute for
+       recording it; R4/R5b call `verify --against shipped_head` directly); a
+       below-threshold unit (`fires=0`) is verified via `reviewed_head`, since
+       no further commit is expected to land on it at all, and its
+       `shipped_head` is already set equal to `reviewed_head` at pin time
+       (`--review-skipped`):
+         pin_json=$(uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode pin \
+           --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+           --project-root "{project_root}" --campaign-worktree "{project_root}" \
+           --loop-id "{loop_id}" --default-branch "{default}" \
+           --pr-node-id "$(jq -r .id <<<"$pr_json")" \
+           --pr-head-ref "$(jq -r .headRefName <<<"$pr_json")" \
+           --pr-base-ref "$(jq -r .baseRefName <<<"$pr_json")" --json \
+           $([ "$fires" = "1" ] || echo --review-skipped)) || STRICT-STOP
+       Non-zero = STRICT-STOP (as 3f) — an attribution failure (wrong branch
+       checked out) means this unit's diff cannot be trusted at all. Then
+       confirm the pin certifies the SAME tree the diff above was computed
+       against — an inline check, not prose discipline alone (R3 doubt-round):
+         [ "$(jq -r .reviewed_head <<<"$pin_json")" = "$diff_head" ] || STRICT-STOP
+
+       When the trigger did NOT fire: SKIP the rest of 3f-bis, leave the
+       runner's `not_run` rows standing (they are honest), and go to 3g — a
+       below-threshold sub-iterate must still DELIVER. (The pin above already
+       ran with `--review-skipped`, so 3g still has a `reviewed_head` file.)
 
        Review that same MERGE-BASE diff, never `origin/{default}`'s tip (a moved
        main yields false high findings):
@@ -290,15 +353,39 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          … record --review-type doubt --status not_applicable --force              --disposition "Stage 3 is conditional and did not trigger for this
              diff; Stage 2 passed at 3f-bis"
 
-       Then ship the record with the PR. Every command is CHECKED: a promotion
-       that does not reach the remote must STOP the loop, not shorten it. An
-       unchecked `git commit` that the pre-commit hook blocks would otherwise
-       leave the runner's head in place, the local record saying `completed`,
-       and main saying `not_run` — the cascade silently un-shipped:
-         git add ".shipwright/planning/iterate/{run_id}/reviews.json"
-         git commit -m "chore(review): record the delegated cascade for {id}" || STRICT-STOP
-         git push || STRICT-STOP
-         git rev-parse HEAD > "$run_dir/reviewed_head"
+       Then ship the record with the PR. `run_dir`/`pr_url` were set BEFORE
+       the a/b/c spawns above and this block runs AFTER them — re-derive both
+       here, exactly as 3g does below, rather than trust shell state across
+       that boundary (R3 doubt-round, round 2, medium: `run_dir` and `pr_url`
+       are the two values in this step that genuinely cross a spawn; nothing
+       else computed above does):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         pr_url=$(cd "{project_root}" && gh pr view "{branch}" --json url -q .url)
+       Every command is CHECKED: a promotion that does not reach the remote
+       must STOP the loop, not shorten it. An unchecked `git commit` that the
+       pre-commit hook blocks would otherwise leave the runner's head in
+       place, the local record saying `completed`, and main saying
+       `not_run` — the cascade silently un-shipped:
+         git -C "{project_root}" add ".shipwright/planning/iterate/{run_id}/reviews.json"
+         git -C "{project_root}" commit -m "chore(review): record the delegated cascade for {id}" || STRICT-STOP
+         git -C "{project_root}" push || STRICT-STOP
+         shipped_head=$(git -C "{project_root}" rev-parse HEAD)
+       Record the shipped SHA into the pin BEFORE touching the legacy file
+       (R3 doubt-round, round 2, medium: ship-then-write, not write-then-ship
+       — a STRICT-STOPped ship must never leave the legacy file holding a SHA
+       the guard refused, which a human resuming at 3g would otherwise
+       `--match-head-commit` on). Nothing had ever written `review_pin.json`'s
+       own `shipped_head` field before this sub-iterate, so
+       `verify --against shipped_head` fell back to a content-blind
+       parent-of-tip check for every reviewed unit — silently weaker than the
+       `--match-head-commit` it exists to replace. Not run for a
+       `--review-skipped` unit: `pin` already set that unit's `shipped_head`
+       equal to `reviewed_head`, and no further commit is expected on it:
+         uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode ship \
+           --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+           --project-root "{project_root}" --campaign-worktree "{project_root}" \
+           --loop-id "{loop_id}" --shipped-head "$shipped_head" || STRICT-STOP
+         echo "$shipped_head" > "$run_dir/reviewed_head"
 
        **This push restarts CI**, so 3g must watch THIS head. Wait for the PR
        object to catch up — BOUNDED, because an unbounded wait is a third
@@ -313,7 +400,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        On a Stage-1 REJECT, or a Stage-2 high finding left unaddressed:
        STRICT-STOP exactly as 3f/3g — do NOT merge, do NOT build the next. The
        already-merged sub-iterates stay durable; this PR is left OPEN so a human
-       can repair it.
+       can repair it. "Addressing" a Stage-2 finding means a NEW commit on top
+       of the pinned tree — which the `--mode ship` ancestry check above
+       refuses BY DESIGN (R3 doubt-round, round 2, medium: the fix commit's
+       parent is not `reviewed_head`, so `ship` STRICT-STOPs after the push,
+       leaving a `completed` record on a diff nobody actually reviewed). The
+       repair path is never "commit a fix here" — it is restarting 3f-bis
+       from the top (the `rm -f "$run_dir/reviewed_head"` at this step's own
+       start, re-diff, re-pin, re-run the cascade on the fixed tree) so the
+       record and the reviewed diff agree again.
 
        SHIP the REJECT before stopping, or the durable record stays the runner's
        `not_run` and the left-open PR reads as merely unreviewed rather than
@@ -324,28 +419,49 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
              --recorded-by spec-reviewer \\
              --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
              citations, spec_ref -> divergence}. Delivery stopped; PR left open."
-         git add ".shipwright/planning/iterate/{run_id}/reviews.json"
-         git commit -m "chore(review): record the Stage-1 REJECT for {id}" || STRICT-STOP
-         git push || STRICT-STOP
-       Then STRICT-STOP. Write no `reviewed_head` — nothing may merge this.
+         git -C "{project_root}" add ".shipwright/planning/iterate/{run_id}/reviews.json"
+         git -C "{project_root}" commit -m "chore(review): record the Stage-1 REJECT for {id}" || STRICT-STOP
+         git -C "{project_root}" push || STRICT-STOP
+       Then STRICT-STOP. The unconditional pin above already wrote a
+       `reviewed_head` — that pinned diff is what was REJECTED; nothing may
+       ship on top of it, and 3g never reaches this PR because the loop
+       already stopped.
 
    3g. MERGE this sub-iterate's PR — verify CI-green first, then merge, one at a
        time (no shoot-and-forget). The orchestrator owns the merge (the PR did not
        self-arm, step 1):
          # Re-resolve from the branch: shell state does NOT survive between steps,
          # so nothing set in 3f-bis is still in the environment here.
-         pr_url=$(gh pr view "{branch}" --json url -q .url)
-         # The pin comes from 3f-bis's FILE. Absent = 3f-bis pushed nothing (the
-         # cascade skipped below its trigger), and that sub-iterate must still
-         # deliver — so the pin is conditional, never unconditional.
-         run_dir=".shipwright/runs/{loop_id}/{id}"
-         head_pin=""
-         [ -f "$run_dir/reviewed_head" ] && head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
+         pr_url=$(cd "{project_root}" && gh pr view "{branch}" --json url -q .url)
+         # The pin comes from 3f-bis's FILE (R3: written UNCONDITIONALLY now,
+         # by check_review_attribution.py pin — even a below-threshold unit
+         # that skipped the cascade gets one, with --review-skipped).
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         # By this point 3f-bis's post-record-commit write ("echo $shipped_head
+         # > reviewed_head") has overwritten this file with the SHIPPED head,
+         # not the original pin's reviewed_head. Its absence is no longer
+         # tolerated (R3 doubt-round, high): the unconditional pin at 3f-bis
+         # — itself STRICT-STOP-guarded — means every unit that reaches this
+         # line has one, reviewed or skipped; a missing file means an earlier
+         # guard should already have stopped the loop, so merging anyway would
+         # be the exact unpinned merge the spec's acceptance criterion forbids.
+         [ -f "$run_dir/reviewed_head" ] || STRICT-STOP
+         head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
          uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
          gh pr checks "$pr_url" --watch
          #   non-zero exit = a check FAILED → STRICT-STOP (as 3f): do not merge, do not build the next; surface to the user. Merged subs stay durable.
-         gh pr merge "$pr_url" --squash --delete-branch $head_pin
-         until [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ]; do sleep 5; done
+         gh pr merge "$pr_url" --squash --delete-branch $head_pin || STRICT-STOP
+         #   a merge refusal (e.g. $head_pin no longer matches the remote tip)
+         #   must STOP, not fall through to an unbounded wait for a state that
+         #   will never arrive (R3 doubt-round, round 2, low).
+         for i in $(seq 1 60); do
+           [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] && break
+           sleep 5
+         done
+         # still not MERGED after the cap → STRICT-STOP — a "third outcome" the
+         # loop has no name for (neither delivered nor stopped) is exactly what
+         # 3f-bis's own bounded wait above exists to rule out; 3g gets the same
+         # guarantee.
        A merge conflict / timeout is likewise non-delivered → STRICT-STOP.
 
    3h. Update the MAIN-tree campaign status.json (LOCAL-BOARD CONVENIENCE only,

@@ -65,3 +65,14 @@ def step_3f_bis() -> str:
     body = text[start.start():]
     end = re.search(r"(?m)^\s*3g\.", body)
     return norm(body[:end.start()] if end else body)
+
+
+def step_3g() -> str:
+    """The body of loop step `3g` (the merge step), bounded the same way as
+    :func:`step_3f_bis` — from its own label up to `3h.`."""
+    text = CAMPAIGN_DOC.read_text(encoding="utf-8")
+    start = re.search(r"(?m)^\s*3g\.", text)
+    assert start, "campaign-mode.md must define loop step `3g.`"
+    body = text[start.start():]
+    end = re.search(r"(?m)^\s*3h\.", body)
+    return norm(body[:end.start()] if end else body)

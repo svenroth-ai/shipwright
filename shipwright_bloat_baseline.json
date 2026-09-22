@@ -459,6 +459,13 @@
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-bloat-exception.md"
     },
     {
+      "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "limit": 400,
+      "current": 516,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md"
+    },
+    {
       "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
       "limit": 300,
       "current": 457,

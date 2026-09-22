@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T10:30:42.448688+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 9,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The pin is written before the review cascade, but the plan does not specify how `shipped_head` is updated after the review-record commit is created. For a normal reviewed unit, that commit changes the branch tip; leaving `shipped_head` at the pin-time value makes the later verification fail, while updating it without tightly defining the order can reintroduce a race.",
+          "suggestion": "Define one explicit post-review transaction: verify `reviewed_head`, create and push the review-record commit, capture its resulting SHA, atomically update `review_pin.json` with `shipped_head`, then verify that exact SHA immediately before merge. Fail closed on any mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "The stated “single detection path” does not actually detect a PR base change. The specified verify mode checks branch ancestry/tip against pinned SHAs, but never compares the live PR’s node ID, head ref/OID, and base ref to the values persisted in the pin. Persisting `pr_base_ref` alone is not protection.",
+          "suggestion": "At merge-time verification, query the PR by pinned node ID and require its current head ref/OID and base ref to match the pinned identity. Treat a missing, closed, retargeted, or head-changed PR as a failure requiring re-review/re-pin.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "“Actual tip” is ambiguous. Checking `HEAD` in the selected worktree will not detect a manual remote push if that worktree has not fetched; it can pass against a stale local branch.",
+          "suggestion": "Fetch the relevant remote ref and compare the pinned SHA with `refs/remotes/origin/<branch>` (and the PR’s current head OID where available), not only the local checkout. Define fetch failure as fail-closed.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The plan assumes a reliable `origin/{default}` and sufficient history for `merge-base`, but does not establish those prerequisites. Detached worktrees, shallow clones, renamed remotes, and unavailable remote refs will otherwise produce misleading pins or inconsistent failures.",
+          "suggestion": "Reuse the campaign’s canonical default-branch/remote resolver from R2 if one exists; otherwise add a small preflight that fetches the required refs and rejects unsupported/shallow-history states with a clear error.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The shared-worktree fallback is safe only while the legacy workflow guarantees one active unit. A partially migrated state with multiple rows lacking `worktree` can still select the shared checkout for the wrong unit—or merely fail intermittently depending on checkout timing.",
+          "suggestion": "Permit fallback only when the scheduler proves legacy single-unit execution; otherwise reject missing `worktree` data. Add a test for two active legacy-shaped rows to ensure it fails rather than silently attributing a diff.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Keeping the legacy `reviewed_head` file preserves compatibility, but the described existing conditional read (`[ -f ... ] &&`) can still permit an unpinned merge if pin creation or the dual-write fails. The acceptance criterion requires fail-closed behavior, not only a best-effort legacy file.",
+          "suggestion": "Make 3g require a valid pin/legacy head value and always pass it as `--match-head-commit`; no file, malformed pin, or failed verification must block merging. Test the missing-file and malformed-file paths explicitly.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The new pin file is shared state between review and merge steps, but the plan does not require atomic writes or define retry/idempotency behavior. A crash or concurrent retry can leave truncated JSON or a pin belonging to a previous attempt.",
+          "suggestion": "Write to an attempt-specific temporary file and atomically rename it; validate `unit_id` and `attempt_id` on every read. Define whether a retry replaces a pin only after confirming it refers to the same immutable review state.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The implementation will consume worktree paths, branch names, and PR identifiers from state and interpolate them into documented shell calls. If state is malformed or externally influenced, unquoted shell expansion can become command injection or cause Git commands to operate outside the campaign directory.",
+          "suggestion": "Use argument-safe invocation/quoting, validate worktree paths are expected campaign worktrees, and use the pinned PR node ID rather than branch-name parsing wherever GitHub is queried.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The tests focus on the guard in isolation and a simulation of the old failure, but do not prove that every real 3f-bis/3g command now uses the selected unit worktree and pinned merge SHA. Documentation-driven workflow call sites are especially prone to one stale command surviving the edit.",
+          "suggestion": "Add an integration-style fixture that executes the relevant workflow snippets with two worktrees and a mocked PR response, asserting the diff, payload root, review commit, push, PR lookup, and merge command all resolve to the intended unit.  Overall, unit-scoping the workflow and pinning immutable commit/PR identity is the right approach, but the merge-time verification contract needs to be completed and made fail-closed before shipping. The proposed tests should also cover the actual 3f-bis/3g integration, not only the new helper.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-22T10:28:33.299500+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] **Findings**\n\n- **Category: edge-case — Severity: high — The shared-worktree fallback reintroduces the exact bug R3 fixes.**\n  When a unit's row lacks `worktree`, `check_review_attribution.py` pins against the *campaign* worktree's `HEAD`. With two units in flight and no per-unit worktree, pinning the campaign worktree `HEAD` as `reviewed_head` for unit A can capture unit B's checkout state — the wrong-attribution failure this change exists to eliminate. Suggestion: when the fallback fires, verify the pinned `HEAD` is an ancestor of the unit's named `branch` (or at minimum record `worktree: null` and have `verify` fail-closed rather than silently pass), and document explicitly that pre-R5a pins on the shared worktree are best-effort only. Better: make the \"no PR merges unpinned\" acceptance test tolerant of this only for `review_skipped` units, not reviewed ones.\n\n- **Category: edge-case — Severity: medium — Order-of-operations between pin and the reviews.json commit.**\n  The pin records `HEAD` as `reviewed_head`, but step 3f-bis then does `git add`/`commit`/`push` of `reviews.json` on that same worktree — moving `HEAD` past the pinned value. The `--against shipped_head` path apparently expects this (review-record commit's parent is `reviewed_head`), but `--against reviewed_head` would fail on any unit that actually went through review. The spec never states which mode 3g/merge-time uses for which case. Suggestion: state explicitly: reviewed units verify with `shipped_head` (or that the pin happens *after* the reviews.json commit), and test both orderings.\n\n- **Category: edge-case — Severity: medium — Retry/attempt handling.**\n  If a unit retries after pinning (attempt n → n+1), a stale `review_pin.json` at `a{n}` exists alongside the new one. `verify` should be driven by the *current* attempt's expect-file; nothing says what happens if 3g reads an old pin after a mid-flight retry, or if pin re-runs on the same attempt (overwrite semantics). Suggestion:  […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** The pin is written before the review cascade, but the plan does not specify how `shipped_head` is updated after the review-record commit is created. For a normal reviewed unit, that commit changes the branch tip; leaving `shipped_head` at the pin-time value makes the later verification fail, while updating it without tightly defining the order can reintroduce a race.  \n   **Suggestion:** Define one explicit post-review transaction: verify `reviewed_head`, create and push the review-record commit, capture its resulting SHA, atomically update `review_pin.json` with `shipped_head`, then verify that exact SHA immediately before merge. Fail closed on any mismatch.\n\n2. **Category:** approach  \n   **Severity:** high  \n   **Finding:** The stated “single detection path” does not actually detect a PR base change. The specified verify mode checks branch ancestry/tip against pinned SHAs, but never compares the live PR’s node ID, head ref/OID, and base ref to the values persisted in the pin. Persisting `pr_base_ref` alone is not protection.  \n   **Suggestion:** At merge-time verification, query the PR by pinned node ID and require its current head ref/OID and base ref to match the pinned identity. Treat a missing, closed, retargeted, or head-changed PR as a failure requiring re-review/re-pin.\n\n3. **Category:** risk  \n   **Severity:** high  \n   **Finding:** “Actual tip” is ambiguous. Checking `HEAD` in the selected worktree will not detect a manual remote push if that worktree has not fetched; it can pass against a stale local branch.  \n   **Suggestion:** Fetch the relevant remote ref and compare the pinned SHA with `refs/remotes/origin/<branch>` (and the PR’s current head OID where available), not only the local checkout. Define fetch failure as fail-closed.\n\n4. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The plan assumes a reliable `origin/{default}` and sufficient history […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T10:29:03.998111+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T10:29:04.069160+00:00",
+      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (~line 260–300 of the new pin block) The spec says `--mode pin` \"runs unconditionally at 3f-bis's top\". The diff places the pin call after the `gh pr view` STRICT-STOP, the trigger computation, and the diff computation. Any unit where `gh pr view` fails (no PR, gh auth hiccup, transient API error) STRICT-STOPs the  […truncated]",
+          "line": null,
+          "finding": "move the pin invocation (with `--review-skipped` when the trigger hasn't fired) above the `gh pr view` call, making PR-identity args genuinely optional/null on that path, or make 3g fail closed on a missing pin file rather than merging with `head_pin=\"\"`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/.../campaign-mode.md` (3f-bis and 3g hunks) The spec explicitly names \"…`record_review_pass.py --payload-file`'s root, and the `gh pr view` branch resolution\" as call sites that must become unit-scoped (\"Same set for 3g\"). This diff scopes every `git` call but leaves both `gh pr view \"{branch}\"` calls (3f-bis and 3g) and any `record_review_pass.py` invocation untouched — `gh`  […truncated]",
+          "line": null,
+          "finding": "add `-R`/`--repo` (or a documented cwd note) to both `gh pr view` calls and scope the `record_review_pass.py` payload root in the same edit, or record an explicit deviation.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/review_attribution.py` (`_find_unit` + `verify` unit_id cross-check) `_find_unit` resolves case-insensitively, but `pin()` stores the caller-supplied `unit_id` verbatim in the payload and `verify()` compares `pinned.get(\"unit_id\") != unit_id` against its own caller-supplied spelling. Pin with `\"unit-a\"`, verify with `\"Unit-A\"` → the row resolves fine but the pin fil […truncated]",
+          "line": null,
+          "finding": "compare case-folded (`pinned.get(\"unit_id\",\"\").lower() != unit_id.lower()`), or store the canonical row `id` in the payload instead of the caller's argument.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_campaign_step_3f_bis.py` (`--review-skipped` assertion) The doc-prose tests only assert substring presence: `\"--review-skipped\" in step` passes even if the shell conditional is inverted (`$([ \"$fires\" = \"1\" ] && echo --review-skipped)` would produce an identical substring footprint). A wrong fires-condition silently mislabels every pin as review_skipped (shipped_head […truncated]",
+          "line": null,
+          "finding": "assert the full conditional expression verbatim (including `|| echo --review-skipped`), or better, add a functional test of the composed sequence with `fires=0` vs `fires=1`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/review_attribution.py` (`verify`, shipped_head path) + `campaign-mode.md` re-pin flow A same-attempt re-run of 3f-bis after the reviews.json commit (the exact crash-retry scenario the probes claim to cover) re-pins with `reviewed_head` = the record commit, so a subsequent `verify --against shipped_head` accepts one additional commit on top — i.e. a retried unit can  […truncated]",
+          "line": null,
+          "finding": "in `verify`'s reviewed-unit path, also require the tip commit to touch only the expected review-record file, or have `pin` refuse to re-pin when the resolved HEAD's tree already contains the record commit; at minimum test the retry-after-commit sequence against `shipped_head`.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "campaign-mode.md` pin invocation — `--state \"{project_root}/.shipwright/loop_state.json\"` and `--project-root \"{project_root}\"`, where the doc itself defines `{project_root}` as \"THIS unit's own worktree… once R5a flips it\". Post-R5a both the state file and the `runs/{loop_id}/...` pin directory would resolve inside the unit worktree, while 3g reads `$run_dir/reviewed_head` relative t […truncated]",
+          "line": null,
+          "finding": "introduce distinct placeholders now (`{campaign_root}` for state/runs vs `{unit_worktree}` for diffing) so R5a's flip can't silently desynchronize them.",
+          "suggestion": null,
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 389,
+          "finding": "Step 3g still treats `reviewed_head` as optional and permits `head_pin=\"\"`; it also never invokes `check_review_attribution.py verify`. Deleting/misplacing the pin therefore allows `gh pr merge` to run without `--match-head-commit`, directly violating the explicit no-unpinned-merge acceptance criterion.",
+          "suggestion": "Require a valid per-unit pin in 3g, run `verify` with the appropriate mode, and STRICT-STOP if either verification or pin-file loading fails.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 244,
+          "finding": "run_dir` remains relative to the orchestrator’s current directory, while the new guard writes the legacy pin under `--project-root` (documented as the unit worktree after R5a). The later `git ... rev-parse HEAD > \"$run_dir/reviewed_head\"` and 3g read can therefore use the shared campaign worktree’s run directory rather than the selected unit’s. That both overwrites/cross-reads pins and activates the optional unpinned-merge path.",
+          "suggestion": "Derive `run_dir` from the resolved unit worktree (or use an explicit absolute unit-scoped path) consistently in 3f-bis and 3g.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": 225,
+          "finding": "Verification resolves only the local branch ref and never fetches or compares the remote/PR head. A manual remote push can leave the local ref at the pinned SHA and make verification pass, despite the specification requiring this guard to detect every branch-change route.",
+          "suggestion": "Fetch the pinned branch (fail closed on fetch failure) and verify the remote/PR head SHA against the pinned expected value.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": 137,
+          "finding": "loop_id`, `unit_id`, and state-provided `attempt_id` are concatenated into write paths without validation. Values such as `../...` or an absolute attempt ID can escape `.shipwright/runs` and cause the pin and legacy-head writes outside the campaign directory.",
+          "suggestion": "Validate all path components as safe single path segments and resolve/check generated paths remain under the intended runs root before writing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_campaign_step_3f_bis.py",
+          "line": 64,
+          "finding": "The updated test asserts that 3g retains the optional `[ -f \"$run_dir/reviewed_head\" ]` behavior, but does not test the required fail-closed merge behavior. It would pass while a missing pin still produces an unpinned merge.",
+          "suggestion": "Add a workflow-level test that a missing, malformed, or wrong-unit pin blocks 3g and that every merge invocation includes `--match-head-commit`.  Overall assessment: ship-with-fixes. The pin helper covers several important cases, but the actual merge path remains optional and can still merge without a pinned head. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T12:15:18.549969+00:00",
+      "disposition": null,
+      "recorded_by": "external-review",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category: spec — Severity: medium**\nFile: `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (~line 260–300 of the new pin block)\nThe spec says `--mode pin` \"runs unconditionally at 3f-bis's top\". The diff places the pin call *after* the `gh pr view` STRICT-STOP, the trigger computation, and the diff computation. Any unit where `gh pr view` fails (no PR, gh auth hiccup, transient API error) STRICT-STOPs the loop *before* a pin exists — and 3g's `[ -f \"$run_dir/reviewed_head\" ]` check then leaves `head_pin=\"\"`, i.e. an unpinned merge window on the resume path once the PR appears. The doc's own argument (\"a PR already exists by this point\") covers the happy path only.\nSuggestion: move the pin invocation (with `--review-skipped` when the trigger hasn't fired) above the `gh pr view` call, making PR-identity args genuinely optional/null on that path, or make 3g fail closed on a missing pin file rather than merging with `head_pin=\"\"`.\n\n**Category: spec — Severity: medium**\nFile: `plugins/.../campaign-mode.md` (3f-bis and 3g hunks)\nThe spec explicitly names \"…`record_review_pass.py --payload-file`'s root, and the `gh pr view` branch resolution\" as call sites that must become unit-scoped (\"Same set for 3g\"). This diff scopes every `git` call but leaves both `gh pr view \"{branch}\"` calls (3f-bis and 3g) and any `record_review_pass.py` invocation untouched — `gh` resolves the repo from cwd, which is exactly the unstated-cwd assumption the spec says must be eliminated before R5a.\nSuggestion: add `-R`/`--repo` (or a documented cwd note) to both `gh pr view` calls and scope the `record_review_pass.py` payload root in the same edit, or record an explicit deviation.\n\n**Category: bug — Severity: medium**\nFile: `shared/scripts/lib/review_attribution.py` (`_find_unit` + `verify` unit_id cross-check)\n`_find_unit` resolves case-insensitively, but `pin()` stores the *caller-supplied* `unit_id` verbatim in the payload and `verify()` compar […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:389`  \n  Finding: Step 3g still treats `reviewed_head` as optional and permits `head_pin=\"\"`; it also never invokes `check_review_attribution.py verify`. Deleting/misplacing the pin therefore allows `gh pr merge` to run without `--match-head-commit`, directly violating the explicit no-unpinned-merge acceptance criterion.  \n  Suggestion: Require a valid per-unit pin in 3g, run `verify` with the appropriate mode, and STRICT-STOP if either verification or pin-file loading fails.\n\n- Category: bug  \n  Severity: high  \n  File: `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:244`  \n  Finding: `run_dir` remains relative to the orchestrator’s current directory, while the new guard writes the legacy pin under `--project-root` (documented as the unit worktree after R5a). The later `git ... rev-parse HEAD > \"$run_dir/reviewed_head\"` and 3g read can therefore use the shared campaign worktree’s run directory rather than the selected unit’s. That both overwrites/cross-reads pins and activates the optional unpinned-merge path.  \n  Suggestion: Derive `run_dir` from the resolved unit worktree (or use an explicit absolute unit-scoped path) consistently in 3f-bis and 3g.\n\n- Category: spec  \n  Severity: medium  \n  File: `shared/scripts/lib/review_attribution.py:225`  \n  Finding: Verification resolves only the local branch ref and never fetches or compares the remote/PR head. A manual remote push can leave the local ref at the pinned SHA and make verification pass, despite the specification requiring this guard to detect every branch-change route.  \n  Suggestion: Fetch the pinned branch (fail closed on fetch failure) and verify the remote/PR head SHA against the pinned expected value.\n\n- Category: security  \n  Severity: medium  \n  File: `shared/scripts/lib/review_attribution.py:137`  \n  Finding: `loop_id`, `unit_id`, and state-provided ` […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T10:29:03.924838+00:00",
+      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T10:29:03.856233+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
