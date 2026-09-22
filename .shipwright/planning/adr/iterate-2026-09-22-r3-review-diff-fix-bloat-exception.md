@@ -624,3 +624,47 @@ neighbour's — narrowed to bound each call to the text before the NEXT
 
 +16 lines (790 -> 806); `shipwright_bloat_baseline.json`'s `current` is
 bumped to 806 in the same commit as this note.
+
+**Thirteenth crossing (806 -> 810), round 13.** A fresh Stage-2 code-reviewer,
+run against round 12's own fix, found the L2 remediation from round 12 (the
+STRICT-STOP window bound to "the next record call's own marker") did not
+achieve what it claimed for 3 of the 5 `record` calls, and made one strictly
+WORSE than the fixed window it replaced: the prose introducing the
+`not_applicable` call reads "...same `--project-root \"$unit_wt\"`
+override, same `|| STRICT-STOP`):" immediately before that call's own
+marker — a descriptive mention, not a real guard — so the PRECEDING
+(`doubt --status completed`) call's window swallowed it and still passed
+with its own real guard deleted; the `not_applicable` -> REJECT-path gap
+spans ~6000 unrelated chars with many genuine STRICT-STOPs of their own, so
+that call's window (previously the tighter, if imperfect, fixed 500-char
+one) became strictly wider and less discriminating; the REJECT-path call,
+being last, had no upper bound at all. MEDIUM, BLOCKING — the same
+"documented and tested but not actually enforced" class this sub-iterate's
+own D5 fix (round 11 -> 12) was built to close, now found in its own test
+suite's remediation of a DIFFERENT finding.
+
+Fixed by abandoning the "bound to the next call" heuristic entirely: a
+FIXED, narrow window (260 normalized chars) applied identically to every
+call, independent of any other call's position, verified empirically
+against the live document (not assumed) — each of the five calls' own
+guard sits within ~220 chars of its own marker, and deleting any one of
+them leaves nothing else, neighbour or descriptive prose, inside the
+260-char window for that call (confirmed by simulated deletion against the
+actual current text, not by reasoning about it).
+
+Also fixed in the same round, both low, both raised by the same reviewer:
+the `test_step_3f_bis_fires_line_count_is_computed_not_judged` test's
+"mandatory" assertion was satisfied by round-11's own bug-narrative prose
+("...added a test asserting the word 'mandatory' appeared...") rather than
+the actual normative sentence — anchored to the literal phrase "fires=1 is
+mandatory whenever" instead of a bare word search; and the mechanical
+`diff_lines=$(printf '%s\n' "$diff" | wc -l)` computation could emit
+leading whitespace under a non-GNU `wc -l` (BSD/macOS), which a bare
+`[ -n "$diff_lines" ]` re-read guard would accept before the `-gt 100`
+arithmetic test then failed silently (not STRICT-STOP) on the malformed
+value — fixed with `| tr -d '[:space:]'` at the write site and a numeric
+`case "$diff_lines" in ''|*[!0-9]*) STRICT-STOP;; esac` guard at the
+re-read site, replacing the bare `-n` test.
+
++4 lines (806 -> 810); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 810 in the same commit as this note.

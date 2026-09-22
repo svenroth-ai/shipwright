@@ -381,7 +381,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          echo "$diff_head" > "$run_dir/diff_head" || STRICT-STOP
          base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
          diff=$(git -C "$unit_wt" diff "$base"..."$diff_head") || STRICT-STOP
-         diff_lines=$(printf '%s\n' "$diff" | wc -l)
+         diff_lines=$(printf '%s\n' "$diff" | wc -l | tr -d '[:space:]')
          echo "$diff_lines" > "$run_dir/diff_lines" || STRICT-STOP
        Fire when the runner said medium+, OR the diff sets any risk flag, OR
        `$diff_lines` exceeds 100. Only the first two clauses are a JUDGEMENT
@@ -437,9 +437,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        re-derived `$run_dir`, and let it RAISE `fires` mechanically — a shell
        `-gt` test, not a sentence — never lower a judgement that already
        said 1 (code-review round 11, high: this statement is what actually
-       closes D5; the prose alone, however emphatic, is not a guard):
+       closes D5; the prose alone, however emphatic, is not a guard). The
+       re-read guard is a numeric check, not a bare non-empty test (code-
+       review round 12, low: a non-GNU `wc -l`'s leading blanks would pass
+       `-n` and then fail `-gt`'s arithmetic silently, skipping the floor):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         diff_lines=$(cat "$run_dir/diff_lines" 2>/dev/null); [ -n "$diff_lines" ] || STRICT-STOP
+         diff_lines=$(cat "$run_dir/diff_lines" 2>/dev/null)
+         case "$diff_lines" in ''|*[!0-9]*) STRICT-STOP;; esac   # numeric, not merely non-empty
          fires=<1 or 0>   # substitute the literal digit the risk-flag/medium+ judgement concluded
          [ "$diff_lines" -gt 100 ] && fires=1   # mechanical floor: the judgement above may only RAISE fires, never lower it
          echo "$fires" > "$run_dir/fires" || STRICT-STOP

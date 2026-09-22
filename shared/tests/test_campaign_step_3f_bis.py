@@ -740,17 +740,30 @@ def test_step_3f_bis_record_calls_are_unit_scoped_and_checked():
         )
         positions.append((marker, at))
     # Each call's own guard must be checked WITHOUT bleeding into a
-    # neighbour's — a fixed-width window wide enough to reach the next
-    # promote-row call would still pass with THIS call's own
-    # `|| STRICT-STOP` deleted, satisfied only by its neighbour's (code-review
-    # round 11, low: this is exactly what the original 500-char window did).
-    positions.sort(key=lambda pair: pair[1])
-    for i, (marker, at) in enumerate(positions):
-        end = positions[i + 1][1] if i + 1 < len(positions) else len(step)
-        tail = step[at:end]
+    # neighbour's OR into descriptive prose that happens to mention
+    # "|| STRICT-STOP" in passing (code-review round 11, low: a fixed
+    # 500-char window let a deleted guard on the spec/code row still pass on
+    # its neighbour's; code-review round 12, medium, BLOCKING: bounding to
+    # the NEXT record call's own marker position instead did not fix this —
+    # the prose introducing the not_applicable call literally reads "...same
+    # `--project-root "$unit_wt"` override, same `|| STRICT-STOP`):" right
+    # before its marker, so the PRECEDING call's window still swallowed a
+    # foreign match, and the not_applicable->REJECT-path gap is ~6000 chars
+    # of unrelated content with many real STRICT-STOPs of its own). A FIXED,
+    # narrow, empirically-verified window applied identically to every call
+    # — not derived from any other call's position — closes both holes: each
+    # call's own guard sits within ~220 normalized chars of its own marker
+    # (measured directly against the current doc text), and deleting it
+    # leaves nothing else, own-neighbour or prose, inside a 260-char window
+    # for any of the five calls (verified by simulated deletion against the
+    # live document, not assumed).
+    WINDOW = 260
+    for marker, at in positions:
+        tail = step[at:at + WINDOW]
         assert "|| strict-stop" in tail, (
-            f"record call {marker!r} must be checked (|| STRICT-STOP) before "
-            "the next record call, not rely on a neighbour's guard"
+            f"record call {marker!r} must be checked (|| STRICT-STOP) within "
+            f"{WINDOW} chars of its own marker, not rely on a neighbour's "
+            "guard or a prose mention elsewhere in the step"
         )
 
 
@@ -905,13 +918,24 @@ def test_step_3f_bis_fires_line_count_is_computed_not_judged():
         "$diff_lines must be computed via a mechanical line count, not left "
         "to model judgement"
     )
-    assert "mandatory" in step[compute_at:compute_at + 900], (
+    # code-review round 12, low: a bare "mandatory" substring search in this
+    # window is satisfied by the ROUND-11 BUG-NARRATIVE text ("...added a
+    # test asserting the word 'mandatory' appeared...", ~730 chars in) —
+    # deleting the actual normative sentence still left the narrative's own
+    # mention inside a 900-char window, so the assertion never exercised the
+    # claim it named. Anchored to the normative wording itself instead.
+    assert "fires=1 is mandatory whenever" in step[compute_at:compute_at + 1500], (
         "the doc must state that fires=1 is MANDATORY once $diff_lines "
-        "exceeds 100, not merely another factor the judgement weighs"
+        "exceeds 100, not merely another factor the judgement weighs, and "
+        "not just mention the word in an unrelated bug-narrative aside"
     )
     write_marker = 'echo "$diff_lines" > "$run_dir/diff_lines"'
     write_at = step.find(write_marker, compute_at)
-    assert 0 <= write_at - compute_at < 60, (
+    # 90, not 60: code-review round 12's `| tr -d '[:space:]'` portability
+    # fix (non-GNU `wc -l` leading blanks) lengthened the compute line by
+    # ~20 chars; widened with margin rather than re-measured to the exact
+    # new distance, so a future one-word rewording doesn't retrip this.
+    assert 0 <= write_at - compute_at < 90, (
         "$diff_lines must be dual-written to $run_dir/diff_lines "
         "immediately after it is computed, so a value the model never "
         "observed is not the only carrier of the floor across the "

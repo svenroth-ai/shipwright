@@ -234,6 +234,25 @@ same commit as `campaign-mode.md`'s own fix:
 +74 lines (873 -> 947); `shipwright_bloat_baseline.json`'s `current` is
 bumped to 947 in the same commit as this note.
 
+**Round 13 growth (947 -> 971).** A fresh Stage-2 code-reviewer, run against
+round 12's own fix, found `test_step_3f_bis_record_calls_are_unit_scoped_and_checked`'s
+window-bound-to-the-next-call-marker approach did not achieve mutation
+sensitivity for 3 of the 5 `record` calls (see `campaign-mode.md`'s own
+sibling ADR for the full account — the `not_applicable`/REJECT-path calls'
+windows either swallowed descriptive prose mentioning `|| STRICT-STOP` or
+extended thousands of chars into unrelated, genuinely-guarded content).
+Replaced with a fixed 260-char window applied identically to all five
+calls, empirically verified (not assumed) against the live document by
+simulating each call's own guard deletion in turn — none produces a false
+pass. Also extended in the same commit: the fires-line-count test's
+"mandatory" assertion, previously satisfiable by round-11's own bug-
+narrative aside, now anchors to the literal normative phrase; and its
+compute-to-dual-write window widened from 60 to 90 chars to admit the
+`| tr -d '[:space:]'` portability fix's few extra characters.
+
++24 lines (947 -> 971); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 971 in the same commit as this note.
+
 ## Consequences
 
 No downstream consumer reads this file except pytest itself and the
