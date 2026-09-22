@@ -1,0 +1,22 @@
+{
+  "section": "R1 depends_on schema",
+  "review": [
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/scripts/tools/campaign_init.py",
+      "line": 228,
+      "finding": "An unescaped `|` in a sub-iterate `title` shifts every later cell in that campaign.md table row under the new header-indexed column_map, silently corrupting depends_on for that row.",
+      "suggestion": "Escape `|`/newline in title before writing the row."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": "shared/scripts/lib/campaign_graph.py",
+      "line": 39,
+      "finding": "campaign_graph.py imports the module-private `_slug_from_md` from campaign_status.py across the module boundary.",
+      "suggestion": "Rename to a public slug_from_md."
+    }
+  ],
+  "remediation": "Both fixed in the same sub-iterate: campaign_init.py now escapes `|`/newline in title (mirroring the repo's existing `_cell`-style pattern); parse_campaign_skeleton's own cell split was found to be independently vulnerable (a literal `stripped.split(\"|\")` still cuts on an escaped `\\|`), so an escape-aware split (_split_row_cells) was added to close both the write and read sides. _slug_from_md renamed to slug_from_md in campaign_status.py and both call sites (campaign_status.py, campaign_graph.py) updated. Verified via a new regression test (test_title_pipe_is_escaped_in_campaign_md_table), full shared/plugin test suites green, ruff clean."
+}

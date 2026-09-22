@@ -1,0 +1,43 @@
+{
+  "section": "campaign-dag-scheduler R2 — worktree capability",
+  "review": [
+    {
+      "severity": "high",
+      "category": "correctness",
+      "file": "shared/scripts/lib/unit_lease.py",
+      "line": 173,
+      "finding": "The lease upsert writes `branch` onto the unit row, and the runner touches at Step 1 — BEFORE any build work. `branch` is a pre-existing loop_state key owned by `autonomous_loop.cmd_record` (line 325), which sets it only AFTER a run reports back. `_reconcile_in_progress` (autonomous_loop.py:87-104) branches on exactly that field: `if unit.get('branch')` -> if `refs/heads/<branch>` exists and `git log <head_sha>..<branch>` is non-empty, it marks the unit `status=\"complete\"` with no result.json, no commit and no PR. Pre-R2 that heuristic was effectively unreachable on a first attempt (an in_progress row never carried `branch`). After R2 every campaign unit carries `branch` from Step 1 onward, so a runner that commits once and then dies (session death, STRICT-STOP, crash) is reconciled on the next `cmd_init` as COMPLETE — the sub-iterate is silently dropped from the campaign and never rebuilt or merged. No test covers this interaction; the `state_path` fixtures in test_unit_lease.py / the integration test never model a reconcile.",
+      "suggestion": "Do not let the heartbeat write keys `autonomous_loop` already owns. Either namespace them (`lease_worktree`/`lease_branch`/`lease_attempt`) or make `branch` write-if-absent-only; if the field name must stay (spec's field list), add a regression test that runs `_reconcile_in_progress` over a row touched by a lease and asserts it is reset to `pending`, not `complete`.",
+      "disposition": "FIXED (post-review, orchestrator, 3f-bis): _reconcile_in_progress now skips the branch-has-commits heuristic and the pending-reset fallback whenever the unit's lease is still live (lib.unit_lease.is_unit_lease_stale), rather than renaming the field (R3's spec already commits to reading `branch` by this exact name). Regression coverage: shared/tests/test_autonomous_loop_lease_reconcile.py."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "shared/scripts/lib/unit_lease.py",
+      "line": 174,
+      "finding": "Same root cause for `attempt`: it is NOT an R4-only field — `_reconcile_in_progress` (autonomous_loop.py:107) already maintains it as the retry counter (`unit['attempt'] = unit.get('attempt', 0) + 1`) and `cmd_next` emits it (line 212). The runner's touch command in sub-iterate-runner.md passes no `--attempt`, so `check_unit_lease.py` defaults to 0 and `unit.update(lease)` unconditionally writes `attempt: 0` (and `attempt_id: null`) over the row's real counter. On any resumed campaign this (a) silently resets the retry counter every heartbeat, and (b) makes `stale_attempt_conflict` fire on EVERY touch, printing the misleading warning 'touching a row no longer mine' for a perfectly healthy runner. The module docstring's claim that a stale touch 'can only ever refresh a timestamp and echo back the caller's own values, never re-assign a claim' is false for this pre-existing key.",
+      "suggestion": "Make `--attempt` a None-sentinel that preserves the row's existing value when not supplied, and never write an `attempt` lower than the recorded one (write the timestamps, keep the row's attempt, still report `stale_attempt_conflict`). Add a test whose fixture row starts at `attempt: 2`.",
+      "disposition": "FIXED (post-review, orchestrator, 3f-bis): touch_unit_lease now only creates `attempt` on the row when truly absent; an existing value is never overwritten. `stale_attempt_conflict` comparison and the returned dict's `attempt` field are unchanged. Regression test: shared/tests/test_unit_lease.py::test_touch_never_overwrites_an_existing_attempt_counter."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_r2_worktree_capability_prose.py",
+      "line": 38,
+      "finding": "Dead assertion branch (catalog X). `norm()` strips backticks (`_campaign_prose_harness.norm`, `re.sub(r\"[*`]+\", \"\", text)`), so the first operand `\"campaign_worktree (= `{project_root}`\"` can never match a normalised body; only the weaker `\"campaign_worktree (=\"` fallback ever bites. The test therefore does not assert what its own comment says it asserts (that the value is `{project_root}`).",
+      "suggestion": "Replace the whole `or` expression with `assert \"campaign_worktree (= {project_root}\" in body` (matches post-norm text, ~2 LOC saved, strictly stronger, still green).",
+      "disposition": "FIXED (post-review, orchestrator, 3f-bis): assertion replaced exactly as suggested."
+    },
+    {
+      "severity": "low",
+      "category": "architecture",
+      "file": ".shipwright/agent_docs/architecture.md",
+      "line": 9,
+      "finding": "Path drift in two durable artifacts: the architecture.md entry and the decision-drop both say `tools/check_unit_lease.py`, but the file actually lives at `shared/scripts/checks/check_unit_lease.py` (correctly, per the `check_campaign_session_lock.py` precedent the script's own docstring cites). A future reader greps `tools/` and finds nothing.",
+      "suggestion": "Say `checks/check_unit_lease.py` in both `.shipwright/agent_docs/architecture.md` and `.shipwright/agent_docs/decision-drops/iterate-2026-09-22-r2-worktree-capability_001.json`.",
+      "disposition": "FIXED (post-review, orchestrator, 3f-bis): both paths corrected."
+    }
+  ],
+  "verdict": "REVISE",
+  "summary": "Stage 2 found one high and one medium correctness finding in the lease heartbeat's interaction with autonomous_loop.py's pre-existing row ownership, plus two low findings. All four addressed by the orchestrator at 3f-bis before merge, with regression tests for the high/medium findings; full suite re-run green (autonomous_loop.py's bloat-exception ADR records the correctness-fix LOC crossing)."
+}

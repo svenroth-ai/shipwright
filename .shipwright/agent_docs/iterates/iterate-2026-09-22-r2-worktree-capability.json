@@ -1,0 +1,108 @@
+{
+  "run_id": "iterate-2026-09-22-r2-worktree-capability",
+  "date": "2026-09-22T07:32:48.098203Z",
+  "event_at": "2026-09-22T07:32:07.040482+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-r2-worktree-capability",
+  "spec": ".shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R2-worktree-capability.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-22-r2-worktree-capability",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "check_worktree_location.py accepts a composite `{slug}--{unit_id}` value as --campaign-slug with zero code change (guard-mode, not an OR); a directory merely starting with the same string is still rejected",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_unit_worktree.py::test_guard_rejects_a_prefix_collision_directory PASSED"
+      },
+      {
+        "behavior": "composite_worktree_name rejects an invalid campaign slug or unit id (charset), a Windows-reserved device name, and a non-int/negative attempt",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_unit_worktree.py::test_reserved_windows_device_name_is_rejected PASSED"
+      },
+      {
+        "behavior": "resolved_worktree_path always recomputes from validated inputs and refuses a resolved path escaping the approved .worktrees/ root",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_unit_worktree.py::test_resolved_path_escaping_the_worktrees_root_is_rejected PASSED"
+      },
+      {
+        "behavior": "path_length_error bounds the worktree path, the git administrative directory, AND its gitdir child file against Windows MAX_PATH, not the worktree path alone",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_unit_worktree.py::test_path_too_long_is_rejected_before_touching_git PASSED"
+      },
+      {
+        "behavior": "a per-unit lease touch is a field-creating upsert (attempt, attempt_id, lease_touched_at, lease_expires_at, worktree, branch), guarded by the existing loop.lock, with no fencing-token validation until R4",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_unit_lease.py::test_touch_creates_missing_lease_fields_on_a_row_with_none_yet PASSED"
+      },
+      {
+        "behavior": "a touch whose attempt is lower than the row's already-recorded attempt still succeeds but is marked stale_attempt_conflict, distinguishing a ghost touch from a normal heartbeat without fencing",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_unit_lease.py::test_touch_with_lower_attempt_is_marked_stale_attempt_conflict PASSED"
+      },
+      {
+        "behavior": "an optional --campaign-worktree cross-check on check_unit_lease.py touch rejects a --state path that does not resolve under it",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_check_unit_lease.py::test_campaign_worktree_mismatch_is_rejected PASSED"
+      },
+      {
+        "behavior": "the runner touches both the campaign session lock and its own unit lease at Step 1 / before Step 4 / before Step 5, using {project_root} (not {campaign_worktree}) for the lease's own worktree field so it stays correct after R5a's flip",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r2_worktree_capability_prose.py::test_runner_lease_touch_uses_project_root_not_campaign_worktree_for_its_own_field PASSED"
+      },
+      {
+        "behavior": "setup_unit_worktree.py wraps setup_iterate_worktree.py unchanged, computing the composite identity and checking the total path length (exit 4 invalid identity, exit 5 path too long) before delegating",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_setup_unit_worktree.py::test_path_too_long_is_rejected_before_calling_setup PASSED"
+      },
+      {
+        "behavior": "two per-unit worktrees created concurrently at sibling paths for the same campaign slug are isolated: a campaign-level git clean -xfd / git add -A never touches either sibling (real git behavior, not a mock)",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r2_worktree_capability_integration.py::test_git_clean_at_the_campaign_root_skips_a_nested_linked_worktree PASSED, shared/tests/test_r2_worktree_capability_integration.py::test_git_add_all_at_the_campaign_root_does_not_stage_a_gitignored_sibling_worktree PASSED"
+      },
+      {
+        "behavior": "two units created through the actual setup_unit_worktree.py wrapper are independent (own path, own branch), and both leases held/touched independently",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r2_worktree_capability_integration.py::test_two_units_created_through_the_actual_wrapper_are_independent PASSED, shared/tests/test_r2_worktree_capability_integration.py::test_independent_lease_touches_do_not_interfere PASSED"
+      },
+      {
+        "behavior": "N concurrent runner touches against one loop_state.json all succeed, serialized on the existing file_lock, and a lease-touch upsert against a row with no lease fields yet creates them without error",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r2_worktree_capability_integration.py::test_n_concurrent_touches_against_one_lock_file_all_succeed PASSED, shared/tests/test_r2_worktree_capability_integration.py::test_upsert_on_a_fresh_row_creates_lease_fields_without_error PASSED"
+      },
+      {
+        "behavior": "a runner using the wrong session_id is rejected by CampaignLockError, and a simulated lease-touch / session-lock-touch failure exits 1 with parseable JSON (never fatal to the build, per the warn-and-continue rule)",
+        "category": "integration",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_r2_worktree_capability_integration.py::test_wrong_session_id_is_rejected_by_campaign_lock_error PASSED, shared/tests/test_r2_worktree_capability_integration.py::test_a_simulated_lease_touch_failure_exits_1_with_parseable_json PASSED, shared/tests/test_r2_worktree_capability_integration.py::test_a_simulated_session_lock_touch_failure_exits_1_with_parseable_json PASSED"
+      },
+      {
+        "behavior": "the worktree/branch checkout flip stays capability-only -- campaign-mode.md's live loop still spawns into the ONE shared campaign worktree; nothing in this diff calls setup_unit_worktree.py from the live loop",
+        "disposition": "tested",
+        "evidence": "grep of plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md's live steps 0/3a-3h -- no call to setup_unit_worktree.py; documented explicitly in campaign-worktree.md's \"Per-unit worktree path\" section"
+      }
+    ],
+    "counts": {
+      "testable": 13,
+      "tested": 13,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 5,
+      "covered_acs": 5
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 23,
+    "exit_code": 0,
+    "runner": "uv run pytest shared/tests/test_r2_worktree_capability_integration.py shared/tests/test_setup_unit_worktree.py shared/tests/test_check_unit_lease.py -q"
+  },
+  "declared_removals": []
+}

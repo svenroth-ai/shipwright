@@ -1,0 +1,411 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-22-r2-worktree-capability",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T05:57:42.664985+00:00",
+      "disposition": "self-review checklist completed inline in the runner transcript; 7/7 pass",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 12,
+      "findings": [
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The path-traversal hardening relies on \"validated `(slug, unit_id, attempt)`,\" but validation is only specified as R1's length bound (64) for `unit_id`. Nothing states a charset/whitelist for `unit_id` or `slug`, yet both are interpolated into filesystem paths and a git branch name. A `unit_id` containing `/`, `..`, or branch-illegal characters (`~`, `^`, `:`) either escapes the worktree root or produces a `git worktree add` failure the path-length pre-check doesn't anticipate.",
+          "suggestion": "In work item 1/4, specify the exact validation contract for `unit_id` and `slug` (e.g., `[a-z0-9-]` restricted, reject `..` and separators), enforced at both the guard call site and the wrapper before any path is constructed. The \"stays under approved worktree root\" check is the backstop, but validation should be stated as primary, not implied.  2. Category: edge-case — Severity: medium",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The unfenced, field-creating upsert toucher has an unhandled state: a runner whose lease has been reclaimed (worktree recreated, `attempt` incremented) can still blindly upsert `lease_touched_at`/`lease_expires_at` onto its old row or — worse under R4 — onto the row now owned by a new attempt. Warn-and-continue means the stale runner never learns it's dead, and its touches could keep a dead row looking alive until R4's fencing lands.",
+          "suggestion": "Even pre-fencing, the toucher should compare the row's existing `attempt`/`worktree` (if present) against the caller's and emit a distinct warning (\"touching a row no longer mine\") when they mismatch, rather than silently refreshing. This is a few lines and avoids R4 having to disentangle real heartbeats from ghost ones.  3. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Work items 3 (runner touches) go live in R2 while everything they protect against (the `{project_root}` repoint) happens at R5a. Pre-flip, the runner's lock-touch adds a new concurrent-writer population against the campaign session lock and `loop_state.json` that didn't exist before. The test strategy covers concurrency, but the rollout risk is behavioral: an orchestration bug in brief parameter population (wrong `session_id`, missing `state_path`) now surfaces as lock contention or `CampaignLockError` spam in currently-working campaigns.",
+          "suggestion": "Confirm the integration test \"wrong session_id rejected\" is exercised against a realistic brief fixture, and consider logging (not just warning) every non-fatal touch failure with the unit id so a brief-population bug is diagnosable in the first live campaign after merge.  4. Category: reducibility — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "campaign_worktree` and `state_path` both resolve to the campaign worktree's path by construction; `state_path` is derivable as `{campaign_worktree}/.shipwright/...`. Two hand-populated parameters carrying a required invariant (\"must always be consistent\") is a mild redundancy and a future drift risk if one is updated and not the other.",
+          "suggestion": "Either pass only `campaign_worktree` and derive the lock/state paths via the existing `_state_path`-style helper, or state explicitly that `state_path` is validated at runner startup to live under `campaign_worktree`. If there's a known reason both must be independently overridable (e.g., tests), say so in the doc.  5. Category: edge-case — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The path-length bound covers the worktree directory, but git also creates the `.git/worktrees/<name>` administrative path and the per-unit branch name (`campaign-{slug}--{unit_id}-a{n}`), which can hit `MAX_PATH` independently on Windows.",
+          "suggestion": "Compute the bound against the longer of the worktree path and its git metadata path; failing loudly on either is sufficient.  6. Category: risk — Severity: low",
+          "source": "external-review"
+        },
+        {
+          "severity": null,
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "The worktree wrapper ships unused until R5a; if R5a is delayed, the wrapper can silently rot against `setup_iterate_worktree.py` evolution.",
+          "suggestion": "The planned integration tests effectively pin it — just ensure they live in CI (not `category:\"integration\"`-gated-only) so drift is caught before R5a, not during it.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "“Step-boundary” touches are not a heartbeat during a long-running runner step. A build, test suite, or agent call exceeding the 7,200-second stale interval can let the campaign session lock expire while the orchestrator is blocked for the wave—the precise period where the runner is stated to be sole liveness coverage.",
+          "suggestion": "Add periodic touch behavior during long-running runner operations, or explicitly bound every interval between touches below the stale timeout with a meaningful safety margin. Test a simulated operation exceeding the interval.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Treating every failed session-lock touch as warn-and-continue is unsafe. Failures such as a session-ID mismatch, an already-reclaimed lock, or a recreated campaign worktree indicate lost ownership, not a transient heartbeat hiccup. Continuing can allow a stale runner to modify a worktree while a new campaign session proceeds.",
+          "suggestion": "Distinguish transient/operational touch failures from ownership failures. Warn-and-continue only for explicitly transient failures; stop or quarantine execution when the lock is owned by another session, is absent after reclamation, or resolves outside the expected campaign worktree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "The new `campaign_worktree` and `state_path` brief fields are introduced without defining their schema, all producing call sites, or legacy/non-campaign behavior. The runner contract, fixtures, direct runner invocations, and future R4/R5 consumers can otherwise disagree on requiredness or path semantics.",
+          "suggestion": "Define these as campaign-only required fields in the brief schema, update every runner invocation and fixture in R2, and reject absent or inconsistent values before touching state. Derive `state_path` from the validated campaign worktree rather than accepting two independently authoritative paths.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "A field-creating, unfenced lease upsert needs precise ownership semantics before R4 arrives. In particular, it is unclear whether a touch may create or overwrite `attempt`, `attempt_id`, `worktree`, and `branch`; a stale or duplicate runner must not overwrite values later established by a claim/retry flow.",
+          "suggestion": "Specify the R2 upsert as touching only lease timestamps for an existing matching identity, with narrowly defined initialization defaults where no row fields exist. Define the R4 migration/interface change that adds fencing validation, and add a test for duplicate/stale touches against a newer attempt.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The worktree test covers concurrent different-unit creation, but not concurrent creation or recovery for the same unit/attempt. A partially failed `git worktree add`, existing stale directory, or two calls for the same computed path can cause destructive cleanup or inconsistent Git worktree metadata.",
+          "suggestion": "Define idempotency and collision behavior for the same `(slug, unit_id, attempt)`, serialize it where needed, and test partial-setup recovery without deleting a valid existing worktree.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Recomputing paths is necessary but insufficient unless validation includes path separators, drive-qualified paths, Git-ref-invalid values, Windows reserved names, and resolved reparse/symlink paths. Otherwise unit-derived paths or branches can still target unintended locations or produce ambiguous cleanup behavior.",
+          "suggestion": "Make slug/unit/attempt validation an explicit prerequisite of the wrapper and cleanup API; use resolved canonical paths for containment checks and argument-vector Git invocation. Test traversal, absolute-path, symlink/junction, and reserved-name inputs.  Overall, the capability split and campaign-root path correction are sound, but liveness ownership and the new brief/path contract need tightening before implementation. The approach should be revised to make stale-runner behavior and long-running-wave liveness safe.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-22T05:57:17.435538+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: security — Severity: medium**\n**Finding:** The path-traversal hardening relies on \"validated `(slug, unit_id, attempt)`,\" but validation is only specified as R1's length bound (64) for `unit_id`. Nothing states a charset/whitelist for `unit_id` or `slug`, yet both are interpolated into filesystem paths and a git branch name. A `unit_id` containing `/`, `..`, or branch-illegal characters (`~`, `^`, `:`) either escapes the worktree root or produces a `git worktree add` failure the path-length pre-check doesn't anticipate.\n**Suggestion:** In work item 1/4, specify the exact validation contract for `unit_id` and `slug` (e.g., `[a-z0-9-]` restricted, reject `..` and separators), enforced at both the guard call site and the wrapper before any path is constructed. The \"stays under approved worktree root\" check is the backstop, but validation should be stated as primary, not implied.\n\n**2. Category: edge-case — Severity: medium**\n**Finding:** The unfenced, field-creating upsert toucher has an unhandled state: a runner whose lease has been reclaimed (worktree recreated, `attempt` incremented) can still blindly upsert `lease_touched_at`/`lease_expires_at` onto its old row or — worse under R4 — onto the row now owned by a new attempt. Warn-and-continue means the stale runner never learns it's dead, and its touches could keep a dead row looking alive until R4's fencing lands.\n**Suggestion:** Even pre-fencing, the toucher should compare the row's existing `attempt`/`worktree` (if present) against the caller's and emit a distinct warning (\"touching a row no longer mine\") when they mismatch, rather than silently refreshing. This is a few lines and avoids R4 having to disentangle real heartbeats from ghost ones.\n\n**3. Category: risk — Severity: low**\n**Finding:** Work items 3 (runner touches) go live in R2 while everything they protect against (the `{project_root}` repoint) happens at R5a. Pre-flip, the runner's lock-touch adds a new concurr […truncated]\n\n[openai] 1. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** “Step-boundary” touches are not a heartbeat during a long-running runner step. A build, test suite, or agent call exceeding the 7,200-second stale interval can let the campaign session lock expire while the orchestrator is blocked for the wave—the precise period where the runner is stated to be sole liveness coverage.  \n   **Suggestion:** Add periodic touch behavior during long-running runner operations, or explicitly bound every interval between touches below the stale timeout with a meaningful safety margin. Test a simulated operation exceeding the interval.\n\n2. **Category:** risk  \n   **Severity:** high  \n   **Finding:** Treating every failed session-lock touch as warn-and-continue is unsafe. Failures such as a session-ID mismatch, an already-reclaimed lock, or a recreated campaign worktree indicate lost ownership, not a transient heartbeat hiccup. Continuing can allow a stale runner to modify a worktree while a new campaign session proceeds.  \n   **Suggestion:** Distinguish transient/operational touch failures from ownership failures. Warn-and-continue only for explicitly transient failures; stop or quarantine execution when the lock is owned by another session, is absent after reclamation, or resolves outside the expected campaign worktree.\n\n3. **Category:** dependency  \n   **Severity:** medium  \n   **Finding:** The new `campaign_worktree` and `state_path` brief fields are introduced without defining their schema, all producing call sites, or legacy/non-campaign behavior. The runner contract, fixtures, direct runner invocations, and future R4/R5 consumers can otherwise disagree on requiredness or path semantics.  \n   **Suggestion:** Define these as campaign-only required fields in the brief schema, update every runner invocation and fixture in R2, and reject absent or inconsistent values before touching state. Derive `state_path` from the validated campaign worktree rather than ac […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/unit_lease.py",
+          "line": 173,
+          "finding": "The lease upsert writes `branch` onto the unit row, and the runner touches at Step 1 — BEFORE any build work. `branch` is a pre-existing loop_state key owned by `autonomous_loop.cmd_record` (line 325), which sets it only AFTER a run reports back. `_reconcile_in_progress` (autonomous_loop.py:87-104) branches on exactly that field: `if unit.get('branch')` -> if `refs/heads/<branch>` exists and `git log <head_sha>..<branch>` is non-empty, it marks the unit `status=\"complete\"` with no result.json, no commit and no PR. Pre-R2 that heuristic was effectively unreachable on a first attempt (an in_progress row never carried `branch`). After R2 every campaign unit carries `branch` from Step 1 onward, so a runner that commits once and then dies (session death, STRICT-STOP, crash) is reconciled on the next `cmd_init` as COMPLETE — the sub-iterate is silently dropped from the campaign and never rebuilt or merged. No test covers this interaction; the `state_path` fixtures in test_unit_lease.py / the integration test never model a reconcile.",
+          "suggestion": "Do not let the heartbeat write keys `autonomous_loop` already owns. Either namespace them (`lease_worktree`/`lease_branch`/`lease_attempt`) or make `branch` write-if-absent-only; if the field name must stay (spec's field list), add a regression test that runs `_reconcile_in_progress` over a row touched by a lease and asserts it is reset to `pending`, not `complete`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/unit_lease.py",
+          "line": 174,
+          "finding": "Same root cause for `attempt`: it is NOT an R4-only field — `_reconcile_in_progress` (autonomous_loop.py:107) already maintains it as the retry counter (`unit['attempt'] = unit.get('attempt', 0) + 1`) and `cmd_next` emits it (line 212). The runner's touch command in sub-iterate-runner.md passes no `--attempt`, so `check_unit_lease.py` defaults to 0 and `unit.update(lease)` unconditionally writes `attempt: 0` (and `attempt_id: null`) over the row's real counter. On any resumed campaign this (a) silently resets the retry counter every heartbeat, and (b) makes `stale_attempt_conflict` fire on EVERY touch, printing the misleading warning 'touching a row no longer mine' for a perfectly healthy runner. The module docstring's claim that a stale touch 'can only ever refresh a timestamp and echo back the caller's own values, never re-assign a claim' is false for this pre-existing key.",
+          "suggestion": "Make `--attempt` a None-sentinel that preserves the row's existing value when not supplied, and never write an `attempt` lower than the recorded one (write the timestamps, keep the row's attempt, still report `stale_attempt_conflict`). Add a test whose fixture row starts at `attempt: 2`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_r2_worktree_capability_prose.py",
+          "line": 38,
+          "finding": "Dead assertion branch (catalog X). `norm()` strips backticks (`_campaign_prose_harness.norm`, `re.sub(r\"[*`]+\", \"\", text)`), so the first operand `\"campaign_worktree (= `{project_root}`\"` can never match a normalised body; only the weaker `\"campaign_worktree (=\"` fallback ever bites. The test therefore does not assert what its own comment says it asserts (that the value is `{project_root}`).",
+          "suggestion": "Replace the whole `or` expression with `assert \"campaign_worktree (= {project_root}\" in body` (matches post-norm text, ~2 LOC saved, strictly stronger, still green).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/agent_docs/architecture.md",
+          "line": 9,
+          "finding": "Path drift in two durable artifacts: the architecture.md entry and the decision-drop both say `tools/check_unit_lease.py`, but the file actually lives at `shared/scripts/checks/check_unit_lease.py` (correctly, per the `check_campaign_session_lock.py` precedent the script's own docstring cites). A future reader greps `tools/` and finds nothing.",
+          "suggestion": "Say `checks/check_unit_lease.py` in both `.shipwright/agent_docs/architecture.md` and `.shipwright/agent_docs/decision-drops/iterate-2026-09-22-r2-worktree-capability_001.json`.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T08:20:37.631045+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Stage-2 finding #1 (false-complete on resume) is FIXED by the lease-liveness guard",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "skipping reconciliation for a live-lease unit is safe because the unit will be reconciled later",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the lease read in _reconcile_in_progress sees a consistent, lock-protected view of the row",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "is_unit_lease_stale is safe to promote into a production gating position",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Stage-2 finding #2 (medium) is FIXED",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "'create only if absent' is a strictly safer attempt write",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "'the returned dict is unchanged' is a neutral consequence of the attempt fix",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T08:20:43.826856+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 11,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "test",
+          "file": "shared/tests/test_r2_worktree_capability_integration.py (test_campaign_level_tree_op_does_not_touch_either_sibling, ~line 60)",
+          "line": null,
+          "finding": "The spec's Test strategy explicitly requires \"a campaign-level `git clean -xfd`/`git add -A` does not touch either sibling.\" The test never invokes `git clean` or `git add -A` at all — it writes marker files into the worktrees, writes a `status.json` into the main tree, and then asserts the markers still exist. Every assertion is trivially true of an untouched filesystem; the test would pass even if campaign-level tree operations destroyed both siblings, because no such operation is ever executed. (This matters: `git clean -xfd` in the main tree can plausibly reach ignored content under `.worktrees/`, which is exactly the risk the spec asked to be proven safe.)",
+          "suggestion": "Actually run `git -C <main> clean -xfd` (and/or `git add -A`) inside the test before asserting the sibling markers survive; assert the exit code and the post-state of both worktrees. If `git clean` does remove them, that is a real finding the capability needs to address (e.g. gitignore semantics or explicit exclusion), not a test to weaken.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_r2_worktree_capability_integration.py (test_a_simulated_lock_failure_during_a_touch_is_confirmed_non_fatal)",
+          "line": null,
+          "finding": "This test is tautological: it wraps a call in `try/except` and sets a flag in the handler, then asserts the flag. Any exception (or none) passes; it does not exercise any runner behavior, because the \"runner\" is a markdown contract with no executable warn-and-continue code. The spec's test-strategy line \"a simulated lock failure during a touch is confirmed non-fatal to the runner's own build\" is only nominally covered — the actual non-fatality lives in prose in `sub-iterate-runner.md`, which no test can validate. A broken implementation (e.g. CLI exiting non-zero on success, or a crash rather than clean exit 1) would still pass this test.",
+          "suggestion": "At minimum, assert the specific failure mode the contract depends on: the CLI exits 1 with a parseable block payload (not a traceback / not exit>1 signals) on a simulated failure, e.g. run `check_unit_lease.py` via subprocess with a missing state file and assert `returncode == 1` and valid JSON on stdout. Rename or drop the try/except tautology.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "shared/scripts/lib/unit_lease.py, touch_unit_lease (~line 150, `with file_lock(...)`)",
+          "line": null,
+          "finding": "file_lock(..., timeout_seconds=30)` can raise `LockTimeout`, which is not a `UnitLeaseError`. `check_unit_lease.py` only catches `UnitLeaseError`, so a contended lock (>30s, plausible when N runners serialize on one `loop.lock` plus the orchestrator's own writes) produces an unhandled traceback instead of the documented \"exit 1, could not touch, JSON payload\" contract. The runner's warn-and-continue reading of \"non-zero exit\" happens to still hold, but the CLI's own documented exit-1-with-JSON behavior is violated and callers parsing stdout JSON will crash on the traceback text.",
+          "suggestion": "Either catch `LockTimeout` in `touch_unit_lease` and re-raise as `UnitLeaseError(\"could not acquire loop.lock: ...\")`, or add `LockTimeout` to the CLI's except clause so it emits the standard block payload and exits 1.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md (touch snippet, `--worktree \"{campaign_worktree}\"`)",
+          "line": null,
+          "finding": "The runner's lease touch records `worktree={campaign_worktree}` in the unit's own row, but `check_unit_lease.py`'s own `--worktree` help and the spec's lease-field list say this field is the unit's own worktree path. It is only accidentally correct pre-flip (the unit \"lives\" in the shared campaign worktree). Post-flip, the spec's claim that these brief parameters are \"reused unchanged at R5a\" means the row's `worktree` field would permanently record the campaign worktree, not the per-unit worktree — precisely the stored-path value the security-hardening section says destructive callers must not trust, and which R4's reconcile/cleanup would read back. The doc's stated reuse-unchanged property hides a wrong value.",
+          "suggestion": "Pass the runner's own `{project_root}` (pre-flip: campaign worktree; post-flip: per-unit worktree) as `--worktree`, or explicitly document in `campaign-worktree.md` that the row's `worktree` field is campaign-worktree-valued until R4 mints it, so a future cleanup never reads it as the per-unit path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_r2_worktree_capability_integration.py (test_two_sibling_per_unit_worktrees_are_independently_isolated)",
+          "line": null,
+          "finding": "This test creates worktrees via raw `git worktree add` and only exercises the guard, not `setup_unit_worktree.py`. The sibling-isolation behavior of the actual wrapper (which is what production will call) is covered elsewhere, but the integration test named for the spec's \"two per-unit worktrees created concurrently at sibling paths\" AC never uses the wrapper nor exercises concurrency of creation — it's a sequential guard test duplicating `test_campaign_unit_worktree.py`. The \"created concurrently\" aspect of the AC is untested anywhere.",
+          "suggestion": "Either create the two siblings through `setup_unit_worktree.py` (two subprocess calls, ideally interleaved) in this integration test, or note the concurrency-creation gap; at minimum invoke the wrapper so the AC's \"created\" verb matches the tested path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/unit_lease.py, `_find_unit",
+          "line": null,
+          "finding": "The case-folded fallback can silently touch the wrong row if two units differ only by case (e.g. `r2` and `R2`), and the exact-match pass runs first so the folded pass only fires on a miss — but a folded match then writes lease fields onto a row whose canonical id differs from the CLI's `--unit-id`, with no warning. `is_unit_ready`'s convention is read-only; a write via folded match is a new hazard.",
+          "suggestion": "Restrict the folded fallback to a read-only confirmation or emit a warning when the folded id differs from the row's exact id; or drop the fallback entirely since the runner receives `sub_iterate_id` verbatim.  Overall assessment: ship-with-fixes — the capability modules are solid and well-tested, but the headline integration test for campaign-level `git clean` isolation doesn't actually run the operation it claims to prove, the lock-timeout path breaks the CLI's documented error contract, and the runner brief writes the campaign worktree into the per-unit `worktree` lease field.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 26,
+          "finding": "The new `campaign_worktree` and `state_path` parameters are only documented as runner inputs; no producer/call site populating them is included in the diff. Consequently, real campaign briefs will omit both values and the runner will skip all required liveness touches.",
+          "suggestion": "Update the campaign runner-brief construction to supply the campaign worktree path and its absolute `.shipwright/loop_state.json` path for every campaign sub-iterate.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "bug",
+          "file": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+          "line": 48,
+          "finding": "The per-unit lease touch records `--worktree \"{campaign_worktree}\"`. Once R5a repoints `{project_root}` to the per-unit checkout, this will still persist the shared campaign worktree on every unit row, rather than the unit’s actual worktree. That breaks the per-unit lease/worktree identity required for retries and cleanup.",
+          "suggestion": "Pass the runner’s own worktree (`{project_root}` after the flip) to `--worktree`; retain `--campaign-worktree` solely for locating and validating the shared state file.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "shared/scripts/lib/campaign_unit_worktree.py",
+          "line": 156,
+          "finding": "The path-length gate checks the administrative directory path but not files Git creates within it, such as `.git/worktrees/<name>/gitdir`. A path whose admin directory is within 260 characters can still fail during `git worktree add` when that child path exceeds the Windows limit.",
+          "suggestion": "Include the longest administrative child path Git must create (at least `admin_path / \"gitdir\"`) in the maximum-length calculation and add a boundary test.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/tests/test_r2_worktree_capability_integration.py",
+          "line": 151,
+          "finding": "The “simulated lock failure” test only catches a missing-unit exception from `touch_unit_lease`; it neither invokes the runner’s touch commands nor simulates a campaign-session-lock failure. It would pass even if runner-side failures terminated the build, so it does not validate the required warn-and-continue behavior.",
+          "suggestion": "Exercise the runner-facing command path with both lease and session-lock touch failures, then assert the subsequent build/finalization action still runs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/tests/test_r2_worktree_capability_integration.py",
+          "line": 59,
+          "finding": "The claimed campaign-level `git clean -xfd` / `git add -A` isolation test only writes `status.json`; it never executes either Git operation. It therefore does not cover the explicit integration acceptance criterion.",
+          "suggestion": "Run the actual commands in the campaign worktree and verify both sibling worktree markers remain unchanged.  Overall assessment: ship-with-fixes. The lease capability is largely present, but missing brief wiring prevents its required liveness behavior from running, and the persisted worktree path is wrong after the intended R5a transition.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-22T06:06:36.961842+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] - Category: test\n- Severity: high\n- File: shared/tests/test_r2_worktree_capability_integration.py (test_campaign_level_tree_op_does_not_touch_either_sibling, ~line 60)\n- Finding: The spec's Test strategy explicitly requires \"a campaign-level `git clean -xfd`/`git add -A` does not touch either sibling.\" The test never invokes `git clean` or `git add -A` at all — it writes marker files into the worktrees, writes a `status.json` into the main tree, and then asserts the markers still exist. Every assertion is trivially true of an untouched filesystem; the test would pass even if campaign-level tree operations destroyed both siblings, because no such operation is ever executed. (This matters: `git clean -xfd` in the main tree can plausibly reach ignored content under `.worktrees/`, which is exactly the risk the spec asked to be proven safe.)\n- Suggestion: Actually run `git -C <main> clean -xfd` (and/or `git add -A`) inside the test before asserting the sibling markers survive; assert the exit code and the post-state of both worktrees. If `git clean` does remove them, that is a real finding the capability needs to address (e.g. gitignore semantics or explicit exclusion), not a test to weaken.\n\n- Category: test\n- Severity: medium\n- File: shared/tests/test_r2_worktree_capability_integration.py (test_a_simulated_lock_failure_during_a_touch_is_confirmed_non_fatal)\n- Finding: This test is tautological: it wraps a call in `try/except` and sets a flag in the handler, then asserts the flag. Any exception (or none) passes; it does not exercise any runner behavior, because the \"runner\" is a markdown contract with no executable warn-and-continue code. The spec's test-strategy line \"a simulated lock failure during a touch is confirmed non-fatal to the runner's own build\" is only nominally covered — the actual non-fatality lives in prose in `sub-iterate-runner.md`, which no test can validate. A broken implementation (e.g. CLI exiting non-zero on success, or a crash rather […truncated]\n\n[openai] - Category: spec  \n  Severity: high  \n  File: plugins/shipwright-iterate/agents/sub-iterate-runner.md:26  \n  Finding: The new `campaign_worktree` and `state_path` parameters are only documented as runner inputs; no producer/call site populating them is included in the diff. Consequently, real campaign briefs will omit both values and the runner will skip all required liveness touches.  \n  Suggestion: Update the campaign runner-brief construction to supply the campaign worktree path and its absolute `.shipwright/loop_state.json` path for every campaign sub-iterate.\n\n- Category: bug  \n  Severity: medium  \n  File: plugins/shipwright-iterate/agents/sub-iterate-runner.md:48  \n  Finding: The per-unit lease touch records `--worktree \"{campaign_worktree}\"`. Once R5a repoints `{project_root}` to the per-unit checkout, this will still persist the shared campaign worktree on every unit row, rather than the unit’s actual worktree. That breaks the per-unit lease/worktree identity required for retries and cleanup.  \n  Suggestion: Pass the runner’s own worktree (`{project_root}` after the flip) to `--worktree`; retain `--campaign-worktree` solely for locating and validating the shared state file.\n\n- Category: edge-case  \n  Severity: medium  \n  File: shared/scripts/lib/campaign_unit_worktree.py:156  \n  Finding: The path-length gate checks the administrative directory path but not files Git creates within it, such as `.git/worktrees/<name>/gitdir`. A path whose admin directory is within 260 characters can still fail during `git worktree add` when that child path exceeds the Windows limit.  \n  Suggestion: Include the longest administrative child path Git must create (at least `admin_path / \"gitdir\"`) in the maximum-length calculation and add a boundary test.\n\n- Category: test  \n  Severity: medium  \n  File: shared/tests/test_r2_worktree_capability_integration.py:151  \n  Finding: The “simulated lock failure” test only catches a missing-unit exception from `touch_unit_lease […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T08:20:31.835032+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T05:57:23.530420+00:00",
+      "disposition": "campaign sub-iterates have no internal plan-review arm yet — a documented gap (trg-71d7a4fa/trg-d6cc3d3d), not delegated to the orchestrator like the other three",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

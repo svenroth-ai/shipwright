@@ -104,13 +104,59 @@ windows remain genuinely unbounded and untouched while they run: (1) the
 DONE marker: build + reviews + F0–F6 + push) — the loop's longest block, and
 (2) `gh pr checks --watch` plus the merge-status poll after it, which the 3g
 touch only precedes rather than covers. A sub-iterate — or a slow CI run —
-that takes longer than `DEFAULT_STALE_AFTER_SECONDS` can go stale and be
-reclaimed by a second session while the first is still working inside the
-same shared worktree; that constant has no measured p95 behind it (see its
-docstring). Closing this fully means the runner itself heartbeats the lock
-(it is the process actually occupying the worktree) — documented, not
-solved here; this section names the gap rather than overclaiming it is
-covered so the next reader does not have to re-derive it.
+that takes longer than `DEFAULT_STALE_AFTER_SECONDS` (7200s / 2h — a round,
+generous guess with no measured p95 behind it; see the constant's own
+docstring in `lib/campaign_session_lock.py`) can go stale and be reclaimed by
+a second session while the first is still working inside the same shared
+worktree.
+
+**Narrowed for window (1) — the runner itself heartbeats the lock (R2).**
+The `sub-iterate-runner` subagent — the process actually occupying the
+worktree for the whole of window (1) — calls `check_campaign_session_lock.py
+touch` at its own step boundaries (Step 1 after branch setup, before Step 4
+Finalization, before Step 5 Push), using the `session_id` it receives in its
+own brief (the ORCHESTRATOR's `$SHIPWRIGHT_SESSION_ID` — the lock's
+`touch()` validates `existing["session_id"] == session_id` against the
+owning session, never a subagent's own identity, so passing anything else
+makes every touch raise `CampaignLockError`). Under the wave model (the
+orchestrator itself is blocked for the whole of window (1)), **this runner
+touch is the SOLE coverage for that window, not merely additional
+coverage** — nothing else touches the lock while the Task is running.
+
+**Honest limit (external plan review, OpenAI, high — this is a per-STEP
+touch, not a continuous heartbeat).** The three step boundaries above turn
+window (1) into three SHORTER sub-windows (Step 1→Step 4, i.e. Build +
+reviews; Step 4→Step 5, i.e. Finalization), not zero exposure — a single one
+of those sub-windows (e.g. a very long F0 full-suite run inside Build) can
+itself still exceed `DEFAULT_STALE_AFTER_SECONDS` and go untouched for its
+whole duration. R2 scopes to these three boundaries; touching more finely
+(e.g. between individual F-phases) is a future refinement, named here rather
+than overclaimed as already closed.
+
+A failed touch is **warn-and-continue, never fatal to the runner's own
+build** — this is the sub-iterate spec's OWN explicit, deliberate design
+(not an oversight this doc papers over): a touch failure (lock released
+early, reclaimed past staleness, or the worktree recreated) says nothing
+about whether the runner's current build is healthy, and the orchestrator's
+own step-3a/3g touches remain the authoritative lock-lost detector — see the
+spec's own "warn-and-continue, never fatal" rationale. (External plan
+review, OpenAI, high, proposed treating an ownership-loss touch failure as
+fatal instead; rejected — reversing this rule is out of scope for R2, which
+implements the spec's stated design rather than relitigating it.) Window (2)
+(`gh pr checks --watch` + the merge-status poll) remains open — that runs in
+the orchestrator's own process, after the runner Task has already returned,
+so it is out of scope for a runner-side heartbeat; documented, not solved
+here.
+
+The runner ALSO heartbeats its own PER-UNIT lease at the same step
+boundaries (`check_unit_lease.py touch`, see "Per-unit worktree path" below)
+— a separate mechanism, on a separate row of `loop_state.json`, guarded by
+the existing `loop.lock` rather than this campaign-wide session lock. The
+two are independent: a campaign session-lock failure means a second SESSION
+may now be driving the campaign; a lease-touch failure means only THIS
+UNIT's own liveness signal went stale, and is even more strictly
+warn-and-continue (no fencing-token validation applies to it at all until R4
+lands — see "Per-unit worktree path" below for why).
 
 **A worktree recreate silently drops the lock.** The state file lives
 *inside* the worktree it protects (`{campaign_wt}/.shipwright/`), so
@@ -155,6 +201,100 @@ sub-iterate; see `lib/worktree_location.py` for why a branch-prefix check was
 tried and rejected (it cannot tell two campaigns whose slugs are themselves a
 hyphenated extension of one another, e.g. `req3` vs `req3-04`, from a slug
 plus a sub-iterate suffix).
+
+## Per-unit worktree path (capability — R2; R5a wires it live)
+
+R2 builds the naming, guard-mode identity, lease mechanism, and worktree
+wrapper a per-unit worktree needs — **as a capability, not yet wired into
+the live loop above.** Every `{project_root}` in this document today still
+means the ONE shared campaign worktree; a per-unit checkout only exists once
+a caller explicitly invokes `setup_unit_worktree.py` (nothing in
+`campaign-mode.md`'s live steps does yet). R5a performs that flip, once R4's
+claim mechanics (`attempt`, `attempt_id`, fencing) exist — until then this
+section describes machinery that exists and is tested, not behavior a
+running campaign exhibits.
+
+**Path form:** `.worktrees/campaign-{slug}--{unit_id}` for attempt 0, and
+`.worktrees/campaign-{slug}--{unit_id}-a{attempt}` for a retry attempt >= 1
+(R4 mints attempts). `lib.campaign_unit_worktree.composite_worktree_name`
+is the single place that constructs this string, reused by every call site
+(the wrapper below, a future R4 reconcile/cleanup) so none of them can drift
+apart. `--` is the reserved separator between the two components —
+`lib.campaign_graph.id_charset_ok` (R1) already rejects a literal `--`
+inside either a campaign slug or a unit id, so a malformed value can never
+forge a second separator and collide two different `(slug, unit_id)` pairs
+onto the same composite string.
+
+**Guard-mode, not "either form" OR.** `check_worktree_location.py`'s
+existing `--campaign-slug` parameter accepts this composite value
+(`"{slug}--{unit_id}"`) with **zero code change** to `lib.worktree_location`
+itself — that guard only ever compares the worktree DIRECTORY's exact
+basename against `campaign-{expected_campaign_slug}`, so passing the
+composite string is call-site wiring, not new guard logic. It is a MODE, not
+an OR: the orchestrator's own step-3c check (above) validates only the
+shared campaign path; the runner's own Step 1.0 check, once R5a flips it,
+validates only its own per-unit path. An OR would let a runner legally sit
+in the shared campaign worktree even after the flip — exactly the race
+per-unit worktrees exist to remove.
+
+**Worktree lifecycle wrapper:** `setup_unit_worktree.py` reuses
+`setup_iterate_worktree.py`'s fresh-fetch / gitignore / cleanup behavior
+UNCHANGED, via that script's own `slug` parameter — it does not
+re-implement any of it. Its own job is narrow: build the composite identity
+from validated inputs, check the total resolved path length, then delegate.
+
+**Total path-length bound (Windows finding).** A unit id's length alone is
+bounded (64 chars, R1's `_ID_CHARSET_RE`), but the TOTAL resolved path is
+not — a real ~35-char campaign slug, plus `campaign-`, plus a 64-char unit
+id, plus an `-a{n}` attempt suffix, under this repo's own nested
+`.worktrees/` structure, can reach Windows' `MAX_PATH` (260) on the stated
+primary dev platform. `setup_unit_worktree.py` computes the full path length
+and fails loudly (exit 5, naming the campaign slug and unit id) BEFORE
+calling `git worktree add`, rather than letting git fail mid-checkout with
+an opaque error.
+
+**Security hardening.** Every function in `lib.campaign_unit_worktree`
+RECOMPUTES the expected worktree path from validated `(slug, unit_id,
+attempt)` — a destructive caller (a future R4 cleanup) must never trust a
+path string read back from `loop_state.json` instead of recomputing it here
+— and refuses a resolved path landing outside `<main_root>/.worktrees/`.
+
+**Per-unit lease.** `lib.unit_lease` / `check_unit_lease.py touch` maintain
+`attempt`, `attempt_id`, `lease_touched_at`, `lease_expires_at`, `worktree`,
+and `branch` on the unit's OWN row in `loop_state.json` — guarded by the
+SAME `loop.lock` / `file_lock` `autonomous_loop.py` already serializes every
+other `loop_state.json` write through, deliberately not a second state
+file. It is a **field-creating upsert**: this campaign's own DAG makes R2
+independent of R1, so a row is not guaranteed to already carry these fields,
+and the first touch for a unit creates them. **No fencing-token validation
+applies to it** — R4 adds that for every OTHER claim mutation; this touch is
+the explicit, documented exception until R4 lands. Like the campaign session
+lock's own touch, a failed lease touch is **warn-and-continue, never
+fatal** to the runner's own build.
+
+Two non-fencing refinements (external plan review): a touch whose caller
+`attempt` is LOWER than the row's already-recorded `attempt` still succeeds
+(no rejection — that stays R4's job) but is marked
+`stale_attempt_conflict: true` in its own return value / CLI warning, so a
+caller can distinguish "touching a row no longer mine" from a normal
+heartbeat without this being a fencing check; and an optional
+`--campaign-worktree` flag on `check_unit_lease.py touch` cross-checks that
+`--state` actually resolves under `{campaign_worktree}/.shipwright/` —
+catching the two brief parameters having drifted apart from each other.
+
+**Single-writer invariant, unaffected by the flip.** Campaigns keep using
+this narrow location guard rather than the full `check_iterate_isolation.py`
+leak-guard even once a per-unit worktree carries its own run-pointer /
+main-tree snapshot (`setup_unit_worktree.py` writes both, via the
+`setup_iterate_worktree.setup()` it delegates to) — that fuller guard's
+main-tree diff would still misreport campaign-mode step 3h's own deliberate
+`status.json` write as a leak (see "Spawn guard" above). Campaign-level
+`status.json` regeneration happens ONLY in the campaign worktree — the
+orchestrator itself, or the churn resolver — never in a per-unit worktree; a
+per-unit worktree's runner writes only its own per-unit iterate artifacts.
+Enforced by the same isolation guard: a per-unit worktree's runner never
+holds a `{project_root}` that resolves to the campaign worktree, so it has
+no path through which to reach `status.json` in the first place.
 
 ## Defense in depth: the runner's own check
 

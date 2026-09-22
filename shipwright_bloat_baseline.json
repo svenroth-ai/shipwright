@@ -454,9 +454,9 @@
     {
       "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
       "limit": 400,
-      "current": 497,
+      "current": 512,
       "state": "exception",
-      "adr": "ADR-119"
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-bloat-exception.md"
     },
     {
       "path": "plugins/shipwright-iterate/scripts/hooks/cache_repair_lock.py",
@@ -478,6 +478,13 @@
       "current": 208,
       "state": "ok",
       "adr": null
+    },
+    {
+      "path": "plugins/shipwright-iterate/scripts/tools/campaign_init.py",
+      "limit": 300,
+      "current": 416,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md"
     },
     {
       "path": "plugins/shipwright-iterate/tests/test_classify_complexity.py",
@@ -825,9 +832,23 @@
     {
       "path": "shared/scripts/lib/autonomous_loop.py",
       "limit": 300,
-      "current": 436,
-      "state": "grandfathered",
-      "adr": null
+      "current": 454,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md"
+    },
+    {
+      "path": "shared/scripts/lib/campaign_graph.py",
+      "limit": 300,
+      "current": 354,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-graph-bloat.md"
+    },
+    {
+      "path": "shared/scripts/lib/campaign_status.py",
+      "limit": 300,
+      "current": 415,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-status-bloat.md"
     },
     {
       "path": "shared/scripts/lib/drift_parsers.py",
@@ -1220,6 +1241,13 @@
       "current": 442,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/tests/test_campaign_graph.py",
+      "limit": 300,
+      "current": 325,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-test-campaign-graph-bloat.md"
     },
     {
       "path": "shared/tests/test_campaign_session_lock.py",

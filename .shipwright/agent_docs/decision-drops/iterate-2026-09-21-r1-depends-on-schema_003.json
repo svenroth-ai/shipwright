@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-21-r1-depends-on-schema",
+  "date": "2026-09-22",
+  "section": "Bloat exception — campaign_status.py",
+  "title": "campaign_status.py raised to 357-LOC",
+  "context": "campaign_status.py was already at 299 lines with no baseline entry before R1. The header-indexed parse_campaign_skeleton rewrite, depends_on carry-through, and a Step 3.8 probe's UTF-8-BOM fix all landed in this same, already-narrow file.",
+  "decision": "Grant an exception raising campaign_status.py's allowed current to 357; retire if a FOURTH cross-cutting concern is added beyond skeleton-parsing/event-projection/merge-status, by extracting column-lookup helpers into their own module.",
+  "consequences": "Only an additive, default-preserving project_campaign_status(..., *, skeleton=None) parameter changed; every existing caller is unaffected.",
+  "rationale": "The file is a deep module: four narrow public functions, substantial logic behind them (never-downgrade status ladder, corrupt-line-tolerant event projection, header-indexed parsing) — splitting would relocate tightly-coupled private helpers with no other caller.",
+  "rejected": "Move project_campaign_status into campaign_graph.py instead — rejected, campaign_graph.py already imports it FROM this file; reversing that would duplicate _project_events/merge_status reach-across.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-status-bloat.md"
+}

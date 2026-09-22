@@ -83,33 +83,138 @@ def _strip_md(cell: str) -> str:
     return cell.strip().strip(_MD_EMPHASIS).strip()
 
 
-def parse_campaign_skeleton(campaign_md_text: str) -> list[dict]:
-    """Parse the ``## Sub-Iterates`` markdown table into ``[{id, slug, title}]``.
+#: Header-cell label (lowercased, emphasis-stripped) -> row field name.
+_HEADER_ALIASES = {"id": "id", "slug": "slug", "title": "title", "depends on": "depends_on"}
+#: Legacy fixed positions, used when the table has no recognizable header row.
+_LEGACY_COLUMN_MAP = {0: "id", 1: "slug", 2: "title"}
 
-    Row order is preserved (authoritative for the board). The ``Status`` column
-    is intentionally ignored — status comes from projection, not the skeleton.
-    Markdown emphasis on the id/slug cells is stripped (``**C1**`` -> ``C1``).
-    Raises ``ValueError`` on a missing/empty table, an empty id, or duplicate ids.
+
+def _unescape_cell(text: str) -> str:
+    """Reverse ``campaign_init.py``'s ``\\\\`` -> ``\\`` / ``|`` -> ``\\|`` cell escape."""
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] == "\\" and i + 1 < n and text[i + 1] in "\\|":
+            out.append(text[i + 1])
+            i += 2
+        else:
+            out.append(text[i])
+            i += 1
+    return "".join(out)
+
+
+def _split_row_cells(stripped: str) -> list[str]:
+    """Split a ``| a | b |`` row on unescaped ``|`` only, then unescape each cell.
+
+    A ``title`` cell may itself contain a literal ``|`` or ``\\`` (escaped at
+    write time as ``\\|`` / ``\\\\`` — ``campaign_init.py``'s
+    ``_validate_depends_on_for_write`` sibling). Splitting on every literal
+    ``|`` char, escaped or not, shifted every later cell in that row by one
+    column onto this header-indexed ``column_map`` (code review finding,
+    medium, campaign-dag-scheduler R1). A naive "not preceded by a single
+    backslash" lookbehind is not enough (doubt-review finding, medium): it
+    only inspects one preceding char, so a title containing an UNESCAPED
+    trailing backslash immediately adjacent to the next delimiter (no
+    padding space) still mis-splits. Consuming ``\\`` + the next char as one
+    unit while scanning — rather than a fixed-width lookbehind — is correct
+    for any content once the writer escapes ``\\`` before ``|`` (which
+    ``campaign_init.py`` does), because every backslash in the encoded text
+    is then always the first half of a two-char escape pair.
     """
+    inner = stripped.strip("|")
+    cells: list[str] = []
+    buf: list[str] = []
+    i, n = 0, len(inner)
+    while i < n:
+        ch = inner[i]
+        if ch == "\\" and i + 1 < n:
+            buf.append(inner[i:i + 2])
+            i += 2
+        elif ch == "|":
+            cells.append("".join(buf))
+            buf = []
+            i += 1
+        else:
+            buf.append(ch)
+            i += 1
+    cells.append("".join(buf))
+    return [_unescape_cell(c.strip()) for c in cells]
+
+
+def _depends_on_tokens(cell: str) -> list[str]:
+    """Cell grammar: comma-separated bare ids; empty cell -> ``[]``."""
+    return [_strip_md(tok) for tok in cell.split(",") if _strip_md(tok)] if cell.strip() else []
+
+
+def _row_from_cells(cells: list[str], column_map: dict[int, str]) -> dict:
+    at = {field: (cells[idx] if idx < len(cells) else "") for idx, field in column_map.items()}
+    return {
+        "id": _strip_md(at.get("id", "")),
+        "slug": _strip_md(at.get("slug", "")),
+        "title": at.get("title", ""),
+        "depends_on": _depends_on_tokens(at.get("depends_on", "")),
+    }
+
+
+def parse_campaign_skeleton(campaign_md_text: str) -> list[dict]:
+    """Parse the ``## Sub-Iterates`` markdown table into
+    ``[{id, slug, title, depends_on}]``.
+
+    Row order is preserved (authoritative for the board). The ``Status``
+    column is ignored — status comes from projection, not the skeleton.
+    Markdown emphasis is stripped from id/slug/depends_on cells.
+
+    **Header-indexed** (R1, campaign-dag-scheduler): columns are looked up by
+    the header row's own labels, not fixed positions, so a ``Depends On``
+    column (any position) never misaligns the rest. A header row is
+    recognized when ANY cell reads ``id`` (case-insensitive, markdown-emphasis
+    stripped), regardless of that cell's position — an earlier version only
+    checked ``cells[0]``, so a reordered header (e.g. ``| Slug | Title | ID |
+    Depends On |``) fell through to the legacy fixed positions and silently
+    misaligned every column of every row (external Tier-3 PR review,
+    blocking). No recognizable header at all falls back to the legacy fixed
+    positions with ``depends_on`` defaulting to ``[]``. **Structural-only with respect
+    to validation** — no ``validate_dependency_graph`` call here — but
+    ``depends_on`` is always extracted, since ``project_campaign_status``
+    needs it on the row to carry it through.
+
+    Raises ``ValueError`` on a missing/empty table, an empty id, or duplicate ids.
+
+    **UTF-8 BOM stripped up front** (Step 3.8 confidence-calibration probe,
+    boundary-probes.md's canonical category): a leading ``﻿`` — from a
+    campaign.md opened and resaved in Notepad — prefixes whatever line
+    happens to be first. On a file that starts with YAML frontmatter this is
+    harmless (frontmatter is skipped either way), but on a file where
+    ``## Sub-Iterates`` is literally the first line, the BOM broke this
+    function's own ``stripped.startswith("## ")`` header-section detection
+    entirely, producing a confusing "no table rows" error instead of the
+    real cause. Reproduced empirically before this fix, then fixed and
+    reprobed clean (asymptote reached: one further probe with the fix
+    applied found nothing further).
+    """
+    campaign_md_text = campaign_md_text.lstrip("﻿")
     rows: list[dict] = []
     in_section = False
+    column_map: dict[int, str] | None = None
     for line in campaign_md_text.splitlines():
         stripped = line.strip()
         if stripped.startswith("## "):
             in_section = stripped.lower() == "## sub-iterates"
+            column_map = None
             continue
         if not in_section or not stripped.startswith("|"):
             continue
-        cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if len(cells) < 2:
+        cells = _split_row_cells(stripped)
+        if len(cells) < 2 or all(set(c) <= set("-: ") for c in cells):  # data check / separator row
             continue
-        # skip the separator row (|---|---|) and the header row (| ID | Slug |...|)
-        if all(set(c) <= set("-: ") for c in cells):
-            continue
-        if cells[0].lower() == "id":
-            continue
-        rows.append({"id": _strip_md(cells[0]), "slug": _strip_md(cells[1]),
-                     "title": cells[2] if len(cells) > 2 else ""})
+        if column_map is None:
+            candidate = {i: _HEADER_ALIASES[k] for i, c in enumerate(cells)
+                         if (k := _strip_md(c).lower()) in _HEADER_ALIASES}
+            if "id" in candidate.values():
+                column_map = candidate
+                continue  # header row consumed, not a data row
+            column_map = _LEGACY_COLUMN_MAP  # legacy: no header — this row IS data
+        rows.append(_row_from_cells(cells, column_map))
 
     if not rows:
         raise ValueError(
@@ -184,13 +289,22 @@ def project_campaign_status(
     committed_status: dict | None,
     events_lines: Iterable[str],
     slug: str,
+    *,
+    skeleton: list[dict] | None = None,
 ) -> tuple[dict, dict]:
     """Project a campaign's ``status.json`` from its skeleton + the event log.
 
     Pure: no filesystem, no git. Returns ``(status_dict, summary)``. ``summary``
     is a fixed-shape operability record (counts + dropped subs + warnings).
+
+    ``skeleton`` is an optional pre-parsed override (the
+    ``parse_campaign_skeleton`` shape) — used by
+    ``lib.campaign_graph.safe_project_campaign_status`` to pass in a skeleton
+    whose ``depends_on`` cells were already frozen-contract-reverted, without
+    this function re-parsing (and so losing) that reversion. Defaults to
+    parsing ``campaign_md_text`` itself, unchanged for every existing caller.
     """
-    skeleton = parse_campaign_skeleton(campaign_md_text)
+    skeleton = skeleton if skeleton is not None else parse_campaign_skeleton(campaign_md_text)
     committed_status = committed_status or {}
     committed_by_id = {s.get("id"): s for s in committed_status.get("sub_iterates", [])}
     projected_by_id, warnings = _project_events(events_lines, slug)
@@ -223,6 +337,8 @@ def project_campaign_status(
             "branch": base.get("branch"),  # from the committed status, not the event
             "tests_passed": tests_passed,
             "tests_total": tests_total,
+            "depends_on": sk.get("depends_on", []),  # from the live skeleton, not the event (R1)
+            "merged_commit": base.get("merged_commit"),  # carried through; populated by R4's state mechanics
         })
 
     skeleton_ids = {sk["id"] for sk in skeleton}
@@ -249,7 +365,7 @@ def project_campaign_status(
     return new_status, summary
 
 
-def _slug_from_md(campaign_md_text: str) -> str | None:
+def slug_from_md(campaign_md_text: str) -> str | None:
     m = _FRONTMATTER_CAMPAIGN_RE.search(campaign_md_text)
     return m.group(1) if m else None
 
@@ -282,7 +398,7 @@ def regenerate_campaign_status(campaign_dir, events_log) -> tuple[dict, dict]:
             # "rebuild the board from tracked artifacts" true even after a bad write.
             committed_warning = "committed status.json was corrupt — rebuilt with no baseline"
 
-    slug = _slug_from_md(md_text) or (committed or {}).get("campaign") or campaign_dir.name
+    slug = slug_from_md(md_text) or (committed or {}).get("campaign") or campaign_dir.name
 
     events_lines: list[str] = []
     events_log = Path(events_log)

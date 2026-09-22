@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-21-r1-depends-on-schema",
+  "date": "2026-09-22",
+  "section": "Campaign campaign-dag-scheduler — R1: depends_on schema",
+  "title": "depends_on schema, campaign_graph.py, resume-safe readiness guard",
+  "context": "Bootstraps a dependency-aware parallel campaign scheduler: campaign.md needs an operator-editable depends_on edge per sub-iterate, and cmd_next needs to skip a not-yet-merged dependency without disturbing the existing single-unit serial engine.",
+  "decision": "Add a header-indexed Depends On column + carry-through, a new campaign_graph.py (charset/structural/frozen-contract validators + resume-safe projector) and loop_state.py (terminal-status mapping + ancestry-verified is_unit_ready), and one narrow kind==sub_iterate guard in cmd_next — no new flag/exit code.",
+  "consequences": "depends_on gating degrades safely (stays blocked, never falsely unblocks) but is NOT yet load-bearing within one continuous campaign session — only across a restart — until R4/R5b's cmd_mark_merged lands; escalated to the campaign owner in the ADR.",
+  "rationale": "4 rounds of external code review converged on real case-fold/fetch/type-validation/BOM bugs, all fixed; the remaining gap is architectural (R4's own promotion mechanism), not a code defect this sub-iterate can safely patch.",
+  "rejected": "Storing depends_on only in status.json (skip the campaign.md column) — rejected, campaign.md is what the operator/design-conversation read and edit.",
+  "commit": "",
+  "architecture_impact": "data-flow",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-adr.md"
+}

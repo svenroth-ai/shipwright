@@ -23,6 +23,21 @@ You receive these parameters in the prompt:
 - `base_branch`: Ref to branch off. **serial (campaign default): the FRESH `origin/<default>` remote ref** — every sub-iterate (incl. the first) branches off it, so it starts from a `main` that already contains every prior merged sub-iterate. (stacked: the previous sub-iterate's branch; null for the first stacked sub-iterate.)
 - `session_id`: Shipwright session ID
 - `branch_name`: Target branch name (e.g., `iterate/campaign-14.2-multi-question`)
+- `campaign_worktree` (campaign-dag-scheduler R2): campaign worktree path; absent on a standalone iterate.
+- `state_path` (campaign-dag-scheduler R2): path to this campaign's `loop_state.json`; absent on a standalone iterate.
+
+## Step-boundary liveness touches (campaign-dag-scheduler R2)
+
+When present (skip on a standalone iterate), touch the campaign session lock and this unit's lease at Step 1 (after branch setup), before Step 4, and before Step 5 — warn-and-continue on a non-zero exit. Mirror of `references/campaign-worktree.md`'s "Per-unit worktree path" section for the full rationale (incl. why `--worktree` here is `{project_root}`, not `{campaign_worktree}`).
+
+```bash
+uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch \
+  --campaign-worktree "{campaign_worktree}" --session-id "{session_id}"
+uv run "{shared_root}/scripts/checks/check_unit_lease.py" touch \
+  --state "{state_path}" --unit-id "{sub_iterate_id}" \
+  --worktree "{project_root}" --branch "{branch_name}" \
+  --campaign-worktree "{campaign_worktree}"
+```
 
 ## Workflow
 

@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-21-r1-depends-on-schema",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 1,
+      "findings": [
+        {
+          "severity": null,
+          "category": "Naming & Structure",
+          "file": null,
+          "line": null,
+          "finding": "campaign_status.py (344) and campaign_init.py (342) both cross the 300-line guideline — a real crossing, not a false alarm; mitigated (not silently ignored) via two ADR-gated bloat-baseline exceptions with a documented Ousterhout/YAGNI justification, per Shipwright's own bloat policy (splitting further was evaluated and rejected as a worse-shaped abstraction, not skipped for expedience).",
+          "suggestion": null,
+          "source": "self-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-21T22:10:51.478249+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 16,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "cmd_next`'s interim guard clause has an undefined terminal behavior when every remaining pending unit is blocked. `cmd_next` can't emit exit 4 (that's R4's, on `cmd_next_batch`), so in the R1→R4 window a campaign where B (depends on A) is the only pending unit must return something. If the FIFO loop exhausts candidates and falls through to today's \"nothing pending\" path, `cmd_next` returns the \"campaign finished\" signal (exit 2 semantics) while B is unstarted — `campaign-mode.md`'s loop would finalize and the session lock would release, with B silently never run. This is worse than the interim hazard the guard clause exists to close.",
+          "suggestion": "Specify the exhausted-candidates outcome explicitly for the interim window: e.g. `cmd_next` exits non-zero with a distinct stderr message naming the blocker via `describe_blocker` (reusing an existing non-2, non-5 exit code or a documented stderr-only contract that doesn't change `kind == \"section\"`), and add an acceptance test for \"all remaining pending units blocked\" in the interim configuration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The guard clause's ancestry verification (\"all deps `merged` with verified `merged_commit` ancestry\") has no fetch/retry policy in `cmd_next`. R4 specifies one-retry-then-leave-pending for `cmd_next_batch`, but R1's guard runs on every `cmd_next` call with no stated handling for a stale local ref or a failed fetch. A transient network failure makes a genuinely-ready unit look blocked — combined with the exit-2 fallthrough above, this can finalize a campaign prematurely. Also unspecified: where this git call sits relative to any lock, and what cwd it runs with (`branch_base.py`'s cwd ambiguity is deferred to R4, but `is_unit_ready` performs git operations now).",
+          "suggestion": "Define `is_unit_ready`'s ancestry check failure mode (treat unverifiable as not-ready + warning, never as \"finished\"), its retry count, and the cwd/repo root it executes against — the same invariant R4 states for `branch_base.py` should be pinned here for R1's own git calls.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Migrated-`complete` rows get `merged_commit` populated via \"a fresh, fetch-then-verify ancestry check against `origin/{default}`\" — but there's no handling for the fetch failing, the commit no longer being on the default branch (history rewrite, squash-merge of a rerun), or the default-branch name not resolving. In those cases `_load_units_from` must choose between treating the unit as `merged`-unverified (blocking dependents forever) or `failed` (wrongly failing a unit that completed).",
+          "suggestion": "Specify: fetch failure → warning + unit treated as `merged` with empty `merged_commit`, and `is_unit_ready` reports \"dependency merged but ancestry unverifiable\" via `describe_blocker` rather than hard-blocking silently. At minimum, make the degradation observable.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "parse_campaign_skeleton`'s \"legacy positional fallback for a table with no header row\" is a heuristic — a headerless table whose first data row happens to contain a token matching a known column name (e.g. a unit id literally named `status` or `id`, both charset-legal) could be misparsed as a header, silently misaligning every row.",
+          "suggestion": "Define the header-detection predicate precisely (e.g. first-row cells must be a subset of the known column-name set, case-insensitive) and unit-test the ambiguous case.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The plan (v6 preamble) states id uniqueness is enforced case-insensitively (\"Windows worktree directories case-fold\"), but R1's `validate_dependency_graph` spec lists only \"duplicate ids\" without stating the comparison, and `depends_on` references presumably match ids exactly. A `depends_on: r0` referencing unit `R0` would fail \"every referenced id exists\" — or pass, depending on unspecified comparison — inconsistently with the uniqueness rule.",
+          "suggestion": "State both comparisons explicitly (case-insensitive duplicate detection; dependency resolution — recommend case-insensitive with a warning on case mismatch) and cover in unit tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "check_frozen_contracts`'s per-unit revert creates a durable divergence between `campaign.md` (operator-edited, source of truth) and the frozen `loop_state.json` value used for scheduling, with only a transient `warnings` entry. An operator who edits a claimed unit's `depends_on` and later re-inits from `campaign.md` could get different scheduling than the frozen row implied, with no persisted record of the revert decision.",
+          "suggestion": "Low-stakes, but consider having the revert write the reverted value (or at least the rejection) into the unit's row or an event in `events_log` so the divergence is auditable after the fact.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "campaign_init.py` gets a `sys.path` bootstrap for `lib.campaign_graph`, but `campaign_graph.py` is also imported by `campaign_status.py` and (R4) `loop_claim.py` — the plan should confirm no entry point invokes `campaign_status.py` in a context where the `shared/scripts` root isn't already on `sys.path` (it presumably is today, since `campaign_status.py` already does `lib.` imports — fine, just verify `campaign_init.py`'s runtime invocation context actually supports the bootstrap, e.g. it's run as a plugin tool script with a known cwd).",
+          "suggestion": "One-line confirmation in the spec; otherwise the first runtime failure is at campaign setup.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "validate_dependency_graph() -> list[str]` cannot simultaneously provide “separately-typed” charset findings and structural findings. Callers would have to parse error text to decide reject versus warn.",
+          "suggestion": "Return structured findings, e.g. `{kind: \"charset\"|\"duplicate\"|\"missing_dependency\"|\"cycle\", message: ...}`, or separate `structural_errors` and `charset_warnings`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "is_unit_ready(unit, all_units)` is described as pure, but readiness requires a fresh Git ancestry assertion against a resolved base. Its signature has neither repository context nor a precomputed ancestry result.",
+          "suggestion": "Keep the predicate pure by passing verified dependency/base facts into it, and place fetch/`merge-base` verification in the caller. Define the campaign-worktree cwd/root explicitly for R1’s `cmd_next` path.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "R1 promises live `campaign.md` dependency refreshes in `cmd_next`, but explicitly adds no campaign-directory argument and does not identify how `cmd_next` obtains the current projection, applies it under state locking, or reacts to a degraded projection. As written, pending edits can be ignored or race with a claim.",
+          "suggestion": "Specify the exact refresh sequence: derive campaign root from existing state metadata, project safely, acquire the state lock, compare/apply pending rows, preserve frozen rows, then run FIFO readiness selection.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Frozen-contract handling is underspecified for deleted or renamed campaign rows. Comparing only `depends_on` for IDs present in both sources permits a claimed/running row to disappear from `campaign.md`, while `_load_units_from` is also required to retain every historic unit.",
+          "suggestion": "Define reconciliation rules for removed IDs: reject removal of non-pending rows, retain-and-report removed pending rows or explicitly support cancellation, and enforce case-insensitive identity matching consistently.",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Mapping an existing `status.json` `complete` row to `merged` requires the specific merge SHA, but the plan does not identify a trustworthy source for that SHA. Fetching `origin/default` only proves that some commit is on default; it cannot reconstruct which commit belonged to the completed unit.",
+          "suggestion": "Do not synthesize `merged_commit` from the current default tip. Require an existing recorded PR/merge SHA, otherwise retain a legacy state requiring an explicit audited migration before dependency scheduling is enabled.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "safe_project_campaign_status` is moved to a new module, but the plan does not explicitly change the current status-generation/progress call sites to invoke it. “Existing caller expects” the tuple shape does not establish that it will use the safe path.",
+          "suggestion": "Name and modify every production caller, including the `cmd_next` refresh path and campaign-progress/status regeneration path, and add a test proving malformed live markdown returns the prior projection rather than invoking normal regeneration.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The plan states that `campaign_graph.py` is imported by `campaign_status.py`, while `campaign_graph.py` wraps `parse_campaign_skeleton` from `campaign_status.py`. That creates a likely import cycle.",
+          "suggestion": "Keep `campaign_status` independent of `campaign_graph`; have `campaign_graph` import parser/projector functions one-way, or extract shared parsing primitives into a third small module.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Case-insensitive uniqueness is required by the Windows worktree model, but R1’s validator only says “duplicate ids.” `A` and `a` can create colliding paths and ambiguous references despite each passing the charset check.",
+          "suggestion": "Reject case-folded duplicate IDs and resolve `depends_on` references against the same canonical key while preserving the authored display ID.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "R1 documentation acceptance requires describing exit code 4, although R4 is the first code change that implements it. Publishing the operational action before the command exists creates a misleading intermediate contract.",
+          "suggestion": "Defer the executable exit-code table to R4, or clearly mark it as unavailable until R4 and avoid presenting it as an R1 behavior.  The design direction is sound, especially the source-of-truth and frozen-per-unit intent, but R1 is not yet independently implementable without clarifying state reconciliation, Git-proof ownership, and live-refresh wiring. These are targeted revisions rather than a reason to abandon the approach.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-21T22:07:14.118728+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Review findings\n\n**Category:** risk — **Severity:** high\n**Finding:** `cmd_next`'s interim guard clause has an undefined terminal behavior when *every* remaining pending unit is blocked. `cmd_next` can't emit exit 4 (that's R4's, on `cmd_next_batch`), so in the R1→R4 window a campaign where B (depends on A) is the only pending unit must return *something*. If the FIFO loop exhausts candidates and falls through to today's \"nothing pending\" path, `cmd_next` returns the \"campaign finished\" signal (exit 2 semantics) while B is unstarted — `campaign-mode.md`'s loop would finalize and the session lock would release, with B silently never run. This is worse than the interim hazard the guard clause exists to close.\n**Suggestion:** Specify the exhausted-candidates outcome explicitly for the interim window: e.g. `cmd_next` exits non-zero with a distinct stderr message naming the blocker via `describe_blocker` (reusing an existing non-2, non-5 exit code or a documented stderr-only contract that doesn't change `kind == \"section\"`), and add an acceptance test for \"all remaining pending units blocked\" in the interim configuration.\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** The guard clause's ancestry verification (\"all deps `merged` with *verified* `merged_commit` ancestry\") has no fetch/retry policy in `cmd_next`. R4 specifies one-retry-then-leave-pending for `cmd_next_batch`, but R1's guard runs on every `cmd_next` call with no stated handling for a stale local ref or a failed fetch. A transient network failure makes a genuinely-ready unit look blocked — combined with the exit-2 fallthrough above, this can finalize a campaign prematurely. Also unspecified: where this git call sits relative to any lock, and what cwd it runs with (`branch_base.py`'s cwd ambiguity is deferred to R4, but `is_unit_ready` performs git operations *now*).\n**Suggestion:** Define `is_unit_ready`'s ancestry check failure mode (treat unverifiable as not-ready + warning, ne […truncated]\n\n[openai] 1. **Category:** approach  \n   **Severity:** high  \n   **Finding:** `validate_dependency_graph() -> list[str]` cannot simultaneously provide “separately-typed” charset findings and structural findings. Callers would have to parse error text to decide reject versus warn.  \n   **Suggestion:** Return structured findings, e.g. `{kind: \"charset\"|\"duplicate\"|\"missing_dependency\"|\"cycle\", message: ...}`, or separate `structural_errors` and `charset_warnings`.\n\n2. **Category:** dependency  \n   **Severity:** high  \n   **Finding:** `is_unit_ready(unit, all_units)` is described as pure, but readiness requires a fresh Git ancestry assertion against a resolved base. Its signature has neither repository context nor a precomputed ancestry result.  \n   **Suggestion:** Keep the predicate pure by passing verified dependency/base facts into it, and place fetch/`merge-base` verification in the caller. Define the campaign-worktree cwd/root explicitly for R1’s `cmd_next` path.\n\n3. **Category:** approach  \n   **Severity:** high  \n   **Finding:** R1 promises live `campaign.md` dependency refreshes in `cmd_next`, but explicitly adds no campaign-directory argument and does not identify how `cmd_next` obtains the current projection, applies it under state locking, or reacts to a degraded projection. As written, pending edits can be ignored or race with a claim.  \n   **Suggestion:** Specify the exact refresh sequence: derive campaign root from existing state metadata, project safely, acquire the state lock, compare/apply pending rows, preserve frozen rows, then run FIFO readiness selection.\n\n4. **Category:** edge-case  \n   **Severity:** high  \n   **Finding:** Frozen-contract handling is underspecified for deleted or renamed campaign rows. Comparing only `depends_on` for IDs present in both sources permits a claimed/running row to disappear from `campaign.md`, while `_load_units_from` is also required to retain every historic unit.  \n   **Suggestion:** Define reconciliation rules f […truncated]",
+      "verdicts": {
+        "glm": "revise",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/scripts/tools/campaign_init.py",
+          "line": 228,
+          "finding": "An unescaped `|` in a sub-iterate `title` shifts every later cell in that campaign.md table row under the new header-indexed column_map, silently corrupting depends_on for that row.",
+          "suggestion": "Escape `|`/newline in title before writing the row.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/campaign_graph.py",
+          "line": 39,
+          "finding": "campaign_graph.py imports the module-private `_slug_from_md` from campaign_status.py across the module boundary.",
+          "suggestion": "Rename to a public slug_from_md.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T00:55:41.808088+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/campaign_status.py",
+          "line": 92,
+          "finding": "Claim under doubt: The code-review remediation's escape-aware split (`_split_row_cells`, a single-char `(?<!\\\\)\\|` lookbehind) closes the column-misalignment class for any title containing a `|`. — A single-char lookbehind only inspects the ONE char preceding a `|`. A title ending in an unescaped, unpadded literal backslash directly adjacent to the real delimiter (e.g. a hand-edited row) still merges the next cell into the title, silently corrupting depends_on with no error. Concrete repro traced by hand and confirmed by a failing regression test before the fix.",
+          "suggestion": "Escape `\\` itself (`\\` -> `\\\\`, ahead of `|` -> `\\|`) at write time, and read with a pair-consuming scan (`\\` + next char is always one unit) instead of a fixed-width lookbehind.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/campaign_status.py",
+          "line": 107,
+          "finding": "Claim under doubt: Multiple literal `|` characters within one title cell, and consecutive escaped pipes, round-trip correctly through the escape/unescape pair. — Traced by hand across both the escape and split/unescape steps; no failure found. Recorded as an attempted-and-failed disproof, not a live issue.",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T01:06:00.909139+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 5,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "spec",
+          "file": "[shared/scripts/lib/autonomous_loop.py:184](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/autonomous_loop.py:184)",
+          "line": null,
+          "finding": "cmd_next` only checks the `depends_on` values already stored in `loop_state.json`; it never refreshes pending units from the live `campaign.md` projection via `safe_project_campaign_status`. This misses R1’s required per-`cmd_next` refresh, so an operator can add or remove a dependency after initialization and the next claim will use stale ordering data.",
+          "suggestion": "Persist/resolve the campaign directory for the loop and, while holding the claim lock, refresh only pending rows from the safe projection before applying `is_unit_ready`.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/scripts/lib/campaign_graph.py:254](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/campaign_graph.py:254)",
+          "line": null,
+          "finding": "safe_project_campaign_status` is introduced but no production caller is wired in this diff. Consequently structural degradation and frozen-contract reversion are only exercised by direct tests, not by the live R1 scheduler/projection path.",
+          "suggestion": "Route the campaign status consumer used by campaign execution through this wrapper, and add an integration test proving a live frozen edit cannot alter a subsequent claim.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": "[shared/scripts/lib/campaign_graph.py:250](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/campaign_graph.py:250)",
+          "line": null,
+          "finding": "_read_loop_state_units` treats syntactically valid but schema-invalid state as usable. For example, `{\"units\": [null]}` or `{\"units\": {}}` reaches `check_frozen_contracts`, which calls `.get()` on a non-dict and crashes the supposedly resume-safe status projection.",
+          "suggestion": "Validate that `units` is a list of dictionaries before returning it; otherwise return `[]` (or a degraded warning) consistently with the function’s corrupt-state contract.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "[shared/tests/test_campaign_dag_integration.py:11](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/tests/test_campaign_dag_integration.py:11)",
+          "line": null,
+          "finding": "The required integration route is `campaign_init → cmd_next` across a resume, but this test explicitly hand-writes the campaign artifacts and monkeypatches ancestry verification. It therefore cannot catch an incompatibility between generated `campaign_init` output, loader behavior, and real ancestry verification.",
+          "suggestion": "Create the campaign through `campaign_init` and use a local git repository with a real verified commit for the resume assertion; retain focused mocks only in unit tests.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "[shared/scripts/lib/campaign_status.py:218](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/campaign_status.py:218)",
+          "line": null,
+          "finding": "The plan explicitly requires `campaign_status.py` to remain within its 300-line cap after moving the wrapper to `campaign_graph.py`. This change grows it to 344 lines and changes the baseline to an exception instead of implementing the specified bloat mitigation.",
+          "suggestion": "Move sufficient parser/projection support into an appropriate module or otherwise revise the approved plan before relying on a bloat exception.  Ship-with-fixes: the dependency guard is a useful partial implementation, but live dependency edits and the resume-safe projection are not actually enforced on the operational claim path.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": "openrouter",
+      "completed_at": "2026-09-21T22:38:34.151130+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "partial",
+      "raw_excerpt": "[glm] ## Findings\n\n**1. Category: bug — Severity: high**\n`shared/scripts/lib/loop_state.py` (`_map_unit_status` / `is_unit_ready`) + `shared/scripts/lib/autonomous_loop.py::cmd_next` guard — **R1 actively breaks single-session campaigns that use `depends_on`.** Within one continuous run, `cmd_record` writes a finished unit's `loop_state.json` status as `\"complete\"` (verified nowhere is it promoted to `\"merged\"` mid-session — the diff's own docstring for `verify_merged_commit_ancestry` admits this as \"known limitation 2\"). `is_unit_ready` requires `status == \"merged\"`, so after A is recorded, B stays blocked for the rest of the session. `cmd_next` then falls through to exit `2`, and per the documented loop-action table exit `2` → **Finalize** — the orchestrator finalizes a campaign with a pending, never-started dependent. Pre-R1, B would simply have been built. The additive `blocked_pending_ids` JSON fields are explicitly not consumed by today's orchestrator, so nothing prevents the early finalize. The ADR frames this as \"no live benefit\"; it is worse than that — it is a live regression. Fix: either map `complete → merged` for readiness purposes within `cmd_next`'s guard (trusting `cmd_record`'s own commit), or block exit-2 fallthrough semantics when `blocked_pending_ids` is non-empty (which needs an exit-code/behavior change now, not in R4).\n\n**2. Category: spec — Severity: medium**\n`autonomous_loop.py::cmd_next` guard — the spec's R1 \"Readiness reads the live `campaign.md` projection, refreshed per-pending-unit … on `cmd_next`'s own narrow guard clause\" is not implemented: the guard reads only the `depends_on` frozen onto each unit's row at `cmd_init` time. ADR finding #9's \"rejected-with-reason\" is a deviation from the spec text, not a justification grounded in it — an operator who edits a *pending* unit's `depends_on` mid-campaign (explicitly legal per the frozen-on-claim rule) gets no effect until a full state rebuild. Either implement the refresh or get  […truncated]\n\n[openai] - Category: spec\n- Severity: high\n- File: [shared/scripts/lib/autonomous_loop.py:184](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/autonomous_loop.py:184)\n- Finding: `cmd_next` only checks the `depends_on` values already stored in `loop_state.json`; it never refreshes pending units from the live `campaign.md` projection via `safe_project_campaign_status`. This misses R1’s required per-`cmd_next` refresh, so an operator can add or remove a dependency after initialization and the next claim will use stale ordering data.\n- Suggestion: Persist/resolve the campaign directory for the loop and, while holding the claim lock, refresh only pending rows from the safe projection before applying `is_unit_ready`.\n\n- Category: spec\n- Severity: medium\n- File: [shared/scripts/lib/campaign_graph.py:254](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/campaign_graph.py:254)\n- Finding: `safe_project_campaign_status` is introduced but no production caller is wired in this diff. Consequently structural degradation and frozen-contract reversion are only exercised by direct tests, not by the live R1 scheduler/projection path.\n- Suggestion: Route the campaign status consumer used by campaign execution through this wrapper, and add an integration test proving a live frozen edit cannot alter a subsequent claim.\n\n- Category: edge-case\n- Severity: medium\n- File: [shared/scripts/lib/campaign_graph.py:250](C:/Users/SvenRoth/AppData/Local/Temp/shipwright-codex-review-fsbm9kkk/shared/scripts/lib/campaign_graph.py:250)\n- Finding: `_read_loop_state_units` treats syntactically valid but schema-invalid state as usable. For example, `{\"units\": [null]}` or `{\"units\": {}}` reaches `check_frozen_contracts`, which calls `.get()` on a non-dict and crashes the supposedly resume-safe status projection.\n- Suggestion: Validate that `units` is a list of dictionaries before returning it; otherwise return `[]` (or a de […truncated]",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T00:46:59.884873+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "opus"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-21T22:10:03.279164+00:00",
+      "disposition": "runner has no Agent tool for the internal plan-review pass; permanent documented gap, never promoted",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}
