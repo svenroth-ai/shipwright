@@ -84,7 +84,18 @@ def _reconcile_in_progress(state: dict) -> list[str]:
             except (json.JSONDecodeError, OSError):
                 pass
 
-        if unit.get("branch"):
+        # R2's lease heartbeat (lib.unit_lease) can populate `branch` on this
+        # row from Step 1, well before any commit exists — once a row has
+        # EVER been lease-touched, `branch`'s presence no longer implies
+        # `cmd_record` reported back (the only pre-R2 writer of this field),
+        # so the branch-has-commits guess below can never safely apply to it
+        # again, live lease or since-expired: gating on staleness alone only
+        # re-triggers the exact same false-complete bug once the lease
+        # expires (doubt-reviewer, high — a resume happening AFTER the lease
+        # window is the common case, not the exotic one). A never-touched row
+        # (no lease fields at all — the only way `branch` could be set
+        # pre-R2) still takes the original evidence-based path unchanged.
+        if unit.get("lease_touched_at") is None and unit.get("branch"):
             try:
                 result = subprocess.run(
                     ["git", "rev-parse", "--verify", f"refs/heads/{unit['branch']}"],
@@ -123,20 +134,28 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 1
 
     if state_path.exists():
-        existing = _load_state(state_path)
-        in_progress = [u for u in existing.get("units", []) if u["status"] == "in_progress"]
-        if in_progress:
-            warnings = _reconcile_in_progress(existing)
-            for w in warnings:
-                print(f"RECONCILE: {w}", file=sys.stderr)
-            _save_state(state_path, existing)
-            print(json.dumps({"action": "reconciled", "warnings": warnings}))
-            return 0
+        # Doubt-reviewer, medium: this read-modify-write previously took no
+        # lock, unlike every other loop_state.json writer (cmd_next/
+        # cmd_record/touch_unit_lease) — harmless while nothing else could be
+        # writing concurrently, but R2's lease heartbeat now legitimately can
+        # be (a live runner touching its own row while a resumed orchestrator
+        # session inits). Same `loop.lock` as everyone else, so a concurrent
+        # heartbeat is serialized rather than clobbered.
+        with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
+            existing = _load_state(state_path)
+            in_progress = [u for u in existing.get("units", []) if u["status"] == "in_progress"]
+            if in_progress:
+                warnings = _reconcile_in_progress(existing)
+                for w in warnings:
+                    print(f"RECONCILE: {w}", file=sys.stderr)
+                _save_state(state_path, existing)
+                print(json.dumps({"action": "reconciled", "warnings": warnings}))
+                return 0
 
-        pending = [u for u in existing.get("units", []) if u["status"] == "pending"]
-        if pending:
-            print(json.dumps({"action": "resumed", "pending": len(pending)}))
-            return 0
+            pending = [u for u in existing.get("units", []) if u["status"] == "pending"]
+            if pending:
+                print(json.dumps({"action": "resumed", "pending": len(pending)}))
+                return 0
 
     loop_id = f"{args.kind}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
     try:

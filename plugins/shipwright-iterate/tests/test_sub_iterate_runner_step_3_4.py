@@ -30,8 +30,11 @@ CAMPAIGN_STEP_3_4 = (
     / "campaign-step-3-4-risk-recheck.md"
 )
 
-#: The bloat baseline pins the runner contract here (state: exception, ADR-119).
-RUNNER_DOC_LINE_CEILING = 497
+#: The bloat baseline pins the runner contract here (state: exception,
+#: ADR-119 raised 400->497; campaign-dag-scheduler R2's own bloat-exception
+#: ADR raised 497->512 — see
+#: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-bloat-exception.md).
+RUNNER_DOC_LINE_CEILING = 512
 
 
 def _runner() -> str:
