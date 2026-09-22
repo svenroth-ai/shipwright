@@ -136,11 +136,21 @@ def test_campaign_level_git_add_all_does_not_stage_sibling_content(git_origin_re
     convention rather than assuming an un-configured fixture behaves the
     same way."""
     work, _ = git_origin_repo
+    # CI has no global git identity configured for this throwaway repo (unlike
+    # a dev machine's own global config) — `git commit` fails with exit 128
+    # ("Please tell me who you are") without it. Mirrors git_origin_repo's own
+    # fixture env, since this is the only test in this file that commits
+    # outside that fixture's internal `_git` helper.
+    commit_env = os.environ.copy()
+    commit_env.update({
+        "GIT_AUTHOR_NAME": "Iso Test", "GIT_AUTHOR_EMAIL": "iso@test.invalid",
+        "GIT_COMMITTER_NAME": "Iso Test", "GIT_COMMITTER_EMAIL": "iso@test.invalid",
+    })
     (work / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(work), "add", ".gitignore"],
                     capture_output=True, text=True, check=True)
     subprocess.run(["git", "-C", str(work), "commit", "-m", "gitignore .worktrees/"],
-                    capture_output=True, text=True, check=True)
+                    env=commit_env, capture_output=True, text=True, check=True)
 
     wt_r2 = _add_worktree(work, composite_worktree_name("dag-scheduler", "R2"),
                            "iterate/campaign-dag-scheduler--R2")
