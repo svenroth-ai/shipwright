@@ -400,6 +400,46 @@ sixth cascade round for two already-non-blocking readability fixes was
 judged disproportionate to the marginal risk. Reviews recorded and
 promoted from this round's payloads.
 
+**Post-cascade CI discovery, before merge:** the delegated cascade above
+(and every local check run this session) only exercises `shared/tests` —
+`plugins/shipwright-iterate/tests` was never run locally this session,
+despite `CLAUDE.md`'s own Testing section naming both. CI's "Python (lint +
+test)" job runs it and failed:
+`test_skill_references_link.py::test_every_new_reference_under_loc_budget`
+hard-asserts every file in `EXPECTED_TOPICAL_REFERENCES` (which includes
+`campaign-mode.md`) stays <= 400 LOC, with NO exception mechanism — a
+second, independent LOC cap on the same file the bloat-baseline/ADR-
+exception system above (this ADR's own sibling) already approves past 400.
+`campaign-mode.md` was exactly 400 LOC on `main` before R3, so this gate
+was latent (tight, not yet tripped) rather than newly introduced by R3.
+**Fixed:** `test_every_new_reference_under_loc_budget` now reads
+`shipwright_bloat_baseline.json` via a new `_bloat_exception_budgets()`
+helper — the same ADR-backed authorization this file's own growth already
+carries — rather than leaving two silently conflicting caps on the same
+file. Verified via the full `shipwright-iterate` plugin suite (968 passed,
+1 skipped) and re-confirmed against the full `shared/tests` suite (11432
+passed) and repo-wide lint, both green.
+
+A dedicated code-reviewer pass on this fix alone (it is new, previously
+unreviewed logic, not a tweak to already-reviewed code) returned PASS with
+6 non-blocking findings, all fixed before commit: (medium) the exemption
+was unconditional (file measurement stopped entirely once exempted) rather
+than capped at the entry's own `current` — fixed by returning a
+`dict[str, int]` of per-file ceilings instead of a bare exemption set; (low
+x5) the basename match could collide with a same-named exception filed
+elsewhere in the repo (fixed: path-prefix-scoped to this references dir);
+the fail-open `except` clause missed `UnicodeDecodeError` on a non-UTF-8
+baseline (fixed: `except (OSError, ValueError)`, both being `ValueError`
+subclasses covers it); the predicate didn't require a non-empty `adr` link
+despite the docstring's "ADR-backed" claim, looser than Group H's H4 audit
+(fixed: added the check); the new helper itself had no test coverage
+(fixed: added `test_bloat_exception_budgets_only_exempts_approved_references`,
+using a `baseline_path` test-seam parameter rather than monkeypatching a
+module global); the original name promised paths but returned basenames
+(fixed: renamed `_bloat_exception_paths` -> `_bloat_exception_budgets`).
+Re-verified: `shipwright-iterate` plugin suite 969 passed, 1 skipped; lint
+clean.
+
 ## Rejected alternatives
 
 Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch
