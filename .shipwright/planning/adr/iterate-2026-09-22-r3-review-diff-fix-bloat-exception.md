@@ -499,3 +499,13 @@ the previously-unchecked `diff=` capture, matching the guard already on
 `merge-base` one line above (same fail-open class, lower probability).
 `shipwright_bloat_baseline.json`'s `current` is left at 706 (actual: 705,
 under the existing ceiling) — no bump needed this round.
+
+**Round 10 (705 -> 706, no bump needed — exactly at the ceiling).** Two
+independent fresh reviewers converged on the same residual finding: the
+`run_dir`/`pr_url` "cross only the a/b/c SPAWN boundary" wording (added in
+round 8's rewrite) was itself still inaccurate — `pr_url` is assigned before
+the `fires` judgement too, so it crosses both boundaries just like
+`$unit_wt`. Reworded to sidestep the attribution entirely ("`run_dir`/`pr_url`
+are re-derived from scratch here, so which boundary they crossed is moot"),
+net +1 line. `shipwright_bloat_baseline.json`'s `current` stays at 706 —
+actual is now exactly 706, the existing ceiling, zero headroom remaining.
