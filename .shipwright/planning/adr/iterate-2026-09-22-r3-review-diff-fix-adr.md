@@ -475,6 +475,54 @@ module global); the original name promised paths but returned basenames
 Re-verified: `shipwright-iterate` plugin suite 969 passed, 1 skipped; lint
 clean.
 
+**Stage-3 doubt-review, final round (`aee815011bbc0080d`) — 7 doubts, 1
+high/4 medium/2 low by the reviewer's own count.** D1 (record's
+`--project-root` not unit-scoped like `--payload-file` already is, no
+`STRICT-STOP` on any `record` call), D3 (3g's merge gate checks only that
+`reviewed_head` exists, not that the cascade actually shipped — a pin
+written unconditionally, before review, holds a live-tip SHA for the whole
+cascade window), D4 (re-entry clears only `reviewed_head`, leaving a stale
+`fires` digit uncross-checked), and D6 (the reviews.json commit has no
+pathspec and its `git add` has no `STRICT-STOP`) were independently
+re-verified against the actual file content (not taken on the reviewer's
+word) and confirmed as genuine defects — same class, and in D1's case the
+same recurring root cause, as the shell-boundary/scoping bugs rounds 4-10
+already fixed. Fixed in a follow-up commit (see this file's own
+bloat-exception ADRs for the resulting LOC growth). D2 (`$shipped_head`/
+`$pr_url` read after a `run_dir=` rebuild with no dual-write, unlike the
+four values that already get one) was hardened the same way even though
+the underlying "does a boundary actually cross here" claim is arguable —
+closing the ambiguity is cheaper than resolving it. D5 (the fires trigger's
+100-line clause is exactly computable but left entirely to model judgement)
+was tightened to compute the line count mechanically and force `fires=1`
+past the threshold, leaving only the semantic risk-flag/medium+ clauses to
+judgement.
+
+**D7 (low, security) — rebutted, not fixed.** The doubt-reviewer noted that
+`{branch}`/`{id}`/`{loop_id}` are interpolated into double-quoted shell
+strings (`gh pr view "{branch}"`, `run_dir=".../{loop_id}/{id}"`) with no
+shell-side validation, while `review_attribution.py`'s `_safe_segment`
+guards the same values on the Python side before using them as filesystem
+path segments. This asymmetry is real but the two guards protect different
+things: `_safe_segment` stops a value from escaping
+`.shipwright/runs/<loop_id>/<unit_id>/` on disk (blocks `.`/`..`, path
+separators, NUL, a Windows drive-relative `:` escape) — a path-traversal
+concern specific to that helper's own contract, not a general "these values
+are shell-safe" guarantee. The shell-side values (`{branch}`, `{id}`,
+`{loop_id}`) all originate from `loop_state.json` / the campaign brief,
+authored and committed by the same operator who already has shell execution
+rights on the host running this orchestrator and write access to the repo —
+there is no privilege boundary being crossed by an unvalidated branch name
+reaching a locally-run `gh pr view`. Every other templated value in
+`campaign-mode.md` (`{project_root}`, `{default}`, `{run_id}`, `{loop_id}`
+itself elsewhere) is interpolated into shell commands the identical way,
+unvalidated, throughout this file and every other step of the campaign
+loop — singling out these three for quoting/validation would be
+inconsistent with the file's existing convention and is out of scope for
+this sub-iterate, whose mandate is unit-scoped review attribution, not a
+general hardening pass over campaign-mode.md's templating. Accepted as a
+pre-existing, operator-trust-model risk, unchanged by R3.
+
 ## Rejected alternatives
 
 Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch

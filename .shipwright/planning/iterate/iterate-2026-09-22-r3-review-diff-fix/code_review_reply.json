@@ -1,32 +1,33 @@
 {
-  "section": "R3-round9-verify",
+  "section": "R3-round13-verify",
   "verdict": "PASS",
   "review": [
     {
-      "severity": "low",
-      "category": "correctness",
+      "severity": "medium",
+      "category": "architecture",
       "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 560,
-      "finding": "Matches independent spec-reviewer finding (b): test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns's docstring still carries the EXACT claim round 9 just corrected in campaign-mode.md -- '$unit_wt/$diff_head/$fires/$pr_json cross the earlier fires-judgement boundary instead', with $unit_wt still in the fires-only group. Doc was fixed, its mirror was not -- repo now asserts both readings at once. The round-8 ADR even records fixing this specific mirror as part of that round's work; round-9's ADR entry says 'corrected in the doc' (singular), confirming the mirror was missed.",
-      "suggestion": "MUST FIX, in-place, zero net lines: change 'a separate crossing from $unit_wt/$diff_head/$fires/$pr_json, which cross the earlier fires-judgement boundary instead' to '...from $diff_head/$fires/$pr_json, which cross the earlier fires-judgement boundary; $unit_wt crosses both'."
+      "line": 760,
+      "finding": "WINDOW=260 is correct today but sits in a 31-char-wide valid band [234, 265): the spec row's own guard ends at 234 (floor) and the code row's neighbour guard ends at 265 (ceiling). Mutation-sensitivity margin on the --review-type code --status completed call is only 5 normalized chars -- any >=5-char shortening of campaign-mode.md's doubt-completed line silently restores the round-12 false pass.",
+      "suggestion": "Non-blocking. Next touch: scan the raw document for each record logical command (following backslash continuations) and assert each ends with || STRICT-STOP -- no tuned constant. Interim: end = min(at + WINDOW, next_record_call_at), strictly safer than either round-12's or round-13's rule alone."
     },
     {
-      "severity": "low",
+      "severity": "medium",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 523,
-      "finding": "Matches independent spec-reviewer finding (a): same sentence, pr_url clause. 'run_dir and pr_url cross only the a/b/c SPAWN boundary' -- but pr_url is assigned at :313, before the fires judgement at :389, same as unit_wt. Under the sentence's own definition it crosses both boundaries too. Harmless in practice (pr_url is re-derived fresh at :530, never relies on surviving either boundary) but is the same half-truth just removed for unit_wt.",
-      "suggestion": "Optional, cheap, in-place (campaign-mode.md has ZERO bloat headroom -- baseline current:706 matches actual count exactly, any net-line-growth edit needs a bump+ADR): drop the word 'only' -- e.g. 'run_dir/pr_url are re-derived from scratch here, so which boundary they crossed is moot'. Strictly-shrinking or net-neutral edit only."
+      "line": 384,
+      "finding": "Neither half of round 12's portability remediation (tr -d '[:space:]' at the compute site; the numeric case guard at the re-read site) has regression coverage. Reverting either leaves the suite green.",
+      "suggestion": "Add two literal assertions to test_step_3f_bis_fires_line_count_is_computed_not_judged. Note the norm() trap: '*' is stripped, so assert against \"''|[!0-9])\", not the raw \"''|*[!0-9]*)\"."
     },
     {
       "severity": "low",
-      "category": "test-coverage",
+      "category": "readability",
       "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 638,
-      "finding": "Optional, non-blocking: the round-9 gh pr checks --watch || STRICT-STOP guard itself is not asserted anywhere (existing test only checks ordering + --watch presence, not the guard). The round-8 structural test's premise ('3g has no model judgement anywhere in its body') explicitly rests on this guard existing -- if deleted, that premise silently goes stale with tests still green.",
-      "suggestion": "Optional: add one assertion that the gh pr checks line ends with || STRICT-STOP. Skip if it risks scope creep -- explicitly flagged as non-blocking by the reviewer."
+      "line": 425,
+      "finding": "test_step_3f_bis_rederives_run_dir_before_the_fires_write's 400-char lookback now has 5 chars of slack (measured rebuild-to-fires-write distance = 395), consumed by this round's new case-statement line. The docstring's own stated rationale for 400 (65 chars of slack) no longer holds.",
+      "suggestion": "Widen to 500 to match the sibling block test's slack at the same site, and update the docstring, or anchor structurally rather than by char count."
     }
   ],
-  "recorded_from": "a7120a1352c0d59b6",
+  "summary": "PASS. The round-12 blocking finding (an ineffective STRICT-STOP test window) is genuinely fixed -- independently reproduced all five mutation probes by hand rather than trusting the summary, and 260 holds for all five record calls. Three non-blocking findings (fragile window margins on two tests; two untested portability fixes) are quality/durability notes for the next touch of this file, not defects shipping today.",
+  "recorded_from": "ac42e075b1662f1f6",
   "run_id": "iterate-2026-09-22-r3-review-diff-fix"
 }
