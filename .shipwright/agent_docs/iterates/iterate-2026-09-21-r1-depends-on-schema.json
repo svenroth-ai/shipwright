@@ -1,0 +1,90 @@
+{
+  "run_id": "iterate-2026-09-21-r1-depends-on-schema",
+  "date": "2026-09-21T23:47:11.913684Z",
+  "event_at": "2026-09-21T23:46:37.866662+00:00",
+  "type": "feature",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-r1-depends-on-schema",
+  "spec": ".shipwright/planning/iterate/2026-09-20-campaign-dag-scheduler-plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-21-r1-depends-on-schema",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "a valid header-indexed `Depends On` column round-trips through `parse_campaign_skeleton` into `[id, ...]` lists, comma-separated and markdown-emphasis-stripped per token, with an empty cell reading as `[]`",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_status_depends_on.py PASSED (13 tests)"
+      },
+      {
+        "behavior": "a campaign.md with no `Depends On` column falls back to the legacy fixed id/slug/title positions and every row defaults to `depends_on: []`",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_status_depends_on.py::TestLegacyFallback PASSED"
+      },
+      {
+        "behavior": "a UTF-8 BOM prefixing a frontmatter-less campaign.md no longer breaks `## Sub-Iterates` header detection (real bug found via empirical boundary probing, fixed with `lstrip(\"\\ufeff\")`)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_status_depends_on.py::TestBoundaryProbes::test_utf8_bom_on_frontmatter_less_file PASSED"
+      },
+      {
+        "behavior": "`validate_dependency_graph` rejects duplicate ids, unknown references, self-dependency, and cycles of any length as structural findings, case-folding BOTH duplicate-detection and existence-resolution so `R0`/`r0` collide and `depends_on: [r0]` resolves against `R0`",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_graph.py (33 tests, incl. test_mixed_case_cycle_detected) PASSED"
+      },
+      {
+        "behavior": "a row with a missing or non-string id is reported as its own structural finding rather than raising `TypeError` in a bare set/sort",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_graph.py::test_missing_id_is_its_own_structural_finding_no_crash, ::test_non_string_id_is_its_own_structural_finding_no_crash PASSED"
+      },
+      {
+        "behavior": "`check_frozen_contracts` reverts a `depends_on` edit on any non-pending unit to its frozen `loop_state.json` value, case-insensitively matched, and names the unit in a `warnings` entry",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_graph.py::test_case_mismatched_unit_id_still_frozen PASSED"
+      },
+      {
+        "behavior": "`campaign_init.py` hard-rejects a structural violation or a charset violation at write time, and rejects a non-list / non-string-membership `depends_on` value with a clean `ValueError` naming the offending id (not an uncaught `TypeError`)",
+        "disposition": "tested",
+        "evidence": "plugins/shipwright-iterate/tests/test_campaign_init_depends_on.py (11 tests, incl. test_depends_on_non_list_non_string_raises_valueerror_not_typeerror) PASSED"
+      },
+      {
+        "behavior": "`lib.loop_state.is_unit_ready` requires every declared dependency to be `merged` with a `merged_commit` freshly verified (fetch + `git merge-base --is-ancestor`) against `origin/<default>` -- a failed fetch, a non-hex-SHA value, or an unverified commit all degrade SAFELY to blocked, never falsely unblocking",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state.py (28 tests, incl. test_failed_fetch_returns_none_never_trusts_stale_local_ref, test_non_hex_sha_rejected_before_any_subprocess_call) PASSED"
+      },
+      {
+        "behavior": "the resume-safe loader maps `status.json`'s terminal statuses onto unit statuses (`complete`/`done` -> `merged`, `failed`/`escalated` -> `failed`) and prefers a durable `merged_commit` over the legacy `commit` field once one is present",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state.py::test_done_maps_to_merged_same_as_complete, ::test_prefers_durable_merged_commit_over_legacy_commit_field PASSED"
+      },
+      {
+        "behavior": "END-TO-END: `cmd_next`'s `kind == \"sub_iterate\"`-gated readiness guard skips a pending-but-blocked unit in favor of the next FIFO-eligible candidate, still claims an independent sibling despite a blocked unit ahead of it in FIFO order, claims the dependent once its dependency is `merged` and ancestry-verified, and falls through to `{\"done\": true}` with observable `blocked_pending_ids`/`blockers` fields when every remaining unit is blocked -- `kind == \"section\"` (shipwright-build) is completely unaffected",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_autonomous_loop_depends_on.py (7 tests) PASSED; shared/tests/test_campaign_dag_integration.py::test_b_waits_for_a_then_unblocks_across_resume_c_never_blocked, ::test_ancestry_unverified_keeps_b_blocked_across_resume, ::test_editing_claimed_units_depends_on_reverts_only_that_unit PASSED (also this run's F0.5 CLI surface: `uv run pytest shared/tests/test_campaign_dag_integration.py -q`, exit 0, 3 passed)"
+      },
+      {
+        "behavior": "`safe_project_campaign_status` degrades to the LAST successful `status.json` projection plus a `warnings`/`degraded_reason` entry on a structural violation, and never invents a new top-level `status` token",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_campaign_graph.py (degraded side-channel tests) PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 11,
+      "tested": 11,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 11,
+      "covered_acs": 11
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 3,
+    "exit_code": 0,
+    "evidence_path": ".shipwright/runs/iterate-2026-09-21-r1-depends-on-schema/surface_verification.log"
+  },
+  "declared_removals": []
+}

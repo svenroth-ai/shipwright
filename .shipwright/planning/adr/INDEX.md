@@ -148,3 +148,8 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Shared per-journey E2E coverage oracle](iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md)
 - [Canonical plugin-root resolver + deterministic Codex bundle builder](iterate-2026-09-20-codex-plugin-bundle-root-contract-resolver-and-bundle-builder.md)
 - [Codex activation-envelope delivery: prompt-borne, minted reactively by UserPromptSubmit](iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md)
+- [R1 — `depends_on` schema, `campaign_graph.py`, resume-safe readiness](iterate-2026-09-21-r1-depends-on-schema-adr.md)
+- [Bloat exception — `shared/scripts/lib/campaign_graph.py` raised to 354-LOC](iterate-2026-09-21-r1-depends-on-schema-campaign-graph-bloat.md)
+- [Bloat exception — `plugins/shipwright-iterate/scripts/tools/campaign_init.py` raised to 416-LOC](iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md)
+- [Bloat exception — `shared/scripts/lib/campaign_status.py` raised to 415-LOC](iterate-2026-09-21-r1-depends-on-schema-campaign-status-bloat.md)
+- [Bloat exception — `shared/tests/test_campaign_graph.py` raised to 325-LOC](iterate-2026-09-21-r1-depends-on-schema-test-campaign-graph-bloat.md)

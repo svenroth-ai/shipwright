@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-21-r1-depends-on-schema",
+  "date": "2026-09-22",
+  "section": "Bloat exception — campaign_init.py",
+  "title": "campaign_init.py raised to 358-LOC",
+  "context": "campaign_init.py was at 300 lines before R1. It needs write-time depends_on validation (hard-reject), a stacked-strategy deprecation warning, and a type/membership guard a code review found necessary.",
+  "decision": "Grant an exception raising campaign_init.py's allowed current to 358; retire when a future sub-iterate adds another write-time validation concern, by extracting a shared campaign_init_validation.py.",
+  "consequences": "No caller's signature changed except init_campaign's new ValueError failure mode, already the pattern _validate_triage_id uses and main() already catches.",
+  "rationale": "The new validation logic has exactly one caller and reuses the file's own existing lazy-import pattern — a same-file, same-caller helper does not meet the bar for its own module (Ousterhout deep-module argument).",
+  "rejected": "Split immediately instead of granting the exception — rejected, would relocate one caller's helper into a new module for LOC-counting alone, not genuine encapsulation.",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md"
+}

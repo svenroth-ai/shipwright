@@ -1,0 +1,24 @@
+{
+  "stage": "doubt",
+  "doubts": [
+    {
+      "claim_under_doubt": "The code-review remediation's escape-aware split (`_split_row_cells`, a single-char `(?<!\\\\)\\|` lookbehind) closes the column-misalignment class for any title containing a `|`.",
+      "disproof_attempt": "A single-char lookbehind only inspects the ONE char preceding a `|`. A title ending in an unescaped, unpadded literal backslash directly adjacent to the real delimiter (e.g. a hand-edited row) still merges the next cell into the title, silently corrupting depends_on with no error. Concrete repro traced by hand and confirmed by a failing regression test before the fix.",
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "file": "shared/scripts/lib/campaign_status.py",
+      "line": 92,
+      "what_would_resolve_it": "Escape `\\` itself (`\\` -> `\\\\`, ahead of `|` -> `\\|`) at write time, and read with a pair-consuming scan (`\\` + next char is always one unit) instead of a fixed-width lookbehind."
+    },
+    {
+      "claim_under_doubt": "Multiple literal `|` characters within one title cell, and consecutive escaped pipes, round-trip correctly through the escape/unescape pair.",
+      "disproof_attempt": "Traced by hand across both the escape and split/unescape steps; no failure found. Recorded as an attempted-and-failed disproof, not a live issue.",
+      "severity": "low",
+      "lens": "boundary & contract",
+      "file": "shared/scripts/lib/campaign_status.py",
+      "line": 107,
+      "what_would_resolve_it": null
+    }
+  ],
+  "remediation": "HIGH-severity doubt (medium in the reviewer's own scale) fixed in the same sub-iterate: campaign_init.py now escapes `\\` -> `\\\\` ahead of `|` -> `\\|` at write time; campaign_status.py's `_split_row_cells` rewritten around a pair-consuming scan (any `\\` plus the next char is one unit, not a fixed-width lookbehind) plus a new `_unescape_cell` helper that reverses both escapes in one pass. Verified with new regression tests at both the campaign_init round-trip level and the parser level directly (hand-crafted markdown with an escaped pipe and with an escaped trailing backslash adjacent to a real delimiter), full shared + plugin test suites green, ruff clean. The low-severity multi-pipe doubt required no change (already correct). All other lenses (concurrency/resume-safety, ADR-045 module-identity, hidden coupling) were attacked and no new break was found beyond what prior review rounds already covered and the campaign owner already accepted in the run ADR."
+}
