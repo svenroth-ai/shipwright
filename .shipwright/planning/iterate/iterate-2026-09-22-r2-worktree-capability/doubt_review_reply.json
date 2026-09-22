@@ -1,0 +1,47 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "async/concurrency + shared mutable state (loop_state.json unit rows, campaign reconcile state machine) + irreversible effect (a sub-iterate silently dropped from a campaign = lost work, no PR)",
+  "doubts": [
+    {
+      "severity": "high",
+      "claim_under_doubt": "Stage-2 finding #1 (false-complete on resume) is FIXED by the lease-liveness guard",
+      "disposition": "FIXED (correctly disproved). The staleness-gated guard only deferred the bug past DEFAULT_STALE_AFTER_SECONDS (7200s), and the common resume case (>2h later) hit it byte-for-byte. Replaced with a provenance-based gate: shared/scripts/lib/autonomous_loop.py's _reconcile_in_progress now checks `unit.get(\"lease_touched_at\") is None` before the branch-has-commits heuristic — once a row has EVER been lease-touched, that heuristic never applies again, live or expired, and the unit falls straight through to the pending-reset. No field rename; R3's spec commitment to reading `branch` by name is unaffected."
+    },
+    {
+      "severity": "high",
+      "claim_under_doubt": "skipping reconciliation for a live-lease unit is safe because the unit will be reconciled later",
+      "disposition": "MOOT under the new fix — there is no more 'skip and leave in_progress' branch. Every in_progress unit is now either reconciled via result.json, via the branch heuristic (never-touched rows only), or via the pending-reset (lease-touched rows with no result.json). No unit is ever left silently in_progress after a call to _reconcile_in_progress."
+    },
+    {
+      "severity": "medium",
+      "claim_under_doubt": "the lease read in _reconcile_in_progress sees a consistent, lock-protected view of the row",
+      "disposition": "FIXED. cmd_init's existing-state reconcile branch (autonomous_loop.py, cmd_init) is now wrapped in the same `file_lock(state_path.parent / \"loop.lock\", timeout_seconds=30)` every other loop_state.json writer (cmd_next/cmd_record/touch_unit_lease) already serializes through."
+    },
+    {
+      "severity": "medium",
+      "claim_under_doubt": "is_unit_lease_stale is safe to promote into a production gating position",
+      "disposition": "No longer gates any production caller (the new fix is provenance-based, not staleness-based), but fixed anyway as a latent landmine for R4's future use: a present-but-non-numeric lease_expires_at (hand-repaired state, foreign schema, an ISO string) now returns True (stale, fail-closed) instead of False (fail-open, would have wedged a unit as permanently unreconcilable). Test added: test_is_unit_lease_stale_fails_closed_on_a_malformed_present_value."
+    },
+    {
+      "severity": "medium",
+      "claim_under_doubt": "Stage-2 finding #2 (medium) is FIXED",
+      "disposition": "Half fixed, half is a documented known limitation, not silently left as a false claim. The counter-reset half is genuinely fixed and tested. The stale_attempt_conflict noise half (the runner has no `--attempt` brief parameter to pass, so every touch compares against a hardcoded 0) is NOT fixed — sub-iterate-runner.md has zero bloat-ceiling headroom to add a new Input parameter for this alone. The false docstring claim ('attempt=0 can never trigger this') is corrected to explicitly document the noisy-but-harmless behavior and defer the real fix to R4, which is already building the fencing this signal needs to become trustworthy. check_unit_lease.py's warning now also prints the recorded row_attempt value and the same caveat."
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "'create only if absent' is a strictly safer attempt write",
+      "disposition": "FIXED. Guard changed to `if not isinstance(row_attempt, int) or isinstance(row_attempt, bool)` (matching the isinstance style the stale_attempt_conflict check already uses two lines above), so a None/str leftover is replaced rather than preserved as garbage that would later crash cmd_init's `+ 1`."
+    },
+    {
+      "severity": "low",
+      "claim_under_doubt": "'the returned dict is unchanged' is a neutral consequence of the attempt fix",
+      "disposition": "FIXED. touch_unit_lease's return dict now also carries `row_attempt` (the row's real counter after this touch), and check_unit_lease.py's stale_attempt_conflict warning interpolates it, so the one message a debugger gets no longer withholds the number that explains it."
+    }
+  ],
+  "verified_clean": [
+    "Low finding #3 (dead assertion) and low finding #4 (path drift) — no further action, doubt-reviewer confirmed both correctly fixed.",
+    "Import surface and write atomicity — no further action, doubt-reviewer confirmed both sound."
+  ],
+  "summary": "All 2 high and 4 medium doubts addressed: the two high findings by replacing the staleness-gated fix with a provenance-based gate that removes the bug's trigger condition entirely rather than narrowing its window; the four medium findings each fixed individually (lock-wrapping cmd_init, fail-closed staleness predicate, corrected docstring + one documented known limitation for R4, and the row_attempt/warning-text fix). Both low findings fixed. Full targeted suite re-run green (60 tests) after every fix; lint clean."
+}

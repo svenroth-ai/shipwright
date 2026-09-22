@@ -141,27 +141,130 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "correctness",
+          "file": "shared/scripts/lib/unit_lease.py",
+          "line": 173,
+          "finding": "The lease upsert writes `branch` onto the unit row, and the runner touches at Step 1 — BEFORE any build work. `branch` is a pre-existing loop_state key owned by `autonomous_loop.cmd_record` (line 325), which sets it only AFTER a run reports back. `_reconcile_in_progress` (autonomous_loop.py:87-104) branches on exactly that field: `if unit.get('branch')` -> if `refs/heads/<branch>` exists and `git log <head_sha>..<branch>` is non-empty, it marks the unit `status=\"complete\"` with no result.json, no commit and no PR. Pre-R2 that heuristic was effectively unreachable on a first attempt (an in_progress row never carried `branch`). After R2 every campaign unit carries `branch` from Step 1 onward, so a runner that commits once and then dies (session death, STRICT-STOP, crash) is reconciled on the next `cmd_init` as COMPLETE — the sub-iterate is silently dropped from the campaign and never rebuilt or merged. No test covers this interaction; the `state_path` fixtures in test_unit_lease.py / the integration test never model a reconcile.",
+          "suggestion": "Do not let the heartbeat write keys `autonomous_loop` already owns. Either namespace them (`lease_worktree`/`lease_branch`/`lease_attempt`) or make `branch` write-if-absent-only; if the field name must stay (spec's field list), add a regression test that runs `_reconcile_in_progress` over a row touched by a lease and asserts it is reset to `pending`, not `complete`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "correctness",
+          "file": "shared/scripts/lib/unit_lease.py",
+          "line": 174,
+          "finding": "Same root cause for `attempt`: it is NOT an R4-only field — `_reconcile_in_progress` (autonomous_loop.py:107) already maintains it as the retry counter (`unit['attempt'] = unit.get('attempt', 0) + 1`) and `cmd_next` emits it (line 212). The runner's touch command in sub-iterate-runner.md passes no `--attempt`, so `check_unit_lease.py` defaults to 0 and `unit.update(lease)` unconditionally writes `attempt: 0` (and `attempt_id: null`) over the row's real counter. On any resumed campaign this (a) silently resets the retry counter every heartbeat, and (b) makes `stale_attempt_conflict` fire on EVERY touch, printing the misleading warning 'touching a row no longer mine' for a perfectly healthy runner. The module docstring's claim that a stale touch 'can only ever refresh a timestamp and echo back the caller's own values, never re-assign a claim' is false for this pre-existing key.",
+          "suggestion": "Make `--attempt` a None-sentinel that preserves the row's existing value when not supplied, and never write an `attempt` lower than the recorded one (write the timestamps, keep the row's attempt, still report `stale_attempt_conflict`). Add a test whose fixture row starts at `attempt: 2`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/tests/test_r2_worktree_capability_prose.py",
+          "line": 38,
+          "finding": "Dead assertion branch (catalog X). `norm()` strips backticks (`_campaign_prose_harness.norm`, `re.sub(r\"[*`]+\", \"\", text)`), so the first operand `\"campaign_worktree (= `{project_root}`\"` can never match a normalised body; only the weaker `\"campaign_worktree (=\"` fallback ever bites. The test therefore does not assert what its own comment says it asserts (that the value is `{project_root}`).",
+          "suggestion": "Replace the whole `or` expression with `assert \"campaign_worktree (= {project_root}\" in body` (matches post-norm text, ~2 LOC saved, strictly stronger, still green).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": ".shipwright/agent_docs/architecture.md",
+          "line": 9,
+          "finding": "Path drift in two durable artifacts: the architecture.md entry and the decision-drop both say `tools/check_unit_lease.py`, but the file actually lives at `shared/scripts/checks/check_unit_lease.py` (correctly, per the `check_campaign_session_lock.py` precedent the script's own docstring cites). A future reader greps `tools/` and finds nothing.",
+          "suggestion": "Say `checks/check_unit_lease.py` in both `.shipwright/agent_docs/architecture.md` and `.shipwright/agent_docs/decision-drops/iterate-2026-09-22-r2-worktree-capability_001.json`.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-22T05:57:52.453520+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-22T08:20:37.631045+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Stage-2 finding #1 (false-complete on resume) is FIXED by the lease-liveness guard",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "high",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "skipping reconciliation for a live-lease unit is safe because the unit will be reconciled later",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "the lease read in _reconcile_in_progress sees a consistent, lock-protected view of the row",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "is_unit_lease_stale is safe to promote into a production gating position",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "Stage-2 finding #2 (medium) is FIXED",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "'create only if absent' is a strictly safer attempt write",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": null,
+          "file": null,
+          "line": null,
+          "finding": "'the returned dict is unchanged' is a neutral consequence of the attempt fix",
+          "suggestion": null,
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-22T05:57:52.556304+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-22T08:20:43.826856+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "external_code": {
       "review_type": "external_code",
@@ -281,15 +384,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-22T05:57:52.349214+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-22T08:20:31.835032+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "opus"
     },
     "plan_internal": {
       "review_type": "plan_internal",
