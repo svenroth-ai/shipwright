@@ -112,11 +112,23 @@ missing `(OSError, UnicodeError)` for the same reason `_resolve()`'s own
 fix closed it a round ago — widened to match. And
 `resolve_unit_identity()` validated `worktree`/`branch` by truthiness
 only, so a malformed loop_state row (e.g. a numeric `worktree`) passed
-straight through to a later `subprocess.run(..., cwd=worktree)` call in
-`pin`/`verify`/`ship`, raising an uncaught `TypeError` instead of
-`ReviewAttributionError`; added an explicit `isinstance(..., str)` check
-for both fields, raised before any git call. Confirmed both red-before
+straight through to `_run_git`, which stringifies it into `git -C
+<worktree> ...` — git then fails with an opaque exit-code error naming a
+bad path, not the real cause; added an explicit `isinstance(..., str)`
+check for both fields, raised before any git call, giving a specific,
+documented `ReviewAttributionError` instead. Confirmed both red-before
 (temporarily reverting each fix) / green-after.
+
+**Correction (code-review round 3 verify):** the paragraph above
+originally claimed this closed an "uncaught `TypeError`" — a fresh
+reviewer traced `_run_git`'s actual argv construction (`str(cwd)`
+stringifies before use) and found no `TypeError` was ever reachable;
+pre-fix, the malformed row already failed with a clean
+`ReviewAttributionError` from git's own non-zero exit code, just naming
+the wrong thing (a bad path) instead of the real cause (a malformed
+loop_state row). The fix is still worthwhile — an earlier, more specific
+failure — corrected here rather than left standing as an inaccurate
+record, per this file's own "no hindsight-inaccurate record" standard.
 
 ## Consequences
 

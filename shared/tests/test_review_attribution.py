@@ -569,29 +569,33 @@ def test_ship_refuses_a_pin_whose_recorded_worktree_no_longer_matches_the_curren
              loop_id="r3-test", shipped_head=pinned["reviewed_head"])
 
 
-def test_resolve_unit_identity_refuses_a_non_string_worktree(git_origin_repo):
+def test_resolve_unit_identity_refuses_a_non_string_worktree():
     """External Tier-3 review (round 3, PR #787): `resolve_unit_identity`
     only checked `worktree`'s truthiness, so a malformed loop_state row with
-    a numeric `worktree` passed straight through to a later
-    `subprocess.run(..., cwd=worktree)` call in `pin`/`verify`/`ship`,
-    raising an uncaught `TypeError` instead of this documented
-    `ReviewAttributionError`."""
+    a numeric `worktree` passed straight through to `_run_git`, which
+    stringifies it into `git -C <worktree> ...` — git then fails with an
+    opaque exit-code error naming a bad path, not the real cause (a
+    malformed loop_state row). Validating the TYPE here gives a specific,
+    documented `ReviewAttributionError` instead (code-review round 3
+    verify, medium: this does NOT prevent an uncaught `TypeError` — none
+    was possible, since `_run_git` stringifies `cwd` before use — the value
+    is purely a clearer, earlier failure message)."""
     state = {"units": [{"id": "P", "branch": "main", "worktree": 12345, "attempt": 0}]}
     with pytest.raises(ReviewAttributionError, match="non-string worktree"):
         resolve_unit_identity(state, "P", campaign_worktree="/fallback")
 
 
-def test_resolve_unit_identity_refuses_a_non_string_branch(git_origin_repo):
+def test_resolve_unit_identity_refuses_a_non_string_branch():
     state = {"units": [{"id": "Q", "branch": 12345, "attempt": 0}]}
-    with pytest.raises(ReviewAttributionError, match="has no branch recorded"):
+    with pytest.raises(ReviewAttributionError, match="non-string branch"):
         resolve_unit_identity(state, "Q", campaign_worktree="/fallback")
 
 
 def test_pin_refuses_a_malformed_worktree_type_before_any_git_call(git_origin_repo):
     """Integration-level proof (not just the unit-level `resolve_unit_identity`
-    tests above): `pin()`'s first git call is `cwd=worktree`, which would
-    raise an uncaught `TypeError` pre-fix — confirm the whole call chain now
-    fails closed with `ReviewAttributionError` instead."""
+    tests above): confirm the whole `pin()` call chain fails closed with a
+    specific `ReviewAttributionError` for a malformed row, rather than
+    reaching `_run_git` and surfacing git's own opaque exit-code error."""
     work, _ = git_origin_repo
     state_path = work / ".shipwright" / "loop_state.json"
     _write_loop_state(state_path, [{"id": "R", "branch": "main", "worktree": 999, "attempt": 0}])

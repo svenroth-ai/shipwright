@@ -638,13 +638,14 @@ meta-caution:
   pin-file reader. Accepted and fixed: widened to match.
 - **`resolve_unit_identity()` validated `worktree`/`branch` by truthiness
   only**, so a malformed loop_state row (e.g. a numeric `worktree`) passed
-  straight through to a later `subprocess.run(..., cwd=worktree)` call in
-  `pin`/`verify`/`ship`, raising an uncaught `TypeError` instead of
-  `ReviewAttributionError`. Accepted and fixed: added an explicit
+  straight through to `_run_git`, which stringifies it into `git -C
+  <worktree> ...` — git then fails with an opaque exit-code error naming
+  a bad path, not the real cause. Accepted and fixed: added an explicit
   `isinstance(..., str)` check for both fields, raised before any git
-  call, with a unit-level test against `resolve_unit_identity` directly
-  and an integration-level test through `pin()` proving the whole call
-  chain now fails closed.
+  call, giving a specific, documented `ReviewAttributionError` instead of
+  git's own opaque failure — with a unit-level test against
+  `resolve_unit_identity` directly and an integration-level test through
+  `pin()`.
 - **Meta-caution: this ADR's own override language could be read as
   self-granted authorization** rather than a record of an actual human
   decision. Legitimate concern about a real failure mode (an agent writing
@@ -656,6 +657,20 @@ meta-caution:
 Both technical findings were confirmed red-before/green-after by
 temporarily reverting each fix in isolation and re-running the affected
 tests.
+
+**Correction (round-3-verify code-review):** the second bullet above
+originally claimed the fix closed an "uncaught `TypeError`" — a fresh
+reviewer traced `_run_git`'s argv construction (`str(cwd)` stringifies
+before use) and found no `TypeError` was ever reachable there; pre-fix, a
+malformed row already produced a clean `ReviewAttributionError` from
+git's own non-zero exit code, just naming the wrong thing. The fix is
+still worthwhile — an earlier, more specific failure message — corrected
+here rather than left standing as an inaccurate record. The same round
+also found the non-string-`branch` raise reused the generic "has no
+branch recorded" message (misleading for a value that IS present, just
+the wrong type) — split into its own "non-string branch" message
+mirroring `worktree`'s, with the corresponding test's `match=` updated to
+pin the new, specific diagnostic rather than the old generic one.
 
 ## Rejected alternatives
 

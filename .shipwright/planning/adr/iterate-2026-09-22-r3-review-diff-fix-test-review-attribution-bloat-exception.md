@@ -87,14 +87,27 @@ green after.
 
 ### Round 3 growth (569 -> 618)
 
-Added three regression tests for round 3's genuine fixes (sibling
+Added four regression tests for round 3's genuine fixes (sibling
 implementation ADR): `resolve_unit_identity`'s new type checks for a
 non-string `worktree` and a non-string `branch` (unit-level), a
 `pin()`-level integration test proving the whole call chain now fails
-closed instead of raising an uncaught `TypeError` from a `subprocess.run`
-call, and `_load_pin`'s widened except tuple (invalid-UTF-8
-`review_pin.json`). Confirmed all four red-before/green-after by
-temporarily reverting both fixes and re-running the affected tests.
+closed with a specific `ReviewAttributionError` instead of reaching
+`_run_git` and surfacing git's own opaque exit-code error, and
+`_load_pin`'s widened except tuple (invalid-UTF-8 `review_pin.json`).
+Confirmed all four red-before/green-after by temporarily reverting both
+fixes and re-running the affected tests.
+
+### Round 3b growth (618 -> 622)
+
+A fresh code-reviewer pass on round 3's own diff found the "uncaught
+`TypeError`" framing above was factually wrong (see the sibling
+implementation ADR's "Correction" note) and that the non-string-`branch`
+test asserted the generic, now-inaccurate "has no branch recorded"
+message rather than pinning the new, specific diagnostic. Corrected the
+test's `match=` to `"non-string branch"` and dropped the unused
+`git_origin_repo` fixture parameter from the two pure-dict
+`resolve_unit_identity` tests (no assertion touches git; the fixture cost
+~6 git subprocesses per test for nothing).
 
 ## Consequences
 

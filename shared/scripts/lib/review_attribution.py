@@ -252,14 +252,23 @@ def resolve_unit_identity(state: dict, unit_id: str, *, campaign_worktree: str) 
     if not isinstance(worktree, str):
         # External Tier-3 review, blocking: truthiness alone let a numeric
         # or otherwise non-string `worktree` (a malformed loop_state row)
-        # through to a later `subprocess.run(..., cwd=worktree)` call in
-        # `pin`/`verify`/`ship`, raising an uncaught `TypeError` instead of
-        # this documented `ReviewAttributionError` — validate the TYPE here,
-        # before any git call, not just its truthiness.
+        # through to `_run_git`, which stringifies it into `git -C
+        # <worktree> ...` — git then fails with an opaque exit-code error
+        # naming the wrong thing (a bad path, not a malformed loop_state
+        # row), instead of this documented, specific `ReviewAttributionError`
+        # — validate the TYPE here, before any git call, not just its
+        # truthiness, so the failure names the real cause (code-review
+        # round 3 verify, medium: an earlier version of this comment
+        # claimed an uncaught `TypeError` from `subprocess.run`, which
+        # `_run_git`'s `str(cwd)` argv-building actually prevents — the
+        # value here is a clearer failure message, not a crash fix).
         raise ReviewAttributionError(
             f"unit {unit_id!r} has a non-string worktree ({worktree!r}) recorded in loop_state")
     branch = unit.get("branch")
-    if not isinstance(branch, str) or not branch:
+    if not isinstance(branch, str):
+        raise ReviewAttributionError(
+            f"unit {unit_id!r} has a non-string branch ({branch!r}) recorded in loop_state")
+    if not branch:
         raise ReviewAttributionError(f"unit {unit_id!r} has no branch recorded in loop_state")
     attempt = unit.get("attempt")
     if not isinstance(attempt, int) or isinstance(attempt, bool):
