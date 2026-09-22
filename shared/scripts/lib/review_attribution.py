@@ -121,10 +121,29 @@ def _resolve(state_path: Path | str, unit_id: str, *, loop_id: str, campaign_wor
     """Load state, cross-check ``loop_id``, and resolve the unit's identity —
     the preamble shared by ``pin``/``verify``/``ship`` (code-review round 3,
     medium: extracted to stop the same four lines drifting apart across the
-    three functions)."""
-    state = json.loads(durable_read_text(Path(state_path), encoding="utf-8"))
+    three functions).
+
+    Every load/shape failure is wrapped in :class:`ReviewAttributionError`
+    (external Tier-3 review, blocking): a missing or malformed
+    ``loop_state.json`` previously escaped as a raw ``FileNotFoundError`` /
+    ``JSONDecodeError`` / ``AttributeError``, which the CLI's ``except
+    ReviewAttributionError`` does not catch — an uncaught traceback instead
+    of the documented ``check_review_attribution ...: BLOCK`` response. The
+    exit code was already 1 either way, so no `|| STRICT-STOP` caller was
+    ever fooled into treating this as success; this closes the diagnostic
+    gap, not a fail-open."""
+    try:
+        state = json.loads(durable_read_text(Path(state_path), encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ReviewAttributionError(f"could not load state file {state_path}: {exc}") from exc
+    if not isinstance(state, dict):
+        raise ReviewAttributionError(f"state file {state_path} is not a JSON object")
     _check_loop_id(state, loop_id)
-    return resolve_unit_identity(state, unit_id, campaign_worktree=campaign_worktree)
+    try:
+        return resolve_unit_identity(state, unit_id, campaign_worktree=campaign_worktree)
+    except (AttributeError, TypeError) as exc:
+        raise ReviewAttributionError(
+            f"malformed unit entry for {unit_id!r} in {state_path}: {exc}") from exc
 
 
 def _load_pin(pin_path: Path, canonical_id: str, unit_id: str, *, verb: str) -> dict:

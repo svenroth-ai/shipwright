@@ -1224,14 +1224,14 @@
     {
       "path": "shared/scripts/lib/review_attribution.py",
       "limit": 300,
-      "current": 458,
+      "current": 477,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-review-attribution-bloat-exception.md"
     },
     {
       "path": "shared/tests/test_review_attribution.py",
       "limit": 300,
-      "current": 470,
+      "current": 515,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md"
     },

@@ -468,3 +468,48 @@ def test_pin_raises_for_an_unknown_unit_id(git_origin_repo):
     with pytest.raises(ReviewAttributionError, match="not found"):
         pin(state_path, "does-not-exist", project_root=str(work), campaign_worktree=str(work),
             loop_id="r3-test")
+
+
+def test_pin_wraps_a_missing_state_file_as_review_attribution_error(git_origin_repo):
+    """External Tier-3 review (PR #787): `_resolve` previously let
+    `FileNotFoundError` escape uncaught, which the CLI's `except
+    ReviewAttributionError` does not catch."""
+    work, _ = git_origin_repo
+    missing = work / ".shipwright" / "does-not-exist.json"
+
+    with pytest.raises(ReviewAttributionError, match="could not load state file"):
+        pin(missing, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+
+def test_pin_wraps_invalid_json_in_the_state_file_as_review_attribution_error(git_origin_repo):
+    work, _ = git_origin_repo
+    state_path = work / ".shipwright" / "loop_state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text("{not valid json", encoding="utf-8")
+
+    with pytest.raises(ReviewAttributionError, match="could not load state file"):
+        pin(state_path, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+
+def test_pin_wraps_a_state_file_that_is_not_a_json_object_as_review_attribution_error(git_origin_repo):
+    work, _ = git_origin_repo
+    state_path = work / ".shipwright" / "loop_state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+
+    with pytest.raises(ReviewAttributionError, match="is not a JSON object"):
+        pin(state_path, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+
+def test_pin_wraps_a_malformed_unit_entry_as_review_attribution_error(git_origin_repo):
+    """A unit entry that is not itself a dict (e.g. a bare string) reaches
+    `resolve_unit_identity`'s `.get(...)` calls and previously raised a raw
+    `AttributeError` instead of the documented BLOCK message."""
+    work, _ = git_origin_repo
+    state_path = work / ".shipwright" / "loop_state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(
+        json.dumps({"loop_id": "r3-test", "units": ["T"]}), encoding="utf-8")
+
+    with pytest.raises(ReviewAttributionError, match="malformed unit entry"):
+        pin(state_path, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")

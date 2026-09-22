@@ -523,6 +523,46 @@ this sub-iterate, whose mandate is unit-scoped review attribution, not a
 general hardening pass over campaign-mode.md's templating. Accepted as a
 pre-existing, operator-trust-model risk, unchanged by R3.
 
+## External Tier-3 PR Review (round 14)
+
+`openai/gpt-5.6-luna`'s required "PR Review" check BLOCKed on two findings.
+
+**Finding 1 (`_resolve()` exception leakage) — accepted, fixed.** Matches
+D5/D1's own recurring class exactly: a documented contract
+(`check_review_attribution ...: BLOCK`) was enforced only by convention, not
+mechanically, for the state-loading path. `_resolve()` now wraps its load and
+`resolve_unit_identity()` call in `try`/`except`, re-raising
+`json.JSONDecodeError`/`OSError` (missing or unreadable state file) and
+`AttributeError`/`TypeError` (a state file that parses but is not the
+expected shape — e.g. a list instead of an object, or a unit entry that is
+not itself a dict) as `ReviewAttributionError`. Four new regression tests
+cover missing file, invalid JSON, non-object state, and non-dict unit entry.
+Diagnostic-quality gap, not fail-open: the exit code was already 1 either
+way, so no `|| STRICT-STOP` caller downstream was ever fooled into treating
+a malformed state file as success — this closes the gap between "fails" and
+"fails with the documented message," nothing more.
+
+**Finding 2 (`fires=<1 or 0>` "is not valid shell syntax") — rebutted, not
+fixed.** `campaign-mode.md` is a natural-language runtime prompt an LLM
+orchestrator reads and acts on, not a literal shell script that gets
+sourced or executed as-is — the file is full of similarly non-literal
+placeholders throughout (`{project_root}`, `{loop_id}`, `{id}`, `{default}`)
+that a shell would equally reject if pasted verbatim. `<1 or 0>` uses
+angle-brackets specifically, a distinct convention from the `{...}`
+context-substitutions, deliberately introduced in spec-review round 6 (well
+before this round) so a reader following the fires-assignment block
+literally cannot default to always writing `1` — it marks the one point in
+the block where the *value* comes from the model's own risk-flag/medium+
+judgement rather than from a context variable already in scope. Three
+internal review rounds (spec, code, doubt) confirmed this convention
+correct before this PR ever reached external review, and the line
+immediately below it (`[ "$diff_lines" -gt 100 ] && fires=1`) is genuine,
+executable shell that mechanically overrides whatever the model wrote — the
+combination is exactly D5's fix. Not changed: weakening or removing the
+placeholder to satisfy a literal-shell-syntax check would reintroduce the
+prose-only, unenforced judgement this sub-iterate's own D5 finding already
+closed.
+
 ## Rejected alternatives
 
 Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch

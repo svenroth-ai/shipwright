@@ -55,6 +55,15 @@ its implementation.
 
 `current` raised from unfiled to 470, `limit` 300, `state: "exception"`.
 
+### Round 14 growth (470 -> 515)
+
+Added four regression tests for `_resolve()`'s new
+`ReviewAttributionError`-wrapping (sibling implementation ADR, round 14):
+a missing state file, invalid JSON, a state file that parses but is not a
+JSON object, and a unit entry that is not itself a dict — each previously
+raised an uncaught Python exception instead of the documented BLOCK
+message.
+
 ## Consequences
 
 `test_review_attribution.py` remains the authoritative regression suite

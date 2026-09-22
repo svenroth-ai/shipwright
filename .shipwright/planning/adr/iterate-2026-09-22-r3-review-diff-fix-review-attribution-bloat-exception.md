@@ -74,6 +74,22 @@ Further growth is expected to be modest going forward — R4/R5b's own specs
 already name specific new call sites (`verify --against shipped_head`) but
 those are consumers of this module's existing CLI surface, not new modes.
 
+### Round 14 growth (458 -> 477)
+
+External Tier-3 PR review on the live PR found `_resolve()` — the shared
+`pin`/`ship`/`verify` preamble — let `json.JSONDecodeError`, `OSError`
+(from a missing state file) and structural errors from
+`resolve_unit_identity()` (`AttributeError`/`TypeError` on a malformed
+`state`/unit entry, e.g. a list instead of an object) escape uncaught; the
+CLI's `except ReviewAttributionError` does not catch any of those, so a
+missing or malformed `loop_state.json` produced a raw Python traceback
+instead of the documented `check_review_attribution <mode>: BLOCK`
+message. Fixed by wrapping `_resolve()`'s body in `try`/`except` and
+re-raising each failure as `ReviewAttributionError` with a clear message.
+Diagnostic-quality gap, not a fail-open: the exit code was already 1
+either way, so no `|| STRICT-STOP` caller was ever fooled into treating
+this as success.
+
 ## Consequences
 
 `review_attribution.py` remains the single source of truth for pin/ship/
