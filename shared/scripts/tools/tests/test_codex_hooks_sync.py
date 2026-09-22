@@ -260,8 +260,18 @@ def test_stale_launcher_removal_survives_unlink_failure(tmp_path, monkeypatch):
     assert stale_launcher.is_file()
 
 
+@pytest.mark.covers("FR-01.21/AC05")
 def test_launcher_path_with_spaces_actually_runs(tmp_path):
-    """The concrete regression test for the Windows cmd.exe /C double-quote
+    """@covers FR-01.21/AC05 — hook-EXECUTION parity, not just discoverability
+    (AC01). A live `codex exec` firing this same sync'd hook is the
+    operator's own two-round empirical proof (iterate spec Design Notes /
+    AC4); this is the automated proxy for it, reproducing Codex's exact
+    invocation mechanism byte-for-byte (`cmd.exe /C "<command_line>"` on
+    Windows, `$SHELL -lc <command_line>` on POSIX — see
+    codex-rs/hooks/src/engine/command_runner.rs) and asserting the command
+    genuinely ran, not just that hooks.json's shape looks plausible.
+
+    The concrete regression test for the Windows cmd.exe /C double-quote
     bug: a bundle root (and therefore launcher dir) containing a space in
     the path must still produce a launcher that a real shell can invoke as
     a bare, unquoted token."""
