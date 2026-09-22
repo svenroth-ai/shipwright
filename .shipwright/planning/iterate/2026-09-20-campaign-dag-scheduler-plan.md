@@ -706,6 +706,19 @@ the live flip having happened.
     a builder doesn't invent an unneeded check). `pr_node_id`/`pr_head_ref`/
     `pr_base_ref` (v5, new) persist the PR's identity so it is never
     re-resolved by branch name alone.
+  - `--mode ship --shipped-head <sha>` (v5, added same sub-iterate, closing
+    a gap the doubt-reviewer cascade caught in this run: `shipped_head` was
+    part of the pin schema from the start but nothing ever WROTE it after
+    pin time, so a reviewed unit's `verify --against shipped_head` fell back
+    to a content-blind parent-of-tip check — silently weaker than today's
+    `--match-head-commit`, and the schema field was dead). Records the
+    post-review-record-push HEAD as `shipped_head` on an existing pin,
+    `|| STRICT-STOP` when the given SHA's parent is not `reviewed_head` (a
+    fix commit landed on top of the pinned tree instead of a clean
+    push-through). Called once, immediately after 3f-bis's `reviews.json`
+    commit/push, for a reviewed unit only; a `review_skipped` unit's
+    `shipped_head` is already set equal to `reviewed_head` at pin time and
+    `ship` is not called for it.
   - `--mode verify --expect-file review_pin.json --against
     {reviewed_head|shipped_head}`: asserts the named field is still the
     branch's actual tip (or, for `shipped_head`, that the review-record
@@ -715,6 +728,11 @@ the live flip having happened.
     action — see R5b). **This is the single detection path** for every
     branch-change route (rebase, manual push, PR base change, a failed
     merge-time check) — there is no second implementation to keep in sync.
+    A reviewed unit (`review_skipped: false`) MUST be verified `--against
+    shipped_head`, never `reviewed_head` — the latter predates the
+    review-record commit and does not detect an unreviewed fix landing
+    after it; a below-threshold unit MUST use `reviewed_head`, since no
+    further commit is expected on it at all.
   - **`review_skipped: true`**: `--mode pin` runs unconditionally at
     3f-bis's top even for a below-threshold unit that skips the review
     cascade, so `built → merging` (R4) always has a pin to verify at merge
@@ -726,8 +744,9 @@ the live flip having happened.
    the wrong one's diff.
 2. Fix every named call site to be unit-scoped, with the shared-worktree
    fallback.
-3. Add `check_review_attribution.py` (`--mode pin` / `--mode verify`,
-   including `review_skipped` and the legacy-file dual-write).
+3. Add `check_review_attribution.py` (`--mode pin` / `--mode ship` /
+   `--mode verify`, including `review_skipped` and the legacy-file
+   dual-write).
 4. Re-run step 1's test green; add the "no PR merges unpinned" acceptance
    test.
 
@@ -736,7 +755,9 @@ the live flip having happened.
 - Guard's own unit tests (pin/verify on an untouched branch passes; a
   commit added after pinning, or a rebase, is detected; review-skipped pin
   verifies correctly at merge time; fallback-to-shared-worktree behavior
-  when `worktree` is absent from the row).
+  when `worktree` is absent from the row; `ship` records `shipped_head` on a
+  clean push-through and `STRICT-STOP`s when the given SHA's parent is not
+  `reviewed_head`).
 
 ### Alternative approach considered — rejected
 Serialize step 3f-bis itself instead of fixing the diff source. Rejected:
@@ -1173,9 +1194,12 @@ without an unverifiable assumption.
      `git add -A`; after commit, assert the new commit's parent equals
      `reviewed_head`. Any deviation → do not commit; delete the pin, demote
      `reviewed → built`, re-enter 3f-bis.
-  3. **After that push** — `shipped_head` was already written to the schema
-     at pin time for the review-skipped path; for the reviewed path, record
-     it here as the post-commit branch tip.
+  3. **After that push** — already covered by R3's own `--mode ship` call
+     (added same sub-iterate, run `iterate-2026-09-22-r3-review-diff-fix`,
+     closing the doubt-reviewer's "shipped_head is a dead field" finding):
+     `shipped_head` is written to the schema at pin time for the
+     review-skipped path, and by `ship` for the reviewed path, right after
+     the `reviews.json` push. Nothing left for R5b to do at this point.
   4. **3g, after `gh pr checks --watch` returns green, before `gh pr merge`**
      → `--mode verify --against shipped_head` + assert `gh pr view --json
      headRefOid,id,headRefName,baseRefName` matches the pinned

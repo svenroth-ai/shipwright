@@ -239,3 +239,21 @@ def test_verify_against_shipped_head_blocks_when_a_skipped_unit_moved(git_origin
     result = verify(state_path, "W", project_root=str(work), campaign_worktree=str(work),
                      loop_id="r3-test", against="shipped_head")
     assert result["ok"] is False
+
+
+def test_verify_refuses_an_expect_file_that_would_escape_the_pin_directory(git_origin_repo):
+    """Stage-3 external review (openai/gpt-5.6-luna, PR #787): `--expect-file`
+    is caller-supplied (CLI flag) and was joined to the pin directory with no
+    validation, so `--expect-file ../../secret` could make `verify()` read
+    outside the unit's own pin directory. Routed through the same
+    `_safe_segment` guard `unit_id` already uses."""
+    work, _ = git_origin_repo
+    _commit_file(work, "j2.txt", "x\n")
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "X", "branch": "main", "attempt": 0}])
+    pin(state_path, "X", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+    with pytest.raises(ReviewAttributionError, match="not a safe path segment"):
+        verify(state_path, "X", project_root=str(work), campaign_worktree=str(work),
+               loop_id="r3-test", against="reviewed_head",
+               expect_file="../../../etc/passwd")

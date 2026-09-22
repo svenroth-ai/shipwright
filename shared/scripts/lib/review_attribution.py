@@ -332,7 +332,10 @@ def verify(
     worktree, branch, attempt_id = identity["worktree"], identity["branch"], identity["attempt_id"]
     canonical_id = identity["unit_id"]
 
-    pin_path = _pin_dir(loop_id, canonical_id, attempt_id, project_root=project_root) / expect_file
+    # `expect_file` is caller-supplied (CLI `--expect-file`) — reuse the same
+    # escape guard as `unit_id` so a crafted `../../secret` can't make this
+    # read outside the unit's own pin directory (Stage-3 external review).
+    pin_path = _pin_dir(loop_id, canonical_id, attempt_id, project_root=project_root) / _safe_segment("expect_file", expect_file)
     pinned = _load_pin(pin_path, canonical_id, unit_id, verb="verify")
 
     # Fully qualified ref: a bare `branch` name is resolved against tags

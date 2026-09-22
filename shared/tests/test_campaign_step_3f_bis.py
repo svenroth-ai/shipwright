@@ -127,17 +127,22 @@ def test_step_3f_bis_fails_closed_when_the_promotion_does_not_ship():
     # Anchor on the COMMAND forms, not the prose that explains the hazard —
     # matching a bare "git commit" found the explanatory sentence first and
     # reported the guarded command as unguarded. R3 scoped every git call
-    # here with an explicit `-C "{project_root}"` (campaign-mode.md must
-    # never rely on an unstated cwd once R5a gives each unit its own
-    # worktree), so the literal command form gained that prefix too.
+    # here with an explicit `-C`, never a bare `git` relying on cwd
+    # (campaign-mode.md must never rely on an unstated cwd once R5a gives
+    # each unit its own worktree). A fresh spec-review round on this same
+    # sub-iterate then found the scoping was fallback-only — every named
+    # call site read the literal `{project_root}` template value, never a
+    # genuinely resolved unit worktree — so it now reads `$unit_wt`,
+    # resolved from `loop_state.json`'s row by the pin call and dual-written
+    # to a file for this exact cross-spawn boundary.
     assert 'push || strict-stop' in step, (
         "`git push` in 3f-bis must be checked — a promotion that does not "
         "reach the remote must STOP the loop, not shorten it"
     )
     push_at = step.index("push || strict-stop")
-    assert 'git -c "{project_root}"' in step[max(0, push_at - 40):push_at], (
-        "the push must be explicitly scoped to {project_root}, not an "
-        "unstated cwd (R3)"
+    assert 'git -c "$unit_wt"' in step[max(0, push_at - 40):push_at], (
+        "the push must be explicitly scoped to $unit_wt (this unit's own "
+        "worktree), not the bare {project_root} fallback value (R3)"
     )
     commit_at = step.index('commit -m "chore(review): record the delegated cascade')
     assert "|| strict-stop" in step[commit_at:commit_at + 160], (
@@ -184,17 +189,34 @@ def test_a_stage_1_reject_is_not_recorded_as_completed():
 def test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g():
     """External plan review (openai high / glm medium): R3's spec names
     `run_dir` and "the `gh pr view` branch resolution" among the exact call
-    sites that must become unit-scoped (`{project_root}`), same set for 3g.
-    Every OTHER call in this step already got `git -C "{project_root}"`; these
-    two used a bare relative path / a bare `gh pr view` that resolves from
-    cwd, which is exactly the unstated-cwd assumption the spec forbids."""
+    sites that must become unit-scoped, same set for 3g. Every OTHER call in
+    this step already got an explicit `-C`; these two used a bare relative
+    path / a bare `gh pr view` that resolves from cwd, which is exactly the
+    unstated-cwd assumption the spec forbids.
+
+    `run_dir` itself is deliberately still anchored at `{project_root}` in
+    BOTH steps (it is the campaign's own bookkeeping location for this
+    unit's run artifacts, including the `unit_worktree` file 3g reads to
+    resolve everything else — it cannot be unit-scoped without a circular
+    dependency on the very value it exists to hand out). A fresh
+    spec-review round on this same sub-iterate found the ORIGINAL fix
+    fallback-only for the actual named git/gh call sites: 3f-bis's own
+    post-cascade `gh pr view` re-derivation is not one of the spec's named
+    call sites and stays at `{project_root}`, but 3g's IS named, and now
+    resolves `$unit_wt` from the file 3f-bis's pin call wrote there before
+    using it."""
     scoped_run_dir = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
-    scoped_gh = 'cd "{project_root}" && gh pr view "{branch}"'
     for step, label in ((_step_3f_bis(), "3f-bis"), (_step_3g(), "3g")):
         assert scoped_run_dir in step, f"{label} must scope run_dir to {{project_root}}"
-        assert scoped_gh in step, (
-            f"{label}'s `gh pr view \"{{branch}}\"` must not rely on an unstated cwd"
-        )
+    assert 'cd "{project_root}" && gh pr view "{branch}"' in _step_3f_bis(), (
+        "3f-bis's post-cascade gh pr view re-derivation is not a named "
+        "unit-scoped call site and must stay anchored at {project_root}"
+    )
+    assert 'cd "$unit_wt" && gh pr view "{branch}"' in _step_3g(), (
+        "3g's gh pr view branch resolution is a named unit-scoped call site "
+        "and must resolve $unit_wt, not rely on an unstated cwd or the bare "
+        "{project_root} fallback value"
+    )
 
 
 def test_step_3f_bis_pin_invocation_is_checked_not_prose_only():
@@ -299,6 +321,38 @@ def test_step_3g_never_merges_without_a_pin_file():
     assert "$head_pin" in step[merge_at:merge_at + 120], (
         "the merge command must actually use $head_pin — a merge call that "
         "dropped it would merge unpinned even with the guard above intact"
+    )
+
+
+def test_step_3f_bis_bounded_wait_rechecks_after_the_loop_exhausts():
+    """Stage-3 external review (openai/gpt-5.6-luna, PR #787): the bounded
+    wait's `for i in $(seq 1 60); do ... break; sleep 5; done` only ever
+    escapes early via `break` on a match — without an inline re-check right
+    after the loop, exhausting the cap without ever matching fell through
+    to 3g with a stale head instead of stopping. A trailing prose comment
+    claiming "STRICT-STOP" is not a guard; this must be an executable
+    statement. Mutation-probed: delete the re-check line and this fails."""
+    step = _step_3f_bis()
+    loop_at = step.index("seq 1 60")
+    done_at = step.index("done", loop_at)
+    recheck = step[done_at:done_at + 250]
+    assert "|| strict-stop" in recheck, (
+        "3f-bis's bounded wait must re-check the match and STRICT-STOP "
+        "immediately after the loop, not rely on a trailing comment"
+    )
+
+
+def test_step_3g_bounded_wait_rechecks_after_the_loop_exhausts():
+    """Same defect, same fix, at 3g's own bounded wait for PR state MERGED
+    (Stage-3 external review, PR #787) — exhausting the cap without ever
+    matching MERGED must not fall through to 3h with the PR still open."""
+    step = _step_3g()
+    loop_at = step.index("seq 1 60")
+    done_at = step.index("done", loop_at)
+    recheck = step[done_at:done_at + 250]
+    assert "|| strict-stop" in recheck, (
+        "3g's bounded wait must re-check for MERGED and STRICT-STOP "
+        "immediately after the loop, not rely on a trailing comment"
     )
 
 

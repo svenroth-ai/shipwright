@@ -1,4 +1,4 @@
-# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 516-LOC
+# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 522-LOC
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -159,3 +159,66 @@ false, was preferred over leaving a footgun for the next reader.
 are likely to touch 3f-bis/3g again. That is not a licence to keep growing
 past this point without review: the next crossing needs its own ADR, exactly
 as this one does for R2's precedent.
+
+## Post-merge-cycle growth (516 → 522)
+
+The PR's own CI (`gh pr checks`) runs a Tier-3 external review
+(`openai/gpt-5.6-luna`, sensitive-path gate) on every push, independent of
+this sub-iterate's own delegated internal cascade. That external review
+caught two real defects the internal cascade's earlier rounds had not:
+
+- **3f-bis's and 3g's bounded wait loops (`for i in $(seq 1 60); do ...
+  break; sleep 5; done`) had no executable check after the loop** — only a
+  trailing prose comment claiming "still not matching/MERGED after the cap
+  → STRICT-STOP". Exhausting the cap without ever `break`ing fell through
+  to the next step (3g, then 3h) with a stale head or an unmerged PR,
+  silently treating "timed out" the same as "succeeded". Fixed by adding an
+  explicit re-check statement (`[ ... ] || STRICT-STOP`) right after each
+  loop — 6 lines added.
+- `review_attribution.verify()`'s caller-supplied `--expect-file` was
+  joined to the pin directory with no validation, permitting a crafted
+  `../../...` to read outside the unit's pin directory. Fixed by routing it
+  through the same `_safe_segment()` guard already used for `unit_id` — no
+  line growth in this file (the fix is in `review_attribution.py`).
+
+516 → 522 is a second crossing on top of the FIRST crossing this ADR
+already covers; the `shipwright_bloat_baseline.json` entry's `current` is
+bumped in the same commit as this note, per this file's own convention.
+
+## Post-merge-cycle growth (522 → 564)
+
+A FRESH spec-reviewer (independent of this sub-iterate's own internal
+cascade, spawned by the orchestrator specifically to catch what a
+self-review loop structurally cannot) REJECTed this file's 3f-bis/3g prose
+on the same grounds the 516→522 entry above already names as the exact
+failure mode this sub-iterate exists to close: every NAMED call site
+(`git -C`, `record --payload-file`, `gh pr view`) still read `{project_root}`
+as-is, with the doc's own prose explicitly deferring genuine per-unit
+resolution to R5a — contradicting the pin call's own `--campaign-worktree
+"{project_root}"` argument in the same passage. +42 lines (522 -> 564):
+
+- Reworked the L253-262 passage to resolve and dual-write `$unit_wt` — THIS
+  unit's own worktree, as pin's own `--json` output reports it
+  (`.worktree`) — right after the pin call, to `$run_dir/unit_worktree`, so
+  every later call site in 3f-bis/3g reads the SAME resolution pin already
+  certified instead of re-deriving (or never deriving) its own. `{project_root}`
+  itself is untouched: it remains reserved for pin/ship/verify's own
+  `--project-root`/`--state`/`--campaign-worktree` arguments, resolving the
+  contradiction without redefining the placeholder's existing meaning.
+- The diff computation itself is the one call site that must still run
+  BEFORE pin (its result feeds pin's own `--review-skipped` argument), so it
+  stays at `{project_root}` — today identical to `$unit_wt` — with the
+  equality check right after the pin call strengthened to also assert
+  `$unit_wt`'s actual current HEAD matches, not merely pin's self-reported
+  SHA.
+- Converted the reviews.json add/commit/push, the REJECT-path's own
+  add/commit/push, `record`'s `--payload-file` root, and 3g's `gh pr view`
+  branch resolution to `git -C "$unit_wt"` / `cd "$unit_wt"`, each re-reading
+  `$unit_wt` from `$run_dir/unit_worktree` at the top of its own block —
+  the same file-based crossing this doc's `run_dir`/`pr_url` already use,
+  since none of these blocks share a shell with the pin call that resolved
+  it.
+
+This is a THIRD crossing on top of the two this ADR already covers; the
+`shipwright_bloat_baseline.json` entry's `current` is bumped to 564 in the
+same commit as this note, per this file's own convention.
