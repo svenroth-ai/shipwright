@@ -680,8 +680,11 @@ reported "non-string branch (None)" instead of the accurate "has no
 branch recorded". Fixed by checking `branch is None or branch == ""`
 first, `isinstance` second, so a falsy-but-typed value (`0`, `[]`, `False`)
 still reaches the type check while a genuinely absent/empty branch keeps
-its original, accurate message. Confirmed red-before/green-after with two
-new tests (see the sibling test-file bloat ADR's "Round 3c" entry).
+its original, accurate message. Confirmed red-before/green-after with the
+missing-key test; the empty-string test is a permanent boundary guard that
+passed under the pre-fix ordering too (`""` is a string, so it already
+cleared `isinstance` and fell through to the old falsy check) — see the
+sibling test-file bloat ADR's "Round 3c" entry.
 
 ## Rejected alternatives
 

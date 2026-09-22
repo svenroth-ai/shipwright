@@ -135,10 +135,11 @@ record, per this file's own "no hindsight-inaccurate record" standard.
 Two catch-up items land together here since neither got its own entry when
 it landed:
 
-- The "Correction" paragraph above (code-review round 3 verify) itself
-  edited this file's rationale text, growing it 509 -> 518 with no matching
-  growth entry — a fresh code-reviewer pass on round 3's diff flagged this
-  file's own inconsistency (the sibling test ADR got its "Round 3b" entry,
+- Round 3's message split (code-review round 3 verify) also rewrote
+  `resolve_unit_identity`'s inline rationale comment in
+  `review_attribution.py`, growing it 509 -> 518 with no matching growth
+  entry here — a fresh code-reviewer pass on round 3's diff flagged this
+  ADR's own inconsistency (the sibling test ADR got its "Round 3b" entry,
   this one didn't).
 - A second fresh code-reviewer pass (round 3b verify) found the branch
   message split introduced by round 3's fix (`_check pinned worktree`'s
