@@ -153,6 +153,7 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — `plugins/shipwright-iterate/scripts/tools/campaign_init.py` raised to 416-LOC](iterate-2026-09-21-r1-depends-on-schema-campaign-init-bloat.md)
 - [Bloat exception — `shared/scripts/lib/campaign_status.py` raised to 415-LOC](iterate-2026-09-21-r1-depends-on-schema-campaign-status-bloat.md)
 - [Bloat exception — `shared/tests/test_campaign_graph.py` raised to 325-LOC](iterate-2026-09-21-r1-depends-on-schema-test-campaign-graph-bloat.md)
+- [Codex hooks: config-layer sync via per-hook launcher scripts, platform-split quoting](iterate-2026-09-22-r1b-codex-hooks-config-layer-shim-launcher-script-quoting.md)
 - [Bloat exception — `shared/scripts/lib/autonomous_loop.py` raised to 454-LOC](iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md)
 - [Bloat exception — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 512-LOC](iterate-2026-09-22-r2-worktree-capability-bloat-exception.md)
 - [R3 — unit-scoped review-attribution pin, `lib/review_attribution.py`](iterate-2026-09-22-r3-review-diff-fix-adr.md)

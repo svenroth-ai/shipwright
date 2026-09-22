@@ -1,0 +1,1 @@
+Codex CLI hooks now sync into the global config-layer `~/.codex/hooks.json` (Codex never executes plugin-bundled hooks — openai/codex#16430, #39895), non-destructively merged and idempotent, via `shared/scripts/tools/codex_hooks_sync.py`.

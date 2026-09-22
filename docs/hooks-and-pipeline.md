@@ -3113,14 +3113,97 @@ Claude's own marketplace reads — never a hand-edited second copy.
   matches `shared/tests/test_audit_compliance_on_stop_wiring.py`'s own
   declared invariant (`iterate_stop_finalize.py` < `audit_phase_quality_on_stop.py`
   < `audit_compliance_on_stop.py` < ... < `aggregate_triage_on_stop.py`).
-- **Not yet proven:** hook *execution* under Codex — whether Codex actually
-  runs same-group command hooks sequentially, in array order, at all (trust
-  review, dispatcher semantics). This bundle's merge-time ordering is
-  correct by construction; whether Codex's runtime honors that order is a
-  separate, genuinely unobserved question. Real Codex plugins observed
-  during Repo Scout exclusively use `"type": "mcp_tool"` hooks; no real
-  precedent for `"type": "command"` hooks was found. That proof is R2's job
-  (`codex-plugin-execution-reliability` campaign), not this bundle's.
+- **Known false, corrected R1b:** the previous version of this section left
+  hook *execution* under Codex as "not yet proven." It has since been
+  proven **negative**: Codex CLI does not execute a plugin-bundled `hooks`
+  key at all — confirmed via 8 live Codex invocations across every
+  event/path/trust-bypass combination tried, producing zero fires, and
+  corroborated by two open upstream bugs,
+  [openai/codex#16430](https://github.com/openai/codex/issues/16430)
+  ("Plugin docs/examples imply plugin-local hooks are supported, but the
+  runtime only loads hooks from config-layer locations") and
+  [openai/codex#39895](https://github.com/openai/codex/issues/39895) (a
+  related manifest-precedence bug, same silent-no-op symptom, no error/log/
+  `codex doctor` diagnostic). This bundle's merge-time ordering
+  (`build_hook_inventory`) remains correct by construction and is still what
+  the config-layer shim below reads — only the *execution path* from the
+  bundle's own `.codex-plugin/plugin.json` is dead. See "Codex Hooks
+  Config-Layer Shim" below for the working alternative.
+
+---
+
+## Codex Hooks Config-Layer Shim
+
+R1b (`codex-plugin-execution-reliability` campaign, sub-iterate R1b) works
+around the dead plugin-bundle hook path above. The one confirmed-working
+mechanism is a **config-layer** hooks file that Codex reads independently of
+plugin installation: `~/.codex/hooks.json` (global) or
+`<project>/.codex/hooks.json` (project-local, gated on that project's
+`.codex/` layer being trusted).
+
+- **Global, not project-local.** `C-02` (`spec.md` Constraints) forbids
+  installing anything into a project's own settings; a per-project
+  `.codex/hooks.json` is exactly that, and would additionally need the
+  operator to grant Codex's project-trust to every fresh
+  `.worktrees/<slug>` directory an iterate creates (trust is keyed by
+  literal absolute path) before that iterate's hooks would ever fire.
+  Global hooks are documented as trust-independent, so neither problem
+  applies. Every Shipwright hook script already no-ops outside a real
+  Shipwright project (the `.shipwright/` presence guard used pervasively),
+  so registering them globally is not a new safety concern — the same guard
+  already relied on elsewhere.
+- **Sync command:** `uv run shared/scripts/tools/codex_hooks_sync.py
+  [--bundle-root <path>] [--codex-home <path>] [--yes]` (bundle root and
+  codex home both default to the resolved plugin root and `~/.codex`
+  respectively). Reads the bundle's already-merged `hooks` key (same
+  `build_hook_inventory` output the dead plugin path also reads) and merges
+  it additively into `~/.codex/hooks.json`. Before writing, prints the
+  resolved bundle root and the exact hook events/commands about to be
+  merged and requires an interactive `y`/`N` confirmation — a cheap
+  mitigation for the fact that bundle-root resolution verifies shape, not
+  authenticity (see the ADR's Accepted Risk section). `--yes` skips the
+  prompt for scripted/test use; a future automated caller should only pass
+  it once it has established equivalent trust some other way. Manually run
+  today; R2's terminal helper (paused, blocked on this landing) is the
+  intended automatic trigger once it resumes.
+- **Launcher scripts, not inline commands.** Codex runs a hook's `command`
+  string on Windows via `cmd.exe /C "<command_line>"`, wrapping the WHOLE
+  string in one extra, unconditional quote pair. `cmd.exe /C` only parses
+  cleanly with exactly one quote pair total, and every real Shipwright hook
+  command embeds its own quoted paths (`uv run "${CLAUDE_PLUGIN_ROOT}/..."
+  "${CLAUDE_PLUGIN_ROOT}/../../shared/..."`, often several) — so Codex's own
+  wrap breaks the whole line silently (traced by reading
+  `codex-rs/hooks/src/engine/command_runner.rs` directly; confirmed
+  empirically, 8 zero-fire invocations until the bug was found and worked
+  around). The sync tool writes one small launcher script per hook handler
+  (`.cmd` on Windows, `.sh` + executable bit on POSIX) into
+  `~/.codex/shipwright-hooks/`, holding the real invocation, and puts only
+  that launcher's bare path — no embedded quotes, no arguments — into
+  `hooks.json`. A single quoted token with no arguments is `cmd.exe`'s
+  documented "preserve as executable name" special case, so this is safe
+  even when the path itself contains spaces.
+- **Ownership + idempotency.** A `hooks.json` entry is Shipwright's
+  if-and-only-if its command resolves inside `~/.codex/shipwright-hooks/` —
+  self-evident from the entry alone, so re-running the sync never needs a
+  sidecar to know what to replace (a sidecar,
+  `~/.codex/.shipwright-hooks-managed.json`, is still written as a
+  human-readable record, but is not load-bearing). Every prior
+  Shipwright-owned entry is removed and the launcher directory regenerated
+  from scratch on each run; anything an operator or another tool added
+  directly to `hooks.json` is left untouched.
+- **`env` is empty for config-layer hooks.** Unlike plugin-bundled hooks
+  (which Codex documents as receiving `PLUGIN_ROOT`/`PLUGIN_DATA` and the
+  `CLAUDE_PLUGIN_ROOT` compatibility alias), a global/config-layer hook
+  receives no such injection — confirmed empirically (captured hook
+  payloads showed `"env": {}`). The sync tool therefore rewrites every
+  `${CLAUDE_PLUGIN_ROOT}` token to the bundle's literal absolute path at
+  sync time; it never relies on the placeholder resolving itself.
+- **macOS risk, not yet proven at this writing.** Codex picks the shell via
+  `$SHELL` and runs it as `-lc` (login + command) — a login shell sources
+  `.zprofile`/`.zlogin` but not `.zshrc`, so a hook relying on PATH entries
+  set up only in `.zshrc` (Homebrew shims, pyenv, nvm) could fail with
+  "command not found" independent of the quoting fix above. Flagged for the
+  first macOS live-proof round to check explicitly.
 
 ---
 
