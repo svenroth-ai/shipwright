@@ -1,8 +1,33 @@
 {
   "stage": "spec-compliance",
-  "verdict": "PASS",
-  "spec_citations": [],
-  "summary": "Round 3 (commit 03d8a703d): all five round-2 divergences genuinely resolved. $unit_wt resolved via jq lookup into loop_state.json (with {project_root} fallback) before both the pre-pin gh pr view and the diff/diff_head computation, both scoped to $unit_wt; a genuine post-pin path-equality check (pin_wt vs unit_wt, not a HEAD-sha proxy) added with STRICT-STOP on mismatch; post-cascade gh pr view reordered to use $unit_wt; test_campaign_step_3f_bis.py flipped to require unit-scoping at both 3f-bis gh pr view call sites plus a new test for the pre-pin resolution and pin-agreement check; both docs now say 'Three modes:'. No new contradictions or regressions found on a full read of campaign-mode.md:239-532. One non-blocking observation recorded for code-reviewer's judgement (REJECT-path run_dir re-derivation edge case at L480, fails closed, not a spec divergence). Reviewer noted no Bash tool was available so diff enumeration wasn't independently run; reviewed on-disk state of all spec-named artifacts instead.",
-  "recorded_from": "adecdf530a575a01b",
+  "verdict": "REJECT",
+  "spec_citations": [
+    {
+      "spec_ref": "R3-review-diff-fix.md:L20-25 (named unit-scoped call sites)",
+      "divergence": "Round 4's dual-write/re-read fix is cosmetic: the re-read at campaign-mode.md:371-373 dereferences $run_dir, which is a shell variable assigned only once at :250 -- i.e. it dies at the exact spawn boundary the fix exists to survive. Across that boundary: cat \"$run_dir/unit_worktree\" becomes cat \"/unit_worktree\" -> empty -> silently falls back to {project_root} (wrong worktree post-R5a); diff_head reads empty -> equality check at :401 STRICT-STOPs on the happy path; fires reads empty -> a reviewed unit gets marked --review-skipped. The doc already knows the rule (:454, :536 re-derive run_dir inline; test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns asserts it's mandatory) but didn't apply it here.",
+      "diff_location": "campaign-mode.md:371-373 vs :250 (sole prior run_dir= assignment) and :243-249 (the boundary claim)",
+      "kind": "unfaithful"
+    },
+    {
+      "spec_ref": "R3-review-diff-fix.md:L45-47 (pr_node_id/pr_head_ref/pr_base_ref persist PR identity)",
+      "divergence": "$pr_json is captured at :281 in the same pre-fires shell call as $unit_wt/$diff_head, consumed at :378-380 inside the pin block, but was NOT added to the dual-write set. Under the step's own shell model $pr_json is empty at :378, so the pin records no PR identity -- silently dead despite the spec mandating it. Doc also contradicts itself: prose at :350-352 claims pr_json's identity fields are 'always resolvable here -- never null', which the boundary declaration two paragraphs earlier falsifies.",
+      "diff_location": "campaign-mode.md:281 (capture) -> :378-380 (consumption), prose claim at :350-352",
+      "kind": "unfaithful"
+    },
+    {
+      "spec_ref": "R3-review-diff-fix.md:L20-25 (reviews.json add/commit/push, record_review_pass.py --payload-file root)",
+      "divergence": "Two more re-reads dereference the un-re-derived $run_dir: (a) :432, whose value roots record's --payload-file at :438 (spec-named call site); (b) :519 on the Stage-1-REJECT branch, feeding git -C \"$unit_wt\" add/commit/push of reviews.json at :520-522 (also spec-named) -- this branch never executes :454's run_dir= since that lives in the ship path the REJECT branch skips. Both silently fall back to {project_root}, un-scoping themselves post-R5a on every run.",
+      "diff_location": "campaign-mode.md:432 (-> :438) and :519 (-> :520-522)",
+      "kind": "unfaithful"
+    },
+    {
+      "spec_ref": "R3-review-diff-fix.md:L32-33 (Three modes) and L20-25 (git -C <unit-worktree>)",
+      "divergence": "Durable decision records still describe the design earlier rounds rejected. ADR .../iterate-2026-09-22-r3-review-diff-fix-adr.md:33 says '(pin/verify' (missing ship), :36 says '--mode {pin,verify}' vs shipped choices=[pin,ship,verify], :41-43 claims every named git call site gets explicit {project_root} scoping (the literal round-2 REJECT, opposite of current :320/:323/:463-465), :47 calls 3g's [ -f ... ] check 'a defensive fallback' when it's the mechanism per test docstring. Same staleness in .shipwright/agent_docs/architecture.md:536 ('(pin/verify, FATAL-on-error)', no ship) and shared/scripts/checks/check_review_attribution.py:80 CLI help ('(pre-R5a: every row)' -- the identical stale claim round 4 corrected in campaign-mode.md itself). Round 4's ADR fix only touched the heading, not the Decision body.",
+      "diff_location": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-adr.md:33,36,41-43,47; .shipwright/agent_docs/architecture.md:536; shared/scripts/checks/check_review_attribution.py:80",
+      "kind": "unfaithful"
+    }
+  ],
+  "summary": "REJECT (round 4, commit b8224702a). Confirmed genuine and NOT to be re-touched: test_step_3f_bis_computes_the_diff_itself_against_unit_wt (mutation-probed, pins :320/:323 exact text); merge-base guard at :322 correctly placed before the diff range; empty-string unit_worktree fallback present at all 5 read sites (:371,432,455,519,552); jq hardening (.id? // \"\", dropped 2>/dev/null) at :276-278; post-cascade pr_url emptiness guard at :457; ship-before-legacy-write ordering (:478-482); --mode ship contract, reviews.json unit-scoping (:463-465), 3g's own gh pr view (:553), unconditional-pin STRICT-STOP (:545), --match-head-commit on merge (:554/558), plan's 'Three modes:' wording all intact. Minimal fix: re-derive run_dir=\"{project_root}/.shipwright/runs/{loop_id}/{id}\" immediately above :371, :432, and :519 (matching :454's existing pattern); dual-write $pr_json (or its 3 extracted fields) alongside unit_wt/diff_head/fires at :281, re-read at :378; add a test that actually guards this re-derivation (none currently references unit_worktree's re-derivation before these three read sites); correct the ADR Decision section, architecture.md:536, and the CLI help string in check_review_attribution.py:80.",
+  "recorded_from": "a611789d878251ab7",
   "run_id": "iterate-2026-09-22-r3-review-diff-fix"
 }

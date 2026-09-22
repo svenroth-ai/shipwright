@@ -139,8 +139,9 @@ def test_step_3f_bis_fails_closed_when_the_promotion_does_not_ship():
     # sub-iterate then found the scoping was fallback-only — every named
     # call site read the literal `{project_root}` template value, never a
     # genuinely resolved unit worktree — so it now reads `$unit_wt`,
-    # resolved from `loop_state.json`'s row by the pin call and dual-written
-    # to a file for this exact cross-spawn boundary.
+    # resolved from `loop_state.json`'s row by 3f-bis's own jq lookup (pin
+    # never writes this) and dual-written to a file for this exact
+    # cross-spawn boundary.
     assert 'push || strict-stop' in step, (
         "`git push` in 3f-bis must be checked — a promotion that does not "
         "reach the remote must STOP the loop, not shorten it"
@@ -303,7 +304,8 @@ def test_step_3f_bis_resolves_unit_wt_before_pin_and_verifies_pins_agreement():
     )
     assert 'unit_wt="{project_root}"' in step[resolve_at:pin_at], (
         "the pre-pin resolution must fall back to {project_root} when the "
-        "loop_state.json row carries no worktree field yet"
+        "loop_state.json row carries no worktree field (a pre-R2 row, or a "
+        "warned lease-touch failure)"
     )
     assert 'pin_wt=$(jq -r .worktree <<<"$pin_json")' in step, (
         "3f-bis must capture pin's own self-reported worktree"
@@ -311,6 +313,108 @@ def test_step_3f_bis_resolves_unit_wt_before_pin_and_verifies_pins_agreement():
     assert '[ "$pin_wt" = "$unit_wt" ] || strict-stop' in step, (
         "3f-bis must STRICT-STOP when pin's self-reported worktree diverges "
         "from the $unit_wt already used for the pre-pin gh pr view and diff"
+    )
+
+
+def test_step_3f_bis_rederives_run_dir_before_each_boundary_crossing_read():
+    """Spec-review round 4 (blocking): round 4's dual-write/re-read fix for
+    `$unit_wt`/`$diff_head`/`$fires` was cosmetic — every re-read dereferenced
+    `$run_dir` itself, a shell variable assigned only once, on the near side
+    of the same spawn boundary the fix exists to survive. `run_dir` is a
+    template-string rebuild, not a persisted value, so every block that reads
+    one of the boundary-crossing files must re-derive it fresh first. This
+    counts one `run_dir=` re-derivation immediately before EVERY `unit_worktree`
+    read site in 3f-bis's own body (the pin-block re-read, the promote-rows
+    block, the ship-path block, and the Stage-1-REJECT branch, which never
+    reaches the ship path's own re-derivation) — delete any one of the
+    matching `run_dir=` lines and this fails."""
+    step = _step_3f_bis()
+    rederive = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
+    read = 'cat "$run_dir/unit_worktree"'
+    positions = []
+    idx = 0
+    while True:
+        idx = step.find(read, idx)
+        if idx < 0:
+            break
+        positions.append(idx)
+        idx += len(read)
+    assert len(positions) >= 4, (
+        "3f-bis must have at least 4 unit_worktree read sites (pin block, "
+        "promote-rows, ship-path, Stage-1-REJECT branch)"
+    )
+    for pos in positions:
+        preceding = step[max(0, pos - 400):pos]
+        assert rederive in preceding, (
+            f"unit_worktree read at offset {pos} must be preceded by a fresh "
+            "run_dir= re-derivation within the same block, not a bare read "
+            "through a possibly-empty $run_dir"
+        )
+
+
+def test_step_3f_bis_merge_base_failure_is_checked():
+    """Code-review round 4/5, low: an unchecked `merge-base` failure collapses
+    the diff range to `...{sha}` — an EMPTY diff for `diff_head==HEAD` — which
+    fails OPEN (fires=0, cascade skipped, unit merges unreviewed). Delete the
+    `|| STRICT-STOP` and this fails."""
+    step = _step_3f_bis()
+    assert 'base=$(git -c "$unit_wt" merge-base origin/{default} "$diff_head") || strict-stop' in step, (
+        "merge-base must be captured explicitly and STRICT-STOP-guarded "
+        "before it is used to build the diff range"
+    )
+
+
+def test_step_3f_bis_fires_is_a_real_assignment_not_a_bare_variable_read():
+    """Code-review round 5, CRITICAL: `echo "$fires" > "$run_dir/fires"`
+    presupposed a shell variable `$fires` that no command in the step ever
+    assigned — the fires decision is a model judgement read from the diff's
+    own text, described only in prose ("set fires=1 ... else fires=0"), never
+    a shell computation. The literal snippet therefore wrote an EMPTY file
+    unconditionally, independent of any spawn-boundary issue — worse than the
+    pre-fix behavior, where `fires` was a live, correctly-set variable. The
+    doc's literal next command must be an ACTUAL assignment of the digit just
+    decided, and the re-read must fail closed on anything else."""
+    step = _step_3f_bis()
+    assert "fires=1" in step, (
+        "the fires decision must be written as a literal shell assignment "
+        "(fires=1 or fires=0), not left as a bare $fires with nothing "
+        "upstream ever assigning it"
+    )
+    fires_write_at = step.find('echo "$fires" > "$run_dir/fires"')
+    assert fires_write_at >= 0, "3f-bis must dual-write the fires decision"
+    assert "fires=1" in step[max(0, fires_write_at - 120):fires_write_at], (
+        "the literal fires=1/fires=0 assignment must immediately precede "
+        "the dual-write, not float disconnected from it"
+    )
+    reread_at = step.find('fires=$(cat "$run_dir/fires"')
+    assert reread_at >= 0, "3f-bis must re-read $fires from the dual-write file"
+    assert '[ "$fires" = "1" ] || [ "$fires" = "0" ] || strict-stop' in step[reread_at:reread_at + 200], (
+        "the fires re-read must fail closed (STRICT-STOP) when the value is "
+        "neither 1 nor 0 -- anything else means the write above never "
+        "happened, which must not silently read as 'did not fire'"
+    )
+
+
+def test_step_3f_bis_dual_writes_and_rereads_pr_json_across_the_boundary():
+    """Spec-review round 4: `$pr_json` crosses the SAME spawn boundary as
+    `$unit_wt`/`$diff_head`/`$fires` (it is captured before the `fires`
+    judgement and consumed inside the pin block after it), but round 4 only
+    added the other three to the dual-write set. Without this, the pin's
+    `--pr-node-id`/`--pr-head-ref`/`--pr-base-ref` arguments silently resolve
+    empty whenever the boundary is crossed."""
+    step = _step_3f_bis()
+    write_at = step.find('echo "$pr_json" > "$run_dir/pr_json"')
+    assert write_at >= 0, "3f-bis must dual-write $pr_json alongside the other three values"
+    capture_at = step.find("pr_json=$(cd \"$unit_wt\" && gh pr view")
+    assert 0 <= capture_at < write_at, (
+        "the pr_json dual-write must come after its initial capture"
+    )
+    reread_at = step.find('pr_json=$(cat "$run_dir/pr_json"')
+    assert reread_at >= 0, "3f-bis must re-read $pr_json from the dual-write file"
+    pin_at = step.find("pin_json=$(uv run")
+    assert reread_at < pin_at, (
+        "pr_json must be re-read before the pin block consumes it for the "
+        "--pr-node-id/--pr-head-ref/--pr-base-ref arguments"
     )
 
 

@@ -77,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--project-root", required=True,
                          help="Where runs/{loop_id}/... is rooted (the shared campaign worktree today)")
     parser.add_argument("--campaign-worktree", required=True,
-                         help="Fallback worktree when the unit's row carries none yet (pre-R5a: every row)")
+                         help="Fallback worktree when the unit's row carries none (a pre-R2 row, or a warned lease-touch failure)")
     parser.add_argument("--loop-id", required=True)
     parser.add_argument("--json", action="store_true")
 

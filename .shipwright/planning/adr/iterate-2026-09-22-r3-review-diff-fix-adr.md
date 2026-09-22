@@ -30,21 +30,31 @@ path under wave-build's own time pressure.
 
 Implemented exactly per the sub-iterate spec's "Files to create/modify"
 and "Test strategy" sections: new `lib/review_attribution.py`
-(`pin`/`verify`, mirroring `lib/unit_lease.py`'s lib+CLI split, but
+(`pin`/`ship`/`verify`, mirroring `lib/unit_lease.py`'s lib+CLI split, but
 FATAL-on-error rather than warn-and-continue — a misattributed review is
 exactly the bug this module exists to prevent) and
-`checks/check_review_attribution.py` (thin CLI, `--mode {pin,verify}`,
+`checks/check_review_attribution.py` (thin CLI, `--mode {pin,ship,verify}`,
 matching the spec's and the master plan's literal CLI spelling — a Stage-1
 spec-review REJECT caught an earlier subcommand-shaped implementation of
-this same contract). `campaign-mode.md`'s 3f-bis gains an unconditional
-`check_review_attribution.py --mode pin` call at its top (`--review-skipped`
-on the below-threshold path) and every named git call site (diff, merge-base,
-the reviews.json commit/push, the Stage-1-REJECT commit/push) gains
-explicit `git -C "{project_root}"` scoping; 3g's stale "the pin is
-conditional" comment is corrected. `pin` writes
+this same contract; `ship` was added later, closing the doubt-reviewer's
+content-blind-verify finding). `campaign-mode.md`'s 3f-bis gains an
+unconditional `check_review_attribution.py --mode pin` call at its top
+(`--review-skipped` on the below-threshold path) and every named call site
+(the diff itself, both `gh pr view` resolutions, reviews.json's
+add/commit/push, the Stage-1-REJECT commit/push, and `record`'s
+`--payload-file` root) runs against `$unit_wt` — THIS unit's own worktree,
+resolved from `loop_state.json`'s row before pin ever runs — not
+`{project_root}` (round-2 spec-review REJECTed an earlier draft that left
+these `{project_root}`-scoped; round 5 closed the last two call sites and
+a spawn-boundary regression in the fix itself, documented in the sibling
+bloat-exception ADR's Round 5 entry); 3g's stale "the pin is conditional"
+comment is corrected. `pin` writes
 `runs/{loop_id}/{unit_id}/{attempt_id}/review_pin.json` and dual-writes
-the legacy `runs/{loop_id}/{unit_id}/reviewed_head` file so 3g's existing
-`[ -f ... ]` check keeps working unchanged as a defensive fallback.
+the legacy `runs/{loop_id}/{unit_id}/reviewed_head` file; 3g's `[ -f ... ]`
+check on that file is the load-bearing merge gate, not a defensive
+fallback — the unconditional pin above is itself STRICT-STOP-guarded, so
+every unit that reaches 3g has one, and a missing file means an earlier
+guard should already have stopped the loop.
 
 ## External-Plan-Review-Findings
 

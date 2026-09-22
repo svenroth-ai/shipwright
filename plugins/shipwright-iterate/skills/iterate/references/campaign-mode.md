@@ -243,11 +243,20 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        THIS step too: `fires` below is a model judgement read from the diff's
        own text, not something a shell script can decide on its own, which in
        practice forces a fresh Bash call before pin runs — so `$unit_wt`,
-       `$diff_head`, and `$fires` are each dual-written to `$run_dir/` the
-       moment they are known and re-read at the top of the pin block, rather
-       than trusted to survive as shell variables from here to there
-       (code-review round 4, medium).
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
+       `$diff_head`, `$fires`, and `$pr_json` are each dual-written to
+       `$run_dir/` the moment they are known and re-read at the top of the pin
+       block, rather than trusted to survive as shell variables from here to
+       there. `$run_dir` itself is NOT one of the values this dual-write
+       protects — it is a shell variable exactly like the others, so every
+       block below that reads one of these files re-derives
+       `run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"` first, from
+       the same `{project_root}`/`{loop_id}`/`{id}` template placeholders
+       every spawn is given fresh — the dual-write files are useless if the
+       path to find them is itself lost the same way (code-review round 5,
+       blocking: round 4 dual-wrote the values but re-read them through an
+       un-re-derived `$run_dir`, so the fix did not survive the exact
+       boundary it was built for).
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head"
        `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
        wait for pin's own answer, because `worktree` is independently readable
        from `loop_state.json`'s row for this unit (the exact field
@@ -274,11 +283,12 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        failure surface instead of silently reading as "no match" (code-review
        round 4, low):
          unit_wt=$(jq -r --arg id "{id}" \
-           '(.units[]? | select(((.id? // "")|ascii_downcase)==($id|ascii_downcase)) | .worktree) // empty' \
-           "{project_root}/.shipwright/loop_state.json")
+           '[.units[]? | select(((.id? // "")|ascii_downcase)==($id|ascii_downcase)) | .worktree] | first // empty' \
+           "{project_root}/.shipwright/loop_state.json") || STRICT-STOP
          [ -n "$unit_wt" ] || unit_wt="{project_root}"
-         echo "$unit_wt" > "$run_dir/unit_worktree"
+         echo "$unit_wt" > "$run_dir/unit_worktree" || STRICT-STOP
          pr_json=$(cd "$unit_wt" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
+         echo "$pr_json" > "$run_dir/pr_json" || STRICT-STOP
          pr_url=$(jq -r .url <<<"$pr_json")
          [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # no PR = nothing to review or merge
 
@@ -318,11 +328,21 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        for `diff_head==HEAD`, which fails OPEN (`fires=0`, cascade skipped,
        unit merges unreviewed — code-review round 4, low):
          diff_head=$(git -C "$unit_wt" rev-parse HEAD)
-         echo "$diff_head" > "$run_dir/diff_head"
+         echo "$diff_head" > "$run_dir/diff_head" || STRICT-STOP
          base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
          diff=$(git -C "$unit_wt" diff "$base"..."$diff_head")
        Fire when the runner said medium+, OR the diff sets any risk flag, OR it
-       exceeds 100 lines — set `fires=1` in that case, else `fires=0`. `diff_head`
+       exceeds 100 lines — this is a JUDGEMENT made by reading the diff, not a
+       shell computation, so the literal next command is an ACTUAL assignment
+       of the digit just decided (`fires=1` or `fires=0`), never a bare `echo
+       "$fires"` with nothing upstream ever having assigned it (code-review
+       round 5, blocking: the prior wording described the decision in prose
+       and then wrote `$fires` as though an earlier line had set it — none
+       had, so every unit's fires file was written EMPTY, unconditionally,
+       independent of the spawn-boundary issue above; empty reads as "did not
+       fire" on re-read, silently skipping the whole review cascade and
+       merging the unit unreviewed — worse than the pre-fix behavior, where
+       `fires` was at least a live, correctly-set variable). `diff_head`
        is resolved BEFORE the diff and the diff is computed explicitly against
        IT (not a second, later `HEAD`, which a concurrent commit could make a
        different SHA — code-review round 3, low). It is the tree the reviewers
@@ -331,9 +351,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        doubt-round, medium: the two resolved the tree independently with no
        equality check, so a divergence would let the pin certify a diff nobody
        reviewed — the exact bug R3 exists to prevent). Dual-write the fires
-       decision too, once made — it is the third value this paragraph hands
-       across the boundary named at the top of this step:
-         echo "$fires" > "$run_dir/fires"
+       decision as the literal digit just assigned — it is the third value
+       this paragraph hands across the boundary named at the top of this step:
+         fires=1   # or fires=0 — whichever the judgement above concluded
+         echo "$fires" > "$run_dir/fires" || STRICT-STOP
 
        **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
        unit's own `worktree`/`branch`/`attempt_id` from `loop_state.json`
@@ -348,8 +369,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        unpinned window between diff computation and the later commit/push
        below) so a crash before that later write still leaves a pin behind.
        Runs regardless of the trigger above (a PR already exists by this
-       point, per the STRICT-STOP above, so `pr_json`'s identity fields are
-       always resolvable here — never null), so a below-threshold unit still
+       point, per the STRICT-STOP above) — `pr_json` crosses the SAME spawn
+       boundary as `$unit_wt`/`$diff_head`/`$fires`, so its identity fields
+       are resolvable here via the SAME dual-write/re-read below, not by
+       trusting shell survival alone (code-review round 5: a prior draft
+       claimed these were "always resolvable — never null" on the strength
+       of the STRICT-STOP above, which guards existence at CAPTURE time, not
+       survival across the boundary) — so a below-threshold unit still
        has a pin `built -> merging` (R4) can verify at merge time — pass
        `--review-skipped` exactly when the trigger above did NOT fire.
        **Which field a later verify uses is fixed, not left ambiguous:** a
@@ -364,13 +390,20 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        below-threshold unit (`fires=0`) is verified via `reviewed_head`, since
        no further commit is expected to land on it at all, and its
        `shipped_head` is already set equal to `reviewed_head` at pin time
-       (`--review-skipped`). Re-derive `$unit_wt`/`$diff_head`/`$fires` first
-       — the dual-writes above exist because the `fires` judgement between
-       them and here may have started a fresh Bash call; re-reading is safe
-       even when it did not (code-review round 4, medium):
-         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
-         diff_head=$(cat "$run_dir/diff_head")
-         fires=$(cat "$run_dir/fires")
+       (`--review-skipped`). Re-derive `run_dir`, then `$unit_wt`/`$diff_head`/
+       `$fires`/`$pr_json` — the dual-writes above exist because the `fires`
+       judgement between them and here may have started a fresh Bash call;
+       re-reading is safe even when it did not, but only once `run_dir`
+       itself is re-derived — it is a shell variable too, and reading
+       `$run_dir/unit_worktree` through an EMPTY `$run_dir` silently reads
+       `/unit_worktree` instead (code-review round 5, blocking: this was the
+       exact gap round 4's fix left open):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         diff_head=$(cat "$run_dir/diff_head" 2>/dev/null); [ -n "$diff_head" ] || STRICT-STOP
+         fires=$(cat "$run_dir/fires" 2>/dev/null)
+         [ "$fires" = "1" ] || [ "$fires" = "0" ] || STRICT-STOP   # fail closed: anything else means the write above never happened
+         pr_json=$(cat "$run_dir/pr_json" 2>/dev/null); [ -n "$pr_json" ] || STRICT-STOP
          pin_json=$(uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode pin \
            --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
            --project-root "{project_root}" --campaign-worktree "{project_root}" \
@@ -425,10 +458,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        reviewer.** A mitigation, not a guarantee; the salvage hook backstops
        the window this alone cannot close (see `iteration-reviews.md`).
 
-       Promote the rows IN THAT ORDER. Re-derive `$unit_wt` from the file pin
-       wrote above — this runs after the a/b/c spawns, the same shell
-       boundary `run_dir`/`pr_url` cross below, so the variable set at pin
-       time does not survive to here either:
+       Promote the rows IN THAT ORDER. Re-derive `run_dir`, then `$unit_wt`
+       from the file dual-written at the top of 3f-bis (code-review round 5:
+       a prior draft attributed this file to pin — pin never writes it, this
+       step does) — this runs after the a/b/c spawns, the same shell
+       boundary `run_dir`/`pr_url` cross below, so the variables set at pin
+       time do not survive to here either (code-review round 5: `run_dir`
+       itself must be re-derived before the file it names can be read; a
+       prior draft read `$run_dir/unit_worktree` here without first
+       re-deriving `run_dir`, silently falling back to `{project_root}`):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
        The runner already closed the rows and a closed row is immutable, so
        `--force` is REQUIRED (without it the CLI exits 3). A `code` row
@@ -511,7 +550,12 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `not_run` and the left-open PR reads as merely unreviewed rather than
        REJECTED. `completed` is wrong here — the native Stage-1 payload stores
        `spec_citations` and drops `verdict`, so a `completed` REJECT is
-       byte-indistinguishable from a PASS to the next reader, human or gate:
+       byte-indistinguishable from a PASS to the next reader, human or gate.
+       This branch never reaches the ship path's own `run_dir` re-derivation
+       above (it SKIPS ship entirely on a REJECT), so it re-derives its own
+       here — the identical gap as the promote-rows block above, on a
+       separate branch (code-review round 5, blocking):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          … record --review-type spec --status not_run --force \\
              --recorded-by spec-reviewer \\
              --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
@@ -544,7 +588,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          # be the exact unpinned merge the spec's acceptance criterion forbids.
          [ -f "$run_dir/reviewed_head" ] || STRICT-STOP
          # Same unit-scoping as 3f-bis (R3): read $unit_wt back from the FILE
-         # pin wrote there — a fresh Bash call, so nothing set in 3f-bis's own
+         # 3f-bis dual-wrote there (pin never writes this one — code-review
+         # round 5) — a fresh Bash call, so nothing set in 3f-bis's own
          # shell survives to here — falling back to {project_root} if the file
          # is absent OR empty (a bare `2>/dev/null || echo` fallback catches
          # only a missing file, not a present-but-empty one — code-review

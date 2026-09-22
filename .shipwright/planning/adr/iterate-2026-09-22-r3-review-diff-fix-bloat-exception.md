@@ -1,4 +1,4 @@
-# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (first crossing: raised to 522-LOC; see the latest entry below for the current ceiling)
+# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (first crossing 400 → 447; current ceiling in the latest entry below)
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -322,8 +322,12 @@ crash. +41 lines (583 -> 624):
   pre-pin sibling and contradicting the step's own "every command is
   CHECKED" claim. Mirrored the pre-pin guard.
 - Fixed a stale test docstring rationale (claimed unit-scoping `run_dir`
-  would be "circular" — disproven by this same round's own diff fix) and a
-  stale ADR heading ("raised to 522-LOC" after four further crossings).
+  would be "circular" — disproven by this same round's own diff fix) and
+  attempted a fix to the stale ADR heading ("raised to 522-LOC" after four
+  further crossings) — the heading text was corrected, but the file's
+  Decision body, `architecture.md`, and the CLI help string carried the
+  identical staleness untouched; a fresh code-reviewer caught this in round
+  5 below (N7).
 - Two low findings (a harness-normalization comment for `git -c` vs. `-C` in
   test assertions; the lexical-vs-realpath nature of the new path-equality
   check) were addressed as a documentation-only comment and left as-is
@@ -332,3 +336,73 @@ crash. +41 lines (583 -> 624):
 This is a FIFTH crossing on top of the four this ADR already covers; the
 `shipwright_bloat_baseline.json` entry's `current` is bumped to 624 in the
 same commit as this note, per this file's own convention.
+
+## Round 5 — two independent fresh reviews of the 583 -> 624 fix
+
+A fresh spec-reviewer REJECTed (4 findings) and, in parallel, a fresh
+code-reviewer independently REJECTed the SAME commit (10 findings, 2
+overlapping with the spec-reviewer's). Both are fixed in this round.
+
+**From the spec-reviewer:**
+
+- **The round-4 dual-write/re-read fix was cosmetic**: `$unit_wt`/
+  `$diff_head`/`$fires` were dual-written to `$run_dir/*`, but the re-read
+  sites dereferenced `$run_dir` itself — a shell variable assigned only
+  once, on the near side of the very spawn boundary the fix exists to
+  survive. Fixed by re-deriving `run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"`
+  (a template-string rebuild, not a variable read — it survives any shell
+  boundary) at all three read sites: the pin-block re-read, the
+  promote-rows block, and the Stage-1-REJECT branch (which never reaches
+  the ship path's own re-derivation).
+- **`$pr_json` crossed the same boundary undual-written** — its identity
+  fields (`pr_node_id`/`pr_head_ref`/`pr_base_ref`) would read null if the
+  boundary was crossed, despite a prose claim that they were "always
+  resolvable — never null". Fixed: `$pr_json` is now dual-written and
+  re-read alongside the other three.
+- **No test guarded the round-4 fix's own headline change** (the diff
+  computation's unit-scoping) or the new run_dir re-derivation. Added
+  `test_step_3f_bis_computes_the_diff_itself_against_unit_wt` and
+  `test_step_3f_bis_rederives_run_dir_before_each_boundary_crossing_read`.
+- **Durable decision records still described the pre-R3 design**: this
+  ADR's own Decision section said `(pin/verify` (no `ship`), claimed every
+  named git call site got `{project_root}` scoping (the literal round-2
+  REJECT reason), and called 3g's `[ -f ... ]` check "a defensive fallback"
+  rather than the load-bearing mechanism it is. `architecture.md` and the
+  CLI help string in `check_review_attribution.py` carried matching
+  staleness. All four corrected.
+
+**From the independent code-reviewer, on the same commit:**
+
+- **CRITICAL: the `fires` dual-write was writing an EMPTY file, unconditionally,
+  independent of any spawn-boundary issue.** `echo "$fires" > "$run_dir/fires"`
+  presupposed a shell variable `$fires` that no command ever assigned — the
+  fires decision was pure prose ("set fires=1 in that case, else fires=0"),
+  a model judgement, never a shell assignment. Fixed: the doc now states the
+  literal next command is an actual assignment (`fires=1` or `fires=0`) of
+  the digit just decided, and the re-read fails closed
+  (`[ "$fires" = "1" ] || [ "$fires" = "0" ] || STRICT-STOP`) rather than
+  silently treating anything else as "did not fire".
+- **No baseline entry for `shared/tests/test_campaign_step_3f_bis.py`**,
+  which crossed 300 lines with no `state: "exception"` row — see the fix
+  chosen below.
+- Stale "every row, pre-R5a" wording also lived in
+  `resolve_unit_identity()`'s own docstring (`review_attribution.py`) and a
+  test assertion message — reworded to match campaign-mode.md's own round-4
+  correction.
+- Misattribution: two spots said "the file pin wrote" for `unit_worktree`,
+  which pin never writes — the step itself dual-writes it. Corrected in
+  both the promote-rows paragraph and 3g's own comment.
+- Hardening: `mkdir -p "$run_dir"` added once at the top of 3f-bis; every
+  dual-write now `|| STRICT-STOP`s; the jq lookup is now checked
+  (`|| STRICT-STOP`) and takes only the first match
+  (`[...] | first // empty`) so a duplicate-id row can't produce a
+  multi-line `$unit_wt` that breaks every downstream `cd`/`git -C`.
+
++45 lines (624 -> 669); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 669 in the same commit as this note. `shared/tests/test_campaign_step_3f_bis.py`
+also crossed 300 lines this round (540) with no prior baseline entry — a
+genuine omission, not a policy difference (`shared/tests/conftest.py`
+already has one for the same campaign) — closed with a new, separate
+bloat-exception ADR (`iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md`)
+rather than folded into this one, since it is a different file with its
+own retirement plan.

@@ -144,7 +144,8 @@ def test_the_old_single_worktree_diff_would_have_misattributed_units(git_origin_
 
 
 def test_fallback_to_shared_campaign_worktree_when_row_has_no_worktree_field(git_origin_repo):
-    """Every row, pre-R5a — the row carries no `worktree` field at all."""
+    """A pre-R2 row, or one whose lease-touch warned-and-continued — the
+    row carries no `worktree` field at all."""
     work, _ = git_origin_repo
     head = _commit_file(work, "c.txt", "shared worktree change\n")
     state_path = work / ".shipwright" / "loop_state.json"

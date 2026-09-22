@@ -1,96 +1,104 @@
 {
-  "section": "R3-round3-unit-scoping-fix",
+  "section": "R3-round4-verify",
   "verdict": "REJECT",
   "review": [
     {
-      "severity": "medium",
+      "severity": "high",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 247,
-      "finding": "Prose claims no unit row carries a `worktree` field pre-R5a (\"Pre-R5a no row carries a worktree field yet\"), but R2 (#784) already writes it: unit_lease.py:187-194 sets `\"worktree\": str(worktree)` and sub-iterate-runner.md:36-39 calls check_unit_lease.py touch before Step 4/5. The fallback at L252-255 is dead code on the normal path today, and R5a's author is told (L285-288) to rely on a branch that isn't taken. Not a live bug (both sides read the same field), but a false load-bearing claim in a guaranteed-loaded runtime prompt.",
-      "suggestion": "Reword to: the row normally carries `worktree` (written by unit_lease.touch at each runner step boundary); the fallback covers a row touched before R2's lease landed or a lease touch that failed (warn-and-continue)."
-    },
-    {
-      "severity": "medium",
-      "category": "correctness",
-      "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 248,
-      "finding": "The round's headline fix -- scoping the diff itself (diff_head/$diff) to $unit_wt instead of {project_root} -- has no test guarding it. Existing assertions (`\"merge-base\" in step`, `\"diff_head=$(git\" in step`) are satisfied verbatim by `git -C \"{project_root}\"` too; reverting campaign-mode.md:294-295 back to {project_root} leaves every test in the file green. Given this sub-iterate was REJECTed twice already for exactly this class of silent {project_root} call site, the diff needs its own mutation-probed guard.",
-      "suggestion": "Add assertions anchored on the unit-scoped forms, e.g. `'diff_head=$(git -c \"$unit_wt\" rev-parse head)' in step` and `'git -c \"$unit_wt\" diff' in step` (note: harness lowercases -C to -c, see LOW 6 below)."
+      "line": 371,
+      "finding": "N1 (matches independent spec-reviewer finding): the re-read block (unit_wt/diff_head/fires from $run_dir/*) dereferences $run_dir itself, assigned only once at L250 -- on the far side of the same spawn boundary the fix exists to survive. Same defect at L432 and L519.",
+      "suggestion": "Make run_dir=\"{project_root}/.shipwright/runs/{loop_id}/{id}\" the first line of each of the three blocks (L371, L432, L519), matching L454/L536's existing pattern. IN PROGRESS via round-5 fix fork."
     },
     {
       "severity": "medium",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 353,
-      "finding": "$unit_wt is resolved at L252 and consumed at L256/294-295/353/357/364, but the `fires` decision at L296-297 is a model judgement made from the diff body that in practice forces a fresh Bash call before pin runs at L335. campaign-mode.md's own L239-242 states a fresh Bash call starts with an empty environment. In that fresh call $unit_wt is empty, and the NEW equality check at L353 ([ \"$pin_wt\" = \"$unit_wt\" ]) turns that loss into a STRICT-STOP on the happy path -- a new failure mode this commit introduced (prior post-pin checks used literal {project_root} or same-call values). $fires being lost in the same window also silently appends --review-skipped to a pin for a unit that IS being reviewed. Fails closed but halts a healthy campaign.",
-      "suggestion": "Either state explicitly that L252-364 must run as ONE Bash call, or dual-write $unit_wt/$diff_head/$fires to $run_dir/ before the fires judgement and re-read them at the top of the pin block, matching the pattern already used at L394/L417 for run_dir/pr_url/unit_wt across the a/b/c spawn boundary."
+      "line": 336,
+      "finding": "N2 CRITICAL, NOT yet scoped into round-5 fix: `echo \"$fires\" > \"$run_dir/fires\"` presupposes a shell variable `fires` that NO command in the step ever assigns -- the fires decision is pure prose (\"set fires=1 in that case, else fires=0\"), a model judgement, never a shell assignment. The literal snippet therefore writes an EMPTY file unconditionally, TODAY, independent of any spawn-boundary issue. The re-read has no validity guard either; empty/missing reads as \"did not fire\" -> the whole review cascade is skipped -> pin records review_skipped:true -> 3g merges the unit UNREVIEWED. This is worse than the pre-fix state (fires used to be a live, correctly-set shell variable).",
+      "suggestion": "The doc's literal instruction must be: `echo 1 > \"$run_dir/fires\"` (or `echo 0`) with the JUDGED value substituted, not `$fires`. Fail closed on re-read: `fires=$(cat \"$run_dir/fires\"); [ \"$fires\" = \"1\" ] || [ \"$fires\" = \"0\" ] || STRICT-STOP`. MUST be added to round-5 fix scope."
     },
     {
-      "severity": "low",
+      "severity": "medium",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 295,
-      "finding": "If the inner `git -C \"$unit_wt\" merge-base origin/{default} \"$diff_head\"` fails, the substitution collapses and git sees `...{sha}` (HEAD...{sha}), an empty diff for diff_head==HEAD. Empty diff -> fires=0 -> cascade skipped -> unit merges unreviewed. Fail-open. Pre-dates this commit structurally but the line was rewritten here.",
-      "suggestion": "Capture `base=$(git -C \"$unit_wt\" merge-base ...) || STRICT-STOP` before building the diff command."
+      "line": 378,
+      "finding": "N3, matches round-5 finding 2 already in scope: $pr_json crosses the same boundary, was not dual-written, all three PR identity args pass empty if the boundary is crossed.",
+      "suggestion": "Already in round-5 fix scope."
     },
     {
-      "severity": "low",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 252,
-      "finding": "The jq lookup is not identical to resolve_unit_identity() (review_attribution.py:92-103): jq case-folds with ascii_downcase (ASCII only) vs Python's exact-match-first then .lower() (Unicode). A row with .id null/non-string aborts the WHOLE jq program (poisoning every unit's resolution); two rows differing only in case emit two lines, making $unit_wt multi-line and cd fail. Currently fail-closed via the new pin_wt check, but the failure mode is confusing.",
-      "suggestion": "Use `select((.id? // \"\") | ascii_downcase == ...)` with first-match semantics, or drop the claim that the two lookups are identical."
-    },
-    {
-      "severity": "low",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 254,
-      "finding": "2>/dev/null on the jq call conflates jq-missing, malformed loop_state.json, and genuinely-no-worktree-field into the same {project_root} fallback, producing a STRICT-STOP message pointing at the wrong root cause downstream.",
-      "suggestion": "Capture jq's exit status (`unit_wt=$(jq ...) || STRICT-STOP`) or let stderr through."
-    },
-    {
-      "severity": "low",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 417,
-      "finding": "`unit_wt=$(cat \"$run_dir/unit_worktree\" 2>/dev/null || echo \"{project_root}\")` does not fall back on an EMPTY file -- cat succeeds, $unit_wt is \"\", cd \"\" returns 0 without moving, gh pr view silently runs in the campaign worktree. Post-R5a this is the exact misattribution class R3 exists to close. The write producing this file (L357) is the only unguarded state-write in the step.",
-      "suggestion": "Apply the same `[ -n \"$unit_wt\" ] || unit_wt=\"{project_root}\"` idiom this commit introduced at L255, and guard the echo with `|| STRICT-STOP`. Same empty-value exposure exists at the bare cats around L394, L417, L480."
-    },
-    {
-      "severity": "low",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 418,
-      "finding": "The reordered post-cascade `pr_url=$(cd \"$unit_wt\" && gh pr view ...)` is unchecked, contradicting the adjacent prose claim at L419 that \"every command is CHECKED\". Its pre-pin sibling (L256-258) does guard with `[ -n \"$pr_url\" ] && [ \"$pr_url\" != \"null\" ] || STRICT-STOP`.",
-      "suggestion": "Mirror the pre-pin guard on the post-cascade pr_url."
-    },
-    {
-      "severity": "low",
-      "category": "readability",
+      "severity": "medium",
+      "category": "test-coverage",
       "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 143,
-      "finding": "The prose harness lowercases text, so assertions read `git -c \"$unit_wt\"` and `headrefname,baserefname` -- a reader has no way to know `-c` is a normalized `-C` (a real, different git flag) without knowing the harness internals.",
-      "suggestion": "Add a module-level comment explaining the lowercase normalization, or a norm()-applying helper for expected strings."
+      "line": 1,
+      "finding": "N4: zero test hits for unit_worktree/run_dir/fires read-write pairs; deleting all three echo/cat pairs (L280/321/336, L371-373) keeps every existing test green. Also the merge-base `|| STRICT-STOP` guard (fix #4 from round 4) is unguarded by any test -- reverting it to unchecked also stays green.",
+      "suggestion": "Add tests asserting: each write/read pair present AND run_dir= re-derived before each cat \"$run_dir/ (catches N1); merge-base appears with trailing || strict-stop; the fires write uses a literal 0/1, not $fires."
+    },
+    {
+      "severity": "high",
+      "category": "architecture",
+      "file": "shipwright_bloat_baseline.json",
+      "line": 462,
+      "finding": "N5 BLOCKING, not in round-5 scope: shared/tests/test_campaign_step_3f_bis.py is 437 lines against the 300-line source limit, with NO baseline entry (grepped the whole baseline file for test_campaign_step_3f_bis / test_campaign_review_contract_prose / _campaign_prose_harness -- zero matches). This branch cannot merge with an un-allowlisted crossing. Same campaign already has a proper exception entry for shared/tests/conftest.py (state:exception + ADR) -- this is an omission, not a policy difference.",
+      "suggestion": "Either add a baseline entry (state: exception + ADR link) for this test file, or trim its docstrings' review-round provenance narrative (per N6) to get back under 300 -- the reviewer's own LOC accounting shows ~120 removable lines with zero assertions touched. MUST be added to round-5 fix scope."
+    },
+    {
+      "severity": "medium",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 224,
+      "finding": "N6 advisory: campaign-mode.md is 624 lines against a 400 cap (5th exception). ~28 of this round's +41 lines are provenance prose (round-attribution parentheticals, why-a-reviewer-asked paragraphs) already duplicated in the ADR. CLAUDE.md's own rule: docs = what/how, not provenance.",
+      "suggestion": "Move round provenance to the ADR (where it already lives), keep the runtime prompt imperative. Est. 40-60 LOC saved. Non-blocking but recommended, especially since it also resolves N5 for the test file's own docstrings."
     },
     {
       "severity": "low",
-      "category": "readability",
-      "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 189,
-      "finding": "Test named `..._run_dir_and_gh_pr_view_are_unit_scoped_...` asserts the OPPOSITE for run_dir (stays {project_root}), with a stale justification (\"circular dependency on the very value it exists to produce\") that this same commit's own ADR bullet refutes for the diff -- $unit_wt is now provably resolvable before anything else runs. The real reason run_dir stays at {project_root} is that the runner writes DONE/result.json there and pin roots runs/ there via --project-root.",
-      "suggestion": "Replace the stale rationale in the test docstring/comment with the real one, to avoid a future reviewer bouncing on the same disproven argument."
-    },
-    {
-      "severity": "low",
-      "category": "readability",
+      "category": "correctness",
       "file": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md",
       "line": 1,
-      "finding": "Heading still reads \"raised to 522-LOC\" after four appended crossings; current is now 583.",
-      "suggestion": "Update the heading to reflect current state or make it clear it's historical (first crossing) and point to the latest entry."
+      "finding": "N7 (=prior #11, still not fixed): heading now says 'first crossing: raised to 522-LOC' -- but the ADR's own body says the first crossing was 400->447, and calls 516->522 'a second crossing'. The hedge asserts something new and false.",
+      "suggestion": "Fix heading to: 'first crossing 400 -> 447; current ceiling in the latest entry below'. Add to round-5 scope (already touching this ADR)."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 200,
+      "finding": "N8 (=prior #3, incomplete -- doc-only fix): resolve_unit_identity()'s own docstring still says worktree falls back 'when the row carries no worktree field (every row, pre-R5a)' -- the identical stale claim, on the function campaign-mode.md now cites as authoritative. Test file assertion message at ~L304-307 repeats the stale 'yet'.",
+      "suggestion": "Reword both to: the row normally carries the field since R2; fallback covers a pre-R2 row or a warned lease-touch failure. Add to round-5 scope."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 428,
+      "finding": "N9: prose misattributes unit_worktree's author -- says 'the file pin wrote above' (L428, and 3g's L546-548) but pin never writes this file; the step itself does (L280). L393 gets it right, contradicting L428/L547. Test file repeats the wrong attribution at ~L140-143.",
+      "suggestion": "Reword L428 and L547 to 'the file dual-written at the top of 3f-bis'."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 280,
+      "finding": "N10: the three dual-writes are unchecked redirections in a step claiming 'every command is CHECKED'; no mkdir -p on run_dir before first use (relies on runner's 3d DONE marker, degrades silently -- and for fires, degrades OPEN per N2 -- if 3d timed out and 3e took its fallback).",
+      "suggestion": "mkdir -p \"$run_dir\" once near L250; || STRICT-STOP on each of the three writes."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 276,
+      "finding": "N11 (=prior #6, partially cosmetic): dropping 2>/dev/null makes jq failure visible but unit_wt=$(jq ...) is still unchecked, so a corrupt loop_state.json still silently takes the {project_root} fallback -- control-flow-identical to 'no match'. Also the jq filter emits one line per matching row; a duplicate-id row makes $unit_wt multi-line, breaking every cd/git -C downstream.",
+      "suggestion": "unit_wt=$(jq -r ...) || STRICT-STOP, and | first / head -n1 on the jq output."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 372,
+      "finding": "N12: inconsistent hardening -- unit_wt gets [ -n ... ] || fallback at all 5 sites, diff_head/fires get nothing (fails closed for diff_head via the L401 check, but not documented as deliberate).",
+      "suggestion": "Apply one idiom to all three values, state the fail-closed reasoning once."
     }
   ],
-  "recorded_from": "a6e4d0cf13f088b60",
+  "recorded_from": "a6c21d14abdb76f8b",
   "run_id": "iterate-2026-09-22-r3-review-diff-fix"
 }

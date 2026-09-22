@@ -198,7 +198,9 @@ def resolve_unit_identity(state: dict, unit_id: str, *, campaign_worktree: str) 
     """``{worktree, branch, attempt_id}`` for a unit row.
 
     ``worktree`` falls back to ``campaign_worktree`` when the row carries no
-    ``worktree`` field (every row, pre-R5a — see module docstring).
+    ``worktree`` field — normally a pre-R2 row, or one whose lease-touch
+    warned-and-continued past a failure; ``unit_lease.touch`` has written
+    this field at every runner step boundary since R2 (#784).
     ``attempt_id`` falls back to ``a{attempt}`` when absent (``lib.unit_lease``
     leaves it ``null`` until a later campaign wires real attempt-passing —
     R3's spec names this exact default).
