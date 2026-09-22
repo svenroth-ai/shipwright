@@ -114,27 +114,166 @@
     },
     "code": {
       "review_type": "code",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 8,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": 170,
+          "finding": "`_single_parent` swallows `ReviewAttributionError` from `_run_git` and returns `None`. Both call sites pass a SHA that was just resolved by `rev-parse --verify refs/heads/...` (verify:342/376) or asserted equal to it (ship:425/442), so `rev-list` can only fail STRUCTURALLY here (git missing, timeout, corrupt object). The except turns that structural failure into an ancestry verdict: verify() returns `ok=False` with detail 'parent None vs pinned reviewed_head ...' instead of raising, and ship() reports \"shipped_head X's parent None does not equal pinned reviewed_head\" - an operator reads that as a merge/ancestry problem, not a git failure. Fail-closed either way, so non-blocking.",
+          "suggestion": "Drop the try/except in `_single_parent` and let `_run_git`'s ReviewAttributionError propagate (the CLI already maps it to exit 1 / BLOCK with the real git stderr).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/tests/test_campaign_step_3f_bis.py",
+          "line": 149,
+          "finding": "This round's 3g merge fix (`gh pr merge ... || STRICT-STOP` and the bounded `seq 1 60` wait at campaign-mode.md:452/456-459) is the only change this round with no prose guard: `test_step_3f_bis_bounds_its_wait` covers `_step_3f_bis()` only; `test_step_3g_never_merges_without_a_pin_file` checks `$head_pin` near `gh pr merge` but not the trailing `|| strict-stop`.",
+          "suggestion": "Parametrise `test_step_3f_bis_bounds_its_wait` over `(_step_3f_bis(), _step_3g())`, and add to `test_step_3g_never_merges_without_a_pin_file`: assert `'|| strict-stop'` appears within ~120 chars of the `gh pr merge` call.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 363,
+          "finding": "The re-derived `pr_url` has no emptiness guard, unlike the original derivation earlier in the step (`[ -n \"$pr_url\" ] && [ \"$pr_url\" != \"null\" ] || STRICT-STOP`). If `gh pr view` fails here, `pr_url` is empty and the bounded wait polls `gh pr view \"\"` for the full cap before STRICT-STOPping on a misleading outcome. Same pre-existing shape at 3g. Fail-closed, so non-blocking.",
+          "suggestion": "Repeat the earlier guard after the re-derivation (and at 3g's own copy).",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": 409,
+          "finding": "The new repair-path sentence hardcodes a line number ('line 243's `rm -f`'). Accurate today, but this file has grown 400 -> 515 across five review rounds and is expected to grow again for R4/R5a; the number will silently drift.",
+          "suggestion": "Replace 'line 243's `rm -f`' with 'the `rm -f \"$run_dir/reviewed_head\"` at the top of this step'.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": 146,
+          "finding": "With the new `isinstance(pinned, dict)` guard, `TypeError` in the `except (json.JSONDecodeError, KeyError, TypeError)` tuple is unreachable: `json.loads` never raises it, and the `in` test now only runs on a dict.",
+          "suggestion": "Narrow to `except (json.JSONDecodeError, KeyError) as exc:`.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "architecture",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": 1,
+          "finding": "Carried from rounds 3 and 4, still not addressed: `review_attribution.py` (453 lines) and `test_review_attribution.py` (470 lines) are both over the 300-line limit with no baseline entry for either (the bloat-exception drop covers campaign-mode.md only).",
+          "suggestion": "Either add both files to shipwright_bloat_baseline.json with state: exception under the existing R3 drop, or apply the round-4-proposed shared `pinned_unit` fixture to cut duplicated test preamble.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "readability",
+          "file": "shared/scripts/checks/check_review_attribution.py",
+          "line": 62,
+          "finding": "Carried from round 4, unchanged: `_FLAG_CLI_NAMES` is a hand-maintained table defining the set of flags the cross-mode check iterates; a mode-specific `add_argument` not mirrored there escapes the check silently.",
+          "suggestion": "Derive from `parser._actions` or add a test that every non-common parser dest is covered by some `_MODE_ONLY_FLAGS` set.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "correctness",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": 267,
+          "finding": "Carried from rounds 2-4, unchanged: pin() identifies the checked-out branch via bare `rev-parse --abbrev-ref HEAD`, which prints `heads/<branch>` when a same-named tag exists (false BLOCK, fail-closed), while verify()/ship() use the fully-qualified `refs/heads/` form.",
+          "suggestion": "Use `git symbolic-ref --quiet HEAD` and compare to `refs/heads/{branch}`.",
+          "source": "code-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-22T10:29:03.998111+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the cascade; delegated to the campaign orchestrator (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-22T15:19:23.465389+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "fable"
     },
     "doubt": {
       "review_type": "doubt",
-      "status": "not_run",
-      "findings_count": 0,
-      "findings": [],
+      "status": "completed",
+      "findings_count": 7,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: 3f-bis, as written, carries a reviewed unit from pin to ship on the live path — campaign-mode.md 239-242 states the rule (state crosses steps in a FILE; a fresh Bash call has an empty environment) but 3f-bis breaks it internally. `run_dir` (243) and `pr_url` (245) are consumed at 365 (`echo \"$shipped_head\" > \"$run_dir/reviewed_head\"`) and 383 (`gh pr view \"$pr_url\"` / `cat \"$run_dir/reviewed_head\"`) AFTER three Agent-tool spawns (a/b/c) and several `record` calls -- necessarily different Bash calls. `diff_head`/`fires` (261-264) are consumed at 309/314, and `fires` requires the orchestrator to READ the diff and judge risk flags, so the pin call is realistically a separate Bash call too. Traced consequences with empty vars: `$diff_head` empty -> `[ sha = \"\" ] || STRICT-STOP` fires on EVERY unit (spurious stop); `$fires` empty -> `$([ \"$fires\" = \"1\" ] || echo --review-skipped)` passes `--review-skipped` for a unit the cascade then reviews -> pin.shipped_head=reviewed_head -> after the record commit is PUSHED, `--mode ship` refuses (`already has shipped_head`) -> STRICT-STOP post-push; `$run_dir` empty -> legacy overwrite goes to `/reviewed_head`, 3g pins `--match-head-commit <pre-record reviewed_head>` -> GitHub refuses the merge. Every branch is fail-closed for the merge, but the mechanism cannot complete a reviewed unit unless the orchestrator silently re-derives the variables the doc forbids relying on. No prose test covers intra-step variable lifetime (test_the_head_pin_crosses_steps_in_a_file_not_a_shell_variable only checks 3f-bis->3g).",
+          "suggestion": "In the post-cascade block re-derive `run_dir` and `pr_url` inline from template placeholders exactly as 3g already does (`run_dir=\"{project_root}/.shipwright/runs/{loop_id}/{id}\"`; `pr_url=$(cd \"{project_root}\" && gh pr view \"{branch}\" --json url -q .url)`); persist `diff_head` and `fires` to `$run_dir/diff_head` / `$run_dir/fires` at compute time and `cat` them back at the pin call and the equality check; move the legacy-file overwrite INTO ship() (it already has project_root/loop_id/unit_id and only writes after its checks pass), deleting line 365 so `$run_dir` is not needed there at all. Add a prose test: every `$name` referenced after the `a) spec-reviewer` marker in 3f-bis is assigned after that marker too.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "concurrency & ordering / reversibility",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: a Stage-2 finding can be 'addressed' at 3f-bis without producing a misattributed merge (code-review lows (a)+(c), assessed jointly and escalated) — Line 389 ('a Stage-2 high finding left unaddressed -> STRICT-STOP') tells the orchestrator addressing is allowed; the only way to address a code finding is a fix commit F on top of reviewed_head. The step then says record `completed` rows, `git commit` R, `git push` (363, ||STRICT-STOP passes), overwrite `$run_dir/reviewed_head` with R (365), THEN `--mode ship` (374-377) -- which now refuses because R^ == F != reviewed_head. Net state after that STRICT-STOP: origin/{branch} = reviewed_head+F+R with reviews.json on it saying every stage `completed` for a diff the reviewers never saw (F is unreviewed); review_pin.json.shipped_head = null; the legacy file = R. The doc says the PR is 'left OPEN so a human can repair it' -- a human resuming at 3g runs `--match-head-commit $(cat reviewed_head)` = R and merges the mixed reviewed/unreviewed tree with a green record on it: the exact misattribution class R3 exists to close, reached by following the doc's own prose. The automated loop is safe (STRICT-STOP never reaches 3g; a re-entry hits `rm -f` at 243), which is why each half was rated low in isolation; together, on the routine Stage-2-finding path, they steer into a post-push stop with a stale, rejected legacy pin.",
+          "suggestion": "At 389 state plainly: addressing a finding means a NEW commit, which the `--mode ship` guard refuses by design -- go back to the top of 3f-bis (`rm -f`, re-diff, re-pin, re-run the cascade); never commit on top of the pinned tree and never record `completed` for a diff that has since changed. And swap the order at 365/374 (ship first, legacy write only on success) -- or, per doubt 1, let ship() own the legacy write. Add a prose test asserting the ship call precedes the legacy overwrite in 3f-bis.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": null,
+          "finding": "Claim under doubt: ship()'s 'exactly one commit ahead of reviewed_head' check proves the shipped tree is the reviewed tree plus reviews.json (code-review low (b), escalated) — `git rev-parse {sha}^` (review_attribution.py:425, and :355 in verify) resolves the FIRST parent only, and the check is topology-only -- it never looks at what the one commit contains; the spec demoted `diff_sha256` to 'evidence, not a gate', so nothing content-level backs the sole live enforcement point. Concrete route on the pre-R5a SHARED worktree the runner and orchestrator both use: if that worktree carries a `MERGE_HEAD` (a resolved-but-uncommitted merge left behind -- e.g. a bring-branch-current step that died after conflict resolution), then 3f-bis's `git -C \"{project_root}\" add reviews.json && git commit -m ...` (361-362) silently produces a MERGE commit R whose first parent is reviewed_head and whose tree is the merge result; ship() ALLOWs (R^ == reviewed_head), verify() ALLOWs, 3g merges everything MERGE_HEAD carried, unreviewed. Simpler route, same class: `git add <one path>` adds to whatever is ALREADY staged in the index; any pre-staged entry rides along in R. 'Not reachable today' assumed a clean worktree state that a shared worktree does not guarantee.",
+          "suggestion": "In ship() and verify(): replace `rev-parse {sha}^` with `git rev-list --parents -n 1 {sha}` and require exactly two tokens (one parent) equal to reviewed_head. Additionally let ship() take an optional `--only-path <reviews.json path>` (3f-bis knows it) and assert `git diff-tree --no-commit-id --name-only -r {sha}` equals exactly that one path. Add two tests: a merge record commit (`git merge --no-commit <other>` then the record commit) and a record commit with a pre-staged extra file -- both must be refused.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: 3f-bis/3g are 'already calling through' the per-unit resolver such that R5a changes only two call-site values (bloat-exception ADR, YAGNI, lines 117-120) — The pin/ship call site uses ONE placeholder for three distinct roots: the state root (`--state \"{project_root}/.shipwright/loop_state.json\"`), the evidence root (`--project-root \"{project_root}\"` -> `.shipwright/runs/`), and the git root (`diff_head`, `diff`, `git add/commit/push`, `rev-parse HEAD`, `--campaign-worktree`). campaign-mode.md 254-260 says `{project_root}` itself becomes per-unit under R5a; the ADR says R5a changes only `--project-root`/`--campaign-worktree`. Neither works: `.shipwright/*` is gitignored (.gitignore:155) so a fresh per-unit worktree has NO loop_state.json and no runs/ -- a per-unit `{project_root}` makes `_resolve` fail at `durable_read_text` (fail-closed, but R5a must rework the whole block); under the ADR's reading the `diff_head` line stays on the campaign worktree while pin() resolves HEAD in the unit worktree, so the inline equality check STRICT-STOPs every unit. Fail-closed both ways, so no live impact -- but the R5a-readiness claim this sub-iterate ships is not true as stated.",
+          "suggestion": "Introduce distinct placeholders now: `{campaign_worktree}` for `--state`, `--project-root`, `--campaign-worktree` and `run_dir`; `{unit_worktree}` (defined as = `{project_root}` today) for every `git -C` call in 3f-bis/3g. Correct the ADR's YAGNI paragraph to say R5a must supply `{unit_worktree}` and set the row's `worktree`, nothing else.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "reversibility",
+          "file": "shared/scripts/lib/review_attribution.py",
+          "line": null,
+          "finding": "Claim under doubt: ship()'s 'a re-ship after retry must not be silent' guard is enforceable — pin() overwrites `review_pin.json` unconditionally (test_review_attribution_probes.py:62 documents this as intended), including a pin whose `shipped_head` is set. The documented re-entry route (`rm -f` at 243, re-pin) therefore bypasses the overwrite guard by design -- re-pin, then ship, and the guard never sees the prior head -- and destroys the only evidence that a given diff was pinned and REJECTED (the Stage-1 REJECT path at 394-409 leaves that pin as the record of what was refused).",
+          "suggestion": "Have pin() archive an existing pin (`review_pin.<pinned_at>.json`) before overwriting, or refuse to overwrite a pin whose `shipped_head` is non-null unless `--force`; document which.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "concurrency & ordering",
+          "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+          "line": null,
+          "finding": "Claim under doubt: a refused merge at 3g STRICT-STOPs — 3g's `gh pr merge ... $head_pin` (434) has no `|| STRICT-STOP` and is followed by an UNBOUNDED `until [ state = MERGED ]; do sleep 5; done` (435) -- the 'third outcome the loop has no name for' that 3f-bis's own wait was bounded to avoid. Likely pre-existing, but R3 deliberately raises the base rate of `--match-head-commit` refusals (every STRICT-STOP path now leaves a legacy file the remote no longer matches; doubts 1 and 2 add more), so a refused merge now spins forever instead of stopping. test_step_3f_bis_bounds_its_wait covers 3f-bis only.",
+          "suggestion": "`gh pr merge ... || STRICT-STOP` and a `seq 1 N` cap on the MERGED wait; extend the bounded-wait prose test to step 3g.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "boundary & contract",
+          "file": "shared/scripts/checks/check_review_attribution.py",
+          "line": null,
+          "finding": "Claim under doubt: carried code-review lows (d), (e), (f), (g) -- independently assessed, remain low — (d) `_load_pin` on a non-dict JSON: `'reviewed_head' not in <list|str>` can be False, then `.get` raises AttributeError -> traceback exit 1 -> `|| STRICT-STOP` still fires; fail-closed, cosmetic. (e) `_FLAG_CLI_NAMES` still defines the SET of cross-mode-checked flags; a new mode-specific `add_argument` not added to both tables silently escapes -- and the comment at check_review_attribution.py:106-110 now claims the table is 'not hand-maintained', which is inaccurate for the key set. (f) review_attribution.py 437 / test_review_attribution.py 435 lines with no baseline entry; the bloat-exception drop covers campaign-mode.md only; anti-ratchet is baseline-only so CI is not blocked, but test_review_attribution_probes.py's docstring ('split out to keep that file under 300') is already stale. (g) `--abbrev-ref HEAD` prints `heads/<b>` on a same-named tag -> false BLOCK; fail-closed.",
+          "suggestion": "(d) `if not isinstance(pinned, dict) or 'reviewed_head' not in pinned: raise KeyError`. (e) derive the name map from `parser._actions` for dests in `set().union(*_MODE_ONLY_FLAGS.values())`, or add a test that every non-common parser dest is in some `_MODE_ONLY_FLAGS` set; fix the comment. (f) either add both files to the baseline under the existing r3 exception drop or extract the 5-line preamble into a `pinned_unit` fixture and update the probes docstring. (g) `git symbolic-ref --quiet HEAD` compared to `refs/heads/{branch}`.",
+          "source": "doubt-reviewer"
+        }
+      ],
       "provider": null,
-      "completed_at": "2026-09-22T10:29:04.069160+00:00",
-      "disposition": "blocker 1 (no Agent tool): Stage 3 runs only behind a Stage 2 pass, and the internal cascade did not run in this campaign sub-iterate",
-      "recorded_by": "none",
+      "completed_at": "2026-09-22T15:19:33.352714+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "fable"
     },
     "external_code": {
       "review_type": "external_code",
@@ -254,15 +393,16 @@
     },
     "spec": {
       "review_type": "spec",
-      "status": "not_run",
+      "status": "completed",
       "findings_count": 0,
       "findings": [],
       "provider": null,
-      "completed_at": "2026-09-22T10:29:03.924838+00:00",
-      "disposition": "blocker 1 (no Agent tool): the sub-iterate-runner cannot spawn the Stage-1 spec-reviewer; delegated with the rest of the cascade (ADR-029, campaign mode only)",
-      "recorded_by": "none",
+      "completed_at": "2026-09-22T15:19:06.343323+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
       "parse_status": null,
-      "raw_excerpt": null
+      "raw_excerpt": null,
+      "model_tier": "fable"
     },
     "plan_internal": {
       "review_type": "plan_internal",
