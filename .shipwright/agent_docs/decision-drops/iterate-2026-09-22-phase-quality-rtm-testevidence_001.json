@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-22-phase-quality-rtm-testevidence",
+  "date": "2026-09-22",
+  "section": "Iterate — change: refresh RTM + test-evidence for stale compliance regen",
+  "title": "Regenerate traceability-matrix.md and test-evidence.md for FR-01.21 + freshness",
+  "context": "Phase-Quality flagged two Tier-1 FAILs: T1 (FR-01.21, added by the R1b Codex-hooks iterate, was missing from the RTM's Requirements Coverage table) and W3 (test-evidence.md's Source-State run was 11 days / 20+ merged commits stale, so it no longer named the latest work_completed run).",
+  "decision": "Ran update_compliance.py --phase iterate to regenerate traceability-matrix.md, test-evidence.md, test-traceability.json, change-history.md, sbom.md and dashboard.md from current HEAD, inside a fresh iterate worktree rather than committing straight to main.",
+  "consequences": "RTM now lists all 21 FRs incl. FR-01.21; test-evidence.md's Source-State matches the latest iterate work_completed event (R1b). No source/behavior change; a pure derived-artifact refresh.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ""
+}

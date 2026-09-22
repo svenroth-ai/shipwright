@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-09-12-generated-prefixes-provenance-anchor"
+run_id: "iterate-2026-09-22-phase-quality-rtm-testevidence"
 phase: "iterate"
-reason: "iterate: anchor or remove is_safe_to_skip_review's _GENERATED_PREFIXES skip-safety per prefix"
-timestamp: "2026-09-12T06:25:32.512191+00:00"
+reason: "iterate: refresh RTM + test-evidence.md to clear Phase-Quality T1/W3 Tier-1 FAILs"
+timestamp: "2026-09-22T19:48:05.142740+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-09-12 06:25:32 UTC
+> Auto-generated 2026-09-22 19:48:05 UTC
 
 ## Session Info
 
-- **Session ID**: 8d134d7c-6358-4d69-9360-d4b362d068d8
-- **Timestamp**: 2026-09-12 06:25:32 UTC
-- **Reason**: iterate completion: iterate-2026-09-12-generated-prefixes-provenance-anchor
+- **Session ID**: 22da9a88-1781-44c7-8dcb-2bce8e0127b3
+- **Timestamp**: 2026-09-22 19:48:05 UTC
+- **Reason**: iterate: refresh RTM + test-evidence.md to clear Phase-Quality T1/W3 Tier-1 FAILs
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-09-12-generated-prefixes-provenance-anchor
-- **Date**: 2026-09-12T06:25:32.304815Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/generated-prefixes-provenance-anchor
-- **ADR**: iterate-2026-09-12-generated-prefixes-provenance-anchor
+- **Run ID**: iterate-2026-09-22-phase-quality-rtm-testevidence
+- **Date**: 2026-09-22T19:48:04.952427Z
+- **Type**: change
+- **Complexity**: trivial
+- **Branch**: iterate/phase-quality-t1-w3-rtm-testevidence
+- **ADR**: iterate-2026-09-22-phase-quality-rtm-testevidence
 - **Tests passed**: True
-- **Spec**: Anchor or remove PR-review skip-safety per _GENERATED_PREFIXES entry, closing the gap a confirmed deploy-gate consumer (ci-security.json) exposed.
+- **Spec**: none
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/generated-prefixes-provenance-anchor
+- **Branch**: iterate/phase-quality-t1-w3-rtm-testevidence
 - **External Review Marker**: missing
 - **Review Cascade**: no run_id resolved
 
@@ -66,8 +66,8 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 ## Git State
 
-- **Branch**: iterate/generated-prefixes-provenance-anchor
-- **Last Commit**: bf193f6a6 chore(churn): regenerate derived snapshots after main merge
+- **Branch**: iterate/phase-quality-t1-w3-rtm-testevidence
+- **Last Commit**: a9a1be0fd chore(triage): sweep 6 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -83,17 +83,17 @@ Authoritative per-phase status from `shipwright_run_config.json` → `phase_task
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-6c5ebe28 | work_completed | iterate (Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser.) | 2026-09-11 |
-| evt-b5e5c018 | work_completed | iterate (Record the deferred test-results-orphan retention defect (promised by trg-b28a039c, never filed) as its own triage card, with measured counts and root cause; no code fix.) | 2026-09-12 |
-| evt-636423bf | work_completed | iterate (Bind FR-01.06's and FR-01.07's unbound acceptance criteria to existing/new tests via @pytest.mark.covers and regenerate the AC coverage baseline) | 2026-09-12 |
-| evt-354973ae | work_completed | iterate (Raise ITERATE_RETENTION from 50 to 200 in append_iterate_entry.py, with all prose/code mirrors of the cap updated and a regression test guarding them.) | 2026-09-11 |
-| evt-ca92f53b | work_completed | iterate (Fix agent_doc_budget.entry_anchor() false-anchor-match hole: an incidental bold quote elsewhere in an entry's prose could be mistaken for its cross-diff identity, letting a new over-budget entry escape the budget gate by colliding with an unrelated base entry's anchor.) | 2026-09-12 |
+| evt-0b38ab36 | work_completed | iterate (Regenerate traceability-matrix.md and test-evidence.md via update_compliance.py --phase iterate) | 2026-09-22 |
+| evt-66c3ed06 | grade_snapshot | — | 2026-09-22 |
+| evt-912e2c37 | work_completed | iterate (Per-unit campaign worktree identity, Windows path-safety, and lease heartbeat (capability-only; checkout flip deferred to R5a)) | 2026-09-22 |
+| evt-6556dae5 | grade_snapshot | — | 2026-09-21 |
+| evt-d552990f | work_completed | iterate (Add a depends_on dependency-graph schema to campaign sub-iterates (campaign.md Depends On column), new lib.campaign_graph validators + resume-safe status projector, new lib.loop_state ancestry-verified readiness predicate, a narrow cmd_next readiness guard, and write-time validation in campaign_init.py) | 2026-09-21 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 624
-- **Last iterate**: bug — Address 5 non-blocking deferred items from PR #699's review of the glossary generator's legacy CLI flag path and CONTEXT.md parser. (2026-09-11)
+- **Total work events**: 661
+- **Last iterate**: change — Regenerate traceability-matrix.md and test-evidence.md via update_compliance.py --phase iterate (2026-09-22)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
