@@ -64,6 +64,17 @@ JSON object, and a unit entry that is not itself a dict — each previously
 raised an uncaught Python exception instead of the documented BLOCK
 message.
 
+### Round 14b growth (515 -> 531)
+
+A fresh code-reviewer pass on round 14's own diff found the `except
+(OSError, json.JSONDecodeError)` tuple still missed `UnicodeError` (a
+strict-mode `UnicodeDecodeError` from `durable_read_text` is a
+`ValueError`, not an `OSError`) — the sibling reader of the same
+`loop_state.json`, `lib/unit_lease.py`, already pairs `UnicodeError` with
+the other two for this exact reason. Added one test writing invalid UTF-8
+bytes into the state file, confirmed red against the pre-fix tuple, green
+after widening it.
+
 ## Consequences
 
 `test_review_attribution.py` remains the authoritative regression suite

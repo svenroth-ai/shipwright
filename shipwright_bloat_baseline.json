@@ -1231,7 +1231,7 @@
     {
       "path": "shared/tests/test_review_attribution.py",
       "limit": 300,
-      "current": 515,
+      "current": 531,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md"
     },

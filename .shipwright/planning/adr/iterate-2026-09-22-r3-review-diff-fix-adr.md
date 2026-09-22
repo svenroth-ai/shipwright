@@ -542,6 +542,16 @@ way, so no `|| STRICT-STOP` caller downstream was ever fooled into treating
 a malformed state file as success — this closes the gap between "fails" and
 "fails with the documented message," nothing more.
 
+A fresh internal code-reviewer pass on this fix (round 14b) then found the
+first attempt's `except (OSError, json.JSONDecodeError)` still missed
+`UnicodeError` — a strict-mode `UnicodeDecodeError` from `durable_read_text`
+is a `ValueError`, not an `OSError`, so it still escaped uncaught. The
+sibling reader of the same `loop_state.json`, `lib/unit_lease.py`, already
+pairs `UnicodeError` with the other two for this exact reason; widened
+`_resolve()`'s tuple to match, with a regression test writing invalid UTF-8
+bytes into the state file (confirmed red against the pre-fix tuple, green
+after).
+
 **Finding 2 (`fires=<1 or 0>` "is not valid shell syntax") — rebutted, not
 fixed.** `campaign-mode.md` is a natural-language runtime prompt an LLM
 orchestrator reads and acts on, not a literal shell script that gets

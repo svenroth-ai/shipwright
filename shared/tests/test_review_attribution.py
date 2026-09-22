@@ -513,3 +513,19 @@ def test_pin_wraps_a_malformed_unit_entry_as_review_attribution_error(git_origin
 
     with pytest.raises(ReviewAttributionError, match="malformed unit entry"):
         pin(state_path, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+
+def test_pin_wraps_invalid_utf8_in_the_state_file_as_review_attribution_error(git_origin_repo):
+    """Round-14 code-review, medium: `durable_read_text` defaults to strict
+    decoding, so a `UnicodeDecodeError` is a `ValueError`, not an `OSError` —
+    it slipped past the original `except (OSError, json.JSONDecodeError)`
+    and escaped uncaught. `lib/unit_lease.py` (the sibling reader of this
+    same loop_state.json) already pairs `UnicodeError` with `OSError` and
+    `json.JSONDecodeError` for exactly this reason."""
+    work, _ = git_origin_repo
+    state_path = work / ".shipwright" / "loop_state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_bytes(b'{"loop_id": "r3-test", "units": [{"id": "T", "branch": "m\xe9in"}]}')
+
+    with pytest.raises(ReviewAttributionError, match="could not load state file"):
+        pin(state_path, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
