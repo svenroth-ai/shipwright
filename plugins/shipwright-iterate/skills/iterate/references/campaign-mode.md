@@ -204,13 +204,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    3c. **Worktree guard, then spawn.** Run the spawn-guard command from `references/campaign-worktree.md` first (non-zero = STRICT-STOP, go to step 4, do NOT spawn). Then, Spawn sub-iterate-runner subagent:
        result = Task(subagent_type="shipwright-iterate:sub-iterate-runner",
                      model=<finalization tier resolved at loop step 2, omit if "inherit">,
-                     prompt=<brief with sub_iterate_id, run_id (3b), spec, base_branch, campaign_slug (this loop's `{slug}`), plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), etc.>)
+                     prompt=<brief with sub_iterate_id, run_id (3b), spec, base_branch, campaign_slug (this loop's `{slug}`), plan_plugin_root (this session's shipwright-plan plugin root — resolved like plugin_root/shared_root; the runner needs it for `uv run --project` at 3.5/3.7), campaign_worktree (= `{project_root}`, this loop's own campaign worktree — R2), state_path (= `{project_root}/.shipwright/loop_state.json` — R2), etc.>)
        The runner branches off base_branch (fresh origin/<default>), builds,
        finalizes, pushes, and leaves the PR OPEN (auto-merge deferred). The brief
        carries campaign_path + campaign_slug + sub_iterate_id; the runner
        contract Step 4 STAMPS campaign_slug + sub_iterate_id into the
        work_completed event extras ("campaign" / "sub_iterate_id" — S1) so
-       per-sub status is projectable from events.jsonl alone.
+       per-sub status is projectable from events.jsonl alone. `campaign_worktree`/`state_path` feed the runner's own step-boundary liveness touches (references/campaign-worktree.md, R2).
 
    3d. Wait for terminal marker (.shipwright/runs/{loop_id}/{id}/DONE, timeout 30s)
 
