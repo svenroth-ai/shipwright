@@ -509,3 +509,78 @@ the `fires` judgement too, so it crosses both boundaries just like
 are re-derived from scratch here, so which boundary they crossed is moot"),
 net +1 line. `shipwright_bloat_baseline.json`'s `current` stays at 706 —
 actual is now exactly 706, the existing ceiling, zero headroom remaining.
+
+**Eleventh crossing (706 -> 790), round 11.** A fresh Stage-3 doubt-reviewer,
+run after round 10's spec+code review PASSed cleanly, found six further
+genuine gaps — one high, four medium, one low — none previously flagged:
+
+- **HIGH: `record_review_pass.py`'s `--project-root` was never unit-scoped,
+  only `--payload-file`'s root was.** The `…` prefix (`iteration-reviews.md`)
+  carries `--project-root "{project_root}"` unconditionally; every `record`
+  call inside 3f-bis left it at that default while `--payload-file` pointed
+  at `$unit_wt/...` — so `record` writes reviews.json into `{project_root}`
+  while validating a payload under `$unit_wt`, the exact "fallback-only
+  exception" class this file's own governing rule already forbids for
+  `--payload-file`'s root, just not extended to `record`'s own root. Once
+  R5a gives a unit a genuinely distinct worktree, `git -C "$unit_wt" add
+  reviews.json` immediately after `record` would find nothing to stage
+  (`record` wrote a different tree's copy) — a campaign-wide stall on every
+  unit. Fixed: every `record` call in 3f-bis (the three promote-rows lines,
+  the not_applicable line, the REJECT-path line) now carries an explicit
+  `--project-root "$unit_wt"` override plus `|| STRICT-STOP`; the governing
+  "Unit-scoped, no fallback-only exceptions" paragraph now names `record`'s
+  `--project-root` alongside `--payload-file`'s root, and distinguishes it
+  from `check_review_attribution.py`'s own same-named `--project-root`
+  argument (a genuinely different root — the orchestrator-owned
+  `.shipwright/runs/` bookkeeping tree, correctly left at `{project_root}`).
+- **MEDIUM: 3g's `[ -f "$run_dir/reviewed_head" ]` merge gate certified "a
+  pin exists", not "a review happened."** Because pin writes this file
+  UNCONDITIONALLY and BEFORE the cascade even starts, it holds a SHA equal
+  to the remote tip throughout the entire cascade window, including every
+  STRICT-STOP inside it — existence alone cannot tell a completed review
+  from an interrupted one. Fixed by adding `check_review_attribution.py
+  --mode verify --against shipped_head || STRICT-STOP` right after the
+  existence check, reusing the already-tested `verify()` BLOCK-on-`None`
+  logic instead of duplicating it.
+- **MEDIUM: stale handoff files survived 3f-bis re-entry** — the top-of-step
+  `rm -f` cleared only `reviewed_head`, leaving `unit_worktree`/`diff_head`/
+  `fires`/`pr_json` from a prior attempt in place. `diff_head`/`unit_worktree`
+  are cross-checked downstream so a stale value there is caught, but `fires`
+  has no such cross-check — a stale `fires=0` surviving a re-entry after new
+  commits enlarged the diff could silently skip the cascade on the new diff.
+  Fixed by widening the `rm -f` to all five handoff files (all unconditionally
+  re-derived later in the same step regardless, so clearing them costs
+  nothing).
+- **MEDIUM: `$shipped_head` crossed the ship-block's `run_dir=` rebuild with
+  no dual-write**, unlike `$unit_wt`/`$diff_head`/`$fires`/`$pr_json`, which
+  all get that treatment specifically for crossing a boundary. Whether a
+  genuine boundary separates the push from the `ship` call is exactly the
+  kind of same-call-or-not ambiguity that drew three consecutive REJECTs on
+  this class in earlier rounds; rather than argue it, `$shipped_head` now
+  gets the identical dual-write/re-read treatment, closing the ambiguity for
+  one file instead of resolving it in prose. (`3g`'s own `$pr_url` was
+  already independently fresh via its own `gh pr view` call, not read from
+  3f-bis's scope — confirmed, documented inline, no fix needed there.)
+- **MEDIUM: the fires trigger's line-count clause was left entirely to model
+  judgement** despite being exactly computable, unlike the other two clauses
+  (risk flags, medium+) which genuinely require reading the diff. Fixed by
+  computing `diff_lines=$(printf '%s\n' "$diff" | wc -l)` mechanically and
+  making `fires=1` MANDATORY whenever it exceeds 100, leaving only the two
+  genuinely-judgement clauses to the model.
+- **LOW: the review-record commit had no pathspec** — `git commit` with no
+  `--` argument commits the WHOLE index, so any other pre-existing staged
+  content would ride along inside the commit whose entire purpose is to
+  certify a review happened. Fixed by scoping both the promote-path and the
+  REJECT-path commits to `-- ".../reviews.json"` and adding the missing
+  `|| STRICT-STOP` to their preceding `git add`.
+
+A seventh, low-severity doubt (shell-injection risk from unvalidated
+`{branch}`/`{id}`/`{loop_id}` template values reaching the shell, asymmetric
+with `review_attribution.py`'s own `_safe_segment` guard) is addressed as a
+written rebuttal by the orchestrator rather than a code change here — see
+this sub-iterate's own review-history record, not this ADR, since it results
+in no line change to this file.
+
++84 lines (706 -> 790); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 790 in the same commit as this note — a NEW ceiling, since round
+10 had already reached the previous one with zero headroom.

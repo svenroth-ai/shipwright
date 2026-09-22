@@ -695,3 +695,179 @@ def test_skill_iterate_docs_have_no_double_backslash_line_continuations():
         f"backslash as a line continuation (real continuation is a single "
         f"trailing \\): {offenders}"
     )
+
+
+def test_step_3f_bis_record_calls_are_unit_scoped_and_checked():
+    """R3 doubt-round, round 4, high: `record_review_pass.py`'s own
+    `--project-root` was left at the `…` prefix's `{project_root}` default
+    while `--payload-file` was unit-scoped — the same fallback-only
+    exception class this step already forbids for `--payload-file`'s root,
+    just not yet extended to `record`'s own root. Once R5a gives a unit a
+    genuinely distinct worktree, `record` would write reviews.json into
+    `{project_root}` while `git -C "$unit_wt" add` looks for it in
+    `$unit_wt` — nothing to stage, a campaign-wide stall. Every `record`
+    call in 3f-bis (promote-rows x3, not_applicable, REJECT-path) must
+    override `--project-root` to `$unit_wt`, immediately before its own
+    `--review-type` flag, and be checked (`|| STRICT-STOP`)."""
+    step = _step_3f_bis()
+    override = '--project-root "$unit_wt"'
+    count = step.count(override)
+    assert count >= 5, (
+        f"expected at least 5 record calls overriding --project-root to "
+        f"$unit_wt (3 promote-rows + not_applicable + REJECT-path) — found "
+        f"{count}"
+    )
+    for marker in (
+        "--review-type spec --status completed",
+        "--review-type code --status completed",
+        "--review-type doubt --status completed",
+        "--review-type doubt --status not_applicable",
+        "--review-type spec --status not_run",
+    ):
+        at = step.find(marker)
+        assert at >= 0, f"3f-bis must still contain the record call: {marker!r}"
+        assert override in step[max(0, at - 40):at], (
+            f"record call {marker!r} must have --project-root \"$unit_wt\" "
+            "immediately before its --review-type flag"
+        )
+        tail = step[at:at + 500]
+        assert "|| strict-stop" in tail, (
+            f"record call {marker!r} must be checked (|| STRICT-STOP)"
+        )
+
+
+def test_step_3g_verifies_shipped_state_not_just_pin_file_existence():
+    """R3 doubt-round, round 4, medium: pin writes `reviewed_head`
+    UNCONDITIONALLY and BEFORE the cascade even starts, so the file holds a
+    SHA equal to the remote tip throughout the entire cascade window —
+    including every STRICT-STOP inside it. File EXISTENCE alone cannot tell
+    a completed review from an interrupted one; `verify --against
+    shipped_head` additionally BLOCKs a reviewed (non-skipped) unit whose
+    shipped_head was never recorded — which existence-of-file alone cannot
+    distinguish from a genuine completed review."""
+    step = _step_3g()
+    exists_at = step.index('[ -f "$run_dir/reviewed_head" ] || strict-stop')
+    verify_at = step.find('check_review_attribution.py" --mode verify', exists_at)
+    assert verify_at > exists_at, (
+        "3g must call check_review_attribution.py --mode verify AFTER the "
+        "bare existence check, not rely on file existence alone"
+    )
+    window = step[verify_at:verify_at + 400]
+    assert "--against shipped_head" in window, (
+        "3g's verify call must check --against shipped_head, the mode that "
+        "BLOCKs a reviewed unit whose cascade never actually shipped"
+    )
+    assert "|| strict-stop" in window, (
+        "3g's verify call must be checked (|| STRICT-STOP)"
+    )
+
+
+def test_step_3f_bis_clears_all_handoff_files_on_reentry():
+    """R3 doubt-round, round 4, medium: the top-of-step `rm -f` cleared only
+    `reviewed_head`, leaving `unit_worktree`/`diff_head`/`fires`/`pr_json`
+    from a prior attempt in place. `diff_head`/`unit_worktree` are
+    cross-checked downstream so a stale value is caught there, but `fires`
+    has NO such cross-check — a stale `fires=0` surviving a re-entry after
+    new commits enlarged the diff could silently skip the cascade on the
+    new, now-large diff using an old, no-longer-applicable verdict."""
+    step = _step_3f_bis()
+    rm_at = step.index("rm -f")
+    line_end = step.find("\n", rm_at)
+    rm_line = step[rm_at:line_end if line_end >= 0 else rm_at + 300]
+    for name in ("reviewed_head", "unit_worktree", "diff_head", "fires", "pr_json"):
+        assert f'"$run_dir/{name}"' in rm_line, (
+            f"the re-entry cleanup must clear $run_dir/{name}, not just "
+            "reviewed_head — a stale value with no downstream cross-check "
+            "(fires) can silently misfire on re-entry"
+        )
+
+
+def test_step_3f_bis_review_record_commits_are_scoped_and_checked():
+    """R3 doubt-round, round 4, low: `git commit` with no pathspec commits
+    the WHOLE index, so any other pre-existing staged content rides along
+    inside the commit whose entire purpose is to certify a review happened.
+    Both the promote-path and REJECT-path commits must be scoped to
+    reviews.json's own path, and both `git add` calls must be checked."""
+    step = _step_3f_bis()
+    add_marker = 'git -c "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json"'
+    add_positions = [m.start() for m in re.finditer(re.escape(add_marker), step)]
+    assert len(add_positions) >= 2, (
+        "expected at least 2 git add calls staging reviews.json (promote-path "
+        f"+ REJECT-path) — found {len(add_positions)}"
+    )
+    for pos in add_positions:
+        tail = step[pos:pos + len(add_marker) + 30]
+        assert "|| strict-stop" in tail, (
+            f"git add at offset {pos} must be checked (|| STRICT-STOP)"
+        )
+    for commit_marker in (
+        'commit -m "chore(review): record the delegated cascade for {id}"',
+        'commit -m "chore(review): record the stage-1 reject for {id}"',
+    ):
+        commit_at = step.index(commit_marker)
+        tail = step[commit_at:commit_at + 300]
+        assert '-- ".shipwright/planning/iterate/{run_id}/reviews.json"' in tail, (
+            f"commit {commit_marker!r} must be scoped to reviews.json's own "
+            "path with a pathspec, not commit the whole index"
+        )
+        assert "|| strict-stop" in tail, (
+            f"commit {commit_marker!r} must be checked (|| STRICT-STOP)"
+        )
+
+
+def test_step_3f_bis_dual_writes_and_rereads_shipped_head():
+    """R3 doubt-round, round 4, medium: unlike $unit_wt/$diff_head/$fires/
+    $pr_json, $shipped_head crossed the ship-block's run_dir= rebuild with
+    no dual-write of its own. Whether a genuine boundary separates the push
+    from the --mode ship call is exactly the ambiguity that drew three
+    consecutive REJECTs on this class in earlier rounds; closing it costs
+    one file rather than arguing it in prose."""
+    step = _step_3f_bis()
+    write_at = step.find('echo "$shipped_head" > "$run_dir/shipped_head"')
+    assert write_at >= 0, "3f-bis must dual-write $shipped_head"
+    capture_at = step.find('shipped_head=$(git -c "$unit_wt" rev-parse head)')
+    assert 0 <= capture_at < write_at, (
+        "the shipped_head dual-write must come after its initial capture"
+    )
+    reread_marker = 'shipped_head=$(cat "$run_dir/shipped_head"'
+    reread_positions = [
+        m.start() for m in re.finditer(re.escape(reread_marker), step)
+    ]
+    assert len(reread_positions) >= 2, (
+        "3f-bis must re-read $shipped_head from the dual-write file at "
+        "least twice — once before the --mode ship call, once before the "
+        f"legacy reviewed_head overwrite — found {len(reread_positions)}"
+    )
+    ship_invocation_at = step.index('check_review_attribution.py" --mode ship')
+    legacy_write_at = step.index('echo "$shipped_head" > "$run_dir/reviewed_head"')
+    assert reread_positions[0] < ship_invocation_at, (
+        "shipped_head must be re-read before the --mode ship call consumes it"
+    )
+    assert any(pos < legacy_write_at for pos in reread_positions[1:]), (
+        "shipped_head must be re-read again before the legacy reviewed_head "
+        "overwrite"
+    )
+
+
+def test_step_3f_bis_fires_line_count_is_computed_not_judged():
+    """R3 doubt-round, round 4, medium: the fires trigger's line-count clause
+    was left entirely to model judgement despite being exactly computable,
+    unlike the other two clauses (risk flags, medium+) which genuinely
+    require reading the diff. `$diff_lines` must be computed mechanically
+    from `$diff` right after it is captured, and `fires=1` must be MANDATORY
+    once it exceeds 100 — not merely another factor a model weighs."""
+    step = _step_3f_bis()
+    diff_capture_at = step.index('diff=$(git -c "$unit_wt" diff "$base"..."$diff_head") || strict-stop')
+    compute_at = step.find("diff_lines=$(printf", diff_capture_at)
+    assert 0 <= compute_at - diff_capture_at < 200, (
+        "$diff_lines must be computed mechanically immediately after the "
+        "diff itself is captured"
+    )
+    assert "wc -l" in step[compute_at:compute_at + 120], (
+        "$diff_lines must be computed via a mechanical line count, not left "
+        "to model judgement"
+    )
+    assert "mandatory" in step[compute_at:compute_at + 900], (
+        "the doc must state that fires=1 is MANDATORY once $diff_lines "
+        "exceeds 100, not merely another factor the judgement weighs"
+    )

@@ -164,6 +164,36 @@ boundaries, so the two surfaces disagreed. Corrected in place; net +1 line
 from the added round-9-attribution clause. `shipwright_bloat_baseline.json`'s
 `current` is bumped to 697 in the same commit as this note.
 
+**Round 11 growth (697 -> 873).** A fresh Stage-3 doubt-reviewer, run after
+round 10's spec+code review PASSed cleanly, found six genuine gaps in
+`campaign-mode.md` (one high, four medium, one low — see that file's own
+sibling ADR for the full account). Each code fix landed with its own new
+mutation-probed guard here, following this file's established convention:
+
+- `test_step_3f_bis_record_calls_are_unit_scoped_and_checked` — every
+  `record` call in 3f-bis must override `--project-root` to `$unit_wt`
+  (not the `…` prefix's `{project_root}` default) and be checked.
+- `test_step_3g_verifies_shipped_state_not_just_pin_file_existence` — 3g
+  must call `check_review_attribution.py --mode verify --against
+  shipped_head` after the bare file-existence check, not rely on existence
+  alone.
+- `test_step_3f_bis_clears_all_handoff_files_on_reentry` — the top-of-step
+  `rm -f` must clear all five handoff files, not `reviewed_head` alone.
+- `test_step_3f_bis_review_record_commits_are_scoped_and_checked` — both
+  the promote-path and REJECT-path `git add`/`git commit` calls for
+  reviews.json must be checked and pathspec-scoped.
+- `test_step_3f_bis_dual_writes_and_rereads_shipped_head` — `$shipped_head`
+  must get the same dual-write/re-read treatment as the other four
+  boundary-crossing values.
+- `test_step_3f_bis_fires_line_count_is_computed_not_judged` — the fires
+  trigger's line-count clause must be computed mechanically (`wc -l`) and
+  MANDATORY above 100, not left to model judgement; mutation-probed
+  directly (removing the mechanical computation line reproduces the
+  failure, confirmed, then re-applied).
+
++176 lines (697 -> 873); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 873 in the same commit as this note — a NEW ceiling.
+
 ## Consequences
 
 No downstream consumer reads this file except pytest itself and the
