@@ -141,6 +141,77 @@ access to fabricate a correctly-shaped manifest is out of scope for this
 fix, consistent with the codebase's existing single-user-laptop trust model
 elsewhere.
 
+## Accepted Risk — bundle-root authenticity (operator decision, 2026-09-22)
+
+The PR-review preflight gate (Tier-3, `openai/gpt-5.6-luna`) raised this as a
+BLOCK against the pushed diff: `sync_codex_hooks()` resolves `bundle_root`
+either from `--bundle-root` or from `resolve_plugin_root()`'s env-var chain
+(`SHIPWRIGHT_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` / `PLUGIN_ROOT`, none of
+which are cryptographically bound to a real Shipwright build —
+`plugin_root.py`'s own docstring already documents `PLUGIN_ROOT` as
+spoofable by "an unrelated ambient tool"), and `is_codex_runtime()` only
+checks that `BUILD_MANIFEST.json` is *shaped* like a real build output, not
+that it *is* one. A directory with a forged, correctly-shaped
+`BUILD_MANIFEST.json` and an attacker-chosen `.codex-plugin/plugin.json`
+would pass, and its `hooks` would be merged into the GLOBAL, cross-session
+`~/.codex/hooks.json` — the first place in this codebase where a
+`resolve_plugin_root()` value converts into unsandboxed, persistent code
+execution rather than an inert config artifact (R1's plugin-bundled
+`hooks.json` never executes at all; R1b is what makes it real).
+
+**Decision: accept the risk. Do not fix it in this run, and no follow-up
+sub-iterate is scoped for it.** The operator (Sven) made this call directly,
+with the reasoning below — not a generic "acceptable risk" label, but the
+actual analysis so a future reader does not have to re-derive it:
+
+- **The precondition is narrow, and both branches of it are already
+  sufficient.** Exploiting this requires the attacker to EITHER already run
+  code on the operator's machine, OR control the specific env vars
+  `sync_codex_hooks()` reads (without needing code execution — e.g. a
+  malicious `.envrc`/shell-profile line, or a compromised build tool that
+  exports `PLUGIN_ROOT`). Neither branch is exotic, but neither is free
+  either: a purely passive vector — cloning or opening a malicious repo,
+  with no script ever running — does NOT set these env vars or invoke this
+  CLI by itself.
+- **In the code-execution branch, this mechanism grants nothing
+  incremental.** An attacker who can already run arbitrary code on the
+  operator's machine has strictly simpler, better-established persistence
+  mechanisms available (a startup-folder entry, a shell-profile line, a
+  scheduled task/cron job) — none of which require a human to click through
+  a trust dialog first. Closing this specific path would not meaningfully
+  reduce that attacker's capability.
+- **In the env-var-only branch (no code execution yet), impact is real but
+  gated by a second, independent control.** Codex's own "Hooks need review"
+  trust prompt (documented and empirically confirmed this same run, see
+  Confidence Calibration in the iterate spec) sits between a merged
+  `hooks.json` entry and its first execution — an operator who reviews that
+  prompt before trusting has a genuine second chance to catch an
+  unrecognized command. The risk is real specifically when the operator
+  blindly trusts without reading it, and hook commands then run unsandboxed
+  once trusted — so impact is HIGH conditional on BOTH the narrow
+  precondition being met AND the operator skipping that review.
+- **What a real close would require, and why it is deliberately not built
+  now:** resolving `bundle_root` via Codex's own plugin registry (a
+  first-party, non-env-var-spoofable source of truth) instead of trusting
+  the env-var chain at all. This is a materially different design — it was
+  not evaluated or scoped as part of this run, and no follow-up sub-iterate
+  has been opened for it. A future reader hitting this same class of finding
+  should start there rather than re-inventing a signature/nonce scheme (see
+  Rejected alternatives below, which the same reasoning already excludes).
+
+**Mitigation added instead (cheap, not a close):** `codex_hooks_sync.py`'s
+CLI wrapper (`main()`, not `sync_codex_hooks()` — that function's pure,
+silently-callable, fully-test-covered contract is deliberately unchanged)
+now prints the resolved `bundle_root` and a summary of exactly which hook
+events/commands are about to be merged into `~/.codex/hooks.json`, and
+requires an explicit interactive `y`/`N` confirmation before writing. `--yes`
+skips it for scripted/test use; a future automated caller (R2's paused
+terminal helper, if it resumes) should only pass `--yes` once it has
+established equivalent trust some other way. This does not close the
+authenticity gap above — it gives the operator one more chance to notice an
+unexpected bundle path or an unfamiliar command before anything is written,
+the same shape of control as Codex's own trust prompt one step later.
+
 ## Rejected alternatives
 
 Shape-checking `.codex-plugin/plugin.json` the same way as

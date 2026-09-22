@@ -167,7 +167,7 @@ def test_main_success_reports_synced_count(tmp_path, capsys):
     make_bundle(bundle_root, SAMPLE_HOOKS)
     codex_home = tmp_path / "codex_home"
 
-    rc = main(["--bundle-root", str(bundle_root), "--codex-home", str(codex_home)])
+    rc = main(["--bundle-root", str(bundle_root), "--codex-home", str(codex_home), "--yes"])
 
     assert rc == 0
     assert "Synced 2 Shipwright hook(s)" in capsys.readouterr().out
@@ -182,6 +182,7 @@ def test_main_allow_empty_flag_used(tmp_path, capsys):
         "--bundle-root", str(bundle_root),
         "--codex-home", str(codex_home),
         "--allow-empty",
+        "--yes",
     ])
 
     assert rc == 0
@@ -195,11 +196,15 @@ def test_main_wraps_sync_codex_hooks_error(tmp_path, capsys):
     codex_home.mkdir()
     (codex_home / "hooks.json").write_text("not json", encoding="utf-8")
 
-    rc = main(["--bundle-root", str(bundle_root), "--codex-home", str(codex_home)])
+    rc = main(["--bundle-root", str(bundle_root), "--codex-home", str(codex_home), "--yes"])
 
     assert rc == 1
     assert "error:" in capsys.readouterr().err
 
+
+# main()'s interactive y/N confirmation checkpoint (Accepted Risk mitigation)
+# is covered in test_codex_hooks_sync_confirm.py, split out to stay under
+# the repo's 300-LOC guideline.
 
 def test_main_resolve_plugin_root_failure_when_bundle_root_omitted(monkeypatch, capsys):
     def _raise(*a, **kw):

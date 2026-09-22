@@ -3153,12 +3153,19 @@ plugin installation: `~/.codex/hooks.json` (global) or
   so registering them globally is not a new safety concern — the same guard
   already relied on elsewhere.
 - **Sync command:** `uv run shared/scripts/tools/codex_hooks_sync.py
-  [--bundle-root <path>] [--codex-home <path>]` (both default to the
-  resolved plugin root and `~/.codex` respectively). Reads the bundle's already-
-  merged `hooks` key (same `build_hook_inventory` output the dead plugin
-  path also reads) and merges it additively into `~/.codex/hooks.json`.
-  Manually run today; R2's terminal helper (paused, blocked on this
-  landing) is the intended automatic trigger once it resumes.
+  [--bundle-root <path>] [--codex-home <path>] [--yes]` (bundle root and
+  codex home both default to the resolved plugin root and `~/.codex`
+  respectively). Reads the bundle's already-merged `hooks` key (same
+  `build_hook_inventory` output the dead plugin path also reads) and merges
+  it additively into `~/.codex/hooks.json`. Before writing, prints the
+  resolved bundle root and the exact hook events/commands about to be
+  merged and requires an interactive `y`/`N` confirmation — a cheap
+  mitigation for the fact that bundle-root resolution verifies shape, not
+  authenticity (see the ADR's Accepted Risk section). `--yes` skips the
+  prompt for scripted/test use; a future automated caller should only pass
+  it once it has established equivalent trust some other way. Manually run
+  today; R2's terminal helper (paused, blocked on this landing) is the
+  intended automatic trigger once it resumes.
 - **Launcher scripts, not inline commands.** Codex runs a hook's `command`
   string on Windows via `cmd.exe /C "<command_line>"`, wrapping the WHOLE
   string in one extra, unconditional quote pair. `cmd.exe /C` only parses

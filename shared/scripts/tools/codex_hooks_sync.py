@@ -41,6 +41,7 @@ from plugin_root import PluginRootUnresolvedError, resolve_plugin_root  # noqa: 
 
 from codex_hooks_launcher import (  # noqa: E402
     CodexHooksSyncError,
+    _PLACEHOLDER,
     _command_to_launcher_path,
     _materialize,
 )
@@ -258,6 +259,42 @@ def _strip_shipwright_entries(hooks: dict, launcher_dir: Path) -> dict:
     return stripped
 
 
+def _describe_bundle_hooks(bundle_hooks: dict, bundle_root: Path) -> str:
+    """Human-readable preview of exactly what a confirmed sync would merge
+    into ``~/.codex/hooks.json`` — the resolved (placeholder-substituted)
+    command a launcher script would actually run, not the raw bundle text,
+    so the operator reviews what will execute, not what is on disk."""
+    lines = []
+    for event, groups in bundle_hooks.items():
+        for group in groups:
+            matcher = group.get("matcher")
+            suffix = f" (matcher={matcher})" if matcher else ""
+            for handler in group.get("hooks", []):
+                command = (handler.get("command") or "").replace(
+                    _PLACEHOLDER, str(bundle_root)
+                )
+                lines.append(f"  {event}{suffix}: {command}")
+    return "\n".join(lines) if lines else "  (no hooks)"
+
+
+def _confirm_sync(bundle_root: Path, codex_home: Path, bundle_hooks: dict) -> bool:
+    """Interactive checkpoint before ``main()`` writes to the GLOBAL,
+    cross-session ``~/.codex/hooks.json`` — a cheap mitigation, not an
+    authenticity check (see the ADR's Accepted Risk section): it gives the
+    operator one more chance to notice an unexpected bundle path or an
+    unfamiliar command before anything is written. Declines on anything
+    other than an explicit y/yes, including EOF (a piped/non-interactive
+    stdin with no answer must never be read as consent)."""
+    print(f"About to merge hooks from bundle: {bundle_root}", file=sys.stderr)
+    print(f"into: {codex_home / _HOOKS_FILENAME}", file=sys.stderr)
+    print(_describe_bundle_hooks(bundle_hooks, bundle_root), file=sys.stderr)
+    try:
+        answer = input("Proceed? [y/N] ")
+    except EOFError:
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -278,6 +315,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Sync even if the bundle yields zero hooks (default: refuse, since "
         "this is almost always a corrupt or partial build, not a real bundle)",
     )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip the interactive y/N confirmation before writing to the "
+        "global ~/.codex/hooks.json (for scripted/test use). A future "
+        "automated caller should only pass this once it has established "
+        "equivalent trust some other way.",
+    )
     args = parser.parse_args(argv)
 
     if args.bundle_root is not None:
@@ -290,6 +335,16 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     codex_home = Path(args.codex_home) if args.codex_home is not None else Path.home() / ".codex"
+
+    if not args.yes and is_codex_runtime(bundle_root):
+        try:
+            bundle_hooks = _read_bundle_hooks(bundle_root)
+        except CodexHooksSyncError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        if not _confirm_sync(bundle_root.resolve(), codex_home, bundle_hooks):
+            print("aborted: sync declined", file=sys.stderr)
+            return 1
 
     try:
         result = sync_codex_hooks(

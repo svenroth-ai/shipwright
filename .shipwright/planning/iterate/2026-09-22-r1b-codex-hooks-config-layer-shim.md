@@ -199,6 +199,12 @@ forward pointer, not built here (see Out of Scope).
   automatic cleanup on uninstall is not built, since Codex's plugin-removal
   hook (if any) is unproven for the same class of reason this whole run
   exists)
+- Cryptographic/registry-backed bundle-root authenticity — `is_codex_runtime()`
+  checks shape, not provenance; the PR-review preflight flagged this as a
+  BLOCK and the operator explicitly accepted the risk rather than scoping a
+  fix here. Full reasoning + the cheap mitigation added instead (an
+  interactive `y`/`N` confirmation before `main()` writes, skippable with
+  `--yes`): ADR's "Accepted Risk" section.
 
 ## Affected Boundaries
 
