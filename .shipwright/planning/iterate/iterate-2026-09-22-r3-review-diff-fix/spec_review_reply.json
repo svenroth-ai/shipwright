@@ -1,27 +1,8 @@
 {
   "stage": "spec-compliance",
-  "verdict": "REJECT",
-  "spec_citations": [
-    {
-      "spec_ref": ".shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R3-review-diff-fix.md:L20-25 (\"the diff itself\" is a named call site)",
-      "divergence": "3f-bis still computes diff_head/$diff with git -C {project_root} (campaign worktree), before pin resolves $unit_wt; the doc's own justification (diff can't wait for pin because fires is a pin input) doesn't hold since worktree is readable from loop_state.json via jq before pin runs, with the spec's own fallback.",
-      "diff_location": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md:L274-284",
-      "kind": "unfaithful"
-    },
-    {
-      "spec_ref": ".shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R3-review-diff-fix.md:L20-25 (gh pr view branch resolution named for 3f-bis, same set for 3g)",
-      "divergence": "3g's gh pr view was fixed to use $unit_wt, but both 3f-bis occurrences (pre-pin at L244, post-cascade at L398) still use {project_root}. Worse, a test now explicitly asserts the post-cascade one must stay at {project_root} -- a test locking in the wrong behavior.",
-      "diff_location": "campaign-mode.md:L244, L398; shared/tests/test_campaign_step_3f_bis.py:L203-214",
-      "kind": "unfaithful"
-    },
-    {
-      "spec_ref": ".shipwright/planning/iterate/campaigns/campaign-dag-scheduler/sub-iterates/R3-review-diff-fix.md:L32-33 / plan L691-692",
-      "divergence": "The ship-mode amendment kept the heading text 'Two modes:' while listing three bullets (pin/ship/verify) -- self-contradictory in both the spec and the plan.",
-      "diff_location": "R3-review-diff-fix.md:L33; 2026-09-20-campaign-dag-scheduler-plan.md:L692",
-      "kind": "contradiction"
-    }
-  ],
-  "summary": "REJECT, narrow: 2 call sites (the diff itself, 3f-bis's own gh pr view) still read {project_root} instead of a pre-pin-resolved $unit_wt, with a test now locking in the wrong behavior for one; plus a 'Two modes' vs three-bullet text inconsistency. The reviewer confirmed everything else genuine and correct: $unit_wt resolution for reviews.json/REJECT-path/record --payload-file/3g's gh pr view, the ship mode's full contract and hardening, plan consistency (R5b point 3 correctly deferred to R3), and the complete test-strategy coverage including the no-unpinned-merge acceptance test. Reviewer supplied an exact minimal fix: resolve unit_wt from loop_state.json via jq BEFORE the diff/pr_json calls (with the spec's own {project_root} fallback), reorder L398's cd \"$unit_wt\", add an equality assertion that jq -r .worktree from pin matches the pre-pin $unit_wt, flip the test assertion at L203-214/L290, and fix 'Two modes' -> 'Three modes' in both docs.",
-  "recorded_from": "a80f9e54a59cc24be",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Round 3 (commit 03d8a703d): all five round-2 divergences genuinely resolved. $unit_wt resolved via jq lookup into loop_state.json (with {project_root} fallback) before both the pre-pin gh pr view and the diff/diff_head computation, both scoped to $unit_wt; a genuine post-pin path-equality check (pin_wt vs unit_wt, not a HEAD-sha proxy) added with STRICT-STOP on mismatch; post-cascade gh pr view reordered to use $unit_wt; test_campaign_step_3f_bis.py flipped to require unit-scoping at both 3f-bis gh pr view call sites plus a new test for the pre-pin resolution and pin-agreement check; both docs now say 'Three modes:'. No new contradictions or regressions found on a full read of campaign-mode.md:239-532. One non-blocking observation recorded for code-reviewer's judgement (REJECT-path run_dir re-derivation edge case at L480, fails closed, not a spec divergence). Reviewer noted no Bash tool was available so diff enumeration wasn't independently run; reviewed on-disk state of all spec-named artifacts instead.",
+  "recorded_from": "adecdf530a575a01b",
   "run_id": "iterate-2026-09-22-r3-review-diff-fix"
 }

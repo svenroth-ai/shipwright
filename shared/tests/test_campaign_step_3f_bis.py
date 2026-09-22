@@ -26,6 +26,12 @@ from _campaign_prose_harness import (  # noqa: E402
     step_3g as _step_3g,
 )
 
+# `norm()` (in `_campaign_prose_harness.py`) lowercases the whole step body, so
+# every assertion below reads `-c` where the doc itself writes `-C` (`git -C`,
+# a real and DIFFERENT git flag from `git -c key=val`) and `headrefname` where
+# the doc writes `headRefName`. This is a normalisation artifact of the
+# harness, not a typo in either the doc or the tests (code-review round 4).
+
 
 def test_step_3f_bis_runs_the_cascade_in_the_order_the_gate_enforces():
     """`spec` is the HARD-GATE: a completed `code` over a non-completed `spec`
@@ -195,10 +201,15 @@ def test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g():
     unstated-cwd assumption the spec forbids.
 
     `run_dir` itself is deliberately still anchored at `{project_root}` in
-    BOTH steps (it is the campaign's own bookkeeping location for this
-    unit's run artifacts, including the `unit_worktree` file that hands
-    `$unit_wt` out — it cannot be unit-scoped without a circular dependency
-    on the very value it exists to produce). A second fresh spec-review round
+    BOTH steps — NOT because resolving it any other way would be circular
+    ($unit_wt is provably resolvable from `loop_state.json` before anything
+    else runs, per the round-3/round-4 fixes below), but because it is the
+    campaign's own bookkeeping location: the runner writes `DONE`/`result.json`
+    there (sub-iterate-runner.md steps 3d/3e) and `pin` roots its `runs/` tree
+    there via `--project-root`, so a unit-scoped `run_dir` would split a
+    single unit's artifacts across two directories depending on which step
+    wrote them (code-review round 4, low — replaces a disproven rationale).
+    A second fresh spec-review round
     found the round-1 fix incomplete: it scoped 3g's `gh pr view` but left
     BOTH of 3f-bis's own `gh pr view` calls (the pre-pin resolution and the
     post-cascade re-derivation) at `{project_root}` — the spec names "the
@@ -251,6 +262,26 @@ def test_step_3f_bis_asserts_the_pin_certifies_the_diff_that_was_reviewed():
     assert '.reviewed_head <<<"$pin_json")" = "$diff_head"' in step, (
         "3f-bis must assert the pin's reviewed_head equals diff_head before "
         "trusting the review as attributed to this diff"
+    )
+
+
+def test_step_3f_bis_computes_the_diff_itself_against_unit_wt():
+    """Code-review round 4, medium: the round-3 fix's headline change — scoping
+    `diff_head`/`$diff` to `$unit_wt` instead of `{project_root}` — had no
+    test guarding it. `test_step_3f_bis_asserts_the_pin_certifies_the_diff_...`
+    only checked `"diff_head=$(git" in step`, satisfied verbatim by
+    `git -C "{project_root}"` too; reverting the diff computation back to
+    `{project_root}` left every prior test in this file green. This sub-iterate
+    was REJECTed twice already for exactly this class of silent
+    `{project_root}` call site, so the diff gets its own mutation-probed
+    guard: delete `$unit_wt` from either the rev-parse or the diff line and
+    this fails."""
+    step = _step_3f_bis()
+    assert 'diff_head=$(git -c "$unit_wt" rev-parse head)' in step, (
+        "diff_head must be captured from $unit_wt, not {project_root}"
+    )
+    assert 'diff=$(git -c "$unit_wt" diff "$base"..."$diff_head")' in step, (
+        "the diff itself must be computed against $unit_wt, not {project_root}"
     )
 
 

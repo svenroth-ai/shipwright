@@ -239,20 +239,45 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        State crosses to 3g in a FILE, never a shell variable: these are separate
        steps and a fresh Bash call starts with an empty environment, so a `$sha`
        set here would silently expand to "" there — unpinning the merge in the
-       exact window this step calls dangerous.
+       exact window this step calls dangerous. The SAME hazard applies inside
+       THIS step too: `fires` below is a model judgement read from the diff's
+       own text, not something a shell script can decide on its own, which in
+       practice forces a fresh Bash call before pin runs — so `$unit_wt`,
+       `$diff_head`, and `$fires` are each dual-written to `$run_dir/` the
+       moment they are known and re-read at the top of the pin block, rather
+       than trusted to survive as shell variables from here to there
+       (code-review round 4, medium).
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
        `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
        wait for pin's own answer, because `worktree` is independently readable
        from `loop_state.json`'s row for this unit (the exact field
-       `resolve_unit_identity()` reads), falling back to `{project_root}` when
-       the row carries none yet (pre-R5a: every row) — the SAME fallback pin
-       applies below, kept in lockstep by the equality check two paragraphs
-       down (R3, spec-review round 2: the prior draft treated this as a
-       structural ordering gap it could not close before pin; it was not one):
+       `resolve_unit_identity()` reads). Since R2 (#784) the row normally
+       CARRIES a `worktree` field — `check_unit_lease.py touch` writes it at
+       every runner step boundary (`sub-iterate-runner.md`'s "Step-boundary
+       liveness touches", `--worktree "{project_root}"`) — so the fallback
+       below is for a row touched before R2's lease landed, or a lease touch
+       that warned-and-continued past a failure, not the normal case
+       (code-review round 4: the prior wording claimed no row carries the
+       field pre-R5a, which stopped being true the moment R2 merged). It is
+       the SAME fallback pin applies below, kept in lockstep by the equality
+       check two paragraphs down (R3, spec-review round 2: the prior draft
+       treated this as a structural ordering gap it could not close before
+       pin; it was not one). The lookup is close to, not identical to,
+       `resolve_unit_identity()`'s own case-insensitive match (Python's
+       `.lower()` vs. jq's ASCII-only `ascii_downcase`) — both still fail
+       closed on the one input they could disagree on (a non-ASCII-cased id),
+       since a jq non-match falls through to the `{project_root}` fallback,
+       which pin's own equality check below then catches on comparison.
+       `.id? // ""` guards a null/non-string `.id` row from aborting the
+       whole jq program for every unit's lookup, not just its own
+       (code-review round 4, low); dropping `2>/dev/null` lets a genuine jq
+       failure surface instead of silently reading as "no match" (code-review
+       round 4, low):
          unit_wt=$(jq -r --arg id "{id}" \
-           '(.units[]? | select((.id|ascii_downcase)==($id|ascii_downcase)) | .worktree) // empty' \
-           "{project_root}/.shipwright/loop_state.json" 2>/dev/null)
+           '(.units[]? | select(((.id? // "")|ascii_downcase)==($id|ascii_downcase)) | .worktree) // empty' \
+           "{project_root}/.shipwright/loop_state.json")
          [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         echo "$unit_wt" > "$run_dir/unit_worktree"
          pr_json=$(cd "$unit_wt" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
          pr_url=$(jq -r .url <<<"$pr_json")
          [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # no PR = nothing to review or merge
@@ -270,29 +295,32 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `--payload-file` root — runs against `$unit_wt`, THIS unit's own
        worktree, resolved from `loop_state.json`'s row (the SAME `jq` lookup
        above, before pin ever runs), dual-written to `$run_dir/unit_worktree`
-       so the steps and spawns that cross a shell boundary can re-read it
-       rather than re-derive it independently (a second, divergent resolution
-       is the exact bug class the equality check right after pin below exists
-       to catch). `{project_root}` itself is untouched by this — it stays
-       reserved for the campaign-level args (`--project-root`, `--state`,
-       `--campaign-worktree`) pin/ship/verify take below, which is exactly
-       what those calls already declare; this section does not redefine it,
-       so nothing here contradicts pin's own `--campaign-worktree
-       "{project_root}"` argument. Pre-R5a no row carries a `worktree` field
-       yet, so `$unit_wt` resolves to the campaign worktree — the SAME value
-       `{project_root}` holds today — but the resolution is now genuine (read
-       from the row, falling back to the campaign worktree only when the row
-       is silent), not a hardcoded alias, and needs no further change here
-       when R5a starts populating that field: the diff below already reads
-       `$unit_wt`, so a genuinely distinct per-unit worktree is honored
-       automatically, not a future TODO.
+       above so the steps and spawns that cross a shell boundary can re-read
+       it rather than re-derive it independently (a second, divergent
+       resolution is the exact bug class the equality check right after pin
+       below exists to catch). `{project_root}` itself is untouched by this —
+       it stays reserved for the campaign-level args (`--project-root`,
+       `--state`, `--campaign-worktree`) pin/ship/verify take below, which is
+       exactly what those calls already declare; this section does not
+       redefine it, so nothing here contradicts pin's own
+       `--campaign-worktree "{project_root}"` argument. Every row resolves to
+       the SAME value `{project_root}` holds today (R5a hasn't yet given a
+       unit a genuinely distinct worktree) — but the resolution reads the
+       row, not a hardcoded alias, so a distinct worktree is honored
+       automatically once R5a lands, not a future TODO.
        The diff itself is computed against `$unit_wt` — the SAME resolution
        used for the pre-pin `gh pr view` above, not `{project_root}` — because
        `$unit_wt`'s `worktree` field is independently readable from
        `loop_state.json` before pin ever runs; nothing here is a pin input, so
-       nothing here needs to wait for pin:
+       nothing here needs to wait for pin. `merge-base` is captured explicitly
+       and CHECKED before it builds the diff range — an unchecked failure
+       collapses the range to `...{sha}` (i.e. `HEAD...{sha}`), an EMPTY diff
+       for `diff_head==HEAD`, which fails OPEN (`fires=0`, cascade skipped,
+       unit merges unreviewed — code-review round 4, low):
          diff_head=$(git -C "$unit_wt" rev-parse HEAD)
-         diff=$(git -C "$unit_wt" diff "$(git -C "$unit_wt" merge-base origin/{default} "$diff_head")"..."$diff_head")
+         echo "$diff_head" > "$run_dir/diff_head"
+         base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
+         diff=$(git -C "$unit_wt" diff "$base"..."$diff_head")
        Fire when the runner said medium+, OR the diff sets any risk flag, OR it
        exceeds 100 lines — set `fires=1` in that case, else `fires=0`. `diff_head`
        is resolved BEFORE the diff and the diff is computed explicitly against
@@ -302,13 +330,18 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        its own independent worktree/branch resolution happens to land on (R3
        doubt-round, medium: the two resolved the tree independently with no
        equality check, so a divergence would let the pin certify a diff nobody
-       reviewed — the exact bug R3 exists to prevent).
+       reviewed — the exact bug R3 exists to prevent). Dual-write the fires
+       decision too, once made — it is the third value this paragraph hands
+       across the boundary named at the top of this step:
+         echo "$fires" > "$run_dir/fires"
 
        **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
        unit's own `worktree`/`branch`/`attempt_id` from `loop_state.json`
        (`shared/scripts/lib/review_attribution.py`), falling back to the
-       campaign worktree when the row carries no `worktree` field yet
-       (pre-R5a: every row); asserts the checked-out branch matches; records
+       campaign worktree when the row carries no `worktree` field (same
+       narrow case the `$unit_wt` resolution above falls back on — see there
+       for why that is the exception, not the rule, since R2); asserts the
+       checked-out branch matches; records
        `HEAD` as `reviewed_head`, `base_sha` at pin time only, and (v5)
        `shipped_head`. Dual-writes the legacy `$run_dir/reviewed_head` file
        (the SAME reviewed_head SHA, immediately — closes the previously
@@ -331,7 +364,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        below-threshold unit (`fires=0`) is verified via `reviewed_head`, since
        no further commit is expected to land on it at all, and its
        `shipped_head` is already set equal to `reviewed_head` at pin time
-       (`--review-skipped`):
+       (`--review-skipped`). Re-derive `$unit_wt`/`$diff_head`/`$fires` first
+       — the dual-writes above exist because the `fires` judgement between
+       them and here may have started a fresh Bash call; re-reading is safe
+       even when it did not (code-review round 4, medium):
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         diff_head=$(cat "$run_dir/diff_head")
+         fires=$(cat "$run_dir/fires")
          pin_json=$(uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode pin \
            --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
            --project-root "{project_root}" --campaign-worktree "{project_root}" \
@@ -351,11 +390,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        hazard directly, not a proxy for it):
          pin_wt=$(jq -r .worktree <<<"$pin_json")
          [ "$pin_wt" = "$unit_wt" ] || STRICT-STOP
-       Dual-write `$run_dir/unit_worktree` so every later call site in this
-       step and every spawn that crosses a shell boundary re-reads this SAME
-       resolution rather than re-deriving its own:
-         echo "$unit_wt" > "$run_dir/unit_worktree"
-       Then confirm the pin certifies the SAME tree the diff above was
+       `$run_dir/unit_worktree` already holds this resolution — dual-written
+       above, before pin ran — so every later call site in this step and
+       every spawn that crosses a shell boundary re-reads it rather than
+       re-deriving its own. Then confirm the pin certifies the SAME tree the diff above was
        computed against — an inline check, not prose discipline alone (R3
        doubt-round) — against BOTH pin's own self-reported SHA and
        `$unit_wt`'s actual current HEAD, so a pin that resolved a different
@@ -391,7 +429,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        wrote above — this runs after the a/b/c spawns, the same shell
        boundary `run_dir`/`pr_url` cross below, so the variable set at pin
        time does not survive to here either:
-         unit_wt=$(cat "$run_dir/unit_worktree")
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
        The runner already closed the rows and a closed row is immutable, so
        `--force` is REQUIRED (without it the CLI exits 3). A `code` row
        completed over a non-completed `spec` FAILS the gate, so Stage 1 must
@@ -414,8 +452,9 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        these are the values in this step that genuinely cross a spawn;
        nothing else computed above does):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         unit_wt=$(cat "$run_dir/unit_worktree")
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
+         [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # mirrors the pre-pin guard (code-review round 4, low)
        Every command is CHECKED: a promotion that does not reach the remote
        must STOP the loop, not shorten it. An unchecked `git commit` that the
        pre-commit hook blocks would otherwise leave the runner's head in
@@ -477,7 +516,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
              --recorded-by spec-reviewer \\
              --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
              citations, spec_ref -> divergence}. Delivery stopped; PR left open."
-         unit_wt=$(cat "$run_dir/unit_worktree")
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json"
          git -C "$unit_wt" commit -m "chore(review): record the Stage-1 REJECT for {id}" || STRICT-STOP
          git -C "$unit_wt" push || STRICT-STOP
@@ -506,9 +545,11 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          [ -f "$run_dir/reviewed_head" ] || STRICT-STOP
          # Same unit-scoping as 3f-bis (R3): read $unit_wt back from the FILE
          # pin wrote there — a fresh Bash call, so nothing set in 3f-bis's own
-         # shell survives to here — falling back to {project_root} only if
-         # somehow absent (it never is, given the guard just above).
-         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null || echo "{project_root}")
+         # shell survives to here — falling back to {project_root} if the file
+         # is absent OR empty (a bare `2>/dev/null || echo` fallback catches
+         # only a missing file, not a present-but-empty one — code-review
+         # round 4, low).
+         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
          head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
          uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it

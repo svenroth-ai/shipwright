@@ -461,7 +461,7 @@
     {
       "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
       "limit": 400,
-      "current": 583,
+      "current": 624,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md"
     },

@@ -1,4 +1,4 @@
-# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 522-LOC
+# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` (first crossing: raised to 522-LOC; see the latest entry below for the current ceiling)
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -269,4 +269,66 @@ now actively asserted the wrong (spec-contradicting) behavior for one of them.
 
 This is a FOURTH crossing on top of the three this ADR already covers; the
 `shipwright_bloat_baseline.json` entry's `current` is bumped to 583 in the
+same commit as this note, per this file's own convention.
+
+## Fresh code-review pass on the 564 -> 583 fix (583 -> 624)
+
+A fresh, independent code-reviewer (a new fork) PASSed the 564->583 fix on
+spec-compliance grounds but REJECTed it on code-quality grounds: three medium
+and eight low findings, all correctness/testability/readability, none a
+crash. +41 lines (583 -> 624):
+
+- **A stale claim, repeated four times, that no `loop_state.json` row carries
+  a `worktree` field pre-R5a** — false since R2 (#784): `unit_lease.py`
+  writes `"worktree": str(worktree)` and the runner calls
+  `check_unit_lease.py touch --worktree "{project_root}"` at every step
+  boundary. Reworded across all four occurrences to state the row normally
+  carries the field (falling back only for a pre-R2 row or a warned-and-
+  continued lease-touch failure), and collapsed the most redundant of the
+  four tellings into a cross-reference to the others.
+- **The round's headline fix — scoping the diff itself to `$unit_wt` — had no
+  test.** The existing assertions (`"merge-base" in step`,
+  `"diff_head=$(git" in step`) were satisfied verbatim by the
+  `{project_root}`-scoped form too; reverting the fix left every test green.
+  Added `test_step_3f_bis_computes_the_diff_itself_against_unit_wt`, anchored
+  on the unit-scoped command forms, and confirmed by mutation-probing it
+  (reverting the fix locally reproduces the failure, then re-applied).
+- **`$unit_wt`, `$diff_head`, and `$fires` could be lost across a Bash-call
+  boundary the step's own text elsewhere warns about.** The `fires` decision
+  is a model judgement read from the diff's own text, not something a shell
+  script can compute — in practice this forces a fresh Bash call before pin
+  runs, and a fresh call starts empty (per this step's own opening
+  paragraph). That would turn the new pin-agreement check into a STRICT-STOP
+  on the happy path, and could silently pass `--review-skipped` for a unit
+  that IS being reviewed. Fixed by dual-writing all three values to
+  `$run_dir/` the moment they are known and re-reading them at the top of the
+  pin block — the same dual-write/re-read pattern this step already uses for
+  `run_dir`/`pr_url`/`unit_wt` across the a/b/c review-spawn boundary.
+- **`merge-base` failure was unchecked**, which would collapse the diff range
+  to `...{sha}` (an empty diff for `diff_head==HEAD`) and fail OPEN
+  (`fires=0`, cascade skipped). Now captured and `|| STRICT-STOP`-guarded
+  before building the diff range.
+- **The jq lookup's case-fold and null-`.id` handling diverged from
+  `resolve_unit_identity()`'s own Python resolver** (ASCII-only
+  `ascii_downcase` vs. Unicode `.lower()`; a null/non-string `.id` row could
+  abort the whole jq program). Guarded with `.id? // ""`; dropped the
+  `2>/dev/null` that was conflating a genuine jq failure with "no match".
+- **The `unit_worktree` state file's read side didn't fall back on an EMPTY
+  file**, only a missing one (`cat ... 2>/dev/null || echo fallback` doesn't
+  fire on a present-but-empty file) — `cd ""` is a silent no-op, which would
+  route a call back to the campaign worktree post-R5a. Applied the
+  `[ -n "$unit_wt" ] || unit_wt="{project_root}"` idiom at every read site.
+- **The post-cascade `pr_url` re-derivation was unchecked**, unlike its
+  pre-pin sibling and contradicting the step's own "every command is
+  CHECKED" claim. Mirrored the pre-pin guard.
+- Fixed a stale test docstring rationale (claimed unit-scoping `run_dir`
+  would be "circular" — disproven by this same round's own diff fix) and a
+  stale ADR heading ("raised to 522-LOC" after four further crossings).
+- Two low findings (a harness-normalization comment for `git -c` vs. `-C` in
+  test assertions; the lexical-vs-realpath nature of the new path-equality
+  check) were addressed as a documentation-only comment and left as-is
+  respectively — no line-count-relevant code change.
+
+This is a FIFTH crossing on top of the four this ADR already covers; the
+`shipwright_bloat_baseline.json` entry's `current` is bumped to 624 in the
 same commit as this note, per this file's own convention.
