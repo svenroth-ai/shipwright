@@ -212,6 +212,40 @@ authenticity gap above — it gives the operator one more chance to notice an
 unexpected bundle path or an unfamiliar command before anything is written,
 the same shape of control as Codex's own trust prompt one step later.
 
+## Decision — bundle-root character validation (F11 preflight, second finding, 2026-09-22)
+
+The re-run local PR-review preflight (after the Accepted Risk mitigation
+above landed) raised a **distinct** BLOCK, not a re-surfacing of the round-2
+`glm` LOW finding already dispositioned in the table above: that earlier
+finding was about unescaped **bundle-command content** (`raw_command`,
+first-party/trusted bundle text); this one is about `codex_hooks_launcher.py`
+`_materialize()` splicing the **resolved `bundle_root` path** into the same
+launcher-script body via `raw_command.replace(_PLACEHOLDER, str(bundle_root))`
+without escaping. The two are not interchangeable: `bundle_root` is exactly
+the value the Accepted Risk section above already documents as
+env-var-spoofable, and unlike `raw_command`'s quoting (author-controlled,
+consistent), the quoting context surrounding `${CLAUDE_PLUGIN_ROOT}` in any
+given `raw_command` is not something this module can assume — a future hook
+command need not wrap the placeholder in quotes at all.
+
+**Fixed, not accepted** — this one has a clean, low-risk technical answer,
+unlike the architectural bundle-root-authenticity gap: `_materialize()` now
+validates `bundle_root` against a conservative path-safe character allowlist
+(`_UNSAFE_BUNDLE_ROOT_RE` in `codex_hooks_launcher.py`) before any
+substitution happens, raising `CodexHooksSyncError` — the same "surface
+loudly" contract the rest of this module already commits to — rather than
+attempting to escape for a quoting context that varies per hook command and
+per platform (POSIX shell vs. `cmd.exe`, each with different unsafe
+characters, some of which — like `cmd.exe`'s `%`/`^` — are genuinely hard to
+escape correctly with confidence on a Windows-only development machine, the
+same blind spot that let the POSIX mirror-bug through above). Real bundle
+roots (plugin cache directories such as
+`~/.claude/plugins/cache/shipwright/...`) never legitimately need
+shell/cmd.exe metacharacters, so this validation is not expected to ever
+fire in ordinary use — it converts an unreachable-in-practice but
+theoretically-exploitable splice into a loud, safe refusal instead of a
+silent or partially-escaped one.
+
 ## Rejected alternatives
 
 Shape-checking `.codex-plugin/plugin.json` the same way as

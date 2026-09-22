@@ -34,6 +34,7 @@ filesystem path from either shape.
 from __future__ import annotations
 
 import hashlib
+import re
 import shlex
 import stat
 import sys
@@ -46,6 +47,17 @@ if str(_LIB) not in sys.path:
 from atomic_write import durable_atomic_write  # noqa: E402
 
 _PLACEHOLDER = "${CLAUDE_PLUGIN_ROOT}"
+
+# ``bundle_root`` is spliced into a launcher-script body wherever the
+# bundle's own raw_command text places _PLACEHOLDER — which may or may not
+# sit inside quotes, depending on how that command was authored (unlike
+# _hooks_json_command()'s single, known context). Rather than escape for an
+# assumed quoting context, reject any character outside this conservative
+# path-safe allowlist: real bundle roots (plugin cache directories) never
+# legitimately need shell/cmd.exe metacharacters (F11 PR-review preflight,
+# 2026-09-22 — see the ADR's Accepted Risk section for why the sibling
+# raw_command-content case is handled differently).
+_UNSAFE_BUNDLE_ROOT_RE = re.compile(r"[^A-Za-z0-9 ._/\\:~+@,()-]")
 
 
 class CodexHooksSyncError(RuntimeError):
@@ -105,9 +117,24 @@ def _command_to_launcher_path(command: str) -> Path | None:
     return Path(tokens[0])
 
 
+def _validate_bundle_root_for_launcher(bundle_root: Path) -> None:
+    """Raise loudly rather than splice an unsafe character into a launcher
+    script body — surfacing a genuine problem instead of silently risking
+    shell/cmd.exe injection (this module's "surface loudly" commitment)."""
+    text = str(bundle_root)
+    match = _UNSAFE_BUNDLE_ROOT_RE.search(text)
+    if match:
+        raise CodexHooksSyncError(
+            f"bundle root contains a character unsafe for launcher-script "
+            f"generation ({match.group()!r} in {text!r}) — refusing to "
+            "materialize hooks rather than risk shell/cmd.exe injection"
+        )
+
+
 def _materialize(
     bundle_hooks: dict, bundle_root: Path, launcher_dir: Path
 ) -> tuple[dict, list[dict]]:
+    _validate_bundle_root_for_launcher(bundle_root)
     new_hooks: dict = {}
     manifest_entries: list[dict] = []
 

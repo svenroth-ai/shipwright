@@ -137,3 +137,42 @@ def test_materialize_raises_on_blank_command(tmp_path):
 
     with pytest.raises(CodexHooksSyncError, match=r"Stop\[0\]\.hooks\[0\] has no command"):
         _materialize(bundle_hooks, tmp_path / "bundle", launcher_dir)
+
+
+# ---------------------------------------------------------------------------
+# bundle_root validation — F11 PR-review preflight (2026-09-22): bundle_root
+# is spliced into a launcher-script body wherever the bundle's raw_command
+# places ${CLAUDE_PLUGIN_ROOT}, in a quoting context this module cannot
+# assume. Reject unsafe characters outright instead of escaping for it.
+# ---------------------------------------------------------------------------
+
+_PLACEHOLDER_HOOKS = {
+    "Stop": [{"hooks": [{"type": "command", "command": 'uv run "${CLAUDE_PLUGIN_ROOT}/x.py"'}]}]
+}
+
+
+@pytest.mark.parametrize(
+    "bad_char",
+    ['"', "`", "$", ";", "|", "&", "<", ">", "^", "%", "'", "\n"],
+)
+def test_materialize_rejects_unsafe_bundle_root_characters(tmp_path, bad_char):
+    bundle_root = tmp_path / f"bundle{bad_char}root"
+    launcher_dir = tmp_path / "launchers"
+
+    with pytest.raises(CodexHooksSyncError, match="unsafe for launcher-script"):
+        _materialize(_PLACEHOLDER_HOOKS, bundle_root, launcher_dir)
+
+    assert not launcher_dir.exists() or not list(launcher_dir.iterdir())
+
+
+def test_materialize_accepts_windows_style_path_with_parentheses_and_spaces(tmp_path):
+    """A real, entirely legitimate Windows install path (e.g. under
+    ``Program Files (x86)``) must not be rejected by the same guard."""
+    bundle_root = Path("C:/Program Files (x86)/Shipwright Bundle_v1.2/cache")
+    launcher_dir = tmp_path / "launchers"
+
+    new_hooks, manifest_entries = _materialize(_PLACEHOLDER_HOOKS, bundle_root, launcher_dir)
+
+    assert len(manifest_entries) == 1
+    launcher_path = _command_to_launcher_path(manifest_entries[0]["command"])
+    assert launcher_path.read_text(encoding="utf-8").count(str(bundle_root)) == 1
