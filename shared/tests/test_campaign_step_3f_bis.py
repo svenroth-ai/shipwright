@@ -14,6 +14,7 @@ mutation-probed: delete its subject from the step and it fails.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -373,17 +374,20 @@ def test_step_3f_bis_fires_is_a_real_assignment_not_a_bare_variable_read():
     unconditionally, independent of any spawn-boundary issue — worse than the
     pre-fix behavior, where `fires` was a live, correctly-set variable. The
     doc's literal next command must be an ACTUAL assignment of the digit just
-    decided, and the re-read must fail closed on anything else."""
+    decided, and the re-read must fail closed on anything else. Round 6:
+    reworded the placeholder to `fires=<1 or 0>` so a reader following the
+    snippet literally cannot default to always writing `1`."""
     step = _step_3f_bis()
-    assert "fires=1" in step, (
-        "the fires decision must be written as a literal shell assignment "
-        "(fires=1 or fires=0), not left as a bare $fires with nothing "
-        "upstream ever assigning it"
+    assert "fires=<1 or 0>" in step, (
+        "the fires decision must be written as an explicit placeholder "
+        "assignment substituting the judged digit, not a bare $fires with "
+        "nothing upstream ever assigning it, and not a hardcoded fires=1 "
+        "that a reader could apply unconditionally"
     )
     fires_write_at = step.find('echo "$fires" > "$run_dir/fires"')
     assert fires_write_at >= 0, "3f-bis must dual-write the fires decision"
-    assert "fires=1" in step[max(0, fires_write_at - 120):fires_write_at], (
-        "the literal fires=1/fires=0 assignment must immediately precede "
+    assert "fires=<1 or 0>" in step[max(0, fires_write_at - 120):fires_write_at], (
+        "the literal fires=<1 or 0> assignment must immediately precede "
         "the dual-write, not float disconnected from it"
     )
     reread_at = step.find('fires=$(cat "$run_dir/fires"')
@@ -392,6 +396,27 @@ def test_step_3f_bis_fires_is_a_real_assignment_not_a_bare_variable_read():
         "the fires re-read must fail closed (STRICT-STOP) when the value is "
         "neither 1 nor 0 -- anything else means the write above never "
         "happened, which must not silently read as 'did not fire'"
+    )
+
+
+def test_step_3f_bis_rederives_run_dir_before_the_fires_write():
+    """Spec-review round 6 (blocking): round 5's run_dir re-derivation rule
+    covered every READ site but not the fires WRITE site. The fires judgement
+    itself is what forces the fresh Bash call the step's own top-of-block
+    warning names, so `$run_dir` from the earlier block (set once, ~97 lines
+    above) is gone by the time `echo "$fires" > "$run_dir/fires"` runs too —
+    the write silently targeted `/fires`, and the fail-closed re-read guard
+    then STRICT-STOPped every unit on the happy path. Delete the run_dir=
+    rebuild immediately preceding the fires write and this fails."""
+    step = _step_3f_bis()
+    rederive = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
+    fires_write_at = step.find('echo "$fires" > "$run_dir/fires"')
+    assert fires_write_at >= 0, "3f-bis must dual-write the fires decision"
+    preceding = step[max(0, fires_write_at - 200):fires_write_at]
+    assert rederive in preceding, (
+        "the fires write must be preceded by a fresh run_dir= re-derivation "
+        "within the same block, not a bare write through a possibly-empty "
+        "$run_dir carried from an earlier shell call"
     )
 
 
@@ -537,4 +562,24 @@ def test_no_doc_still_calls_browser_verify_f2():
     )
     assert "sub-iterate-runner F2" not in text, (
         "hooks-and-pipeline.md still labels the runner's Browser Verify as F2"
+    )
+
+
+def test_campaign_mode_doc_has_no_double_backslash_line_continuations():
+    """Code-review round 6: `--force \\\\` / `--recorded-by spec-reviewer \\\\`
+    in the Stage-1-REJECT `record` invocation used a DOUBLE backslash as a
+    line continuation. In shell, `\\\\` is an escaped literal backslash, not a
+    continuation — the newline then terminates the command, silently
+    dropping `--recorded-by` and `--disposition` entirely, leaving a
+    dispositionless `not_run` indistinguishable from "the cascade never ran".
+    This bug class is invisible to every prose-matching assertion above
+    (they all match substrings, not line endings), so it needs its own,
+    doc-wide guard rather than a step-scoped one."""
+    text = CAMPAIGN_DOC.read_text(encoding="utf-8")
+    offenders = [
+        line for line in text.splitlines() if re.search(r"\\\\\s*$", line)
+    ]
+    assert not offenders, (
+        "campaign-mode.md must not use a double backslash as a line "
+        f"continuation (real continuation is a single trailing \\): {offenders}"
     )

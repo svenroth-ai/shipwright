@@ -350,10 +350,19 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        its own independent worktree/branch resolution happens to land on (R3
        doubt-round, medium: the two resolved the tree independently with no
        equality check, so a divergence would let the pin certify a diff nobody
-       reviewed — the exact bug R3 exists to prevent). Dual-write the fires
-       decision as the literal digit just assigned — it is the third value
-       this paragraph hands across the boundary named at the top of this step:
-         fires=1   # or fires=0 — whichever the judgement above concluded
+       reviewed — the exact bug R3 exists to prevent). The trigger judgement
+       above is what forces the fresh Bash call the top-of-step warning names,
+       so `$run_dir` from the earlier block is gone here too — the WRITE side
+       needs the same re-derivation the READ side already gets, not just the
+       value being written (spec-review round 6, blocking: round 5 fixed
+       every re-read site but left this one write dereferencing the stale
+       `$run_dir` from the earlier block, 97 lines up, so the write itself
+       silently targeted `/fires` and the fail-closed guard below STRICT-STOPped
+       every unit on the happy path). Dual-write the fires decision as the
+       literal digit just assigned — it is the third value this paragraph
+       hands across the boundary named at the top of this step:
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         fires=<1 or 0>   # substitute the literal digit the judgement above concluded
          echo "$fires" > "$run_dir/fires" || STRICT-STOP
 
        **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
@@ -518,7 +527,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
            --project-root "{project_root}" --campaign-worktree "{project_root}" \
            --loop-id "{loop_id}" --shipped-head "$shipped_head" || STRICT-STOP
-         echo "$shipped_head" > "$run_dir/reviewed_head"
+         echo "$shipped_head" > "$run_dir/reviewed_head" || STRICT-STOP
 
        **This push restarts CI**, so 3g must watch THIS head. Wait for the PR
        object to catch up — BOUNDED, because an unbounded wait is a third
@@ -556,8 +565,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        here — the identical gap as the promote-rows block above, on a
        separate branch (code-review round 5, blocking):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         … record --review-type spec --status not_run --force \\
-             --recorded-by spec-reviewer \\
+         … record --review-type spec --status not_run --force \
+             --recorded-by spec-reviewer \
              --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
              citations, spec_ref -> divergence}. Delivery stopped; PR left open."
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"

@@ -85,6 +85,16 @@ this ADR's own history instead of being repeated inline, the same
 consolidation opportunity `campaign-mode.md`'s own exception recorded as
 non-blocking (N6) rather than done immediately in round 5.
 
+**Post-merge-cycle growth (540 -> 585), round 6.** Two new tests added in
+the same commit as `campaign-mode.md`'s own sixth crossing: one
+mutation-probed guard that a fresh `run_dir=` re-derivation precedes the
+`fires` write specifically (round 5's rule covered reads only, missing the
+write site a fresh spec-review caught), and one doc-wide guard against a
+double-backslash line-continuation regression (an independent code-review
+finding, same round) that is invisible to every existing substring-matching
+assertion in this file. `shipwright_bloat_baseline.json`'s `current` is
+bumped to 585 in the same commit as this note.
+
 ## Consequences
 
 No downstream consumer reads this file except pytest itself and the

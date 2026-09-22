@@ -406,3 +406,18 @@ already has one for the same campaign) — closed with a new, separate
 bloat-exception ADR (`iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md`)
 rather than folded into this one, since it is a different file with its
 own retirement plan.
+
+**Sixth crossing (669 -> 678), round 6.** A fresh spec-review found round 5's
+`run_dir` re-derivation rule was scoped to READ sites only — the `fires`
+WRITE site (`echo "$fires" > "$run_dir/fires"`) still dereferenced the
+stale `$run_dir` from the earlier block, silently targeting `/fires` and
+STRICT-STOPping every unit on the happy path via the new fail-closed guard.
+Fixed with the same one-line `run_dir=` rebuild immediately before that
+write, plus the reasoning for why the write side needed it too. Also
+folded in during the same round (independent code-review, same commit):
+a double-backslash line continuation (`--force \\` / `--recorded-by ... \\`)
+in the Stage-1-REJECT `record` invocation that silently dropped
+`--recorded-by`/`--disposition` in shell (real continuation is a single
+`\`), and a missing `|| STRICT-STOP` on the ship-block's legacy
+`reviewed_head` write, for consistency with every sibling dual-write this
+campaign added `|| STRICT-STOP` to. +9 lines (669 -> 678).
