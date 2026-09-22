@@ -100,7 +100,8 @@ bumped to 585 in the same commit as this note.
 found a third consecutive REJECT on the same `run_dir` re-derivation class
 (round 5 covered one read site, round 6 covered the `fires` write) —
 each fix had targeted only the one site a reviewer had just named. This
-round adds `test_step_3f_bis_every_run_dir_use_is_locally_rederived`, a
+round adds `test_step_3f_bis_every_run_dir_use_is_locally_rederived`
+(renamed in round 8 to `..._opens_within_its_own_block`, see below), a
 structural test that scans every double-quoted `$run_dir/`-prefixed
 occurrence in 3f-bis and 3g generically (not one enumerated site at a
 time) and asserts each has a fresh `run_dir=` rederivation within a
@@ -112,6 +113,26 @@ line-continuation guard from `campaign-mode.md` alone to the whole
 `skills/iterate/references/*.md` + `agents/*.md` tree.
 `shipwright_bloat_baseline.json`'s `current` is bumped to 659 in the same
 commit as this note.
+
+**Round 8 growth (659 -> 690).** The structural test added in round 7
+(`test_step_3f_bis_every_run_dir_use_is_locally_rederived`) enforced a rule
+that turned out not to match the doc it governed — 8 sites shared one
+opening rebuild across a contiguous block, none a live bug, but all
+literal violations of the round-7 rule as stated. Round 8 reworded the
+doc's rule to the policy actually implemented (one rebuild opens each
+contiguous block) and rewrote this test to match: renamed to
+`..._opens_within_its_own_block`, kept 3f-bis's 500-char lookback
+(re-verified directly against the text), and replaced 3g's unbounded
+"from start of step" lookback — which could never have caught a future
+fourth occurrence in that step, since ANY use anywhere in 3g trivially
+satisfied "some `run_dir=` appears earlier" — with an explicit assertion
+that 3g has EXACTLY ONE rebuild, preceding every use. Also fixed one
+mirrored stale docstring claim (`test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns`
+no longer claims `run_dir`/`pr_url` are "the ONLY two values in this step
+that genuinely cross a spawn boundary" — they cross the a/b/c spawn
+boundary specifically; `$unit_wt`/`$diff_head`/`$fires`/`$pr_json` cross
+the earlier `fires`-judgement boundary instead). `shipwright_bloat_baseline.json`'s
+`current` is bumped to 690 in the same commit as this note.
 
 ## Consequences
 

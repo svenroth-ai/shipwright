@@ -1,56 +1,72 @@
 {
-  "section": "R3-round6-verify",
+  "section": "R3-round7-verify",
   "verdict": "REJECT",
   "review": [
     {
-      "severity": "medium",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 359,
-      "finding": "This round reintroduces a hardcoded line-distance ('$run_dir from the earlier block, 97 lines up') -- the exact anti-pattern this file's own bloat-exception ADR already recorded as FIXED in round 5 (the hardcoded 'line 243's rm -f' was reworded to describe the command instead). Also already factually wrong: run_dir is last assigned at :259, fires write at :366 -- 107 lines, not 97 (drift from this round's own +9 lines, precisely what the round-5 finding predicted). Same stale number echoed in the test docstring.",
-      "suggestion": "Replace '97 lines up' with a command-descriptive phrase (e.g. 'from the block that resolves $unit_wt above'). Same edit in test_campaign_step_3f_bis.py:406."
+      "severity": "high",
+      "category": "architecture",
+      "file": "shipwright_bloat_baseline.json",
+      "line": 1218,
+      "finding": "VERIFIED via direct wc -l: shared/scripts/lib/review_attribution.py (458 LOC) and shared/tests/test_review_attribution.py (470 LOC) cross the 300-LOC limit with NO baseline entry at all (grep for 'review_attribution' in shipwright_bloat_baseline.json returns nothing). The ADR punts them to 'a future Group H audit decision' while the SAME commit files exception ADRs + baseline entries for three smaller files (campaign-mode.md 700, test_campaign_step_3f_bis.py 659, conftest.py 323). 928 combined LOC over the limit, more than all three filed entries' overage combined, left unallowlisted while the smaller ones were filed -- an internal inconsistency within one PR.",
+      "suggestion": "File baseline entries + exception ADRs for review_attribution.py and test_review_attribution.py in this round, matching what the PR already did three times, for consistency. MUST fix."
     },
     {
       "severity": "medium",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 289,
-      "finding": "THIRD CONSECUTIVE ROUND on this class. The write-side re-derivation rule was applied to only 1 of 4 write sites. Round 6 states the general principle ('the WRITE side needs the same re-derivation the READ side already gets') but only honours it at the fires write. Three other writes still dereference the stale $run_dir from :259: :289 (unit_worktree), :291 (pr_json), :331 (diff_head). Two reads inside the bounded CI wait block do the same through $run_dir set at :502: :536 and :539. Worst: :289's silent {project_root} fallback on re-read (rather than STRICT-STOP) means the pin equality check only catches it post-R5a. Neither existing test covers any of these -- the read-site test scans only unit_worktree reads, the round-6 test only the fires write.",
-      "suggestion": "Do NOT patch one more site narrowly. AUDIT every `\"$run_dir/` occurrence in 3f-bis and 3g (both reads and writes) and confirm EACH is immediately preceded by a run_dir= rebuild, OR is provably inside the same shell call as the block that sets it (state that invariant explicitly if so, since the doc currently asserts the broader universal rule). Widen the test to scan every `$run_dir/` occurrence generically rather than enumerating specific ones, so a future site can't recreate this same gap a fourth time."
+      "line": 262,
+      "finding": "Matches independent spec-reviewer finding, already in round-8 fix scope: the rule as STATED ('no exception argued from same-call reasoning') is not the rule as ENFORCED (one rebuild governs multiple reads in the same block; 3g's test lookback is None, justified by same-call reasoning the rule itself bans).",
+      "suggestion": "Already in round-8 fix scope (truthful-rule route: reword to block-scoping rule, tighten 3g's lookback to a real window)."
+    },
+    {
+      "severity": "medium",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 373,
+      "finding": "NOT yet in round-8 scope, must add: dangling forward-reference from round 7's rewrite. L373 says '-- this is the group-(1)/group-(2) boundary named above --' and L378 says 'that earlier group'. Grepped the whole file for 'group' case-insensitively: L373/378 are the ONLY two hits. No group (1)/(2) taxonomy exists anywhere -- round 7 deleted it but left the citations.",
+      "suggestion": "Delete the em-dash clause at L373 (sentence reads fine without it); reword L378's 'that earlier group' to 'the block that resolves $unit_wt and computes the diff' -- same drift-free phrasing round 7 already used elsewhere. MUST fix -- add to round-8 scope."
+    },
+    {
+      "severity": "medium",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 519,
+      "finding": "NOT yet in round-8 scope, must add: stale claim contradicting the rewritten rule 200 lines above. L519-521 says '(R3 doubt-round, round 2, medium: these are the values in this step that genuinely cross a spawn; NOTHING ELSE computed above does)'. Under the step's own boundary definition, $unit_wt/$diff_head/$fires/$pr_json ALSO cross the fires boundary -- that's the entire reason the dual-writes at L305/308/349/386 exist. A reader who believes L520 could conclude those dual-writes are dead weight and remove them. Same stale claim mirrored in test_campaign_step_3f_bis.py:528-530.",
+      "suggestion": "Reword both to: 'these are the values that cross the a/b/c SPAWN boundary specifically; $unit_wt/$diff_head/$fires/$pr_json cross the earlier fires-judgement boundary and are handled by the dual-writes above'. MUST fix -- add to round-8 scope."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 556,
+      "finding": "Optional: $pr_url (set at L524) is NOT re-derived before the bounded CI-wait block that consumes it at L558/561, even though run_dir WAS re-derived there. If a boundary genuinely exists at L556, pr_url is equally gone. Fails closed (60x5s wait then STRICT-STOP) so non-blocking, but undermines the round's 'no site exempted' framing.",
+      "suggestion": "Optional for round-8: either re-derive pr_url at L557 the same way, or note this block shares a shell with the ship block above (same-call justification, consistent with the truthful-rule fix)."
     },
     {
       "severity": "low",
       "category": "architecture",
       "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 568,
-      "finding": "The new double-backslash guard is scoped to campaign-mode.md alone, while the bug class spans 'the entire skills/iterate tree' per the finding that motivated it. sub-iterate-runner.md, iteration-reviews.md, campaign-worktree.md carry equally executable multi-line shell snippets.",
-      "suggestion": "Glob the check over plugins/shipwright-iterate/**/*.md (or at minimum skills/iterate/references/*.md + agents/*.md). Currently zero offenders tree-wide, lands green immediately."
+      "line": 457,
+      "finding": "Optional, merge-stability nit: the 500-char lookback has only ~80 chars of slack at its tightest site (L430 rebuild to L435 pr_json match, ~420 chars). Future growth in that block (both ADRs say this file WILL grow for R4/R5a) reddens an unrelated test.",
+      "suggestion": "Optional for round-8: anchor on block boundaries (split on run_dir= token, assert every match falls in a non-first segment) instead of a char window, OR just note the measured worst-case in a comment. Not blocking -- can defer to a later round if round-8 is already large enough."
     },
     {
       "severity": "low",
-      "category": "readability",
-      "file": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md",
-      "line": 1,
-      "finding": "Stale ADR heading (same class as round-4 finding N7 for the sibling ADR): H1 still says 'raised to 540-LOC' while the round-6 addendum and baseline both say 585; body also says 'now 540 lines' / 'raised to 540' in two more spots.",
-      "suggestion": "Apply the sibling ADR's fix: '...current ceiling in the latest entry below', soften the two inline number restatements to reference the addendum instead."
-    },
-    {
-      "severity": "low",
-      "category": "readability",
-      "file": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md",
-      "line": 124,
-      "finding": "The pin/ship/verify sweep missed one occurrence in the durable ADR: the Ousterhout Argument still says 'the pin/verify field semantics'.",
-      "suggestion": "'the pin/ship/verify field semantics'. One word, durable record."
-    },
-    {
-      "severity": "low",
-      "category": "readability",
+      "category": "architecture",
       "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 415,
-      "finding": "New fires test uses a 200-char lookback vs its sibling read-site test's 400 -- only ~65 chars of slack before a comment-length change would spuriously redden it. Cannot produce a false green, cosmetic only.",
-      "suggestion": "Use 400 for consistency."
+      "line": 640,
+      "finding": "Non-blocking: the widened double-backslash guard now governs ~44 markdown files this PR doesn't own, banning trailing \\\\ regardless of whether the line is shell. Currently zero offenders. Future legitimate regex/escape examples in unrelated files could trip it.",
+      "suggestion": "Non-blocking, no action needed this round. If it becomes a problem later, scope the match to fenced code blocks or lines with a --flag/command token."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "line": 224,
+      "finding": "Non-blocking reducibility note: 3f-bis now spans ~378 lines with 40+ inline round/severity citations duplicating history already in the ADRs. Already tracked as a Re-Review-Date item in the test file's own bloat ADR.",
+      "suggestion": "Non-blocking, already tracked for a future consolidation pass. No action needed this round."
     }
   ],
-  "recorded_from": "a70e47808c489b1ff",
+  "recorded_from": "aa2dda162c681ca3e",
   "run_id": "iterate-2026-09-22-r3-review-diff-fix"
 }

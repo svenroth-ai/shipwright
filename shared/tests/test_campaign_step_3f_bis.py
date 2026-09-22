@@ -424,55 +424,83 @@ def test_step_3f_bis_rederives_run_dir_before_the_fires_write():
     )
 
 
-def test_step_3f_bis_every_run_dir_use_is_locally_rederived():
+def test_step_3f_bis_every_run_dir_use_opens_within_its_own_block():
     """Spec-review/code-review rounds 5-7: three consecutive rounds each
     fixed the one `$run_dir` use a reviewer had just named (the fires write,
     then the promote-rows/ship/REJECT-path re-reads), and each time a
-    DIFFERENT, equally un-re-derived use turned out to have the identical
-    gap — because "prove this site is safely in the same shell call as its
-    governing `run_dir=`" is not a claim a prose-matching test can verify.
-    The rule this test enforces is therefore unconditional: EVERY site in
-    3f-bis or 3g that reads or writes a `$run_dir/`-prefixed path must have
-    a `run_dir=` re-derivation within a short lookback window, with no
-    site exempted by an argument that it is "probably still in the same
-    call". Scans generically (every double-quoted $run_dir/ occurrence),
-    not one enumerated site at a time, so a future addition cannot recreate
-    this same gap a fourth time without also tripping this test."""
+    DIFFERENT use in a DIFFERENT contiguous block turned out to have the
+    identical gap. Round 7 tried to close the class with a rule claiming NO
+    site may rely on same-call reasoning — but 3f-bis genuinely has several
+    reads sharing one opening rebuild within a single block (the pin-block
+    re-read group; the bounded-wait loop), and 3g genuinely IS one block
+    start to finish, so an unconditional per-site rule was never true of the
+    doc it governed (round 8: reworded to the rule actually implemented —
+    exactly one rebuild opens each contiguous block, a block ends only at a
+    model judgement or an Agent-tool spawn).
+
+    3f-bis's window is a short, tight lookback: a use far from its OWN
+    block's opening rebuild is exactly the defect this test exists to
+    catch. 3g needs a different check, not a wider window standing in for
+    "no check at all": 3g's own governing rebuild sits up to ~1300
+    normalized chars before its farthest use (measured directly, NOT the
+    ~450 estimated when this test was first written — round 8 verified the
+    real number before picking a window), so any window generous enough to
+    pass today's genuine single-block text is too generous to catch
+    anything. Instead, 3g is asserted to have EXACTLY ONE `run_dir=`
+    rebuild, and it must precede every use — the moment a future edit adds
+    a SECOND rebuild to 3g (the natural signal that a second block/boundary
+    was recognized), this assertion breaks and forces a conscious decision
+    about that block's own lookback, rather than silently staying vacuous
+    forever the way an unconditional "unbounded from start" window did."""
     rederive = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
     usage = re.compile(r'"\$run_dir/')
+
     # 3f-bis covers pin-scope writes, the pin-block re-read, promote-rows,
-    # the ship block (incl. the bounded wait) and the REJECT path; 3g is a
-    # separate, much smaller step with only its own three reads. A single
-    # shared minimum would silently pass if either step's scan broke.
-    minimums = {"3f-bis": 8, "3g": 3}
-    # 3f-bis's step body contains genuine spawn boundaries mid-step (the
-    # `fires` model judgement, the a/b/c review-cascade dispatch), so its
-    # lookback stays a short, tight window: a use far from ITS OWN nearest
-    # rederivation is exactly the defect this test exists to catch. 3g has
-    # no such boundary anywhere in its body — the whole step is one Bash
-    # call with a single leading `run_dir=` — so its lookback is unbounded
-    # (from the start of the step) rather than a short window, matching
-    # that different shape instead of forcing a redundant re-derivation
-    # line onto a step that has nowhere for state to be lost in between.
-    lookbacks = {"3f-bis": 500, "3g": None}
-    for step, label in ((_step_3f_bis(), "3f-bis"), (_step_3g(), "3g")):
-        positions = [m.start() for m in usage.finditer(step)]
-        assert len(positions) >= minimums[label], (
-            f"expected at least {minimums[label]} $run_dir/-prefixed usages "
-            f"in {label} — got {len(positions)}, which means the scan itself "
-            "is broken, not that the step shrank"
+    # the ship block (incl. the bounded wait) and the REJECT path.
+    step = _step_3f_bis()
+    positions = [m.start() for m in usage.finditer(step)]
+    assert len(positions) >= 8, (
+        f"expected at least 8 $run_dir/-prefixed usages in 3f-bis — got "
+        f"{len(positions)}, which means the scan itself is broken, not "
+        "that the step shrank"
+    )
+    window = 500
+    for pos in positions:
+        preceding = step[max(0, pos - window):pos]
+        assert rederive in preceding, (
+            f"3f-bis: the $run_dir/-prefixed use at offset {pos} must be "
+            "preceded within the same block by a fresh run_dir= "
+            "re-derivation — a bare use through a possibly-stale $run_dir "
+            "carried from an earlier shell call is exactly the defect "
+            "class that drew three consecutive REJECTs on this step"
         )
-        window = lookbacks[label]
-        for pos in positions:
-            start = 0 if window is None else max(0, pos - window)
-            preceding = step[start:pos]
-            assert rederive in preceding, (
-                f"{label}: the $run_dir/-prefixed use at offset {pos} must be "
-                "preceded within the same block by a fresh run_dir= "
-                "re-derivation — a bare use through a possibly-stale $run_dir "
-                "carried from an earlier shell call is exactly the defect "
-                "class that drew three consecutive REJECTs on this step"
-            )
+
+    # 3g: a separate, much smaller step that is genuinely one continuous
+    # Bash call — no model judgement, no Agent-tool spawn anywhere in its
+    # body. Enforced structurally (one rebuild, opening the step) instead
+    # of via a lookback window, so a future SECOND rebuild — the sign that
+    # 3g stopped being one block — cannot slip past silently.
+    step_3g = _step_3g()
+    positions_3g = [m.start() for m in usage.finditer(step_3g)]
+    assert len(positions_3g) >= 3, (
+        f"expected at least 3 $run_dir/-prefixed usages in 3g — got "
+        f"{len(positions_3g)}, which means the scan itself is broken, not "
+        "that the step shrank"
+    )
+    rebuild_count = step_3g.count(rederive)
+    assert rebuild_count == 1, (
+        f"3g: expected exactly one run_dir= rebuild (the step is asserted "
+        f"to be a single continuous Bash call) — found {rebuild_count}. "
+        "If 3g now genuinely has more than one shell block, this test's "
+        "single-rebuild assumption is stale and must be replaced with a "
+        "real lookback window sized to the new block boundaries, not "
+        "widened blindly."
+    )
+    rebuild_pos = step_3g.find(rederive)
+    assert all(pos > rebuild_pos for pos in positions_3g), (
+        "3g: every $run_dir/-prefixed use must come AFTER the step's one "
+        "opening rebuild"
+    )
 
 
 def test_step_3f_bis_dual_writes_and_rereads_pr_json_across_the_boundary():
@@ -525,10 +553,13 @@ def test_step_3f_bis_records_shipped_head_after_the_record_commit_lands():
 
 def test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns():
     """Doubt-round, round 2, medium: `run_dir` and `pr_url` were set BEFORE
-    the a/b/c review-cascade spawns and this block runs AFTER them — the ONLY
-    two values in this step that genuinely cross a spawn boundary. Shell
-    variables do not survive across separate tool calls, so this block must
-    re-derive both explicitly rather than trust the earlier assignment."""
+    the a/b/c review-cascade spawns and this block runs AFTER them — they
+    cross the a/b/c SPAWN boundary specifically (a separate crossing from
+    `$unit_wt`/`$diff_head`/`$fires`/`$pr_json`, which cross the earlier
+    `fires`-judgement boundary and are handled by the dual-writes above).
+    Shell variables do not survive across separate tool calls, so this block
+    must re-derive both explicitly rather than trust the earlier
+    assignment."""
     step = _step_3f_bis()
     assert 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"' in step, (
         "3f-bis must re-derive run_dir after the cascade spawns, not reuse a "

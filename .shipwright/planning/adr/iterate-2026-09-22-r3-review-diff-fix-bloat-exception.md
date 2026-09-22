@@ -440,3 +440,42 @@ a stale "97 lines up" line-distance claim in the `fires` paragraph
 line count that goes wrong the moment either block is edited). +22 lines
 (678 -> 700); `shipwright_bloat_baseline.json`'s `current` is bumped to
 700 in the same commit as this note.
+
+**Correction to the Seventh-crossing entry above.** The "unconditional,
+no exception for same-call reasoning" rule it describes was never true of
+the text it governed: a fresh independent spec-reviewer (round 8) found 8
+remaining `$run_dir/`-prefixed sites that share ONE opening rebuild with
+several sibling reads/writes in the same contiguous shell block (the
+pin-block re-read group; the bounded-wait loop; 3g's three uses under its
+one leading rebuild) — all functionally safe, none a live bug, but all in
+literal violation of the rule as stated. See the Eighth crossing below for
+the fix. The original text above is left as written for history; this
+paragraph is the accurate account.
+
+**Eighth crossing (700 -> 706), round 8.** Reworded the governing rule to
+the policy actually implemented: exactly one `run_dir=` rebuild must OPEN
+every contiguous shell block that touches a `$run_dir/`-prefixed path,
+where a block ends only at a model judgement (`fires`) or an Agent-tool
+spawn (the a/b/c cascade) — never at a subprocess call, a `sleep`, or a
+shell loop. A read or write inside a block that already opened with its
+own rebuild needs no second one. Also fixed two smaller staleness issues
+an independent code-reviewer found in the same verify pass: a dangling
+"group-(1)/group-(2)" forward-reference left behind when round 7's
+rewrite deleted the taxonomy it pointed at (no such grouping exists
+anywhere else in the file), and a stale claim that `run_dir`/`pr_url`/
+`unit_wt` were "the values in this step that genuinely cross a spawn;
+nothing else computed above does" — false under the step's own current
+boundary definition, since `$unit_wt`/`$diff_head`/`$fires`/`$pr_json`
+also cross the earlier `fires`-judgement boundary (the entire reason
+their dual-writes exist); a reader trusting the old wording could
+conclude those dual-writes are dead weight. The corresponding test
+(`test_step_3f_bis_every_run_dir_use_is_locally_rederived`, renamed to
+`..._opens_within_its_own_block`) was rewritten to match: 3f-bis keeps its
+500-char lookback window (verified directly against the actual text —
+its tightest site has ~80 chars of slack), and 3g — genuinely one
+continuous Bash call with no boundary anywhere in its body — is now
+asserted to have EXACTLY ONE `run_dir=` rebuild that precedes every use,
+replacing an unbounded-lookback exemption that could never have caught a
+future fourth occurrence in that step. +6 lines (700 -> 706);
+`shipwright_bloat_baseline.json`'s `current` is bumped to 706 in the same
+commit as this note.

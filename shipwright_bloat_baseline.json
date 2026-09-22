@@ -461,7 +461,7 @@
     {
       "path": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
       "limit": 400,
-      "current": 700,
+      "current": 706,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md"
     },
@@ -1217,9 +1217,23 @@
     {
       "path": "shared/tests/test_campaign_step_3f_bis.py",
       "limit": 300,
-      "current": 659,
+      "current": 690,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md"
+    },
+    {
+      "path": "shared/scripts/lib/review_attribution.py",
+      "limit": 300,
+      "current": 458,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-review-attribution-bloat-exception.md"
+    },
+    {
+      "path": "shared/tests/test_review_attribution.py",
+      "limit": 300,
+      "current": 470,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md"
     },
     {
       "path": "shared/tests/test_append_iterate_entry.py",

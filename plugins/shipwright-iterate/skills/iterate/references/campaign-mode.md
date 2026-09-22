@@ -260,17 +260,21 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `run_dir` at the one site a reviewer had just named, then a
        DIFFERENT site — equally un-provably-same-call, just not yet
        flagged — turned out to have the identical gap. **The rule from here
-       on is therefore not "re-derive after a proven boundary" but
-       "re-derive immediately before every single site that reads or
-       writes a `$run_dir/`-prefixed path, with no exception argued from
-       same-call reasoning"** — one extra template-string line costs
-       nothing (it is not a subprocess call, just a local reassignment to
-       the same value), and a rule with no exceptions is the only form of
-       this rule a mechanical test can actually enforce (see
-       `test_step_3f_bis_every_run_dir_use_is_locally_rederived` in
+       on is therefore not "re-derive at the one site a reviewer just
+       named" but "exactly one `run_dir=` rebuild must OPEN every
+       contiguous shell block that touches a `$run_dir/`-prefixed path,
+       where a block ENDS at any model judgement (like `fires` below) or
+       Agent-tool spawn (the a/b/c cascade) — never at a subprocess call, a
+       `sleep`, or a shell loop, none of which return control to the
+       model"** — a read or write inside a block that already opened with
+       its own rebuild needs no second one; one extra template-string line
+       costs nothing where a genuine boundary IS crossed (it is not a
+       subprocess call, just a local reassignment to the same value), and
+       the opening rebuild is what a mechanical test can verify (see
+       `test_step_3f_bis_every_run_dir_use_opens_within_its_own_block` in
        `test_campaign_step_3f_bis.py`, which scans every double-quoted
-       `$run_dir/`-prefixed occurrence in this step generically, not one
-       enumerated site at a time).
+       `$run_dir/`-prefixed occurrence in both 3f-bis and 3g generically,
+       not one enumerated site at a time, and does not exempt either step).
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head"
        `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
        wait for pin's own answer, because `worktree` is independently readable
@@ -369,15 +373,15 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        doubt-round, medium: the two resolved the tree independently with no
        equality check, so a divergence would let the pin certify a diff nobody
        reviewed — the exact bug R3 exists to prevent). The trigger judgement
-       above is what forces the fresh Bash call the top-of-step warning names
-       — this is the group-(1)/group-(2) boundary named above — so `$run_dir`
-       from the block that resolves `$unit_wt` and computes the diff is gone
-       here too — the WRITE side needs the same re-derivation the READ side
-       already gets, not just the value being written (spec-review round 6,
-       blocking: round 5 fixed every re-read site but left this one write
-       dereferencing the stale `$run_dir` from that earlier group, so the
-       write itself silently targeted `/fires` and the fail-closed guard
-       below STRICT-STOPped every unit on the happy path). Dual-write the
+       above is what forces the fresh Bash call the top-of-step warning
+       names, so `$run_dir` from the block that resolves `$unit_wt` and
+       computes the diff is gone here too — the WRITE side needs the same
+       re-derivation the READ side already gets, not just the value being
+       written (spec-review round 6, blocking: round 5 fixed every re-read
+       site but left this one write dereferencing the stale `$run_dir` from
+       that same block, so the write itself silently targeted `/fires` and
+       the fail-closed guard below STRICT-STOPped every unit on the happy
+       path). Dual-write the
        fires decision as the
        literal digit just assigned — it is the third value this paragraph
        hands across the boundary named at the top of this step:
@@ -517,8 +521,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        set BEFORE the a/b/c spawns above and this block runs AFTER them —
        re-derive all three here, exactly as 3g does below, rather than trust
        shell state across that boundary (R3 doubt-round, round 2, medium:
-       these are the values in this step that genuinely cross a spawn;
-       nothing else computed above does):
+       these are the values that cross the a/b/c SPAWN boundary
+       specifically; `$unit_wt`/`$diff_head`/`$fires`/`$pr_json` cross the
+       earlier `fires`-judgement boundary instead, and are handled by the
+       dual-writes above):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
