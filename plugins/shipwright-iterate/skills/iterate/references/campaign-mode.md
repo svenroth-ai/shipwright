@@ -241,7 +241,19 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        set here would silently expand to "" there — unpinning the merge in the
        exact window this step calls dangerous.
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
-         pr_json=$(cd "{project_root}" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
+       `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
+       wait for pin's own answer, because `worktree` is independently readable
+       from `loop_state.json`'s row for this unit (the exact field
+       `resolve_unit_identity()` reads), falling back to `{project_root}` when
+       the row carries none yet (pre-R5a: every row) — the SAME fallback pin
+       applies below, kept in lockstep by the equality check two paragraphs
+       down (R3, spec-review round 2: the prior draft treated this as a
+       structural ordering gap it could not close before pin; it was not one):
+         unit_wt=$(jq -r --arg id "{id}" \
+           '(.units[]? | select((.id|ascii_downcase)==($id|ascii_downcase)) | .worktree) // empty' \
+           "{project_root}/.shipwright/loop_state.json" 2>/dev/null)
+         [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         pr_json=$(cd "$unit_wt" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
          pr_url=$(jq -r .url <<<"$pr_json")
          [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # no PR = nothing to review or merge
 
@@ -251,37 +263,36 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        structurally never set for it; inheriting that verdict would make this
        gate NARROWEST on exactly the framework surface it exists to protect.
        Every git command here (and every one below) is `git -C` a resolved
-       path, never a bare `git` relying on cwd. **Unit-scoped, not
-       fallback-only (R3):** every NAMED 3f-bis/3g call site below —
-       reviews.json's add/commit/push, the REJECT-path's add/commit/push,
-       `record`'s `--payload-file` root, and 3g's `gh pr view` — runs against
-       `$unit_wt`, THIS unit's own worktree as pin below resolves it from
-       `loop_state.json`'s row, dual-written to `$run_dir/unit_worktree` so
-       the steps and spawns that cross a shell boundary can re-read it rather
-       than re-derive it independently (a second, divergent resolution is the
-       exact bug class the equality check two paragraphs down exists to
-       catch). `{project_root}` itself is untouched by this — it stays
+       path, never a bare `git` relying on cwd. **Unit-scoped, no fallback-only
+       exceptions (R3, spec-review round 2):** every NAMED 3f-bis/3g call site
+       — the diff itself, both `gh pr view` resolutions, reviews.json's
+       add/commit/push, the REJECT-path's add/commit/push, and `record`'s
+       `--payload-file` root — runs against `$unit_wt`, THIS unit's own
+       worktree, resolved from `loop_state.json`'s row (the SAME `jq` lookup
+       above, before pin ever runs), dual-written to `$run_dir/unit_worktree`
+       so the steps and spawns that cross a shell boundary can re-read it
+       rather than re-derive it independently (a second, divergent resolution
+       is the exact bug class the equality check right after pin below exists
+       to catch). `{project_root}` itself is untouched by this — it stays
        reserved for the campaign-level args (`--project-root`, `--state`,
        `--campaign-worktree`) pin/ship/verify take below, which is exactly
        what those calls already declare; this section does not redefine it,
        so nothing here contradicts pin's own `--campaign-worktree
        "{project_root}"` argument. Pre-R5a no row carries a `worktree` field
        yet, so `$unit_wt` resolves to the campaign worktree — the SAME value
-       `{project_root}` holds today — but the resolution is now genuine
-       (read from the row, falling back to the campaign worktree only when
-       the row is silent), not a hardcoded alias, and needs no further
-       change here when R5a starts populating that field.
-       The diff immediately below is the one call site that cannot wait for
-       `$unit_wt`: `fires`, computed from it, is one of pin's own arguments,
-       so pin cannot run first. It is computed at `{project_root}` — today
-       identical to `$unit_wt`, resolved independently only because it must
-       run before pin can resolve anything — and the pin call's equality
-       check right after it re-verifies the SAME tree against `$unit_wt`'s
-       actual HEAD once pin has run, not merely against pin's own
-       self-reported value, closing the one ordering gap this section cannot
-       route around:
-         diff_head=$(git -C "{project_root}" rev-parse HEAD)
-         diff=$(git -C "{project_root}" diff "$(git -C "{project_root}" merge-base origin/{default} "$diff_head")"..."$diff_head")
+       `{project_root}` holds today — but the resolution is now genuine (read
+       from the row, falling back to the campaign worktree only when the row
+       is silent), not a hardcoded alias, and needs no further change here
+       when R5a starts populating that field: the diff below already reads
+       `$unit_wt`, so a genuinely distinct per-unit worktree is honored
+       automatically, not a future TODO.
+       The diff itself is computed against `$unit_wt` — the SAME resolution
+       used for the pre-pin `gh pr view` above, not `{project_root}` — because
+       `$unit_wt`'s `worktree` field is independently readable from
+       `loop_state.json` before pin ever runs; nothing here is a pin input, so
+       nothing here needs to wait for pin:
+         diff_head=$(git -C "$unit_wt" rev-parse HEAD)
+         diff=$(git -C "$unit_wt" diff "$(git -C "$unit_wt" merge-base origin/{default} "$diff_head")"..."$diff_head")
        Fire when the runner said medium+, OR the diff sets any risk flag, OR it
        exceeds 100 lines — set `fires=1` in that case, else `fires=0`. `diff_head`
        is resolved BEFORE the diff and the diff is computed explicitly against
@@ -331,10 +342,18 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            $([ "$fires" = "1" ] || echo --review-skipped)) || STRICT-STOP
        Non-zero = STRICT-STOP (as 3f) — an attribution failure (wrong branch
        checked out) means this unit's diff cannot be trusted at all.
-       Resolve and dual-write `$unit_wt` NOW, from pin's own answer, so every
-       later call site in this step reads the SAME resolution pin already
-       certified rather than re-deriving its own:
-         unit_wt=$(jq -r .worktree <<<"$pin_json")
+       Confirm pin's OWN resolution agrees with the `$unit_wt` already
+       resolved above and used for the pre-pin `gh pr view` and the diff (R3,
+       spec-review round 2: comparing only `$unit_wt`'s HEAD sha against
+       `diff_head`, as the prior draft did, would let a pin that walked a
+       DIFFERENT worktree path to the same HEAD sha slip through unnoticed —
+       this checks the resolved PATH itself, the "two divergent resolutions"
+       hazard directly, not a proxy for it):
+         pin_wt=$(jq -r .worktree <<<"$pin_json")
+         [ "$pin_wt" = "$unit_wt" ] || STRICT-STOP
+       Dual-write `$run_dir/unit_worktree` so every later call site in this
+       step and every spawn that crosses a shell boundary re-reads this SAME
+       resolution rather than re-deriving its own:
          echo "$unit_wt" > "$run_dir/unit_worktree"
        Then confirm the pin certifies the SAME tree the diff above was
        computed against — an inline check, not prose discipline alone (R3
@@ -395,8 +414,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        these are the values in this step that genuinely cross a spawn;
        nothing else computed above does):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         pr_url=$(cd "{project_root}" && gh pr view "{branch}" --json url -q .url)
          unit_wt=$(cat "$run_dir/unit_worktree")
+         pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
        Every command is CHECKED: a promotion that does not reach the remote
        must STOP the loop, not shorten it. An unchecked `git commit` that the
        pre-commit hook blocks would otherwise leave the runner's head in

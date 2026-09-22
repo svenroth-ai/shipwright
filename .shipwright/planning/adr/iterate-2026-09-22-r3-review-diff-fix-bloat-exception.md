@@ -222,3 +222,51 @@ resolution to R5a — contradicting the pin call's own `--campaign-worktree
 This is a THIRD crossing on top of the two this ADR already covers; the
 `shipwright_bloat_baseline.json` entry's `current` is bumped to 564 in the
 same commit as this note, per this file's own convention.
+
+## Post-merge-cycle growth (564 → 583)
+
+A SECOND fresh, independent spec-reviewer (a new fork, not the same session
+that wrote the 522→564 fix) REJECTed again on a narrower version of the exact
+failure mode the 522→564 entry describes: two named call sites the previous
+fix had NOT actually converted still read `{project_root}`, plus a test that
+now actively asserted the wrong (spec-contradicting) behavior for one of them.
++19 lines (564 -> 583):
+
+- **The diff itself (`diff_head`/`$diff`) was still computed at
+  `{project_root}`,** with this ADR's own 522→564 entry claiming it "must
+  still run BEFORE pin" and therefore "stays at `{project_root}`" — a false
+  necessity: `worktree` is independently readable from `loop_state.json`'s
+  row for this unit, the same field `resolve_unit_identity()` reads, before
+  pin ever runs. Fixed by resolving `$unit_wt` via a `jq` lookup into
+  `loop_state.json` (falling back to `{project_root}` when the row carries no
+  `worktree` field yet, matching pin's own fallback) immediately after the
+  run_dir line, BEFORE both the pre-pin `gh pr view` and the diff
+  computation, and scoping both to it.
+- **3f-bis's own pre-pin `gh pr view` (computing `pr_json`) and its
+  post-cascade re-derivation (computing `pr_url`) were still `{project_root}`-
+  scoped** even though the spec names "the `gh pr view` branch resolution"
+  as a 3f-bis call site, not only 3g's. Fixed by scoping the pre-pin call to
+  the newly-resolved `$unit_wt`, and reordering the post-cascade block so
+  `unit_wt=$(cat "$run_dir/unit_worktree")` runs before `pr_url=$(cd
+  "$unit_wt" && gh pr view ...)` instead of after it.
+- **Added a genuine path-equality check, not a HEAD-sha proxy for it:**
+  comparing only `$unit_wt`'s HEAD sha against `diff_head` (the existing
+  check) would let a pin that resolved a DIFFERENT worktree path landing on
+  the same HEAD sha slip through unnoticed. Added `pin_wt=$(jq -r .worktree
+  <<<"$pin_json"); [ "$pin_wt" = "$unit_wt" ] || STRICT-STOP` right after the
+  pin call, asserting pin's own self-reported worktree agrees with the
+  pre-pin resolution already used for the diff and the `gh pr view` call.
+- `shared/tests/test_campaign_step_3f_bis.py` had a test
+  (`test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g`) that
+  explicitly asserted the post-cascade `gh pr view` "is not a named
+  unit-scoped call site and must stay anchored at `{project_root}`" —
+  directly contradicting the spec's own text. Flipped to require `$unit_wt`
+  for both 3f-bis `gh pr view` call sites; added a new test covering the
+  pre-pin `$unit_wt` resolution and the pin-agreement equality check.
+- Fixed a stale "Two modes:" heading (three bullets — pin/ship/verify — have
+  existed since the `--mode ship` amendment) in both this sub-iterate's own
+  spec and the master campaign plan document — no line growth in this file.
+
+This is a FOURTH crossing on top of the three this ADR already covers; the
+`shipwright_bloat_baseline.json` entry's `current` is bumped to 583 in the
+same commit as this note, per this file's own convention.

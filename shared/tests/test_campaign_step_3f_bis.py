@@ -190,27 +190,30 @@ def test_run_dir_and_gh_pr_view_are_unit_scoped_in_3f_bis_and_3g():
     """External plan review (openai high / glm medium): R3's spec names
     `run_dir` and "the `gh pr view` branch resolution" among the exact call
     sites that must become unit-scoped, same set for 3g. Every OTHER call in
-    this step already got an explicit `-C`; these two used a bare relative
+    this step already got an explicit `-C`; these used a bare relative
     path / a bare `gh pr view` that resolves from cwd, which is exactly the
     unstated-cwd assumption the spec forbids.
 
     `run_dir` itself is deliberately still anchored at `{project_root}` in
     BOTH steps (it is the campaign's own bookkeeping location for this
-    unit's run artifacts, including the `unit_worktree` file 3g reads to
-    resolve everything else — it cannot be unit-scoped without a circular
-    dependency on the very value it exists to hand out). A fresh
-    spec-review round on this same sub-iterate found the ORIGINAL fix
-    fallback-only for the actual named git/gh call sites: 3f-bis's own
-    post-cascade `gh pr view` re-derivation is not one of the spec's named
-    call sites and stays at `{project_root}`, but 3g's IS named, and now
-    resolves `$unit_wt` from the file 3f-bis's pin call wrote there before
-    using it."""
+    unit's run artifacts, including the `unit_worktree` file that hands
+    `$unit_wt` out — it cannot be unit-scoped without a circular dependency
+    on the very value it exists to produce). A second fresh spec-review round
+    found the round-1 fix incomplete: it scoped 3g's `gh pr view` but left
+    BOTH of 3f-bis's own `gh pr view` calls (the pre-pin resolution and the
+    post-cascade re-derivation) at `{project_root}` — the spec names "the
+    `gh pr view` branch resolution" as a 3f-bis call site too, not only 3g's.
+    Both are now unit-scoped."""
     scoped_run_dir = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
     for step, label in ((_step_3f_bis(), "3f-bis"), (_step_3g(), "3g")):
         assert scoped_run_dir in step, f"{label} must scope run_dir to {{project_root}}"
-    assert 'cd "{project_root}" && gh pr view "{branch}"' in _step_3f_bis(), (
-        "3f-bis's post-cascade gh pr view re-derivation is not a named "
-        "unit-scoped call site and must stay anchored at {project_root}"
+    assert 'cd "$unit_wt" && gh pr view "{branch}" --json url,id,headrefname,baserefname' in _step_3f_bis(), (
+        "3f-bis's pre-pin gh pr view must resolve $unit_wt (from the "
+        "loop_state.json jq lookup), not rely on {project_root}"
+    )
+    assert 'cd "$unit_wt" && gh pr view "{branch}" --json url -q .url' in _step_3f_bis(), (
+        "3f-bis's post-cascade gh pr view re-derivation must resolve "
+        "$unit_wt, not stay anchored at {project_root}"
     )
     assert 'cd "$unit_wt" && gh pr view "{branch}"' in _step_3g(), (
         "3g's gh pr view branch resolution is a named unit-scoped call site "
@@ -251,6 +254,35 @@ def test_step_3f_bis_asserts_the_pin_certifies_the_diff_that_was_reviewed():
     )
 
 
+def test_step_3f_bis_resolves_unit_wt_before_pin_and_verifies_pins_agreement():
+    """Spec-review round 2: the diff and the pre-pin `gh pr view` must not
+    wait for pin's own answer, since `worktree` is independently readable
+    from `loop_state.json` before pin ever runs. Comparing only `$unit_wt`'s
+    HEAD sha against `diff_head` would let a pin that resolved a DIFFERENT
+    worktree path to the same HEAD sha slip through unnoticed — the resolved
+    PATH itself must be checked, not just its tip."""
+    step = _step_3f_bis()
+    resolve_at = step.find('unit_wt=$(jq -r --arg id "{id}"')
+    pin_at = step.find("pin_json=$(uv run")
+    assert resolve_at >= 0, (
+        "3f-bis must resolve $unit_wt from loop_state.json via jq before pin runs"
+    )
+    assert resolve_at < pin_at, (
+        "the pre-pin $unit_wt resolution must precede the pin invocation"
+    )
+    assert 'unit_wt="{project_root}"' in step[resolve_at:pin_at], (
+        "the pre-pin resolution must fall back to {project_root} when the "
+        "loop_state.json row carries no worktree field yet"
+    )
+    assert 'pin_wt=$(jq -r .worktree <<<"$pin_json")' in step, (
+        "3f-bis must capture pin's own self-reported worktree"
+    )
+    assert '[ "$pin_wt" = "$unit_wt" ] || strict-stop' in step, (
+        "3f-bis must STRICT-STOP when pin's self-reported worktree diverges "
+        "from the $unit_wt already used for the pre-pin gh pr view and diff"
+    )
+
+
 def test_step_3f_bis_records_shipped_head_after_the_record_commit_lands():
     """Doubt-round, high: `shipped_head` must be recorded into the pin once
     the reviews.json commit is actually pushed — otherwise `verify --against
@@ -287,9 +319,9 @@ def test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns():
         "3f-bis must re-derive run_dir after the cascade spawns, not reuse a "
         "shell variable set before them"
     )
-    assert 'pr_url=$(cd "{project_root}" && gh pr view "{branch}" --json url -q .url)' in step, (
-        "3f-bis must re-derive pr_url after the cascade spawns, not reuse a "
-        "shell variable set before them"
+    assert 'pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)' in step, (
+        "3f-bis must re-derive pr_url (unit-scoped) after the cascade "
+        "spawns, not reuse a shell variable set before them"
     )
 
 

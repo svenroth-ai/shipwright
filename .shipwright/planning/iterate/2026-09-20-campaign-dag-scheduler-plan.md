@@ -689,7 +689,7 @@ the live flip having happened.
   criterion, explicit:** no campaign PR merges without `--match-head-commit`
   at any point during or after this sub-iterate.
 - `shared/scripts/checks/check_review_attribution.py` (new) — hashes
-  content, not identity. Two modes:
+  content, not identity. Three modes:
   - `--mode pin`: resolves the unit's `worktree`/`branch`/`attempt_id` from
     `loop_state.json` (falling back to the campaign worktree / `a{attempt}`
     default per above); asserts the checked-out branch matches; records
