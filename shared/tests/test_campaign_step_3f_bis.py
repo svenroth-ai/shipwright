@@ -386,9 +386,15 @@ def test_step_3f_bis_fires_is_a_real_assignment_not_a_bare_variable_read():
     )
     fires_write_at = step.find('echo "$fires" > "$run_dir/fires"')
     assert fires_write_at >= 0, "3f-bis must dual-write the fires decision"
-    assert "fires=<1 or 0>" in step[max(0, fires_write_at - 120):fires_write_at], (
-        "the literal fires=<1 or 0> assignment must immediately precede "
-        "the dual-write, not float disconnected from it"
+    # Round 11 (D5) deliberately interposes the mechanical `-gt 100` floor
+    # (`test_step_3f_bis_fires_line_count_is_computed_not_judged` asserts its
+    # exact presence/order) between the judgement and the write, so the
+    # window widens from 120 to 250 to admit that one tracked statement —
+    # still tight enough that an untracked, silent interposition would fail.
+    assert "fires=<1 or 0>" in step[max(0, fires_write_at - 250):fires_write_at], (
+        "the literal fires=<1 or 0> assignment must precede the dual-write "
+        "with nothing but the tracked mechanical floor between them, not "
+        "float disconnected from it"
     )
     reread_at = step.find('fires=$(cat "$run_dir/fires"')
     assert reread_at >= 0, "3f-bis must re-read $fires from the dual-write file"
@@ -717,22 +723,34 @@ def test_step_3f_bis_record_calls_are_unit_scoped_and_checked():
         f"$unit_wt (3 promote-rows + not_applicable + REJECT-path) — found "
         f"{count}"
     )
-    for marker in (
+    markers = (
         "--review-type spec --status completed",
         "--review-type code --status completed",
         "--review-type doubt --status completed",
         "--review-type doubt --status not_applicable",
         "--review-type spec --status not_run",
-    ):
+    )
+    positions = []
+    for marker in markers:
         at = step.find(marker)
         assert at >= 0, f"3f-bis must still contain the record call: {marker!r}"
         assert override in step[max(0, at - 40):at], (
             f"record call {marker!r} must have --project-root \"$unit_wt\" "
             "immediately before its --review-type flag"
         )
-        tail = step[at:at + 500]
+        positions.append((marker, at))
+    # Each call's own guard must be checked WITHOUT bleeding into a
+    # neighbour's — a fixed-width window wide enough to reach the next
+    # promote-row call would still pass with THIS call's own
+    # `|| STRICT-STOP` deleted, satisfied only by its neighbour's (code-review
+    # round 11, low: this is exactly what the original 500-char window did).
+    positions.sort(key=lambda pair: pair[1])
+    for i, (marker, at) in enumerate(positions):
+        end = positions[i + 1][1] if i + 1 < len(positions) else len(step)
+        tail = step[at:end]
         assert "|| strict-stop" in tail, (
-            f"record call {marker!r} must be checked (|| STRICT-STOP)"
+            f"record call {marker!r} must be checked (|| STRICT-STOP) before "
+            "the next record call, not rely on a neighbour's guard"
         )
 
 
@@ -769,16 +787,23 @@ def test_step_3f_bis_clears_all_handoff_files_on_reentry():
     cross-checked downstream so a stale value is caught there, but `fires`
     has NO such cross-check — a stale `fires=0` surviving a re-entry after
     new commits enlarged the diff could silently skip the cascade on the
-    new, now-large diff using an old, no-longer-applicable verdict."""
+    new, now-large diff using an old, no-longer-applicable verdict.
+    `shipped_head`/`diff_lines` (code-review round 11, medium: the D4 fix's
+    own test omitted the two files the round-11 fix itself added — reverting
+    either from the `rm -f` line left this test green) share the same
+    no-downstream-cross-check exposure as `fires` and must be cleared too."""
     step = _step_3f_bis()
     rm_at = step.index("rm -f")
     line_end = step.find("\n", rm_at)
     rm_line = step[rm_at:line_end if line_end >= 0 else rm_at + 300]
-    for name in ("reviewed_head", "unit_worktree", "diff_head", "fires", "pr_json"):
+    for name in (
+        "reviewed_head", "unit_worktree", "diff_head", "fires", "diff_lines",
+        "pr_json", "shipped_head",
+    ):
         assert f'"$run_dir/{name}"' in rm_line, (
             f"the re-entry cleanup must clear $run_dir/{name}, not just "
             "reviewed_head — a stale value with no downstream cross-check "
-            "(fires) can silently misfire on re-entry"
+            "(fires, diff_lines) can silently misfire on re-entry"
         )
 
 
@@ -855,7 +880,20 @@ def test_step_3f_bis_fires_line_count_is_computed_not_judged():
     unlike the other two clauses (risk flags, medium+) which genuinely
     require reading the diff. `$diff_lines` must be computed mechanically
     from `$diff` right after it is captured, and `fires=1` must be MANDATORY
-    once it exceeds 100 — not merely another factor a model weighs."""
+    once it exceeds 100 — not merely another factor a model weighs.
+
+    code-review round 11, high: the first pass of this fix computed
+    `$diff_lines` and asserted the word "mandatory" appeared nearby, but
+    never surfaced the value anywhere a model or a shell statement could act
+    on it — no `echo`, no dual-write, no re-read, and no executable `-gt`
+    test tying it to `$fires`. The prose called the floor MANDATORY while
+    nothing enforced it — a control that is documented and tested-for
+    without being implemented, which is worse than not having the test.
+    This now asserts the floor is an executable shell statement, not just a
+    sentence: `$diff_lines` is dual-written, re-read through a re-derived
+    `$run_dir` at the fires-assignment site, and combined with `fires` via a
+    literal `-gt 100` comparison that can only RAISE `fires`, never lower a
+    judgement that already decided 1."""
     step = _step_3f_bis()
     diff_capture_at = step.index('diff=$(git -c "$unit_wt" diff "$base"..."$diff_head") || strict-stop')
     compute_at = step.find("diff_lines=$(printf", diff_capture_at)
@@ -870,4 +908,40 @@ def test_step_3f_bis_fires_line_count_is_computed_not_judged():
     assert "mandatory" in step[compute_at:compute_at + 900], (
         "the doc must state that fires=1 is MANDATORY once $diff_lines "
         "exceeds 100, not merely another factor the judgement weighs"
+    )
+    write_marker = 'echo "$diff_lines" > "$run_dir/diff_lines"'
+    write_at = step.find(write_marker, compute_at)
+    assert 0 <= write_at - compute_at < 60, (
+        "$diff_lines must be dual-written to $run_dir/diff_lines "
+        "immediately after it is computed, so a value the model never "
+        "observed is not the only carrier of the floor across the "
+        "fires-judgement boundary"
+    )
+    assert "|| strict-stop" in step[write_at:write_at + len(write_marker) + 20], (
+        "the $diff_lines dual-write must be checked (|| STRICT-STOP)"
+    )
+    reread_marker = 'diff_lines=$(cat "$run_dir/diff_lines"'
+    reread_at = step.find(reread_marker, write_at)
+    assert reread_at > write_at, (
+        "$diff_lines must be re-read from its dual-write file at the "
+        "fires-assignment site — the same treatment $unit_wt/$diff_head/"
+        "$fires/$pr_json/$shipped_head already get"
+    )
+    fires_assign_at = step.find("fires=<1 or 0>", reread_at)
+    assert 0 <= fires_assign_at - reread_at < 200, (
+        "the $diff_lines re-read must sit immediately before the fires "
+        "digit assignment, not somewhere unrelated in the step"
+    )
+    override_marker = '[ "$diff_lines" -gt 100 ] && fires=1'
+    override_at = step.find(override_marker, fires_assign_at)
+    assert 0 <= override_at - fires_assign_at < 200, (
+        "the mechanical floor must be an EXECUTABLE statement — "
+        f"{override_marker!r} — immediately after the judgement's own "
+        "fires=<1 or 0> assignment, not merely asserted in prose"
+    )
+    fires_write_at = step.index('echo "$fires" > "$run_dir/fires"', override_at)
+    assert fires_write_at > override_at, (
+        "the mechanical -gt 100 override must run BEFORE $fires is written "
+        "to its dual-write file, or a late judgement could still write a "
+        "value the floor never had a chance to raise"
     )

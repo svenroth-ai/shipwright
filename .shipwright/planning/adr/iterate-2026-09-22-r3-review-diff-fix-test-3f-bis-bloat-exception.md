@@ -194,6 +194,46 @@ mutation-probed guard here, following this file's established convention:
 +176 lines (697 -> 873); `shipwright_bloat_baseline.json`'s `current` is
 bumped to 873 in the same commit as this note — a NEW ceiling.
 
+**Round 12 growth (873 -> 947).** A fresh Stage-2 code-reviewer, run against
+round 11's own fix commit, found round 11's D5 close (the
+`fires_line_count_is_computed_not_judged` guard above) was mutation-probed
+against the wrong thing: deleting the `diff_lines=$(printf ...)` line does
+fail the test, but the test never asserted `$diff_lines` was surfaced,
+dual-written, or connected to `$fires` by any executable statement — a
+"MANDATORY" claim in prose with nothing enforcing it, HIGH because
+documented-and-tested-for is worse than acknowledged-open. Extended in the
+same commit as `campaign-mode.md`'s own fix:
+
+- `test_step_3f_bis_fires_line_count_is_computed_not_judged` (extended, not
+  replaced) — now also asserts `$diff_lines` is dual-written to
+  `$run_dir/diff_lines` immediately after computation (checked), re-read
+  through a re-derived `run_dir` at the fires-assignment site, and combined
+  with the judged digit via the literal executable
+  `[ "$diff_lines" -gt 100 ] && fires=1`, in that order, before the `fires`
+  dual-write. Mutation-probed against the actual gap this round found:
+  removing any one of the four new assertions' subjects (the write, the
+  `|| STRICT-STOP`, the re-read, the `-gt 100` statement) now fails it,
+  where round 11's version did not.
+- `test_step_3f_bis_clears_all_handoff_files_on_reentry` (extended) — now
+  also requires `diff_lines` and `shipped_head` in the `rm -f` line; a
+  separate medium finding from the same round noted `shipped_head`'s own
+  round-11 addition to the `rm -f` line had shipped with no test coverage
+  at all.
+- `test_step_3f_bis_record_calls_are_unit_scoped_and_checked` (narrowed,
+  low) — its `|| STRICT-STOP` check used a fixed 500-char window wide
+  enough to reach a neighbouring promote-row call's own guard, so deleting
+  one call's `|| STRICT-STOP` still passed, satisfied by the next call's.
+  Rebound to the text between one `record` call and the next, so each
+  call's guard is checked independently.
+- `test_step_3f_bis_fires_is_a_real_assignment_not_a_bare_variable_read`
+  (pre-existing, round 5/6) — its own window between `fires=<1 or 0>` and
+  the dual-write widened from 120 to 250 chars to admit the new, TRACKED
+  `-gt 100` statement round 12 deliberately interposes between them; still
+  tight enough to fail on an untracked, silent interposition.
+
++74 lines (873 -> 947); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 947 in the same commit as this note.
+
 ## Consequences
 
 No downstream consumer reads this file except pytest itself and the

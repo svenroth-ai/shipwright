@@ -584,3 +584,43 @@ in no line change to this file.
 +84 lines (706 -> 790); `shipwright_bloat_baseline.json`'s `current` is
 bumped to 790 in the same commit as this note — a NEW ceiling, since round
 10 had already reached the previous one with zero headroom.
+
+**Twelfth crossing (790 -> 806), round 12.** A fresh Stage-2 code-reviewer,
+run against round 11's own fix commit before merge, found that round 11's
+D5 close was itself incomplete: `$diff_lines` was computed
+(`diff_lines=$(printf '%s\n' "$diff" | wc -l)`) but never surfaced anywhere
+— no `echo`, no dual-write, no re-read, and no executable statement tying
+it to `$fires`. The prose called `fires=1` "MANDATORY" once `$diff_lines`
+exceeds 100 and a new test asserted the word "mandatory" appeared nearby,
+but nothing enforced it: the model making the `fires` judgement never
+observed the number, and the round-8 governing rule this file itself states
+("a block ends at a model judgement... never at a subprocess call") means
+`$diff_lines`, computed on the near side of that exact boundary and
+consumed only in prose on the far side, needed the same dual-write/re-read
+treatment as its five siblings — the round-11 fix had reintroduced the
+rounds-4-10 shell-variable-lifetime class on the one value it itself
+introduced. HIGH, because a documented-and-tested-for control that is not
+actually implemented is worse than an acknowledged gap.
+
+Fixed: `$diff_lines` is now dual-written to `$run_dir/diff_lines`
+immediately after computation (checked, `|| STRICT-STOP`), cleared on
+re-entry alongside the other six handoff files (the `rm -f` line now clears
+seven, not five — `shipped_head` was also missing a test asserting its own
+re-entry clearing, a separate medium finding from the same round, fixed by
+extending the existing re-entry test), and re-read through a re-derived
+`run_dir` at the fires-assignment site, where it is combined with the
+judged digit via a literal executable statement,
+`[ "$diff_lines" -gt 100 ] && fires=1`, that can only raise `fires`, never
+lower a judgement that already decided 1. Also fixed in the same round: the
+"All [N] are unconditionally re-derived... regardless" claim from round 11's
+own prose was inaccurate for `shipped_head` (skipped on the
+`--review-skipped` path, where nothing reads it) — reworded to state the
+files are re-derived/rewritten "on the path that uses them"; and a weak
+mutation-probed guard (`test_step_3f_bis_record_calls_are_unit_scoped_and_checked`)
+whose `|| STRICT-STOP` check used a fixed 500-char window wide enough for
+one promote-row call's deleted guard to still pass, satisfied only by its
+neighbour's — narrowed to bound each call to the text before the NEXT
+`record` call, so each call's own guard is checked independently.
+
++16 lines (790 -> 806); `shipwright_bloat_baseline.json`'s `current` is
+bumped to 806 in the same commit as this note.

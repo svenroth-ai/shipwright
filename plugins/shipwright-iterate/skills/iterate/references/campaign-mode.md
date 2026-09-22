@@ -275,17 +275,18 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `test_campaign_step_3f_bis.py`, which scans every double-quoted
        `$run_dir/`-prefixed occurrence in both 3f-bis and 3g generically,
        not one enumerated site at a time, and does not exempt either step).
-         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head" "$run_dir/unit_worktree" "$run_dir/diff_head" "$run_dir/fires" "$run_dir/pr_json" "$run_dir/shipped_head"
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head" "$run_dir/unit_worktree" "$run_dir/diff_head" "$run_dir/fires" "$run_dir/diff_lines" "$run_dir/pr_json" "$run_dir/shipped_head"
        Clears EVERY handoff file this step writes, not `reviewed_head` alone
        (R3 doubt-round, round 4, medium: `diff_head`/`unit_worktree` are
        cross-checked downstream against the live diff/pin, so a stale value
-       surviving a re-entry is caught there — but `fires` has NO such
-       cross-check, only the fail-closed shape guard below, so a stale
-       `fires=0` surviving a re-entry after new commits enlarged the diff
-       would silently skip the cascade on a NEW, now-large diff using an OLD,
-       no-longer-applicable verdict). All five are unconditionally
-       re-derived or rewritten later in this same step regardless, so
-       clearing them up front costs nothing.
+       surviving a re-entry is caught there — but `fires`/`diff_lines` have NO
+       such cross-check, only the fail-closed shape guard below, so a stale
+       `fires=0`/`diff_lines` surviving a re-entry after new commits enlarged
+       the diff would silently skip the cascade on a NEW, now-large diff
+       using an OLD, no-longer-applicable verdict). All seven are re-derived
+       or rewritten later in this same step on the path that uses them
+       (`shipped_head` only on the `fires=1` path, which is the only path
+       that reads it), so clearing them up front costs nothing.
        `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
        wait for pin's own answer, because `worktree` is independently readable
        from `loop_state.json`'s row for this unit (the exact field
@@ -381,22 +382,30 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
          diff=$(git -C "$unit_wt" diff "$base"..."$diff_head") || STRICT-STOP
          diff_lines=$(printf '%s\n' "$diff" | wc -l)
+         echo "$diff_lines" > "$run_dir/diff_lines" || STRICT-STOP
        Fire when the runner said medium+, OR the diff sets any risk flag, OR
        `$diff_lines` exceeds 100. Only the first two clauses are a JUDGEMENT
        made by reading the diff — the line-count clause is NOT: it is computed
-       mechanically above, and `fires=1` is MANDATORY whenever `$diff_lines`
-       is over 100, never left to the same read-and-decide judgement as the
-       other two (R3 doubt-round, round 4, medium: the line-count clause was
-       always exactly computable and previously wasn't computed at all,
-       leaving a model free to misjudge or understate it on a large diff with
-       nothing to catch the error — this closes that gap for the one clause
-       that never needed judgement in the first place; the risk-flag and
-       medium+ clauses still require actually reading the diff, since neither
-       is mechanically decidable from line count alone). Once the digit is
-       decided (by this mandatory floor or by judgement), the literal next
-       command is an ACTUAL assignment of it (`fires=1` or `fires=0`), never a
-       bare `echo "$fires"` with nothing upstream ever having assigned it
-       (code-review
+       mechanically above, dual-written for the SAME reason `$fires` itself is
+       below (this is the fourth value the `fires`-judgement boundary hands
+       across, not a fifth kind of thing), and enforced by an executable
+       shell statement at the fires-assignment site below, not by a sentence
+       claiming it is enforced (code-review round 11, high: a prior draft of
+       this fix stated the floor in prose and added a test asserting the word
+       "mandatory" appeared, while `$diff_lines` itself was computed but never
+       echoed, dual-written, or read again anywhere — the model making the
+       `fires` judgement never observed the number and nothing downstream
+       could raise `fires` from it, so the "MANDATORY" claim was
+       unenforceable; this re-opened the exact rounds-4-10 shell-variable-
+       lifetime class on the one value this round's own fix introduced).
+       `fires=1` is MANDATORY whenever `$diff_lines` is over 100, never left
+       to the same read-and-decide judgement as the other two (the risk-flag
+       and medium+ clauses still require actually reading the diff, since
+       neither is mechanically decidable from line count alone). Once the
+       digit is decided (by this mandatory floor or by judgement), the
+       literal next command is an ACTUAL assignment of it (`fires=1` or
+       `fires=0`), never a bare `echo "$fires"` with nothing upstream ever
+       having assigned it (code-review
        round 5, blocking: the prior wording described the decision in prose
        and then wrote `$fires` as though an earlier line had set it — none
        had, so every unit's fires file was written EMPTY, unconditionally,
@@ -423,9 +432,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        path). Dual-write the
        fires decision as the
        literal digit just assigned — it is the third value this paragraph
-       hands across the boundary named at the top of this step:
+       hands across the boundary named at the top of this step (`$diff_lines`
+       above is the fourth). Re-read `$diff_lines` here too, through the SAME
+       re-derived `$run_dir`, and let it RAISE `fires` mechanically — a shell
+       `-gt` test, not a sentence — never lower a judgement that already
+       said 1 (code-review round 11, high: this statement is what actually
+       closes D5; the prose alone, however emphatic, is not a guard):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
-         fires=<1 or 0>   # substitute the literal digit the judgement above concluded
+         diff_lines=$(cat "$run_dir/diff_lines" 2>/dev/null); [ -n "$diff_lines" ] || STRICT-STOP
+         fires=<1 or 0>   # substitute the literal digit the risk-flag/medium+ judgement concluded
+         [ "$diff_lines" -gt 100 ] && fires=1   # mechanical floor: the judgement above may only RAISE fires, never lower it
          echo "$fires" > "$run_dir/fires" || STRICT-STOP
 
        **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
