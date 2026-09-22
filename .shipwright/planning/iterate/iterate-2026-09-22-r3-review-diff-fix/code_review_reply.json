@@ -1,33 +1,42 @@
 {
-  "section": "R3-round13-verify",
+  "section": "R3-external-review-remediation-verify",
   "verdict": "PASS",
   "review": [
     {
-      "severity": "medium",
-      "category": "architecture",
-      "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 760,
-      "finding": "WINDOW=260 is correct today but sits in a 31-char-wide valid band [234, 265): the spec row's own guard ends at 234 (floor) and the code row's neighbour guard ends at 265 (ceiling). Mutation-sensitivity margin on the --review-type code --status completed call is only 5 normalized chars -- any >=5-char shortening of campaign-mode.md's doubt-completed line silently restores the round-12 false pass.",
-      "suggestion": "Non-blocking. Next touch: scan the raw document for each record logical command (following backslash continuations) and assert each ends with || STRICT-STOP -- no tuned constant. Interim: end = min(at + WINDOW, next_record_call_at), strictly safer than either round-12's or round-13's rule alone."
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 165,
+      "finding": "_load_pin() still catches only (json.JSONDecodeError, KeyError), not (OSError, UnicodeError) -- the same class this round's fix closed in _resolve(). Pre-existing, adjacent, out of scope for this narrow fix.",
+      "suggestion": "Widen _load_pin's except tuple in a future touch of this file."
     },
     {
-      "severity": "medium",
+      "severity": "low",
       "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 384,
-      "finding": "Neither half of round 12's portability remediation (tr -d '[:space:]' at the compute site; the numeric case guard at the re-read site) has regression coverage. Reverting either leaves the suite green.",
-      "suggestion": "Add two literal assertions to test_step_3f_bis_fires_line_count_is_computed_not_judged. Note the norm() trap: '*' is stripped, so assert against \"''|[!0-9])\", not the raw \"''|*[!0-9]*)\"."
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 189,
+      "finding": "_check_pinned_worktree does raw string equality on a filesystem path with no normalization. No current call site can produce a spelling divergence (pin/ship/verify pass the identical --campaign-worktree), but this is forward-looking-only fragility.",
+      "suggestion": "Normalize before comparing, or document byte-identical spelling as the intended contract."
     },
     {
       "severity": "low",
       "category": "readability",
-      "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 425,
-      "finding": "test_step_3f_bis_rederives_run_dir_before_the_fires_write's 400-char lookback now has 5 chars of slack (measured rebuild-to-fires-write distance = 395), consumed by this round's new case-statement line. The docstring's own stated rationale for 400 (65 chars of slack) no longer holds.",
-      "suggestion": "Widen to 500 to match the sibling block test's slack at the same site, and update the docstring, or anchor structurally rather than by char count."
+      "file": "shared/tests/test_review_attribution.py",
+      "line": 561,
+      "finding": "The ship-worktree-check test's loop_state row carries a redundant review_skipped key not read by resolve_unit_identity -- the pin() kwarg is what actually matters.",
+      "suggestion": "Drop the redundant row key."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 366,
+      "finding": "verify()'s docstring enumeration of raise cases is stale after adding the worktree cross-check.",
+      "suggestion": "Add the new case to both the docstring and check_review_attribution.py's enumeration."
     }
   ],
-  "summary": "PASS. The round-12 blocking finding (an ineffective STRICT-STOP test window) is genuinely fixed -- independently reproduced all five mutation probes by hand rather than trusting the summary, and 260 holds for all five record calls. Three non-blocking findings (fragile window margins on two tests; two untested portability fixes) are quality/durability notes for the next touch of this file, not defects shipping today.",
-  "recorded_from": "ac42e075b1662f1f6",
-  "run_id": "iterate-2026-09-22-r3-review-diff-fix"
+  "summary": "PASS across three follow-up rounds remediating the external Tier-3 PR Review's findings on commit 9fabdb795: (1) _resolve() now wraps json.JSONDecodeError/OSError/UnicodeError/AttributeError/TypeError as ReviewAttributionError instead of letting them escape uncaught -- fixed across two rounds after a fresh reviewer caught the first attempt's tuple still missing UnicodeError; (2) verify()/ship() now cross-check the pin's recorded worktree against the unit's current loop_state.json resolution via a new _check_pinned_worktree(), closing a genuine gap the external reviewer found on its second BLOCK. All fixes independently confirmed red-before/green-after; all four remaining findings are low-severity and non-blocking, deferred to the next touch of this file per this campaign's established practice (round 13's own precedent). Two other external-reviewer findings (unvalidated shell interpolation of {branch}/{id}/{loop_id} in campaign-mode.md; the operator-trust-model D7 item) were rebutted in writing in the master ADR, not fixed -- accepted by the maintainer as the basis for a --admin merge override on the still-BLOCKing external check.",
+  "recorded_from": "a6b11613449023b03",
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix",
+  "verified_head": "0e052800922d090619bbb24680f6631e5cc18585"
 }

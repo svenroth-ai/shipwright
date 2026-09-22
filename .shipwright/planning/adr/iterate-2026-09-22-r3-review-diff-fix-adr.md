@@ -604,6 +604,26 @@ three findings:
   caller) confirmed red-before/green-after by temporarily neutering the
   two call sites and re-running.
 
+## External Tier-3 PR Review, round 3, and maintainer override
+
+The gate re-ran once more on the round-14c push (commit `0e05280`) and
+converged to a single blocking finding: the shell-interpolation repeat.
+Neither the `_resolve()` exception-wrapping fix nor the worktree
+cross-check fix was re-flagged — both landed cleanly. With the one
+remaining finding being the same D7 item already rebutted in writing
+above (twice, across two rounds), continuing to push further changes
+against an automated reviewer that re-derives its verdict from the diff
+each run — with no way to see a rebuttal recorded in this ADR — offers no
+further signal. The maintainer (Sven Roth) was asked directly whether to
+override the check, add validation anyway purely to satisfy it, or keep
+retrying with no code change, and chose to override: merge with
+`gh pr merge --admin --match-head-commit <sha>`, with every OTHER required
+check (lint, both test suites, security scan, anti-ratchet) confirmed
+green first, and the D7 rebuttal serving as the recorded rationale for the
+one check being bypassed. This is a one-time decision on this specific,
+already-analyzed finding for this PR — not a standing policy to bypass the
+"PR Review" gate in general.
+
 ## Rejected alternatives
 
 Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch
