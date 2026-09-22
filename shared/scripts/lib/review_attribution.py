@@ -162,7 +162,7 @@ def _load_pin(pin_path: Path, canonical_id: str, unit_id: str, *, verb: str) -> 
         # still fails closed either way, but the traceback was uncaught).
         if not isinstance(pinned, dict) or "reviewed_head" not in pinned:
             raise KeyError("reviewed_head")
-    except (json.JSONDecodeError, KeyError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError, KeyError) as exc:
         raise ReviewAttributionError(
             f"pin file at {pin_path} is malformed or missing 'reviewed_head': {exc}") from exc
     if pinned.get("unit_id") != canonical_id:
@@ -249,8 +249,17 @@ def resolve_unit_identity(state: dict, unit_id: str, *, campaign_worktree: str) 
     if unit is None:
         raise ReviewAttributionError(f"unit {unit_id!r} not found in loop_state")
     worktree = unit.get("worktree") or campaign_worktree
+    if not isinstance(worktree, str):
+        # External Tier-3 review, blocking: truthiness alone let a numeric
+        # or otherwise non-string `worktree` (a malformed loop_state row)
+        # through to a later `subprocess.run(..., cwd=worktree)` call in
+        # `pin`/`verify`/`ship`, raising an uncaught `TypeError` instead of
+        # this documented `ReviewAttributionError` — validate the TYPE here,
+        # before any git call, not just its truthiness.
+        raise ReviewAttributionError(
+            f"unit {unit_id!r} has a non-string worktree ({worktree!r}) recorded in loop_state")
     branch = unit.get("branch")
-    if not branch:
+    if not isinstance(branch, str) or not branch:
         raise ReviewAttributionError(f"unit {unit_id!r} has no branch recorded in loop_state")
     attempt = unit.get("attempt")
     if not isinstance(attempt, int) or isinstance(attempt, bool):

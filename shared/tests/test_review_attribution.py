@@ -567,3 +567,52 @@ def test_ship_refuses_a_pin_whose_recorded_worktree_no_longer_matches_the_curren
     with pytest.raises(ReviewAttributionError, match="worktree has moved"):
         ship(state_path, "N", project_root=str(work), campaign_worktree=str(work),
              loop_id="r3-test", shipped_head=pinned["reviewed_head"])
+
+
+def test_resolve_unit_identity_refuses_a_non_string_worktree(git_origin_repo):
+    """External Tier-3 review (round 3, PR #787): `resolve_unit_identity`
+    only checked `worktree`'s truthiness, so a malformed loop_state row with
+    a numeric `worktree` passed straight through to a later
+    `subprocess.run(..., cwd=worktree)` call in `pin`/`verify`/`ship`,
+    raising an uncaught `TypeError` instead of this documented
+    `ReviewAttributionError`."""
+    state = {"units": [{"id": "P", "branch": "main", "worktree": 12345, "attempt": 0}]}
+    with pytest.raises(ReviewAttributionError, match="non-string worktree"):
+        resolve_unit_identity(state, "P", campaign_worktree="/fallback")
+
+
+def test_resolve_unit_identity_refuses_a_non_string_branch(git_origin_repo):
+    state = {"units": [{"id": "Q", "branch": 12345, "attempt": 0}]}
+    with pytest.raises(ReviewAttributionError, match="has no branch recorded"):
+        resolve_unit_identity(state, "Q", campaign_worktree="/fallback")
+
+
+def test_pin_refuses_a_malformed_worktree_type_before_any_git_call(git_origin_repo):
+    """Integration-level proof (not just the unit-level `resolve_unit_identity`
+    tests above): `pin()`'s first git call is `cwd=worktree`, which would
+    raise an uncaught `TypeError` pre-fix — confirm the whole call chain now
+    fails closed with `ReviewAttributionError` instead."""
+    work, _ = git_origin_repo
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "R", "branch": "main", "worktree": 999, "attempt": 0}])
+
+    with pytest.raises(ReviewAttributionError, match="non-string worktree"):
+        pin(state_path, "R", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+
+def test_load_pin_wraps_invalid_utf8_in_the_pin_file_as_review_attribution_error(git_origin_repo):
+    """External Tier-3 review (round 3, PR #787): `_load_pin` caught only
+    `(json.JSONDecodeError, KeyError)`, missing `(OSError, UnicodeError)` —
+    the same class `_resolve`'s own fix (round 14b) already closed for
+    `loop_state.json`. An invalid-UTF-8 `review_pin.json` escaped uncaught."""
+    work, _ = git_origin_repo
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "S", "branch": "main", "attempt": 0}])
+    pin(state_path, "S", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+    pin_path = work / ".shipwright" / "runs" / "r3-test" / "S" / "a0" / "review_pin.json"
+    pin_path.write_bytes(b'{"unit_id": "S", "reviewed_head": "m\xe9in"}')
+
+    with pytest.raises(ReviewAttributionError, match="is malformed or missing"):
+        verify(state_path, "S", project_root=str(work), campaign_worktree=str(work),
+               loop_id="r3-test", against="reviewed_head")

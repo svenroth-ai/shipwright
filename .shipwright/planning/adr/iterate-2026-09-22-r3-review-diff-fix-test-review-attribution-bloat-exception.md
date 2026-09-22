@@ -1,4 +1,4 @@
-# Bloat exception — `shared/tests/test_review_attribution.py` raised to 470-LOC
+# Bloat exception — `shared/tests/test_review_attribution.py` raised above the 300-LOC limit (current: see `shipwright_bloat_baseline.json`)
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -84,6 +84,17 @@ pinning a unit, then changing the row's `worktree` field in
 `ReviewAttributionError` with `"worktree has moved"`. Confirmed red
 against the pre-fix code (temporarily neutering the two call sites),
 green after.
+
+### Round 3 growth (569 -> 618)
+
+Added three regression tests for round 3's genuine fixes (sibling
+implementation ADR): `resolve_unit_identity`'s new type checks for a
+non-string `worktree` and a non-string `branch` (unit-level), a
+`pin()`-level integration test proving the whole call chain now fails
+closed instead of raising an uncaught `TypeError` from a `subprocess.run`
+call, and `_load_pin`'s widened except tuple (invalid-UTF-8
+`review_pin.json`). Confirmed all four red-before/green-after by
+temporarily reverting both fixes and re-running the affected tests.
 
 ## Consequences
 

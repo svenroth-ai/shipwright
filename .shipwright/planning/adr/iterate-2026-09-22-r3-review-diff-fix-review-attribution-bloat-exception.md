@@ -1,4 +1,4 @@
-# Bloat exception — `shared/scripts/lib/review_attribution.py` raised to 458-LOC
+# Bloat exception — `shared/scripts/lib/review_attribution.py` raised above the 300-LOC limit (current: see `shipwright_bloat_baseline.json`)
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -103,6 +103,20 @@ file, even though that data was already sitting right there. Added
 `_check_pinned_worktree()`, called from both `verify()` and `ship()`
 immediately after `_load_pin()`, raising `ReviewAttributionError` when the
 row's current `worktree` disagrees with the pinned one.
+
+### Round 3 growth (500 -> 509)
+
+A third external Tier-3 pass found two more genuine, independently-real
+gaps: `_load_pin()` still caught only `(json.JSONDecodeError, KeyError)`,
+missing `(OSError, UnicodeError)` for the same reason `_resolve()`'s own
+fix closed it a round ago — widened to match. And
+`resolve_unit_identity()` validated `worktree`/`branch` by truthiness
+only, so a malformed loop_state row (e.g. a numeric `worktree`) passed
+straight through to a later `subprocess.run(..., cwd=worktree)` call in
+`pin`/`verify`/`ship`, raising an uncaught `TypeError` instead of
+`ReviewAttributionError`; added an explicit `isinstance(..., str)` check
+for both fields, raised before any git call. Confirmed both red-before
+(temporarily reverting each fix) / green-after.
 
 ## Consequences
 
