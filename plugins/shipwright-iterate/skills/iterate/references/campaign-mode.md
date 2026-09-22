@@ -521,10 +521,11 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        set BEFORE the a/b/c spawns above and this block runs AFTER them —
        re-derive all three here, exactly as 3g does below, rather than trust
        shell state across that boundary (R3 doubt-round, round 2, medium:
-       `run_dir` and `pr_url` cross only the a/b/c SPAWN boundary;
-       `$diff_head`/`$fires`/`$pr_json` cross the earlier `fires`-judgement
-       boundary and are handled by the dual-writes above; `$unit_wt` crosses
-       BOTH, which is why it is re-read from its file here as well):
+       `run_dir`/`pr_url` are re-derived from scratch here, so which boundary
+       they crossed is moot; `$diff_head`/`$fires`/`$pr_json` cross the
+       earlier `fires`-judgement boundary and are handled by the dual-writes
+       above; `$unit_wt` crosses BOTH, which is why it is re-read from its
+       file here as well):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)

@@ -155,6 +155,15 @@ would need a real block-segmentation rework, explicitly deferred.
 `shipwright_bloat_baseline.json`'s `current` is bumped to 696 in the same
 commit as this note.
 
+**Round 10 growth (696 -> 697).** Two independent fresh reviewers (a
+spec-reviewer and a code-reviewer) both flagged that round 9's own wording
+fix left its mirror in this file's `test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns`
+docstring uncorrected — it still listed `$unit_wt` in the fires-only group
+after `campaign-mode.md` was already fixed to say `$unit_wt` crosses both
+boundaries, so the two surfaces disagreed. Corrected in place; net +1 line
+from the added round-9-attribution clause. `shipwright_bloat_baseline.json`'s
+`current` is bumped to 697 in the same commit as this note.
+
 ## Consequences
 
 No downstream consumer reads this file except pytest itself and the

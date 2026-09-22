@@ -559,13 +559,14 @@ def test_step_3f_bis_records_shipped_head_after_the_record_commit_lands():
 
 def test_step_3f_bis_rederives_run_dir_and_pr_url_after_the_cascade_spawns():
     """Doubt-round, round 2, medium: `run_dir` and `pr_url` were set BEFORE
-    the a/b/c review-cascade spawns and this block runs AFTER them — they
-    cross the a/b/c SPAWN boundary specifically (a separate crossing from
-    `$unit_wt`/`$diff_head`/`$fires`/`$pr_json`, which cross the earlier
-    `fires`-judgement boundary and are handled by the dual-writes above).
-    Shell variables do not survive across separate tool calls, so this block
-    must re-derive both explicitly rather than trust the earlier
-    assignment."""
+    the a/b/c review-cascade spawns and this block runs AFTER them, so they
+    are re-derived from scratch here regardless of which boundary they
+    crossed. `$diff_head`/`$fires`/`$pr_json` cross the earlier
+    `fires`-judgement boundary and are handled by the dual-writes above;
+    `$unit_wt` crosses BOTH (round 9 fix — it was previously miscategorized
+    as fires-only here). Shell variables do not survive across separate tool
+    calls, so this block must re-derive `run_dir`/`pr_url` explicitly rather
+    than trust the earlier assignment."""
     step = _step_3f_bis()
     assert 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"' in step, (
         "3f-bis must re-derive run_dir after the cascade spawns, not reuse a "
