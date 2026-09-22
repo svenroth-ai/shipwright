@@ -1,0 +1,1 @@
+Campaign review step 3f-bis now pins and verifies each sub-iterate's own reviewed diff by resolved worktree/branch (lib/review_attribution.py), closing a misattribution risk R5a's per-unit worktrees would otherwise reintroduce

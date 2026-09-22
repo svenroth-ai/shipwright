@@ -194,6 +194,9 @@ def git_origin_repo(tmp_path):
     work = tmp_path / "work"
     _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
     _git(tmp_path, "clone", str(origin), str(work))
+    # Local identity: callers' own bare `git commit` needs one on CI runners.
+    _git(work, "config", "user.email", "iso@test.invalid")
+    _git(work, "config", "user.name", "Iso Test")
     (work / "README.md").write_text("hello\n", encoding="utf-8")
     shipwright_dir = work / ".shipwright"
     shipwright_dir.mkdir()
