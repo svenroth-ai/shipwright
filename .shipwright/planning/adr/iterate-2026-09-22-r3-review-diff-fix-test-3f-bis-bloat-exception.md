@@ -1,4 +1,4 @@
-# Bloat exception — `shared/tests/test_campaign_step_3f_bis.py` raised to 540-LOC
+# Bloat exception — `shared/tests/test_campaign_step_3f_bis.py` (first crossing: raised to 540-LOC; see the latest entry below for the current ceiling)
 
 - **Status:** accepted
 - **Date:** 2026-09-22
@@ -23,8 +23,9 @@ this sub-iterate (spec-review rounds 1/2/4/5, code-review rounds
 and each fix shipped with its own mutation-probed test in this file, per
 this repo's own stated convention ("Each guard here has been
 mutation-probed: delete its subject from the step and it fails" — this
-file's own module docstring). The file is now 540 lines against the
-300-line default.
+file's own module docstring). The file was 540 lines against the 300-line
+default at this ADR's first crossing; see the latest entry below for the
+current line count.
 
 ## Ousterhout Argument
 
@@ -94,6 +95,23 @@ double-backslash line-continuation regression (an independent code-review
 finding, same round) that is invisible to every existing substring-matching
 assertion in this file. `shipwright_bloat_baseline.json`'s `current` is
 bumped to 585 in the same commit as this note.
+
+**Post-merge-cycle growth (585 -> 659), round 7.** A fresh code-reviewer
+found a third consecutive REJECT on the same `run_dir` re-derivation class
+(round 5 covered one read site, round 6 covered the `fires` write) —
+each fix had targeted only the one site a reviewer had just named. This
+round adds `test_step_3f_bis_every_run_dir_use_is_locally_rederived`, a
+structural test that scans every double-quoted `$run_dir/`-prefixed
+occurrence in 3f-bis and 3g generically (not one enumerated site at a
+time) and asserts each has a fresh `run_dir=` rederivation within a
+lookback window, so a future addition cannot recreate this same gap a
+fourth time without also tripping this test. It also widens the
+`fires`-write test's lookback window (200 -> 400 chars, for consistency
+with its sibling read-site test) and widens the double-backslash
+line-continuation guard from `campaign-mode.md` alone to the whole
+`skills/iterate/references/*.md` + `agents/*.md` tree.
+`shipwright_bloat_baseline.json`'s `current` is bumped to 659 in the same
+commit as this note.
 
 ## Consequences
 

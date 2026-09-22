@@ -403,21 +403,76 @@ def test_step_3f_bis_rederives_run_dir_before_the_fires_write():
     """Spec-review round 6 (blocking): round 5's run_dir re-derivation rule
     covered every READ site but not the fires WRITE site. The fires judgement
     itself is what forces the fresh Bash call the step's own top-of-block
-    warning names, so `$run_dir` from the earlier block (set once, ~97 lines
-    above) is gone by the time `echo "$fires" > "$run_dir/fires"` runs too —
-    the write silently targeted `/fires`, and the fail-closed re-read guard
-    then STRICT-STOPped every unit on the happy path. Delete the run_dir=
-    rebuild immediately preceding the fires write and this fails."""
+    warning names, so `$run_dir` from the block that resolves `$unit_wt` and
+    computes the diff is gone by the time `echo "$fires" > "$run_dir/fires"`
+    runs too — the write silently targeted `/fires`, and the fail-closed
+    re-read guard then STRICT-STOPped every unit on the happy path. Delete
+    the run_dir= rebuild immediately preceding the fires write and this
+    fails. Lookback window matches the sibling read-site test's 400 chars
+    (code-review round 6-verify, low: this test's original 200-char window
+    left only ~65 chars of slack before a comment-length change would
+    spuriously redden it)."""
     step = _step_3f_bis()
     rederive = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
     fires_write_at = step.find('echo "$fires" > "$run_dir/fires"')
     assert fires_write_at >= 0, "3f-bis must dual-write the fires decision"
-    preceding = step[max(0, fires_write_at - 200):fires_write_at]
+    preceding = step[max(0, fires_write_at - 400):fires_write_at]
     assert rederive in preceding, (
         "the fires write must be preceded by a fresh run_dir= re-derivation "
         "within the same block, not a bare write through a possibly-empty "
         "$run_dir carried from an earlier shell call"
     )
+
+
+def test_step_3f_bis_every_run_dir_use_is_locally_rederived():
+    """Spec-review/code-review rounds 5-7: three consecutive rounds each
+    fixed the one `$run_dir` use a reviewer had just named (the fires write,
+    then the promote-rows/ship/REJECT-path re-reads), and each time a
+    DIFFERENT, equally un-re-derived use turned out to have the identical
+    gap — because "prove this site is safely in the same shell call as its
+    governing `run_dir=`" is not a claim a prose-matching test can verify.
+    The rule this test enforces is therefore unconditional: EVERY site in
+    3f-bis or 3g that reads or writes a `$run_dir/`-prefixed path must have
+    a `run_dir=` re-derivation within a short lookback window, with no
+    site exempted by an argument that it is "probably still in the same
+    call". Scans generically (every double-quoted $run_dir/ occurrence),
+    not one enumerated site at a time, so a future addition cannot recreate
+    this same gap a fourth time without also tripping this test."""
+    rederive = 'run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"'
+    usage = re.compile(r'"\$run_dir/')
+    # 3f-bis covers pin-scope writes, the pin-block re-read, promote-rows,
+    # the ship block (incl. the bounded wait) and the REJECT path; 3g is a
+    # separate, much smaller step with only its own three reads. A single
+    # shared minimum would silently pass if either step's scan broke.
+    minimums = {"3f-bis": 8, "3g": 3}
+    # 3f-bis's step body contains genuine spawn boundaries mid-step (the
+    # `fires` model judgement, the a/b/c review-cascade dispatch), so its
+    # lookback stays a short, tight window: a use far from ITS OWN nearest
+    # rederivation is exactly the defect this test exists to catch. 3g has
+    # no such boundary anywhere in its body — the whole step is one Bash
+    # call with a single leading `run_dir=` — so its lookback is unbounded
+    # (from the start of the step) rather than a short window, matching
+    # that different shape instead of forcing a redundant re-derivation
+    # line onto a step that has nowhere for state to be lost in between.
+    lookbacks = {"3f-bis": 500, "3g": None}
+    for step, label in ((_step_3f_bis(), "3f-bis"), (_step_3g(), "3g")):
+        positions = [m.start() for m in usage.finditer(step)]
+        assert len(positions) >= minimums[label], (
+            f"expected at least {minimums[label]} $run_dir/-prefixed usages "
+            f"in {label} — got {len(positions)}, which means the scan itself "
+            "is broken, not that the step shrank"
+        )
+        window = lookbacks[label]
+        for pos in positions:
+            start = 0 if window is None else max(0, pos - window)
+            preceding = step[start:pos]
+            assert rederive in preceding, (
+                f"{label}: the $run_dir/-prefixed use at offset {pos} must be "
+                "preceded within the same block by a fresh run_dir= "
+                "re-derivation — a bare use through a possibly-stale $run_dir "
+                "carried from an earlier shell call is exactly the defect "
+                "class that drew three consecutive REJECTs on this step"
+            )
 
 
 def test_step_3f_bis_dual_writes_and_rereads_pr_json_across_the_boundary():
@@ -565,7 +620,7 @@ def test_no_doc_still_calls_browser_verify_f2():
     )
 
 
-def test_campaign_mode_doc_has_no_double_backslash_line_continuations():
+def test_skill_iterate_docs_have_no_double_backslash_line_continuations():
     """Code-review round 6: `--force \\\\` / `--recorded-by spec-reviewer \\\\`
     in the Stage-1-REJECT `record` invocation used a DOUBLE backslash as a
     line continuation. In shell, `\\\\` is an escaped literal backslash, not a
@@ -574,12 +629,31 @@ def test_campaign_mode_doc_has_no_double_backslash_line_continuations():
     dispositionless `not_run` indistinguishable from "the cascade never ran".
     This bug class is invisible to every prose-matching assertion above
     (they all match substrings, not line endings), so it needs its own,
-    doc-wide guard rather than a step-scoped one."""
-    text = CAMPAIGN_DOC.read_text(encoding="utf-8")
-    offenders = [
-        line for line in text.splitlines() if re.search(r"\\\\\s*$", line)
-    ]
+    doc-wide guard rather than a step-scoped one.
+
+    Code-review round 6-verify, low: the original guard scoped to
+    `campaign-mode.md` alone, but every runtime-prompt markdown file under
+    `skills/iterate/references/` and `agents/` carries the same executable
+    multi-line shell snippets and is equally invisible to substring
+    assertions if this class recurs there. Widened to the whole tree; zero
+    offenders exist today."""
+    skill_dir = CAMPAIGN_DOC.parents[1]  # .../skills/iterate
+    iterate_root = REPO_ROOT / "plugins" / "shipwright-iterate"
+    offenders: dict[str, list[str]] = {}
+    for pattern, base in (
+        ("references/*.md", skill_dir),
+        ("agents/*.md", iterate_root),
+    ):
+        for md in base.glob(pattern):
+            bad = [
+                line
+                for line in md.read_text(encoding="utf-8").splitlines()
+                if re.search(r"\\\\\s*$", line)
+            ]
+            if bad:
+                offenders[str(md.relative_to(REPO_ROOT))] = bad
     assert not offenders, (
-        "campaign-mode.md must not use a double backslash as a line "
-        f"continuation (real continuation is a single trailing \\): {offenders}"
+        "no skills/iterate references or agent doc may use a double "
+        f"backslash as a line continuation (real continuation is a single "
+        f"trailing \\): {offenders}"
     )

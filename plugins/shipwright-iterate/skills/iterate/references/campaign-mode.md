@@ -247,15 +247,30 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        `$run_dir/` the moment they are known and re-read at the top of the pin
        block, rather than trusted to survive as shell variables from here to
        there. `$run_dir` itself is NOT one of the values this dual-write
-       protects — it is a shell variable exactly like the others, so every
-       block below that reads one of these files re-derives
-       `run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"` first, from
-       the same `{project_root}`/`{loop_id}`/`{id}` template placeholders
-       every spawn is given fresh — the dual-write files are useless if the
-       path to find them is itself lost the same way (code-review round 5,
-       blocking: round 4 dual-wrote the values but re-read them through an
+       protects — it is a shell variable exactly like the others, and
+       genuine boundaries here are real: a model judgement (`fires`, below)
+       or an Agent-tool spawn (the a/b/c cascade) each force a fresh Bash
+       call with an empty environment (code-review round 5, blocking:
+       round 4 dual-wrote the values but re-read them through an
        un-re-derived `$run_dir`, so the fix did not survive the exact
-       boundary it was built for).
+       boundary it was built for). Proving WHICH specific reads and writes
+       are safely same-call and which cross a boundary is exactly the
+       reasoning that drew three consecutive REJECTs on this class
+       (spec-review/code-review rounds 5-7): each fix correctly re-derived
+       `run_dir` at the one site a reviewer had just named, then a
+       DIFFERENT site — equally un-provably-same-call, just not yet
+       flagged — turned out to have the identical gap. **The rule from here
+       on is therefore not "re-derive after a proven boundary" but
+       "re-derive immediately before every single site that reads or
+       writes a `$run_dir/`-prefixed path, with no exception argued from
+       same-call reasoning"** — one extra template-string line costs
+       nothing (it is not a subprocess call, just a local reassignment to
+       the same value), and a rule with no exceptions is the only form of
+       this rule a mechanical test can actually enforce (see
+       `test_step_3f_bis_every_run_dir_use_is_locally_rederived` in
+       `test_campaign_step_3f_bis.py`, which scans every double-quoted
+       `$run_dir/`-prefixed occurrence in this step generically, not one
+       enumerated site at a time).
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head"
        `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
        wait for pin's own answer, because `worktree` is independently readable
@@ -286,8 +301,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            '[.units[]? | select(((.id? // "")|ascii_downcase)==($id|ascii_downcase)) | .worktree] | first // empty' \
            "{project_root}/.shipwright/loop_state.json") || STRICT-STOP
          [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          echo "$unit_wt" > "$run_dir/unit_worktree" || STRICT-STOP
          pr_json=$(cd "$unit_wt" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          echo "$pr_json" > "$run_dir/pr_json" || STRICT-STOP
          pr_url=$(jq -r .url <<<"$pr_json")
          [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # no PR = nothing to review or merge
@@ -328,6 +345,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        for `diff_head==HEAD`, which fails OPEN (`fires=0`, cascade skipped,
        unit merges unreviewed — code-review round 4, low):
          diff_head=$(git -C "$unit_wt" rev-parse HEAD)
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          echo "$diff_head" > "$run_dir/diff_head" || STRICT-STOP
          base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
          diff=$(git -C "$unit_wt" diff "$base"..."$diff_head")
@@ -351,14 +369,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        doubt-round, medium: the two resolved the tree independently with no
        equality check, so a divergence would let the pin certify a diff nobody
        reviewed — the exact bug R3 exists to prevent). The trigger judgement
-       above is what forces the fresh Bash call the top-of-step warning names,
-       so `$run_dir` from the earlier block is gone here too — the WRITE side
-       needs the same re-derivation the READ side already gets, not just the
-       value being written (spec-review round 6, blocking: round 5 fixed
-       every re-read site but left this one write dereferencing the stale
-       `$run_dir` from the earlier block, 97 lines up, so the write itself
-       silently targeted `/fires` and the fail-closed guard below STRICT-STOPped
-       every unit on the happy path). Dual-write the fires decision as the
+       above is what forces the fresh Bash call the top-of-step warning names
+       — this is the group-(1)/group-(2) boundary named above — so `$run_dir`
+       from the block that resolves `$unit_wt` and computes the diff is gone
+       here too — the WRITE side needs the same re-derivation the READ side
+       already gets, not just the value being written (spec-review round 6,
+       blocking: round 5 fixed every re-read site but left this one write
+       dereferencing the stale `$run_dir` from that earlier group, so the
+       write itself silently targeted `/fires` and the fail-closed guard
+       below STRICT-STOPped every unit on the happy path). Dual-write the
+       fires decision as the
        literal digit just assigned — it is the third value this paragraph
        hands across the boundary named at the top of this step:
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
@@ -527,11 +547,13 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
            --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
            --project-root "{project_root}" --campaign-worktree "{project_root}" \
            --loop-id "{loop_id}" --shipped-head "$shipped_head" || STRICT-STOP
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          echo "$shipped_head" > "$run_dir/reviewed_head" || STRICT-STOP
 
        **This push restarts CI**, so 3g must watch THIS head. Wait for the PR
        object to catch up — BOUNDED, because an unbounded wait is a third
        outcome the loop has no name for (neither delivered nor stopped):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          for i in $(seq 1 60); do
            [ "$(gh pr view "$pr_url" --json headRefOid -q .headRefOid)" = "$(cat "$run_dir/reviewed_head")" ] && break
            sleep 5
@@ -551,9 +573,9 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        parent is not `reviewed_head`, so `ship` STRICT-STOPs after the push,
        leaving a `completed` record on a diff nobody actually reviewed). The
        repair path is never "commit a fix here" — it is restarting 3f-bis
-       from the top (the `rm -f "$run_dir/reviewed_head"` at this step's own
-       start, re-diff, re-pin, re-run the cascade on the fixed tree) so the
-       record and the reviewed diff agree again.
+       from the top (the `rm -f` of the legacy `reviewed_head` file at this
+       step's own start, re-diff, re-pin, re-run the cascade on the fixed
+       tree) so the record and the reviewed diff agree again.
 
        SHIP the REJECT before stopping, or the durable record stays the runner's
        `not_run` and the left-open PR reads as merely unreviewed rather than

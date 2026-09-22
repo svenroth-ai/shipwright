@@ -1,64 +1,56 @@
 {
-  "section": "R3-round5-verify",
+  "section": "R3-round6-verify",
   "verdict": "REJECT",
   "review": [
     {
-      "severity": "high",
+      "severity": "medium",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 357,
-      "finding": "Matches independent spec-reviewer finding: the fires dual-write dereferences $run_dir without re-deriving it -- the N1 defect moved from read side to write side. run_dir last assigned at L259; the fires judgement forces a fresh Bash call (L243-246) before pin runs, so $run_dir is empty at L357's echo. Fails closed (L405 STRICT-STOPs) but halts every unit on the happy path. IN PROGRESS via round-6 fix fork.",
-      "suggestion": "Insert run_dir= rebuild immediately before fires=1 at L356; extend the round-5 rule to cover writes, not just reads; extend the test to assert this specific site."
+      "line": 359,
+      "finding": "This round reintroduces a hardcoded line-distance ('$run_dir from the earlier block, 97 lines up') -- the exact anti-pattern this file's own bloat-exception ADR already recorded as FIXED in round 5 (the hardcoded 'line 243's rm -f' was reworded to describe the command instead). Also already factually wrong: run_dir is last assigned at :259, fires write at :366 -- 107 lines, not 97 (drift from this round's own +9 lines, precisely what the round-5 finding predicted). Same stale number echoed in the test docstring.",
+      "suggestion": "Replace '97 lines up' with a command-descriptive phrase (e.g. 'from the block that resolves $unit_wt above'). Same edit in test_campaign_step_3f_bis.py:406."
     },
     {
       "severity": "medium",
       "category": "correctness",
       "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 559,
-      "finding": "NOT yet in round-6 scope, must add: the Stage-1-REJECT record invocation uses DOUBLE backslashes as line continuations (--force \\\\ at L559, --recorded-by spec-reviewer \\\\ at L560). In shell, \\\\ is an escaped literal backslash, NOT a continuation -- the newline terminates the command, silently dropping --recorded-by and --disposition. These are the ONLY two \\\\-terminated lines in the entire skills/iterate tree (every other multi-line command uses a single \\). The dropped --disposition is exactly what the surrounding prose says must not be lost -- without it the durable record is a dispositionless not_run, indistinguishable from 'the cascade never ran'.",
-      "suggestion": "Change both \\\\ to a single \\. Add a test asserting no \\\\$ occurs in campaign-mode.md, since this class is invisible to every existing prose guard. MUST be added to round-6 fix scope."
-    },
-    {
-      "severity": "medium",
-      "category": "correctness",
-      "file": ".shipwright/agent_docs/decision-drops/iterate-2026-09-22-r3-review-diff-fix_001.json",
-      "line": 7,
-      "finding": "NOT yet in round-6 scope, must add: the decision-drop's `decision` field still reads 'New lib/review_attribution.py (pin/verify, FATAL-on-error)' -- stale, despite the ADR/architecture.md/CLI docstring all being swept in round 5. The drop is the MOST durable record (folds into decision_log.md at release), so this staleness will re-emerge in the shipped decision log.",
-      "suggestion": "Update the drop's decision field to 'pin/ship/verify', matching architecture.md:536. MUST be added to round-6 fix scope."
-    },
-    {
-      "severity": "low",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 402,
-      "finding": "unit_worktree re-read is the only one of four boundary-crossing re-reads that doesn't fail closed -- falls back to {project_root} instead. Since pin's own fallback is identically {project_root}, a genuinely lost $run_dir produces unit_wt==pin_wt and the L425 equality check passes -- the loss is invisible to the check added to detect it. Same silent fallback at L471/494/563.",
-      "suggestion": "Since the L289 write is now || STRICT-STOP-guarded, an absent/empty file at re-read time can only mean the boundary ate $run_dir -- STRICT-STOP there instead of falling back; keep the documented pre-R2 fallback only at the original jq-lookup site (L288) where it's actually load-bearing. Optional for round-6 if time allows; not blocking."
-    },
-    {
-      "severity": "low",
-      "category": "correctness",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 521,
-      "finding": "echo \"$shipped_head\" > \"$run_dir/reviewed_head\" is the only write in the ship block with no || STRICT-STOP, despite the step asserting 'every command is CHECKED' and this same round adding the guard to every other dual-write.",
-      "suggestion": "Append || STRICT-STOP, matching L289/291/331/357. Cheap, include in round-6 if convenient."
+      "line": 289,
+      "finding": "THIRD CONSECUTIVE ROUND on this class. The write-side re-derivation rule was applied to only 1 of 4 write sites. Round 6 states the general principle ('the WRITE side needs the same re-derivation the READ side already gets') but only honours it at the fires write. Three other writes still dereference the stale $run_dir from :259: :289 (unit_worktree), :291 (pr_json), :331 (diff_head). Two reads inside the bounded CI wait block do the same through $run_dir set at :502: :536 and :539. Worst: :289's silent {project_root} fallback on re-read (rather than STRICT-STOP) means the pin equality check only catches it post-R5a. Neither existing test covers any of these -- the read-site test scans only unit_worktree reads, the round-6 test only the fires write.",
+      "suggestion": "Do NOT patch one more site narrowly. AUDIT every `\"$run_dir/` occurrence in 3f-bis and 3g (both reads and writes) and confirm EACH is immediately preceded by a run_dir= rebuild, OR is provably inside the same shell call as the block that sets it (state that invariant explicitly if so, since the doc currently asserts the broader universal rule). Widen the test to scan every `$run_dir/` occurrence generically rather than enumerating specific ones, so a future site can't recreate this same gap a fourth time."
     },
     {
       "severity": "low",
       "category": "architecture",
-      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
-      "line": 502,
-      "finding": "record writes reviews.json under --project-root {project_root}, but the add/commit/push runs git -C \"$unit_wt\" with the relative path -- pre-R5a latent (same tree), post-R5a a real cross-tree mismatch (git add would fail on a nonexistent path; || STRICT-STOP is on commit, not add, so a failed add falls through silently).",
-      "suggestion": "Non-blocking for R3 (pre-R5a latent) -- add a spec/plan note flagging this for R5a's attention rather than changing behavior now. Do not attempt a functional fix in this round; scope creep risk."
+      "file": "shared/tests/test_campaign_step_3f_bis.py",
+      "line": 568,
+      "finding": "The new double-backslash guard is scoped to campaign-mode.md alone, while the bug class spans 'the entire skills/iterate tree' per the finding that motivated it. sub-iterate-runner.md, iteration-reviews.md, campaign-worktree.md carry equally executable multi-line shell snippets.",
+      "suggestion": "Glob the check over plugins/shipwright-iterate/**/*.md (or at minimum skills/iterate/references/*.md + agents/*.md). Currently zero offenders tree-wide, lands green immediately."
     },
     {
       "severity": "low",
-      "category": "test-coverage",
+      "category": "readability",
+      "file": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md",
+      "line": 1,
+      "finding": "Stale ADR heading (same class as round-4 finding N7 for the sibling ADR): H1 still says 'raised to 540-LOC' while the round-6 addendum and baseline both say 585; body also says 'now 540 lines' / 'raised to 540' in two more spots.",
+      "suggestion": "Apply the sibling ADR's fix: '...current ceiling in the latest entry below', soften the two inline number restatements to reference the addendum instead."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": ".shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md",
+      "line": 124,
+      "finding": "The pin/ship/verify sweep missed one occurrence in the durable ADR: the Ousterhout Argument still says 'the pin/verify field semantics'.",
+      "suggestion": "'the pin/ship/verify field semantics'. One word, durable record."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
       "file": "shared/tests/test_campaign_step_3f_bis.py",
-      "line": 319,
-      "finding": "The round's mkdir -p, || STRICT-STOP on each dual-write, and the jq first-match guard have no mutation-probed test -- deletable without a red, same class as the N4 gaps this file was grown to close.",
-      "suggestion": "Add one test asserting mkdir -p \"$run_dir\" at the top of 3f-bis and that each echo ... > \"$run_dir/...\" is followed by || strict-stop. Include in round-6 if time allows."
+      "line": 415,
+      "finding": "New fires test uses a 200-char lookback vs its sibling read-site test's 400 -- only ~65 chars of slack before a comment-length change would spuriously redden it. Cannot produce a false green, cosmetic only.",
+      "suggestion": "Use 400 for consistency."
     }
   ],
-  "recorded_from": "ae19be8edbfea1ece",
+  "recorded_from": "a70e47808c489b1ff",
   "run_id": "iterate-2026-09-22-r3-review-diff-fix"
 }

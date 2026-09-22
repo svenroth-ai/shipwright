@@ -121,7 +121,7 @@ new pin call is exactly a step's *existence and exact trigger* — under what
 condition `--review-skipped` is passed, and that it runs unconditionally —
 which belongs inline for the same reason the trigger conditions for the
 review cascade itself already do. The underlying mechanism (worktree/branch
-resolution, the pin/verify field semantics, the fallback rule) is fully
+resolution, the pin/ship/verify field semantics, the fallback rule) is fully
 delegated to `shared/scripts/lib/review_attribution.py`'s own docstring and
 `R3-review-diff-fix.md`'s spec — this diff does not re-explain either.
 
@@ -421,3 +421,22 @@ in the Stage-1-REJECT `record` invocation that silently dropped
 `\`), and a missing `|| STRICT-STOP` on the ship-block's legacy
 `reviewed_head` write, for consistency with every sibling dual-write this
 campaign added `|| STRICT-STOP` to. +9 lines (669 -> 678).
+
+**Seventh crossing (678 -> 700), round 7.** Rounds 5-6 each re-derived
+`run_dir` at only the one site a reviewer had just named, and each time a
+different, equally un-guarded site turned out to have the identical gap —
+a third consecutive REJECT on this class. This round replaced the
+site-by-site rule with an unconditional one: re-derive `run_dir`
+immediately before every single site that reads or writes a
+`$run_dir/`-prefixed path, with no exception argued from same-call
+reasoning, since the extra rebuild line is a cost-free local reassignment.
+Added the missing rebuild at five previously-unguarded sites (the
+`unit_worktree` write, the `pr_json` write, the `diff_head` write, the
+ship-block's `reviewed_head` write, and the bounded CI-wait loop's two
+reads) and rewrote the governing rule paragraph to state the
+unconditional policy instead of arguing boundary-by-boundary. Also fixed
+a stale "97 lines up" line-distance claim in the `fires` paragraph
+(replaced with a description of the source block instead of a specific
+line count that goes wrong the moment either block is edited). +22 lines
+(678 -> 700); `shipwright_bloat_baseline.json`'s `current` is bumped to
+700 in the same commit as this note.

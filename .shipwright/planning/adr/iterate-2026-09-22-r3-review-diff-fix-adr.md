@@ -410,6 +410,31 @@ sixth cascade round for two already-non-blocking readability fixes was
 judged disproportionate to the marginal risk. Reviews recorded and
 promoted from this round's payloads.
 
+**Correction — the "disproportionate to marginal risk" judgement above did
+not hold.** After this ADR's Round 6 entry was written, the PR went through
+several more independent spec-/code-review passes against the run_dir/
+unit-scoping mechanism this same ADR documents, each finding a genuine
+blocking defect: the dual-write/re-read fix not surviving the fires
+spawn-boundary because `$run_dir` itself was not re-derived (campaign-mode.md's
+own "code-review round 5, blocking" / "spec-review round 6, blocking"
+comments inline), the `fires` value being written as an unassigned bare
+variable (empty file, unconditionally — "code-review round 5, CRITICAL" /
+"code-review round 4" numbering collides here with the labels in this
+paragraph; they are TWO SEPARATE counters, this ADR's own narrative history
+above and the post-merge-attempt fix cascade's own round labels inline in
+campaign-mode.md — do not try to reconcile them into one sequence), a
+double-backslash line-continuation silently dropping `--recorded-by`/
+`--disposition` from the Stage-1-REJECT record call, and a stale
+"pin/verify" (missing `ship`) claim left in this file's own Decision body
+and in `architecture.md`/the CLI help string. All of these were real,
+user-facing correctness defects, not readability nits — the risk this
+paragraph judged as marginal was not. Fixed across the commits documented
+in the bloat-exception ADR's own per-round entries (`iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md`),
+which is the accurate, append-only record of what actually happened after
+this point; this section is left as originally written, uncorrected in
+place, specifically so a reader can see what was believed at the time
+without the record being rewritten in hindsight.
+
 **Post-cascade CI discovery, before merge:** the delegated cascade above
 (and every local check run this session) only exercises `shared/tests` —
 `plugins/shipwright-iterate/tests` was never run locally this session,
