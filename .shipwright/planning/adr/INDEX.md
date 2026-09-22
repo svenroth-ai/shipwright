@@ -157,4 +157,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — `shared/scripts/lib/autonomous_loop.py` raised to 454-LOC](iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md)
 - [Bloat exception — `plugins/shipwright-iterate/agents/sub-iterate-runner.md` raised to 512-LOC](iterate-2026-09-22-r2-worktree-capability-bloat-exception.md)
 - [R3 — unit-scoped review-attribution pin, `lib/review_attribution.py`](iterate-2026-09-22-r3-review-diff-fix-adr.md)
-- [Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 516-LOC](iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md)
+- [Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 522-LOC](iterate-2026-09-22-r3-review-diff-fix-bloat-exception.md)
+- [Bloat exception — `shared/tests/conftest.py` raised to 323-LOC](iterate-2026-09-22-r3-review-diff-fix-conftest-bloat-exception.md)
