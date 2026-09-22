@@ -529,3 +529,41 @@ def test_pin_wraps_invalid_utf8_in_the_state_file_as_review_attribution_error(gi
 
     with pytest.raises(ReviewAttributionError, match="could not load state file"):
         pin(state_path, "T", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+
+def test_verify_refuses_a_pin_whose_recorded_worktree_no_longer_matches_the_current_resolution(git_origin_repo):
+    """External Tier-3 review (round 14, PR #787): `verify`/`ship` re-resolve
+    `worktree` fresh from `loop_state.json` on every call but never checked
+    it against the value `pin()` already recorded there — a row that comes
+    to resolve to a genuinely different worktree/clone between pin and
+    verify would otherwise be checked with no signal that the unit's
+    identity moved out from under its own pin."""
+    work, _ = git_origin_repo
+    wt_other = _add_worktree(work, "moved-elsewhere", "iterate/moved-elsewhere")
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "M", "branch": "main", "attempt": 0, "worktree": str(work)}])
+    pin(state_path, "M", project_root=str(work), campaign_worktree=str(work), loop_id="r3-test")
+
+    # The row's `worktree` field changes after pinning — e.g. a lease
+    # reassignment — while `branch` stays "main".
+    _write_loop_state(state_path, [{"id": "M", "branch": "main", "attempt": 0, "worktree": str(wt_other)}])
+
+    with pytest.raises(ReviewAttributionError, match="worktree has moved"):
+        verify(state_path, "M", project_root=str(work), campaign_worktree=str(work),
+               loop_id="r3-test", against="reviewed_head")
+
+
+def test_ship_refuses_a_pin_whose_recorded_worktree_no_longer_matches_the_current_resolution(git_origin_repo):
+    work, _ = git_origin_repo
+    wt_other = _add_worktree(work, "moved-elsewhere-2", "iterate/moved-elsewhere-2")
+    state_path = work / ".shipwright" / "loop_state.json"
+    _write_loop_state(state_path, [{"id": "N", "branch": "main", "attempt": 0, "worktree": str(work),
+                                     "review_skipped": True}])
+    pinned = pin(state_path, "N", project_root=str(work), campaign_worktree=str(work),
+                 loop_id="r3-test", review_skipped=True)
+
+    _write_loop_state(state_path, [{"id": "N", "branch": "main", "attempt": 0, "worktree": str(wt_other)}])
+
+    with pytest.raises(ReviewAttributionError, match="worktree has moved"):
+        ship(state_path, "N", project_root=str(work), campaign_worktree=str(work),
+             loop_id="r3-test", shipped_head=pinned["reviewed_head"])

@@ -90,6 +90,20 @@ Diagnostic-quality gap, not a fail-open: the exit code was already 1
 either way, so no `|| STRICT-STOP` caller was ever fooled into treating
 this as success.
 
+### Round 14c growth (477 -> 500)
+
+The external Tier-3 reviewer re-ran on the round-14 push and raised three
+findings: two repeats of already-rebutted items (shell-interpolation of
+`{branch}`/`{id}`/`{loop_id}` in `campaign-mode.md`, and `fires=<1 or 0>`)
+— see the master ADR's "External Tier-3 PR Review" section, now extended
+with a round-2 note — plus one new, genuine finding: `verify()`/`ship()`
+re-resolve `worktree` fresh from `loop_state.json` on every call but never
+cross-checked it against the value `pin()` already recorded in the pin
+file, even though that data was already sitting right there. Added
+`_check_pinned_worktree()`, called from both `verify()` and `ship()`
+immediately after `_load_pin()`, raising `ReviewAttributionError` when the
+row's current `worktree` disagrees with the pinned one.
+
 ## Consequences
 
 `review_attribution.py` remains the single source of truth for pin/ship/

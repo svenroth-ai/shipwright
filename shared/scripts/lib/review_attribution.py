@@ -172,6 +172,27 @@ def _load_pin(pin_path: Path, canonical_id: str, unit_id: str, *, verb: str) -> 
     return pinned
 
 
+def _check_pinned_worktree(pinned: dict, resolved_worktree: str, *, pin_path: Path, verb: str) -> None:
+    """Refuse a pin whose recorded ``worktree`` no longer matches the unit's
+    CURRENT resolution from ``loop_state.json`` (external Tier-3 review,
+    blocking): ``verify``/``ship`` re-resolve ``worktree`` fresh on every
+    call but never checked it against the value ``pin()`` already recorded,
+    even though the pin file's own ``git rev-parse --verify
+    refs/heads/{branch}`` runs with the FRESH worktree as ``cwd`` — a
+    same-repo worktree reassignment is harmless (refs are shared across
+    worktrees of one repository), but a row that comes to point at a
+    genuinely different clone/repo with a same-named branch would otherwise
+    be checked with no signal that the unit's identity moved out from under
+    its own pin. Structural failure, not a content mismatch: raises rather
+    than returning ``ok=False``, matching ``_load_pin``'s own convention."""
+    pinned_worktree = pinned.get("worktree")
+    if pinned_worktree != str(resolved_worktree):
+        raise ReviewAttributionError(
+            f"pin at {pin_path} was recorded for worktree {pinned_worktree!r}, "
+            f"but loop_state.json now resolves this unit to {str(resolved_worktree)!r} "
+            f"— refusing to {verb} against a pin whose worktree has moved; re-pin first")
+
+
 def _single_parent(sha: str, *, cwd: str) -> str | None:
     """The ONE parent of ``sha``, or ``None`` if it has zero parents (a root
     commit) or more than one (a MERGE commit) — used by ``verify``/``ship``'s
@@ -358,6 +379,7 @@ def verify(
     # read outside the unit's own pin directory (Stage-3 external review).
     pin_path = _pin_dir(loop_id, canonical_id, attempt_id, project_root=project_root) / _safe_segment("expect_file", expect_file)
     pinned = _load_pin(pin_path, canonical_id, unit_id, verb="verify")
+    _check_pinned_worktree(pinned, worktree, pin_path=pin_path, verb="verify")
 
     # Fully qualified ref: a bare `branch` name is resolved against tags
     # before refs/heads/ (gitrevisions precedence), so a tag sharing the
@@ -444,6 +466,7 @@ def ship(
 
     pin_path = _pin_dir(loop_id, canonical_id, attempt_id, project_root=project_root) / "review_pin.json"
     pinned = _load_pin(pin_path, canonical_id, unit_id, verb="ship")
+    _check_pinned_worktree(pinned, worktree, pin_path=pin_path, verb="ship")
 
     current_tip = _run_git(["rev-parse", "--verify", f"refs/heads/{branch}"], cwd=worktree)
     if current_tip != shipped_head:

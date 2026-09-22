@@ -75,6 +75,16 @@ the other two for this exact reason. Added one test writing invalid UTF-8
 bytes into the state file, confirmed red against the pre-fix tuple, green
 after widening it.
 
+### Round 14c growth (531 -> 569)
+
+Added two regression tests for `_check_pinned_worktree()` (sibling
+implementation ADR, round 14c): one for `verify()`, one for `ship()`, each
+pinning a unit, then changing the row's `worktree` field in
+`loop_state.json` before calling `verify`/`ship` and asserting
+`ReviewAttributionError` with `"worktree has moved"`. Confirmed red
+against the pre-fix code (temporarily neutering the two call sites),
+green after.
+
 ## Consequences
 
 `test_review_attribution.py` remains the authoritative regression suite

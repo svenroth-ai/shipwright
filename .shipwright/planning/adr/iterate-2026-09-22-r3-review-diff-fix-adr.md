@@ -573,6 +573,37 @@ placeholder to satisfy a literal-shell-syntax check would reintroduce the
 prose-only, unenforced judgement this sub-iterate's own D5 finding already
 closed.
 
+## External Tier-3 PR Review, round 2 (round 14c)
+
+The gate re-ran on the round-14/14b push and returned BLOCK again, with
+three findings:
+
+- **Repeat of the shell-interpolation finding** (`{branch}`/`{id}`/
+  `{loop_id}` unvalidated in `campaign-mode.md`'s shell strings) — the
+  reviewer re-derives its verdict from the diff each run and has no way to
+  see a rebuttal recorded in this ADR; unchanged, same operator-trust-model
+  rationale as the first round above.
+- **Repeat of `fires=<1 or 0>`** — same false positive, same rationale,
+  unchanged.
+- **New: `verify()`/`ship()` in `review_attribution.py` never cross-check
+  the pin's recorded `worktree` against the unit's current resolution from
+  `loop_state.json`.** Unlike the two repeats, this one is genuine and
+  cheap to close — accepted and fixed, not rebutted: `pin()` already
+  records `worktree` in the pin payload, and `verify`/`ship` were re-
+  resolving it fresh on every call without ever reading that field back.
+  A same-repo worktree reassignment is harmless in practice (git worktrees
+  of one repository share refs, so `refs/heads/{branch}` resolves
+  identically from any of them), but a row that comes to resolve to a
+  genuinely different clone/repo with a same-named branch had no signal
+  that the unit's identity moved out from under its own pin — the
+  content-based SHA checks would likely (not certainly) still catch a
+  divergent branch by coincidence-free mismatch, so this closes a real gap
+  in the *contract*, not merely a defense-in-depth nicety. Added
+  `_check_pinned_worktree()`, called from both `verify()` and `ship()`
+  right after `_load_pin()`, with two new regression tests (one per
+  caller) confirmed red-before/green-after by temporarily neutering the
+  two call sites and re-running.
+
 ## Rejected alternatives
 
 Per the sub-iterate spec: teaching 3f-bis to defer worktree/branch
