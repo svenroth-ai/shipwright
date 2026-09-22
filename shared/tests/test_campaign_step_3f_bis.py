@@ -477,9 +477,15 @@ def test_step_3f_bis_every_run_dir_use_opens_within_its_own_block():
 
     # 3g: a separate, much smaller step that is genuinely one continuous
     # Bash call — no model judgement, no Agent-tool spawn anywhere in its
-    # body. Enforced structurally (one rebuild, opening the step) instead
-    # of via a lookback window, so a future SECOND rebuild — the sign that
-    # 3g stopped being one block — cannot slip past silently.
+    # body (round 9: `gh pr checks --watch` gained its own `|| STRICT-STOP`,
+    # closing the last spot where a human/model had to read an exit code
+    # and decide rather than the shell enforcing it mechanically). Enforced
+    # structurally (one rebuild, opening the step) instead of via a lookback
+    # window, so a future SECOND rebuild — the sign that 3g stopped being
+    # one block — cannot slip past silently. Residual gap, accepted: a
+    # future boundary added WITHOUT a second rebuild (careless, not the
+    # "right" fix) is invisible to this assertion — it only catches the
+    # case where an author does add the second rebuild.
     step_3g = _step_3g()
     positions_3g = [m.start() for m in usage.finditer(step_3g)]
     assert len(positions_3g) >= 3, (

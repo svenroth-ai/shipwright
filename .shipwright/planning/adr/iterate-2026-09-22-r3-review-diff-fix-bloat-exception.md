@@ -479,3 +479,23 @@ replacing an unbounded-lookback exemption that could never have caught a
 future fourth occurrence in that step. +6 lines (700 -> 706);
 `shipwright_bloat_baseline.json`'s `current` is bumped to 706 in the same
 commit as this note.
+
+**Round 9 (706 -> 705, no bump needed).** A fresh code-reviewer found `gh
+pr checks "$pr_url" --watch` at 3g had no executable guard — only a
+trailing prose comment claimed "non-zero exit -> STRICT-STOP", so a red
+check could fall through to `gh pr merge` unless GitHub branch protection
+happened to catch it; also, this meant 3g was not yet literally "one
+continuous Bash call with no model judgement anywhere in its body" (the
+premise the round-8 structural test relies on) — a human/model still had
+to read the exit code and decide. Fixed with an inline `|| STRICT-STOP`,
+folding the comment onto the same line and netting one fewer line. The
+Eighth-crossing entry's "instead" wording above was independently flagged
+by both a fresh spec-reviewer and a fresh code-reviewer as still
+self-contradictory by one word: `$unit_wt` is not exclusive to the
+`fires`-judgement boundary the way `$diff_head`/`$fires`/`$pr_json` are —
+it crosses BOTH boundaries, which is exactly why it is re-read a second
+time after the a/b/c spawns. Corrected. Also added `|| STRICT-STOP` to
+the previously-unchecked `diff=` capture, matching the guard already on
+`merge-base` one line above (same fail-open class, lower probability).
+`shipwright_bloat_baseline.json`'s `current` is left at 706 (actual: 705,
+under the existing ceiling) — no bump needed this round.

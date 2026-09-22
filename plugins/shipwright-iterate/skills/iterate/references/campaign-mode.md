@@ -352,7 +352,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          echo "$diff_head" > "$run_dir/diff_head" || STRICT-STOP
          base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
-         diff=$(git -C "$unit_wt" diff "$base"..."$diff_head")
+         diff=$(git -C "$unit_wt" diff "$base"..."$diff_head") || STRICT-STOP
        Fire when the runner said medium+, OR the diff sets any risk flag, OR it
        exceeds 100 lines — this is a JUDGEMENT made by reading the diff, not a
        shell computation, so the literal next command is an ACTUAL assignment
@@ -521,10 +521,10 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        set BEFORE the a/b/c spawns above and this block runs AFTER them —
        re-derive all three here, exactly as 3g does below, rather than trust
        shell state across that boundary (R3 doubt-round, round 2, medium:
-       these are the values that cross the a/b/c SPAWN boundary
-       specifically; `$unit_wt`/`$diff_head`/`$fires`/`$pr_json` cross the
-       earlier `fires`-judgement boundary instead, and are handled by the
-       dual-writes above):
+       `run_dir` and `pr_url` cross only the a/b/c SPAWN boundary;
+       `$diff_head`/`$fires`/`$pr_json` cross the earlier `fires`-judgement
+       boundary and are handled by the dual-writes above; `$unit_wt` crosses
+       BOTH, which is why it is re-read from its file here as well):
          run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
@@ -635,8 +635,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
          head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
          uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
-         gh pr checks "$pr_url" --watch
-         #   non-zero exit = a check FAILED → STRICT-STOP (as 3f): do not merge, do not build the next; surface to the user. Merged subs stay durable.
+         gh pr checks "$pr_url" --watch || STRICT-STOP   # as 3f: do not merge, do not build the next; surface to the user. Merged subs stay durable.
          gh pr merge "$pr_url" --squash --delete-branch $head_pin || STRICT-STOP
          #   a merge refusal (e.g. $head_pin no longer matches the remote tip)
          #   must STOP, not fall through to an unbounded wait for a state that

@@ -1217,7 +1217,7 @@
     {
       "path": "shared/tests/test_campaign_step_3f_bis.py",
       "limit": 300,
-      "current": 690,
+      "current": 696,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md"
     },

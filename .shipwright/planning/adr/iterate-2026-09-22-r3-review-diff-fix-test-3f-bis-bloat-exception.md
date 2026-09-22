@@ -134,6 +134,27 @@ boundary specifically; `$unit_wt`/`$diff_head`/`$fires`/`$pr_json` cross
 the earlier `fires`-judgement boundary instead). `shipwright_bloat_baseline.json`'s
 `current` is bumped to 690 in the same commit as this note.
 
+**Round 9 growth (690 -> 696).** A fresh code-reviewer found `gh pr checks
+"$pr_url" --watch` at 3g had no executable guard — its failure handling
+was only a trailing prose comment, meaning a red check fell through to
+`gh pr merge` unless GitHub branch protection happened to catch it. This
+also meant 3g's own "one continuous Bash call, no model judgement
+anywhere" premise (relied on by the round-8 structural test) was not yet
+literally true — a human/model still had to read the exit code and
+decide. Fixed with an inline `|| STRICT-STOP`. The same reviewer, plus
+an independent spec-reviewer, both separately flagged that round 8's
+"instead" wording (see the round-8 entry above) was itself still
+self-contradictory by one word: `$unit_wt` is not exclusive to the
+`fires`-judgement boundary, it crosses BOTH boundaries, which is exactly
+why it is re-read a second time after the a/b/c spawns. Corrected in the
+doc. This round's docstring addition documents the residual, accepted
+gap in the round-8 structural test: it catches a future SECOND rebuild
+added to 3g (the sign an author recognized a new boundary) but not a
+boundary added carelessly with no rebuild at all — closing that fully
+would need a real block-segmentation rework, explicitly deferred.
+`shipwright_bloat_baseline.json`'s `current` is bumped to 696 in the same
+commit as this note.
+
 ## Consequences
 
 No downstream consumer reads this file except pytest itself and the
