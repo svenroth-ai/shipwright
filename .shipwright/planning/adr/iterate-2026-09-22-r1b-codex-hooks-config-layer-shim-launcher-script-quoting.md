@@ -199,6 +199,18 @@ actual analysis so a future reader does not have to re-derive it:
   should start there rather than re-inventing a signature/nonce scheme (see
   Rejected alternatives below, which the same reasoning already excludes).
 
+This same accepted-risk reasoning covers the bundle's `raw_command` text
+itself (the `hooks.hooks[].command` strings each hook is authored with), not
+only the resolved `bundle_root` path: an attacker who can shape what a
+trusted-looking bundle contains already has full, direct control over
+`raw_command` and needs no quoting trick to reach it — writing the malicious
+command text is strictly simpler than crafting an injection payload through
+it. `_materialize()`'s `bundle_root` character allowlist (added separately,
+below) closes the narrower path-splicing bug; it is not, and was never meant
+to be, a content-authenticity boundary for `raw_command` — that boundary is
+this same Accepted Risk, restated once more so a future preflight re-run
+does not re-litigate it as a new finding.
+
 **Mitigation added instead (cheap, not a close):** `codex_hooks_sync.py`'s
 CLI wrapper (`main()`, not `sync_codex_hooks()` — that function's pure,
 silently-callable, fully-test-covered contract is deliberately unchanged)
