@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "name": "Spec Compliance",
+      "verdict": "pass",
+      "note": "AC1-AC5 of the iterate spec (is_codex_runtime detection, launcher-script generation, idempotent merge, ownership-by-directory stripping, AC5 no-op on non-Codex bundle) are all implemented and test-covered; AC4's live proof was run by the operator against the real shipped codex_hooks_sync.py and confirmed both rounds fired."
+    },
+    {
+      "name": "Error Handling",
+      "verdict": "pass",
+      "note": "Every malformed-input path (bad plugin.json, bad hooks.json, wrong inner shape, bad sidecar, empty bundle, empty command) raises CodexHooksSyncError with a specific message instead of propagating a raw traceback; lock contention raises a clear error; stale-launcher cleanup failures are caught and logged rather than crashing (doubt-review fix)."
+    },
+    {
+      "name": "Security Basics",
+      "verdict": "pass",
+      "note": "No user input reaches a shell without going through the existing durable_atomic_write primitive; no secrets are read or written; POSIX launcher scripts are owner-only executable (0700, tightened from 0711 per doubt-review) since a shared-machine neighbour has no legitimate reason to execute them."
+    },
+    {
+      "name": "Test Quality",
+      "verdict": "pass",
+      "note": "Every test asserts on the written hooks.json/launcher-file content or the raised exception type, never on internal call counts; each behavior has both a happy-path and a malformed-input test (e.g. test_ac2_placeholder_rewritten_into_launcher_script + test_malformed_bundle_plugin_json_raises)."
+    },
+    {
+      "name": "Performance Basics",
+      "verdict": "n/a",
+      "note": "A local, single-operator config-sync tool with no query/list endpoints or DB access — this checklist item does not apply."
+    },
+    {
+      "name": "Naming & Structure",
+      "verdict": "pass",
+      "note": "codex_hooks_sync.py was split into codex_hooks_sync.py (293 lines, orchestration + CLI) and codex_hooks_launcher.py (102 lines, launcher materialization) specifically to stay under the repo's 300-LOC guideline after doubt-review fixes pushed the single file to 371 lines."
+    },
+    {
+      "name": "Affected Boundaries",
+      "verdict": "pass",
+      "note": "Producer/consumer pair: codex_hooks_sync.py writes ~/.codex/hooks.json + the .shipwright-hooks-managed.json sidecar + per-hook launcher scripts; Codex CLI itself and a future codex_hooks_sync.py resync both consume them. touches_io_boundary fired (hooks.json is an explicit trigger). Round-trip coverage: test_ac3_idempotent_byte_identical_on_rerun (write->read->write, byte-identical) plus a real end-to-end round trip against build_codex_plugin.py's actual bundle output, run twice (before and after the doubt-review fixes) and confirmed idempotent; the operator additionally proved the full round trip live against real codex/codex exec (AC4)."
+    },
+    {
+      "name": "Test Hygiene Probe",
+      "verdict": "pass",
+      "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reports no findings against the changed test files."
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "run_id": "iterate-2026-09-22-r1b-codex-hooks-config-layer-shim",
+  "date": "2026-09-22T11:30:27.663539Z",
+  "event_at": "2026-09-22T11:29:59.809056+00:00",
+  "type": "change",
+  "complexity": "medium",
+  "prior_source": "keyword",
+  "branch": "iterate/codex-hooks-config-layer-shim",
+  "spec": ".shipwright/planning/iterate/2026-09-22-r1b-codex-hooks-config-layer-shim.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-22-r1b-codex-hooks-config-layer-shim",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "AC1 detection (both markers true)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_runtime.py::test_both_markers_present_returns_true PASSED"
+      },
+      {
+        "behavior": "AC1 detection (one/neither marker, unrelated dir, env-var resolution)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_runtime.py (7 remaining cases) PASSED"
+      },
+      {
+        "behavior": "AC2 placeholder rewrite into launcher script",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ac2_placeholder_rewritten_into_launcher_script PASSED"
+      },
+      {
+        "behavior": "AC2 real bundle double-wrap shape (plugin.json[\"hooks\"][\"hooks\"])",
+        "disposition": "tested",
+        "evidence": "fixed live against a real build_codex_plugin.py bundle; _codex_hooks_sync_fixtures.py::make_bundle reproduces the real shape"
+      },
+      {
+        "behavior": "AC3 idempotent byte-identical rerun",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ac3_idempotent_byte_identical_on_rerun PASSED"
+      },
+      {
+        "behavior": "AC3 foreign entry survives resync + bundle content change",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ac3_foreign_entry_survives_resync_and_content_change PASSED"
+      },
+      {
+        "behavior": "AC3 ownership survives without sidecar present",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ownership_survives_without_sidecar_present PASSED"
+      },
+      {
+        "behavior": "AC4 live fire against real Codex CLI, no bypass flag",
+        "disposition": "tested",
+        "evidence": "operator's two-round live proof (iterate spec Design Notes / AC4)"
+      },
+      {
+        "behavior": "AC5 no-op under non-Codex bundle",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ac5_noop_when_not_codex_runtime PASSED"
+      },
+      {
+        "behavior": "AC6 docs corrected",
+        "disposition": "tested",
+        "evidence": "docs/hooks-and-pipeline.md diff (manual doc review, not a unit test)"
+      },
+      {
+        "behavior": "Windows cmd.exe /C quoting bug (launcher path with spaces actually runs)",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_launcher_path_with_spaces_actually_runs (real cmd.exe /C \"<launcher>\" invocation on Windows) PASSED"
+      },
+      {
+        "behavior": "POSIX $SHELL -lc word-splitting bug (launcher path with spaces, shlex.quote() round-trip)",
+        "disposition": "tested",
+        "evidence": "same test's POSIX (else) branch (external code review, both legs, high) PASSED"
+      },
+      {
+        "behavior": "Ownership check rejects a lexical ../-traversal that escapes launcher_dir (.resolve() fix)",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ownership_rejects_lexical_traversal_outside_launcher_dir PASSED"
+      },
+      {
+        "behavior": "Ownership check accepts a genuinely-inside path with a harmless . segment",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_ownership_accepts_genuinely_inside_path_with_dot_segment PASSED"
+      },
+      {
+        "behavior": "is_codex_runtime() rejects two empty/placeholder marker files (shape check, not presence-only)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_runtime.py::test_false_with_empty_placeholder_markers PASSED"
+      },
+      {
+        "behavior": "is_codex_runtime() rejects a malformed BUILD_MANIFEST.json",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_codex_runtime.py::test_false_with_malformed_build_manifest PASSED"
+      },
+      {
+        "behavior": "POSIX launcher is executable, owner-only (0700)",
+        "disposition": "tested",
+        "evidence": "test_posix_launcher_is_executable, test_posix_launcher_is_owner_only_executable (skipped on this Windows dev machine, run in CI's Linux matrix); requested-mode behavior additionally covered in-process by test_codex_hooks_launcher_direct.py::test_write_launcher_posix_branch_writes_sh_with_shebang_and_exec_bit"
+      },
+      {
+        "behavior": "Malformed bundle / hooks.json / sidecar inputs raise CodexHooksSyncError",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync_errors.py (8 cases) + test_codex_hooks_sync_direct.py (top-level hooks.json shape, sidecar shape, _materialize AttributeError-wrap) PASSED"
+      },
+      {
+        "behavior": "Lock contention raises CodexHooksSyncError specifically",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync_errors.py::test_lock_contention_raises_clear_error PASSED"
+      },
+      {
+        "behavior": "Empty bundle refuses unless --allow-empty (doubt-review)",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync_errors.py::test_empty_bundle_raises_unless_allow_empty PASSED"
+      },
+      {
+        "behavior": "Stale-launcher removal is a genuine orphan and unlink failure/absence degrades to a warning or silent skip, never crashes",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync.py::test_stale_launcher_removal_survives_unlink_failure + test_codex_hooks_sync_direct.py::test_stale_launcher_removed_successfully_prints_notice, test_stale_launcher_removal_survives_already_gone PASSED"
+      },
+      {
+        "behavior": "CLI --help smoke",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync_errors.py::test_cli_help_exits_zero PASSED"
+      },
+      {
+        "behavior": "main() CLI body (bundle-root/codex-home args, resolve_plugin_root fallback, --allow-empty, success/no-op/error print paths) exercised in-process for diff-coverage (subprocess calls are invisible to this session's coverage instrumentation)",
+        "disposition": "tested",
+        "evidence": "test_codex_hooks_sync_direct.py::test_main_noop_when_bundle_root_is_not_a_codex_bundle, test_main_success_reports_synced_count, test_main_allow_empty_flag_used, test_main_wraps_sync_codex_hooks_error, test_main_resolve_plugin_root_failure_when_bundle_root_omitted, test_main_resolve_plugin_root_success_when_bundle_root_omitted PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 23,
+      "tested": 23,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 6,
+      "covered_acs": 6
+    }
+  },
+  "surface_verification": {
+    "surface": "cli",
+    "tests_run": 40,
+    "exit_code": 0,
+    "justification": "codex_hooks_sync.py / codex_hooks_launcher.py are CLI producers (sync ~/.codex/hooks.json from a Codex bundle) -- no web/dev-server surface. Verification is the unit test suite (F0, tmp_path-scoped fake ~/.codex/) plus AC4's operator live proof against the real Codex CLI (see iterate spec Design Notes / Verification)."
+  },
+  "declared_removals": []
+}

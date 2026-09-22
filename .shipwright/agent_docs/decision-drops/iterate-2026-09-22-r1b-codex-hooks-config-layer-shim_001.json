@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-22-r1b-codex-hooks-config-layer-shim",
+  "date": "2026-09-22",
+  "section": "Iterate — feature: config-layer Codex hooks sync",
+  "title": "Codex hooks: launcher-script quoting, platform-split",
+  "context": "R1 wired hooks into the Codex plugin bundle, but live probing showed Codex never executes bundled hooks (openai/codex#16430, #39895) — the config-layer ~/.codex/hooks.json is the only path that works, and building its sync surfaced a Windows cmd.exe /C double-quote bug plus, per external review, a mirror-image POSIX space-in-path bug.",
+  "decision": "Sync bundle hooks into ~/.codex/hooks.json via one launcher script per handler (bare path on Windows, shlex-quoted on POSIX); ownership by directory membership with .resolve() containment, not exact-triple matching; is_codex_runtime() now shape-checks BUILD_MANIFEST.json, not just presence.",
+  "consequences": "hooks.json's command field is now genuinely platform-shaped (bare vs shlex-quoted); future code touching it directly must go through _hooks_json_command()/_command_to_launcher_path() or risk reintroducing either platform's bug. Manual sync remains required until R2's terminal trigger resumes.",
+  "rationale": "Two clean internal review passes (doubt-reviewer, code-reviewer) both reasoned on this Windows dev machine and missed the POSIX bug entirely; two independent external review legs caught it convergently — clear evidence for why external code review is mandatory-by-default, not conditional on the internal cascade's outcome.",
+  "rejected": "Shape-checking plugin.json the same way as BUILD_MANIFEST.json (converts a genuinely corrupted bundle's loud error into a silent no-op). Escaping cmd.exe metacharacters in launcher bodies (bundle content is already first-party trusted). A nonce/signature for bundle authenticity (disproportionate to the threat model).",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-22-r1b-codex-hooks-config-layer-shim-launcher-script-quoting.md"
+}

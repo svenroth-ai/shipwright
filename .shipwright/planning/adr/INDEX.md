@@ -148,3 +148,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Shared per-journey E2E coverage oracle](iterate-2026-09-19-e2e-journey-coverage-gate-shared-journey-coverage.md)
 - [Canonical plugin-root resolver + deterministic Codex bundle builder](iterate-2026-09-20-codex-plugin-bundle-root-contract-resolver-and-bundle-builder.md)
 - [Codex activation-envelope delivery: prompt-borne, minted reactively by UserPromptSubmit](iterate-2026-09-20-r0-resolve-1a-envelope-delivery-envelope-delivery.md)
+- [Codex hooks: config-layer sync via per-hook launcher scripts, platform-split quoting](iterate-2026-09-22-r1b-codex-hooks-config-layer-shim-launcher-script-quoting.md)

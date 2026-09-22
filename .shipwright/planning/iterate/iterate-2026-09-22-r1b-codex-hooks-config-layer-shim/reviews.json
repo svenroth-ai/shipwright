@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-22-r1b-codex-hooks-config-layer-shim",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T09:14:41.923836+00:00",
+      "disposition": null,
+      "recorded_by": "self-review",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "completed",
+      "findings_count": 14,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Manifest-loss orphaning. AC3's non-destructive removal depends entirely on the sidecar manifest existing. If `~/.codex/.shipwright-hooks-managed.json` is deleted (operator cleanup, `codex` config reset, backup-restore that captures `hooks.json` but not dotfile sidecars) while `hooks.json` survives, every previously-written Shipwright entry becomes permanently orphaned — re-runs append duplicates rather than replacing, and nothing ever identifies the stale entries again.",
+          "suggestion": "Tag Shipwright-written entries with a stable marker Codex will tolerate inside the entry (e.g. a `shipwright-managed` comment field or a recognizable command prefix like `shipwright-hook `), so removal can fall back to marker-based detection when the manifest is missing or doesn't cover an entry. Alternatively, at minimum detect the state (manifest absent but plausible Shipwright entries present) and warn loudly rather than silently appending duplicates.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Path-quoting on placeholder rewrite. Step 3 is a plain string replace of `${CLAUDE_PLUGIN_ROOT}` with `str(bundle_root)`. If the bundle lives under a path containing spaces (very plausible on Windows — the probe output shows `C:\\Users\\...`, and usernames/project paths with spaces are common), the resulting command string may break parsing depending on how Codex splits hook commands.",
+          "suggestion": "Check what R1's stored command format already does for quoting; if commands embed the placeholder unquoted, quote the replacement (or verify Codex executes commands via shell/whole-string so spaces are safe). Add one unit test with `bundle_root` containing a space.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Manual edits to Shipwright-owned entries orphan duplicates. If an operator edits one of Shipwright's entries in place (change matcher or tweak command), the exact `(event, matcher, command)` manifest match fails, so the re-run appends the fresh entry and the edited one survives as a duplicate — arguably violating the \"non-destructive\" spirit and causing the hook to fire twice.",
+          "suggestion": "Document this behavior explicitly (spec already half-acknowledges it: \"not specially detected\") and have the sync warn when a manifest entry had no exact match in `hooks.json`, so the operator knows an edit was overwritten-or-orphaned.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Schema assumption for config-layer `hooks.json`. The plan assumes the global hooks file uses the same entry shape (`{event, matcher, command}` list under `hooks`) as the plugin manifest's `hooks` key. Upstream bugs #16430/#39895 exist precisely because plugin-layer and config-layer handling diverge; the schema could differ too. AC4's live proof will catch this, but the unit tests will all pass against a wrong schema assumption, so the failure surfaces late (blocking, operator round-trip).",
+          "suggestion": "Before building the merge logic, empirically dump or verify the config-layer schema from the probe setup (a minimal hand-written `~/.codex/hooks.json` fired via `CODEX_HOME` override). Cheap and de-risks the whole producer shape.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Machine-wide hook execution is a real (if accepted) blast-radius expansion. Every Codex session on the machine now executes Shipwright hook scripts before the `.shipwright/` guard no-ops them. The plan's \"safety is unaffected\" argument relies on every one of 14 plugins' hook scripts having that guard — worth verifying rather than assuming, since a single missing guard means arbitrary script execution in unrelated Codex sessions.",
+          "suggestion": "Add a cheap verification step: grep/audit all hook commands in the built bundle for the guard (or confirm they all route through one guarded entrypoint). One assertion in the sync tool itself (\"every command references a guarded entrypoint\") would make this self-enforcing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "approach",
+          "file": null,
+          "line": null,
+          "finding": "Chicken-and-egg on invocation is acknowledged but leaves a real operational gap: between this landing and R2 resuming, hooks only work if the operator remembers to run the sync manually, and a bundle reinstall (new path) silently invalidates the rewritten absolute paths until the next manual run. Stale absolute paths in global hooks pointing at a deleted/old bundle directory could cause noisy failures or, worse, execute scripts from a moved-but-still-present old bundle.",
+          "suggestion": "Have the sync tool detect this at minimum (compare manifest-recorded bundle_root to current; warn on mismatch), and state the \"re-run sync after every bundle rebuild\" requirement prominently in the docs section.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "dependency",
+          "file": null,
+          "line": null,
+          "finding": "AC4 depends on an operator round-trip and on `CODEX_HOME` override behavior matching this session's `codex doctor` inference. If `CODEX_HOME` doesn't fully redirect hooks loading (e.g. hooks read from the real home regardless), the live proof needs rework.",
+          "suggestion": "First live-proof step should be a trivial known-good hook (echo to a file) in the fake `CODEX_HOME` before running the full sync, isolating \"did CODEX_HOME redirect work\" from \"did our merge work\".",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "The plan conflates project-layer trust with hook-definition trust. Global hooks load in untrusted projects, but Codex still requires review/trust of each non-managed hook definition; a fresh `CODEX_HOME` may skip the hook without `--dangerously-bypass-hook-trust`.",
+          "suggestion": "Make AC4 start from a fresh `CODEX_HOME` and explicitly verify the required hook-trust workflow/recording, including behavior after a hook command changes. Document that operator step if it cannot be automated. [Codex Hooks guide](https://learn.chatgpt.com/docs/hooks)",
+          "source": "external-review"
+        },
+        {
+          "severity": "high",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "The ownership manifest cannot reliably distinguish Shipwright’s entry from an operator’s identical entry using only `(event, matcher, command)`. A user can create the same triple independently; the next sync will remove it, violating AC3. This is also ambiguous for matcher groups containing multiple handlers or handler metadata.",
+          "suggestion": "Define ownership at the actual schema level (matcher group plus complete handler), with a stable Shipwright-specific marker/identity, and test duplicate-identical and multi-handler groups. Do not infer ownership from command equality alone.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Two separately atomic file writes are not an atomic transaction. A crash or write failure between `hooks.json` and the sidecar leaves them inconsistent; a later sync can retain stale hooks, duplicate new ones, or remove the wrong set.",
+          "suggestion": "Specify a recoverable commit protocol (for example, versioned sidecar with generation/hash and recovery on mismatch), order writes deliberately, and add fault-injection tests for each write failing.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "The merge contract does not say how malformed existing `~/.codex/hooks.json`, malformed sidecar data, non-object `hooks`, invalid event arrays, or unexpected handler types are handled. Blindly normalizing or overwriting such input risks losing another tool’s configuration.",
+          "suggestion": "Fail closed with a clear error before either write when existing user-owned files are invalid; validate the full Codex hook schema and preserve all unrelated top-level metadata and entries.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": null,
+          "line": null,
+          "finding": "Marker presence alone does not establish that `bundle_root` is a Shipwright bundle. A directory containing the two marker files and malicious commands could cause persistent, global Codex hook registration when supplied through the CLI or environment.",
+          "suggestion": "Verify expected Shipwright bundle identity and manifest/build-manifest consistency before writing global configuration; treat an unexpected bundle as an error, not a valid runtime.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "edge-case",
+          "file": null,
+          "line": null,
+          "finding": "Plain replacement of `${CLAUDE_PLUGIN_ROOT}` is unsafe unless every generated command already quotes the placeholder correctly. Absolute Windows paths commonly contain spaces, and global hooks execute from the session cwd. Existing “project presence” guards must also locate the project from nested working directories.",
+          "suggestion": "Reuse the established command-rewrite/quoting routine rather than a separate string replacement, and add Windows-space-path plus nested-cwd execution coverage to the live or integration proof.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "risk",
+          "file": null,
+          "line": null,
+          "finding": "Concurrent manual or update-time sync invocations can race: each reads the same files and the last writer can discard the other process’s additions or an operator edit.",
+          "suggestion": "Use a user-scoped lock around read–merge–write and test that a concurrent invocation is rejected or serialized.  The config-layer direction is reasonable, but the plan needs a proven hook-trust path and a stronger ownership/recovery design before it can safely modify a global Codex configuration. The live proof should validate a truly fresh configuration, not only project-trust independence. SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T09:14:07.867251+00:00",
+      "disposition": null,
+      "recorded_by": "external-review-json",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** Manifest-loss orphaning. AC3's non-destructive removal depends entirely on the sidecar manifest existing. If `~/.codex/.shipwright-hooks-managed.json` is deleted (operator cleanup, `codex` config reset, backup-restore that captures `hooks.json` but not dotfile sidecars) while `hooks.json` survives, every previously-written Shipwright entry becomes permanently orphaned — re-runs append duplicates rather than replacing, and nothing ever identifies the stale entries again.\n**Suggestion:** Tag Shipwright-written entries with a stable marker Codex will tolerate inside the entry (e.g. a `shipwright-managed` comment field or a recognizable command prefix like `shipwright-hook `), so removal can fall back to marker-based detection when the manifest is missing or doesn't cover an entry. Alternatively, at minimum detect the state (manifest absent but plausible Shipwright entries present) and warn loudly rather than silently appending duplicates.\n\n**Category:** edge-case — **Severity:** medium\n**Finding:** Path-quoting on placeholder rewrite. Step 3 is a plain string replace of `${CLAUDE_PLUGIN_ROOT}` with `str(bundle_root)`. If the bundle lives under a path containing spaces (very plausible on Windows — the probe output shows `C:\\Users\\...`, and usernames/project paths with spaces are common), the resulting command string may break parsing depending on how Codex splits hook commands.\n**Suggestion:** Check what R1's stored command format already does for quoting; if commands embed the placeholder unquoted, quote the replacement (or verify Codex executes commands via shell/whole-string so spaces are safe). Add one unit test with `bundle_root` containing a space.\n\n**Category:** edge-case — **Severity:** low\n**Finding:** Manual edits to Shipwright-owned entries orphan duplicates. If an operator edits one of Shipwright's entries in place (change matcher or tweak command), the exact `(event, match […truncated]\n\n[openai] 1. Category: security  \n   Severity: high  \n   Finding: The plan conflates project-layer trust with hook-definition trust. Global hooks load in untrusted projects, but Codex still requires review/trust of each non-managed hook definition; a fresh `CODEX_HOME` may skip the hook without `--dangerously-bypass-hook-trust`.  \n   Suggestion: Make AC4 start from a fresh `CODEX_HOME` and explicitly verify the required hook-trust workflow/recording, including behavior after a hook command changes. Document that operator step if it cannot be automated. [Codex Hooks guide](https://learn.chatgpt.com/docs/hooks)\n\n2. Category: risk  \n   Severity: high  \n   Finding: The ownership manifest cannot reliably distinguish Shipwright’s entry from an operator’s identical entry using only `(event, matcher, command)`. A user can create the same triple independently; the next sync will remove it, violating AC3. This is also ambiguous for matcher groups containing multiple handlers or handler metadata.  \n   Suggestion: Define ownership at the actual schema level (matcher group plus complete handler), with a stable Shipwright-specific marker/identity, and test duplicate-identical and multi-handler groups. Do not infer ownership from command equality alone.\n\n3. Category: risk  \n   Severity: medium  \n   Finding: Two separately atomic file writes are not an atomic transaction. A crash or write failure between `hooks.json` and the sidecar leaves them inconsistent; a later sync can retain stale hooks, duplicate new ones, or remove the wrong set.  \n   Suggestion: Specify a recoverable commit protocol (for example, versioned sidecar with generation/hash and recovery on mismatch), order writes deliberately, and add fault-injection tests for each write failing.\n\n4. Category: edge-case  \n   Severity: medium  \n   Finding: The merge contract does not say how malformed existing `~/.codex/hooks.json`, malformed sidecar data, non-object `hooks`, invalid event arrays, or unexpected handler types  […truncated]",
+      "verdicts": {
+        "glm": "approve",
+        "openai": "revise"
+      }
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 2,
+      "findings": [
+        {
+          "severity": "low",
+          "category": "test-coverage",
+          "file": "shared/scripts/tools/codex_hooks_launcher.py",
+          "line": null,
+          "finding": "_materialize()'s AttributeError/TypeError/KeyError wrap for a malformed bundle_hooks sub-shape (e.g. a group that isn't a dict) has no dedicated test — the symmetric hooks.json-side wrong-inner-shape case is tested (test_valid_json_wrong_inner_shape_raises), the bundle-side equivalent isn't. ACCEPTED, not fixed this pass: the code already raises CodexHooksSyncError correctly on this path (verified by trace); the iterate spec's Test Completeness Ledger doesn't list this as a required row, and _read_bundle_hooks() already covers the more likely corruption modes with a dedicated test.",
+          "suggestion": "Worth a one-line test if this file is touched again; not blocking.",
+          "source": "code-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "bloat",
+          "file": "shared/scripts/tools/codex_hooks_sync.py",
+          "line": null,
+          "finding": "312 lines, 12 over the repo's 300-LOC source guideline for a brand-new file. ACCEPTED, not fixed this pass: no shipwright_bloat_baseline.json entry required (pre-commit hook only blocks ratcheting an EXISTING entry, per repo CLAUDE.md); surfaced for the Group H post-merge audit rather than blocking here.",
+          "suggestion": "Consider trimming or registering before merge if a future pass touches this file again.",
+          "source": "code-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T09:48:55.160780+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "completed",
+      "findings_count": 4,
+      "findings": [
+        {
+          "severity": "high",
+          "category": "concurrency",
+          "file": "shared/scripts/tools/codex_hooks_sync.py",
+          "line": null,
+          "finding": "Claim under doubt: a resync always either succeeds cleanly or fails loudly via CodexHooksSyncError — The stale-launcher cleanup loop (shared/scripts/tools/codex_hooks_sync.py:140-143) does a bare `existing.unlink()` with no exception handling, unlike every other write in this module's dependency chain (`durable_atomic_write`/`replace_retrying` explicitly retry past exactly this class of Windows PermissionError, per atomic_write.py's own module docstring on 'a concurrent READER can defeat the rename'). The iterate spec (`2026-09-22-r1b-codex-hooks-config-layer-shim.md:164-168`) explicitly designs this tool to be re-run 'at update-time' -- i.e. while OTHER, already-running Codex CLI sessions on the same machine may still be executing hooks loaded from the OLD `hooks.json` (the file is explicitly documented as global and trust-independent, shared by every Codex CLI invocation on the machine). If a resync changes the hook set (any bundle rebuild that adds/removes/reorders a hook shifts every `_launcher_slug(event, matcher, group_idx, handler_idx)` for events after the change, since the slug is derived from positional index, not identity), a launcher file that a concurrently-running session is mid-executing (or about to spawn via `cmd.exe /C \"<launcher>\"`) can be exactly the file this loop tries to unlink. On Windows, deleting an open-for-execution file without FILE_SHARE_DELETE raises PermissionError/OSError -- which is NOT caught here and is NOT among the exceptions `main()` catches (only `CodexHooksSyncError`, codex_hooks_sync.py:309-313). The result: an uncaught traceback out of what the module's own docstring calls a design that must 'surface loudly, never route around silently' -- inconsistent with every other error path in the file, which is wrapped. Note hooks.json + the sidecar are already durably published by this point (steps before the loop), so the important state isn't corrupted -- only cleanup is interrupted and the crash is ugly rather than the write being lost.",
+          "suggestion": "wrap the unlink loop in a try/except that swallows FileNotFoundError and (on Windows) a transient sharing-violation PermissionError with the same retry-then-give-up discipline `atomic_write.py` already uses elsewhere in this codebase -- or at minimum catch OSError there and re-raise as CodexHooksSyncError so main() still prints the clean 'error: ...' message instead of a raw traceback. Alternatively, an explicit rebuttal that no realistic operator workflow re-runs this while another session's hook could be mid-fire against a slug the new run drops would resolve it -- but the spec's own 'update-time-run' framing argues against that.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "medium",
+          "category": "boundary & contract / reversibility",
+          "file": "shared/scripts/tools/codex_hooks_sync.py:76-153 (sync_codex_hooks), :156-172 (_read_bundle_hooks)",
+          "line": null,
+          "finding": "Claim under doubt: an empty bundle_hooks result is a legitimate 'nothing to sync' state, not something that needs to be surfaced — `_materialize` guards ONE malformed-bundle shape explicitly (an empty `command` string raises CodexHooksSyncError, codex_hooks_sync.py:256-261, with the comment 'a malformed bundle, not an absence signal' -- directly echoing the module's own CodexHooksSyncError docstring principle at lines 62-65). But there is no equivalent guard for the coarser case: `_read_bundle_hooks` returning `{}` (or every event mapping to an empty group list) because `.codex-plugin/plugin.json`'s `hooks.hooks` was built from a corrupt/partial/interrupted `build_codex_plugin.py` run rather than because Shipwright genuinely has zero hooks. In that case `_materialize` returns `({}, [])`, `wanted_names` becomes the empty set, and the stale-cleanup loop (line 140-143) deletes EVERY existing launcher script, while `_strip_shipwright_entries` + the (now-empty) `new_hooks` merge silently removes every Shipwright entry from hooks.json -- globally disabling all Shipwright hook automation for every Codex CLI session on the machine, with no warning, no confirmation, and (per the spec's own Non-Goals, lines 181-186) no shipped un-sync/restore tool beyond hand-editing via the sidecar. This is exactly the 'absence signal' failure mode the module's own docstring says must never happen silently, just applied at bundle granularity instead of per-handler.",
+          "suggestion": "raise CodexHooksSyncError when `bundle_hooks` (from _read_bundle_hooks) is empty or produces zero manifest_entries, unless an explicit `--allow-empty`/force flag is passed -- or a rebuttal showing build_codex_plugin.py structurally cannot produce a well-formed-but-empty hooks.hooks map (I did not verify that upstream invariant; it is outside this diff).",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/codex_hooks_sync.py:140-143,199-205",
+          "line": null,
+          "finding": "Claim under doubt: ownership-by-directory only ever claims (and deletes) files this tool itself wrote — `_is_shipwright_entry` (codex_hooks_sync.py:199-205) and the stale-cleanup loop treat directory membership under `codex_home/shipwright-hooks/` as sufficient proof of Shipwright ownership, with no marker/metadata check beyond location. Any file an operator (or a different tool) later places inside that directory -- by hand, by mistake, via a symlink, a backup copy, etc. -- is silently claimed: if its filename never matches a freshly-computed `wanted_names` slug, the very next sync deletes it with no log line identifying what was removed. This is a deliberate, previously-reviewed tradeoff (the module docstring explains why exact-triple matching was rejected instead), so the risk direction just moved rather than being new, but it's still an irreversible delete gated purely on path, worth a written acknowledgment.",
+          "suggestion": "either accepted as-is (the directory name is unambiguous and the tool owns it exclusively by convention) or the unlink loop logs each removed filename so an operator has a trail to notice an unexpected deletion.",
+          "source": "doubt-reviewer"
+        },
+        {
+          "severity": "low",
+          "category": "hidden coupling & blast radius",
+          "file": "shared/scripts/tools/codex_hooks_sync.py:236-240",
+          "line": null,
+          "finding": "Claim under doubt: launcher scripts are created with an appropriately conservative permission set — On POSIX, a brand-new launcher is written via `durable_atomic_write` (base mode 0600 from `tempfile.mkstemp`, since `carry_destination_mode` has nothing to carry for a not-yet-existing destination), then `_write_launcher` (codex_hooks_sync.py:236-240) ORs in `S_IXUSR|S_IXGRP|S_IXOTH`, producing 0711 (rwx--x--x) rather than 0700 -- group and other gain EXECUTE (not read/write) on a Shipwright-authored hook launcher inside a directory (`shipwright-hooks/`, default `mkdir` mode ~0755) that other local accounts can traverse. Exploitability requires a genuinely shared multi-user machine with a permissive home-directory mode -- atypical for Shipwright's primary single-user-laptop target, and content stays unreadable/unmodifiable by others -- so this is informational, not blocking.",
+          "suggestion": "chmod 0700 instead of OR-ing group/other execute bits, or an explicit note that this is accepted for the single-user target audience.",
+          "source": "doubt-reviewer"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T09:15:24.923253+00:00",
+      "disposition": null,
+      "recorded_by": "doubt-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "completed",
+      "findings_count": 6,
+      "findings": [
+        {
+          "severity": "medium",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_codex_hooks_sync.py` — `test_launcher_path_with_spaces_actually_runs",
+          "line": null,
+          "finding": "assert \" \" in launcher` runs unconditionally, but on POSIX CI (Linux matrix the ledger says runs these tests) `tmp_path` is typically `/tmp/pytest-...` with no space, so the assertion fails before the interesting part of the test executes — and even when it doesn't fail, `subprocess.run([\"sh\", \"-lc\", launcher])` bypasses the Codex invocation shape (`$SHELL -lc \"<command_line>\"`, where Codex passes the string as one `-c` argument, not via shlex-split argv). This is the exact defect glm flagged as high (\"this test cannot pass as written on POSIX\") and it is still present in the diff despite the shlex.quote code fix landing.",
+          "suggestion": "Force a space into the launcher path on POSIX (e.g. create `codex_home = tmp_path / \"codex home\"` — already done — but also verify the command string is what Codex would actually receive: run `subprocess.run([os.environ.get(\"SHELL\", \"sh\"), \"-lc\", launcher])`), and skip or branch the `\" \" in launcher` assertion so the test is meaningful rather than failing on spaceless CI tmpdirs.",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "security",
+          "file": "shared/scripts/lib/codex_runtime.py:32-37` (`is_codex_runtime`)",
+          "line": null,
+          "finding": "Bundle identity is established by marker-file presence only. Any directory containing `BUILD_MANIFEST.json` + `.codex-plugin/plugin.json` with attacker-controlled `hooks.hooks` commands, passed via `--bundle-root` (or a spoofed `SHIPWRIGHT_PLUGIN_ROOT`/`CLAUDE_PLUGIN_ROOT` when no explicit root is given), gets its commands installed as globally-executing hooks for every Codex session on the machine. This was flagged by the openai external review (medium) and is not addressed anywhere in the diff or resolution notes — the doubt-review and self-review both skip it.",
+          "suggestion": "Validate `BUILD_MANIFEST.json`'s shape (it's the builder's own sha256 manifest — check it's a non-empty dict with expected keys) or cross-check a known Shipwright marker inside `plugin.json` before treating the root as genuine, and raise rather than sync on mismatch.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "edge-case",
+          "file": "shared/scripts/tools/codex_hooks_launcher.py:56-63` (`_write_launcher`, Windows branch)",
+          "line": null,
+          "finding": "The `.cmd` body is `@echo off\\r\\n{command_line}\\r\\nexit /b %ERRORLEVEL%\\r\\n`. `command_line` is the bundle's raw command with only `${CLAUDE_PLUGIN_ROOT}` replaced; any `%VAR%` token, unescaped `&`, `|`, `>`, or `^` that survives from a bundle command (or from a bundle-root path containing such characters) is interpreted by cmd.exe inside the script. This is the same class of shell-metacharacter injection the module exists to reason carefully about, but the write side performs no escaping or validation of the interpolated path.",
+          "suggestion": "At minimum, validate the resolved `bundle_root` path (and command strings) contain no cmd metacharacters and raise `CodexHooksSyncError` if they do; the failure mode (a hook that silently corrupts or executes unintended commands) is exactly the \"silent no-op / mangled line\" class this run documented.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "test",
+          "file": "shared/scripts/tools/tests/test_codex_hooks_sync.py` — `test_ac2_placeholder_rewritten_into_launcher_script",
+          "line": null,
+          "finding": "assert str(bundle_root) in launcher_body` compares the unresolved test-side path against a body built from `bundle_root.resolve()`. On platforms where `tmp_path` contains a symlink component (e.g. macOS `/tmp` → `/private/tmp` in some pytest configurations), the assertion can false-fail — and conversely it would still pass for an implementation that rewrote the placeholder to any path merely containing the bundle root as a substring (e.g. a sibling directory). Assert on `str(bundle_root.resolve())` and on the exact expected command line, not substring containment.",
+          "suggestion": "assert str(bundle_root.resolve()) in launcher_body` and additionally assert the full expected `uv run \"<resolved>/scripts/hooks/on_start.py\"` line.",
+          "source": "external-review"
+        },
+        {
+          "severity": "low",
+          "category": "bug",
+          "file": "shared/scripts/tools/codex_hooks_sync.py:95-100` (lock acquisition)",
+          "line": null,
+          "finding": "file_lock(lock_path, ...)` is called with `lock_path = codex_home / _LOCK_FILENAME` before any code in the applied path guarantees `codex_home` exists (`launcher_dir.mkdir(parents=True)` happens inside the lock). On a first-ever sync where `codex_home` doesn't exist, this relies entirely on `file_lock`'s implementation creating parent directories; nothing in the diff or tests pins that contract (the tests exercise it only incidentally). If `file_lock` ever opens the file directly, the first sync crashes with a raw FileNotFoundError, not a `CodexHooksSyncError`.",
+          "suggestion": "codex_home.mkdir(parents=True, exist_ok=True)` before acquiring the lock, or add an explicit test asserting a first sync into a nonexistent `codex_home` succeeds (test_ac2 covers it only if `file_lock` happens to mkdir — make the contract explicit).",
+          "source": "external-review"
+        },
+        {
+          "severity": "medium",
+          "category": "spec",
+          "file": "docs/hooks-and-pipeline.md",
+          "line": 3152,
+          "finding": "The required documented manual sync command has no executable invocation example. It names a non-executable, no-shebang Python source file; on POSIX, running the shown path directly fails, and the repository convention requires `uv run`.",
+          "suggestion": "Document a runnable command, e.g. `uv run shared/scripts/tools/codex_hooks_sync.py --bundle-root <bundle>`, including the optional `--codex-home` live-proof override.  The implementation appears otherwise aligned with the acceptance criteria, including the corrected POSIX quoting and ownership handling. Ship with this documentation fix so the manual bootstrap path is actually usable.  SHIPWRIGHT_VERDICT: revise",
+          "source": "external-review"
+        }
+      ],
+      "provider": null,
+      "completed_at": "2026-09-22T09:50:27.127695+00:00",
+      "disposition": "Round 2 (final) both legs revise; every high/medium finding merged into the ADR's External-Code-Review-Findings table and disposed accepted-and-fixed or rejected-with-reason before commit, per iteration-reviews.md workflow. See .shipwright/planning/adr/iterate-2026-09-22-r1b-codex-hooks-config-layer-shim-launcher-script-quoting.md",
+      "recorded_by": "external-review",
+      "parse_status": "structured",
+      "raw_excerpt": "[glm] ## Findings\n\n- Category: test\n  Severity: medium\n  File: `shared/scripts/tools/tests/test_codex_hooks_sync.py` — `test_launcher_path_with_spaces_actually_runs`\n  Finding: `assert \" \" in launcher` runs unconditionally, but on POSIX CI (Linux matrix the ledger says runs these tests) `tmp_path` is typically `/tmp/pytest-...` with no space, so the assertion fails before the interesting part of the test executes — and even when it doesn't fail, `subprocess.run([\"sh\", \"-lc\", launcher])` bypasses the Codex invocation shape (`$SHELL -lc \"<command_line>\"`, where Codex passes the string as one `-c` argument, not via shlex-split argv). This is the exact defect glm flagged as high (\"this test cannot pass as written on POSIX\") and it is still present in the diff despite the shlex.quote code fix landing.\n  Suggestion: Force a space into the launcher path on POSIX (e.g. create `codex_home = tmp_path / \"codex home\"` — already done — but also verify the *command string* is what Codex would actually receive: run `subprocess.run([os.environ.get(\"SHELL\", \"sh\"), \"-lc\", launcher])`), and skip or branch the `\" \" in launcher` assertion so the test is meaningful rather than failing on spaceless CI tmpdirs.\n\n- Category: security\n  Severity: medium\n  File: `shared/scripts/lib/codex_runtime.py:32-37` (`is_codex_runtime`)\n  Finding: Bundle identity is established by marker-file presence only. Any directory containing `BUILD_MANIFEST.json` + `.codex-plugin/plugin.json` with attacker-controlled `hooks.hooks` commands, passed via `--bundle-root` (or a spoofed `SHIPWRIGHT_PLUGIN_ROOT`/`CLAUDE_PLUGIN_ROOT` when no explicit root is given), gets its commands installed as globally-executing hooks for every Codex session on the machine. This was flagged by the openai external review (medium) and is not addressed anywhere in the diff or resolution notes — the doubt-review and self-review both skip it.\n  Suggestion: Validate `BUILD_MANIFEST.json`'s shape (it's the builder's own sha256 manifes […truncated]\n\n[openai] - Category: spec\n- Severity: medium\n- File: docs/hooks-and-pipeline.md:3152\n- Finding: The required documented manual sync command has no executable invocation example. It names a non-executable, no-shebang Python source file; on POSIX, running the shown path directly fails, and the repository convention requires `uv run`.\n- Suggestion: Document a runnable command, e.g. `uv run shared/scripts/tools/codex_hooks_sync.py --bundle-root <bundle>`, including the optional `--codex-home` live-proof override.\n\nThe implementation appears otherwise aligned with the acceptance criteria, including the corrected POSIX quoting and ownership handling. Ship with this documentation fix so the manual bootstrap path is actually usable.\n\nSHIPWRIGHT_VERDICT: revise",
+      "verdicts": {
+        "openai": "revise",
+        "glm": "revise"
+      }
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T09:22:02.131919+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null,
+      "model_tier": "inherit"
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_run",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-22T09:14:13.066400+00:00",
+      "disposition": "This sub-iterate's design was driven by live empirical probing against the real Codex CLI (a Windows cmd.exe /C quoting bug found by reading Codex's own Rust source) rather than the standard SKILL.md planning ceremony; no opus-plan-reviewer spawn occurred before the external plan review (Branch A) ran. External plan review (14 findings, addressed in Design Notes) and the full internal review cascade (spec/code/doubt) substitute for it.",
+      "recorded_by": "none",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

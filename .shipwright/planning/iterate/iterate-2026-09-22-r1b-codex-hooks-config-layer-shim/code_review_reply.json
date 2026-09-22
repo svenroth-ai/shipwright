@@ -1,0 +1,20 @@
+{
+  "section": "iterate-2026-09-22-r1b-codex-hooks-config-layer-shim — third pass, tree fully settled after POSIX/ownership fixes",
+  "review": [
+    {
+      "severity": "low",
+      "category": "test-coverage",
+      "file": "shared/scripts/tools/codex_hooks_launcher.py",
+      "finding": "_materialize()'s AttributeError/TypeError/KeyError wrap for a malformed bundle_hooks sub-shape (e.g. a group that isn't a dict) has no dedicated test — the symmetric hooks.json-side wrong-inner-shape case is tested (test_valid_json_wrong_inner_shape_raises), the bundle-side equivalent isn't. ACCEPTED, not fixed this pass: the code already raises CodexHooksSyncError correctly on this path (verified by trace); the iterate spec's Test Completeness Ledger doesn't list this as a required row, and _read_bundle_hooks() already covers the more likely corruption modes with a dedicated test.",
+      "suggestion": "Worth a one-line test if this file is touched again; not blocking."
+    },
+    {
+      "severity": "low",
+      "category": "bloat",
+      "file": "shared/scripts/tools/codex_hooks_sync.py",
+      "finding": "312 lines, 12 over the repo's 300-LOC source guideline for a brand-new file. ACCEPTED, not fixed this pass: no shipwright_bloat_baseline.json entry required (pre-commit hook only blocks ratcheting an EXISTING entry, per repo CLAUDE.md); surfaced for the Group H post-merge audit rather than blocking here.",
+      "suggestion": "Consider trimming or registering before merge if a future pass touches this file again."
+    }
+  ],
+  "summary_note": "Third pass, clean verdict, no blocking findings. First two passes on this diff raced my own concurrent POSIX-fix edits and produced stale/invalid findings against intermediate tree states (first pass's 'critical' fixture-shape finding was verified FALSE by directly running the full test suite — all green — before this third pass was even spawned). This pass re-read every file fresh after the tree was fully settled: is_codex_runtime()'s BUILD_MANIFEST.json shape-check / plugin.json presence-only split (deliberately NOT shape-checking plugin.json, so _read_bundle_hooks() still raises loudly on a genuinely-corrupted real bundle instead of silently no-op-ing); codex_hooks_launcher.py's _hooks_json_command()/_command_to_launcher_path() POSIX shlex.quote() round-trip (the HIGH-severity space-in-launcher-path fix, traced for spaces/quotes/plain paths); codex_hooks_sync.py's _is_shipwright_entry() .resolve(strict=False) traversal fix (traced against test_ownership_rejects_lexical_traversal_outside_launcher_dir); and the full current test suites traced assertion-by-assertion against the implementation, cross-checked against the iterate spec's Test Completeness Ledger. All confirmed correct."
+}
