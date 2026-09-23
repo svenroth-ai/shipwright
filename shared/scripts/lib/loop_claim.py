@@ -62,15 +62,54 @@ from lib.loop_state import (  # noqa: E402
 MAX_PARALLEL_HARD_CAP = 8
 
 
+#: Retry budget for `_retry_on_transient_permission_error` below — short
+#: enough to never mask a REAL permission problem (missing ACL, wrong user)
+#: as a hang, long enough to ride out a concurrent process's in-flight
+#: read or atomic replace on Windows.
+_TRANSIENT_PERMISSION_RETRY_ATTEMPTS = 5
+
+
+def _retry_on_transient_permission_error(fn):
+    """Runs the zero-arg callable `fn`, retrying only `PermissionError`
+    with a short linear backoff, up to `_TRANSIENT_PERMISSION_RETRY_ATTEMPTS`
+    times. On Windows, `state_path`'s unlocked reader (`_load_state`) and
+    its locked writer's atomic tmp+replace (`_save_state`) can transiently
+    deny EACH OTHER with `PermissionError` while one has the destination
+    file momentarily open and the other tries to read or replace it —
+    `os.replace` needs to briefly hold the destination exclusively, and
+    Python's default `open()` does not request `FILE_SHARE_DELETE`; POSIX
+    rename has no equivalent window. Real CI failure (round 12/13, PR
+    #790): `Shared tests (Windows)`, `test_n_concurrent_claimers_never_
+    double_claim` — 20 real subprocesses racing the unlocked peek
+    (`cmd_next_batch`'s outside-`loop.lock` read) against each other's
+    locked writes surfaced BOTH directions (a denied reader, and — round
+    13's local stress-test rerun — a denied `tmp.replace` when a
+    concurrent reader held the destination open), reproduced independently
+    of any specific diff: an architectural gap in the "atomic tmp+replace
+    means no lock is needed just to read" assumption, true on POSIX, false
+    on Windows. Retried briefly rather than failing an operation that would
+    otherwise succeed a few milliseconds later.
+    """
+    last_exc: PermissionError | None = None
+    for attempt in range(_TRANSIENT_PERMISSION_RETRY_ATTEMPTS):
+        try:
+            return fn()
+        except PermissionError as exc:
+            last_exc = exc
+            time.sleep(0.01 * (attempt + 1))
+    raise last_exc
+
+
 def _load_state(state_path: Path) -> dict:
-    return json.loads(state_path.read_text(encoding="utf-8"))
+    return _retry_on_transient_permission_error(
+        lambda: json.loads(state_path.read_text(encoding="utf-8")))
 
 
 def _save_state(state_path: Path, state: dict) -> None:
     state_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = state_path.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(state_path)
+    _retry_on_transient_permission_error(lambda: tmp.replace(state_path))
 
 
 def _is_ancestor(commit: str, base: str, *, cwd: str | None = None) -> bool:

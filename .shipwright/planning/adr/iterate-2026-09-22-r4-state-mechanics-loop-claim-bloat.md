@@ -214,16 +214,47 @@ context) — same shape, same "reject before any state is touched"
 placement. Not a new responsibility — completing the same CLI-argument
 validation coverage this module already gives its other numeric flag.
 
+### Round 13 growth (442 -> 481)
+
+Not an external-review finding this time — a self-discovered, CI-blocking
+regression surfaced while re-verifying round 12's fix: CI's `Shared tests
+(Windows)` failed on the round-12 push with a `PermissionError` in
+`test_n_concurrent_claimers_never_double_claim`'s real-subprocess stress
+test, and local re-runs of the SAME unmodified test reproduced it
+independently (~1-in-4 to ~1-in-6), proving it a pre-existing
+architectural gap rather than something round 12 introduced. Root cause:
+`_load_state`'s outside-lock peek and `_save_state`'s locked
+`tmp.replace(state_path)` can transiently deny EACH OTHER a
+`PermissionError` on Windows — `os.replace` needs to briefly hold the
+destination exclusively and Python's default `open()` does not request
+`FILE_SHARE_DELETE`, a window POSIX rename has no equivalent of (the
+module's own "atomic tmp+replace means no lock is needed just to read"
+assumption is true on POSIX, false on Windows). Both a reader-denied and
+a writer-denied variant were reproduced locally. Fixed by routing both
+`_load_state` and `_save_state`'s replace through one shared
+`_retry_on_transient_permission_error` helper (5 attempts, short linear
+backoff, retrying only `PermissionError` — a persistent, non-transient
+permission problem still surfaces once the budget is exhausted). Verified
+with 8 consecutive clean re-runs of the concurrency stress test after the
+fix (vs. failures within the first handful before it) — a probabilistic
+race needs more than one green run to trust. `autonomous_loop.py` and
+`loop_mark.py` carry their own separate `_load_state`/`_save_state`
+copies with the same theoretical exposure (ADR-045: never a shared
+import) — NOT touched here, since no test currently demonstrates them
+failing; left as a documented, not-yet-observed risk rather than
+speculative preemptive work.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 442-line ceiling (see
-  Round 12 growth above), not 300 — the next crossing needs its own ADR.
-- New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
-  regression live in sibling files, `shared/tests/
-  test_loop_claim_release_cleanup.py` (`cmd_release`'s own coverage) and
-  `shared/tests/test_loop_claim_mark_dispatch.py` (the ADR-045 dispatch
-  regression, moved out of the former round 12) — all split from
+  touches `loop_claim.py` operates against the current 481-line ceiling (see
+  Round 13 growth above), not 300 — the next crossing needs its own ADR.
+- New tests for `_cleanup_unit_worktree`, the ADR-045 dispatch-identity
+  regression, and the transient-`PermissionError` retry live in sibling
+  files, `shared/tests/test_loop_claim_release_cleanup.py` (`cmd_release`'s
+  own coverage), `shared/tests/test_loop_claim_mark_dispatch.py` (the
+  ADR-045 dispatch regression, moved out round 12), and `shared/tests/
+  test_loop_claim_load_state_retry.py` (round 13) — all split from
   `test_loop_claim.py` purely to keep every file under the 300-line
   guideline; no baseline implication, none of these files' own limits
   changed. Round 10's kind-recheck regression test pushed
