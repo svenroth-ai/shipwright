@@ -37,22 +37,43 @@ def state_path(tmp_path) -> Path:
     return p
 
 
+def _seed_attempt_id(state_path: Path, unit_id: str, attempt_id: str) -> None:
+    """Simulates a prior atomic claim (`loop_claim._claim_unit`) having
+    already minted a token — the only legitimate way a row gets one, since
+    round 8's fix makes `touch_unit_lease` refuse to mint it itself."""
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    unit = next(u for u in state["units"] if u["id"] == unit_id)
+    unit["attempt_id"] = attempt_id
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+
 def test_touch_creates_lease_fields_on_a_row_with_none_yet(state_path):
     lease = touch_unit_lease(
-        state_path, "R2", worktree="/wt/campaign-x", branch="iterate/x-r2",
-        attempt=0, attempt_id="a0",
+        state_path, "R2", worktree="/wt/campaign-x", branch="iterate/x-r2", attempt=0,
     )
     state = json.loads(state_path.read_text(encoding="utf-8"))
     unit = next(u for u in state["units"] if u["id"] == "R2")
-    for key in ("attempt", "attempt_id", "lease_touched_at", "lease_expires_at",
-                "worktree", "branch"):
+    for key in ("attempt", "lease_touched_at", "lease_expires_at", "worktree", "branch"):
         assert key in unit
     assert unit["worktree"] == "/wt/campaign-x"
     assert unit["branch"] == "iterate/x-r2"
     assert lease["worktree"] == "/wt/campaign-x"
 
 
+def test_touch_never_mints_an_attempt_id_on_a_token_less_row(state_path):
+    """External Tier-3 PR review (GPT, round 8): a caller-supplied
+    `attempt_id` for a row with no existing token must be REJECTED, not
+    minted — `loop_claim._claim_unit` is the sole minter."""
+    with pytest.raises(UnitLeaseError, match="attempt token mismatch"):
+        touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt_id="a0")
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    unit = next(u for u in state["units"] if u["id"] == "R2")
+    assert "attempt_id" not in unit
+    assert "worktree" not in unit  # rejected before any lease field was mutated
+
+
 def test_touch_preserves_unrelated_fields_on_the_row(state_path):
+    _seed_attempt_id(state_path, "R2", "a0")
     touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
     state = json.loads(state_path.read_text(encoding="utf-8"))
     unit = next(u for u in state["units"] if u["id"] == "R2")
@@ -68,6 +89,7 @@ def test_touch_does_not_fence_on_the_attempt_int_alone(state_path):
     so a mismatch there is routine, not evidence of a real conflict): a
     second touch with a DIFFERENT `attempt` but the SAME `attempt_id` still
     succeeds and simply overwrites."""
+    _seed_attempt_id(state_path, "R2", "a0")
     touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
     lease2 = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2",
                                attempt=1, attempt_id="a0")
@@ -80,8 +102,9 @@ def test_touch_rejects_a_mismatched_attempt_id(state_path):
     fencing token with no false-positive case — unlike `attempt` above, a
     caller that supplies one is enforced against the row's current token,
     and a mismatch must reject before mutating any lease field."""
+    _seed_attempt_id(state_path, "R2", "a0")
     touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
-    with pytest.raises(UnitLeaseError, match="stale attempt token"):
+    with pytest.raises(UnitLeaseError, match="attempt token mismatch"):
         touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2",
                           attempt=1, attempt_id="a1")
     state = json.loads(state_path.read_text(encoding="utf-8"))
@@ -95,7 +118,7 @@ def test_touch_with_no_attempt_id_preserves_an_existing_one(state_path):
     caller today (`check_unit_lease.py`'s CLI, `sub-iterate-runner.md`'s
     brief) ever passes a real one — a default-arg heartbeat touch must not
     null out a fencing token a prior atomic claim already minted."""
-    touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
+    _seed_attempt_id(state_path, "R2", "a0")
     lease2 = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2")
     assert lease2["attempt_id"] == "a0"
     state = json.loads(state_path.read_text(encoding="utf-8"))

@@ -10,21 +10,25 @@ unbounded windows — see ``campaign-worktree.md``'s "touch coverage gap".
 This module closes the FIRST one: the runner itself heartbeats its own unit
 row while it is the process actually occupying the worktree.
 
-Lease fields (``attempt``, ``attempt_id``, ``lease_touched_at``,
-``lease_expires_at``, ``worktree``, ``branch``) live on the unit's own row in
-``loop_state.json``, guarded by the SAME ``loop.lock`` / ``file_lock``
-``autonomous_loop.py`` already serializes every other ``loop_state.json``
-write through — deliberately not a second state file, so there is only ever
-one mutex to reason about for this file.
+Lease fields (``attempt``, ``lease_touched_at``, ``lease_expires_at``,
+``worktree``, ``branch``) live on the unit's own row in ``loop_state.json``,
+guarded by the SAME ``loop.lock`` / ``file_lock`` ``autonomous_loop.py``
+already serializes every other ``loop_state.json`` write through —
+deliberately not a second state file, so there is only ever one mutex to
+reason about for this file. ``attempt_id`` lives on the same row but is
+NEVER touch-created — see below.
 
-**Field-creating upsert, fencing-token validation is opt-in.** R2 is
-independent of R1 in this campaign's own DAG, so a row is not guaranteed to
-already carry these fields (``_load_units_from``'s fixed key set does not
-mint them) — the first touch for a unit creates them. **Fencing-token
-(`attempt_id`) validation only engages when the caller supplies a real
-token** (external Tier-3 PR review, round 7): a mismatch against the row's
-current `attempt_id` then raises :class:`UnitLeaseError` before any lease
-field is mutated. No caller today (`check_unit_lease.py`'s CLI,
+**Field-creating upsert for the lease fields; `attempt_id` is read/validated
+only, never minted.** R2 is independent of R1 in this campaign's own DAG, so
+a row is not guaranteed to already carry the lease fields (`_load_units_from`'s
+fixed key set does not mint them) — the first touch for a unit creates them.
+`attempt_id` is different: `loop_claim._claim_unit` is its sole minter
+(external Tier-3 PR review, round 8) — a touch only ECHOES the row's current
+value back, and if the caller supplies a real token, validates it against
+that value: a mismatch — including a token supplied for a row that has none
+yet — raises :class:`UnitLeaseError` before any lease field is mutated
+(round 7 added the mismatch check; round 8 closed the token-less-row minting
+gap it still allowed). No caller today (`check_unit_lease.py`'s CLI,
 `sub-iterate-runner.md`'s brief) passes a real `attempt_id`, so this is fully
 inert until R5a wires one through — a touch with no token is completely
 unaffected and behaves exactly as before.
@@ -155,13 +159,15 @@ def touch_unit_lease(
 ) -> dict:
     """Field-creating upsert of this unit's lease fields. Returns the lease
     fields written (a plain ``dict``, not the whole row) — ``attempt_id`` is
-    echoed from the row rather than necessarily written, since a `None`
-    caller value leaves any existing token untouched — plus
+    always the row's EXISTING value echoed back, never written by this
+    function (`loop_claim._claim_unit` is its sole minter) — plus
     ``stale_attempt_conflict`` (see module docstring's "Ghost-touch
     marking") and ``row_attempt`` (the row's real attempt counter after this
     touch — may differ from the echoed ``attempt`` the caller touched with).
 
     Raises :class:`UnitLeaseError` when the state file is missing/unreadable,
+    a caller-supplied `attempt_id` does not match the row's current value
+    (including a row with none yet — see module docstring),
     `expected_campaign_worktree` is given and does not match `state_path`,
     the unit id is not found, or the write itself fails — every case the
     caller must treat as warn-and-continue (module docstring).
@@ -186,17 +192,21 @@ def touch_unit_lease(
                 raise UnitLeaseError(
                     f"unit {unit_id!r} not found in {state_path} — cannot touch its lease")
 
-            # External Tier-3 PR review (GPT, round 7): unlike the `attempt`
-            # int counter below (a documented false-positive-prone
+            # External Tier-3 PR review (GPT, rounds 7-8): unlike the
+            # `attempt` int counter below (a documented false-positive-prone
             # diagnostic — see "Known limitation" above), `attempt_id` is a
             # real fencing TOKEN with no false-positive case, so a caller
-            # that supplies one can be enforced against now; one that
-            # doesn't (every caller today) is unaffected.
+            # that supplies one is enforced against the row's CURRENT value —
+            # including `None` (round 8: a token-less row has nothing to
+            # match, so a supplied token is rejected rather than minted;
+            # `loop_claim._claim_unit` is the sole minter, never this touch).
+            # A caller that supplies no token (every caller today) is
+            # unaffected either way.
             existing_attempt_id = unit.get("attempt_id")
-            if attempt_id and existing_attempt_id and attempt_id != existing_attempt_id:
+            if attempt_id and attempt_id != existing_attempt_id:
                 raise UnitLeaseError(
-                    f"stale attempt token for {unit_id!r}: touch carries {attempt_id!r}, "
-                    f"row is now {existing_attempt_id!r} — refusing to mutate lease fields")
+                    f"attempt token mismatch for {unit_id!r}: touch carries {attempt_id!r}, "
+                    f"row's real token is {existing_attempt_id!r} — refusing to mutate lease fields")
 
             existing_attempt = unit.get("attempt")
             stale_attempt_conflict = (
@@ -212,23 +222,12 @@ def touch_unit_lease(
                 "branch": branch,
             }
             unit.update(lease)
-            # Stage-3 doubt review (HIGH #3): `attempt_id` is the atomic-claim
-            # fencing token (`loop_claim.py`'s sole minter) -- the exact same
-            # bug class the `attempt` field below was already fixed for.
-            # `attempt_id` defaults to `None` and no caller today
-            # (`check_unit_lease.py`'s CLI, `sub-iterate-runner.md`'s brief)
-            # ever passes a real one (R5a work), so writing it unconditionally
-            # into `lease` nulled a real fencing token on every heartbeat,
-            # defeating fencing for every later `cmd_record`/`cmd_mark` call
-            # against this row. Only ever set it when the caller passes a
-            # real value; never blank an existing one. Scoped-review fix
-            # (low, finding E): guard on truthiness, not `is not None` — an
-            # unrendered template variable in a runner brief can pass
-            # `--attempt-id ""`, which `is not None` would still accept and
-            # blank the live token with, exactly the bug this fix removes.
-            if attempt_id:
-                unit["attempt_id"] = attempt_id
-            lease["attempt_id"] = unit.get("attempt_id")
+            # `attempt_id` is the atomic-claim fencing token
+            # (`loop_claim.py`'s sole minter) — this touch never writes it,
+            # only echoes the row's existing value back (round 8: any
+            # caller-supplied value already matched it or was rejected
+            # above, so there is nothing left to write).
+            lease["attempt_id"] = existing_attempt_id
             # Stage-2 code review (high): `attempt` is `autonomous_loop`'s own
             # retry counter (`_reconcile_in_progress`, `cmd_next`), not a lease
             # field this module owns — every real row already carries it from
