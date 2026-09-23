@@ -597,7 +597,6 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
     (`is_legal_transition`) both see a real state on this row from here on.
     """
     warnings: list[str] = []
-    runs_dir = runs_dir_for(state_path, state["loop_id"])
     is_sub_iterate = state.get("kind") == "sub_iterate"
     done_status = "merged" if is_sub_iterate else "complete"
 
@@ -605,8 +604,23 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
         if unit["status"] != "in_progress":
             continue
 
-        result_path = runs_dir / unit["id"] / "result.json"
-        if result_path.exists():
+        # External Tier-3 PR review (GPT, round 19): the persisted
+        # `unit["id"]` was previously concatenated into `runs_dir /
+        # unit["id"] / "result.json"` directly, unvalidated — the same
+        # traversal/malformed-identifier threat model `runs_dir_for`'s own
+        # `unit_id` parameter (round 9) already exists to close, just not
+        # routed through here. A malformed/tampered id could redirect this
+        # lookup to an unrelated `result.json` and get treated as
+        # completion. Route through `runs_dir_for`'s validated
+        # `unit_id` parameter instead; a malformed id fails CLOSED (this
+        # unit is simply not reconciled from result.json this pass, falling
+        # through to the branch-log check below), never crashes the whole
+        # reconcile sweep for every other unit.
+        try:
+            result_path = runs_dir_for(state_path, state["loop_id"], unit["id"]) / "result.json"
+        except ValueError:
+            result_path = None
+        if result_path is not None and result_path.exists():
             try:
                 result = json.loads(result_path.read_text(encoding="utf-8"))
                 if result.get("status") == "complete":

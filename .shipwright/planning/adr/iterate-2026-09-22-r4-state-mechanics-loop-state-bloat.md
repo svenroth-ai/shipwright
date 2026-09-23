@@ -307,16 +307,49 @@ to `is_unit_ready` making this boundary explicit for the next reader (or
 reviewer) who has the same question, since the confusion was genuine
 even though the finding was not.
 
+### Round 19 growth (954 -> 968)
+
+External Tier-3 review (GPT, PR #790 round 19) found `_reconcile_legacy`
+concatenated a persisted unit's `id` directly into
+`runs_dir / unit["id"] / "result.json"` unvalidated — the same traversal
+threat model `runs_dir_for`'s own `unit_id` parameter already closes
+(Round 9), just not routed through here. A malformed `unit_id` such as
+`"A/../B"` resolves to the sibling `runs/{loop_id}/B/`, letting one unit's
+reconcile read another unit's `result.json`. Fixed by routing the lookup
+through `runs_dir_for(state_path, state["loop_id"], unit["id"])` instead of
+manual string concatenation, and catching the `ValueError` it raises on a
+charset-rejected id so a malformed persisted id fails closed (falls through
+to the existing reset-to-pending fallback) rather than crashing the whole
+reconcile sweep. Not a new responsibility — closing the same gap Round 9
+already closed for `autonomous_loop.py`'s call sites, for this module's own
+internal call site. One new regression test
+(`test_legacy_reconcile_fails_closed_on_a_malformed_persisted_unit_id`)
+plants a real `result.json` at exactly the sibling path a naive containment
+check alone would miss, proving it is never read.
+
+**Test-file split:** the new regression test pushed
+`test_loop_state_fencing.py` to 323 lines, over the 300-line guideline. Its
+`TestCmdInitSubIteratePayload` class (10 tests, all already exercising
+`cmd_init_sub_iterate_payload`/`_reconcile_legacy`, none of the other
+classes in that file) was extracted verbatim into a new sibling file,
+`shared/tests/test_loop_state_init_reconcile.py` — no baseline implication,
+that file never existed before. Both files re-verified together
+(`test_loop_state_fencing.py` + `test_loop_state_init_reconcile.py` +
+`test_loop_state_transitions.py`): 79 passed, the same total as before the
+split.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 954-line ceiling
-  (see Round 15 growth above), not 278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 968-line ceiling
+  (see Round 19 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`
-  (fencing primitives, path helpers, init/finalize/record-status bodies —
-  split from the former purely to keep each file under the 300-line
+  (fencing primitives, path helpers, finalize/record-status bodies),
+  `shared/tests/test_loop_state_init_reconcile.py` (the
+  `cmd_init_sub_iterate_payload`/`_reconcile_legacy` decision body, split out
+  of the former at Round 19 purely to keep each file under the 300-line
   guideline), and `shared/tests/test_loop_claim.py` / `test_loop_mark.py`
   (the new CLIs); none of these existed before this diff, so none carries
   baseline history to ratchet.
