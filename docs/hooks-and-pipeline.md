@@ -2291,16 +2291,29 @@ writes the identical session-keyed pointer file
 `_pointer_targets_a_different_wave_unit(pointer_worktree, caller_root)` —
 gated on `per_unit_worktree_identity(caller_root)` being non-`None` — and
 fall through past source 0 rather than hand a caller its sibling's `run_id`
-when the shared pointer was last written by a different unit. Inert (never
-triggers) for a standalone iterate or a main-root-rooted audit — which is
-also this fix's documented residual: a caller whose OWN root is main or the
-shared campaign worktree (not a per-unit worktree) during a live wave —
-e.g. the orchestrator's own Stop hook, or a separate session inspecting
-`main` mid-wave — still resolves source 0 to whichever sibling's setup call
-wrote the shared pointer last, since `per_unit_worktree_identity(caller_root)`
-correctly returns `None` for it and the new guard has nothing to gate on.
-Pre-R5a this ambiguity did not exist: exactly one unit was ever live, so the
-pointer was unambiguous for every caller (code review round 4).
+when the shared pointer was last written by a different unit. That guard
+alone is inert for a caller whose OWN root is main or the shared campaign
+worktree (not a per-unit worktree) during a live wave — e.g. the
+orchestrator's own Stop hook — since `per_unit_worktree_identity(caller_root)`
+correctly returns `None` for it and the guard has nothing to gate on; a
+SEPARATE, unconditional check closes that case instead (external Tier-3 PR
+review, blocking, R5a): `_in_wave_but_identity_unverifiable(caller_root)`
+fails BOTH `pointer_run_id` and `pointer_worktree_root` closed — refusing
+source 0 outright, before the pointer file is even read — whenever the
+`SHIPWRIGHT_LOOP_UNIT_ID` sentinel is set (a signal proven to reach a
+Stop-hook subprocess correctly, since the CI-supplychain-authorship-guard
+has relied on this same env var's truthiness since before R5a) but
+`per_unit_worktree_identity(caller_root)` cannot prove the caller IS a
+per-unit worktree. Such a caller falls through all the way to source 3,
+which fails the same identity check and falls through to `SHIPWRIGHT_LOOP_ID`
+alone — a shared, non-attributing value — rather than a confidently wrong
+sibling's `run_id`. Deliberately independent of whether `Path.cwd()`
+resolves to the per-unit worktree inside a hook subprocess (the "Round 4"
+question the run-id bloat-exception ADR still tracks as open) — this check
+only needs the ALREADY-per-unit case to keep working, not the non-per-unit
+case to resolve cwd correctly. Pre-R5a this ambiguity did not exist: exactly
+one unit was ever live, so the pointer was unambiguous for every caller
+(code review round 4).
 
 Source 0 is the per-session run pointer `setup_iterate_worktree.py` writes at
 B1a (`iterate-2026-08-06-resolve-run-id-seam`). Sources 1-3 are structurally

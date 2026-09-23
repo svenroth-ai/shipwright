@@ -325,3 +325,43 @@ against the code currently on this branch, not assumed fixed from memory:
   those comments are the record of three PRIOR external-review rounds fixing
   real bugs in this exact function; removing them to make room for a fourth
   finding's fix would make the NEXT reviewer re-discover the same ground.
+
+## Superseded: exception resolved by a module split (round 7, PR-review-gate fix)
+
+The `_in_wave_but_identity_unverifiable` fix (closing the external Tier-3 PR
+reviewer's blocking finding — a shared-root caller silently inheriting a
+sibling's identity, § below) pushed the file to 369 lines, past even this
+ADR's own 335 ceiling. Rather than raise the exception a third time, the file
+was split three ways, and the bloat-baseline entry for `_run_id.py` this ADR
+created is **removed** — the file is back at 201 lines, under the default
+300-line limit, and needs no exception:
+
+- `_run_id.py` (201 lines) — keeps exactly the pointer-reading functions
+  (`pointer_run_id`, `pointer_worktree_root`, `_worktree_is_live`) that read
+  the on-disk run pointer and apply its liveness/ownership/identity checks.
+- `_run_id_wave.py` (69 lines, new) — the two wave-collision predicates
+  (`_pointer_targets_a_different_wave_unit`,
+  `_in_wave_but_identity_unverifiable`). These answer a cross-cutting
+  question — "is this pointer safe to trust from THIS caller during a live
+  wave" — that both pointer functions call into but neither owns; round 3's
+  Ousterhout argument against splitting concerned a helper that WAS one rung
+  of a single ladder read top-to-bottom, which these predicates are not.
+- `_run_id_resolve.py` (138 lines, new) — `resolve_run_id`'s composite
+  fallback ladder (steps 1-4), which already called `pointer_run_id` as an
+  ordinary cross-module function (not an inlined step) and already had a
+  clean re-export seam at `_resolution.py` (`phase_quality.resolve_run_id`
+  callers are unaffected — `_resolution.py` now imports it from
+  `_run_id_resolve` instead of `_run_id`, same public name, same behavior).
+  Moving it does not fragment anything read as one unit: `resolve_run_id`'s
+  own docstring already describes its 5 steps as separate, independently
+  reasoned-about tiers, unlike round 3's single-function helper.
+
+This is not a reversal of the Ousterhout/YAGNI reasoning above so much as its
+natural endpoint: rounds 2-3 grew the file because the alternative available
+at the time (splitting a helper off a single ladder-rung) was a worse
+interface than a few more lines. Round 7's growth is a different shape — a
+whole additional top-level function (`resolve_run_id`) and a pair of
+free-standing predicates, both already loosely coupled to the pointer
+functions through ordinary calls rather than shared inline state — so here
+the split is the better interface, not the deferred cost.
+

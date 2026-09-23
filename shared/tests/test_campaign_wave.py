@@ -204,7 +204,7 @@ class TestHandoffNamespacingUsesTheRealUnitIdNotTheSentinel:
 
 class TestRunIdTier3IgnoresTheSentinel:
     def test_resolve_run_id_falls_back_to_loop_id_alone_under_the_sentinel(self, tmp_path, monkeypatch):
-        from lib.phase_quality._run_id import resolve_run_id
+        from lib.phase_quality._run_id_resolve import resolve_run_id
 
         monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")
         monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", WAVE_UNIT_ID_SENTINEL)
@@ -214,7 +214,7 @@ class TestRunIdTier3IgnoresTheSentinel:
         assert WAVE_UNIT_ID_SENTINEL not in result
 
     def test_resolve_run_id_still_composes_a_real_loop_unit(self, tmp_path, monkeypatch):
-        from lib.phase_quality._run_id import resolve_run_id
+        from lib.phase_quality._run_id_resolve import resolve_run_id
 
         monkeypatch.setenv("SHIPWRIGHT_LOOP_ID", "loop-1")
         monkeypatch.setenv("SHIPWRIGHT_LOOP_UNIT_ID", "section-3")
@@ -227,7 +227,7 @@ class TestRunIdTier3IgnoresTheSentinel:
         """A per-unit worktree gets its OWN composed id under the sentinel,
         not the shared `loop_id`-alone value two sibling units would
         otherwise collide on."""
-        from lib.phase_quality._run_id import resolve_run_id
+        from lib.phase_quality._run_id_resolve import resolve_run_id
 
         wt = tmp_path / "campaign-mydag--R5a"
         wt.mkdir()
