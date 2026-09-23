@@ -35,6 +35,7 @@ import json
 import re
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -255,7 +256,16 @@ def cmd_mark(args: argparse.Namespace) -> int:
             # tightening it.
             old_attempt_id = unit.get("attempt_id")
             if current in ACTIVE and args.status not in ACTIVE and old_attempt_id:
-                unit["attempt_id"] = f"{old_attempt_id}-marked-away-{now_iso()}"
+                # External review (GPT, high): a raw `now_iso()` suffix
+                # produces colons and a `+00:00` offset, violating the
+                # hyphen-based attempt-ID convention every real mint
+                # (`f"{loop_id}-{unit_id}-a{attempt}"`) and
+                # `_SAFE_ATTEMPT_ID_RE` observe — colons are the NTFS
+                # alternate-data-stream separator on Windows. A UUID needs
+                # no such guarantee: it is already alnum-only and, unlike a
+                # timestamp, carries no risk of colliding with a real mint
+                # even if this row is later reclaimed in the same instant.
+                unit["attempt_id"] = f"{old_attempt_id}-marked-away-{uuid.uuid4().hex}"
             if args.status == "held" and not reason_code:
                 reason_code = "operator_mark"
             if reason_code:

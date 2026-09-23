@@ -155,7 +155,12 @@ class TestCmdMark:
         already says e.g. `held`. Rotated (not cleared to `None`): a `None`
         `attempt_id` would make `resolve_record_status`/
         `enforce_record_fencing`'s own compatibility boundary treat the row
-        as never touched by the new flow and SKIP fencing entirely."""
+        as never touched by the new flow and SKIP fencing entirely.
+
+        External review (GPT, high): the rotated suffix must stay within the
+        hyphen-based attempt-ID convention every real mint observes — a raw
+        `now_iso()` suffix produced colons and a `+00:00` offset, and `:` is
+        the NTFS alternate-data-stream separator on Windows."""
         state_path = _write_state(tmp_path, [
             {"id": "A", "status": "running", "attempt_id": "l-A-a0"},
         ])
@@ -165,6 +170,7 @@ class TestCmdMark:
         assert row["status"] == "held"
         assert row["attempt_id"] != "l-A-a0"
         assert row["attempt_id"] is not None
+        assert ":" not in row["attempt_id"] and "+" not in row["attempt_id"]
 
     def test_staying_within_active_states_does_not_rotate_attempt_id(self, tmp_path):
         """A forced transition that stays WITHIN ACTIVE (e.g. `running` ->
