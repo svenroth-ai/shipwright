@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -39,6 +40,34 @@ _CLAUDE_VERSION_TIMEOUT_SECONDS = 15
 _EMPTY_MCP_CONFIG_PATH = (
     Path(__file__).resolve().parents[2] / "config" / "claude_cli_empty_mcp.json"
 )
+
+# This leg must always reach real Anthropic when the session is
+# Codextender-routed (CODEXTENDER_ACTIVE set — see docs/hooks-and-pipeline.md):
+# a bare `subprocess.run(argv, ...)` with no `env=` would otherwise inherit
+# the parent session's ANTHROPIC_BASE_URL pointed at a local Codex-backed
+# proxy, silently misrouting this leg too. Scrubbed ONLY under that
+# condition, never unconditionally — a CI PR-review pass found that
+# ANTHROPIC_AUTH_TOKEN in particular is also a legitimate way to
+# authenticate directly with real Anthropic outside any proxy setup (e.g. an
+# enterprise bearer-token credential with no separate ANTHROPIC_API_KEY); an
+# unconditional scrub would silently break that installation's auth entirely
+# (iterate-2026-09-23-codextender-monorepo-part-c). CODEXTENDER_ACTIVE is the
+# one signal that actually distinguishes "these vars are a proxy override"
+# from "this is the caller's own legitimate config" — scrubbing only ever
+# removes an override that flag itself proves is in place.
+_ANTHROPIC_ENV_SCRUB_KEYS = ("ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_MODEL")
+
+
+def _real_anthropic_env() -> dict[str, str] | None:
+    """A copy of the current environment with the Anthropic routing/model
+    overrides removed when this session is Codextender-routed, so the spawned
+    ``claude`` CLI always reaches real Anthropic instead of the Codex-backed
+    proxy. Returns ``None`` (subprocess.run's own "inherit unchanged")
+    outside Codextender, since these vars may be the caller's own
+    legitimate, non-proxy configuration."""
+    if not os.environ.get("CODEXTENDER_ACTIVE"):
+        return None
+    return {key: value for key, value in os.environ.items() if key not in _ANTHROPIC_ENV_SCRUB_KEYS}
 
 
 def _resolve_claude_binary() -> str | None:
@@ -183,6 +212,7 @@ def review_claude_cli(content: str, context: str, system_prompt: str, user_promp
             proc = subprocess.run(
                 argv, input=stdin_payload, capture_output=True,
                 encoding="utf-8", errors="replace", timeout=timeout,
+                env=_real_anthropic_env(),
             )
         except subprocess.TimeoutExpired:
             return {"status": "error", "via": "claude_cli", "reason": f"claude CLI timed out after {timeout}s"}

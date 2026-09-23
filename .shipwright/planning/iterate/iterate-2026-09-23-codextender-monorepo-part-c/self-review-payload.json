@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Spec Compliance", "verdict": "pass", "note": "Implements exactly Part C items 1-4 of Spec/codextender-integration.md: driver-selection prose fixed across all 11 census sites, the env-scrub bug fixed with a regression test, docs/hooks-and-pipeline.md and the model-config schema updated, codex_review_transport.py untouched."},
+    {"name": "Error Handling", "verdict": "pass", "note": "_real_anthropic_env() is a plain dict comprehension over os.environ.items(); no new failure mode introduced. Bash conditionals ([ -n ... ]) are the existing prose style already used elsewhere in these files."},
+    {"name": "Security Basics", "verdict": "pass", "note": "The change is itself a security hardening: scrubs ANTHROPIC_BASE_URL/ANTHROPIC_AUTH_TOKEN/ANTHROPIC_MODEL from the opus-leg subprocess env so it always reaches real Anthropic regardless of the parent session's routing. No new user input paths, no secrets added."},
+    {"name": "Test Quality", "verdict": "pass", "note": "New test asserts on the observable outcome (the env dict passed to subprocess.run), not internal state; covers both the leaked vars being absent and an unrelated var being preserved. 26/26 existing opus-leg tests still pass unchanged."},
+    {"name": "Performance Basics", "verdict": "n/a", "note": "Doc/prose edits plus one O(n) dict comprehension over the process environment (n is tiny); no loops, no I/O added."},
+    {"name": "Naming & Structure", "verdict": "pass", "note": "All touched files re-verified under their LOC ceilings (sub-iterate-runner.md=512, plan SKILL.md=300, step-5-external-review.md=400) after trimming; naming (_real_anthropic_env, _ANTHROPIC_ENV_SCRUB_KEYS) follows the module's existing _resolve_claude_binary-style private-helper convention."},
+    {"name": "Affected Boundaries", "verdict": "n/a", "note": "No serialized-format producer/consumer introduced or changed — CODEXTENDER_ACTIVE is read as a plain boolean-presence env var via shell prose ([ -n \"$VAR\" ]) and os.environ, not a new file/JSON/YAML format; model_config.schema.json's structure is unchanged, only a $defs description string was extended."},
+    {"name": "Test Hygiene Probe", "verdict": "pass", "note": "uv run shared/scripts/tools/scan_test_hygiene.py --diff reported no findings."}
+  ]
+}

@@ -340,11 +340,17 @@ uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_revi
   > "{project_root}/.shipwright/planning/iterate/$RUN_ID/external-code-review-raw.json"
 ```
 
-(`--driver` is **required, no default** — same `{driver}` value as this run's
-plan/architecture calls in [iteration-planning.md](iteration-planning.md): the
-harness actually driving this session, `claude` or `codex`. A Codex-authored
-diff must never be reviewed by another OpenAI-family model, so this cascade's
-identity swap has to track the same session's driver, not a hardcoded value.)
+(`--driver` is **required, no default** — the harness actually driving this
+session, `claude` or `codex`, `codex` also when `CODEXTENDER_ACTIVE` is set
+(even though the harness is `claude`) — same resolution rule as
+[iteration-planning.md](iteration-planning.md) Step 3.5, **read directly, not
+only inherited from it**: this cascade fires whenever a diff exceeds 100
+lines or touches a security-sensitive file (see "Full Code Review Trigger"
+above), which happens at any complexity, not only medium+ where Step 3.5
+runs — a small run with no plan/architecture call must still resolve `codex`
+here on its own. A Codex-authored diff must never be reviewed by another
+OpenAI-family model, so this cascade's identity swap has to track the same
+session's driver, not a hardcoded value.)
 
 (The redirect writes the ONE canonical basename "Recording each review pass"
 below names for `external_code` — `record_review_pass.py record` REJECTS a

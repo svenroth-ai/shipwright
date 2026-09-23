@@ -35,7 +35,7 @@
   "$defs": {
     "Tier": {
       "enum": ["opus", "sonnet", "haiku", "fable", "inherit"],
-      "description": "'inherit' is an explicit way to say the same thing as leaving the key unset. 'fable' is a valid, unranked tier — it cannot be used as a 'floors' value (see RankedTier)."
+      "description": "'inherit' is an explicit way to say the same thing as leaving the key unset. 'fable' is a valid, unranked tier — it cannot be used as a 'floors' value (see RankedTier). Under Codextender mode (CODEXTENDER_ACTIVE set — see docs/hooks-and-pipeline.md), setting 'review' and 'plan_review' to 'inherit' is the correct operator action to route internal reviews onto the same Codex-backed model the main session uses: no new plumbing needed, since a subagent with no model override already inherits the spawning session's routing. There is no mechanism to pin a review role to a *different* Codextender alias than the main loop."
     },
     "RankedTier": {
       "enum": ["opus", "sonnet", "haiku"],
