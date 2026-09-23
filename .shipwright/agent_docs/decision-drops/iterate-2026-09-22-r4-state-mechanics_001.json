@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-22-r4-state-mechanics",
+  "date": "2026-09-23",
+  "section": "campaign-dag-scheduler R4 — concurrent state mechanics",
+  "title": "9-state unit machine, single-writer fencing, atomic batch claim (R4)",
+  "context": "loop_state.json gains a 9-state machine + hyphen-based single-writer fencing for kind==sub_iterate, restated for the wave model. See .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md (bloat exception, current 757) and -review-findings.md (28 external-review findings, dispositioned).",
+  "decision": "Split mechanics into lib/loop_state.py (state machine, fencing primitives, path helpers, dual-kind reconcile), lib/loop_claim.py (batch claim/release, ancestry outside loop.lock), lib/loop_mark.py (identity-checked mark-running/mark-merged/mark). kind==section behaviorally unchanged, proven by a dedicated full-cycle regression test.",
+  "consequences": "autonomous_loop.py shrinks (420->442, still net below its pre-R4 454 baseline). loop_state.py needs a bloat exception (278->757) per its own explicit plan-assigned module boundary. Every downstream R5a/R5b/R6 sub-iterate builds on this 9-state vocabulary and fencing invariant.",
+  "rationale": "Two external review passes (plan + code) found and fixed 2 high + 4 medium real defects (path traversal, cmd_record TOCTOU + missing transition check, ancestry-inside-lock, legacy in_progress fallthrough, unfenced cmd_mark cwd, claim-time lease gap); 6 more findings deferred to R5a (runner-brief construction, R2-lease-touch fencing migration) with documented reasoning. Full table in -review-findings.md.",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "component",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-review-findings.md"
+}

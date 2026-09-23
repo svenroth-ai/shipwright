@@ -50,16 +50,20 @@ module's: doing so on every heartbeat (the runner always touches with
 `attempt=0`) would have silently reset the real retry counter to zero and
 then reported every later touch as a false conflict.
 
-**Known limitation (doubt-reviewer, medium — NOT yet fixed, tracked for
-R4):** `sub-iterate-runner.md` never passes its own `--attempt` (it has no
-brief parameter to pass), so every touch compares the row's real counter
-against a hardcoded `attempt=0`. Once `_reconcile_in_progress` has ever
-bumped that counter (any prior reconcile of THIS unit, for any reason), every
-subsequent touch from the unit's sole, legitimate, still-healthy runner
-reports `stale_attempt_conflict: True` — this is an EXPECTED, common false
-positive today, not evidence of an actual ownership conflict, and must not be
-treated as a trustworthy fencing signal until R4 wires the real attempt
-through to the runner's touch call.
+**Known limitation (doubt-reviewer, medium — NOT yet fixed; R4 landed the
+fencing primitives this needs, but not this call site — deferred to R5a,
+where the runner brief that would carry a real `--attempt` is actually
+built; see `iterate-2026-09-22-r4-state-mechanics-review-findings.md`):**
+`sub-iterate-runner.md` never passes its own `--attempt` (it has no brief
+parameter to pass), so every touch compares the row's real counter against a
+hardcoded `attempt=0`. Once a reconcile has ever bumped that counter (any
+prior reconcile of THIS unit, for any reason — `lib.loop_state.reconcile_in_progress`
+for the new fencing-based claims, `autonomous_loop.cmd_next`'s legacy path
+otherwise), every subsequent touch from the unit's sole, legitimate,
+still-healthy runner reports `stale_attempt_conflict: True` — this is an
+EXPECTED, common false positive today, not evidence of an actual ownership
+conflict, and must not be treated as a trustworthy fencing signal until R5a
+wires the real attempt through to the runner's touch call.
 
 **Optional campaign-worktree consistency check** (external plan review, GLM
 finding 4 + OpenAI finding 3): `campaign_worktree` and `state_path` are two

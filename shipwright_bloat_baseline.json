@@ -839,9 +839,16 @@
     {
       "path": "shared/scripts/lib/autonomous_loop.py",
       "limit": 300,
-      "current": 454,
+      "current": 442,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r2-worktree-capability-autonomous-loop-bloat.md"
+    },
+    {
+      "path": "shared/scripts/lib/loop_state.py",
+      "limit": 300,
+      "current": 757,
+      "state": "exception",
+      "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md"
     },
     {
       "path": "shared/scripts/lib/campaign_graph.py",

@@ -1,0 +1,184 @@
+{
+  "run_id": "iterate-2026-09-22-r4-state-mechanics",
+  "date": "2026-09-23T01:32:33.510276Z",
+  "event_at": "2026-09-23T01:32:01.898155+00:00",
+  "type": "change",
+  "complexity": "large",
+  "prior_source": "keyword",
+  "branch": "iterate/campaign-r4-state-mechanics",
+  "spec": ".shipwright/planning/iterate/2026-09-20-campaign-dag-scheduler-plan.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-09-22-r4-state-mechanics",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "the 9-state edge table matches the spec exactly (legal/illegal for every from/to pair)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_transitions.py::TestStateMachineData::test_edge_table_exhaustive PASSED"
+      },
+      {
+        "behavior": "`mark`'s forced override crosses any real edge but still rejects an unknown state name",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_transitions.py::TestStateMachineData::test_forced_crosses_any_real_edge, test_forced_still_rejects_unknown_state_names PASSED"
+      },
+      {
+        "behavior": "ACTIVE/RESUMABLE/TERMINAL partition every state with none left over",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_transitions.py::TestStateMachineData::test_terminal_active_resumable_partition_non_terminal PASSED"
+      },
+      {
+        "behavior": "reconcile dispatch: sub_iterate -> lease-based reconcile; section/unknown kind -> untouched legacy reconcile",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_transitions.py::TestReconcileDispatch (2 tests) PASSED"
+      },
+      {
+        "behavior": "lease-based reconcile: never-leased/expired claimed-or-running unit resets to pending without bumping attempt; a live lease is left untouched; `merging` is never touched",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_transitions.py::TestReconcileLeases (4 tests) PASSED"
+      },
+      {
+        "behavior": "cmd_init resume/reinit fix (gated kind==sub_iterate): ACTIVE reconciled+mutates, RESUMABLE reports resumed without mutating, all-TERMINAL resumes pending:0 not reinit, genuinely empty list still reinits",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestCmdInitSubIteratePayload (4 base tests) PASSED"
+      },
+      {
+        "behavior": "a unit stuck at the pre-R4 legacy status \"in_progress\" is reconciled via the untouched legacy path (alone or alongside an ACTIVE unit), never silently reported resumed-with-nothing-pending",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestCmdInitSubIteratePayload::test_legacy_in_progress_unit_is_reconciled_not_silently_resumed, test_legacy_in_progress_alongside_active_unit_both_reconciled PASSED"
+      },
+      {
+        "behavior": "cmd_finalize refuses while any unit sits outside TERMINAL, and summarizes merged/failed/held counts once all units are terminal",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestSubIterateFinalizeSummary (2 tests) PASSED"
+      },
+      {
+        "behavior": "cmd_record's status remap: never-claimed row passes through unchanged; claimed row maps complete->built, else->failed; kind==section never remapped even with attempt_id present",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestResolveRecordStatus (4 tests) PASSED"
+      },
+      {
+        "behavior": "cmd_record's fencing gate: never-claimed unit skips the check; claimed unit without --attempt-id rejected; stale token rejected AND parked; matching token proceeds -- including the write-lock target-transition-legality re-check (code-review TOCTOU fix)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestEnforceRecordFencing (4 tests) PASSED"
+      },
+      {
+        "behavior": "fencing primitives: SHA format validation, attempt-token match/mismatch/absence, unit-row lookup exact-then-case-fold",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestFencingPrimitives (5 tests) PASSED"
+      },
+      {
+        "behavior": "canonical state-root path helpers (runs_dir_for, rejected_payload_path, handoff_dir_for) are state-root-relative, never cwd-relative",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_fencing.py::TestPathHelpers (3 tests) PASSED"
+      },
+      {
+        "behavior": "rejected_payload_path safely contains a malicious --attempt-id (path separators, .., absolute paths, embedded NUL) inside its intended directory, never escaping it",
+        "disposition": "tested",
+        "evidence": "Step 3.8 confidence-calibration probe (this run, run_id iterate-2026-09-22-r4-state-mechanics): 6/6 malicious attempt_id values contained, 0 findings"
+      },
+      {
+        "behavior": "atomic batch claim (cmd_next_batch): claims min(max_parallel, ready_set) atomically; rejects invalid --max-parallel/non-sub_iterate kind; reports done/stalled/LockTimeout correctly; claims a unit whose dependency ancestry verifies",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_claim.py::TestCmdNextBatch (7 tests) PASSED"
+      },
+      {
+        "behavior": "dependency ancestry assert: no-deps always ready; missing base/merged_commit/invalid SHA fail closed; ancestor confirmed without or after one fetch retry; still-absent leaves the unit pending for next round rather than failing the batch",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_claim.py::TestAncestryOk (7 tests) PASSED"
+      },
+      {
+        "behavior": "single-writer fencing on claim: first claim never bumps attempt; a reclaim bumps attempt exactly once on the NEXT claim; a claim writes an initial lease so the unit is never read as never-leased before its runner's first heartbeat (code-review fix)",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_claim.py::TestClaimUnit (3 tests) PASSED"
+      },
+      {
+        "behavior": "cmd_release: returns a launch-failed unit to pending without bumping attempt; fails it once max_attempts exhausted; rejects a stale token/non-claimed unit/unknown unit id",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_claim.py::TestCmdRelease (5 tests) PASSED"
+      },
+      {
+        "behavior": "mark-running/mark-merged: identity-checked promotion with a matching token; stale token rejected; illegal source state rejected; merge commit format-validated before any write",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_mark.py::TestCmdMarkRunning (3 tests), TestCmdMarkMerged (2 tests) PASSED"
+      },
+      {
+        "behavior": "mark, the audited operator override: crosses any forced edge with an audit trail; rejects unknown status; running/merging require --force+--confirm-no-task-running; --status merged requires a valid --merged-commit AND fresh-fetch-verified ancestor AND --campaign-worktree (code-review fix), never falling back to the process cwd",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_mark.py::TestCmdMark (8 tests) PASSED"
+      },
+      {
+        "behavior": "reason/operator text sanitization: control characters and over-length values rejected; boundary (exactly 500 vs 501 chars, and 500 multi-byte characters) empirically probed",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_mark.py::TestSanitizeText (4 tests) PASSED + Step 3.8 confidence-calibration probe (this run): 500 accepted, 501 rejected, 500 multi-byte accepted"
+      },
+      {
+        "behavior": "loop_state.json v1 files degrade safely: cmd_next still works, honors R1-vintage depends_on, tolerates missing attempt_id/lease fields, reports done the same as before",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_loop_state_v1_compat.py::TestCmdNextDegradesSafelyOnV1File (4 tests) PASSED"
+      },
+      {
+        "behavior": "check_unit_attempt.py (the runner's pre-push fencing check): matching token allows; stale token blocks with exit 5; missing unit/state file blocks with exit 1; a never-claimed unit with no attempt_id field blocks",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_check_unit_attempt.py (5 tests) PASSED"
+      },
+      {
+        "behavior": "kind==section full behavioral regression (work item 12): init -> next -> record -> crash -> init-resume -> finalize returns every value and status unchanged from pre-R4 behavior",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_autonomous_loop_section_full_cycle.py::test_section_init_next_record_crash_resume_finalize PASSED"
+      },
+      {
+        "behavior": "kind==section lease-unaware legacy reconcile (retargeted verbatim from autonomous_loop.py): live/stale lease still resets to pending, no-lease-fields falls through to the old salvage logic unchanged, a result.json-complete unit is reconciled regardless of any lease field",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_autonomous_loop_lease_reconcile.py::TestLeaseAwareReconcile (5 tests) PASSED"
+      },
+      {
+        "behavior": "N real OS processes racing a real file lock never double-claim the same unit",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_loop_claim_concurrency_integration.py::TestConcurrentClaimsRealProcesses::test_n_concurrent_claimers_never_double_claim PASSED"
+      },
+      {
+        "behavior": "a lease that expired before a wave boundary is reclaimed via a real init subprocess call, not a mock",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_loop_claim_concurrency_integration.py::TestLeaseReclaimAtWaveBoundary::test_expired_lease_reclaimed_via_real_init_subprocess PASSED"
+      },
+      {
+        "behavior": "a dependency whose merge commit is unmergeable against a real git repo leaves the dependent unit pending for the next batch, rather than blocking or failing the whole batch",
+        "disposition": "tested",
+        "category": "integration",
+        "evidence": "shared/tests/test_loop_claim_concurrency_integration.py::TestDependencyAncestryAssertRealGit::test_unmergeable_dependency_leaves_unit_pending_batch_not_blocked PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 27,
+      "tested": 27,
+      "untestable": 0,
+      "untested_testable": 0
+    },
+    "enumeration_basis": {
+      "acs": 12,
+      "covered_acs": 12
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "backend CLI/library mechanics only (loop_state.json state machine, fencing, atomic claim) -- no startable web/dev-server/CLI surface of its own to browser-verify; verification is the unit + real-process/real-git integration suite itself (F0)."
+  },
+  "declared_removals": [],
+  "risk_recheck": {
+    "risk_flags": [
+      "cross_component",
+      "touches_auth",
+      "touches_io_boundary",
+      "touches_migrations"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "large",
+    "effective_complexity": "large",
+    "upgraded": false
+  }
+}
