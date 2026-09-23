@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix",
+  "risk_recheck": {
+    "changed_file_count": 8,
+    "diff_loc": 862,
+    "risk_flags": [
+      "cross_component"
+    ],
+    "diff_risk_flags": [
+      "cross_component"
+    ],
+    "complexity_floor": "medium",
+    "stage1_complexity": "medium",
+    "effective_complexity": "medium",
+    "upgraded": false,
+    "plan_review_required": true,
+    "ci_ack_recorded": false,
+    "escalate": {
+      "required": false,
+      "reason_code": null,
+      "paths": []
+    }
+  }
+}

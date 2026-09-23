@@ -1,0 +1,42 @@
+{
+  "section": "R3-external-review-remediation-verify",
+  "verdict": "PASS",
+  "review": [
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 165,
+      "finding": "_load_pin() still catches only (json.JSONDecodeError, KeyError), not (OSError, UnicodeError) -- the same class this round's fix closed in _resolve(). Pre-existing, adjacent, out of scope for this narrow fix.",
+      "suggestion": "Widen _load_pin's except tuple in a future touch of this file."
+    },
+    {
+      "severity": "low",
+      "category": "correctness",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 189,
+      "finding": "_check_pinned_worktree does raw string equality on a filesystem path with no normalization. No current call site can produce a spelling divergence (pin/ship/verify pass the identical --campaign-worktree), but this is forward-looking-only fragility.",
+      "suggestion": "Normalize before comparing, or document byte-identical spelling as the intended contract."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/tests/test_review_attribution.py",
+      "line": 561,
+      "finding": "The ship-worktree-check test's loop_state row carries a redundant review_skipped key not read by resolve_unit_identity -- the pin() kwarg is what actually matters.",
+      "suggestion": "Drop the redundant row key."
+    },
+    {
+      "severity": "low",
+      "category": "readability",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "line": 366,
+      "finding": "verify()'s docstring enumeration of raise cases is stale after adding the worktree cross-check.",
+      "suggestion": "Add the new case to both the docstring and check_review_attribution.py's enumeration."
+    }
+  ],
+  "summary": "PASS across three follow-up rounds remediating the external Tier-3 PR Review's findings on commit 9fabdb795: (1) _resolve() now wraps json.JSONDecodeError/OSError/UnicodeError/AttributeError/TypeError as ReviewAttributionError instead of letting them escape uncaught -- fixed across two rounds after a fresh reviewer caught the first attempt's tuple still missing UnicodeError; (2) verify()/ship() now cross-check the pin's recorded worktree against the unit's current loop_state.json resolution via a new _check_pinned_worktree(), closing a genuine gap the external reviewer found on its second BLOCK. All fixes independently confirmed red-before/green-after; all four remaining findings are low-severity and non-blocking, deferred to the next touch of this file per this campaign's established practice (round 13's own precedent). Two other external-reviewer findings (unvalidated shell interpolation of {branch}/{id}/{loop_id} in campaign-mode.md; the operator-trust-model D7 item) were rebutted in writing in the master ADR, not fixed -- accepted by the maintainer as the basis for a --admin merge override on the still-BLOCKing external check.",
+  "recorded_from": "a6b11613449023b03",
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix",
+  "verified_head": "0e052800922d090619bbb24680f6631e5cc18585"
+}

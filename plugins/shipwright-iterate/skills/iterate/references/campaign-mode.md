@@ -239,21 +239,297 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        State crosses to 3g in a FILE, never a shell variable: these are separate
        steps and a fresh Bash call starts with an empty environment, so a `$sha`
        set here would silently expand to "" there — unpinning the merge in the
-       exact window this step calls dangerous.
-         run_dir=".shipwright/runs/{loop_id}/{id}"; rm -f "$run_dir/reviewed_head"
-         pr_url=$(gh pr view "{branch}" --json url -q .url)
-         [ -n "$pr_url" ] || STRICT-STOP   # no PR = nothing to review or merge
+       exact window this step calls dangerous. The SAME hazard applies inside
+       THIS step too: `fires` below is a model judgement read from the diff's
+       own text, not something a shell script can decide on its own, which in
+       practice forces a fresh Bash call before pin runs — so `$unit_wt`,
+       `$diff_head`, `$fires`, and `$pr_json` are each dual-written to
+       `$run_dir/` the moment they are known and re-read at the top of the pin
+       block, rather than trusted to survive as shell variables from here to
+       there. `$run_dir` itself is NOT one of the values this dual-write
+       protects — it is a shell variable exactly like the others, and
+       genuine boundaries here are real: a model judgement (`fires`, below)
+       or an Agent-tool spawn (the a/b/c cascade) each force a fresh Bash
+       call with an empty environment (code-review round 5, blocking:
+       round 4 dual-wrote the values but re-read them through an
+       un-re-derived `$run_dir`, so the fix did not survive the exact
+       boundary it was built for). Proving WHICH specific reads and writes
+       are safely same-call and which cross a boundary is exactly the
+       reasoning that drew three consecutive REJECTs on this class
+       (spec-review/code-review rounds 5-7): each fix correctly re-derived
+       `run_dir` at the one site a reviewer had just named, then a
+       DIFFERENT site — equally un-provably-same-call, just not yet
+       flagged — turned out to have the identical gap. **The rule from here
+       on is therefore not "re-derive at the one site a reviewer just
+       named" but "exactly one `run_dir=` rebuild must OPEN every
+       contiguous shell block that touches a `$run_dir/`-prefixed path,
+       where a block ENDS at any model judgement (like `fires` below) or
+       Agent-tool spawn (the a/b/c cascade) — never at a subprocess call, a
+       `sleep`, or a shell loop, none of which return control to the
+       model"** — a read or write inside a block that already opened with
+       its own rebuild needs no second one; one extra template-string line
+       costs nothing where a genuine boundary IS crossed (it is not a
+       subprocess call, just a local reassignment to the same value), and
+       the opening rebuild is what a mechanical test can verify (see
+       `test_step_3f_bis_every_run_dir_use_opens_within_its_own_block` in
+       `test_campaign_step_3f_bis.py`, which scans every double-quoted
+       `$run_dir/`-prefixed occurrence in both 3f-bis and 3g generically,
+       not one enumerated site at a time, and does not exempt either step).
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"; mkdir -p "$run_dir"; rm -f "$run_dir/reviewed_head" "$run_dir/unit_worktree" "$run_dir/diff_head" "$run_dir/fires" "$run_dir/diff_lines" "$run_dir/pr_json" "$run_dir/shipped_head"
+       Clears EVERY handoff file this step writes, not `reviewed_head` alone
+       (R3 doubt-round, round 4, medium: `diff_head`/`unit_worktree` are
+       cross-checked downstream against the live diff/pin, so a stale value
+       surviving a re-entry is caught there — but `fires`/`diff_lines` have NO
+       such cross-check, only the fail-closed shape guard below, so a stale
+       `fires=0`/`diff_lines` surviving a re-entry after new commits enlarged
+       the diff would silently skip the cascade on a NEW, now-large diff
+       using an OLD, no-longer-applicable verdict). All seven are re-derived
+       or rewritten later in this same step on the path that uses them
+       (`shipped_head` only on the `fires=1` path, which is the only path
+       that reads it), so clearing them up front costs nothing.
+       `$unit_wt` is resolved HERE, before pin ever runs — it does not need to
+       wait for pin's own answer, because `worktree` is independently readable
+       from `loop_state.json`'s row for this unit (the exact field
+       `resolve_unit_identity()` reads). Since R2 (#784) the row normally
+       CARRIES a `worktree` field — `check_unit_lease.py touch` writes it at
+       every runner step boundary (`sub-iterate-runner.md`'s "Step-boundary
+       liveness touches", `--worktree "{project_root}"`) — so the fallback
+       below is for a row touched before R2's lease landed, or a lease touch
+       that warned-and-continued past a failure, not the normal case
+       (code-review round 4: the prior wording claimed no row carries the
+       field pre-R5a, which stopped being true the moment R2 merged). It is
+       the SAME fallback pin applies below, kept in lockstep by the equality
+       check two paragraphs down (R3, spec-review round 2: the prior draft
+       treated this as a structural ordering gap it could not close before
+       pin; it was not one). The lookup is close to, not identical to,
+       `resolve_unit_identity()`'s own case-insensitive match (Python's
+       `.lower()` vs. jq's ASCII-only `ascii_downcase`) — both still fail
+       closed on the one input they could disagree on (a non-ASCII-cased id),
+       since a jq non-match falls through to the `{project_root}` fallback,
+       which pin's own equality check below then catches on comparison.
+       `.id? // ""` guards a null/non-string `.id` row from aborting the
+       whole jq program for every unit's lookup, not just its own
+       (code-review round 4, low); dropping `2>/dev/null` lets a genuine jq
+       failure surface instead of silently reading as "no match" (code-review
+       round 4, low):
+         unit_wt=$(jq -r --arg id "{id}" \
+           '[.units[]? | select(((.id? // "")|ascii_downcase)==($id|ascii_downcase)) | .worktree] | first // empty' \
+           "{project_root}/.shipwright/loop_state.json") || STRICT-STOP
+         [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         echo "$unit_wt" > "$run_dir/unit_worktree" || STRICT-STOP
+         pr_json=$(cd "$unit_wt" && gh pr view "{branch}" --json url,id,headRefName,baseRefName)
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         echo "$pr_json" > "$run_dir/pr_json" || STRICT-STOP
+         pr_url=$(jq -r .url <<<"$pr_json")
+         [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # no PR = nothing to review or merge
 
        FIRES on a trigger computed HERE, from the diff — not inherited from the
        runner. The runner classifies from its spec text alone and has no Stage-2
        Repo Scout, so diff-driven flags (`cross_component`, `touches_*`) are
        structurally never set for it; inheriting that verdict would make this
-       gate NARROWEST on exactly the framework surface it exists to protect:
-         diff=$(git diff "$(git merge-base origin/{default} HEAD)"...HEAD)
-       Fire when the runner said medium+, OR the diff sets any risk flag, OR it
-       exceeds 100 lines. Otherwise SKIP the rest of 3f-bis, leave the runner's
-       `not_run` rows standing (they are honest), write no `reviewed_head`, and
-       go to 3g — a below-threshold sub-iterate must still DELIVER.
+       gate NARROWEST on exactly the framework surface it exists to protect.
+       Every git command here (and every one below) is `git -C` a resolved
+       path, never a bare `git` relying on cwd. **Unit-scoped, no fallback-only
+       exceptions (R3, spec-review round 2; extended R3 doubt-round, round 4,
+       high):** every NAMED 3f-bis/3g call site that touches the DIFF or the
+       reviews.json artifact that certifies it — the diff itself, both
+       `gh pr view` resolutions, reviews.json's add/commit/push, the
+       REJECT-path's add/commit/push, `record`'s `--payload-file` root, AND
+       `record`'s OWN `--project-root` (overridden below from `…`'s
+       `{project_root}` default — see "Promote the rows" and the REJECT-path
+       below) — runs against `$unit_wt`, THIS unit's own worktree, resolved
+       from `loop_state.json`'s row (the SAME `jq` lookup above, before pin
+       ever runs), dual-written to `$run_dir/unit_worktree` above so the
+       steps and spawns that cross a shell boundary can re-read it rather
+       than re-derive it independently (a second, divergent resolution is
+       the exact bug class the equality check right after pin below exists
+       to catch). Leaving `record`'s `--project-root` at the `…` prefix's
+       default was itself exactly the fallback-only exception this same rule
+       already forbids for `--payload-file`'s root: reviews.json must be
+       written into the SAME worktree its own `git -C "$unit_wt"
+       add/commit/push` operates on immediately after, or the two diverge the
+       moment R5a gives a unit a genuinely distinct worktree — `record`
+       landing reviews.json in `{project_root}` while `git -C "$unit_wt" add`
+       looks for it in `$unit_wt` finds nothing to stage ("nothing to
+       commit" on every unit, campaign-wide stall). `check_review_attribution.py`'s
+       own `--project-root`/`--campaign-worktree` arguments (pin/ship/verify,
+       below) are a DIFFERENT root and are untouched by this rule: they
+       locate the orchestrator-owned `.shipwright/runs/{loop_id}/...`
+       bookkeeping tree, which stays `{project_root}` — the shared campaign
+       worktree — by design, not the per-unit diff; nothing here contradicts
+       pin's own `--campaign-worktree "{project_root}"` argument.
+       `record_review_pass.py`'s `--project-root` means something else
+       entirely (where `.shipwright/planning/iterate/{run_id}/reviews.json`
+       lives, beside the reviewed source), which is exactly why it is
+       unit-scoped while pin/ship/verify's is not. Every row resolves to
+       the SAME value `{project_root}` holds today (R5a hasn't yet given a
+       unit a genuinely distinct worktree) — but the resolution reads the
+       row, not a hardcoded alias, so a distinct worktree is honored
+       automatically once R5a lands, not a future TODO.
+       The diff itself is computed against `$unit_wt` — the SAME resolution
+       used for the pre-pin `gh pr view` above, not `{project_root}` — because
+       `$unit_wt`'s `worktree` field is independently readable from
+       `loop_state.json` before pin ever runs; nothing here is a pin input, so
+       nothing here needs to wait for pin. `merge-base` is captured explicitly
+       and CHECKED before it builds the diff range — an unchecked failure
+       collapses the range to `...{sha}` (i.e. `HEAD...{sha}`), an EMPTY diff
+       for `diff_head==HEAD`, which fails OPEN (`fires=0`, cascade skipped,
+       unit merges unreviewed — code-review round 4, low):
+         diff_head=$(git -C "$unit_wt" rev-parse HEAD)
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         echo "$diff_head" > "$run_dir/diff_head" || STRICT-STOP
+         base=$(git -C "$unit_wt" merge-base origin/{default} "$diff_head") || STRICT-STOP
+         diff=$(git -C "$unit_wt" diff "$base"..."$diff_head") || STRICT-STOP
+         diff_lines=$(printf '%s\n' "$diff" | wc -l | tr -d '[:space:]')
+         echo "$diff_lines" > "$run_dir/diff_lines" || STRICT-STOP
+       Fire when the runner said medium+, OR the diff sets any risk flag, OR
+       `$diff_lines` exceeds 100. Only the first two clauses are a JUDGEMENT
+       made by reading the diff — the line-count clause is NOT: it is computed
+       mechanically above, dual-written for the SAME reason `$fires` itself is
+       below (this is the fourth value the `fires`-judgement boundary hands
+       across, not a fifth kind of thing), and enforced by an executable
+       shell statement at the fires-assignment site below, not by a sentence
+       claiming it is enforced (code-review round 11, high: a prior draft of
+       this fix stated the floor in prose and added a test asserting the word
+       "mandatory" appeared, while `$diff_lines` itself was computed but never
+       echoed, dual-written, or read again anywhere — the model making the
+       `fires` judgement never observed the number and nothing downstream
+       could raise `fires` from it, so the "MANDATORY" claim was
+       unenforceable; this re-opened the exact rounds-4-10 shell-variable-
+       lifetime class on the one value this round's own fix introduced).
+       `fires=1` is MANDATORY whenever `$diff_lines` is over 100, never left
+       to the same read-and-decide judgement as the other two (the risk-flag
+       and medium+ clauses still require actually reading the diff, since
+       neither is mechanically decidable from line count alone). Once the
+       digit is decided (by this mandatory floor or by judgement), the
+       literal next command is an ACTUAL assignment of it (`fires=1` or
+       `fires=0`), never a bare `echo "$fires"` with nothing upstream ever
+       having assigned it (code-review
+       round 5, blocking: the prior wording described the decision in prose
+       and then wrote `$fires` as though an earlier line had set it — none
+       had, so every unit's fires file was written EMPTY, unconditionally,
+       independent of the spawn-boundary issue above; empty reads as "did not
+       fire" on re-read, silently skipping the whole review cascade and
+       merging the unit unreviewed — worse than the pre-fix behavior, where
+       `fires` was at least a live, correctly-set variable). `diff_head`
+       is resolved BEFORE the diff and the diff is computed explicitly against
+       IT (not a second, later `HEAD`, which a concurrent commit could make a
+       different SHA — code-review round 3, low). It is the tree the reviewers
+       are about to read — the pin below must certify THIS SHA, not whatever
+       its own independent worktree/branch resolution happens to land on (R3
+       doubt-round, medium: the two resolved the tree independently with no
+       equality check, so a divergence would let the pin certify a diff nobody
+       reviewed — the exact bug R3 exists to prevent). The trigger judgement
+       above is what forces the fresh Bash call the top-of-step warning
+       names, so `$run_dir` from the block that resolves `$unit_wt` and
+       computes the diff is gone here too — the WRITE side needs the same
+       re-derivation the READ side already gets, not just the value being
+       written (spec-review round 6, blocking: round 5 fixed every re-read
+       site but left this one write dereferencing the stale `$run_dir` from
+       that same block, so the write itself silently targeted `/fires` and
+       the fail-closed guard below STRICT-STOPped every unit on the happy
+       path). Dual-write the
+       fires decision as the
+       literal digit just assigned — it is the third value this paragraph
+       hands across the boundary named at the top of this step (`$diff_lines`
+       above is the fourth). Re-read `$diff_lines` here too, through the SAME
+       re-derived `$run_dir`, and let it RAISE `fires` mechanically — a shell
+       `-gt` test, not a sentence — never lower a judgement that already
+       said 1 (code-review round 11, high: this statement is what actually
+       closes D5; the prose alone, however emphatic, is not a guard). The
+       re-read guard is a numeric check, not a bare non-empty test (code-
+       review round 12, low: a non-GNU `wc -l`'s leading blanks would pass
+       `-n` and then fail `-gt`'s arithmetic silently, skipping the floor):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         diff_lines=$(cat "$run_dir/diff_lines" 2>/dev/null)
+         case "$diff_lines" in ''|*[!0-9]*) STRICT-STOP;; esac   # numeric, not merely non-empty
+         fires=<1 or 0>   # substitute the literal digit the risk-flag/medium+ judgement concluded
+         [ "$diff_lines" -gt 100 ] && fires=1   # mechanical floor: the judgement above may only RAISE fires, never lower it
+         echo "$fires" > "$run_dir/fires" || STRICT-STOP
+
+       **Unit-scoped attribution pin (R3, unconditional).** Resolves THIS
+       unit's own `worktree`/`branch`/`attempt_id` from `loop_state.json`
+       (`shared/scripts/lib/review_attribution.py`), falling back to the
+       campaign worktree when the row carries no `worktree` field (same
+       narrow case the `$unit_wt` resolution above falls back on — see there
+       for why that is the exception, not the rule, since R2); asserts the
+       checked-out branch matches; records
+       `HEAD` as `reviewed_head`, `base_sha` at pin time only, and (v5)
+       `shipped_head`. Dual-writes the legacy `$run_dir/reviewed_head` file
+       (the SAME reviewed_head SHA, immediately — closes the previously
+       unpinned window between diff computation and the later commit/push
+       below) so a crash before that later write still leaves a pin behind.
+       Runs regardless of the trigger above (a PR already exists by this
+       point, per the STRICT-STOP above) — `pr_json` crosses the SAME spawn
+       boundary as `$unit_wt`/`$diff_head`/`$fires`, so its identity fields
+       are resolvable here via the SAME dual-write/re-read below, not by
+       trusting shell survival alone (code-review round 5: a prior draft
+       claimed these were "always resolvable — never null" on the strength
+       of the STRICT-STOP above, which guards existence at CAPTURE time, not
+       survival across the boundary) — so a below-threshold unit still
+       has a pin `built -> merging` (R4) can verify at merge time — pass
+       `--review-skipped` exactly when the trigger above did NOT fire.
+       **Which field a later verify uses is fixed, not left ambiguous:** a
+       reviewed unit (`fires=1`) is verified via `shipped_head`, recorded
+       explicitly by a `--mode ship` call once the reviews.json commit lands
+       below (R3 doubt-round, high: a reviewed pin's `shipped_head` stays
+       `null` until `ship` records it — `verify --against shipped_head`
+       refuses to ALLOW on a `null` value rather than silently falling back to
+       a content-blind parent check; today's 3g `--match-head-commit` is a
+       git-native equivalent of the SAME check, not a substitute for
+       recording it; R4/R5b call `verify --against shipped_head` directly); a
+       below-threshold unit (`fires=0`) is verified via `reviewed_head`, since
+       no further commit is expected to land on it at all, and its
+       `shipped_head` is already set equal to `reviewed_head` at pin time
+       (`--review-skipped`). Re-derive `run_dir`, then `$unit_wt`/`$diff_head`/
+       `$fires`/`$pr_json` — the dual-writes above exist because the `fires`
+       judgement between them and here may have started a fresh Bash call;
+       re-reading is safe even when it did not, but only once `run_dir`
+       itself is re-derived — it is a shell variable too, and reading
+       `$run_dir/unit_worktree` through an EMPTY `$run_dir` silently reads
+       `/unit_worktree` instead (code-review round 5, blocking: this was the
+       exact gap round 4's fix left open):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         diff_head=$(cat "$run_dir/diff_head" 2>/dev/null); [ -n "$diff_head" ] || STRICT-STOP
+         fires=$(cat "$run_dir/fires" 2>/dev/null)
+         [ "$fires" = "1" ] || [ "$fires" = "0" ] || STRICT-STOP   # fail closed: anything else means the write above never happened
+         pr_json=$(cat "$run_dir/pr_json" 2>/dev/null); [ -n "$pr_json" ] || STRICT-STOP
+         pin_json=$(uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode pin \
+           --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+           --project-root "{project_root}" --campaign-worktree "{project_root}" \
+           --loop-id "{loop_id}" --default-branch "{default}" \
+           --pr-node-id "$(jq -r .id <<<"$pr_json")" \
+           --pr-head-ref "$(jq -r .headRefName <<<"$pr_json")" \
+           --pr-base-ref "$(jq -r .baseRefName <<<"$pr_json")" --json \
+           $([ "$fires" = "1" ] || echo --review-skipped)) || STRICT-STOP
+       Non-zero = STRICT-STOP (as 3f) — an attribution failure (wrong branch
+       checked out) means this unit's diff cannot be trusted at all.
+       Confirm pin's OWN resolution agrees with the `$unit_wt` already
+       resolved above and used for the pre-pin `gh pr view` and the diff (R3,
+       spec-review round 2: comparing only `$unit_wt`'s HEAD sha against
+       `diff_head`, as the prior draft did, would let a pin that walked a
+       DIFFERENT worktree path to the same HEAD sha slip through unnoticed —
+       this checks the resolved PATH itself, the "two divergent resolutions"
+       hazard directly, not a proxy for it):
+         pin_wt=$(jq -r .worktree <<<"$pin_json")
+         [ "$pin_wt" = "$unit_wt" ] || STRICT-STOP
+       `$run_dir/unit_worktree` already holds this resolution — dual-written
+       above, before pin ran — so every later call site in this step and
+       every spawn that crosses a shell boundary re-reads it rather than
+       re-deriving its own. Then confirm the pin certifies the SAME tree the diff above was
+       computed against — an inline check, not prose discipline alone (R3
+       doubt-round) — against BOTH pin's own self-reported SHA and
+       `$unit_wt`'s actual current HEAD, so a pin that resolved a different
+       worktree than the diff read cannot pass on its self-report alone:
+         [ "$(jq -r .reviewed_head <<<"$pin_json")" = "$diff_head" ] || STRICT-STOP
+         [ "$(git -C "$unit_wt" rev-parse HEAD)" = "$diff_head" ] || STRICT-STOP
+
+       When the trigger did NOT fire: SKIP the rest of 3f-bis, leave the
+       runner's `not_run` rows standing (they are honest), and go to 3g — a
+       below-threshold sub-iterate must still DELIVER. (The pin above already
+       ran with `--review-skipped`, so 3g still has a `reviewed_head` file.)
 
        Review that same MERGE-BASE diff, never `origin/{default}`'s tip (a moved
        main yields false high findings):
@@ -274,78 +550,212 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
        reviewer.** A mitigation, not a guarantee; the salvage hook backstops
        the window this alone cannot close (see `iteration-reviews.md`).
 
-       Promote the rows IN THAT ORDER. The runner already closed them and a
-       closed row is immutable, so `--force` is REQUIRED (without it the CLI
-       exits 3). A `code` row completed over a non-completed `spec` FAILS the
-       gate, so Stage 1 must land first — `…` is the invocation prefix from
-       `iteration-reviews.md`, and every call also carries
-       `--model-tier "{resolved_review_tier}"`:
-         … record --review-type spec  --status completed --from spec-reviewer              --payload-file "{project_root}/.shipwright/planning/iterate/{run_id}/spec_review_reply.json" --recorded-by spec-reviewer --model-tier "{resolved_review_tier}" --force
-         … record --review-type code  --status completed --from code-reviewer   … --model-tier "{resolved_review_tier}" --force
-         … record --review-type doubt --status completed --from doubt-reviewer  … --model-tier "{resolved_review_tier}" --force
+       Promote the rows IN THAT ORDER. Re-derive `run_dir`, then `$unit_wt`
+       from the file dual-written at the top of 3f-bis (code-review round 5:
+       a prior draft attributed this file to pin — pin never writes it, this
+       step does) — this runs after the a/b/c spawns, the same shell
+       boundary `run_dir`/`pr_url` cross below, so the variables set at pin
+       time do not survive to here either (code-review round 5: `run_dir`
+       itself must be re-derived before the file it names can be read; a
+       prior draft read `$run_dir/unit_worktree` here without first
+       re-deriving `run_dir`, silently falling back to `{project_root}`):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+       The runner already closed the rows and a closed row is immutable, so
+       `--force` is REQUIRED (without it the CLI exits 3). A `code` row
+       completed over a non-completed `spec` FAILS the gate, so Stage 1 must
+       land first — `…` is the invocation prefix from `iteration-reviews.md`,
+       and every call also carries `--model-tier "{resolved_review_tier}"` AND
+       `--project-root "$unit_wt"` (R3 doubt-round, round 4, high: overrides
+       `…`'s own `{project_root}` default — see the "Unit-scoped, no
+       fallback-only exceptions" paragraph above for why). Every call is
+       CHECKED: a `record` failure must not fall through to the `git add`
+       below on a payload that was never durably recorded:
+         … record --project-root "$unit_wt" --review-type spec  --status completed --from spec-reviewer              --payload-file "$unit_wt/.shipwright/planning/iterate/{run_id}/spec_review_reply.json" --recorded-by spec-reviewer --model-tier "{resolved_review_tier}" --force || STRICT-STOP
+         … record --project-root "$unit_wt" --review-type code  --status completed --from code-reviewer   … --model-tier "{resolved_review_tier}" --force || STRICT-STOP
+         … record --project-root "$unit_wt" --review-type doubt --status completed --from doubt-reviewer  … --model-tier "{resolved_review_tier}" --force || STRICT-STOP
 
        When Stage 3 does NOT fire (it is conditional), do not leave the runner's
        row standing — its disposition says the cascade did not run, which is now
-       FALSE. Re-record it for the reason that actually applies:
-         … record --review-type doubt --status not_applicable --force              --disposition "Stage 3 is conditional and did not trigger for this
-             diff; Stage 2 passed at 3f-bis"
+       FALSE. Re-record it for the reason that actually applies (same
+       `--project-root "$unit_wt"` override, same `|| STRICT-STOP`):
+         … record --project-root "$unit_wt" --review-type doubt --status not_applicable --force              --disposition "Stage 3 is conditional and did not trigger for this
+             diff; Stage 2 passed at 3f-bis" || STRICT-STOP
 
-       Then ship the record with the PR. Every command is CHECKED: a promotion
-       that does not reach the remote must STOP the loop, not shorten it. An
-       unchecked `git commit` that the pre-commit hook blocks would otherwise
-       leave the runner's head in place, the local record saying `completed`,
-       and main saying `not_run` — the cascade silently un-shipped:
-         git add ".shipwright/planning/iterate/{run_id}/reviews.json"
-         git commit -m "chore(review): record the delegated cascade for {id}" || STRICT-STOP
-         git push || STRICT-STOP
-         git rev-parse HEAD > "$run_dir/reviewed_head"
+       Then ship the record with the PR. `run_dir`/`pr_url`/`unit_wt` were
+       set BEFORE the a/b/c spawns above and this block runs AFTER them —
+       re-derive all three here, exactly as 3g does below, rather than trust
+       shell state across that boundary (R3 doubt-round, round 2, medium:
+       `run_dir`/`pr_url` are re-derived from scratch here, so which boundary
+       they crossed is moot; `$diff_head`/`$fires`/`$pr_json` cross the
+       earlier `fires`-judgement boundary and are handled by the dual-writes
+       above; `$unit_wt` crosses BOTH, which is why it is re-read from its
+       file here as well):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
+         [ -n "$pr_url" ] && [ "$pr_url" != "null" ] || STRICT-STOP   # mirrors the pre-pin guard (code-review round 4, low)
+       Every command is CHECKED: a promotion that does not reach the remote
+       must STOP the loop, not shorten it. An unchecked `git commit` that the
+       pre-commit hook blocks would otherwise leave the runner's head in
+       place, the local record saying `completed`, and main saying
+       `not_run` — the cascade silently un-shipped:
+         git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
+         git -C "$unit_wt" commit -m "chore(review): record the delegated cascade for {id}" -- ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
+         git -C "$unit_wt" push || STRICT-STOP
+         shipped_head=$(git -C "$unit_wt" rev-parse HEAD)
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         echo "$shipped_head" > "$run_dir/shipped_head" || STRICT-STOP
+       `git commit` with no pathspec commits the WHOLE index, so any other
+       pre-existing staged content would ride along inside the commit whose
+       entire purpose is to certify that a review happened — the `add` above
+       is CHECKED and the commit is scoped to reviews.json's own path (R3
+       doubt-round, round 4, low). Record the shipped SHA into the pin BEFORE
+       touching the legacy file
+       (R3 doubt-round, round 2, medium: ship-then-write, not write-then-ship
+       — a STRICT-STOPped ship must never leave the legacy file holding a SHA
+       the guard refused, which a human resuming at 3g would otherwise
+       `--match-head-commit` on). Nothing had ever written `review_pin.json`'s
+       own `shipped_head` field before this sub-iterate, so
+       `verify --against shipped_head` fell back to a content-blind
+       parent-of-tip check for every reviewed unit — silently weaker than the
+       `--match-head-commit` it exists to replace. Not run for a
+       `--review-skipped` unit: `pin` already set that unit's `shipped_head`
+       equal to `reviewed_head`, and no further commit is expected on it.
+       `$shipped_head` is dual-written above and re-read here through a
+       re-derived `$run_dir` (R3 doubt-round, round 4, medium: the same
+       treatment `$unit_wt`/`$diff_head`/`$fires`/`$pr_json` get above, applied
+       here too rather than argued about — whether a genuine boundary
+       separates the git push from this `ship` call is exactly the kind of
+       ambiguity that drew three consecutive REJECTs on this class; closing it
+       costs one file instead of resolving it in prose):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         shipped_head=$(cat "$run_dir/shipped_head" 2>/dev/null); [ -n "$shipped_head" ] || STRICT-STOP
+         uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode ship \
+           --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+           --project-root "{project_root}" --campaign-worktree "{project_root}" \
+           --loop-id "{loop_id}" --shipped-head "$shipped_head" || STRICT-STOP
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         shipped_head=$(cat "$run_dir/shipped_head" 2>/dev/null); [ -n "$shipped_head" ] || STRICT-STOP
+         echo "$shipped_head" > "$run_dir/reviewed_head" || STRICT-STOP
 
        **This push restarts CI**, so 3g must watch THIS head. Wait for the PR
        object to catch up — BOUNDED, because an unbounded wait is a third
        outcome the loop has no name for (neither delivered nor stopped):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
          for i in $(seq 1 60); do
            [ "$(gh pr view "$pr_url" --json headRefOid -q .headRefOid)" = "$(cat "$run_dir/reviewed_head")" ] && break
            sleep 5
          done
-         # still not matching after the cap → STRICT-STOP, do not hand a stale
-         # head to 3g.
+         [ "$(gh pr view "$pr_url" --json headRefOid -q .headRefOid)" = "$(cat "$run_dir/reviewed_head")" ] || STRICT-STOP
+         # the loop above only ever `break`s early on a match; without this
+         # re-check after it, exhausting the cap falls through to 3g with a
+         # stale head instead of stopping (R3 doubt-round, round 3 — Stage-3
+         # external review caught the same missing re-check at 3g below).
 
        On a Stage-1 REJECT, or a Stage-2 high finding left unaddressed:
        STRICT-STOP exactly as 3f/3g — do NOT merge, do NOT build the next. The
        already-merged sub-iterates stay durable; this PR is left OPEN so a human
-       can repair it.
+       can repair it. "Addressing" a Stage-2 finding means a NEW commit on top
+       of the pinned tree — which the `--mode ship` ancestry check above
+       refuses BY DESIGN (R3 doubt-round, round 2, medium: the fix commit's
+       parent is not `reviewed_head`, so `ship` STRICT-STOPs after the push,
+       leaving a `completed` record on a diff nobody actually reviewed). The
+       repair path is never "commit a fix here" — it is restarting 3f-bis
+       from the top (the `rm -f` of the legacy `reviewed_head` file at this
+       step's own start, re-diff, re-pin, re-run the cascade on the fixed
+       tree) so the record and the reviewed diff agree again.
 
        SHIP the REJECT before stopping, or the durable record stays the runner's
        `not_run` and the left-open PR reads as merely unreviewed rather than
        REJECTED. `completed` is wrong here — the native Stage-1 payload stores
        `spec_citations` and drops `verdict`, so a `completed` REJECT is
-       byte-indistinguishable from a PASS to the next reader, human or gate:
-         … record --review-type spec --status not_run --force \\
-             --recorded-by spec-reviewer \\
+       byte-indistinguishable from a PASS to the next reader, human or gate.
+       This branch never reaches the ship path's own `run_dir` re-derivation
+       above (it SKIPS ship entirely on a REJECT), so it re-derives its own
+       here — the identical gap as the promote-rows block above, on a
+       separate branch (code-review round 5, blocking):
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         unit_wt=$(cat "$run_dir/unit_worktree"); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         … record --project-root "$unit_wt" --review-type spec --status not_run --force \
+             --recorded-by spec-reviewer \
              --disposition "Stage-1 spec-reviewer REJECTED at 3f-bis: {the
-             citations, spec_ref -> divergence}. Delivery stopped; PR left open."
-         git add ".shipwright/planning/iterate/{run_id}/reviews.json"
-         git commit -m "chore(review): record the Stage-1 REJECT for {id}" || STRICT-STOP
-         git push || STRICT-STOP
-       Then STRICT-STOP. Write no `reviewed_head` — nothing may merge this.
+             citations, spec_ref -> divergence}. Delivery stopped; PR left open." || STRICT-STOP
+         git -C "$unit_wt" add ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
+         git -C "$unit_wt" commit -m "chore(review): record the Stage-1 REJECT for {id}" -- ".shipwright/planning/iterate/{run_id}/reviews.json" || STRICT-STOP
+         git -C "$unit_wt" push || STRICT-STOP
+       Then STRICT-STOP. The unconditional pin above already wrote a
+       `reviewed_head` — that pinned diff is what was REJECTED; nothing may
+       ship on top of it, and 3g never reaches this PR because the loop
+       already stopped.
 
    3g. MERGE this sub-iterate's PR — verify CI-green first, then merge, one at a
        time (no shoot-and-forget). The orchestrator owns the merge (the PR did not
        self-arm, step 1):
          # Re-resolve from the branch: shell state does NOT survive between steps,
          # so nothing set in 3f-bis is still in the environment here.
-         pr_url=$(gh pr view "{branch}" --json url -q .url)
-         # The pin comes from 3f-bis's FILE. Absent = 3f-bis pushed nothing (the
-         # cascade skipped below its trigger), and that sub-iterate must still
-         # deliver — so the pin is conditional, never unconditional.
-         run_dir=".shipwright/runs/{loop_id}/{id}"
-         head_pin=""
-         [ -f "$run_dir/reviewed_head" ] && head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
+         # The pin comes from 3f-bis's FILE (R3: written UNCONDITIONALLY now,
+         # by check_review_attribution.py pin — even a below-threshold unit
+         # that skipped the cascade gets one, with --review-skipped).
+         run_dir="{project_root}/.shipwright/runs/{loop_id}/{id}"
+         # By this point 3f-bis's post-record-commit write ("echo $shipped_head
+         # > reviewed_head") has overwritten this file with the SHIPPED head,
+         # not the original pin's reviewed_head. Its absence is no longer
+         # tolerated (R3 doubt-round, high): the unconditional pin at 3f-bis
+         # — itself STRICT-STOP-guarded — means every unit that reaches this
+         # line has one, reviewed or skipped; a missing file means an earlier
+         # guard should already have stopped the loop, so merging anyway would
+         # be the exact unpinned merge the spec's acceptance criterion forbids.
+         [ -f "$run_dir/reviewed_head" ] || STRICT-STOP
+         # File EXISTENCE alone only proves pin ran — pin writes this file
+         # UNCONDITIONALLY and BEFORE the review cascade even starts, so it
+         # holds a SHA equal to the remote tip throughout the ENTIRE cascade
+         # window, including every STRICT-STOP inside it (R3 doubt-round,
+         # round 4, medium: a human or a resumed orchestrator invoking 3g
+         # directly during/after an interrupted cascade would see this file
+         # present and a matching --match-head-commit below, and merge an
+         # unreviewed diff). verify --against shipped_head additionally
+         # BLOCKs a reviewed (non-skipped) unit whose shipped_head was never
+         # recorded — i.e. the cascade never actually shipped a record
+         # commit — which file-existence alone cannot distinguish from a
+         # genuine completed review; for a --review-skipped unit the same
+         # call checks branch-tip-equals-reviewed_head instead (its own
+         # internal branch, not a separate call here):
+         uv run "{shared_root}/scripts/checks/check_review_attribution.py" --mode verify \
+           --state "{project_root}/.shipwright/loop_state.json" --unit-id "{id}" \
+           --project-root "{project_root}" --campaign-worktree "{project_root}" \
+           --loop-id "{loop_id}" --against shipped_head || STRICT-STOP
+         # Same unit-scoping as 3f-bis (R3): read $unit_wt back from the FILE
+         # 3f-bis dual-wrote there (pin never writes this one — code-review
+         # round 5) — a fresh Bash call, so nothing set in 3f-bis's own
+         # shell survives to here — falling back to {project_root} if the file
+         # is absent OR empty (a bare `2>/dev/null || echo` fallback catches
+         # only a missing file, not a present-but-empty one — code-review
+         # round 4, low).
+         unit_wt=$(cat "$run_dir/unit_worktree" 2>/dev/null); [ -n "$unit_wt" ] || unit_wt="{project_root}"
+         # $pr_url here is a fresh `gh pr view` call, not a value read from
+         # 3f-bis's own $pr_url (R3 doubt-round, round 4, medium: unlike
+         # $shipped_head above, there is no cross-step variable to dual-write
+         # for this one — 3g always re-derives its own).
+         pr_url=$(cd "$unit_wt" && gh pr view "{branch}" --json url -q .url)
+         head_pin="--match-head-commit $(cat "$run_dir/reviewed_head")"
          uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID" || LOCK-LOST  # as 3a — NOT step 4; --watch below is UNBOUNDED, 3a's heartbeat alone can't cover it
-         gh pr checks "$pr_url" --watch
-         #   non-zero exit = a check FAILED → STRICT-STOP (as 3f): do not merge, do not build the next; surface to the user. Merged subs stay durable.
-         gh pr merge "$pr_url" --squash --delete-branch $head_pin
-         until [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ]; do sleep 5; done
+         gh pr checks "$pr_url" --watch || STRICT-STOP   # as 3f: do not merge, do not build the next; surface to the user. Merged subs stay durable.
+         gh pr merge "$pr_url" --squash --delete-branch $head_pin || STRICT-STOP
+         #   a merge refusal (e.g. $head_pin no longer matches the remote tip)
+         #   must STOP, not fall through to an unbounded wait for a state that
+         #   will never arrive (R3 doubt-round, round 2, low).
+         for i in $(seq 1 60); do
+           [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] && break
+           sleep 5
+         done
+         [ "$(gh pr view "$pr_url" --json state -q .state)" = "MERGED" ] || STRICT-STOP
+         # the loop above only ever `break`s early on MERGED; without this
+         # re-check after it, exhausting the cap falls through to 3h with the
+         # PR still open instead of stopping — a "third outcome" the loop has
+         # no name for (neither delivered nor stopped) is exactly what this
+         # bounded wait exists to rule out (Stage-3 external review, R3 PR
+         # #787: flagged as a real control-flow defect, not prose-only).
        A merge conflict / timeout is likewise non-delivered → STRICT-STOP.
 
    3h. Update the MAIN-tree campaign status.json (LOCAL-BOARD CONVENIENCE only,

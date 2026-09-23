@@ -1,0 +1,73 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "trigger": "cross-plugin/cross-module boundary + irreversible operation (auto-merge gate) + ordering/spawn-boundary state",
+  "doubts": [
+    {
+      "severity": "high",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "every NAMED 3f-bis/3g call site runs against $unit_wt, and a distinct worktree is honored automatically once R5a lands, not a future TODO",
+      "disproof_attempt": "record_review_pass.py's `...` invocation prefix (iteration-reviews.md) carries `--project-root \"{project_root}\"` unconditionally; campaign-mode.md's 3f-bis left it at that default while `--payload-file` was pointed at `$unit_wt/...` -- record would write reviews.json into {project_root} while validating a payload under $unit_wt once R5a gives a unit a genuinely distinct worktree, and the following `git -C \"$unit_wt\" add reviews.json` would find nothing to stage (campaign-wide stall). None of the record calls carried `|| STRICT-STOP` either.",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "what_would_resolve_it": "Override --project-root to $unit_wt on every record call in 3f-bis (three promote-rows, not_applicable, REJECT-path), add || STRICT-STOP throughout, and name record's --project-root alongside --payload-file's root in the governing unit-scoping rule.",
+      "disposition": "ACCEPTED, fixed round 11 (commit e54679a54): every record call in 3f-bis now carries --project-root \"$unit_wt\" immediately before --review-type, plus || STRICT-STOP; the governing paragraph now names this call site explicitly and distinguishes it from check_review_attribution.py's own, deliberately different, --project-root argument."
+    },
+    {
+      "severity": "medium",
+      "lens": "concurrency & ordering",
+      "claim_under_doubt": "$shipped_head and $pr_url survive the run_dir= rebuilds after the ship-block push the same way $unit_wt/$diff_head/$fires/$pr_json do",
+      "disproof_attempt": "$shipped_head (captured after the push) and $pr_url were consumed after run_dir= rebuilds with no dual-write of their own, unlike their four siblings which get that treatment specifically because they might cross a spawn/judgement boundary -- whether a genuine boundary separates the push from the following check_review_attribution.py --mode ship call is exactly the same same-call-or-not ambiguity that drew three consecutive REJECTs on this class in earlier rounds.",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "what_would_resolve_it": "Dual-write $shipped_head to a file and re-read it before both the --mode ship call and the legacy reviewed_head overwrite, matching the existing convention.",
+      "disposition": "ACCEPTED, fixed round 11: $shipped_head is now dual-written to $run_dir/shipped_head immediately after capture and re-read (with a fail-closed guard) at both consumption sites; 3g's own $pr_url was confirmed already independently fresh via its own gh pr view call, not read from 3f-bis's scope, so no fix was needed there."
+    },
+    {
+      "severity": "medium",
+      "lens": "hidden coupling & blast radius",
+      "claim_under_doubt": "no campaign PR merges without --match-head-commit pointing at a genuine review pin",
+      "disproof_attempt": "pin() writes the legacy reviewed_head file UNCONDITIONALLY and BEFORE the review cascade even runs, so the file holds a SHA equal to the remote tip for the entire cascade window, including every STRICT-STOP inside it. 3g's merge gate checked only `[ -f \"$run_dir/reviewed_head\" ]` -- file existence, not that the cascade actually shipped -- so a human or a resumed orchestrator invoking 3g directly during/after an interrupted cascade would see the file present and a matching --match-head-commit, and merge an unreviewed diff.",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "what_would_resolve_it": "Add a check_review_attribution.py --mode verify --against shipped_head call at 3g, after the bare existence check, reusing the already-tested BLOCK-on-null/BLOCK-on-tip-equals-reviewed_head logic.",
+      "disposition": "ACCEPTED, fixed round 11: 3g now calls check_review_attribution.py --mode verify --against shipped_head || STRICT-STOP immediately after the existence check. Independently re-verified against review_attribution.py's verify() implementation: the mid-cascade race (pin ran, nothing pushed yet) leaves current_tip == pinned reviewed_head, which the existing `elif current_tip == pinned[\"reviewed_head\"]: ok = False` branch correctly BLOCKs -- confirmed correct by two subsequent independent code-reviewer passes (rounds 11 and 12)."
+    },
+    {
+      "severity": "medium",
+      "lens": "reversibility / re-entry",
+      "claim_under_doubt": "the top-of-step rm -f re-entry cleanup removes every stale handoff value that could misfire",
+      "disproof_attempt": "The rm -f cleared only reviewed_head, leaving unit_worktree/diff_head/fires/pr_json from a prior attempt in place. diff_head and unit_worktree are cross-checked downstream against the live diff/pin, so a stale value there is caught, but fires has NO cross-check at all beyond a fail-closed shape guard -- a stale fires=0 surviving a re-entry after new commits enlarged the diff would silently skip the cascade on a new, now-large diff using an old, no-longer-applicable verdict.",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "what_would_resolve_it": "Extend the rm -f to all handoff files, since they are all unconditionally re-derived/rewritten later in the same step anyway.",
+      "disposition": "ACCEPTED, fixed round 11 and extended round 12/13: the rm -f now clears reviewed_head, unit_worktree, diff_head, fires, diff_lines, pr_json and shipped_head (seven files total after round 12 added diff_lines); a round-12 code-reviewer found shipped_head's own addition had no regression test, fixed in the same round."
+    },
+    {
+      "severity": "medium",
+      "lens": "boundary & contract",
+      "claim_under_doubt": "the fires trigger's line-count clause is adequately enforced by model judgement alone",
+      "disproof_attempt": "The line-count clause ('exceeds 100 lines') is exactly computable from the diff, yet the whole fires decision -- including this mechanical clause -- was left entirely to model judgement with no verification. fires=0 is the only path that skips the cascade, and nothing downstream compares the digit against the diff it was supposedly read from.",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "what_would_resolve_it": "Compute the line count in shell and force fires=1 when it exceeds 100, leaving only the semantic risk-flag/medium+ clauses to judgement.",
+      "disposition": "ACCEPTED, but required three rounds to close correctly. Round 11 computed diff_lines mechanically but never surfaced or dual-wrote it -- a round-11 code-reviewer caught this as prose-only and unenforceable (the exact defect class this doubt raised, reintroduced by round 11's own fix). Round 12 fixed it: diff_lines is dual-written, re-read through a re-derived run_dir at the fires-assignment site, and combined with fires via a literal `[ \"$diff_lines\" -gt 100 ] && fires=1` executable statement that runs before the fires file is written. Round 13 closed a residual non-GNU wc -l portability fail-open (tr -d '[:space:]' plus a numeric case guard) and fixed test windows that a round-12 code-reviewer found were not genuinely mutation-sensitive for 3 of 5 unrelated record calls."
+    },
+    {
+      "severity": "low",
+      "lens": "ordering",
+      "claim_under_doubt": "the review-record commit's content is constrained to reviews.json",
+      "disproof_attempt": "git -C \"$unit_wt\" add reviews.json had no || STRICT-STOP, and the following git commit had no pathspec -- git commit with no -- pathspec commits the WHOLE index, so any pre-existing staged content would ride along inside the commit whose entire purpose is to certify a review happened.",
+      "file": "plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md",
+      "what_would_resolve_it": "Add || STRICT-STOP to the git add and scope the git commit to -- reviews.json's own path.",
+      "disposition": "ACCEPTED, fixed round 11: both the promote-path and REJECT-path git add calls now carry || STRICT-STOP, and both commits are scoped with an explicit -- pathspec to reviews.json's own path."
+    },
+    {
+      "severity": "low",
+      "lens": "security",
+      "claim_under_doubt": "shell-side template values ({branch}/{id}/{loop_id}) are as safely handled as review_attribution.py's own _safe_segment-guarded path construction",
+      "disproof_attempt": "{branch}, {id} and {loop_id} are interpolated into double-quoted shell strings (gh pr view \"{branch}\", run_dir=\".../{loop_id}/{id}\") with no shell-side validation, while _safe_segment guards the same values on the Python side before using them as filesystem path segments -- an asymmetry between the two layers.",
+      "file": "shared/scripts/lib/review_attribution.py",
+      "what_would_resolve_it": "Validate branch/id/loop_id shell-side the same way _safe_segment does, or document why not.",
+      "disposition": "REBUTTED, not fixed -- written rebuttal recorded in the master ADR (.shipwright/planning/adr/iterate-2026-09-22-r3-review-diff-fix-adr.md). _safe_segment protects a different boundary (path-traversal on disk, specific to that helper's own contract), not a general shell-safety guarantee; {branch}/{id}/{loop_id} originate from loop_state.json/the campaign brief, authored by the same operator who already has shell execution rights and repo write access on the host running this orchestrator -- no privilege boundary is crossed. Every other templated value in campaign-mode.md ({project_root}, {default}, {run_id}) is interpolated into shell commands the identical way, unvalidated, throughout this file; singling out these three would be inconsistent scope creep for a sub-iterate whose mandate is unit-scoped review attribution, not a general hardening pass over the file's templating."
+    }
+  ],
+  "summary": "1 high, 4 medium, 2 low. The Python module (review_attribution.py) survived adversarial attack essentially intact -- no way was found to get an unreviewed diff past pin/ship/verify. Every doubt was in campaign-mode.md, the runtime prompt. D1 (record's --project-root not unit-scoped, the same recurring root cause as rounds 4-10's shell-scoping class) and the fires line-count mechanization (D5) both required additional review rounds (11-13) before the fix was genuinely enforced rather than merely re-worded -- confirming this doubt-reviewer's own framing that the runtime prompt, not the Python core, is where this sub-iterate's residual risk lives. All six actionable findings are fixed and independently re-verified by two to three subsequent spec+code review rounds each; the seventh (shell-injection asymmetry) is rebutted in writing with the operator-trust-model rationale recorded in the master ADR.",
+  "recorded_from": "aee815011bbc0080d",
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix"
+}

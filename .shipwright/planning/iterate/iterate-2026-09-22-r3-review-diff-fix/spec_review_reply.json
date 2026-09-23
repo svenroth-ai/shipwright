@@ -1,0 +1,8 @@
+{
+  "stage": "spec-compliance",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "Round 13 (commit bbdf26915). This round's three changes -- a fixed 260-char STRICT-STOP window applied identically to all five record calls (replacing round 12's ineffective 'bound to the next call' heuristic), the fires-line-count 'mandatory' test assertion anchored to the literal normative phrase instead of a bare word search, and a tr -d/case portability fix for diff_lines on non-GNU wc -l -- are in-scope remediation of prior reviewer findings and introduce no divergence from R3-review-diff-fix.md. Independently re-derived the window arithmetic rather than accepting the claim: all five record calls are genuinely mutation-sensitive at 260 (own-guard offsets top out at 220; nearest foreign match after deletion starts no earlier than 251). Both adjacent structural run_dir tests (rederives-before-fires-write, every-run_dir-use-opens-within-its-own-block) still pass and still assert something real given this round's small text changes. All spec-named unit-scoped call sites, the pin/ship/verify guard, the legacy reviewed_head dual-write, and the no-unpinned-merge acceptance criterion remain satisfied end to end.",
+  "recorded_from": "a1f99e18cc4ca8f5d",
+  "run_id": "iterate-2026-09-22-r3-review-diff-fix"
+}
