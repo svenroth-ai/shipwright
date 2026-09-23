@@ -205,17 +205,16 @@ tried and rejected (it cannot tell two campaigns whose slugs are themselves a
 hyphenated extension of one another, e.g. `req3` vs `req3-04`, from a slug
 plus a sub-iterate suffix).
 
-## Per-unit worktree path (capability — R2; R5a wires it live)
+## Per-unit worktree path (R2 built it; R5a wires it live)
 
-R2 builds the naming, guard-mode identity, lease mechanism, and worktree
-wrapper a per-unit worktree needs — **as a capability, not yet wired into
-the live loop above.** Every `{project_root}` in this document today still
-means the ONE shared campaign worktree; a per-unit checkout only exists once
-a caller explicitly invokes `setup_unit_worktree.py` (nothing in
-`campaign-mode.md`'s live steps does yet). R5a performs that flip, once R4's
-claim mechanics (`attempt`, `attempt_id`, fencing) exist — until then this
-section describes machinery that exists and is tested, not behavior a
-running campaign exhibits.
+R2 built the naming, guard-mode identity, lease mechanism, and worktree
+wrapper a per-unit worktree needs; R5a ("the flip") wires it into the live
+loop — `campaign-mode.md` step 3c now invokes `setup_unit_worktree.py` for
+every unit in a wave, each into its own `.worktrees/campaign-{slug}--{id}`
+sibling, before any concurrent `Task` spawn. Every OTHER `{project_root}` in
+this document still means the ONE shared campaign worktree — the per-unit
+path exists only for the duration of one unit's own build, spawned as that
+unit's own `project_root` (never the shared one) in the runner's brief.
 
 **Path form:** `.worktrees/campaign-{slug}--{unit_id}` for attempt 0, and
 `.worktrees/campaign-{slug}--{unit_id}-a{attempt}` for a retry attempt >= 1

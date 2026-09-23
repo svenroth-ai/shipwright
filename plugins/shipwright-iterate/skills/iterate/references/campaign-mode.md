@@ -174,7 +174,8 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    # literal, importable for any Python-side comparison.
    export SHIPWRIGHT_LOOP_UNIT_ID="__campaign_wave__"
    # Spec-review fix (R5a round 2): `WAVE_MAX_PARALLEL` is a plain shell
-   # variable consumed at 3a's `--max-parallel "$WAVE_MAX_PARALLEL"` — it was
+   # variable, previously consumed at 3a as `--max-parallel "$WAVE_MAX_PARALLEL"`
+   # (round 6 replaced that with a defaulted form — see below) — it was
    # previously only declared in this file's own PROSE (see the constant's
    # rationale below step 3's numbered list), never actually exported. An
    # unset/empty value there is an argparse error (loop_claim.py's
@@ -365,9 +366,9 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          review" section for the open question and the cheap first-live-wave
          probe that settles it. **Confirmed separately (doubt review, R5a
          round 6), independent of that open question:**
-         `generate_handoff_on_stop.py` is registered only on `Stop`
-         (`plugins/shipwright-run/hooks/hooks.json`) — no `hooks.json` in this
-         repo registers it on `SubagentStop`. A `sub-iterate-runner` is spawned
+         `generate_handoff_on_stop.py` is registered on every phase plugin's
+         `Stop` key — no `hooks.json` in this repo registers it on
+         `SubagentStop`. A `sub-iterate-runner` is spawned
          via `Task`, so its own termination is a `SubagentStop` on the
          orchestrator's session, never a `Stop` the runner's own hooks fire
          on; this hook therefore runs ONLY for the orchestrator itself, whose

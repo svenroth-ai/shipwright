@@ -194,8 +194,9 @@ the real files before any fix. Findings:
    exported once at loop step 1 and consumed later at 3a via
    `"$WAVE_MAX_PARALLEL"`, but step 1 and 3a are separate numbered steps
    executed as separate Bash tool calls interleaved with `Task` spawns over
-   the loop's life — and this orchestrating session's own Bash tool is
-   documented to NOT persist shell state (only cwd) between calls. An
+   the loop's life — shell-state persistence across that specific boundary
+   (separate Bash invocations interleaved with `Task` spawns) is not
+   guaranteed by anything this repo controls. An
    argparse-required-int arg reading empty is a structural error that exits
    2, indistinguishable from 3a's own "every unit TERMINAL, done" exit code
    — campaign-mode.md's own round-2 comment already named this exact risk
@@ -207,9 +208,13 @@ the real files before any fix. Findings:
    structural error) predates R5a — the single-unit `cmd_next` already did
    this — and is not this sub-iterate's to redesign.
 3. **(a) CONFIRMED, not fixed here.** `generate_handoff_on_stop.py` is
-   registered only under `plugins/shipwright-run/hooks/hooks.json`'s `Stop`
-   key — grepped every `hooks.json` in the repo; none registers it (or
-   anything) on `SubagentStop`. A `sub-iterate-runner` terminates via
+   registered on the `Stop` key of every phase plugin's `hooks.json` (all
+   eleven of them, including `shipwright-run`) and on no `SubagentStop` key
+   anywhere in the repo — `SubagentStop` itself is used, just only by
+   `shipwright-build` (`write-review-payload-on-stop.py`,
+   `cleanup-review-scratch-on-code-reviewer-failure.py`) and
+   `shipwright-plan` (`write-section-on-stop.py`), neither of which touches
+   this hook. A `sub-iterate-runner` terminates via
    `SubagentStop` on the orchestrator's own session, so this hook only ever
    runs for the orchestrator itself, whose cwd is definitionally the shared
    campaign worktree. Its per-unit `write_wave_aware_handoff` branch is
