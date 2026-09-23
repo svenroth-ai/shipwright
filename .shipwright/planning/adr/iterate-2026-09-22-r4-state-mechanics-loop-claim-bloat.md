@@ -272,11 +272,30 @@ loop body executes) as an "Illegal raise" error — fixed by dropping the
 final attempt instead, which also drops the previously-wasted sleep
 before that final raise.
 
+### Round 16 growth (497 -> 502)
+
+A SEPARATE, PRE-EXISTING GHAS CodeQL alert ("Explicit returns mixed with
+implicit (fall through) returns", `_retry_on_transient_permission_error`)
+had sat as an unresolved PR review thread since round 13 — it never
+failed the CodeQL check itself (not a NEW alert on any later diff), but
+`main-protection`'s `required_review_thread_resolution` rule blocks
+merge on ANY unresolved thread regardless of check status, and this one
+was discovered only when investigating why the PR stayed
+`mergeStateStatus: BLOCKED` after round 15's fix made every check green.
+Same root cause as round 15's `_TRANSIENT_PERMISSION_RETRY_ATTEMPTS`-is-
+always-positive assumption: the loop's `return fn()` (success) and
+`raise` (final failure) paths never actually fall through, but CodeQL
+cannot prove that from the positive literal alone, so an implicit
+`return None` fall-through path is still statically reachable. Fixed
+with an explicit terminal `raise AssertionError(...)` instead of letting
+the function body end implicitly — same "raise the unreachable case
+explicitly" pattern already applied elsewhere in this codebase.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 497-line ceiling (see
-  Round 14 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 502-line ceiling (see
+  Round 16 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree`, the ADR-045 dispatch-identity
   regression, and the transient-`PermissionError` retry live in sibling
   files, `shared/tests/test_loop_claim_release_cleanup.py` (`cmd_release`'s

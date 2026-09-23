@@ -114,6 +114,11 @@ def _retry_on_transient_permission_error(fn):
             if attempt == _TRANSIENT_PERMISSION_RETRY_ATTEMPTS - 1:
                 raise
             time.sleep(min(0.01 * (attempt + 1), _TRANSIENT_PERMISSION_RETRY_BACKOFF_CAP))
+    # Unreachable: the loop above always either returns or re-raises once
+    # `_TRANSIENT_PERMISSION_RETRY_ATTEMPTS` (a positive literal) attempts
+    # are exhausted. Explicit, not an implicit fall-through `None` return
+    # (CodeQL: "Explicit returns mixed with implicit returns").
+    raise AssertionError("unreachable: _TRANSIENT_PERMISSION_RETRY_ATTEMPTS must be > 0")
 
 
 def _load_state(state_path: Path) -> dict:
