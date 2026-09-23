@@ -1,4 +1,4 @@
-# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 1046-LOC
+# Bloat exception — `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md` raised to 1050-LOC
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -92,7 +92,7 @@ merely wrapped in a new per-unit drain loop.
 
 Raise `current` for
 `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md`
-from **810 to 1046** (983 at initial write; +6 from external code review
+from **810 to 1050** (983 at initial write; +6 from external code review
 round 1's two fixes — the attempt-scoped 3e read path and the explicit
 exit-3 STRICT-STOP note on the synthetic no-result record; +10 from round 2
 — the 3c launch-failure release-every-claimed-unit fix and 3i's no-progress
@@ -112,7 +112,13 @@ surfacing an isolation-check failure's `reason_code` when its own
 `result.json` exists — mirroring 3c's own release-before-STRICT-STOP fix
 one reconcile step later; +4 from round 4's own re-review — 3c's release
 branch excluded the failing unit itself, stranding exactly the claim whose
-own failure triggered it), `state: "exception"`,
+own failure triggered it; +4 from round 5's own re-review — retracting an
+overclaim in the security note (and in the run-id bloat-exception ADR) that
+the tier-0/tier-3 fix was "verified to activate" in production, since the
+sources cited for that claim did not actually support it and the codebase's
+own evidence points the other way; the doubt is now recorded as genuinely
+open, with a cheap first-live-wave probe named as the way to settle it),
+`state: "exception"`,
 `adr: "ADR-pending:
 .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-campaign-mode-bloat-exception.md"`,
 in the same commit as the flip. `plugins/shipwright-iterate/tests/test_skill_references_link.py`'s
@@ -129,7 +135,7 @@ further.
 ## Consequences
 
 - The loop reference may grow further before the anti-ratchet blocks again
-  (1046-line current). Not a licence to keep growing — R5b's own crossing,
+  (1050-line current). Not a licence to keep growing — R5b's own crossing,
   if any, needs its own ADR, following this same pattern.
 - `shared/tests/test_r2_worktree_capability_prose.py`'s `_step_3c()` helper
   now anchors on the NEW 3c/3d labels this flip introduced

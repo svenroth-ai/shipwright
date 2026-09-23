@@ -77,9 +77,12 @@ Fixed by adding one helper, `_pointer_targets_a_different_wave_unit(pointer_work
 caller_root)`, called from both `pointer_run_id` and `pointer_worktree_root`
 right after their existing liveness/worktree-membership checks. It is gated on
 `per_unit_worktree_identity(caller_root) is not None`, so it is inert for a
-standalone iterate or a main-root call (`audit_phase_quality_on_stop.py`) and
-only activates when the caller is itself a per-unit wave worktree
-(`mark_implementation_span.py`'s real call shape, `cwd = Path.cwd()`).
+standalone iterate or a main-root call (`audit_phase_quality_on_stop.py`), and
+is INTENDED to activate when the caller is itself a per-unit wave worktree
+(`mark_implementation_span.py`'s call shape, `cwd = Path.cwd()`) — **whether
+`Path.cwd()` genuinely resolves to the per-unit worktree inside that hook's
+own subprocess during a real wave is not yet verified; see "Round 4 code
+review" below.**
 
 Splitting this helper into a separate file was rejected for the same
 Ousterhout reason as the round-2 growth: it is one more rung on the same
@@ -87,7 +90,7 @@ composite-fallback ladder both pointer functions already implement in this
 file, and putting it elsewhere would separate two checks that must be read
 together to see why either exists.
 
-## Round 4 code review — HIGH finding investigated, not fixed
+## Round 4 code review — HIGH finding: investigated, correction, still OPEN
 
 Round 4 (internal, opus re-review) raised a HIGH doubt: does
 `per_unit_worktree_identity(Path.cwd())` — the gate both round-3 fixes and
@@ -99,41 +102,59 @@ its own unit tests (which pass the worktree path directly, never through a
 real hook invocation)? The reviewer explicitly asked for "one real probe,
 not reasoning."
 
-Investigated rather than dismissed or blindly fixed. Two pieces of already-
-existing, already-relied-upon evidence settle it:
+**This section originally closed the doubt as "verified to activate as
+designed." Round 5 re-review checked that reasoning against the sources it
+cited and found it did not hold, and that the codebase's own evidence points
+the other way:**
 
-1. `docs/hooks-and-pipeline.md`'s own Monorepo Auto-Descent Guard section
-   documents, as an established opt-in mechanism: "`cd <managed-subdir>` —
-   cwd is then `project_root` or a descendant; audit fires normally." This
-   is a direct statement that an explicit `cd` during a session DOES change
-   what a LATER Stop-hook subprocess sees as `Path.cwd()` in that same
-   session — the harness tracks the session's actual current directory, it
-   does not pin hook subprocesses to the process's launch-time root.
-2. `sub-iterate-runner.md` Step 1.0's `cd "{project_root}"` is not new to
-   R5a — R1-R4's single-unit sub-iterate-runner did the identical `cd` into
-   its OWN dedicated worktree, and relied on the SAME `Path.cwd()`-based
-   tier-0 pointer resolution for its own Stop-hook audits across every
-   sub-iterate those campaigns shipped. That resolution working correctly
-   in production, repeatedly, is the empirical proof the reviewer asked for
-   — R5a's per-unit worktree is structurally the identical case (a
-   dedicated worktree a runner explicitly `cd`s into), just now one of
-   several concurrent instances rather than the only one. Nothing about
-   running N such subagents concurrently gives them a SHARED `Path.cwd()`
-   — each Task has its own independent execution context, which is the
-   precondition R1-R4 already depended on even at N=1.
+- The cited `docs/hooks-and-pipeline.md` "Monorepo Auto-Descent Guard" quote
+  ("`cd <managed-subdir>` — cwd is then `project_root`...") sits under
+  "Opt-in for cross-dir audit (e.g. CI/automation)" and states which cwd a
+  hook fires FROM in that framing — it never claims a `cd` an agent's own
+  Bash tool issues mid-session propagates into a LATER harness-spawned hook
+  subprocess. Its own sibling bullets (`SHIPWRIGHT_PROJECT_ROOT`, the
+  pointer-verified redirect) are exactly the mechanisms that WOULD be needed
+  if it did not.
+- The R1-R4 "already worked in production" argument is non-discriminating:
+  at N=1, tier 0 resolves correctly whether the hook's cwd is the per-unit
+  worktree OR main, since the one session-keyed pointer names the only live
+  unit either way — and `_pointer_targets_a_different_wave_unit` did not
+  exist in R1-R4, so no cwd-shape-dependent branch was ever exercised by
+  those runs.
+- The claim that "the standalone flow never issues a bare `cd`" is FALSE:
+  `references/F11.md`'s own PR-creation step does `cd "{project_root}"`,
+  with the comment "so `gh` can never operate on the main repo **even if the
+  shell cwd drifted**" — the codebase's own prose treats shell cwd as
+  unreliable, the opposite of what this section concluded.
+  `references/campaign-worktree.md` does a bare `cd` too. And
+  `_worktree_identity.py`'s `fast_main_root` docstring calls
+  `cwd == main repo root` **"the dominant shape"** for a Stop subprocess and
+  justifies a MEASURED 30-80ms fast path on that basis — direct, empirical,
+  in-repo evidence pointing away from this section's conclusion.
 
-The `pointer_worktree_root`/`resolve_run_id` docstrings' own "a
-Stop-subprocess's cwd is the MAIN repo even mid-iterate" claim is not in
-tension with this: it describes the STANDALONE `/shipwright-iterate` flow,
-whose own SKILL.md prose never issues a bare `cd` (always `-C`/
-`--project-root`), so that flow's own tracked cwd never leaves main in the
-first place — a different flow, not a different rule.
-
-No code change results from this finding — the fix is verified to activate
-as designed. The genuinely real residual (a caller whose OWN root is main
-or the shared campaign worktree, not a per-unit worktree, during a live
-wave) was already documented separately in `docs/hooks-and-pipeline.md`'s
-R5a exception paragraph in the same commit as this investigation.
+**Current status: genuinely unverified, not fixed, not disproven.** If the
+gate is in fact inert in the real hook shapes (`mark_implementation_span.py`,
+`generate_handoff_on_stop.py`), `per_unit_worktree_identity(Path.cwd())`
+returns `None`, `_pointer_targets_a_different_wave_unit` short-circuits
+`False`, and tier 0 hands every unit in a wave whichever sibling's setup call
+wrote the shared session-keyed pointer last — the exact round-3 collision,
+live, for the run_id these hooks attribute audit findings, triage cards, and
+handoff namespacing to. No code change was made against this uncertainty
+(a robust fix that does not depend on hook-subprocess cwd resolution at all
+is more than this sub-iterate's own scope should absorb reactively) — the
+concrete, cheap follow-up (round 5's own suggestion): the FIRST time a real
+multi-unit wave runs (`WAVE_MAX_PARALLEL` > 1 in production), have a
+runner's Step 1.0 emit `pwd` as its first post-`cd` Bash call, and/or one
+Stop hook log `Path.cwd()` once under the wave sentinel, so the very first
+live wave settles this empirically instead of continuing to reason about it.
+Whoever drives that first live wave (this campaign's own remaining
+sub-iterates, or a later campaign) should treat this section as the trigger
+to run that check before trusting per-unit run_id attribution during a wave.
+The genuinely real, ALREADY-documented residual for the case where the
+guard's precondition (`per_unit_worktree_identity(caller_root) is not None`)
+correctly fails to hold — a caller rooted at main or the shared campaign
+worktree during a live wave — is unaffected by this correction and remains
+in `docs/hooks-and-pipeline.md`'s R5a exception paragraph.
 
 ## Rejected alternatives
 

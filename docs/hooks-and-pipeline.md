@@ -610,10 +610,20 @@ or merges stale (Group-E staleness noise). The contract:
   reported with the incomplete comparison noted, and with no findings the check
   is a visible SKIP, never a pass.
 - **Autonomous campaign** sets `SHIPWRIGHT_ITERATE_AUTOMERGE=0` so sub-iterate F11
-  does NOT arm; the orchestrator runs **interleaved-serial** (campaign-mode.md) —
-  build one sub-iterate → PR → CI-green → MERGE → build the next off fresh
-  `origin/<default>`. Only ONE campaign PR is open at a time, so the snapshot
-  cascade cannot form and no per-PR regenerate-at-merge drain is needed.
+  does NOT arm; the orchestrator runs **interleaved-serial** on the *merge lane*
+  (campaign-mode.md). Since campaign-dag-scheduler R5a ("the flip"), a WAVE of
+  ready sub-iterates builds **concurrently** — each its own PR, opened and left
+  open — and only the MERGE lane itself stays one-at-a-time: PRs are reviewed
+  and merged in fixed order, never two at once, before the next wave's ready
+  set is computed off the now-advanced `origin/<default>`. The snapshot cascade
+  therefore cannot form ACROSS waves (the next wave always starts from a `main`
+  that already contains every merge the drained wave performed), but CAN form
+  WITHIN one wave — two sibling units branching from the SAME pre-wave `main`
+  and both touching a shared derived file can still hit the 3-way/regenerate
+  problem once the later one merges. This is a documented, deliberate gap
+  (`campaign-mode.md`'s own "Why interleaved-serial" section), closed by a
+  later sub-iterate's serial-merge-lane revision (review pinning, staleness
+  cascade), not by R5a itself.
 
 This is host-agnostic (the regeneration uses `integrate_main`/git, never a
 GitHub-only API), reuses existing machinery, and softens no gate — `audit_staleness`

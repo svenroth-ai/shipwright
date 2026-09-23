@@ -348,7 +348,11 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          across a wave and cannot serve as per-unit identity; `_run_id.py`'s
          own pointer tiers additionally guard against reading a sibling's
          pointer this way — see its `_pointer_targets_a_different_wave_unit`
-         helper).
+         helper). **Not yet empirically verified that a hook subprocess's own
+         `Path.cwd()` genuinely resolves to the per-unit worktree during a
+         real wave** — see the run-id bloat-exception ADR's "Round 4 code
+         review" section for the open question and the cheap first-live-wave
+         probe that settles it.
        - `diff_risk_recheck.py` only tests the same truthiness the authorship
          guard does. UNAFFECTED by the sentinel value.
        - `capture_session_id.py`'s propagation via `CLAUDE_ENV_FILE` is WHY A
