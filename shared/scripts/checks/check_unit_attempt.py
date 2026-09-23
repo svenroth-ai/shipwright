@@ -35,7 +35,7 @@ _SHARED_LIB = Path(__file__).resolve().parents[1]
 if str(_SHARED_LIB) not in sys.path:
     sys.path.insert(0, str(_SHARED_LIB))
 
-from lib.loop_state import find_unit_row, validate_attempt_token  # noqa: E402
+from lib.loop_state import ACTIVE, find_unit_row, validate_attempt_token  # noqa: E402
 
 
 def _emit(args: argparse.Namespace, *, decision: str, reason_code: str, detail: str) -> None:
@@ -78,6 +78,24 @@ def main(argv: list[str] | None = None) -> int:
         _emit(args, decision="block", reason_code="stale_attempt",
               detail=f"unit {args.unit!r}'s current attempt_id is {unit.get('attempt_id')!r}, "
                      f"not the given {args.attempt_id!r} — a reclaim already happened")
+        return 5
+
+    # External Tier-3 PR review (GPT, round 18): a matching `attempt_id`
+    # alone is not enough. `cmd_release` moves a claimed unit back to
+    # `pending` (or `failed`) WITHOUT rotating `attempt_id` — the token
+    # stays exactly what it was at claim time. In the window between a
+    # release and any later reclaim (which would mint a fresh token), a
+    # stale runner whose claim was released out from under it still
+    # presents its OLD, still-matching token here and would otherwise be
+    # ALLOWed to push for a unit it no longer owns. `lib.loop_state.ACTIVE`
+    # is the state machine's own definition of "a runner or the merge
+    # lane currently owns it" — require membership in it, not just a
+    # matching token.
+    if unit.get("status") not in ACTIVE:
+        _emit(args, decision="block", reason_code="unit_not_active",
+              detail=f"unit {args.unit!r}'s attempt_id matches, but its status is "
+                     f"{unit.get('status')!r}, not one of {sorted(ACTIVE)} — "
+                     "the claim was released or reused; refusing a stale push")
         return 5
 
     _emit(args, decision="allow", reason_code="ok", detail=f"attempt_id {args.attempt_id!r} is still current")

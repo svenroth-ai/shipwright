@@ -72,6 +72,26 @@ def test_missing_state_file_blocks_with_exit_1(tmp_path, capsys):
     assert payload["reason_code"] == "state_not_found"
 
 
+def test_released_unit_with_still_matching_token_blocks(tmp_path, capsys):
+    """External Tier-3 PR review (GPT, round 18): `cmd_release` moves a
+    claimed unit back to `pending`/`failed` WITHOUT rotating `attempt_id`
+    — a stale runner whose claim was released out from under it still
+    presents a token that matches exactly. A matching token alone must not
+    be enough; the row's status must also still be one `lib.loop_state.
+    ACTIVE` recognizes as runner/merge-lane-owned."""
+    state = tmp_path / "loop_state.json"
+    _write_state(state, [{"id": "R4", "status": "pending", "attempt_id": "loop-R4-a0",
+                           "released_at": "2026-09-23T00:00:00Z"}])
+
+    rc = check_unit_attempt.main([
+        "--state", str(state), "--unit", "R4", "--attempt-id", "loop-R4-a0", "--json",
+    ])
+    assert rc == 5
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["decision"] == "block"
+    assert payload["reason_code"] == "unit_not_active"
+
+
 def test_never_claimed_unit_with_no_attempt_id_field_blocks(tmp_path, capsys):
     # A row that was never claimed at all has no `attempt_id` key — a
     # runner asserting one is a structural mismatch, never silently allowed.
