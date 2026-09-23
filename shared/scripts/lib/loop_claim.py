@@ -278,6 +278,15 @@ def cmd_release(args: argparse.Namespace) -> int:
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
             state = _load_state(state_path)
+            # External review (GPT, high): this module's own docstring
+            # promises it NEVER touches `kind == "section"` state — `cmd_
+            # next_batch` already enforces that, but `cmd_release` had no
+            # equivalent gate, letting a wrong `--state` path (or a caller
+            # unaware of the new CLI) write the 9-state vocabulary into a
+            # legacy section row's `status` field.
+            if state.get("kind") != "sub_iterate":
+                print("ERROR: release is only valid for kind == 'sub_iterate'", file=sys.stderr)
+                return 1
             unit = find_unit_row(state, args.unit)
             if unit is None:
                 print(f"ERROR: unit {args.unit!r} not found", file=sys.stderr)

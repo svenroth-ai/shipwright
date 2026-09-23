@@ -122,11 +122,22 @@ test_loop_claim_release_cleanup.py`'s prior 5 tests all mocked
 `resolved_worktree_path` away, which is exactly how this bug went
 undetected).
 
+### Round 5 growth (368 -> 377)
+
+External Tier-3 review (GPT, high, PR #790) found this module's own docstring
+promise — "NEVER touches `kind == "section"` state" — enforced only for
+`cmd_next_batch`, not `cmd_release`: a wrong `--state` path or a caller
+unaware of the new CLI could write the 9-state vocabulary into a legacy
+section row's `status` field. Fixed with the same `state.get("kind") !=
+"sub_iterate"` gate `cmd_next_batch` already had, plus one regression test
+proving a section-kind unit is left untouched. Not a new responsibility — a
+completeness fix to a guard this module already owned in part.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 368-line ceiling (see
-  Round 4 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 377-line ceiling (see
+  Round 5 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
   regression live in a new sibling file, `shared/tests/
   test_loop_claim_release_cleanup.py` (split from `test_loop_claim.py`

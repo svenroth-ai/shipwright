@@ -101,6 +101,13 @@ def _fencing_mutate(args: argparse.Namespace, *, from_states: tuple[str, ...], t
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
             state = _load_state(state_path)
+            # External review (GPT, high): this module's own docstring
+            # promises its mutators are for `kind == "sub_iterate"`
+            # campaigns only — `mark-running`/`mark-merged` had no gate
+            # enforcing that, unlike `loop_claim.cmd_next_batch`.
+            if state.get("kind") != "sub_iterate":
+                print(f"ERROR: {to_state} is only valid for kind == 'sub_iterate'", file=sys.stderr)
+                return 1
             unit = find_unit_row(state, args.unit)
             if unit is None:
                 print(f"ERROR: unit {args.unit!r} not found", file=sys.stderr)
@@ -175,6 +182,13 @@ def cmd_mark(args: argparse.Namespace) -> int:
     try:
         with file_lock(state_path.parent / "loop.lock", timeout_seconds=30):
             state = _load_state(state_path)
+            # External review (GPT, high): the one audited operator
+            # override was the last of this module's three mutators still
+            # missing the `kind == "sub_iterate"` gate — see the identical
+            # fix on `_fencing_mutate` above.
+            if state.get("kind") != "sub_iterate":
+                print("ERROR: mark is only valid for kind == 'sub_iterate'", file=sys.stderr)
+                return 1
             unit = find_unit_row(state, args.unit)
             if unit is None:
                 print(f"ERROR: unit {args.unit!r} not found", file=sys.stderr)

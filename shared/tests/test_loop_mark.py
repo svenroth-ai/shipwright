@@ -74,6 +74,19 @@ class TestCmdMarkRunning:
         state_path = _write_state(tmp_path, [{"id": "A", "status": "pending", "attempt_id": "l-A-a0"}])
         assert cmd_mark_running(_mark_running_args(state_path, "A", "l-A-a0")) == 1
 
+    def test_rejects_non_sub_iterate_kind(self, tmp_path):
+        """External review (GPT, high): this module's own docstring promises
+        its mutators are for `kind == "sub_iterate"` campaigns only — before
+        this fix, none of the three enforced it, unlike
+        `loop_claim.cmd_next_batch`."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps({"loop_id": "test-loop", "kind": "section",
+                                           "units": [{"id": "A", "status": "claimed", "attempt_id": "l-A-a0"}]}),
+                               encoding="utf-8")
+        assert cmd_mark_running(_mark_running_args(state_path, "A", "l-A-a0")) == 1
+        assert _unit_row(state_path, "A")["status"] == "claimed"  # untouched
+
 
 def _mark_merged_args(state_path: Path, unit: str, attempt_id: str, merged_commit: str) -> argparse.Namespace:
     return argparse.Namespace(state=str(state_path), unit=unit, attempt_id=attempt_id,
@@ -210,3 +223,15 @@ class TestCmdMark:
         args = _mark_args(state_path, "A", "held")
         args.reason = "bad\x00reason"
         assert cmd_mark(args) == 1
+
+    def test_rejects_non_sub_iterate_kind(self, tmp_path):
+        """External review (GPT, high): the audited operator override was
+        the last of this module's three mutators still missing the
+        `kind == "sub_iterate"` gate."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps({"loop_id": "test-loop", "kind": "section",
+                                           "units": [{"id": "A", "status": "failed"}]}),
+                               encoding="utf-8")
+        assert cmd_mark(_mark_args(state_path, "A", "held")) == 1
+        assert _unit_row(state_path, "A")["status"] == "failed"  # untouched

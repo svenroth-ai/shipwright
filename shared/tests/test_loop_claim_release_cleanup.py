@@ -43,6 +43,19 @@ def _release_args(state_path: Path, unit: str, attempt_id: str, *, max_attempts=
 
 
 class TestCmdReleasePhysicalCleanup:
+    def test_release_rejects_non_sub_iterate_kind(self, tmp_path):
+        """External review (GPT, high): this module's own docstring promises
+        it NEVER touches `kind == "section"` state — unlike `cmd_next_batch`,
+        `cmd_release` had no gate enforcing that before this fix, so a wrong
+        `--state` path could write the 9-state vocabulary into a legacy
+        section row."""
+        state_path = _write_state(tmp_path, kind="section", units=[
+            {"id": "A", "status": "in_progress"},
+        ])
+        assert cmd_release(_release_args(state_path, "A", "whatever")) == 1
+        unit = json.loads(state_path.read_text(encoding="utf-8"))["units"][0]
+        assert unit["status"] == "in_progress"  # untouched
+
     def test_release_skips_cleanup_without_campaign_context(self, tmp_path):
         """No `--campaign-slug`/`--campaign-worktree` (e.g. a caller that
         predates this fix) -> release still succeeds, no cleanup attempted."""
