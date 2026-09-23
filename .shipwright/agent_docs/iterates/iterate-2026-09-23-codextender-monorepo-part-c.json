@@ -1,0 +1,49 @@
+{
+  "run_id": "iterate-2026-09-23-codextender-monorepo-part-c",
+  "date": "2026-09-23T09:03:56.323606Z",
+  "event_at": "2026-09-23T08:34:47.790710+00:00",
+  "type": "change",
+  "complexity": "small",
+  "prior_source": "keyword",
+  "branch": "iterate/codextender-monorepo-part-c",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-09-23-codextender-monorepo-part-c",
+  "test_completeness": {
+    "status": "complete",
+    "behaviors": [
+      {
+        "behavior": "review_claude_cli's subprocess.run call scrubs ANTHROPIC_BASE_URL/ANTHROPIC_AUTH_TOKEN/ANTHROPIC_MODEL from the spawned `claude` CLI's environment ONLY when CODEXTENDER_ACTIVE is set (so a Codextender-routed parent session can never leak into this leg), while preserving unrelated env vars unchanged AND leaving the environment fully untouched outside Codextender -- a CI PR-review pass found the original unconditional scrub would silently break a legitimate ANTHROPIC_AUTH_TOKEN-only installation",
+        "disposition": "tested",
+        "evidence": "shared/tests/test_external_review_opus_leg.py::test_review_claude_cli_scrubs_anthropic_routing_env_vars_under_codextender PASSED; ::test_review_claude_cli_preserves_anthropic_auth_token_outside_codextender PASSED"
+      },
+      {
+        "behavior": "every external_review.py --driver invocation site across plan/build/iterate plugins (7 hardcoded + 4 template-resolved) passes a concrete driver value -- never an unresolved {driver} placeholder -- whether via the literal \"claude\" or a self-resolving CODEXTENDER_ACTIVE conditional",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_external_review_driver_prose_contract.py::test_every_external_review_invocation_block_passes_driver PASSED; ::test_every_inline_prose_mention_passes_driver PASSED; ::test_sub_iterate_runner_resolves_its_own_driver_not_a_placeholder PASSED; ::test_known_call_sites_are_still_present PASSED"
+      },
+      {
+        "behavior": "every CODEXTENDER_ACTIVE-self-resolving driver idiom, extracted LIVE from its own markdown block (not a hand-copied duplicate constant -- a local PR-review preflight, F11, found the original version tested copies instead of the real prose), resolves to the codex roster for any non-empty value and to claude when the var is unset or empty",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_external_review_driver_prose_contract.py::test_live_idioms_cover_every_self_resolving_site PASSED; ::test_codextender_active_shell_idiom_resolves_correctly[None-claude] PASSED; [--claude] PASSED; [1-codex] PASSED; [0-codex] PASSED"
+      },
+      {
+        "behavior": "every consumer site that parses the external_review.py response's second-identity key (reviews.openai.feedback under --driver claude) also names the driver=codex key (reviews.opus.feedback) it must read instead -- a local PR-review preflight (F11) found two of the four parse sites still hardcoded reviews.openai only, which would silently drop the second review under Codextender",
+        "disposition": "tested",
+        "evidence": "integration-tests/test_external_review_driver_prose_contract.py::test_every_openai_feedback_parse_site_also_names_the_opus_key PASSED; ::test_openai_feedback_parse_sites_are_still_present PASSED"
+      }
+    ],
+    "counts": {
+      "testable": 4,
+      "tested": 4,
+      "untestable": 0,
+      "untested_testable": 0
+    }
+  },
+  "surface_verification": {
+    "surface": "none",
+    "tests_run": 0,
+    "exit_code": 0,
+    "justification": "documentation/config-guidance (item 1), a shell-conditional driver-selection change in markdown prose (item 2), and a subprocess env-scrub fix in a review-leg script (item 3) -- no startable web/dev-server/CLI surface of its own to browser-verify; verification is the unit/integration test suite itself (F0)."
+  }
+}

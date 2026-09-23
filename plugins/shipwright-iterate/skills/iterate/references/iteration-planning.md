@@ -348,10 +348,19 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
    **Resolution rule:** this is self-evident to the program executing these
    instructions, not detected or inferred — a Claude Code session is always
    `claude`; a session invoked through Codex CLI's own agent loop is always
-   `codex`. No env var, config file, or heuristic is consulted — Sven
-   explicitly rejected env-sniffing and a default value alike (Escape Hatch /
-   Rejected Alternatives history), so the executing agent states its own
-   identity plainly.)
+   `codex`. No env var, config file, or heuristic is consulted for the
+   *harness* question — Sven explicitly rejected env-sniffing and a default
+   value alike (Escape Hatch / Rejected Alternatives history), so the
+   executing agent states its own identity plainly.
+   **Codextender is a separate axis, not a re-opening of that rejection:**
+   under Codextender mode the harness is still, self-evidently, `claude` —
+   but `CODEXTENDER_ACTIVE`, when set in the environment, is an explicit
+   marker (not a guess) that the model backend behind that harness is
+   Codex-backed. Check it after resolving the harness: `codex` when
+   `CODEXTENDER_ACTIVE` is set, else the harness-identity value above. This
+   is a separate axis from `shared/scripts/lib/codex_runtime.py`'s
+   `is_codex_runtime()` (a plugin-bundle-shape check) — do not fold the two
+   together; see `docs/hooks-and-pipeline.md`.)
    (The `mkdir -p` is not always redundant: step 0's `record` call is what
    normally creates this directory as a side effect, but it is skipped
    entirely under degraded handling above — a bare redirect would then fail

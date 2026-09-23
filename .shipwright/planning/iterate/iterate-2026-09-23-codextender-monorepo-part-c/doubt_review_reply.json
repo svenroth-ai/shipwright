@@ -1,0 +1,10 @@
+{
+  "stage": "doubt",
+  "gating": "advisory-must-address",
+  "summary": "Adversarial review of the opus-leg env-scrub fix and driver-selection prose. Two medium doubts, one low doc-contract nit.",
+  "doubts": [
+    {"severity": "medium", "claim_under_doubt": "review_claude_cli always reaches real Anthropic with a usable credential under Codextender", "disposition": "declined-with-disclosure", "reason": "The scrub is correct for what it claims: it restores default auth resolution by removing the Codextender override, the same resolution this leg already relies on in its ordinary (non-Codextender) operation. Whether `claude --bare` actually falls back to a stored `claude login` session vs. requiring ANTHROPIC_API_KEY is a pre-existing, unverified assumption of this leg's design that predates this fix and is out of scope for the env-scrub fix itself. Disclosed via a code comment in external_review_opus_leg.py so it is not silently assumed."},
+    {"severity": "medium", "claim_under_doubt": "All 11 driver-selection sites resolve to codex under CODEXTENDER_ACTIVE", "disposition": "accepted-and-fixed", "reason": "iteration-reviews.md's external-code-cascade driver definition had no Codextender clause of its own and is the only rule a non-medium+ iterate (e.g. this run, small complexity, diff >100 lines) ever reads before resolving --driver for the code-review cascade. Fixed: iteration-reviews.md now states the Codextender rule directly, not only by reference to iteration-planning.md's medium+-only Step 3.5."},
+    {"severity": "low", "claim_under_doubt": "CODEXTENDER_ACTIVE=0/false is unambiguously read as inactive by every site", "disposition": "accepted-and-fixed", "reason": "The shell form [ -n \"$VAR\" ] treats any non-empty value (including '0') as active, while prose-resolved sites could plausibly read '0' as off. Fixed: docs/hooks-and-pipeline.md's CODEXTENDER_ACTIVE row now states the contract once: any non-empty value = active, unset to disable."}
+  ]
+}

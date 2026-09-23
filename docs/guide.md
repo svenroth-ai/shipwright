@@ -1484,7 +1484,7 @@ The profile configures two deployment environments: **DEV** (auto-deploy on push
 
 ### External LLM Review
 
-Shipwright can send artifacts to external LLMs for an independent second opinion, GLM 5.3 always paired with a second identity chosen by `--driver` (required, no default): `claude` pairs it with GPT-5.6 Terra, `codex` pairs it with Opus 5 (local Claude CLI, OpenRouter fallback) -- Codex CLI already drives its own subagents, so a second Codex-launched OpenAI call would be a same-vendor rubber stamp. The same CLI -- `shared/scripts/tools/external_review.py` -- runs four review modes; which one fires depends on the phase that triggers it.
+Shipwright can send artifacts to external LLMs for an independent second opinion, GLM 5.3 always paired with a second identity chosen by `--driver` (required, no default): `claude` pairs it with GPT-5.6 Terra, `codex` pairs it with Opus 5 (local Claude CLI, OpenRouter fallback) -- Codex CLI already drives its own subagents, so a second Codex-launched OpenAI call would be a same-vendor rubber stamp. `--driver codex` also applies under Codextender mode (`CODEXTENDER_ACTIVE` set) even though the driving binary is `claude` -- the diff was still authored by a Codex-backed model, so the roster swaps for the same reason. The same CLI -- `shared/scripts/tools/external_review.py` -- runs four review modes; which one fires depends on the phase that triggers it.
 
 | Mode | Trigger | Reviews | Marker file |
 |---|---|---|---|

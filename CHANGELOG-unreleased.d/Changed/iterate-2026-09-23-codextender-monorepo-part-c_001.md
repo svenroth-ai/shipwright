@@ -1,0 +1,1 @@
+External-review --driver selection (plan/build/iterate) is now conditional on a new CODEXTENDER_ACTIVE env var, picking the cross-vendor GLM+Opus roster even when the driving harness is claude but the model backend is Codex-backed; documented in docs/hooks-and-pipeline.md and docs/guide.md.

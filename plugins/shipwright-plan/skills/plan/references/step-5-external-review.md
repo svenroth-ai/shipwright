@@ -114,11 +114,11 @@ uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py 
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}" \
-  --driver claude
+  --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)"
 ```
 
-(`--driver` is **required, no default** — always `claude` here; see
-`external-review.md` for why.)
+(`--driver` is **required, no default** — `claude` here, except `codex` under
+Codextender mode; see `external-review.md` for why.)
 
 (`{shared_root}` is typically `{plugin_root}/../../shared`; plan-mode prompts
 load from `{plugin_root}/prompts/plan_reviewer/`.)
@@ -212,13 +212,13 @@ plan adds nothing permanent, that brief is three lines — see the template.
 # 1. Write {planning_dir}/architecture_brief.md from the template.
 #    Do NOT copy the plan's rejected-alternatives rationale into it.
 
-# 2. Ask the same two models.
+# 2. Ask the same two models (same driver resolution as Branch A above).
 uv run --project "{plugin_root}" {shared_root}/scripts/tools/external_review.py \
   --mode architecture \
   --brief-file "{planning_dir}/architecture_brief.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}" \
-  --driver claude
+  --driver "$([ -n "${CODEXTENDER_ACTIVE:-}" ] && echo codex || echo claude)"
 ```
 
 The CLI **refuses `--plan-file` in this mode** (usage error, exit 2): silently

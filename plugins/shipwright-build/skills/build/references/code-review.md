@@ -229,16 +229,22 @@ the repo — see the box below) is what gets sent.
 
 ```bash
 trap 'ec=$?; uv run "{shared_root}/scripts/tools/review_scratch.py" cleanup --run-id "$SHIPWRIGHT_SESSION_ID"; exit "$ec"' EXIT
+DRIVER=claude
+[ -n "${CODEXTENDER_ACTIVE:-}" ] && DRIVER=codex
 uv run --project "{plan_plugin_root}" "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file "$(uv run "{shared_root}/scripts/tools/review_scratch.py" resolve --run-id "$SHIPWRIGHT_SESSION_ID" --name shipwright-review-diff.txt)" \
   --spec-file "{section_spec_path}" \
   --plugin-root "{plan_plugin_root}" \
-  --driver claude
+  --driver "$DRIVER"
 ```
 
 (`--driver` is **required, no default** — `/shipwright-build` is a Claude Code
-plugin, so always `claude` here.)
+plugin, so the driving binary is always `claude`. That alone still means
+`--driver claude` *except* under Codextender mode (`CODEXTENDER_ACTIVE` set —
+see `docs/hooks-and-pipeline.md`): the binary is still `claude`, but the diff
+was actually authored by a Codex-backed model, so the roster swaps to `codex`
+(`{glm, opus}`) for cross-vendor independence.)
 
 (`uv run --project` points uv at the plugin that declares the `openai`
 dependency `external_review.py` imports — without it, `uv run` resolves
@@ -252,10 +258,11 @@ reason, never parsed as a completed review.)
 (`--plugin-root` is unused in code-mode prompt loading but the argument
 remains required for CLI shape parity with plan/iterate modes.)
 
-3. Parse JSON output (`reviews.glm.feedback` + `reviews.openai.feedback`).
-   Merge any high/medium severity findings into the in-flight findings list
-   from Step 6b. Treat them with the same autonomous/guided handling rule
-   as the internal subagent findings.
+3. Parse JSON output (`reviews.glm.feedback` + `reviews.openai.feedback`, or
+   `reviews.opus.feedback` under `--driver codex`; required, no default,
+   never hardcoded). Merge any high/medium severity findings into the
+   in-flight findings list from Step 6b. Treat them with the same
+   autonomous/guided handling rule as the internal subagent findings.
 
 4. Write the review marker:
 
