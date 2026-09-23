@@ -219,6 +219,10 @@ def main(argv: list[str] | None = None) -> int:
 
     shim_refusal = _refuse_if_shell_shim(codex_bin, envelope)
     if shim_refusal is not None:
+        # lgtm[py/clear-text-logging-sensitive-data] -- CodeQL's source model
+        # flags resolve_trusted_executable()'s return as "secret" purely on the
+        # word "trusted" in its name; it is shutil.which()'s resolved filesystem
+        # path to the codex binary, not credential material (verified: PR #792).
         print(shim_refusal, file=sys.stderr)
         return 1
 

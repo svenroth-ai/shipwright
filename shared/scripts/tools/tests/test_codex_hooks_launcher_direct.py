@@ -215,9 +215,12 @@ def test_materialize_rejects_unsafe_bundle_root_characters(tmp_path, bad_char):
     assert not launcher_dir.exists() or not list(launcher_dir.iterdir())
 
 
-def test_materialize_accepts_windows_style_path_with_parentheses_and_spaces(tmp_path):
+def test_materialize_accepts_windows_style_path_with_parentheses_and_spaces(tmp_path, monkeypatch):
     """A real, entirely legitimate Windows install path (e.g. under
-    ``Program Files (x86)``) must not be rejected by the same guard."""
+    ``Program Files (x86)``) must not be rejected by the same guard. Forces
+    the win32 branch (module docstring) so the `.bat`-style assertions below
+    hold on a POSIX CI runner too, not just on this Windows dev machine."""
+    monkeypatch.setattr(launcher_module.sys, "platform", "win32")
     bundle_root = Path("C:/Program Files (x86)/Shipwright Bundle_v1.2/cache")
     launcher_dir = tmp_path / "launchers"
 
