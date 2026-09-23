@@ -152,9 +152,9 @@ below; the **Pre-5b Checkpoint** decides whether the Self-Review Fallback
 runs. Then read `external_review_status` from the session report (First
 Actions > F) and branch on its value:
 
-- **Branch A — `available`:** run `external_review.py --mode plan --driver claude ...`
-  (GLM + OpenAI in parallel), integrate findings, log each to
-  `decision_log.md`. Read `contradiction.requires_resolution` first — put any
+- **Branch A — `available`:** run `external_review.py --mode plan --driver <claude|codex> ...`
+  (resolved per `CODEXTENDER_ACTIVE`, never hardcoded — see `external-review.md`;
+  GLM+OpenAI/GLM+Opus in parallel), integrate findings, log each to `decision_log.md`. Read `contradiction.requires_resolution` first — put any
   disagreement to the user, never proceed on the approving review alone. Then
   **Step 5a**: a second call, `--mode architecture` over a short brief
   *instead of* the plan, asking what no other pass asks — should this be

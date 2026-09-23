@@ -1,0 +1,1 @@
+external_review_opus_leg.py's review_claude_cli now passes an explicit env= that scrubs ANTHROPIC_BASE_URL/ANTHROPIC_AUTH_TOKEN/ANTHROPIC_MODEL, so the opus reviewer leg always reaches real Anthropic instead of silently inheriting the parent process's routing.

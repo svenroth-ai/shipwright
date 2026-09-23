@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-23-codextender-monorepo-part-c",
+  "date": "2026-09-23",
+  "section": "Codextender monorepo integration Part C",
+  "title": "Conditional external-review driver on CODEXTENDER_ACTIVE + opus-leg env-scrub fix",
+  "context": "Under Codextender, the driving harness stays claude but the model backend is Codex-backed, so --driver claude|codex roster selection must follow the model, not the harness. Separately, external_review_opus_leg.py's review_claude_cli inherited ANTHROPIC_* env vars unscrubbed — a pre-existing bug.",
+  "decision": "Made --driver conditional on CODEXTENDER_ACTIVE across all 11 census sites; documented ADR-127's inherit tier as the operator action for review/plan_review; scrubbed ANTHROPIC_BASE_URL/AUTH_TOKEN/MODEL from review_claude_cli's subprocess env with a regression test; updated hooks-and-pipeline.md + guide.md.",
+  "consequences": "Codextender diffs get independent GLM+Opus review instead of a same-vendor rubber stamp; the env-leak fix benefits every caller, not only Codextender; CODEXTENDER_ACTIVE documented as distinct from is_codex_runtime().",
+  "rationale": "Reuses ADR-127's inherit tier and the existing DRIVER_ROSTERS mechanism; the env fix is a minimal targeted subprocess env= addition.",
+  "rejected": "A new free-text Codex model tier for review subagents — rejected, agent_model_param() only accepts opus|sonnet|haiku|fable.",
+  "commit": "",
+  "architecture_impact": "convention",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-23-codextender-monorepo-part-c-details.md"
+}
