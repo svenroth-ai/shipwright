@@ -169,11 +169,31 @@
           "disposition": "tested",
           "category": "integration",
           "evidence": "shared/tests/test_loop_claim_concurrency_integration.py::TestDependencyAncestryAssertRealGit::test_unmergeable_dependency_leaves_unit_pending_batch_not_blocked PASSED"
+        },
+        {
+          "behavior": "cmd_release's physical worktree/branch cleanup (spec's reclaim/cleanup split, Stage-1 spec-reviewer re-check fix): best-effort git worktree remove + git branch -D attempted when --campaign-slug/--campaign-worktree are given, skipped without them, never blocks the logical release even when the cleanup itself fails; the worktree path is always recomputed from validated (slug, unit_id, attempt), never a stored path",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_loop_claim_release_cleanup.py::TestCmdReleasePhysicalCleanup (6 tests) PASSED"
+        },
+        {
+          "behavior": "ADR-045 single-module-identity for mark/mark-running/mark-merged dispatch (Stage-1 spec-reviewer re-check fix): loop_claim.py's cmd_map dispatches into the SAME lib.loop_mark module object test_loop_mark.py patches -- proven both by an identity assert and an end-to-end test that patches lib.loop_mark and invokes loop_claim.main() itself",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_loop_claim_release_cleanup.py::TestMarkDispatchIsSingleModuleIdentity (2 tests) PASSED"
+        },
+        {
+          "behavior": "the dependency-staleness check (_snapshot_merged_commits) case-folds its unit_id key exactly like every other dependency lookup in this module (Stage-2 code-review fix, medium/correctness): a case-mismatched depends_on edge (write-time-valid per campaign_graph.validate_dependency_graph) still correctly detects a merged_commit that changed between the outside-lock peek and the in-lock claim, not just the happy path where nothing changed",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_loop_claim.py::TestCmdNextBatch::test_claims_unit_whose_dependency_id_is_case_mismatched, test_case_mismatched_dependency_staleness_is_still_detected PASSED"
+        },
+        {
+          "behavior": "rejected_payload_path's containment check is anchored against the loop-level runs root, not the unit-level directory unit_id itself derives (Stage-2 code-review fix, medium/security): a traversing unit_id is rejected before any write is attempted, closing a gap where the old unit-level anchor moved both sides of the comparison together and passed vacuously",
+          "disposition": "tested",
+          "evidence": "shared/tests/test_loop_state_fencing.py::TestPathHelpers::test_rejected_payload_path_rejects_traversing_unit_id PASSED"
         }
       ],
       "counts": {
-        "testable": 27,
-        "tested": 27,
+        "testable": 31,
+        "tested": 31,
         "untestable": 0,
         "untested_testable": 0
       },
@@ -191,7 +211,7 @@
   },
   "source_state": {
     "run_id": "iterate-2026-09-22-r4-state-mechanics",
-    "commit": "45ca58382e5031a3244ffbe6bb70934912ea22de",
+    "commit": "208f46c779ede641e5598d6967478f2f64b4f6c2",
     "dirty": true,
     "base": null,
     "release": null

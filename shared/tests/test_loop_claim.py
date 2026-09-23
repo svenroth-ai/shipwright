@@ -164,6 +164,52 @@ class TestCmdNextBatch:
         out = json.loads(capsys.readouterr().out)
         assert [c["id"] for c in out["claimed"]] == ["A"]
 
+    def test_claims_unit_whose_dependency_id_is_case_mismatched(self, tmp_path, capsys):
+        """`campaign_graph.validate_dependency_graph` accepts a
+        case-mismatched `depends_on` edge at write time (e.g.
+        `depends_on: ["r0"]` against unit `R0`) — the happy path (SHA
+        unchanged between peek and claim) must still claim the unit."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "R0", "status": "merged", "attempt": 0, "merged_commit": _FAKE_SHA},
+            {"id": "A", "status": "pending", "attempt": 0, "depends_on": ["r0"]},
+        ])
+        with patch.object(loop_claim, "_is_ancestor", return_value=True), \
+                patch.object(loop_claim.subprocess, "run"):
+            rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
+        assert rc == 0
+        out = json.loads(capsys.readouterr().out)
+        assert [c["id"] for c in out["claimed"]] == ["A"]
+
+    def test_case_mismatched_dependency_staleness_is_still_detected(self, tmp_path, capsys):
+        """Stage-2 code review (medium, correctness): `_snapshot_merged_commits`
+        used to key its `{unit_id: merged_commit}` map by exact-case
+        `u["id"]`, while the comparison site looked up `dep_id` from
+        `depends_on` raw. For a case-mismatched edge (`depends_on: ["r0"]`
+        against unit `R0`), BOTH the pre- and in-lock snapshots returned
+        `None` for that key, so the "did this dependency's merged SHA
+        change between the outside-lock peek and the in-lock claim" check
+        passed VACUOUSLY — the happy-path test above cannot tell this apart
+        from a correct fold, since a vacuous `None == None` also claims the
+        unit. This test forces the dependency's `merged_commit` to actually
+        change between the two reads `cmd_next_batch` performs (outside-lock
+        peek, in-lock re-read) and asserts the unit is correctly EXCLUDED —
+        the case-fold fix is what makes that comparison a real one."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "R0", "status": "merged", "attempt": 0, "merged_commit": _FAKE_SHA},
+            {"id": "A", "status": "pending", "attempt": 0, "depends_on": ["r0"]},
+        ])
+        stale_state = json.loads(state_path.read_text(encoding="utf-8"))
+        changed_state = json.loads(json.dumps(stale_state))
+        changed_state["units"][0]["merged_commit"] = "cafebabe" * 5  # different SHA, in-lock
+
+        with patch.object(loop_claim, "_load_state", side_effect=[stale_state, changed_state]), \
+                patch.object(loop_claim, "_is_ancestor", return_value=True), \
+                patch.object(loop_claim.subprocess, "run"):
+            rc = cmd_next_batch(_batch_args(state_path, max_parallel=1))
+        out = json.loads(capsys.readouterr().out)
+        assert out["claimed"] == []
+        assert rc == 4
+
     def test_all_terminal_reports_done(self, tmp_path):
         state_path = _write_state(tmp_path, units=[{"id": "A", "status": "merged", "attempt": 0}])
         assert cmd_next_batch(_batch_args(state_path)) == 2

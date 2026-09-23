@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from lib.loop_state import (
     cmd_init_sub_iterate_payload,
     enforce_record_fencing,
@@ -74,6 +76,19 @@ class TestPathHelpers:
         state_path = tmp_path / ".shipwright" / "loop_state.json"
         p = rejected_payload_path(state_path, "loop1", "A", "loop1-A-a1")
         assert p == tmp_path / ".shipwright" / "runs" / "loop1" / "A" / "rejected" / "loop1-A-a1.json"
+
+    def test_rejected_payload_path_rejects_traversing_unit_id(self, tmp_path):
+        """Stage-2 code review (medium, security): the containment assert
+        used to compare `resolved_dir` (itself derived from the untrusted
+        `unit_id`) against `resolved_candidate.parent` — a traversing
+        `unit_id` moves both sides of that comparison together, so the
+        assert passed vacuously for exactly the input it existed to catch.
+        Anchored against the LOOP-level root instead
+        (`runs_dir_for(state_path, loop_id)`, no `unit_id`); a traversing
+        `unit_id` must now be rejected before any write is attempted."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        with pytest.raises(ValueError, match="escaped"):
+            rejected_payload_path(state_path, "loop1", "../../etc", "loop1-A-a1")
 
     def test_handoff_dir_for(self, tmp_path):
         state_path = tmp_path / ".shipwright" / "loop_state.json"

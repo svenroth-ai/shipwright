@@ -441,15 +441,26 @@ def rejected_payload_path(state_path, loop_id: str, unit_id: str, attempt_id: st
     filename segment; the resolved-path containment assert below is
     defense-in-depth against a filesystem-specific traversal shape neither
     the regex nor the digest fallback anticipated.
+
+    `unit_id` is ALSO untrusted here (code-review re-check, medium): it is
+    a `loop_state.json` row value, not re-validated by this function against
+    `campaign_graph.id_charset_ok` — a malformed row whose id bypassed that
+    check could otherwise traverse. The containment check is anchored
+    against the LOOP-level root (`runs_dir_for(state_path, loop_id)`, no
+    `unit_id`), not the unit-level `rejected_dir` `unit_id` itself derives —
+    anchoring against the unit-level directory would move both sides of the
+    comparison together for a traversing `unit_id` and pass vacuously,
+    exactly as `attempt_id` sanitization alone does not protect this
+    parameter.
     """
     rejected_dir = runs_dir_for(state_path, loop_id, unit_id) / "rejected"
     candidate = rejected_dir / _safe_rejected_filename(attempt_id)
-    resolved_dir = rejected_dir.resolve()
     resolved_candidate = candidate.resolve()
-    if resolved_dir != resolved_candidate.parent:
+    loop_root = runs_dir_for(state_path, loop_id).resolve()
+    if not resolved_candidate.is_relative_to(loop_root):
         raise ValueError(
-            f"rejected-payload path {resolved_candidate} escaped its intended "
-            f"directory {resolved_dir} — refusing to write"
+            f"rejected-payload path {resolved_candidate} escaped the loop's "
+            f"runs root {loop_root} — refusing to write"
         )
     return candidate
 

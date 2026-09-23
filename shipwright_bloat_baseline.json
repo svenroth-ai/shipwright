@@ -846,14 +846,14 @@
     {
       "path": "shared/scripts/lib/loop_state.py",
       "limit": 300,
-      "current": 757,
+      "current": 768,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md"
     },
     {
       "path": "shared/scripts/lib/loop_claim.py",
       "limit": 300,
-      "current": 347,
+      "current": 353,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md"
     },

@@ -1,4 +1,4 @@
-# Bloat exception — `shared/scripts/lib/loop_state.py` raised to 757-LOC
+# Bloat exception — `shared/scripts/lib/loop_state.py` raised to 768-LOC
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -129,10 +129,27 @@ alone may justify splitting reconcile out from the state-machine/fencing
 core at that point, once there is a second real consumer shape to design
 the boundary around rather than guessing one now.
 
+### Round 2 growth (757 -> 768)
+
+Stage-2 code-review finding (medium, security): `rejected_payload_path`'s
+containment assert compared `resolved_dir` (derived from the untrusted
+`unit_id`) against `resolved_candidate.parent` — a traversing `unit_id`
+moves both sides of that comparison together, so the assert passed
+vacuously for exactly the input it existed to catch. Reachability is
+bounded (needs a malformed `loop_state.json` row whose id bypassed
+`campaign_graph.id_charset_ok`), but this is the same fresh code that
+already hardens the sibling `attempt_id` parameter, so leaving `unit_id`
+unhardened reads as an oversight, not a deliberate choice. Fixed by
+anchoring the containment check against the LOOP-level root
+(`runs_dir_for(state_path, loop_id)`, no `unit_id`) via `Path.is_relative_to`
+instead of the unit-level directory `unit_id` itself derives. Not a new
+responsibility — a security-hardening fix to a path-safety primitive
+already counted above.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the new 757-line ceiling, not
+  touches `loop_state.py` operates against the new 768-line ceiling, not
   278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state

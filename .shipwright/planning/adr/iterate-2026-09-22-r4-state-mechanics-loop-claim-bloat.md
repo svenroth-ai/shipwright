@@ -1,4 +1,4 @@
-# Bloat exception — `shared/scripts/lib/loop_claim.py` raised to 345-LOC
+# Bloat exception — `shared/scripts/lib/loop_claim.py` raised to 353-LOC
 
 <!-- Named by run_id per `_template-bloat-exception.md` — this heading does
      NOT claim a numeric ADR-NNN; that identity is assigned later, at
@@ -89,10 +89,24 @@ the same false impression the review-findings ADR's finding #5 correction
 had just removed from the disposition record. Qualified the docstring to
 say the fallback is spec-named but not yet implemented.
 
+### Round 3 growth (347 -> 353)
+
+Stage-2 code-review finding (medium, correctness): `_snapshot_merged_commits`
+keyed its `{unit_id: merged_commit}` map by exact-case `u["id"]`, but every
+other dependency lookup in this module (`_ancestry_ok`'s `by_id`) case-folds,
+because `campaign_graph.validate_dependency_graph` accepts a case-mismatched
+`depends_on` edge at write time. For such an edge, both the pre- and
+in-lock snapshots returned `None`, letting the staleness comparison pass
+vacuously — silently defeating the check for exactly the edge shape the
+case-fold convention exists to handle. Fixed by case-folding the snapshot's
+key and the comparison-site `dep_id` lookup, matching the existing
+convention exactly (`str(x).lower()`). Not a new responsibility — a
+correctness fix to one already counted above.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the new 345-line ceiling, not
+  touches `loop_claim.py` operates against the new 353-line ceiling, not
   300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
   regression live in a new sibling file, `shared/tests/

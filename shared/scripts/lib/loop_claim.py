@@ -137,10 +137,15 @@ def _claim_unit(unit: dict, loop_id: str) -> tuple[int, str]:
 
 
 def _snapshot_merged_commits(units: list[dict]) -> dict[str, str]:
-    """``{unit_id: merged_commit}`` for every `merged` unit — detects,
-    without I/O, whether a dependency changed between the outside-lock
-    ancestry pass and the in-lock claim."""
-    return {u["id"]: u.get("merged_commit") for u in units if u.get("status") == "merged"}
+    """``{case-folded unit_id: merged_commit}`` for every `merged` unit —
+    detects, without I/O, whether a dependency changed between the
+    outside-lock ancestry pass and the in-lock claim. Keyed case-folded,
+    matching every other dependency lookup in this module
+    (`_ancestry_ok`'s `by_id`) — `campaign_graph.validate_dependency_graph`
+    accepts a case-mismatched `depends_on` edge at write time, so a bare
+    exact-case key would return `None` for both snapshots on such an edge
+    and let the staleness comparison pass vacuously."""
+    return {str(u["id"]).lower(): u.get("merged_commit") for u in units if u.get("status") == "merged"}
 
 
 def cmd_next_batch(args: argparse.Namespace) -> int:
@@ -183,8 +188,9 @@ def cmd_next_batch(args: argparse.Namespace) -> int:
                 if u["status"] == "pending"
                 and is_unit_ready(u, units)
                 and u["id"] in ancestry_confirmed
-                # Deps' SHAs unchanged since the outside-lock pass verified them.
-                and all(fresh_snapshot.get(dep_id) == pre_snapshot.get(dep_id)
+                # Deps' SHAs unchanged since the outside-lock pass verified
+                # them — case-folded lookup, see `_snapshot_merged_commits`.
+                and all(fresh_snapshot.get(str(dep_id).lower()) == pre_snapshot.get(str(dep_id).lower())
                         for dep_id in (u.get("depends_on") or []))
             ]
             claim_n = min(max_parallel, len(ready))
