@@ -5,6 +5,11 @@ raises on a charset-rejected id (round 9), so a malformed identifier at
 either site crashed the CLI with an uncaught traceback instead of the
 function's own structured-failure shape.
 
+Round 23 (same external reviewer) adds `cmd_finalize`'s unguarded
+`handoff_dir_for` call: unlike every `cmd_record` call site, nothing in
+`cmd_finalize` validates `state["loop_id"]` first, so a corrupted state file
+crashed it uncaught too.
+
 Split into its own file (not added to the sibling `test_autonomous_loop.py`)
 because that file is already `"state": "grandfathered"` at 442 lines in
 `shipwright_bloat_baseline.json` — growing a grandfathered file's `current`
@@ -23,7 +28,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib"))
 
-from autonomous_loop import cmd_record  # noqa: E402
+from autonomous_loop import cmd_finalize, cmd_record  # noqa: E402
 
 
 class FakeArgs:
@@ -93,3 +98,21 @@ def test_malformed_persisted_unit_id_on_success_path_fails_closed_not_crashes(st
     # The in-memory status mutation must never have been persisted.
     state = json.loads(state_path.read_text(encoding="utf-8"))
     assert state["units"][0]["status"] == "in_progress"
+
+
+def test_malformed_persisted_loop_id_on_finalize_fails_closed_not_crashes(state_dir, tmp_path, capsys):
+    """`cmd_finalize`'s `handoff_dir_for` call (round 23): a corrupted
+    `loop_id` must fail closed with a structured error on stderr and exit 1,
+    never an uncaught traceback — the legacy (non-sub_iterate) branch this
+    call lives in has no prior validation of its own to lean on."""
+    os.chdir(tmp_path)
+    state_path = _make_state(state_dir, [
+        {"id": "A", "status": "complete", "attempt": 0,
+         "started_at": None, "finished_at": None, "commit": "deadbeef",
+         "head_sha": None, "branch": None, "result_path": None,
+         "handoff_path": None, "failure_reason": None},
+    ], loop_id="../../etc")
+    ret = cmd_finalize(FakeArgs(state=str(state_path)))  # must not raise
+    assert ret == 1
+    payload = json.loads(capsys.readouterr().err)
+    assert "not a safe identifier" in payload["error"]

@@ -376,7 +376,23 @@ def cmd_record(args: argparse.Namespace) -> int:
                 )
                 unit["result_path"] = str(runs_dir / "result.json")
 
-                handoff_path = handoff_dir_for(state_path, state["loop_id"]) / f"{unit['id']}.md"
+                # External Tier-3 PR review (GPT, PR #790 round 23): defense
+                # in depth only — `state["loop_id"]` here is the exact same
+                # value `runs_dir_for` just validated two lines above (it
+                # charset-checks `loop_id` itself, not just `unit_id` — see
+                # its own docstring), so this call cannot actually raise on
+                # this path today. Wrapped anyway to match this file's own
+                # established fail-closed style at every other
+                # runs_dir_for/handoff_dir_for call site (rounds 9, 19, 21)
+                # and to stay safe if the two calls are ever reordered or
+                # decoupled. No new regression test: one would only re-prove
+                # the existing runs_dir_for coverage two lines above.
+                try:
+                    handoff_dir = handoff_dir_for(state_path, state["loop_id"])
+                except ValueError as exc:
+                    print(json.dumps({"recorded": False, "error": str(exc)}), file=sys.stderr)
+                    return 3
+                handoff_path = handoff_dir / f"{unit['id']}.md"
                 if handoff_path.exists():
                     unit["handoff_path"] = str(handoff_path)
 
@@ -434,7 +450,16 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     escalated = [u for u in state["units"] if u["status"] == "escalated"]
     pending = [u for u in state["units"] if u["status"] == "pending"]
 
-    handoff_dir = handoff_dir_for(state_path, state["loop_id"])
+    # External Tier-3 PR review (GPT, PR #790 round 23): unlike cmd_record's
+    # call sites (rounds 9/19/21), nothing in this function validates
+    # `state["loop_id"]` before this point — a hand-edited or corrupted
+    # `loop_state.json` crashed `cmd_finalize` with an uncaught traceback
+    # instead of this function's own structured-failure shape.
+    try:
+        handoff_dir = handoff_dir_for(state_path, state["loop_id"])
+    except ValueError as exc:
+        print(json.dumps({"error": str(exc)}), file=sys.stderr)
+        return 1
     aggregated_parts = []
     if handoff_dir.exists():
         for md_file in sorted(handoff_dir.glob("*.md")):

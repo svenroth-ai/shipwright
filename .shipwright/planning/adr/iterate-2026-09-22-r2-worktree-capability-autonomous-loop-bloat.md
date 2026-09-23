@@ -175,10 +175,31 @@ lines — growing a grandfathered file needs converting it to a filed
 `exception` first, not a bare bump):
 `test_autonomous_loop_record_runs_dir_safety.py`.
 
+### Round 5 growth (514 -> 539)
+
+External Tier-3 review (GPT, PR #790 round 23) found `cmd_record`'s third
+`handoff_dir_for` call (the handoff-path lookup right after the round-4
+`result.json` write) and `cmd_finalize`'s own `handoff_dir_for` call both
+unguarded for the same `ValueError`. Independently verified before fixing:
+the `cmd_record` site is passed the exact same `state["loop_id"]` value that
+the immediately preceding `runs_dir_for` call (round 4, two lines above)
+already validated — `runs_dir_for` charset-checks `loop_id` itself, not only
+`unit_id` — so that specific call cannot raise on this path today. Wrapped
+it anyway, for defense in depth and consistency with this module's own
+established style, and documented in-line why no new test covers it (one
+would only re-prove the existing round-4 coverage). `cmd_finalize`'s call is
+the genuine gap: nothing in that function validates `state["loop_id"]`
+first, so a corrupted state file crashed it uncaught. Fixed with the same
+`try`/`except ValueError` shape, returning a structured `{"error": ...}` on
+stderr and exit 1 (mirroring `sub_iterate_finalize_summary`'s existing
+error-return convention two branches above it in the same function). One new
+regression test, in the same round-4 sibling file (still well under the
+300-line guideline): `test_autonomous_loop_record_runs_dir_safety.py`.
+
 ## Consequences
 
 - `_reconcile_in_progress` may grow further before the anti-ratchet blocks
-  again (514-line current, per Round 4 growth above). Not a licence to keep
+  again (539-line current, per Round 5 growth above). Not a licence to keep
   growing — the next crossing needs its own ADR.
 - `test_autonomous_loop_record_runs_dir_safety.py` is a brand-new file — no
   baseline implication, it never existed before this round.
