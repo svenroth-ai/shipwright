@@ -416,8 +416,23 @@ def runs_dir_for(state_path, loop_id: str, unit_id: str | None = None) -> Path:
     `state_path` is always ``<root>/.shipwright/loop_state.json``, so its
     parent directory IS the ``.shipwright`` tree everything here is rooted
     under, regardless of the calling process's own working directory.
+
+    `loop_id` is a `loop_state.json` value — a real one is always internally
+    minted (`f"{{kind}}-{{timestamp}}"`, always inside the safe charset), but
+    a hand-edited or corrupted state file could carry anything (external
+    Tier-3 PR review, round 9). Rejected against the same
+    `campaign_graph.id_charset_ok` charset :func:`rejected_payload_path`
+    already enforces for `unit_id`, with the same resolved-path containment
+    check kept as defense-in-depth.
     """
-    base = Path(state_path).resolve().parent / "runs" / loop_id
+    if not id_charset_ok(loop_id):
+        raise ValueError(f"runs-dir path refused: loop_id {loop_id!r} is not a safe identifier")
+    state_root = Path(state_path).resolve().parent
+    base = state_root / "runs" / loop_id
+    resolved_base = base.resolve()
+    if not resolved_base.is_relative_to(state_root):
+        raise ValueError(
+            f"runs-dir path {resolved_base} escaped the state root {state_root} — refusing")
     return (base / unit_id) if unit_id else base
 
 
@@ -501,9 +516,21 @@ def handoff_dir_for(state_path, loop_id: str) -> Path:
     ``.resolve().parent`` instead — no such sibling literal for the checker
     to see, even though `state_path`'s parent always IS that directory —
     and was flagged as an unlisted legacy-path reference.
+
+    `loop_id` charset/containment-checked the same way :func:`runs_dir_for`
+    is (external Tier-3 PR review, round 9) — see that function's docstring.
     """
+    if not id_charset_ok(loop_id):
+        raise ValueError(f"handoff-dir path refused: loop_id {loop_id!r} is not a safe identifier")
     project_root = Path(state_path).resolve().parents[1]
-    return project_root / ".shipwright" / "planning" / "handoffs" / loop_id
+    shipwright_root = project_root / ".shipwright"
+    handoff_dir = shipwright_root / "planning" / "handoffs" / loop_id
+    resolved_handoff_dir = handoff_dir.resolve()
+    if not resolved_handoff_dir.is_relative_to(shipwright_root.resolve()):
+        raise ValueError(
+            f"handoff-dir path {resolved_handoff_dir} escaped "
+            f"{shipwright_root.resolve()} — refusing")
+    return handoff_dir
 
 
 def _reconcile_legacy(state: dict, state_path) -> list[str]:

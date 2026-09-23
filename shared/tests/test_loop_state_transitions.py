@@ -18,8 +18,10 @@ from lib.loop_state import (
     STATES,
     TRANSITIONS,
     cmd_init_sub_iterate_payload,
+    handoff_dir_for,
     is_legal_transition,
     reconcile_in_progress,
+    runs_dir_for,
 )
 
 
@@ -183,3 +185,21 @@ class TestCmdInitLegacyTerminalStatuses:
         payload, mutated = cmd_init_sub_iterate_payload(state_path, existing)
         assert payload == {}
         assert mutated is False
+
+
+class TestPathHelpersRejectAMalformedLoopId:
+    """External Tier-3 PR review (GPT, round 9): `runs_dir_for` and
+    `handoff_dir_for` trusted the persisted `loop_id` directly — a
+    hand-edited or corrupted state file could carry a traversing value.
+    Charset-checked the same way `rejected_payload_path` already checks
+    `unit_id` (round 6)."""
+
+    def test_runs_dir_for_rejects_a_traversing_loop_id(self, tmp_path):
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        with pytest.raises(ValueError, match="not a safe identifier"):
+            runs_dir_for(state_path, "../../etc", "A")
+
+    def test_handoff_dir_for_rejects_a_traversing_loop_id(self, tmp_path):
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        with pytest.raises(ValueError, match="not a safe identifier"):
+            handoff_dir_for(state_path, "../../etc")
