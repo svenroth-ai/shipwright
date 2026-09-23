@@ -103,6 +103,25 @@ key and the comparison-site `dep_id` lookup, matching the existing
 convention exactly (`str(x).lower()`). Not a new responsibility — a
 correctness fix to one already counted above.
 
+### Round 4 growth (353 -> 368)
+
+Stage-3 doubt review (HIGH #4): `_cleanup_unit_worktree` (this same Round 3's
+own fix — see this ADR's earlier commit) is completely inert in production —
+`resolved_worktree_path`'s first parameter is `main_root` (the repo root
+ABOVE `.worktrees/`), but `campaign_worktree` (this function's own parameter)
+is ALREADY `<main_root>/.worktrees/campaign-{slug}`, computing a doubled,
+nonexistent path that always hit the `wt_path.exists()` guard and silently
+no-op'd the entire cleanup. Fixed by resolving the real `main_root` first via
+`lib.git_base.main_repo_root` (the same helper `setup_unit_worktree.py`
+already uses for this exact purpose) before calling `resolved_worktree_path`.
+Not a new responsibility — a correctness fix to the physical-cleanup
+primitive already counted in Round 3 above; the growth is the fix itself
+plus a REAL (non-mocked) regression test proving actual git calls fire
+against the correctly-recomputed path (`shared/tests/
+test_loop_claim_release_cleanup.py`'s prior 5 tests all mocked
+`resolved_worktree_path` away, which is exactly how this bug went
+undetected).
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that

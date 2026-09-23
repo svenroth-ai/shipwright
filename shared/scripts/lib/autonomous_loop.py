@@ -43,6 +43,7 @@ from lib.loop_state import (  # noqa: E402
     cmd_init_sub_iterate_payload,
     describe_blocker,
     enforce_record_fencing,
+    find_unit_row,
     handoff_dir_for,
     is_unit_ready,
     now_iso,
@@ -308,15 +309,27 @@ def cmd_record(args: argparse.Namespace) -> int:
 
     with file_lock(lock_path, timeout_seconds=30):
         state = _load_state(state_path)
-        target_unit = next((u for u in state["units"] if u["id"] == args.unit), None)
-        if state.get("kind") == "sub_iterate" and target_unit is not None:
+        is_sub_iterate = state.get("kind") == "sub_iterate"
+        # Stage-3 doubt review (LOW #1): a `kind == "sub_iterate"` state uses
+        # the SAME case-fold-aware lookup (`find_unit_row`) the fencing
+        # pre-check above already uses — a case-mismatched `--unit` that
+        # passes the fence via case-fold must not then be silently dropped
+        # by an exact-match write loop that finds nothing (which used to
+        # still print `{"recorded": true}` / exit 0). `kind == "section"`
+        # keeps its original exact-match lookup unchanged.
+        target_unit = find_unit_row(state, args.unit) if is_sub_iterate else next(
+            (u for u in state["units"] if u["id"] == args.unit), None)
+        if is_sub_iterate and target_unit is not None:
             target_status = resolve_record_status(state.get("kind"), target_unit, result.get("status", "failed"))
             rejection = enforce_record_fencing(state_path, state, args.unit, attempt_id,
                                                  result_str, target_status=target_status)
             if rejection is not None:
                 return rejection
+        if is_sub_iterate and target_unit is None:
+            print(json.dumps({"recorded": False, "error": f"no unit matching {args.unit!r}"}), file=sys.stderr)
+            return 3
         for unit in state["units"]:
-            if unit["id"] == args.unit:
+            if unit is target_unit or (target_unit is None and unit["id"] == args.unit):
                 unit["status"] = resolve_record_status(state.get("kind"), unit, result.get("status", "failed"))
                 unit["finished_at"] = now_iso()
                 unit["commit"] = result.get("commit")
@@ -349,7 +362,21 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     state_path = Path(args.state)
     state = _load_state(state_path)
 
-    if state.get("kind") == "sub_iterate":
+    # Stage-3 doubt review (HIGH #1): `sub_iterate_finalize_summary` refuses
+    # ANY non-TERMINAL unit with no compatibility path for a row still
+    # carrying pre-R4 legacy vocabulary (`"complete"`, `"escalated"`,
+    # `"in_progress"`) — a never-claimed row's own documented pass-through
+    # (`resolve_record_status`, `enforce_record_fencing`). Gate the NEW,
+    # strict finalize on the SAME compatibility boundary those two functions
+    # already use: only dispatch into it once this campaign has actually
+    # been touched by the new atomic-claim flow (some unit carries a real
+    # `attempt_id` — the only thing that ever mints one is
+    # `loop_claim.cmd_next_batch`). A campaign with none falls through
+    # UNCHANGED to the legacy branch below, exactly as it did before this
+    # `kind == "sub_iterate"` branch existed — this campaign never refused
+    # finalize outright even on a genuinely incomplete run; it only reported
+    # `terminal_reason` as informational text.
+    if state.get("kind") == "sub_iterate" and any(u.get("attempt_id") for u in state["units"]):
         error, summary = sub_iterate_finalize_summary(state)
         if error:
             print(json.dumps(error), file=sys.stderr)

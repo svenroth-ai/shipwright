@@ -146,6 +146,32 @@ instead of the unit-level directory `unit_id` itself derives. Not a new
 responsibility — a security-hardening fix to a path-safety primitive
 already counted above.
 
+### Round 3 growth (768 -> 820)
+
+Stage-3 doubt review (4 HIGH + 1 medium + 2 low against PR #790) landed three
+fixes in this module, none a new responsibility — all hardening primitives
+already counted above:
+
+- **HIGH #1:** `sub_iterate_finalize_summary` refused ANY non-TERMINAL unit
+  with no compatibility path for a row still carrying pre-R4 legacy
+  vocabulary — live production risk the moment this PR merges, since the
+  caller-side gate (`autonomous_loop.cmd_finalize`) needed a docstring making
+  the precondition explicit for any future direct caller.
+- **HIGH #2 (second half) + LOW #2:** `_reconcile_legacy` (this module,
+  reused for `kind == "sub_iterate"` rows since Round 1's own fix above) wrote
+  a legacy `"complete"` string into a `sub_iterate` row instead of mapping
+  onto the 9-state vocabulary (`"merged"`, TERMINAL), and unconditionally
+  double-bumped `attempt` on its pending fallback even though `_claim_unit`
+  (`loop_claim.py`) already bumps it once on the row's actual next claim.
+  Both fixed with an `is_sub_iterate` branch inside the same function — no
+  new function, no new file.
+- **HIGH #2 (first half):** `is_legal_transition`'s `forced=True` exemption
+  required BOTH `from_state`/`to_state` to be real `STATES` members,
+  contradicting its own docstring's "may cross any edge" — a row on a legacy
+  `from_state` could never use the one documented operator escape hatch.
+  Fixed by checking `to_state` unconditionally and `from_state` only when
+  `forced` is `False` — three lines changed, same function.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that

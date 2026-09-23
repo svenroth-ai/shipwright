@@ -74,6 +74,19 @@ def test_touch_is_a_field_creating_upsert_no_fencing(state_path):
     assert lease2["worktree"] == "/wt2"
 
 
+def test_touch_with_no_attempt_id_preserves_an_existing_one(state_path):
+    """Stage-3 doubt review (HIGH #3): `attempt_id` defaults to `None` and no
+    caller today (`check_unit_lease.py`'s CLI, `sub-iterate-runner.md`'s
+    brief) ever passes a real one — a default-arg heartbeat touch must not
+    null out a fencing token a prior atomic claim already minted."""
+    touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
+    lease2 = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2")
+    assert lease2["attempt_id"] == "a0"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    unit = next(u for u in state["units"] if u["id"] == "R2")
+    assert unit["attempt_id"] == "a0"
+
+
 def test_touch_raises_for_a_missing_unit_id(state_path):
     with pytest.raises(UnitLeaseError):
         touch_unit_lease(state_path, "R99", worktree="/wt", branch="b")

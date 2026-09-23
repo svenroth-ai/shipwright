@@ -46,6 +46,7 @@ from file_lock import LockTimeout, file_lock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.loop_state import (  # noqa: E402
+    ACTIVE,
     STATES,
     find_unit_row,
     is_legal_transition,
@@ -179,7 +180,13 @@ def cmd_mark(args: argparse.Namespace) -> int:
                 print(f"ERROR: unit {args.unit!r} not found", file=sys.stderr)
                 return 1
             current = unit["status"]
-            if current in ("running", "merging") and not (args.force and args.confirm_no_task_running):
+            # Stage-3 doubt review (MEDIUM): a `"claimed"` row is exactly
+            # where a Task-spawned runner sits before its own Step-1.0.5
+            # `mark-running` promotion — a live claim, same as `"running"`/
+            # `"merging"`, just earlier in the lifecycle. Omitting it let
+            # `mark --status merged ...` succeed against a `"claimed"` unit
+            # with zero confirmation.
+            if current in ("claimed", "running", "merging") and not (args.force and args.confirm_no_task_running):
                 print(f"ERROR: unit {args.unit!r} is {current!r} — mark requires --force and "
                       "--confirm-no-task-running to confirm no Task is running against its worktree",
                       file=sys.stderr)
@@ -218,6 +225,23 @@ def cmd_mark(args: argparse.Namespace) -> int:
                 unit["merged_commit"] = args.merged_commit
 
             unit["status"] = args.status
+            # Stage-3 doubt review (MEDIUM): `cmd_mark` never rotates or
+            # clears `attempt_id` on its own, so a still-building runner's
+            # `check_unit_attempt.py` continued to validate against the SAME
+            # token after an operator override moved this row out from under
+            # it — a stale push could still land after the row already says
+            # e.g. `merged`. Rotate the token whenever the override LEAVES an
+            # ACTIVE state (`claimed`/`running`/`merging`) for a non-ACTIVE
+            # one, so the old runner's held token can never validate again.
+            # Not cleared to `None`: `resolve_record_status`/
+            # `enforce_record_fencing`'s own compatibility boundary treats a
+            # `None` `attempt_id` as "never touched by the new claim flow"
+            # and SKIPS fencing entirely — clearing it here would silently
+            # disable fencing for this row's future mutations instead of
+            # tightening it.
+            old_attempt_id = unit.get("attempt_id")
+            if current in ACTIVE and args.status not in ACTIVE and old_attempt_id:
+                unit["attempt_id"] = f"{old_attempt_id}-marked-away-{now_iso()}"
             if args.status == "held" and not reason_code:
                 reason_code = "operator_mark"
             if reason_code:

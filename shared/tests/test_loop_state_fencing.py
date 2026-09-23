@@ -140,6 +140,40 @@ class TestCmdInitSubIteratePayload:
         assert existing["units"][0]["status"] == "pending"
         assert existing["units"][0]["attempt"] == 1
 
+    def test_legacy_in_progress_sub_iterate_maps_complete_result_onto_merged(self, tmp_path):
+        """Stage-3 doubt review (HIGH #2, second half): a `kind ==
+        "sub_iterate"` row reconciled via a found `result.json` must land
+        on the 9-state vocabulary (`"merged"`, TERMINAL) — not the legacy
+        `"complete"` string the new claim/mark/finalize machinery does not
+        understand — with `merged_commit` set so
+        `sub_iterate_finalize_summary`'s own commit list picks it up."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        runs_dir = state_path.parent / "runs" / "loop1" / "A"
+        runs_dir.mkdir(parents=True)
+        (runs_dir / "result.json").write_text(
+            json.dumps({"status": "complete", "commit": _FAKE_SHA}), encoding="utf-8")
+        existing = {"loop_id": "loop1", "kind": "sub_iterate", "units": [_unit(status="in_progress")]}
+        payload, mutated = cmd_init_sub_iterate_payload(state_path, existing)
+        assert mutated is True
+        unit = existing["units"][0]
+        assert unit["status"] == "merged"
+        assert unit["merged_commit"] == _FAKE_SHA
+
+    def test_legacy_in_progress_sub_iterate_pending_fallback_never_double_bumps(self, tmp_path):
+        """Stage-3 doubt review (LOW #2): a `kind == "sub_iterate"` row with
+        no result.json/branch evidence falls back to `"pending"` here — a
+        real state both vocabularies share — WITHOUT this function bumping
+        `attempt`. `_claim_unit`'s own `attempt_id is None` sentinel already
+        bumps it exactly once on the row's actual next claim; bumping here
+        too would double-count the row's first retry."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        existing = {"loop_id": "loop1", "kind": "sub_iterate", "units": [_unit(status="in_progress")]}
+        payload, mutated = cmd_init_sub_iterate_payload(state_path, existing)
+        assert mutated is True
+        unit = existing["units"][0]
+        assert unit["status"] == "pending"
+        assert unit["attempt"] == 0
+
     def test_legacy_in_progress_alongside_active_unit_both_reconciled(self, tmp_path):
         """A mixed campaign — one unit claimed via the new flow (`running`),
         one still carrying the legacy `in_progress` status — reconciles

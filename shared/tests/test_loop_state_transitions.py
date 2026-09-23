@@ -77,8 +77,26 @@ class TestStateMachineData:
         assert is_legal_transition("merged", "pending", forced=True)
         assert is_legal_transition("failed", "held", forced=True)
 
-    def test_forced_still_rejects_unknown_state_names(self):
-        assert not is_legal_transition("bogus", "pending", forced=True)
+    def test_forced_still_rejects_an_unknown_target_state(self):
+        """`to_state` must always be a real STATES member, forced or not —
+        the exemption is about crossing FROM anywhere, not landing nowhere."""
+        assert not is_legal_transition("pending", "bogus", forced=True)
+        assert not is_legal_transition("bogus", "bogus", forced=True)
+
+    def test_forced_accepts_a_legacy_or_unknown_from_state(self):
+        """Stage-3 doubt review (HIGH #2): `cmd_mark --force` is the one
+        documented operator escape hatch for a row stuck on a pre-R4 legacy
+        status (`"complete"`, `"escalated"`, `"in_progress"` — a
+        never-claimed row's own `resolve_record_status`/
+        `enforce_record_fencing` pass-through, or `_reconcile_legacy`'s own
+        legacy write). Gating the exemption on `from_state` too made that
+        hatch unable to reach the exact rows that most need it — a row on
+        ANY from-state (real, legacy, or simply unknown) may cross to a
+        real target under `forced=True`; only the target is still checked."""
+        assert is_legal_transition("complete", "pending", forced=True)
+        assert is_legal_transition("escalated", "held", forced=True)
+        assert is_legal_transition("in_progress", "merged", forced=True)
+        assert is_legal_transition("bogus", "pending", forced=True)
 
     def test_transitions_table_keys_are_every_state(self):
         assert set(TRANSITIONS) == STATES

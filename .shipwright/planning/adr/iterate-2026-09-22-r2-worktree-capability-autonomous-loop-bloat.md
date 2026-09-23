@@ -98,6 +98,31 @@ liveness becomes fencing-verifiable rather than guessed from git history,
 `_reconcile_in_progress`'s branch-has-commits path (and this guard clause
 alongside it) may be removable outright rather than merely gated.
 
+### Round 2 growth (442 -> 469)
+
+Campaign `campaign-dag-scheduler` R4's own Stage-3 doubt review (4 HIGH + 1
+medium + 2 low against PR #790) landed two fixes in `cmd_finalize`/
+`cmd_record`, both hardening existing responsibilities of this dispatcher,
+not new ones:
+
+- **HIGH #1:** `cmd_finalize`'s `kind == "sub_iterate"` dispatch (added
+  after this file's original 442-line baseline) called the new, strict
+  `sub_iterate_finalize_summary` unconditionally, refusing ANY non-TERMINAL
+  unit with no compatibility path for a row still carrying pre-R4 legacy
+  vocabulary — live production risk for every campaign not yet touched by
+  R4's atomic-claim flow. Fixed by gating that dispatch on `any(u.get(
+  "attempt_id") for u in state["units"])` (the SAME compatibility boundary
+  `loop_state.resolve_record_status`/`enforce_record_fencing` already use),
+  falling through to the untouched legacy branch below otherwise.
+- **LOW #1:** `cmd_record`'s mutation write-loop used an exact-match `--unit`
+  lookup while its own fencing pre-check (`enforce_record_fencing`, via
+  `find_unit_row`) is case-fold-aware — a case-mismatched but genuinely
+  existing unit id passed the fence and then silently found nothing in the
+  write loop, still reporting `{"recorded": true}` / exit 0. Fixed by
+  switching the `kind == "sub_iterate"` mutation lookup to `find_unit_row`
+  too (`kind == "section"` keeps its original exact-match lookup, unchanged)
+  and hard-failing (exit 3) when even that finds nothing.
+
 ## Consequences
 
 - `_reconcile_in_progress` may grow further before the anti-ratchet blocks

@@ -11,11 +11,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from lib import loop_claim
+from lib.campaign_unit_worktree import resolved_worktree_path
 from lib.loop_claim import cmd_release
 
 
@@ -116,6 +120,66 @@ class TestCmdReleasePhysicalCleanup:
         with patch.object(loop_claim.subprocess, "run") as mocked:
             _cleanup_unit_worktree("/repo", "dag-scheduler", "A", 0)
         mocked.assert_not_called()
+
+    def test_cleanup_unit_worktree_real_git_calls_fire_against_the_correct_path(self, tmp_path):
+        """Stage-3 doubt review (HIGH #4), REAL (non-mocked) regression: all 5
+        tests above patch `resolved_worktree_path` away entirely, so none of
+        them would have caught the path-doubling bug (`campaign_worktree` --
+        which is ALREADY `<main_root>/.worktrees/campaign-{slug}` --
+        passed as `resolved_worktree_path`'s `main_root` argument, computing
+        a doubled, nonexistent path that always hit the `exists()` guard and
+        silently no-op'd). This test builds an ACTUAL git repo with an actual
+        campaign worktree AND an actual per-unit worktree on disk, calls
+        `_cleanup_unit_worktree` with the real `campaign_worktree` shape a
+        production caller passes, and asserts the per-unit worktree is
+        genuinely gone afterwards -- proof the real git calls fired against
+        the correctly-recomputed path, not a mock."""
+        if subprocess.run(["git", "--version"], capture_output=True).returncode != 0:
+            pytest.skip("git not available")
+
+        main_root = tmp_path / "main"
+        main_root.mkdir()
+
+        def run(*args):
+            return subprocess.run(
+                ["git", *args], cwd=main_root, capture_output=True, text=True, timeout=30)
+
+        run("init", "-q")
+        run("config", "user.email", "test@example.com")
+        run("config", "user.name", "Test")
+        (main_root / "README.md").write_text("x", encoding="utf-8")
+        run("add", "README.md")
+        run("commit", "-q", "-m", "initial")
+
+        campaign_slug = "dag-scheduler"
+        unit_id = "A"
+        attempt = 0
+
+        # The CAMPAIGN-level worktree -- what `cmd_release` actually passes as
+        # `campaign_worktree` (already inside `.worktrees/`, per
+        # `campaign_unit_worktree.py`'s own docs).
+        campaign_wt_path = main_root / ".worktrees" / f"campaign-{campaign_slug}"
+        result = run("worktree", "add", "-q", str(campaign_wt_path), "-b", "campaign-branch")
+        assert result.returncode == 0, result.stderr
+
+        # The PER-UNIT worktree `_cleanup_unit_worktree` must locate and remove.
+        unit_wt_path = resolved_worktree_path(main_root, campaign_slug, unit_id, attempt=attempt)
+        result = run("worktree", "add", "-q", str(unit_wt_path), "-b", "unit-branch")
+        assert result.returncode == 0, result.stderr
+        assert unit_wt_path.exists()
+
+        from lib.loop_claim import _cleanup_unit_worktree
+
+        _cleanup_unit_worktree(str(campaign_wt_path), campaign_slug, unit_id, attempt)
+
+        assert not unit_wt_path.exists(), (
+            "the per-unit worktree must actually be removed by a real `git "
+            "worktree remove` -- if this still exists, the path arithmetic "
+            "silently no-op'd again"
+        )
+        # And the branch it had checked out is gone too (best-effort branch -D).
+        branches = run("branch", "--list", "unit-branch").stdout
+        assert "unit-branch" not in branches
 
 
 class TestMarkDispatchIsSingleModuleIdentity:

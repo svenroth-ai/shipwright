@@ -340,15 +340,27 @@ TRANSITIONS: dict[str, frozenset[str]] = {
 
 def is_legal_transition(from_state: str, to_state: str, *, forced: bool = False) -> bool:
     """``True`` iff ``from_state -> to_state`` is a legal edge in the 9-state
-    machine above. Both names must be real :data:`STATES` — an unknown state
-    name is never legal to reference, forced or not. ``forced=True`` is
-    ``cmd_mark``'s documented exemption; every other caller leaves it
-    ``False`` and is bound by :data:`TRANSITIONS`.
+    machine above. ``to_state`` must always be a real :data:`STATES` member —
+    an unknown TARGET is never legal to land on, forced or not.
+
+    ``from_state`` is checked against :data:`STATES` only when ``forced`` is
+    ``False``. ``forced=True`` is ``cmd_mark``'s documented "may cross any
+    edge" exemption (Stage-3 doubt review, HIGH #2): a row can carry a
+    pre-R4 legacy status (``"complete"``, ``"escalated"``, ``"in_progress"``
+    — a never-claimed row's `resolve_record_status`/`enforce_record_fencing`
+    pass-through, or `_reconcile_legacy`'s own legacy write) that is not a
+    member of :data:`STATES` at all; gating the exemption on `from_state`
+    too made the one documented operator escape hatch unable to reach the
+    exact rows that most need it. The audit trail still records the real
+    (possibly-legacy) `from` value elsewhere; this function only judges
+    whether the transition may proceed.
     """
-    if from_state not in STATES or to_state not in STATES:
+    if to_state not in STATES:
         return False
     if forced:
         return True
+    if from_state not in STATES:
+        return False
     return to_state in TRANSITIONS.get(from_state, frozenset())
 
 
@@ -495,9 +507,23 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
     build's SKILL.md always operates from the project root), so this cannot
     change observed behavior; it only removes the cwd assumption itself.
     Every other line is behaviorally identical to before this move.
+
+    **Also reused for ``kind == "sub_iterate"``** rows stuck at legacy
+    ``"in_progress"`` (`cmd_init_sub_iterate_payload`'s `legacy_active`
+    branch — a row never touched by the new atomic-claim flow, so it still
+    carries the pre-R4 vocabulary). Stage-3 doubt review (HIGH #2 second
+    half): a `kind == "sub_iterate"` row must land on the 9-state vocabulary
+    (:data:`STATES`), not a legacy string the new claim/mark/finalize
+    machinery does not understand — ``"merged"`` is the closest TERMINAL
+    equivalent to legacy ``"complete"`` for a row whose work is done, so
+    that finalize's own compatibility boundary
+    (`sub_iterate_finalize_summary`) and `cmd_mark --force`'s exemption
+    (`is_legal_transition`) both see a real state on this row from here on.
     """
     warnings: list[str] = []
     runs_dir = runs_dir_for(state_path, state["loop_id"])
+    is_sub_iterate = state.get("kind") == "sub_iterate"
+    done_status = "merged" if is_sub_iterate else "complete"
 
     for unit in state["units"]:
         if unit["status"] != "in_progress":
@@ -508,8 +534,10 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
             try:
                 result = json.loads(result_path.read_text(encoding="utf-8"))
                 if result.get("status") == "complete":
-                    unit["status"] = "complete"
+                    unit["status"] = done_status
                     unit["commit"] = result.get("commit")
+                    if is_sub_iterate:
+                        unit["merged_commit"] = result.get("commit")
                     unit["finished_at"] = now_iso()
                     unit["result_path"] = str(result_path)
                     warnings.append(f"Reconciled {unit['id']}: found result.json with status=complete")
@@ -534,7 +562,9 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
                         capture_output=True, text=True, timeout=10,
                     )
                     if log_result.returncode == 0 and log_result.stdout.strip():
-                        unit["status"] = "complete"
+                        unit["status"] = done_status
+                        if is_sub_iterate:
+                            unit["merged_commit"] = unit.get("commit")
                         unit["finished_at"] = now_iso()
                         warnings.append(f"Reconciled {unit['id']}: branch has commits since head_sha")
                         continue
@@ -542,8 +572,19 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
                 pass
 
         unit["status"] = "pending"
-        unit["attempt"] = unit.get("attempt", 0) + 1
-        warnings.append(f"Reconciled {unit['id']}: reset to pending (attempt {unit['attempt']})")
+        # Stage-3 doubt review (LOW #2): a `kind == "sub_iterate"` row
+        # falling through to here has NEVER been claimed through the new
+        # atomic-claim flow (this function only runs for a legacy
+        # `"in_progress"` row) — `_claim_unit`'s own `attempt_id is None`
+        # sentinel already bumps `attempt` on ITS next claim; bumping it
+        # again here would double-count the row's very first retry and
+        # falsify "a reclaim never bumps attempt" for a row this function
+        # never actually reclaimed (it only reset a legacy status).
+        if is_sub_iterate:
+            warnings.append(f"Reconciled {unit['id']}: reset to pending")
+        else:
+            unit["attempt"] = unit.get("attempt", 0) + 1
+            warnings.append(f"Reconciled {unit['id']}: reset to pending (attempt {unit['attempt']})")
 
     return warnings
 
@@ -662,6 +703,17 @@ def sub_iterate_finalize_summary(state: dict) -> tuple[dict | None, dict | None]
     `status.json`'s 5-token vocabulary is `campaign-mode.md` step 3h's job
     (R5b) — this function only guarantees every unit is genuinely one of
     `merged`/`failed`/`held` before that mapping ever runs.
+
+    **Compatibility precondition (Stage-3 doubt review, HIGH #1):** this
+    function's own :data:`TERMINAL` refusal only understands the 9-state
+    vocabulary — it has no fallback for a row still carrying pre-R4 legacy
+    statuses (`"complete"`, `"escalated"`, `"in_progress"`). The caller
+    (`autonomous_loop.cmd_finalize`) MUST only reach this function once the
+    campaign has actually been touched by the new atomic-claim flow (at
+    least one unit carries a real `attempt_id`); otherwise it falls through
+    to the legacy summary branch unchanged. A future direct caller must
+    apply that same gate — this function does not re-check it, to keep its
+    own contract ("every remaining unit really is TERMINAL") unambiguous.
     """
     units = state["units"]
     non_terminal = [u for u in units if u["status"] not in TERMINAL]

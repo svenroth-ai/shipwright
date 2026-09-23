@@ -123,6 +123,49 @@ class TestCmdMark:
         assert cmd_mark(_mark_args(state_path, "A", "held", force=True)) == 1  # confirm missing too
         assert cmd_mark(_mark_args(state_path, "A", "held", force=True, confirm=True)) == 0
 
+    def test_claimed_requires_force_and_confirm_too(self, tmp_path):
+        """Stage-3 doubt review (MEDIUM): `"claimed"` is exactly where a
+        Task-spawned runner sits before its own Step-1.0.5 `mark-running`
+        promotion — a live claim, same as `"running"`/`"merging"`. Before
+        this fix, `mark --status merged ...` succeeded against a `"claimed"`
+        unit with ZERO confirmation."""
+        state_path = _write_state(tmp_path, [{"id": "A", "status": "claimed", "attempt_id": "l-A-a0"}])
+        assert cmd_mark(_mark_args(state_path, "A", "held")) == 1
+        assert cmd_mark(_mark_args(state_path, "A", "held", force=True)) == 1  # confirm missing too
+        assert cmd_mark(_mark_args(state_path, "A", "held", force=True, confirm=True)) == 0
+
+    def test_leaving_an_active_state_rotates_the_stale_attempt_id(self, tmp_path):
+        """Stage-3 doubt review (MEDIUM): `cmd_mark` never rotated/cleared
+        `attempt_id` on its own — a still-building runner's own held token
+        must stop validating once an operator override moves this row OUT
+        of an ACTIVE state, or a stale push could still land after the row
+        already says e.g. `held`. Rotated (not cleared to `None`): a `None`
+        `attempt_id` would make `resolve_record_status`/
+        `enforce_record_fencing`'s own compatibility boundary treat the row
+        as never touched by the new flow and SKIP fencing entirely."""
+        state_path = _write_state(tmp_path, [
+            {"id": "A", "status": "running", "attempt_id": "l-A-a0"},
+        ])
+        rc = cmd_mark(_mark_args(state_path, "A", "held", force=True, confirm=True))
+        assert rc == 0
+        row = _unit_row(state_path, "A")
+        assert row["status"] == "held"
+        assert row["attempt_id"] != "l-A-a0"
+        assert row["attempt_id"] is not None
+
+    def test_staying_within_active_states_does_not_rotate_attempt_id(self, tmp_path):
+        """A forced transition that stays WITHIN ACTIVE (e.g. `running` ->
+        `merging`, both live-claim states) must not rotate the token — the
+        SAME runner is still legitimately holding it."""
+        state_path = _write_state(tmp_path, [
+            {"id": "A", "status": "running", "attempt_id": "l-A-a0"},
+        ])
+        rc = cmd_mark(_mark_args(state_path, "A", "merging", force=True, confirm=True))
+        assert rc == 0
+        row = _unit_row(state_path, "A")
+        assert row["status"] == "merging"
+        assert row["attempt_id"] == "l-A-a0"
+
     def test_status_merged_requires_valid_merged_commit_arg(self, tmp_path):
         state_path = _write_state(tmp_path, [{"id": "A", "status": "merging"}])
         assert cmd_mark(_mark_args(state_path, "A", "merged")) == 1

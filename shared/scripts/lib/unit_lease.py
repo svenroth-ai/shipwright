@@ -189,13 +189,25 @@ def touch_unit_lease(
 
             touched_at = _now() if now is None else now
             lease = {
-                "attempt_id": attempt_id,
                 "lease_touched_at": touched_at,
                 "lease_expires_at": touched_at + stale_after_seconds,
                 "worktree": str(worktree),
                 "branch": branch,
             }
             unit.update(lease)
+            # Stage-3 doubt review (HIGH #3): `attempt_id` is the atomic-claim
+            # fencing token (`loop_claim.py`'s sole minter) -- the exact same
+            # bug class the `attempt` field below was already fixed for.
+            # `attempt_id` defaults to `None` and no caller today
+            # (`check_unit_lease.py`'s CLI, `sub-iterate-runner.md`'s brief)
+            # ever passes a real one (R5a work), so writing it unconditionally
+            # into `lease` nulled a real fencing token on every heartbeat,
+            # defeating fencing for every later `cmd_record`/`cmd_mark` call
+            # against this row. Only ever set it when the caller passes a
+            # real value; never blank an existing one.
+            if attempt_id is not None:
+                unit["attempt_id"] = attempt_id
+            lease["attempt_id"] = unit.get("attempt_id")
             # Stage-2 code review (high): `attempt` is `autonomous_loop`'s own
             # retry counter (`_reconcile_in_progress`, `cmd_next`), not a lease
             # field this module owns — every real row already carries it from

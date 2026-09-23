@@ -46,6 +46,7 @@ from lib.campaign_unit_worktree import (  # noqa: E402
     CampaignUnitWorktreeError,
     resolved_worktree_path,
 )
+from lib.git_base import GitError, main_repo_root  # noqa: E402
 from lib.loop_mark import cmd_mark, cmd_mark_merged, cmd_mark_running  # noqa: E402
 from lib.loop_state import (  # noqa: E402
     TERMINAL,
@@ -234,9 +235,23 @@ def _cleanup_unit_worktree(campaign_worktree: str, campaign_slug: str, unit_id: 
     RECOMPUTED from validated ``(slug, unit_id, attempt)`` via
     ``lib.campaign_unit_worktree`` — never a stored path. Branch name is not
     owned here (its ``{desc}`` suffix is R5a's job); read back from git's
-    own checked-out ref instead — authoritative, not trusted metadata."""
+    own checked-out ref instead — authoritative, not trusted metadata.
+
+    Stage-3 doubt review (HIGH #4): ``resolved_worktree_path``'s first
+    parameter is ``main_root`` — the repo root ABOVE ``.worktrees/`` — but
+    ``campaign_worktree`` (this function's own parameter) is ALREADY
+    ``<main_root>/.worktrees/campaign-{slug}`` (``campaign_unit_worktree.py``'s
+    own docs; ``setup_unit_worktree.py``'s correct usage). Passing
+    ``campaign_worktree`` straight through computed a doubled, nonexistent
+    path, hit the ``wt_path.exists()`` guard below, and silently no-op'd this
+    entire cleanup on every call. Resolve the real ``main_root`` first, the
+    same way ``setup_unit_worktree.py`` does."""
     try:
-        wt_path = resolved_worktree_path(campaign_worktree, campaign_slug, unit_id, attempt=attempt)
+        main_root = main_repo_root(Path(campaign_worktree))
+    except (GitError, OSError, FileNotFoundError):
+        return  # best-effort — never blocks the logical release above
+    try:
+        wt_path = resolved_worktree_path(main_root, campaign_slug, unit_id, attempt=attempt)
     except CampaignUnitWorktreeError:
         return
     if not wt_path.exists():
