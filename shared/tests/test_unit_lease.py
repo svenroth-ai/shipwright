@@ -62,16 +62,32 @@ def test_touch_preserves_unrelated_fields_on_the_row(state_path):
     assert "lease_touched_at" not in other
 
 
-def test_touch_is_a_field_creating_upsert_no_fencing(state_path):
-    """No fencing-token validation applies — a second touch with a DIFFERENT
-    attempt/attempt_id than the first still succeeds and simply overwrites
-    (R2's stated exception until R4 adds fencing for every other mutation)."""
+def test_touch_does_not_fence_on_the_attempt_int_alone(state_path):
+    """The `attempt` int counter stays an unfenced diagnostic (module
+    docstring's "Known limitation" — no caller passes its real value today,
+    so a mismatch there is routine, not evidence of a real conflict): a
+    second touch with a DIFFERENT `attempt` but the SAME `attempt_id` still
+    succeeds and simply overwrites."""
     touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
     lease2 = touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2",
-                               attempt=1, attempt_id="a1")
+                               attempt=1, attempt_id="a0")
     assert lease2["attempt"] == 1
-    assert lease2["attempt_id"] == "a1"
     assert lease2["worktree"] == "/wt2"
+
+
+def test_touch_rejects_a_mismatched_attempt_id(state_path):
+    """External Tier-3 PR review (GPT, round 7): `attempt_id` is a real
+    fencing token with no false-positive case — unlike `attempt` above, a
+    caller that supplies one is enforced against the row's current token,
+    and a mismatch must reject before mutating any lease field."""
+    touch_unit_lease(state_path, "R2", worktree="/wt", branch="b", attempt=0, attempt_id="a0")
+    with pytest.raises(UnitLeaseError, match="stale attempt token"):
+        touch_unit_lease(state_path, "R2", worktree="/wt2", branch="b2",
+                          attempt=1, attempt_id="a1")
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    unit = next(u for u in state["units"] if u["id"] == "R2")
+    assert unit["worktree"] == "/wt"
+    assert unit["attempt_id"] == "a0"
 
 
 def test_touch_with_no_attempt_id_preserves_an_existing_one(state_path):

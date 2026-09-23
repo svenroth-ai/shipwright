@@ -17,14 +17,17 @@ Lease fields (``attempt``, ``attempt_id``, ``lease_touched_at``,
 write through — deliberately not a second state file, so there is only ever
 one mutex to reason about for this file.
 
-**Field-creating upsert, no fencing.** R2 is independent of R1 in this
-campaign's own DAG, so a row is not guaranteed to already carry these fields
-(``_load_units_from``'s fixed key set does not mint them) — the first touch
-for a unit creates them. **No fencing-token validation applies here** — R4
-adds that for every OTHER claim mutation; this touch is the explicit,
-documented exception until R4 lands (a stale/duplicate touch here can only
-ever refresh a timestamp and echo back the caller's own worktree/branch/
-attempt values, never re-assign a claim).
+**Field-creating upsert, fencing-token validation is opt-in.** R2 is
+independent of R1 in this campaign's own DAG, so a row is not guaranteed to
+already carry these fields (``_load_units_from``'s fixed key set does not
+mint them) — the first touch for a unit creates them. **Fencing-token
+(`attempt_id`) validation only engages when the caller supplies a real
+token** (external Tier-3 PR review, round 7): a mismatch against the row's
+current `attempt_id` then raises :class:`UnitLeaseError` before any lease
+field is mutated. No caller today (`check_unit_lease.py`'s CLI,
+`sub-iterate-runner.md`'s brief) passes a real `attempt_id`, so this is fully
+inert until R5a wires one through — a touch with no token is completely
+unaffected and behaves exactly as before.
 
 **Warn-and-continue, never fatal.** A touch can fail for reasons that say
 nothing about whether the runner's own build is healthy — the lock released
@@ -182,6 +185,18 @@ def touch_unit_lease(
             if unit is None:
                 raise UnitLeaseError(
                     f"unit {unit_id!r} not found in {state_path} — cannot touch its lease")
+
+            # External Tier-3 PR review (GPT, round 7): unlike the `attempt`
+            # int counter below (a documented false-positive-prone
+            # diagnostic — see "Known limitation" above), `attempt_id` is a
+            # real fencing TOKEN with no false-positive case, so a caller
+            # that supplies one can be enforced against now; one that
+            # doesn't (every caller today) is unaffected.
+            existing_attempt_id = unit.get("attempt_id")
+            if attempt_id and existing_attempt_id and attempt_id != existing_attempt_id:
+                raise UnitLeaseError(
+                    f"stale attempt token for {unit_id!r}: touch carries {attempt_id!r}, "
+                    f"row is now {existing_attempt_id!r} — refusing to mutate lease fields")
 
             existing_attempt = unit.get("attempt")
             stale_attempt_conflict = (
