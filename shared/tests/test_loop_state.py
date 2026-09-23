@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from lib import loop_state
 from lib.loop_state import (
     _load_units_from,
     describe_blocker,
     is_unit_ready,
+    rejected_payload_path,
     verify_merged_commit_ancestry,
 )
 
@@ -275,3 +278,17 @@ class TestDescribeBlocker:
         all_units = [{"id": "A", "status": "merged", "merged_commit": None}]
         msg = describe_blocker({"id": "B", "depends_on": ["A"]}, all_units)
         assert "ancestry" in msg
+
+
+class TestRejectedPayloadPathUnitIdCharset:
+    def test_rejects_a_unit_id_that_redirects_within_the_loop_root(self, tmp_path):
+        """External review (GPT, high): `"A/../B"` never escapes the loop
+        root — it resolves to the SIBLING `runs/loop1/B/`, still relative to
+        `runs/loop1/` — so the loop-root containment assert in
+        `rejected_payload_path` passes vacuously while redirecting a payload
+        meant for unit A into unit B's own real `rejected/` directory.
+        Charset-reject any unit_id outside `campaign_graph.id_charset_ok`
+        before any path is built."""
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        with pytest.raises(ValueError, match="not a safe identifier"):
+            rejected_payload_path(state_path, "loop1", "A/../B", "loop1-A-a1")

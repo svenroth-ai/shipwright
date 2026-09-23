@@ -207,11 +207,29 @@ own docstring already requires. Not a new responsibility — a correctness
 fix to the verification primitive Round 4 already counted, plus one new
 regression test proving the unverified case no longer marks the row merged.
 
+### Round 6 growth (861 -> 877)
+
+External Tier-3 review (GPT, high, PR #790) found `rejected_payload_path`'s
+loop-root containment check insufficient on its own: a `unit_id` such as
+`"A/../B"` never escapes `runs/{loop_id}/` at all (it resolves to the
+sibling `runs/{loop_id}/B/`, still relative to the loop root), yet still
+redirects a rejected payload meant for unit A into unit B's own real
+`rejected/` directory, overwriting its file. Fixed by charset-rejecting any
+`unit_id` outside `campaign_graph.id_charset_ok` up front — the same bar
+`campaign_init.py` already enforces on `campaign_slug`/`slug` at write
+time — before any path is built, with the loop-root check kept as
+defense-in-depth. `enforce_record_fencing`'s own call site now catches the
+resulting `ValueError` and fails closed with a clean exit 1 instead of an
+uncaught traceback. Not a new responsibility — a completeness fix to a path
+helper this module already owned; one existing test's assertion updated to
+match the new (earlier, more specific) rejection reason, plus one new test
+for the redirect shape the loop-root check alone missed.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 861-line ceiling
-  (see Round 5 growth above), not 278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 877-line ceiling
+  (see Round 6 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`

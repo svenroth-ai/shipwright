@@ -63,6 +63,7 @@ except ImportError:  # pragma: no cover - defensive; the self-bootstrap
 # (unit_lease's own package root) is already on sys.path by the time this
 # line runs; never a bare `import unit_lease`, which would give `unit_lease`
 # two distinct module identities (ADR-045).
+from lib.campaign_graph import id_charset_ok  # noqa: E402
 from lib.unit_lease import is_unit_lease_stale  # noqa: E402
 
 #: Full-match hex-SHA check, not just length — `commit` is operator-editable
@@ -454,17 +455,24 @@ def rejected_payload_path(state_path, loop_id: str, unit_id: str, attempt_id: st
     defense-in-depth against a filesystem-specific traversal shape neither
     the regex nor the digest fallback anticipated.
 
-    `unit_id` is ALSO untrusted here (code-review re-check, medium): it is
-    a `loop_state.json` row value, not re-validated by this function against
-    `campaign_graph.id_charset_ok` — a malformed row whose id bypassed that
-    check could otherwise traverse. The containment check is anchored
-    against the LOOP-level root (`runs_dir_for(state_path, loop_id)`, no
-    `unit_id`), not the unit-level `rejected_dir` `unit_id` itself derives —
-    anchoring against the unit-level directory would move both sides of the
-    comparison together for a traversing `unit_id` and pass vacuously,
-    exactly as `attempt_id` sanitization alone does not protect this
-    parameter.
+    `unit_id` is ALSO untrusted here (code-review re-check, medium; hardened
+    further by external review, high): it is a `loop_state.json` row value,
+    not previously re-validated by this function against `campaign_graph.
+    id_charset_ok` — a malformed row whose id bypassed that check could
+    otherwise traverse. The loop-root containment check alone is
+    insufficient: a `unit_id` such as `"A/../B"` never escapes `runs/
+    {loop_id}/` at all (it resolves to the sibling `runs/{loop_id}/B/`,
+    which IS relative to the loop root), yet still redirects a rejected
+    payload meant for unit A into unit B's own real `rejected/` directory,
+    overwriting its file. Rejecting any `unit_id` outside the canonical
+    charset up front (no `/`, no `..`) closes that gap — the same charset
+    `campaign_init.py` already enforces at write time, so a row that never
+    passed it should never be trusted to build a path either. The loop-root
+    containment check below is kept as defense-in-depth against a
+    filesystem-specific shape this charset check does not anticipate.
     """
+    if not id_charset_ok(unit_id):
+        raise ValueError(f"rejected-payload path refused: unit_id {unit_id!r} is not a safe identifier")
     rejected_dir = runs_dir_for(state_path, loop_id, unit_id) / "rejected"
     candidate = rejected_dir / _safe_rejected_filename(attempt_id)
     resolved_candidate = candidate.resolve()
@@ -848,7 +856,15 @@ def enforce_record_fencing(state_path, state_peek: dict, unit_id: str, attempt_i
         return 1
     if not validate_attempt_token(unit_row, attempt_id):
         loop_id = state_peek.get("loop_id", "")
-        path = rejected_payload_path(state_path, loop_id, unit_id, attempt_id)
+        try:
+            path = rejected_payload_path(state_path, loop_id, unit_id, attempt_id)
+        except ValueError as exc:
+            # `unit_id` here is the CALLER's `--unit` value, not yet proven
+            # to be one of this loop's real rows at this point in the
+            # fencing check — a malformed one must fail closed with a clean
+            # error, not an uncaught traceback (external review, high).
+            print(f"ERROR: refusing to record stale-attempt payload: {exc}", file=sys.stderr)
+            return 1
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(raw_text, encoding="utf-8")
         print(json.dumps({"recorded": False, "status": "stale_attempt", "unit": unit_id}))

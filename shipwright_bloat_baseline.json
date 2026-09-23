@@ -846,7 +846,7 @@
     {
       "path": "shared/scripts/lib/loop_state.py",
       "limit": 300,
-      "current": 861,
+      "current": 877,
       "state": "exception",
       "adr": "ADR-pending: .shipwright/planning/adr/iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md"
     },

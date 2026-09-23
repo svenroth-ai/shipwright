@@ -79,16 +79,14 @@ class TestPathHelpers:
         assert p == tmp_path / ".shipwright" / "runs" / "loop1" / "A" / "rejected" / "loop1-A-a1.json"
 
     def test_rejected_payload_path_rejects_traversing_unit_id(self, tmp_path):
-        """Stage-2 code review (medium, security): the containment assert
-        used to compare `resolved_dir` (itself derived from the untrusted
-        `unit_id`) against `resolved_candidate.parent` — a traversing
-        `unit_id` moves both sides of that comparison together, so the
-        assert passed vacuously for exactly the input it existed to catch.
-        Anchored against the LOOP-level root instead
-        (`runs_dir_for(state_path, loop_id)`, no `unit_id`); a traversing
-        `unit_id` must now be rejected before any write is attempted."""
+        """Stage-2 code review (medium, security): a traversing `unit_id`
+        must be rejected before any write is attempted. Now caught by the
+        earlier `id_charset_ok` gate (external review, high) — no `/` is in
+        the allowed charset at all, so this specific shape never reaches the
+        loop-root containment assert any more; that assert stays as
+        defense-in-depth for a shape the charset check doesn't anticipate."""
         state_path = tmp_path / ".shipwright" / "loop_state.json"
-        with pytest.raises(ValueError, match="escaped"):
+        with pytest.raises(ValueError, match="not a safe identifier"):
             rejected_payload_path(state_path, "loop1", "../../etc", "loop1-A-a1")
 
     def test_handoff_dir_for(self, tmp_path):
