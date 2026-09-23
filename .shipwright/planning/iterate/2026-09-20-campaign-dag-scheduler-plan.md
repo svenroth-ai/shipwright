@@ -52,10 +52,14 @@ traced to the finding that forced it.
   `SHIPWRIGHT_LOOP_UNIT_ID="__campaign_wave__"` — for the whole wave, so the
   guard's truthiness check still refuses; the variable's other,
   identity-bearing consumers (`_run_id.py`'s tier-3 derivation,
-  `generate_handoff_on_stop.py`'s namespacing) migrate to the brief-provided
-  `unit_id` explicitly, since a shared sentinel value cannot serve those. All
-  five known consumers are enumerated and dispositioned in R5a's own section
-  (was: only `write_terminal_marker.py`, the one v5 happened to fix).
+  `generate_handoff_on_stop.py`'s namespacing) migrate to the per-unit
+  worktree's own directory basename (`lib.campaign_wave.
+  per_unit_worktree_identity`) instead, since a shared sentinel value cannot
+  serve those and neither consumer is a subagent that can read a brief
+  parameter directly — a Stop-hook subprocess in particular only ever sees
+  `project_root` and the environment. All five known consumers are
+  enumerated and dispositioned in R5a's own section (was: only
+  `write_terminal_marker.py`, the one v5 happened to fix).
 - **`campaign_status.py`'s bloat mitigation is corrected — it was illusory.**
   v5 moved `id_charset_ok`/`validate_dependency_graph` into the new
   `campaign_graph.py` "instead of growing `campaign_status.py` past its
@@ -1108,8 +1112,13 @@ variable entirely fails a security control open):**
   refuses exactly as it does today.
 - `_run_id.py`'s tier-3 run-id derivation and `generate_handoff_on_stop.py`'s
   handoff namespacing both need the actual per-unit identity, which a shared
-  sentinel cannot provide. **Migrated:** both read the brief-provided
-  `unit_id` directly instead.
+  sentinel cannot provide. **Migrated:** both resolve identity from the
+  per-unit worktree's own directory basename
+  (`lib.campaign_wave.per_unit_worktree_identity`) instead — not a
+  brief-provided `unit_id`, since neither consumer is a subagent that
+  receives a brief; a Stop-hook subprocess in particular only ever sees
+  `project_root` and the environment, which is exactly why the sentinel
+  itself carries no identity and this per-unit path was needed.
 - `diff_risk_recheck.py` only tests the same truthiness the authorship guard
   does. **Unaffected** by the sentinel value.
 - `capture_session_id.py`'s propagation via `CLAUDE_ENV_FILE` is **why a

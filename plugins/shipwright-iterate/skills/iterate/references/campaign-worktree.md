@@ -100,8 +100,11 @@ instant it runs — it does not cover the wait that follows. `campaign-mode.md`
 loop step 3a `touch`es this lock at the top of every iteration, and step 3g
 touches it again immediately before `gh pr checks --watch`, but **two**
 windows remain genuinely unbounded and untouched while they run: (1) the
-`sub-iterate-runner` Task itself (3c spawn through 3d's wait on the terminal
-DONE marker: build + reviews + F0–F6 + push) — the loop's longest block, and
+`sub-iterate-runner` Task(s) themselves (3c's multi-spawn through the
+implicit wave-return once every Task in that message has returned — R5a
+retired the terminal DONE marker for `kind == "sub_iterate"`, see
+`campaign-mode.md` 3d — covering build + reviews + F0–F6 + push per unit) —
+the loop's longest block, and
 (2) `gh pr checks --watch` plus the merge-status poll after it, which the 3g
 touch only precedes rather than covers. A sub-iterate — or a slow CI run —
 that takes longer than `DEFAULT_STALE_AFTER_SECONDS` (7200s / 2h — a round,

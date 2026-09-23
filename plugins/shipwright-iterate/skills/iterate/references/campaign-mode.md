@@ -31,10 +31,12 @@ before R5a. This formalizes the ad-hoc orchestration pattern.
 >
 > The window is `3f-bis` and NOT "in parallel with the runner, after Build",
 > which an earlier version of this note claimed. No such window exists: the
-> orchestrator blocks at `3d` on the runner's **terminal** DONE marker,
-> emitted only after F6 (commit) and Step 5 (push) — everything the cascade
-> reviews is therefore already committed, which is why `3f-bis` gates the
-> **merge** rather than the commit.
+> orchestrator blocks at `3c`'s multi-`Task` call until every unit's `Task`
+> has returned (R5a: the pre-flip terminal DONE marker this note used to
+> name is retired for `kind == "sub_iterate"` — see 3d below), by which
+> point every unit is already past F6 (commit) and Step 5 (push) —
+> everything the cascade reviews is therefore already committed, which is
+> why `3f-bis` gates the **merge** rather than the commit.
 >
 > The runner still records `spec` / `code` / `doubt` as `not_run`; that is
 > true at the moment it writes them. `3f-bis` promotes those rows with
@@ -171,6 +173,16 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    # the value). `lib.campaign_wave.WAVE_UNIT_ID_SENTINEL` is the same
    # literal, importable for any Python-side comparison.
    export SHIPWRIGHT_LOOP_UNIT_ID="__campaign_wave__"
+   # Spec-review fix (R5a round 2): `WAVE_MAX_PARALLEL` is a plain shell
+   # variable consumed at 3a's `--max-parallel "$WAVE_MAX_PARALLEL"` — it was
+   # previously only declared in this file's own PROSE (see the constant's
+   # rationale below step 3's numbered list), never actually exported. An
+   # unset/empty value there is an argparse error (loop_claim.py's
+   # `--max-parallel` is `required=True, type=int`), which exits 2 —
+   # indistinguishable from 3a's own "every unit TERMINAL, done" exit code,
+   # so the loop would silently finalize an untouched campaign instead of
+   # loudly failing. Export the real value here, once, with the others.
+   export WAVE_MAX_PARALLEL=4
    ```
 
 2. **Initialize loop from the piped units list** — both sides are same-shell
