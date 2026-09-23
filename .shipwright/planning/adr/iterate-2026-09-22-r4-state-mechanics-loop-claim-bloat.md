@@ -291,11 +291,28 @@ with an explicit terminal `raise AssertionError(...)` instead of letting
 the function body end implicitly — same "raise the unreachable case
 explicitly" pattern already applied elsewhere in this codebase.
 
+### Round 17 growth (502 -> 511)
+
+External Tier-3 review (GPT, PR #790 round 17) BLOCKed on a genuine bug,
+verified against the code: `cmd_release` resolves `--unit` via
+`find_unit_row`'s case-folded fallback and correctly mutates the matched
+row's status, but then passed the CALLER's raw `args.unit` spelling
+straight through to `_cleanup_unit_worktree`, which recomputes the
+worktree path from that string. A case-mismatched `--unit` (e.g. `r4`
+against a stored canonical `R4`) makes the recomputed path wrong; on a
+case-sensitive filesystem (Linux CI) `wt_path.exists()` is then False and
+cleanup silently no-ops (best-effort, never blocking) — the real
+worktree and branch are left behind with no error. Fixed by capturing
+`unit["id"]` (the canonical spelling `find_unit_row` actually matched)
+inside the lock and passing that to `_cleanup_unit_worktree` instead of
+`args.unit`. Regression test:
+`test_loop_claim_release_cleanup.py::test_release_cleanup_uses_canonical_unit_id_not_caller_casing`.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the current 502-line ceiling (see
-  Round 16 growth above), not 300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 511-line ceiling (see
+  Round 17 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree`, the ADR-045 dispatch-identity
   regression, and the transient-`PermissionError` retry live in sibling
   files, `shared/tests/test_loop_claim_release_cleanup.py` (`cmd_release`'s

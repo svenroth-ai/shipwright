@@ -152,6 +152,26 @@ class TestCmdReleasePhysicalCleanup:
         assert rc == 0
         mocked.assert_called_once_with("/repo", "dag-scheduler", "A", 1)
 
+    def test_release_cleanup_uses_canonical_unit_id_not_caller_casing(self, tmp_path):
+        """External Tier-3 PR review (GPT, round 17): `find_unit_row`
+        resolves a case-mismatched `--unit` via its case-folded fallback and
+        the logical release correctly mutates the matched row, but the
+        pre-fix code then passed the CALLER's raw spelling straight through
+        to `_cleanup_unit_worktree`, which RECOMPUTES the worktree path from
+        that string — a case mismatch silently no-ops cleanup on any
+        case-sensitive filesystem (Linux CI), leaving the real worktree and
+        branch behind with no error at all (best-effort, never blocking).
+        Must use the canonical `unit["id"]`, not `args.unit`."""
+        state_path = _write_state(tmp_path, units=[
+            {"id": "R4", "status": "claimed", "attempt": 0, "attempt_id": "test-loop-R4-a0"},
+        ])
+        with patch.object(loop_claim, "_cleanup_unit_worktree") as mocked:
+            rc = cmd_release(_release_args(state_path, "r4", "test-loop-R4-a0",
+                                            campaign_slug="dag-scheduler",
+                                            campaign_worktree="/repo"))
+        assert rc == 0
+        mocked.assert_called_once_with("/repo", "dag-scheduler", "R4", 0)
+
     def test_release_cleanup_failure_never_blocks_the_logical_release(self, tmp_path):
         """Even a bug inside the cleanup helper itself (not just an
         anticipated subprocess failure) must not surface as a non-zero

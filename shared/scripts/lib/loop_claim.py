@@ -428,6 +428,7 @@ def cmd_release(args: argparse.Namespace) -> int:
             unit["status"] = "failed" if exhausted else "pending"
             unit["released_at"] = now_iso()
             attempt = unit.get("attempt", 0)
+            canonical_unit_id = unit["id"]
             _save_state(state_path, state)
             print(json.dumps({"released": True, "unit": args.unit, "status": unit["status"]}))
     except LockTimeout as exc:
@@ -438,7 +439,15 @@ def cmd_release(args: argparse.Namespace) -> int:
     campaign_worktree = getattr(args, "campaign_worktree", None)
     if campaign_slug and campaign_worktree:
         try:  # belt-and-suspenders — the release above already landed.
-            _cleanup_unit_worktree(campaign_worktree, campaign_slug, args.unit, attempt)
+            # External Tier-3 PR review (GPT, round 17): the worktree/branch
+            # were created under the CANONICAL `unit["id"]` (find_unit_row's
+            # case-folded resolution above), but `args.unit` may be a
+            # different-case spelling of the same id. Passing `args.unit`
+            # straight through recomputes the wrong path, `wt_path.exists()`
+            # is False, and cleanup silently no-ops (best-effort, never
+            # blocking) — leaving the real worktree/branch behind with no
+            # error at all. Must use `canonical_unit_id`, not `args.unit`.
+            _cleanup_unit_worktree(campaign_worktree, campaign_slug, canonical_unit_id, attempt)
         except Exception:
             pass
     return 0
