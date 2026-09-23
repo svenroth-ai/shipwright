@@ -1,0 +1,6 @@
+{
+  "stage": "spec-review",
+  "verdict": "PASS",
+  "spec_citations": [],
+  "summary": "No spec.md exists for this change to review against -- pure test-file reorganization (splitting two files that crossed the 300-line bloat gate), spec_impact=none, no product FR or spec-observable behavior touched. Confirmed the diff is consistent with that classification: no plugins/*, shared/scripts/lib/**, or production source files touched, only test files and planning/agent-doc artifacts."
+}

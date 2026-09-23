@@ -1,0 +1,6 @@
+{
+  "stage": "code-review",
+  "verdict": "PASS",
+  "review": [],
+  "summary": "Clean, mechanical split of two bloat-gate-crossing test files (shared/tests/test_external_review_opus_leg.py -> itself + new test_external_review_opus_leg_dispatch.py; integration-tests/test_external_review_driver_prose_contract.py -> itself + new test_external_review_key_consistency_contract.py). Verified: (1) every def test_ and @pytest.mark.parametrize case enumerated across all four files totals 38, matching pre-split, no name collisions; (2) both new files' imports/fixtures (sys.path shim, _CONFIG, _FakeCompleted, _json_ok, REPO_ROOT/PLUGINS_ROOT, compiled regexes) are complete and self-contained -- every used name cross-checked against its own file's definitions, and every `legs.` attribute verified to exist via grep; (3) line-by-line read of both new files and the tails of both kept files found no assertion/docstring drift, a verbatim relocation; (4) both ADR files' line counts, test counts, and per-file concern breakdown checked accurate against disk. No correctness, readability, architecture, security, or performance findings; no scope creep."
+}

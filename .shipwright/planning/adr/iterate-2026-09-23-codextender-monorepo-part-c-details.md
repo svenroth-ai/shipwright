@@ -89,7 +89,20 @@ unverified end-to-end in this codebase, same as it was before Codextender
 existed. Regression tests:
 `test_review_claude_cli_scrubs_anthropic_routing_env_vars_under_codextender`
 + `test_review_claude_cli_preserves_anthropic_auth_token_outside_codextender`
-in `shared/tests/test_external_review_opus_leg.py`.
+in `shared/tests/test_external_review_opus_leg_dispatch.py` (split out of
+`test_external_review_opus_leg.py`'s `review_claude_cli` dispatch tests when
+both that file and `integration-tests/test_external_review_driver_prose_contract.py`
+crossed the 300-line bloat gate in this same run; the latter's
+openai/opus-key-consistency tests moved to the new
+`test_external_review_key_consistency_contract.py`). A local PR-review
+preflight (round 3) further suggested also scrubbing generic proxy env vars
+(`HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`), reasoning that some HTTP client
+could honor them and redirect the "real Anthropic" call even under this fix.
+**Declined, disclosed rather than silently assumed away**: those vars are not
+Codextender's routing mechanism (it targets `ANTHROPIC_BASE_URL` per this
+ADR's Context), item 3's original scope named only the three `ANTHROPIC_*`
+vars, and Sven confirmed shipping at that scope — proxy-var scrubbing, if
+ever wanted, is separate future hardening, not this bug fix.
 
 **C.4 — docs.** `docs/hooks-and-pipeline.md` gained a `CODEXTENDER_ACTIVE` row
 in Config File Data Flow plus a short Context Loading paragraph, explicitly
