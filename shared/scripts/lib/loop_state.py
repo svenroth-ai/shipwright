@@ -534,21 +534,44 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
             try:
                 result = json.loads(result_path.read_text(encoding="utf-8"))
                 if result.get("status") == "complete":
-                    unit["status"] = done_status
-                    unit["commit"] = result.get("commit")
+                    # External review (GPT, high): this row was only ever
+                    # reached via a dead session's result.json, not a
+                    # completed `campaign-mode.md` step 3g merge — the
+                    # commit here is a pre-merge branch tip, not a verified
+                    # merge. The earlier fix here routed `merged_commit`
+                    # through `verify_merged_commit_ancestry` but still set
+                    # `unit["status"] = done_status` unconditionally,
+                    # marking the row TERMINAL/"merged" even when the
+                    # verification failed — converting an unverified branch
+                    # tip into a false completion `sub_iterate_
+                    # finalize_summary`/campaign-mode step 3h would then
+                    # publish as done. A sub_iterate row now only takes this
+                    # branch when the commit genuinely verifies; otherwise
+                    # it falls through to the branch-log check and, failing
+                    # that, the reset-to-pending fallback below — the same
+                    # "stays blocked, never wrongly unblocked" direction
+                    # this module's docstring already requires.
                     if is_sub_iterate:
-                        # Doubt-review-round fix (high): this row was only
-                        # ever reached via a dead session's result.json, not
-                        # a completed `campaign-mode.md` step 3g merge — the
-                        # commit here is a pre-merge branch tip, not a
-                        # verified merge. Route it through the same
-                        # never-trust-blindly gate `_load_units_from` already
-                        # applies (see this module's docstring above).
-                        unit["merged_commit"] = verify_merged_commit_ancestry(result.get("commit"))
-                    unit["finished_at"] = now_iso()
-                    unit["result_path"] = str(result_path)
-                    warnings.append(f"Reconciled {unit['id']}: found result.json with status=complete")
-                    continue
+                        verified = verify_merged_commit_ancestry(result.get("commit"))
+                        if verified is not None:
+                            unit["status"] = done_status
+                            unit["commit"] = result.get("commit")
+                            unit["merged_commit"] = verified
+                            unit["finished_at"] = now_iso()
+                            unit["result_path"] = str(result_path)
+                            warnings.append(f"Reconciled {unit['id']}: found result.json with status=complete")
+                            continue
+                        warnings.append(
+                            f"Reconciled {unit['id']}: result.json commit never verified as "
+                            "merged — not marking merged"
+                        )
+                    else:
+                        unit["status"] = done_status
+                        unit["commit"] = result.get("commit")
+                        unit["finished_at"] = now_iso()
+                        unit["result_path"] = str(result_path)
+                        warnings.append(f"Reconciled {unit['id']}: found result.json with status=complete")
+                        continue
             except (json.JSONDecodeError, OSError):
                 pass
 
@@ -569,12 +592,23 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
                         capture_output=True, text=True, timeout=10,
                     )
                     if log_result.returncode == 0 and log_result.stdout.strip():
-                        unit["status"] = done_status
                         if is_sub_iterate:
-                            unit["merged_commit"] = verify_merged_commit_ancestry(unit.get("commit"))
-                        unit["finished_at"] = now_iso()
-                        warnings.append(f"Reconciled {unit['id']}: branch has commits since head_sha")
-                        continue
+                            verified = verify_merged_commit_ancestry(unit.get("commit"))
+                            if verified is not None:
+                                unit["status"] = done_status
+                                unit["merged_commit"] = verified
+                                unit["finished_at"] = now_iso()
+                                warnings.append(f"Reconciled {unit['id']}: branch has commits since head_sha")
+                                continue
+                            warnings.append(
+                                f"Reconciled {unit['id']}: branch has commits since head_sha but "
+                                "commit never verified as merged — not marking merged"
+                            )
+                        else:
+                            unit["status"] = done_status
+                            unit["finished_at"] = now_iso()
+                            warnings.append(f"Reconciled {unit['id']}: branch has commits since head_sha")
+                            continue
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 pass
 

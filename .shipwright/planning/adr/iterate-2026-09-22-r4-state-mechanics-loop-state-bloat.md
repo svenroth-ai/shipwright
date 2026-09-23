@@ -190,11 +190,28 @@ edge. Fixed by routing both `_reconcile_legacy` write sites (the
 `result.json` path and the legacy branch-log fallback) through that same
 verification call — two call sites, no new function.
 
+### Round 5 growth (827 -> 861)
+
+External Tier-3 review (GPT, high, PR #790) found Round 4's own fix
+incomplete: it routed `merged_commit` through `verify_merged_commit_ancestry`
+but left `unit["status"] = done_status` unconditional in both
+`_reconcile_legacy` write sites — an unverified pre-merge branch tip still
+flipped the row to TERMINAL `"merged"`, which is the exact false completion
+`sub_iterate_finalize_summary`/campaign-mode step 3h would then publish as
+done, not merely an unset field. Fixed by gating the status transition
+itself on verification succeeding at both sites (`result.json` and the
+branch-log fallback); an unverified commit now falls through to the
+branch-log check and, failing that, the existing reset-to-pending fallback
+— the same "stays blocked, never wrongly unblocked" direction this module's
+own docstring already requires. Not a new responsibility — a correctness
+fix to the verification primitive Round 4 already counted, plus one new
+regression test proving the unverified case no longer marks the row merged.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 827-line ceiling
-  (see Round 4 growth above), not 278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 861-line ceiling
+  (see Round 5 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`

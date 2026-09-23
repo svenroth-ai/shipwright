@@ -174,6 +174,27 @@ class TestCmdInitSubIteratePayload:
         assert unit["status"] == "merged"
         assert unit["merged_commit"] == _FAKE_SHA
 
+    def test_legacy_in_progress_sub_iterate_result_json_never_marks_merged_when_unverified(
+        self, tmp_path, monkeypatch,
+    ):
+        """External review (GPT, high): an unverified `result.json` commit
+        must not flip `status` to `"merged"` (TERMINAL) — that would be the
+        false completion `sub_iterate_finalize_summary` publishes as done.
+        Falls through to the same reset-to-pending fallback an absent
+        result.json would hit."""
+        monkeypatch.setattr(loop_state, "verify_merged_commit_ancestry", lambda c: None)
+        state_path = tmp_path / ".shipwright" / "loop_state.json"
+        runs_dir = state_path.parent / "runs" / "loop1" / "A"
+        runs_dir.mkdir(parents=True)
+        (runs_dir / "result.json").write_text(
+            json.dumps({"status": "complete", "commit": _FAKE_SHA}), encoding="utf-8")
+        existing = {"loop_id": "loop1", "kind": "sub_iterate", "units": [_unit(status="in_progress")]}
+        payload, mutated = cmd_init_sub_iterate_payload(state_path, existing)
+        assert mutated is True
+        unit = existing["units"][0]
+        assert unit["status"] == "pending"
+        assert "merged_commit" not in unit
+
     def test_legacy_in_progress_sub_iterate_pending_fallback_never_double_bumps(self, tmp_path):
         """Stage-3 doubt review (LOW #2): a `kind == "sub_iterate"` row with
         no result.json/branch evidence falls back to `"pending"` here — a
