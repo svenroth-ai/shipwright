@@ -124,6 +124,7 @@ class TestAC0NoOpUnderClaude:
 
 
 class TestAC1aThreeFixtures:
+    @pytest.mark.covers("FR-01.21/AC06")
     def test_armed_wrong_first_call_denies(self, bundle_env):
         """@covers FR-01.21/AC06 — an armed session's first non-setup call is
         denied with the resolved setup command in the reason."""
