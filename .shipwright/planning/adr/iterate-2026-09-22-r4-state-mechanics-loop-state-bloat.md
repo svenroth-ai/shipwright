@@ -172,11 +172,29 @@ already counted above:
   Fixed by checking `to_state` unconditionally and `from_state` only when
   `forced` is `False` — three lines changed, same function.
 
+### Round 4 growth (820 -> 827)
+
+Scoped orchestrator-level re-review of Round 3's own fixes (see the sibling
+`iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md`'s Round 4 entry
+for the companion `loop_claim.py` fix from the same pass) found one further
+real defect in `_reconcile_legacy`, not a new responsibility: its HIGH #2
+fix (above) mapped a legacy `"in_progress"` row's found `result.json` onto
+`unit["merged_commit"] = result.get("commit")` unconditionally — but that
+commit is a pre-merge branch tip (this reconciliation path only fires for a
+row whose session died before `cmd_record`, which is always before
+`campaign-mode.md` step 3g's merge), and this module's own docstring
+requires every `merged_commit` write to go through
+`verify_merged_commit_ancestry` first (see this file's `## Context` above)
+so a rewritten/never-merged commit cannot silently satisfy a dependency
+edge. Fixed by routing both `_reconcile_legacy` write sites (the
+`result.json` path and the legacy branch-log fallback) through that same
+verification call — two call sites, no new function.
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the new 768-line ceiling, not
-  278 — the next crossing needs its own ADR.
+  touches `loop_state.py` operates against the current 827-line ceiling
+  (see Round 4 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
   machine + reconcile dispatch), `shared/tests/test_loop_state_fencing.py`

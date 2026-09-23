@@ -125,8 +125,8 @@ undetected).
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_claim.py` operates against the new 353-line ceiling, not
-  300 — the next crossing needs its own ADR.
+  touches `loop_claim.py` operates against the current 368-line ceiling (see
+  Round 4 growth above), not 300 — the next crossing needs its own ADR.
 - New tests for `_cleanup_unit_worktree` and the ADR-045 dispatch-identity
   regression live in a new sibling file, `shared/tests/
   test_loop_claim_release_cleanup.py` (split from `test_loop_claim.py`

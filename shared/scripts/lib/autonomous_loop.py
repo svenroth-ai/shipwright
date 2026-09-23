@@ -39,6 +39,7 @@ from file_lock import file_lock
 # `branch_base` the same bare way, so it is never loaded under two names.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.loop_state import (  # noqa: E402
+    STATES,
     _load_units_from,
     cmd_init_sub_iterate_payload,
     describe_blocker,
@@ -273,13 +274,20 @@ def cmd_record(args: argparse.Namespace) -> int:
         if not result:
             with file_lock(lock_path, timeout_seconds=30):
                 state = _load_state(state_path)
-                if state.get("kind") == "sub_iterate":
+                is_sub_iterate = state.get("kind") == "sub_iterate"
+                if is_sub_iterate:
                     rejection = enforce_record_fencing(state_path, state, args.unit, attempt_id,
                                                          result_str, target_status="failed")
                     if rejection is not None:
                         return rejection
+                # Scoped-review fix (low, finding I): same case-fold lookup
+                # as the success path below (Stage-3 doubt review LOW #1) —
+                # a case-mismatched `--unit` that passes the fencing check
+                # above must not then silently no-op against an exact-match
+                # write loop that finds nothing.
+                target_unit = find_unit_row(state, args.unit) if is_sub_iterate else None
                 for unit in state["units"]:
-                    if unit["id"] == args.unit:
+                    if unit is target_unit or (target_unit is None and unit["id"] == args.unit):
                         unit["status"] = "failed"
                         unit["finished_at"] = now_iso()
                         unit["failure_reason"] = f"Non-JSON result: {result_str[:500]}"
@@ -292,13 +300,15 @@ def cmd_record(args: argparse.Namespace) -> int:
     if errors:
         with file_lock(lock_path, timeout_seconds=30):
             state = _load_state(state_path)
-            if state.get("kind") == "sub_iterate":
+            is_sub_iterate = state.get("kind") == "sub_iterate"
+            if is_sub_iterate:
                 rejection = enforce_record_fencing(state_path, state, args.unit, attempt_id,
                                                      result_str, target_status="failed")
                 if rejection is not None:
                     return rejection
+            target_unit = find_unit_row(state, args.unit) if is_sub_iterate else None
             for unit in state["units"]:
-                if unit["id"] == args.unit:
+                if unit is target_unit or (target_unit is None and unit["id"] == args.unit):
                     unit["status"] = "failed"
                     unit["finished_at"] = now_iso()
                     unit["failure_reason"] = f"Contract violation: {'; '.join(errors)}"
@@ -376,7 +386,19 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     # `kind == "sub_iterate"` branch existed — this campaign never refused
     # finalize outright even on a genuinely incomplete run; it only reported
     # `terminal_reason` as informational text.
-    if state.get("kind") == "sub_iterate" and any(u.get("attempt_id") for u in state["units"]):
+    # Scoped-review fix (medium, finding C): `any(...)` alone would trap a
+    # campaign straddling the R5a flip — some units finished under the old
+    # serial cmd_next/cmd_record path (legacy "complete", no attempt_id),
+    # others claimed by the new cmd_next_batch flow — in the strict branch
+    # forever, since nothing promotes a legacy "complete" row into the
+    # 9-state vocabulary post-hoc. Require the WHOLE vocabulary to be
+    # 9-state before trusting the strict branch; a mixed campaign falls
+    # through to the legacy branch below, exactly the pre-R4 behaviour and
+    # therefore never worse than today.
+    all_new_vocabulary = all(u["status"] in STATES for u in state["units"])
+    if state.get("kind") == "sub_iterate" and all_new_vocabulary and any(
+        u.get("attempt_id") for u in state["units"]
+    ):
         error, summary = sub_iterate_finalize_summary(state)
         if error:
             print(json.dumps(error), file=sys.stderr)

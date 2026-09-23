@@ -248,7 +248,7 @@ def _cleanup_unit_worktree(campaign_worktree: str, campaign_slug: str, unit_id: 
     same way ``setup_unit_worktree.py`` does."""
     try:
         main_root = main_repo_root(Path(campaign_worktree))
-    except (GitError, OSError, FileNotFoundError):
+    except (GitError, OSError, subprocess.TimeoutExpired):
         return  # best-effort — never blocks the logical release above
     try:
         wt_path = resolved_worktree_path(main_root, campaign_slug, unit_id, attempt=attempt)

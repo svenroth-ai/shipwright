@@ -537,7 +537,14 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
                     unit["status"] = done_status
                     unit["commit"] = result.get("commit")
                     if is_sub_iterate:
-                        unit["merged_commit"] = result.get("commit")
+                        # Doubt-review-round fix (high): this row was only
+                        # ever reached via a dead session's result.json, not
+                        # a completed `campaign-mode.md` step 3g merge — the
+                        # commit here is a pre-merge branch tip, not a
+                        # verified merge. Route it through the same
+                        # never-trust-blindly gate `_load_units_from` already
+                        # applies (see this module's docstring above).
+                        unit["merged_commit"] = verify_merged_commit_ancestry(result.get("commit"))
                     unit["finished_at"] = now_iso()
                     unit["result_path"] = str(result_path)
                     warnings.append(f"Reconciled {unit['id']}: found result.json with status=complete")
@@ -564,7 +571,7 @@ def _reconcile_legacy(state: dict, state_path) -> list[str]:
                     if log_result.returncode == 0 and log_result.stdout.strip():
                         unit["status"] = done_status
                         if is_sub_iterate:
-                            unit["merged_commit"] = unit.get("commit")
+                            unit["merged_commit"] = verify_merged_commit_ancestry(unit.get("commit"))
                         unit["finished_at"] = now_iso()
                         warnings.append(f"Reconciled {unit['id']}: branch has commits since head_sha")
                         continue

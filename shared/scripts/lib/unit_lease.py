@@ -151,7 +151,9 @@ def touch_unit_lease(
     expected_campaign_worktree: str | None = None,
 ) -> dict:
     """Field-creating upsert of this unit's lease fields. Returns the lease
-    fields written (a plain ``dict``, not the whole row), plus
+    fields written (a plain ``dict``, not the whole row) — ``attempt_id`` is
+    echoed from the row rather than necessarily written, since a `None`
+    caller value leaves any existing token untouched — plus
     ``stale_attempt_conflict`` (see module docstring's "Ghost-touch
     marking") and ``row_attempt`` (the row's real attempt counter after this
     touch — may differ from the echoed ``attempt`` the caller touched with).
@@ -204,8 +206,12 @@ def touch_unit_lease(
             # into `lease` nulled a real fencing token on every heartbeat,
             # defeating fencing for every later `cmd_record`/`cmd_mark` call
             # against this row. Only ever set it when the caller passes a
-            # real value; never blank an existing one.
-            if attempt_id is not None:
+            # real value; never blank an existing one. Scoped-review fix
+            # (low, finding E): guard on truthiness, not `is not None` — an
+            # unrendered template variable in a runner brief can pass
+            # `--attempt-id ""`, which `is not None` would still accept and
+            # blank the live token with, exactly the bug this fix removes.
+            if attempt_id:
                 unit["attempt_id"] = attempt_id
             lease["attempt_id"] = unit.get("attempt_id")
             # Stage-2 code review (high): `attempt` is `autonomous_loop`'s own

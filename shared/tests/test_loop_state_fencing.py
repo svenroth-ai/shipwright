@@ -12,6 +12,7 @@ import json
 
 import pytest
 
+from lib import loop_state
 from lib.loop_state import (
     cmd_init_sub_iterate_payload,
     enforce_record_fencing,
@@ -129,24 +130,38 @@ class TestCmdInitSubIteratePayload:
         pre-R4 `cmd_next` status `"in_progress"` (the live status for
         `--branch-strategy serial` sub_iterate campaigns) is neither ACTIVE
         nor RESUMABLE nor TERMINAL — it must never fall through to a silent
-        `{"action": "resumed", "pending": 0}`."""
+        `{"action": "resumed", "pending": 0}`.
+
+        Scoped-review fix (low, finding G): fixture now carries `"kind":
+        "sub_iterate"` — production's only call site never invokes this
+        function on any other kind, and the omission previously routed this
+        test through `_reconcile_legacy`'s non-sub_iterate attempt-bump
+        branch, contradicting the sibling test below which asserts the
+        sub_iterate branch never bumps `attempt` on this exact fallback.
+        The attempt assertion moves to that sibling."""
         state_path = tmp_path / ".shipwright" / "loop_state.json"
-        existing = {"loop_id": "loop1", "units": [_unit(status="in_progress")]}
+        existing = {"loop_id": "loop1", "kind": "sub_iterate", "units": [_unit(status="in_progress")]}
         payload, mutated = cmd_init_sub_iterate_payload(state_path, existing)
         assert mutated is True
         assert payload["action"] == "reconciled"
         # `_reconcile_legacy`'s own fallback: no result.json/branch evidence
-        # found -> reset to pending with an attempt bump.
+        # found -> reset to pending.
         assert existing["units"][0]["status"] == "pending"
-        assert existing["units"][0]["attempt"] == 1
 
-    def test_legacy_in_progress_sub_iterate_maps_complete_result_onto_merged(self, tmp_path):
+    def test_legacy_in_progress_sub_iterate_maps_complete_result_onto_merged(self, tmp_path, monkeypatch):
         """Stage-3 doubt review (HIGH #2, second half): a `kind ==
         "sub_iterate"` row reconciled via a found `result.json` must land
         on the 9-state vocabulary (`"merged"`, TERMINAL) — not the legacy
         `"complete"` string the new claim/mark/finalize machinery does not
         understand — with `merged_commit` set so
-        `sub_iterate_finalize_summary`'s own commit list picks it up."""
+        `sub_iterate_finalize_summary`'s own commit list picks it up.
+
+        Scoped-review fix (high): `result.json`'s commit is a pre-merge
+        branch tip, never a verified merge, so production routes it through
+        `verify_merged_commit_ancestry` before trusting it — stubbed here to
+        `lambda c: c` (matching `test_loop_state.py`'s own convention) so
+        this test keeps asserting the SHA without a real git fetch."""
+        monkeypatch.setattr(loop_state, "verify_merged_commit_ancestry", lambda c: c)
         state_path = tmp_path / ".shipwright" / "loop_state.json"
         runs_dir = state_path.parent / "runs" / "loop1" / "A"
         runs_dir.mkdir(parents=True)

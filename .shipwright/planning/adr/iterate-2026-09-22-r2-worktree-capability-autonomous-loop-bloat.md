@@ -123,11 +123,36 @@ not new ones:
   too (`kind == "section"` keeps its original exact-match lookup, unchanged)
   and hard-failing (exit 3) when even that finds nothing.
 
+### Round 3 growth (469 -> 491)
+
+Scoped orchestrator-level re-review of Round 2's own HIGH #1 fix found a
+real gap in the compatibility gate, plus one further instance of Round 2's
+own LOW #1 defect class it had not covered — both hardening, not new
+responsibilities:
+
+- **Gate-mixing gap:** Round 2's `any(u.get("attempt_id"))` gate is an OR
+  over units, but `sub_iterate_finalize_summary`'s own refusal is an AND —
+  a campaign straddling the R5a flip (some units finished under the old
+  serial path with no `attempt_id`, others claimed by the new atomic-claim
+  flow) routed into the strict branch anyway and refused finalize forever,
+  since nothing promotes a legacy `"complete"` row into the 9-state
+  vocabulary post-hoc. Fixed by additionally requiring `all(u["status"] in
+  STATES for u in state["units"])` before trusting the strict branch; a
+  mixed campaign now falls through to the legacy branch below, exactly
+  pre-R4 behaviour and therefore never worse.
+- **LOW #1's remaining instances:** the case-fold fix only reached
+  `cmd_record`'s success-path write loop; its non-JSON-result and
+  contract-violation failure branches still used the same exact-match
+  lookup Round 2 fixed elsewhere, so a case-mismatched unit id could still
+  pass the fencing pre-check and then silently fail to be marked `failed`.
+  Fixed with the identical `find_unit_row`-when-`sub_iterate` pattern
+  Round 2 already established, at both remaining sites.
+
 ## Consequences
 
 - `_reconcile_in_progress` may grow further before the anti-ratchet blocks
-  again (454-line current). Not a licence to keep growing — the next
-  crossing needs its own ADR.
+  again (491-line current, per Round 3 growth above). Not a licence to keep
+  growing — the next crossing needs its own ADR.
 - A unit that has EVER been lease-touched is now reset to `pending` (attempt
   bumped) by `cmd_init` whenever no `result.json` exists for it, live lease
   or not — this is a deliberate trade: it can restart a build that was, in

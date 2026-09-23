@@ -92,6 +92,7 @@ class TestCmdReleasePhysicalCleanup:
 
         fake_wt = tmp_path / "wt"
         fake_wt.mkdir()
+        monkeypatch.setattr(loop_claim, "main_repo_root", lambda p: tmp_path)
         monkeypatch.setattr(loop_claim, "resolved_worktree_path", lambda *a, **k: fake_wt)
 
         def _boom(*a, **k):
@@ -100,7 +101,7 @@ class TestCmdReleasePhysicalCleanup:
         monkeypatch.setattr(loop_claim.subprocess, "run", _boom)
         _cleanup_unit_worktree("/repo", "dag-scheduler", "A", 0)  # must not raise
 
-    def test_cleanup_unit_worktree_recomputes_path_never_trusts_a_stored_one(self, monkeypatch):
+    def test_cleanup_unit_worktree_recomputes_path_never_trusts_a_stored_one(self, monkeypatch, tmp_path):
         """Security hardening: an invalid `(slug, unit_id)` recomputation
         must be refused, not silently accepted from caller-supplied data."""
         from lib.campaign_unit_worktree import CampaignUnitWorktreeError
@@ -109,6 +110,7 @@ class TestCmdReleasePhysicalCleanup:
         def _reject(*a, **k):
             raise CampaignUnitWorktreeError("invalid")
 
+        monkeypatch.setattr(loop_claim, "main_repo_root", lambda p: tmp_path)
         monkeypatch.setattr(loop_claim, "resolved_worktree_path", _reject)
         _cleanup_unit_worktree("/repo", "bad slug", "A", 0)  # must not raise
 
@@ -116,6 +118,7 @@ class TestCmdReleasePhysicalCleanup:
         from lib.loop_claim import _cleanup_unit_worktree
 
         missing = tmp_path / "does-not-exist"
+        monkeypatch.setattr(loop_claim, "main_repo_root", lambda p: tmp_path)
         monkeypatch.setattr(loop_claim, "resolved_worktree_path", lambda *a, **k: missing)
         with patch.object(loop_claim.subprocess, "run") as mocked:
             _cleanup_unit_worktree("/repo", "dag-scheduler", "A", 0)

@@ -21,7 +21,6 @@ already established for the identical reason.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -105,14 +104,14 @@ class TestRecordSubIterateCaseFold:
         state_path.write_text(json.dumps(state), encoding="utf-8")
         return state_path
 
-    def test_case_mismatched_unit_is_found_and_recorded_not_silently_dropped(self, tmp_path, capsys):
+    def test_case_mismatched_unit_is_found_and_recorded_not_silently_dropped(self, tmp_path, capsys, monkeypatch):
         """The fencing pre-check's `find_unit_row` (case-fold) already
         matched `--unit r1` against row `R1` and let it through; before this
         fix, the write loop below used an EXACT-match lookup, found nothing,
         and still printed `{"recorded": true}` / exit 0 without ever
         touching the row. Now both lookups agree: the row is genuinely
         found (case-fold) AND updated."""
-        os.chdir(tmp_path)
+        monkeypatch.chdir(tmp_path)
         state_path = self._make_state(tmp_path, [
             {"id": "R1", "status": "running", "attempt_id": "test-loop-R1-a0"},
         ])
@@ -125,10 +124,10 @@ class TestRecordSubIterateCaseFold:
         assert state["units"][0]["status"] == "built"
         assert state["units"][0]["commit"] == "abc123"
 
-    def test_genuinely_nonexistent_unit_hard_fails_instead_of_silently_succeeding(self, tmp_path, capsys):
+    def test_genuinely_nonexistent_unit_hard_fails_instead_of_silently_succeeding(self, tmp_path, capsys, monkeypatch):
         """A `--unit` that matches NO row even case-folded (unlike the test
         above) must hard-fail, not silently report `{"recorded": true}`."""
-        os.chdir(tmp_path)
+        monkeypatch.chdir(tmp_path)
         state_path = self._make_state(tmp_path, [
             {"id": "R1", "status": "running", "attempt_id": "test-loop-R1-a0"},
         ])
