@@ -182,6 +182,17 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    # indistinguishable from 3a's own "every unit TERMINAL, done" exit code,
    # so the loop would silently finalize an untouched campaign instead of
    # loudly failing. Export the real value here, once, with the others.
+   # (Doubt review, R5a round 6: this export and 3a's own consuming call are
+   # documented as SEPARATE numbered steps, run across many separate Bash
+   # calls interleaved with `Task` spawns over the life of the loop — an
+   # exported shell variable is not guaranteed to survive that boundary.
+   # 3a's own invocation therefore reads `${WAVE_MAX_PARALLEL:-4}`, not the
+   # bare variable, so a lost export degrades to the documented constant
+   # instead of the exact silent-done misread this comment already names.
+   # The broader exit-2 conflation itself — any argparse structural error in
+   # `loop_claim.py` reads identically to "every unit TERMINAL" — predates
+   # R5a (the single-unit `cmd_next` already reused exit 2 this way) and is
+   # not this sub-iterate's to redesign.)
    export WAVE_MAX_PARALLEL=4
    ```
 
@@ -253,7 +264,7 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
    3a. Renew the session lock first (`uv run "{shared_root}/scripts/checks/check_campaign_session_lock.py" touch --campaign-worktree "{project_root}" --session-id "$SHIPWRIGHT_SESSION_ID"`, references/campaign-worktree.md; non-zero = **LOCK-LOST — distinct from STRICT-STOP: do NOT proceed to step 4**, because Finalize writes `loop_state.json` and a lock-loss means a second session may already be driving it; stop immediately, write nothing, and report to the operator that this session lost the campaign lock (see references/campaign-worktree.md)), then compute + claim the BOUNDED READY SET for the whole wave in one atomic call:
          uv run "{shared_root}/scripts/lib/loop_claim.py" next-batch \
            --state .shipwright/loop_state.json --campaign-worktree "{project_root}" \
-           --max-parallel "$WAVE_MAX_PARALLEL"
+           --max-parallel "${WAVE_MAX_PARALLEL:-4}"
        → exit 2 → done (every unit TERMINAL) → step 4 (Finalize)
        → exit 4 → **stalled, not done** — `blocked_pending_ids` is non-empty and
          nothing was ready to claim this round: STOP, report `blockers`, do not
@@ -352,7 +363,27 @@ codes and today's exit `2` while gating isn't live): `references/campaign-depend
          `Path.cwd()` genuinely resolves to the per-unit worktree during a
          real wave** — see the run-id bloat-exception ADR's "Round 4 code
          review" section for the open question and the cheap first-live-wave
-         probe that settles it.
+         probe that settles it. **Confirmed separately (doubt review, R5a
+         round 6), independent of that open question:**
+         `generate_handoff_on_stop.py` is registered only on `Stop`
+         (`plugins/shipwright-run/hooks/hooks.json`) — no `hooks.json` in this
+         repo registers it on `SubagentStop`. A `sub-iterate-runner` is spawned
+         via `Task`, so its own termination is a `SubagentStop` on the
+         orchestrator's session, never a `Stop` the runner's own hooks fire
+         on; this hook therefore runs ONLY for the orchestrator itself, whose
+         `Path.cwd()` is definitionally the shared campaign worktree —
+         `per_unit_worktree_identity` returns `None` there by design. Its
+         per-unit `write_wave_aware_handoff` branch is consequently
+         unreachable during a live wave regardless of the cwd question above;
+         `session_handoff.md`'s attribution always falls through to
+         `resolve_fallback()`. Not fixed here — `session_handoff.md` is
+         already documented (Step B1, Resumable Iterate Run) as a secondary,
+         best-effort convenience that no gate trusts, so a wrong per-unit
+         name in it during a wave is a real but proportionate, pre-existing-
+         class gap, not a hard-blocking one; a correct fix needs its own
+         registration point (e.g. each runner's own Stop-equivalent, if one
+         exists) and is properly its own follow-up rather than a reactive
+         patch here.
        - `diff_risk_recheck.py` only tests the same truthiness the authorship
          guard does. UNAFFECTED by the sentinel value.
        - `capture_session_id.py`'s propagation via `CLAUDE_ENV_FILE` is WHY A

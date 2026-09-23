@@ -94,8 +94,13 @@ def main(argv: list[str] | None = None) -> int:
         return 5
 
     try:
+        # main_root, not project_root: campaign-mode.md invokes this with
+        # --project-root = the SHARED campaign worktree, which is itself a
+        # linked worktree. Passing it straight through makes setup()'s own
+        # is_worktree(root) check true and take the no-op branch, so no
+        # per-unit worktree is ever created (doubt-review, R5a round 6).
         exit_code, payload = setup_iterate_worktree(
-            str(project_root), slug, args.run_id,
+            str(main_root), slug, args.run_id,
             main_override=args.main, session_id=args.session_id,
         )
     except (LockTimeout, GitError, OSError) as exc:

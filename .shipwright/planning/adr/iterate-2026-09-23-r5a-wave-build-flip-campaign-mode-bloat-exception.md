@@ -92,7 +92,7 @@ merely wrapped in a new per-unit drain loop.
 
 Raise `current` for
 `plugins/shipwright-iterate/skills/iterate/references/campaign-mode.md`
-from **810 to 1050** (983 at initial write; +6 from external code review
+from **810 to 1090** (983 at initial write; +6 from external code review
 round 1's two fixes — the attempt-scoped 3e read path and the explicit
 exit-3 STRICT-STOP note on the synthetic no-result record; +10 from round 2
 — the 3c launch-failure release-every-claimed-unit fix and 3i's no-progress
@@ -117,7 +117,19 @@ overclaim in the security note (and in the run-id bloat-exception ADR) that
 the tier-0/tier-3 fix was "verified to activate" in production, since the
 sources cited for that claim did not actually support it and the codebase's
 own evidence points the other way; the doubt is now recorded as genuinely
-open, with a cheap first-live-wave probe named as the way to settle it),
+open, with a cheap first-live-wave probe named as the way to settle it;
++40 from doubt review round 6 — a fresh-context adversarial pass over the
+full diff raised six doubts, independently re-verified before any fix (see
+the run-id bloat-exception ADR's own "Round 6 doubt review" section for the
+full disposition of all six); the two that changed this file: 3a's
+`--max-parallel "$WAVE_MAX_PARALLEL"` now reads
+`"${WAVE_MAX_PARALLEL:-4}"` instead, since the export and its consuming call
+are separate Bash invocations across a `Task`-spawn boundary with no
+guaranteed shell-state persistence, and an unset value there was previously
+indistinguishable from the loop's own "done" exit code; and the security
+note's `generate_handoff_on_stop.py` entry now states, as a CONFIRMED fact
+rather than an open question, that the hook is registered only on `Stop`
+and never fires for a wave's own runners),
 `state: "exception"`,
 `adr: "ADR-pending:
 .shipwright/planning/adr/iterate-2026-09-23-r5a-wave-build-flip-campaign-mode-bloat-exception.md"`,
