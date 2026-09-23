@@ -15,22 +15,18 @@ strictly is exclusivity: ``mint()`` never overwrites an existing record,
 
 **Storage:** ``<project_root>/.shipwright/runtime/codex-activation/
 <session>.json`` plus a same-named ``.consumed`` sidecar — both gitignored.
-One file per ``session_id`` (the storage key); ``turn_id``/``cwd``/
-``generation`` are recorded FIELDS. Only ``cwd`` (via ``normalize_cwd()``)
-is re-validated today, alongside ``schema_version`` and expiry —
-``turn_id``/``generation`` are write-only, for a future consumer (R2b).
+One file per ``session_id``; only ``cwd``/``schema_version``/expiry are
+re-validated today, ``turn_id``/``generation`` are write-only (R2b).
 
 **Exclusive-create** mirrors ``lib.event_once._create``'s
-``os.O_CREAT | os.O_EXCL`` (atomic on POSIX and Windows) rather than
-``durable_atomic_write``, an unconditional tmp+replace that would silently
-violate the never-overwrite contract. ``generation`` is a random opaque
-token stamped at mint time, not a counter — so a test can show a
-``consume()`` validates the SAME minted instance, not a recreated one.
+``os.O_CREAT | os.O_EXCL`` rather than ``durable_atomic_write``'s
+tmp+replace, which would silently violate the never-overwrite contract.
 """
 
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import math
 import os
@@ -52,9 +48,8 @@ _SCHEMA_VERSION = 1
 _RUNTIME_SUBDIR = ("runtime", "codex-activation")
 #: Same sanitization spirit as ``lib.event_once``'s claim-file tokens: an
 #: unexpected session_id (separators, ``..``) can never escape the runtime
-#: dir. A theoretical same-token collision across two distinct raw
-#: session_ids is unguarded — real session_ids are UUID-shaped, already
-#: inside this charset.
+#: dir. Lossy on its own (two distinct raw ids can share one sanitized
+#: prefix) — ``_safe_token`` below appends a digest to stay collision-free.
 _SAFE_TOKEN_RE = re.compile(r"[^A-Za-z0-9._-]")
 #: Generous by default: expiry here is an anti-staleness safety net, not a
 #: security boundary (read()/consume() fail open on expiry regardless), so
@@ -77,7 +72,14 @@ class ActivationRecord:
 
 
 def _safe_token(value: str) -> str:
-    return _SAFE_TOKEN_RE.sub("_", value or "") or "unknown"
+    """Filesystem-safe AND collision-resistant: two DISTINCT raw values can
+    never map to the same token, even when both contain disallowed
+    characters (external review, block — a lossy substitution alone let
+    e.g. ``"foo/bar"`` and ``"foo_bar"`` collide onto one record path)."""
+    value = value or ""
+    sanitized = _SAFE_TOKEN_RE.sub("_", value) or "unknown"
+    digest = hashlib.sha256(value.encode("utf-8", "surrogatepass")).hexdigest()[:12]
+    return f"{sanitized}-{digest}"
 
 
 def normalize_cwd(cwd: str) -> str:
@@ -199,11 +201,9 @@ def mint(
 ) -> ActivationRecord | None:
     """Exclusive-create-only mint. Returns the minted record on success, or
     ``None`` if a record already exists for this ``session_id`` (a second
-    ``UserPromptSubmit`` never overwrites the first) or on any I/O failure —
-    the caller distinguishes neither case.
-
-    ``armed=False`` mints an explicit unarmed marker (no grammar match) —
-    still one-shot, so a later prompt cannot retroactively arm a session.
+    ``UserPromptSubmit`` never overwrites the first) or on any I/O failure
+    — the caller distinguishes neither case. ``armed=False`` mints an
+    explicit unarmed marker (no grammar match), still one-shot.
 
     **Early exists() short-circuit (doubt-review, medium):** fires on EVERY
     ``UserPromptSubmit``, not just the first, but only the first can ever

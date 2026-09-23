@@ -20,7 +20,11 @@ import codex_pretooluse_gate  # noqa: E402
 
 
 def _record_path(project_root: Path, session_id: str) -> Path:
-    return project_root / ".shipwright" / "runtime" / "codex-activation" / f"{session_id}.json"
+    # Delegates to the real library function -- see the identical note in
+    # test_codex_hooks_noop_under_claude.py (external review fix, R2).
+    from lib.codex_activation_record import _record_path as _lib_record_path
+
+    return _lib_record_path(project_root, session_id)
 
 
 @pytest.fixture(autouse=True)

@@ -14,7 +14,13 @@ import sys
 from pathlib import PureWindowsPath
 
 _SETUP_SCRIPT_BASENAME = "setup_iterate_worktree.py"
-_SHELL_OPERATORS = ("&&", "||", ";", "|", "&")
+#: Sequential-chain separators only -- a standalone ``&`` (background,
+#: "run without waiting") is deliberately NOT one of these (external
+#: review, comment): unlike ``&&``/``;``, it does not mean "then", so
+#: ``cd /tmp & uv run setup_iterate_worktree.py`` must not be treated as
+#: the same safe shape as ``cd /tmp && uv run setup_iterate_worktree.py``
+#: -- see the standalone-``&`` deny check below.
+_SHELL_OPERATORS = ("&&", "||", ";", "|")
 _RUN_WRAPPERS = ("uv",)  # `uv run <target>`
 _INTERPRETER_WRAPPERS = ("python", "python3", "py")  # `<interp> <target>`
 #: Known ``uv run`` flags that consume a following value token, so that
@@ -160,10 +166,13 @@ def _bash_command_matches_setup(tool_input: object) -> bool:
     false-negative traps plus the fix: (a) a single segment (no shell
     operators at all) that matches; (b) a sequential ``&&``/``;`` chain
     where every segment before the last is a bare ``cd <path>`` (see
-    ``_is_bare_cd``) and the LAST segment matches. Any ``||`` or ``|``
-    anywhere in the command denies outright, regardless of match position —
-    a disjunction or pipe can run other content unconditionally alongside
-    or instead of the setup call, so no shape check can make it safe.
+    ``_is_bare_cd``) and the LAST segment matches. Any ``||``, ``|``, or a
+    standalone ``&`` anywhere in the command denies outright, regardless of
+    match position — a disjunction or pipe can run other content
+    unconditionally alongside or instead of the setup call, and a bare
+    ``&`` backgrounds rather than sequences (external review, comment:
+    ``cd /tmp & uv run setup_iterate_worktree.py`` is NOT the same safe
+    shape as its ``&&`` counterpart), so no shape check can make either safe.
     ``posix`` mode is platform-gated: POSIX shlex treats backslash as an
     escape character, which corrupts a literal Windows path
     (``C:\\Users\\...\\setup_iterate_worktree.py``) — this codebase already
@@ -189,7 +198,7 @@ def _bash_command_matches_setup(tool_input: object) -> bool:
     except ValueError:
         return False
     tokens = [_unquote(t) for t in tokens]
-    if "||" in tokens or "|" in tokens:
+    if "||" in tokens or "|" in tokens or "&" in tokens:
         return False
     if any(t in _REDIRECTION_OR_GROUPING for t in tokens):
         return False

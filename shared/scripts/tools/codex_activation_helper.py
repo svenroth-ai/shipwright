@@ -66,6 +66,14 @@ from cmd_resolver import resolve_trusted_executable  # noqa: E402
 from codex_activation_record import normalize_cwd  # noqa: E402
 
 _RECORD_SUBDIR = (".shipwright", "runtime", "codex-activation")
+#: Duplicated from ``codex_activation_mint.py``'s ``_ACCEPTED_SKILL_IDS``,
+#: not imported: that module lives under a specific plugin's ``scripts/``
+#: tree and shared code must not import a single plugin's internals
+#: (ADR-044/045). Kept here ONLY to warn an operator before launch, not to
+#: enforce -- this CLI is intentionally generic (any skill_id composes a
+#: valid envelope); only the iterate mint hook decides what arms. A drift
+#: between the two sets makes the warning stale, never wrong-blocking.
+_KNOWN_ARMING_SKILL_IDS = frozenset({"shipwright-iterate:iterate"})
 
 # Extensions Windows' CreateProcess routes through an implicit cmd.exe re-parse
 # (see module docstring's "shell=False is not always shell-free" note) — never
@@ -180,6 +188,15 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+    if args.skill_id not in _KNOWN_ARMING_SKILL_IDS:
+        print(
+            f"warning: --skill-id {args.skill_id!r} is not one this tool knows arms the "
+            f"iterate gate (known: {sorted(_KNOWN_ARMING_SKILL_IDS)}) -- the mint hook may "
+            f"mint an UNARMED session for it. Launching anyway (this CLI does not enforce "
+            f"the mint hook's own allowlist).",
+            file=sys.stderr,
+        )
 
     project_root = Path(args.project_root).resolve()
 

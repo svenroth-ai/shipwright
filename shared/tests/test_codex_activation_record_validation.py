@@ -68,3 +68,26 @@ def test_exclusive_create_mkdir_failure_is_fail_open(tmp_path, monkeypatch):
     monkeypatch.setattr(_Path, "mkdir", _boom)
 
     assert car.mint(tmp_path, session_id="s1", turn_id="t1", cwd="/proj", armed=True) is None
+
+
+def test_safe_token_does_not_collide_across_distinct_raw_session_ids():
+    # external review, block: a lossy char-substitution alone let e.g.
+    # "foo/bar" and "foo_bar" collide onto the same sanitized filename,
+    # letting two distinct sessions cross-contaminate one activation record.
+    from lib.codex_activation_record import _safe_token
+
+    assert _safe_token("foo/bar") != _safe_token("foo_bar")
+    assert _safe_token("foo:bar") != _safe_token("foo bar")
+
+
+def test_safe_token_is_deterministic_for_the_same_input():
+    from lib.codex_activation_record import _safe_token
+
+    assert _safe_token("s1") == _safe_token("s1")
+
+
+def test_record_and_consumed_paths_do_not_collide_for_distinct_ids(tmp_path):
+    from lib.codex_activation_record import _consumed_path, _record_path
+
+    assert _record_path(tmp_path, "foo/bar") != _record_path(tmp_path, "foo_bar")
+    assert _consumed_path(tmp_path, "foo/bar") != _consumed_path(tmp_path, "foo_bar")

@@ -265,15 +265,13 @@ def test_consume_second_call_skips_read_and_normalize_cwd_entirely(tmp_path, mon
 def test_purge_expired_records_reaps_stale_pairs_but_keeps_fresh_ones(tmp_path):
     import lib.codex_activation_record as car
 
-    record_dir = tmp_path / ".shipwright" / "runtime" / "codex-activation"
-
     car.mint(
         tmp_path, session_id="stale", turn_id="t1", cwd="/proj",
         armed=True, skill_id="x", ttl_seconds=10.0, now=1000.0,
     )
     car.consume(tmp_path, "stale", cwd="/proj", now=1000.0)
-    assert (record_dir / "stale.json").exists()
-    assert (record_dir / "stale.consumed").exists()
+    assert car._record_path(tmp_path, "stale").exists()
+    assert car._consumed_path(tmp_path, "stale").exists()
 
     # "stale" is now expired (expiry 1010 < 2000); mint()'s purge reaps it
     # as a side effect of minting "fresh", which must itself survive.
@@ -282,9 +280,9 @@ def test_purge_expired_records_reaps_stale_pairs_but_keeps_fresh_ones(tmp_path):
         armed=True, skill_id="x", ttl_seconds=10_000.0, now=2000.0,
     )
 
-    assert not (record_dir / "stale.json").exists()
-    assert not (record_dir / "stale.consumed").exists()
-    assert (record_dir / "fresh.json").exists()
+    assert not car._record_path(tmp_path, "stale").exists()
+    assert not car._consumed_path(tmp_path, "stale").exists()
+    assert car._record_path(tmp_path, "fresh").exists()
 
 
 def test_purge_expired_records_skips_malformed_json_without_raising(tmp_path):

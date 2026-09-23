@@ -116,3 +116,37 @@ comment (an activation-helper test's example `--skill-id` used the bare
 `shipwright-iterate:iterate`) was also fixed, for clarity only — the tests
 it appeared in exercise envelope/CLI composition, not the mint hook's
 accepted-skill_id gating, so nothing was functionally broken.
+
+Round 3 — three real defects, fixed. (a) `_safe_token()`'s lossy
+char-substitution sanitization let two distinct raw session_ids collide onto
+one on-disk activation-record path (e.g. `"foo/bar"` and `"foo_bar"` both
+sanitized to `foo_bar`), letting one session's record cross-contaminate
+another's — closed by appending a 12-char SHA-256 digest suffix of the full
+raw value, keeping the sanitized text as a human-readable prefix. This
+changed every `_record_path`/`_consumed_path` output shape, which in turn
+broke a pre-existing test (`test_purge_expired_records_reaps_stale_pairs_
+but_keeps_fresh_ones`) that hardcoded the old `"<id>.json"` filename instead
+of deriving it from the real helpers — fixed alongside, same class of bug as
+below. (b) `codex_activation_helper.py`'s CLI silently accepted any
+`--skill-id`, including one no Codex hook actually arms for — added a
+stderr warning (not a hard block, since the helper is a standalone
+compose/debug tool, not the enforcement path) when the given id is outside
+a small `_KNOWN_ARMING_SKILL_IDS` allowlist, duplicated rather than imported
+from the mint hook's own constant per the cross-plugin import-isolation rule
+(ADR-044/045: `shared/` must not import a specific plugin's `scripts/`
+internals). (c) `codex_pretooluse_matcher.py` treated a standalone `&`
+(background-execute) the same as `&&`/`;` (sequential) when splitting a
+compound bash command into segments — a command like `cd .. & rm -rf /`
+was read as "then", when a real shell reads it as "concurrently, without
+waiting for the first to finish", letting an attacker-adjacent segment slip
+past the matcher's segment-by-segment check. Moved bare `&` into the
+outright-deny set alongside `||`/`|` instead of treating it as a splitter.
+
+Verifying round 3's fixes surfaced a second instance of (a)'s underlying
+bug class: two test files (`test_codex_hooks_noop_under_claude.py`,
+`test_codex_hooks_ac0_combined.py`) each carried their own locally
+duplicated `_record_path()` helper reproducing the pre-digest filename
+shape, silently drifting out of sync the moment `_safe_token()`'s output
+changed. Both replaced with a delegating import of the real library
+function, so a future shape change can't silently re-break them the same
+way.

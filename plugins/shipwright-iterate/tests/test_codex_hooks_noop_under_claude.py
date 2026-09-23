@@ -42,7 +42,13 @@ def _make_bundle(root: Path) -> None:
 
 
 def _record_path(project_root: Path, session_id: str) -> Path:
-    return project_root / ".shipwright" / "runtime" / "codex-activation" / f"{session_id}.json"
+    # Delegates to the real library function rather than re-deriving the
+    # filename shape locally (external review fix, R2: _safe_token() now
+    # appends a collision-resistant digest, and a hand-duplicated helper
+    # here would silently drift from that the next time the shape changes).
+    from lib.codex_activation_record import _record_path as _lib_record_path
+
+    return _lib_record_path(project_root, session_id)
 
 
 def _make_project(root: Path) -> None:

