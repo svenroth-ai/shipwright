@@ -523,13 +523,19 @@ def handoff_dir_for(state_path, loop_id: str) -> Path:
     if not id_charset_ok(loop_id):
         raise ValueError(f"handoff-dir path refused: loop_id {loop_id!r} is not a safe identifier")
     project_root = Path(state_path).resolve().parents[1]
-    shipwright_root = project_root / ".shipwright"
-    handoff_dir = shipwright_root / "planning" / "handoffs" / loop_id
+    # The `.shipwright` literal must stay directly chained onto the next
+    # path segment below (see docstring above) — the artifact-path-canon
+    # lint only recognizes this as an already-rooted canonical path when it
+    # sees them together; the separate `shipwright_root` variable further
+    # down is only for the containment check, never part of the returned
+    # path's own construction.
+    handoff_dir = project_root / ".shipwright" / "planning" / "handoffs" / loop_id
     resolved_handoff_dir = handoff_dir.resolve()
-    if not resolved_handoff_dir.is_relative_to(shipwright_root.resolve()):
+    shipwright_root = (project_root / ".shipwright").resolve()
+    if not resolved_handoff_dir.is_relative_to(shipwright_root):
         raise ValueError(
             f"handoff-dir path {resolved_handoff_dir} escaped "
-            f"{shipwright_root.resolve()} — refusing")
+            f"{shipwright_root} — refusing")
     return handoff_dir
 
 

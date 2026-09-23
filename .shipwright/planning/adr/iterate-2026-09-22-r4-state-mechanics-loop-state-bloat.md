@@ -243,7 +243,7 @@ branch Round 4 already counted, plus one new regression test proving a
 pre-R4 campaign with legacy terminal/escalated rows reinitializes rather than
 reporting a false `resumed, pending: 0`.
 
-### Round 8 growth (886 -> 913)
+### Round 8 growth (886 -> 919)
 
 External Tier-3 review (GPT, high, PR #790) found `runs_dir_for` and
 `handoff_dir_for` still trusted the persisted `loop_id` directly as a Path
@@ -258,10 +258,19 @@ a resolved-path containment assert to both functions, mirroring
 responsibility — a completeness fix extending Round 6's own charset-hardening
 principle to the two sibling path helpers it didn't yet cover.
 
+`handoff_dir_for`'s first draft of this fix (886 -> 913) computed a separate
+`shipwright_root` variable and chained `"planning"` off of THAT instead of
+directly off a `.shipwright` literal — breaking the same artifact-path-canon
+AST/text-regex lint this function's own docstring already warned about,
+caught by real CI (Windows + Linux `Shared tests`) rather than locally.
+Fixed by keeping `.shipwright` and `"planning"` chained in one expression for
+the returned path, computing the separate containment-check variable from a
+DIFFERENT, non-"planning"-bearing sub-expression instead (913 -> 919).
+
 ## Consequences
 
 - Every downstream campaign-dag-scheduler sub-iterate (R5a, R5b, R6) that
-  touches `loop_state.py` operates against the current 913-line ceiling
+  touches `loop_state.py` operates against the current 919-line ceiling
   (see Round 8 growth above), not 278 — the next crossing needs its own ADR.
 - No test file needed its own bump: all new tests for this sub-iterate's
   additions live in `shared/tests/test_loop_state_transitions.py` (state
