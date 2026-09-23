@@ -1,0 +1,64 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-2026-09-23-codextender-part-c-bloat-split",
+    "date": "2026-09-23",
+    "unit": {
+      "status": "passed",
+      "passed": 11474,
+      "total": 11518
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 558,
+      "total": 558
+    },
+    "pgtap": {
+      "status": "not_run"
+    },
+    "e2e": {
+      "status": "not_run"
+    },
+    "design_fidelity": {
+      "status": "not_run"
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "tests_run": 0,
+      "exit_code": 0,
+      "justification": "pure test-file reorganization (no production code touched) -- no startable web/dev-server/CLI surface of its own to browser-verify; verification is the moved test suite itself"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "splitting test_external_review_opus_leg.py into itself (binary resolution/availability/settings/route-selection) + new test_external_review_opus_leg_dispatch.py (review_claude_cli dispatch/retry/env-scrub), and test_external_review_driver_prose_contract.py into itself (--driver coverage/live-idioms) + new test_external_review_key_consistency_contract.py (openai/opus key-consistency), is a pure move -- no test logic, assertions, or fixtures changed, and no test was dropped or duplicated",
+          "disposition": "tested",
+          "evidence": "all 38 tests across the four files re-run and pass identically post-split: shared/tests/test_external_review_opus_leg.py (18 items) + test_external_review_opus_leg_dispatch.py (9 items) = 27 passed; integration-tests/test_external_review_driver_prose_contract.py (9 items) + test_external_review_key_consistency_contract.py (2 items) = 11 passed"
+        }
+      ],
+      "counts": {
+        "testable": 1,
+        "tested": 1,
+        "untestable": 0,
+        "untested_testable": 0
+      }
+    }
+  },
+  "coverage": {
+    "total": 87.2,
+    "measured_tier": "repo",
+    "source": "combined coverage.xml (all plugins + shared + integration)",
+    "measured_at": "2026-09-02T15:32:00Z"
+  },
+  "source_state": {
+    "run_id": "iterate-2026-09-23-codextender-part-c-bloat-split",
+    "commit": "46d43188273da14be9a28351af109da8a11b2cf5",
+    "dirty": true,
+    "base": null,
+    "release": null
+  }
+}

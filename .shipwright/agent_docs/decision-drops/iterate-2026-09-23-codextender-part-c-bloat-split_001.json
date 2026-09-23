@@ -1,0 +1,14 @@
+{
+  "run_id": "iterate-2026-09-23-codextender-part-c-bloat-split",
+  "date": "2026-09-23",
+  "section": "bloat-repair",
+  "title": "Split two test files that crossed the 300-line bloat gate post-merge",
+  "context": "PR #791 merged before the session bloat-gate Stop-hook could run; two test files exceeded 300 LOC while adding regression tests. CI's own Bloat Check passed (first-time crossings aren't blocked, only ratcheting an exception) so main stayed green, but the crossing is real debt.",
+  "decision": "Split both files along existing concern boundaries, verified byte-identical to origin/main before editing. All 38 tests re-verified passing; code-reviewer PASS with no defects.",
+  "consequences": "Both files back under the 300-line ceiling with headroom. No behavior change.",
+  "rationale": "",
+  "rejected": "",
+  "commit": "",
+  "architecture_impact": "none",
+  "spec_ref": ".shipwright/planning/adr/iterate-2026-09-23-codextender-part-c-bloat-split-details.md"
+}

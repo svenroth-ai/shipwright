@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "run_id": "iterate-2026-09-23-codextender-part-c-bloat-split",
+  "reviews": {
+    "self": {
+      "review_type": "self",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:35:56.708516+00:00",
+      "disposition": "complexity=small, spec_impact=none, no migration/concurrency/cross-plugin-import/irreversible-op, no plan (mechanical bloat-gate test-file split); local + CI PR-review preflight (external code-review equivalent) also ran and approved.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan": {
+      "review_type": "plan",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:35:56.708516+00:00",
+      "disposition": "complexity=small, spec_impact=none, no migration/concurrency/cross-plugin-import/irreversible-op, no plan (mechanical bloat-gate test-file split); local + CI PR-review preflight (external code-review equivalent) also ran and approved.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "code": {
+      "review_type": "code",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:35:52.172003+00:00",
+      "disposition": null,
+      "recorded_by": "code-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "doubt": {
+      "review_type": "doubt",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:35:56.708516+00:00",
+      "disposition": "complexity=small, spec_impact=none, no migration/concurrency/cross-plugin-import/irreversible-op, no plan (mechanical bloat-gate test-file split); local + CI PR-review preflight (external code-review equivalent) also ran and approved.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "external_code": {
+      "review_type": "external_code",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:35:56.708516+00:00",
+      "disposition": "complexity=small, spec_impact=none, no migration/concurrency/cross-plugin-import/irreversible-op, no plan (mechanical bloat-gate test-file split); local + CI PR-review preflight (external code-review equivalent) also ran and approved.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "spec": {
+      "review_type": "spec",
+      "status": "completed",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:39:41.164909+00:00",
+      "disposition": null,
+      "recorded_by": "spec-reviewer",
+      "parse_status": null,
+      "raw_excerpt": null
+    },
+    "plan_internal": {
+      "review_type": "plan_internal",
+      "status": "not_applicable",
+      "findings_count": 0,
+      "findings": [],
+      "provider": null,
+      "completed_at": "2026-09-23T10:35:56.708516+00:00",
+      "disposition": "complexity=small, spec_impact=none, no migration/concurrency/cross-plugin-import/irreversible-op, no plan (mechanical bloat-gate test-file split); local + CI PR-review preflight (external code-review equivalent) also ran and approved.",
+      "recorded_by": "close-missing",
+      "parse_status": null,
+      "raw_excerpt": null
+    }
+  }
+}

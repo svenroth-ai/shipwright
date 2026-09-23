@@ -163,3 +163,4 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — `shared/tests/test_campaign_step_3f_bis.py` (first crossing: raised to 540-LOC; see the latest entry below for the current ceiling)](iterate-2026-09-22-r3-review-diff-fix-test-3f-bis-bloat-exception.md)
 - [Bloat exception — `shared/tests/test_review_attribution.py` raised above the 300-LOC limit (current: see `shipwright_bloat_baseline.json`)](iterate-2026-09-22-r3-review-diff-fix-test-review-attribution-bloat-exception.md)
 - [ADR: Codextender monorepo integration — Part C](iterate-2026-09-23-codextender-monorepo-part-c-details.md)
+- [ADR: Split two test files that crossed the 300-line bloat gate post-merge](iterate-2026-09-23-codextender-part-c-bloat-split-details.md)
