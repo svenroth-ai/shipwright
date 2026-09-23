@@ -165,4 +165,5 @@ _Regenerate:_ `uv run {shared_root}/scripts/tools/rebuild_adr_index.py --project
 - [Bloat exception — `shared/scripts/lib/loop_claim.py` raised to 353-LOC](iterate-2026-09-22-r4-state-mechanics-loop-claim-bloat.md)
 - [Bloat exception — `shared/scripts/lib/loop_state.py` raised to 768-LOC](iterate-2026-09-22-r4-state-mechanics-loop-state-bloat.md)
 - [Review-cascade findings — `iterate-2026-09-22-r4-state-mechanics`](iterate-2026-09-22-r4-state-mechanics-review-findings.md)
+- [Bloat exception — `shared/scripts/lib/unit_lease.py` raised to 323-LOC](iterate-2026-09-22-r4-state-mechanics-unit-lease-bloat.md)
 - [ADR: Codextender monorepo integration — Part C](iterate-2026-09-23-codextender-monorepo-part-c-details.md)
